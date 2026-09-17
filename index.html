@@ -17,7 +17,7 @@
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
   <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260914-websurf-r1" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260917-bodega-search-r4" />
 </head>
 
 <body>
@@ -453,7 +453,14 @@
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <span>EAS Designer</span>
                     </button>
+                    <button id="webSurfSettingsTab" type="button" class="webpage-tab webpage-tab-settings" data-webpage-destination="settings" data-websurf-temporary-tab="settings" hidden>
+                      <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
+                      <span>Settings</span>
+                    </button>
                   </div>
+                  <button id="webSurfSettingsButton" class="webpage-browser-settings" type="button" title="Bubble Borough Settings" aria-label="Open Bubble Borough Settings" data-open-websurf-settings>
+                    <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
+                  </button>
                   <button id="closeStoreOverlay" class="webpage-browser-close" type="button" title="Close browser" aria-label="Close browser">&times;</button>
                 </nav>
                 <section id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden></section>
@@ -521,13 +528,10 @@
                     </button>
                     <nav class="proteus-biodyne-nav" role="tablist" aria-label="Proteus Biodyne sections">
                       <button type="button" role="tab" aria-selected="true" aria-controls="proteusHomePanel" data-proteus-tab="home" class="is-active">Home</button>
-                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusMissionPanel" data-proteus-tab="mission">Our Mission</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusAboutPanel" data-proteus-tab="about">About</button>
                       <button type="button" role="tab" aria-selected="false" aria-controls="proteusResearchPanel" data-proteus-tab="research">Research</button>
-                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusProgramsPanel" data-proteus-tab="programs">Programs</button>
                       <button type="button" role="tab" aria-selected="false" aria-controls="proteusSpecimensPanel" data-proteus-tab="specimens">Specimens</button>
-                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusSustainabilityPanel" data-proteus-tab="sustainability">Sustainability</button>
-                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusCareersPanel" data-proteus-tab="careers">Careers</button>
-                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusInvestorsPanel" data-proteus-tab="investors">Investors</button>
+                      <button type="button" role="tab" aria-selected="false" aria-controls="proteusCustomSpecimenPanel" data-proteus-tab="custom-specimen">Custom Specimen</button>
                     </nav>
                   </header>
 
@@ -538,7 +542,7 @@
                         <p>Oceans adapt.<br />So do we.</p>
                         <h1 id="proteusBiodyneTitle" tabindex="-1"><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne — Adaptive Biology. Engineered." /></h1>
                         <p class="proteus-biodyne-intro">Harnessing the ocean’s potential through responsible genetic innovation. A more resilient tomorrow lives below the surface.</p>
-                        <button class="proteus-biodyne-cta" type="button" data-proteus-tab-link="mission">Our mission <span aria-hidden="true">&#8594;</span></button>
+                        <button class="proteus-biodyne-cta" type="button" data-proteus-tab-link="about">Our mission <span aria-hidden="true">&#8594;</span></button>
                       </div>
                       <div class="proteus-biodyne-hero-side" aria-hidden="true">
                         <span>Stability<br />through<br />adaptation</span>
@@ -556,7 +560,7 @@
                           <span>01</span>
                           <h2>Marine scaling program</h2>
                           <p>Selective genomic pathways support resilience, growth, and environmental adaptability.</p>
-                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                          <button type="button" data-proteus-tab-link="research">Explore program <span aria-hidden="true">&#8594;</span></button>
                         </article>
                         <article class="proteus-program-card">
                           <div class="proteus-program-image" aria-hidden="true">
@@ -565,7 +569,7 @@
                           <span>02</span>
                           <h2>Specimen stability</h2>
                           <p>Long-term viability through proprietary genomic balancing and cellular reinforcement.</p>
-                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                          <button type="button" data-proteus-tab-link="research">Explore program <span aria-hidden="true">&#8594;</span></button>
                         </article>
                         <article class="proteus-program-card">
                           <div class="proteus-program-image" aria-hidden="true">
@@ -574,7 +578,7 @@
                           <span>03</span>
                           <h2>Behavioral integrity</h2>
                           <p>Preserving natural behaviors while enabling predictable responses in managed environments.</p>
-                          <button type="button" data-proteus-tab-link="programs">Explore program <span aria-hidden="true">&#8594;</span></button>
+                          <button type="button" data-proteus-tab-link="research">Explore program <span aria-hidden="true">&#8594;</span></button>
                         </article>
                       </main>
 
@@ -602,9 +606,9 @@
                     </div>
                     </section>
 
-                    <section id="proteusMissionPanel" class="proteus-tab-panel proteus-subpage proteus-mission-page" role="tabpanel" data-proteus-panel="mission" hidden>
+                    <section id="proteusAboutPanel" class="proteus-tab-panel proteus-subpage proteus-mission-page" role="tabpanel" data-proteus-panel="about" hidden>
                       <header class="proteus-page-lead">
-                        <p>Our Mission</p>
+                        <p>About Proteus</p>
                         <h2 tabindex="-1">To reshape biological life for a world that can no longer wait for nature to adapt on its own.</h2>
                         <p>PROTEUS BIODYNE exists to expand the limits of biological adaptation.</p>
                         <blockquote>We believe biology can do more.</blockquote>
@@ -648,6 +652,24 @@
                           <p>By preserving the defining capabilities of an organism while reducing the resources and habitat it requires, biological scaling creates new pathways for species survival, research, and integration.</p>
                         </div>
                       </section>
+
+                      <section class="proteus-about-stewardship" aria-labelledby="proteusStewardshipHeading">
+                        <header class="proteus-section-heading">
+                          <p>Ecological Stewardship</p>
+                          <h3 id="proteusStewardshipHeading">Conservation cannot always preserve the past.</h3>
+                          <p>Sometimes it must redesign what comes next. Proteus reduces biological loss by creating organisms able to thrive within the habitats the future can sustain.</p>
+                        </header>
+                        <section class="proteus-recovery-program" aria-labelledby="proteusRecoveryHeading">
+                          <div class="proteus-recovery-program-label"><span>Lifecycle Recovery / PB-LR1</span><strong>Free for customers</strong></div>
+                          <div>
+                            <p>Customer Stewardship Program</p>
+                            <h3 id="proteusRecoveryHeading">Return life to the cycle.</h3>
+                            <p>Proteus accepts deceased aquatic specimens at no cost to the owner. Every recovery is handled through our secure biological materials program, where viable tissue and biological records may support future conservation, research, and adaptation work.</p>
+                            <small>By enrolling, owners authorize Proteus Biodyne to retain, process, study, or repurpose recovered specimens at its discretion. Specific downstream uses are confidential and are not individually disclosed.</small>
+                          </div>
+                        </section>
+                        <div class="proteus-principle-grid"><article><span>01</span><h3>Preserve</h3><p>Retain viable lineages before environmental change makes recovery impossible.</p></article><article><span>02</span><h3>Adapt</h3><p>Reduce habitat demands and reinforce biological systems against instability.</p></article><article><span>03</span><h3>Integrate</h3><p>Return approved organisms to managed environments under measured oversight.</p></article></div>
+                      </section>
                       <blockquote class="proteus-mission-coda">
                         <span>Founding Principle / Internal Doctrine</span>
                         If an organism cannot survive the world we are creating, change the organism.
@@ -678,17 +700,16 @@
                         <article><h3>Environmental Resilience</h3><p>Expanded tolerance to temperature, chemistry, pressure, and habitat loss.</p></article>
                         <article><h3>Accelerated Phenotypes</h3><p>Viable biological outcomes delivered within operational timelines.</p></article>
                       </div>
-                    </section>
-
-                    <section id="proteusProgramsPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="programs" hidden>
-                      <header class="proteus-page-lead proteus-page-lead-compact"><p>Active Initiatives</p><h2 tabindex="-1">Programs built for what comes next.</h2><p>Five coordinated initiatives translate Proteus research into durable biological systems.</p></header>
-                      <div class="proteus-program-list">
-                        <article><span>PB/CMI</span><div><h3>Compact Marine Initiative</h3><p>Lower habitat and resource requirements through proportional marine scaling.</p></div><strong>Public</strong></article>
-                        <article><span>PB/PEL</span><div><h3>Project Pelagos</h3><p>Ocean adaptation for rapidly changing temperature and chemistry profiles.</p></div><strong>Limited access</strong></article>
-                        <article><span>PB/CON</span><div><h3>Continuity Program</h3><p>Preservation pathways for species approaching nonrecoverable population loss.</p></div><strong>Public</strong></article>
-                        <article><span>PB/AEG</span><div><h3>Aegis Initiative</h3><p>Disease resistance and environmental tolerance across managed populations.</p></div><strong>Partner access</strong></article>
-                        <article><span>PB/HNX</span><div><h3>HABITAT//NEXT</h3><p>Organisms designed to remain viable in environments that do not yet exist.</p></div><strong>Restricted</strong></article>
-                      </div>
+                      <section class="proteus-research-initiatives" aria-labelledby="proteusInitiativesHeading">
+                        <header class="proteus-section-heading"><p>Active Initiatives</p><h3 id="proteusInitiativesHeading">Programs built for what comes next.</h3><p>Five coordinated initiatives translate Proteus research into durable biological systems.</p></header>
+                        <div class="proteus-program-list">
+                          <article><span>PB/CMI</span><div><h3>Compact Marine Initiative</h3><p>Lower habitat and resource requirements through proportional marine scaling.</p></div><strong>Public</strong></article>
+                          <article><span>PB/PEL</span><div><h3>Project Pelagos</h3><p>Ocean adaptation for rapidly changing temperature and chemistry profiles.</p></div><strong>Limited access</strong></article>
+                          <article><span>PB/CON</span><div><h3>Continuity Program</h3><p>Preservation pathways for species approaching nonrecoverable population loss.</p></div><strong>Public</strong></article>
+                          <article><span>PB/AEG</span><div><h3>Aegis Initiative</h3><p>Disease resistance and environmental tolerance across managed populations.</p></div><strong>Partner access</strong></article>
+                          <article><span>PB/HNX</span><div><h3>HABITAT//NEXT</h3><p>Organisms designed to remain viable in environments that do not yet exist.</p></div><strong>Restricted</strong></article>
+                        </div>
+                      </section>
                     </section>
 
                     <section id="proteusSpecimensPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="specimens" hidden>
@@ -702,18 +723,26 @@
                       </div>
                     </section>
 
-                    <section id="proteusSustainabilityPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="sustainability" hidden>
-                      <header class="proteus-page-lead"><p>Ecological Stewardship</p><h2 tabindex="-1">Conservation cannot always preserve the past.</h2><p>Sometimes it must redesign what comes next. Proteus reduces biological loss by creating organisms able to thrive within the habitats the future can sustain.</p><blockquote>Smaller organisms consume fewer resources, require less habitat, and make continuity achievable at ecosystem scale.</blockquote></header>
-                      <section class="proteus-recovery-program" aria-labelledby="proteusRecoveryHeading">
-                        <div class="proteus-recovery-program-label"><span>Lifecycle Recovery / PB-LR1</span><strong>Free for customers</strong></div>
-                        <div>
-                          <p>Customer Stewardship Program</p>
-                          <h3 id="proteusRecoveryHeading">Return life to the cycle.</h3>
-                          <p>Proteus accepts deceased aquatic specimens at no cost to the owner. Every recovery is handled through our secure biological materials program, where viable tissue and biological records may support future conservation, research, and adaptation work.</p>
-                          <small>By enrolling, owners authorize Proteus Biodyne to retain, process, study, or repurpose recovered specimens at its discretion. Specific downstream uses are confidential and are not individually disclosed.</small>
+                    <section id="proteusCustomSpecimenPanel" class="proteus-tab-panel proteus-subpage proteus-custom-specimen-page" role="tabpanel" data-proteus-panel="custom-specimen" hidden>
+                      <header class="proteus-page-lead proteus-page-lead-compact">
+                        <p>Public Adaptation Service / EAS</p>
+                        <h2 tabindex="-1">Engineered Aquatic Specimen.</h2>
+                        <p>Aquatic life designed to your specifications. Proteus Biodyne allows approved members of the public to create an individual aquatic organism calibrated for managed aquarium environments.</p>
+                      </header>
+                      <div class="proteus-custom-specimen-service">
+                        <div class="proteus-custom-specimen-service-copy">
+                          <span>CONSUMER ADAPTATION PROGRAM</span>
+                          <h3>Define the organism. Proteus handles the biology.</h3>
+                          <p>Upload a side-profile reference, name the specimen, and calibrate its behavior, dietary profile, activity, preferred swim zone, social affinity, scale, orientation, reproductive mode, and supported movement settings.</p>
+                          <p>Entering the designer is free. The 75 coin synthesis fee is charged only when you choose to purchase the completed specimen.</p>
+                          <button type="button" class="proteus-biodyne-cta proteus-custom-specimen-create" data-proteus-create-specimen>CREATE CUSTOM SPECIMEN <span aria-hidden="true">&#8594;</span></button>
                         </div>
-                      </section>
-                      <div class="proteus-principle-grid"><article><span>01</span><h3>Preserve</h3><p>Retain viable lineages before environmental change makes recovery impossible.</p></article><article><span>02</span><h3>Adapt</h3><p>Reduce habitat demands and reinforce biological systems against instability.</p></article><article><span>03</span><h3>Integrate</h3><p>Return approved organisms to managed environments under measured oversight.</p></article></div>
+                        <aside class="proteus-custom-specimen-capabilities" aria-label="Custom specimen capabilities">
+                          <article><span>01</span><strong>Custom Morphology</strong><p>Supply the side-profile asset used to synthesize your specimen.</p></article>
+                          <article><span>02</span><strong>Behavioral Calibration</strong><p>Configure temperament, activity, diet, depth preference, and social behavior.</p></article>
+                          <article><span>03</span><strong>Direct Fulfillment</strong><p>Successful specimens are delivered directly into your active aquarium.</p></article>
+                        </aside>
+                      </div>
                     </section>
 
                     <section id="proteusCareersPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="careers" hidden>
@@ -725,6 +754,11 @@
                       <header class="proteus-page-lead"><p>Investor Relations / FY 2026</p><h2 tabindex="-1">Biological limitations are addressable markets.</h2><p>Proteus converts proprietary adaptive systems into scalable platforms for conservation, aquaculture, medicine, licensing, and sovereign resilience programs.</p><div><strong>42</strong><span>active patent families across adaptive biology</span></div></header>
                       <div class="proteus-investor-grid"><article><span>31%</span><h3>Platform growth</h3><p>Year-over-year expansion across licensed marine applications.</p></article><article><span>18</span><h3>Strategic partners</h3><p>Government, conservation, and commercial deployment agreements.</p></article><article><span>7.4×</span><h3>Habitat efficiency</h3><p>Average modeled capacity gain for compact marine populations.</p></article></div>
                     </section>
+
+                    <footer class="proteus-site-footer">
+                      <span>PROTEUS BIODYNE // Adaptive Biology. Engineered.</span>
+                      <nav aria-label="Proteus corporate links"><button type="button" data-proteus-tab-link="careers">Careers</button><button type="button" data-proteus-tab-link="investors">Investor Relations</button></nav>
+                    </footer>
                   </div>
                 </section>
 
@@ -849,10 +883,11 @@
               aria-modal="true" role="dialog">
               <div class="settings-panel settings-dashboard-panel">
                 <div class="settings-panel-header">
-                  <div class="settings-panel-copy">
-                    <p class="settings-kicker">Aquarium Tools</p>
-                    <h2 id="settingsTitle">Settings</h2>
-                    <p>Manage your account, save data, graphics, and game preferences.</p>
+                  <div class="settings-panel-copy websurf-settings-heading">
+                    <div class="websurf-settings-heading-copy">
+                      <h2 id="settingsTitle">Settings</h2>
+                      <p>Manage your Account, graphics, and game prefs.</p>
+                    </div>
                   </div>
 
                   <div class="settings-header-actions">
@@ -973,7 +1008,7 @@
                         <input id="backgroundDepthHazeToggleInput" class="settings-checkbox" type="checkbox" checked />
                       </label>
 
-                      <label class="settings-toggle-row" for="simpleTurnAnimationsToggleInput">
+                      <label class="settings-toggle-row" for="simpleTurnAnimationsToggleInput" hidden>
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Simple Turn Animations</span>
                           <span class="settings-toggle-note">Forces the lightweight turnaround animation for every fish.</span>
@@ -993,6 +1028,18 @@
                           <p class="settings-section-note">Customize the look and feel.</p>
                         </div>
                       </div>
+
+                      <label class="settings-toolbar-color-row settings-websurf-theme-row" for="webSurfThemeModeSelect">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">WebSurf Dark Mode</span>
+                          <span class="settings-toggle-note">Controls WebSurf and its built-in pages. Auto follows your browser color scheme.</span>
+                        </div>
+                        <select id="webSurfThemeModeSelect" class="settings-select" aria-label="WebSurf dark mode">
+                          <option value="auto">Auto</option>
+                          <option value="yes">Yes</option>
+                          <option value="no">No</option>
+                        </select>
+                      </label>
 
                       <label class="settings-toggle-row settings-peaceful-mode-row" for="peacefulModeToggleInput">
                         <div class="settings-toggle-copy">
@@ -1082,13 +1129,13 @@
                           Visit My Site
                         </a>
                         <button class="small-button alt legal-button" type="button" data-open-legal>
-                          <span class="settings-button-icon settings-button-glyph" aria-hidden="true">&sect;</span>
+                          <img class="settings-button-icon" data-sprite-src="assets/icons/data.png" alt="" aria-hidden="true" />
                           Legal
                         </button>
                         <a class="small-button donation-button" href="https://buymeacoffee.com/nathanarcuri" target="_blank"
-                          rel="noopener noreferrer" aria-label="Donate with Buy Me a Coffee">
+                          rel="noopener noreferrer" aria-label="Support Bubble Borough">
                           <img class="settings-button-icon" data-sprite-src="assets/icons/pizza.png" alt="" aria-hidden="true" />
-                          Pizza Me!
+                          Support Bubble Borough
                         </a>
                       </div>
                     </section>
@@ -1416,13 +1463,6 @@
                 <span id="webSurfUnreadBadge" class="dock-button-badge" aria-label="Unread WebSurf mail" hidden></span>
               </button>
 
-
-
-              <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
-                aria-label="Settings">
-                <img class="dock-button-icon" data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true"
-                  draggable="false" />
-              </button>
 
               <!--DEBUG BUTTONS-->
 
@@ -1858,7 +1898,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script src="public/websurf-store.js?v=20260916"></script>
+  <script src="public/websurf-store.js?v=20260917-bodega-search-r4"></script>
 
   <script>
     (() => {
@@ -1998,7 +2038,7 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260916-fish-collision-r2";
+        : "20260917-bodega-search-r4";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);

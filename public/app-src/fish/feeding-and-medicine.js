@@ -99,6 +99,7 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
     return 0;
   }
 
+  recordFishDailyMealIndicator(fish, now, tank);
   const entry = ensureMealHistoryEntry(`feeding-care-${getLocalDayKey(now)}`, now, tank);
   if (!entry) {
     return 0;
@@ -126,6 +127,51 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
     label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
   });
   return mealCoins;
+}
+
+function getDailyMealIndicatorSlots(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const dayKey = getLocalDayKey(timestamp);
+  const midnight = new Date(date);
+  midnight.setHours(0, 0, 0, 0);
+  const noon = new Date(date);
+  noon.setHours(12, 0, 0, 0);
+  const nextMidnight = new Date(midnight);
+  nextMidnight.setDate(nextMidnight.getDate() + 1);
+  return [
+    { key: `daily-feeding-${dayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
+    { key: `daily-feeding-${dayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
+  ];
+}
+
+function getDailyMealIndicatorSlot(timestamp = Date.now()) {
+  const slots = getDailyMealIndicatorSlots(timestamp);
+  return new Date(timestamp).getHours() < 12 ? slots[0] : slots[1];
+}
+
+function recordFishDailyMealIndicator(fish, now = Date.now(), tank = getCurrentTank()) {
+  if (!fish || isMealFreeFish(fish)) {
+    return false;
+  }
+  const slot = getDailyMealIndicatorSlot(now);
+  const entry = ensureMealHistoryEntry(slot.key, now, tank);
+  if (!entry) {
+    return false;
+  }
+  const fedFishIds = new Set(Array.isArray(entry.fishIds) ? entry.fishIds : []);
+  const beforeSize = fedFishIds.size;
+  fedFishIds.add(fish.id);
+  entry.fishIds = [...fedFishIds];
+  entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
+  return fedFishIds.size !== beforeSize;
+}
+
+function getFishDailyMealIndicatorState(fish, now = Date.now(), tank = getCurrentTank()) {
+  const [amSlot, pmSlot] = getDailyMealIndicatorSlots(now);
+  return {
+    am: hasFishEatenInSlot(fish, amSlot, tank),
+    pm: hasFishEatenInSlot(fish, pmSlot, tank)
+  };
 }
 
 function getDailyFeedingCareStatus(tank = getCurrentTank(), now = Date.now()) {

@@ -446,8 +446,26 @@ function getDecorContactSpans(item, decor) {
       start = null;
     }
   }
-  variants.set(flippedY, spans);
-  return spans;
+
+  // Small transparent nicks inside an authored footprint should not fragment a
+  // single root/support into several tiny shadows. Merge only nearby gaps while
+  // preserving real openings such as the center of an arch.
+  let resolvedSpans = spans;
+  if (decor?.shadowFootprintPath && spans.length > 1) {
+    const maxGap = clamp(Number(DECOR_GROUND_SHADOWS.authoredSpanMergeGapRatio) || 0.028, 0.005, 0.08);
+    resolvedSpans = [];
+    for (const span of spans) {
+      const previous = resolvedSpans[resolvedSpans.length - 1];
+      if (previous && span.left - previous.right <= maxGap) {
+        previous.right = Math.max(previous.right, span.right);
+      } else {
+        resolvedSpans.push({ ...span });
+      }
+    }
+  }
+
+  variants.set(flippedY, resolvedSpans);
+  return resolvedSpans;
 }
 
 
@@ -515,8 +533,10 @@ function getDecorContactShadowMetrics(item) {
     y: shadowY,
     radiusX,
     radiusY,
+    boundsCenterX: (bounds.left + bounds.right) * 0.5,
     boundsWidth: width,
     footprintHeightBoost,
+    hasAuthoredFootprint: Boolean(decor.shadowFootprintPath && mask?.bounds),
     alpha: 0.48 * groundingStrength * getTankDepthShadowStrength(getDecorTankLayer(item)) * (typeof getDebugGroundShadowDarknessMultiplier === "function" ? getDebugGroundShadowDarknessMultiplier() : 1),
     spans,
     spriteWidth
@@ -532,18 +552,53 @@ function drawDecorContactShadow(context, item) {
   context.save();
   traceTankFloorMaskPath(context, getTankFloorDrawBounds());
   context.clip();
-  // Base grounding shadow follows the opaque sprite footprint instead of the transparent canvas,
-  // so it stays directly under the decor and fades out at the real sprite edges.
+  const authoredFootprint = shadow.hasAuthoredFootprint === true;
+  const baseAlphaMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseAlphaMultiplier
+    : DECOR_GROUND_SHADOWS.baseAlphaMultiplier;
+  const baseMidAlphaMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseMidAlphaMultiplier
+    : DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier;
+  const baseRadiusXMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseRadiusXMultiplier
+    : DECOR_GROUND_SHADOWS.baseRadiusXMultiplier;
+  const baseRadiusYMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseRadiusYMultiplier
+    : DECOR_GROUND_SHADOWS.baseRadiusYMultiplier;
+
+  // The authored helper controls the physical contact regions. For authored
+  // footprints, the broad cast shadow must span the full visible decor width,
+  // but it must not be darkest in the middle of an arch. Use a vertically faded
+  // ellipse with nearly uniform horizontal density, then add much darker local
+  // occlusion only beneath the support spans extracted from the footprint PNG.
+  // This makes two-root/arch pieces read as grounded at the sides while the
+  // open center receives only a light cast shadow.
   context.save();
-  context.translate(shadow.x, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
-  context.scale(
-    Math.max(8, shadow.radiusX * DECOR_GROUND_SHADOWS.baseRadiusXMultiplier),
-    clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.42), 5, 26)
+  const broadShadowRadiusX = authoredFootprint
+    ? Math.max(8, shadow.boundsWidth * 0.5 * baseRadiusXMultiplier)
+    : Math.max(8, shadow.radiusX * baseRadiusXMultiplier);
+  const broadShadowCenterX = authoredFootprint ? shadow.boundsCenterX : shadow.x;
+  const broadShadowRadiusY = clamp(
+    shadow.radiusY * (baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.32),
+    4,
+    24
   );
-  let gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-  gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * DECOR_GROUND_SHADOWS.baseAlphaMultiplier})`);
-  gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier).toFixed(4)})`);
-  gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  context.translate(broadShadowCenterX, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
+  context.scale(broadShadowRadiusX, broadShadowRadiusY);
+  let gradient;
+  if (authoredFootprint) {
+    gradient = context.createLinearGradient(0, -1, 0, 1);
+    gradient.addColorStop(0, "rgba(3, 9, 14, 0)");
+    gradient.addColorStop(0.28, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(0.5, `rgba(3, 9, 14, ${(shadow.alpha * baseAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(0.72, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  } else {
+    gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * baseAlphaMultiplier})`);
+    gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  }
   context.fillStyle = gradient;
   context.beginPath();
   context.arc(0, 0, 1, 0, Math.PI * 2);
@@ -568,7 +623,10 @@ function drawDecorContactShadow(context, item) {
           : clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.contactRadiusYMultiplier + shadow.footprintHeightBoost * 0.34), 4, 16)
       );
       gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier)})`);
+      const contactAlphaMultiplier = authoredFootprint
+        ? (core ? DECOR_GROUND_SHADOWS.authoredContactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.authoredContactSoftAlphaMultiplier)
+        : (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * contactAlphaMultiplier})`);
       gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
       context.fillStyle = gradient;
       context.beginPath();

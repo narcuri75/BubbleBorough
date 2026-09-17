@@ -626,7 +626,7 @@ function restoreAllFishHealthDebug() {
 
 function resetMealsDebug() {
   const now = Date.now();
-  const slots = getTodaysMealSlots(now);
+  const slots = [...getTodaysMealSlots(now), ...getDailyMealIndicatorSlots(now)];
   let cleared = 0;
 
   for (const slot of slots) {
@@ -674,7 +674,22 @@ function completeMealsDebug() {
     }
   }
 
-  if (!completedSlots) {
+  let indicatorMealsAdded = 0;
+  for (const slot of getDailyMealIndicatorSlots(now)) {
+    const entry = ensureMealHistoryEntry(slot.key, now);
+    const fedFishIds = new Set(Array.isArray(entry.fishIds) ? entry.fishIds : []);
+    const beforeCount = fedFishIds.size;
+    for (const fish of (getCurrentTank()?.fish || [])) {
+      if (fish && !isFishDead(fish) && !isMealFreeFish(fish)) {
+        fedFishIds.add(fish.id);
+      }
+    }
+    entry.fishIds = [...fedFishIds];
+    entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
+    indicatorMealsAdded += Math.max(0, fedFishIds.size - beforeCount);
+  }
+
+  if (!completedSlots && !indicatorMealsAdded) {
     showToast("Today's meals are already complete.");
     return;
   }

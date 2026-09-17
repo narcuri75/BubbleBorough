@@ -1276,6 +1276,17 @@ const DECOR_GROUND_SHADOWS = Object.freeze({
   contactSoftAlphaMultiplier: 0.82,
   contactRadiusXMultiplier: 1.02,
   contactRadiusYMultiplier: 1.0,
+  // Authored footprint helpers describe where wide decor actually contacts the
+  // substrate. Keep the full-width cast shadow light, then make those authored
+  // contact regions noticeably darker. This is especially important for arches
+  // and roots, where a single centered ellipse makes the opening look grounded.
+  authoredBaseAlphaMultiplier: 0.24,
+  authoredBaseMidAlphaMultiplier: 0.18,
+  authoredBaseRadiusXMultiplier: 1.08,
+  authoredBaseRadiusYMultiplier: 0.78,
+  authoredContactCoreAlphaMultiplier: 1.68,
+  authoredContactSoftAlphaMultiplier: 1.08,
+  authoredSpanMergeGapRatio: 0.028,
   shadowDarknessCap: 3
 });
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
@@ -1297,6 +1308,15 @@ const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
   movement: 1,
   shadowDarkness: 1.3
 });
+const WEBSURF_THEME_MODE_AUTO = "auto";
+const WEBSURF_THEME_MODE_YES = "yes";
+const WEBSURF_THEME_MODE_NO = "no";
+const WEBSURF_THEME_MODES = Object.freeze([
+  WEBSURF_THEME_MODE_AUTO,
+  WEBSURF_THEME_MODE_YES,
+  WEBSURF_THEME_MODE_NO
+]);
+const WEBSURF_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
@@ -1304,6 +1324,7 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
+  webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1320,7 +1341,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   decorShadowsEnabled: true,
   depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
   backgroundDepthHazeEnabled: true,
-  simpleTurnAnimationsOnly: false,
+  simpleTurnAnimationsOnly: true,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -8601,6 +8622,8 @@ const dom = {
   storeOverlay: document.querySelector("#storeOverlay"),
   webHomePage: document.querySelector("#webHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
+  webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
+  webSurfSettingsTab: document.querySelector("#webSurfSettingsTab"),
   bubbleBankPage: document.querySelector("#bubbleBankPage"),
   davyJonesLockerPage: document.querySelector("#davyJonesLockerPage"),
   utilityOverlay: document.querySelector("#utilityOverlay"),
@@ -8616,6 +8639,7 @@ const dom = {
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
+  webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -8757,8 +8781,10 @@ const runtime = {
   storeOverlayOpen: false,
   webHomeOpen: false,
   webSurfLastPage: "home",
-  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0 },
+  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 },
   webSurfSelectedMailId: "",
+  webSurfSettingsTabOpen: false,
+  webSurfSettingsReturnPage: "home",
   bubbleBankOpen: false,
   davyJonesLockerOpen: false,
   davyJonesLockerTabOpen: false,
@@ -8766,7 +8792,10 @@ const runtime = {
   davyLockerVariantSelections: {},
   proteusDesignerOpen: false,
   proteusDesignerCompleting: false,
+  proteusDesignerPurchasePending: false,
   activeEngineeredSpecimenOrderId: "",
+  proteusDesignerSessionId: "",
+  proteusCompletedSpecimen: null,
   proteusDesignerCloseTimer: 0,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
@@ -9298,7 +9327,6 @@ const TUTORIAL_TOOLBAR_CONTROL_IDS = Object.freeze([
   "feedButton",
   "fishEditModeDockButton",
   "openEquipmentButton",
-  "openSettingsButton",
   "careTaskPaneButton",
   "spongeButton",
   "scoopButton",
@@ -9311,7 +9339,6 @@ const TUTORIAL_TOOLBAR_BLOCK_MESSAGES = Object.freeze({
   feedButton: "Feeding comes next.",
   fishEditModeDockButton: "Available after the tutorial.",
   openEquipmentButton: "Available after the tutorial.",
-  openSettingsButton: "Available after the tutorial.",
   careTaskPaneButton: "Available after the tutorial.",
   spongeButton: "Cleaning comes next.",
   scoopButton: "Use the sponge here.",
@@ -9354,7 +9381,6 @@ const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
   "scoopButton",
   "fishEditModeDockButton",
   "openEquipmentButton",
-  "openSettingsButton",
   "openManagementButton",
   "careTaskPaneButton",
   "medicineButton",
@@ -9799,10 +9825,16 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       return { ok: true, rawName };
     },
     async save({ pending, now }) {
+      const proteusPurchase = runtime.proteusDesignerOpen === true;
+      if (proteusPurchase && state.coins < CUSTOM_FISH_COST) {
+        showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
+        return false;
+      }
       const outputDataUrl = await getPendingCustomFishOutputDataUrl(pending);
       const storedImage = await storeCustomImageDataUrl(outputDataUrl || pending.dataUrl, "custom-fish");
       await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
       const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
+      const specimenId = proteusPurchase ? generateProteusSpecimenId() : "";
       const asset = sanitizeCustomFishAssetEntry({
         key: speciesKey,
         name: sanitizeCustomFishName(String(pending.name || "").replace(/\s+/g, " ").trim()),
@@ -9816,6 +9848,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
         liveBirth: pending.liveBirth === true,
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+        proteusSpecimenId: specimenId,
         createdAt: now
       }, speciesKey);
       if (!asset) {
@@ -9823,15 +9856,6 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      const activeDesignOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-      const designCredit = Boolean(
-        activeDesignOrderId
-        && getEngineeredAquaticSpecimenOrderStatus(activeDesignOrderId) === "specimen-configured"
-      );
-      if (!designCredit) {
-        state.coins -= CUSTOM_FISH_COST;
-        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
-      }
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -9849,45 +9873,64 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        if (!designCredit) {
-          state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
-          recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
-        }
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
+      if (specimenId) fish.proteusSpecimenId = specimenId;
       addFishToTank(fish, now);
-      if (designCredit) {
-        if (!markEngineeredAquaticSpecimenDesigned(activeDesignOrderId)) {
-          delete state.customFishAssets[asset.key];
-          syncRuntimeCustomFishAssetsFromState(state);
-          state.fish = state.fish.filter((entry) => entry.id !== fish.id);
-          showToast("This Proteus commission could not be fulfilled because its order state changed.");
-          return false;
-        }
-        runtime.proteusDesignerCompleting = true;
+      if (proteusPurchase) {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({
+          amount: CUSTOM_FISH_COST,
+          direction: "debit",
+          now,
+          place: "Proteus Biodyne",
+          label: `Custom specimen ${specimenId} - ${asset.name}.`
+        });
+      } else {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
       }
       maybeSeedNewFishDiseaseCarrier(fish, now);
       if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         setFishNeedValue(fish, "hunger", 82, now);
         fish.lastAteAt = now;
       }
-      if (!designCredit) recordBubbleBodegaOrder([{
-          key: CUSTOM_FISH_SHOP_KEY,
-          name: "Engineered Aquatic Specimen",
-          category: "fish",
-          image: CUSTOM_FISH_SHOP_IMAGE,
-          seller: "Proteus Biodyne",
+      if (!proteusPurchase) recordBubbleBodegaOrder([{
+        key: CUSTOM_FISH_SHOP_KEY,
+        name: "Engineered Aquatic Specimen",
+        category: "fish",
+        image: CUSTOM_FISH_SHOP_IMAGE,
+        seller: "Proteus Biodyne",
+        cost: CUSTOM_FISH_COST,
+        quantity: 1
+      }]);
+      if (proteusPurchase && typeof queueProteusCustomSpecimenFulfillmentEmail === "function") {
+        queueProteusCustomSpecimenFulfillmentEmail({
+          specimenName: asset.name,
+          specimenId,
+          speciesId: asset.key,
+          fishId: fish.id,
           cost: CUSTOM_FISH_COST,
-          quantity: 1
-        }]);
+          now: now + 1
+        });
+      }
       const finalized = finalizeCustomAssetCreation("fish", {
         now,
-        eventText: `Created custom fish ${asset.name}.`,
-        toastText: designCredit ? "" : `${asset.name} created and added to the tank.`
+        eventText: proteusPurchase
+          ? `Proteus delivered custom specimen ${asset.name} (${specimenId}).`
+          : `Created custom fish ${asset.name}.`,
+        toastText: proteusPurchase ? "" : `${asset.name} created and added to the tank.`
       });
-      if (finalized && designCredit) {
-        completeProteusDesignerFlow(activeDesignOrderId);
+      if (finalized && proteusPurchase) {
+        completeProteusDesignerFlow({
+          specimenName: asset.name,
+          specimenId,
+          speciesId: asset.key,
+          fishId: fish.id,
+          cost: CUSTOM_FISH_COST,
+          status: "DELIVERED"
+        });
       }
       return finalized;
     }

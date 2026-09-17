@@ -736,6 +736,7 @@ function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
     species
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
+    && !isCustomFishShopKey(species.id)
     && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
   ));
 }

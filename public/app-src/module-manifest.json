@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 53,
-  "functionCount": 3285,
+  "functionCount": 3302,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -92,7 +92,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 198,
+      "functionCount": 203,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -291,7 +291,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 118,
+      "functionCount": 119,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -477,7 +477,7 @@
     },
     {
       "path": "fish/feeding-and-medicine.js",
-      "functionCount": 33,
+      "functionCount": 37,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -555,7 +555,7 @@
     },
     {
       "path": "store/purchases.js",
-      "functionCount": 43,
+      "functionCount": 46,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -861,6 +861,7 @@
         "fish/health.js",
         "fish/meals-and-needs.js",
         "fish/needs-disease-and-behavior.js",
+        "fish/predators-and-motion.js",
         "machinery/submarine.js",
         "rendering/depth-visuals.js",
         "rendering/tank-and-water.js",
@@ -881,7 +882,7 @@
     },
     {
       "path": "ui/management-and-overlays.js",
-      "functionCount": 187,
+      "functionCount": 188,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -989,7 +990,7 @@
     },
     {
       "path": "fish/predators-and-motion.js",
-      "functionCount": 107,
+      "functionCount": 110,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",
@@ -1140,6 +1141,7 @@
         "decor/layout-and-layers.js",
         "fish/appearance.js",
         "fish/decor-behavior.js",
+        "fish/feeding-and-medicine.js",
         "fish/gravel-and-schooling.js",
         "fish/health.js",
         "fish/lifecycle-and-breeding.js",

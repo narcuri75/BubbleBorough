@@ -151,6 +151,9 @@ function sanitizeFish(fish, options = {}) {
     id: String(fish.id || createId("fish")),
     speciesId: fish.speciesId,
     name: typeof fish.name === "string" && fish.name.trim() ? fish.name : buildFishName(fish.speciesId, []),
+    proteusSpecimenId: typeof fish.proteusSpecimenId === "string" && /^PB-CS-\d{5}$/.test(fish.proteusSpecimenId.trim())
+      ? fish.proteusSpecimenId.trim()
+      : "",
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
     deadAt: Number.isFinite(fish.deadAt) ? fish.deadAt : null,

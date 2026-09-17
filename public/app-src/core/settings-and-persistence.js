@@ -223,7 +223,12 @@ function sanitizeWebSurfSentEmails(rawEmails) {
     const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
       ? {
         orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
-        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : ""
+        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : "",
+        fishId: typeof rawEmail.data.fishId === "string" ? rawEmail.data.fishId.slice(0, 100) : "",
+        specimenName: typeof rawEmail.data.specimenName === "string" ? rawEmail.data.specimenName.slice(0, 80) : "",
+        specimenId: typeof rawEmail.data.specimenId === "string" && /^PB-CS-\d{5}$/.test(rawEmail.data.specimenId.trim()) ? rawEmail.data.specimenId.trim() : "",
+        cost: Math.max(0, Math.floor(Number(rawEmail.data.cost) || 0)),
+        deliveryStatus: typeof rawEmail.data.deliveryStatus === "string" ? rawEmail.data.deliveryStatus.slice(0, 40) : ""
       }
       : {};
     return { id, sender, senderId, templateId, subject, preview, destination, icon, time, data };
@@ -293,6 +298,20 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
+  if (typeof value === "boolean") {
+    return value ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
+  }
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (WEBSURF_THEME_MODES.includes(normalized)) {
+    return normalized;
+  }
+  if (typeof legacyDarkMode === "boolean") {
+    return legacyDarkMode ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
+  }
+  return WEBSURF_THEME_MODE_AUTO;
+}
+
 function normalizeDepthEffectLevel(value, legacyEnabled = undefined) {
   const numeric = Number(value);
   if (Number.isFinite(numeric)) {
@@ -338,6 +357,12 @@ function sanitizeUiSettings(rawSettings) {
       ? normalizeToolbarPosition(source.toolbarPosition)
       : DEFAULT_UI_SETTINGS.toolbarPosition,
     toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
+    webSurfThemeMode: normalizeWebSurfThemeMode(
+      source.webSurfThemeMode,
+      typeof source.webSurfDarkModeEnabled === "boolean"
+        ? source.webSurfDarkModeEnabled
+        : (typeof source.webSurfDarkMode === "boolean" ? source.webSurfDarkMode : undefined)
+    ),
     displayPosition: DISPLAY_POSITION_SETTING_ENABLED
       ? normalizeDisplayPosition(source.displayPosition)
       : DEFAULT_UI_SETTINGS.displayPosition,
@@ -356,7 +381,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
     depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
     backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
-    simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
+    simpleTurnAnimationsOnly: true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -1291,6 +1316,8 @@ function reconcileState(rawState) {
     gameCreatedAt: now,
     webSurfWelcomeVersion: 1,
     webSurfWelcomeSentAt: now,
+    proteusDiscovered: false,
+    proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
@@ -1379,6 +1406,10 @@ function reconcileState(rawState) {
       && Number(incoming.webSurfWelcomeSentAt) > 0
       ? Number(incoming.webSurfWelcomeSentAt)
       : now,
+    proteusDiscovered: incoming.proteusDiscovered === true,
+    proteusDiscoveredAt: incoming.proteusDiscovered === true && Number.isFinite(Number(incoming.proteusDiscoveredAt))
+      ? Math.max(0, Number(incoming.proteusDiscoveredAt))
+      : 0,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({

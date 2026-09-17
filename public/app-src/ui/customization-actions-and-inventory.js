@@ -156,7 +156,7 @@ function renderProteusDesignerWorkspace() {
         <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" draggable="false" />
         <div class="proteus-designer-brand-divider" aria-hidden="true"></div>
         <div class="proteus-designer-app-title"><h1 id="proteusDesignerTitle" tabindex="-1">Engineered Aquatic Specimen Designer</h1><span>DESIGN. ADAPT. POPULATE A MORE RESILIENT TOMORROW.</span></div>
-        <div class="proteus-designer-session"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div>
+        <div class="proteus-designer-session"><div class="proteus-designer-session-copy"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div><div class="proteus-designer-balance" aria-label="Current balance"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="Fish Coin" /><strong>${Math.max(0, Math.floor(Number(state?.coins) || 0))}</strong></div></div>
       </header>
       <div class="proteus-designer-editor">
         <section class="proteus-designer-preview-column" aria-label="Specimen image">
@@ -260,8 +260,8 @@ function renderProteusDesignerWorkspace() {
             <input type="range" min="${CUSTOM_FISH_ROTATION_MIN_DEGREES}" max="${CUSTOM_FISH_ROTATION_MAX_DEGREES}" step="1" value="${rotation}" data-custom-fish-rotation-input ${disabled} />
           </label>
 
-          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered to your tank upon confirmation.</span></div></div>
-          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>COMMISSION SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
+          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered directly to your aquarium upon purchase.</span></div></div>
+          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>PURCHASE SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
           <small class="proteus-designer-legal">All specimens are subject to review in accordance with Proteus Biodyne biosecurity and ecological compliance standards.</small>
         </section>
       </div>
@@ -270,10 +270,24 @@ function renderProteusDesignerWorkspace() {
 }
 
 function renderProteusDesignerCompletion() {
+  const specimen = runtime.proteusCompletedSpecimen || {};
+  const specimenName = String(specimen.specimenName || "Custom Specimen");
+  const specimenId = String(specimen.specimenId || "");
   return `
     <div class="proteus-designer-completion" role="status" aria-live="polite">
-      <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="Proteus Biodyne" />
-      <p>ASSET DESIGN AND FULFILLMENT COMPLETE.</p>
+      <div class="proteus-designer-completion-card">
+        <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" />
+        <p class="proteus-designer-completion-kicker">FULFILLMENT PROTOCOL COMPLETE</p>
+        <h1>SPECIMEN SYNTHESIS COMPLETE</h1>
+        <p>Your custom aquatic specimen has successfully completed synthesis and has been delivered directly to your aquarium.</p>
+        <dl>
+          <div><dt>SPECIMEN</dt><dd>${escapeHtml(specimenName)}</dd></div>
+          <div><dt>SPECIMEN ID</dt><dd>${escapeHtml(specimenId)}</dd></div>
+          <div><dt>STATUS</dt><dd>DELIVERED</dd></div>
+        </dl>
+        <button type="button" data-proteus-designer-return>RETURN TO PROTEUS &nbsp; →</button>
+        <small>PROTEUS BIODYNE // ADAPTIVE BIOLOGY. ENGINEERED.</small>
+      </div>
     </div>
   `;
 }
@@ -287,8 +301,8 @@ function renderProteusDesignerPage() {
   if (route.hidden) return;
   workspace.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
   const renderKey = runtime.proteusDesignerCompleting === true
-    ? `complete:${String(runtime.activeEngineeredSpecimenOrderId || "")}`
-    : `workspace:${String(runtime.activeEngineeredSpecimenOrderId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
+    ? `complete:${String(runtime.proteusDesignerSessionId || "")}:${String(runtime.proteusCompletedSpecimen?.specimenId || "")}`
+    : `workspace:${String(runtime.proteusDesignerSessionId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
   if (workspace.dataset.proteusDesignerRenderKey === renderKey && workspace.firstElementChild) return;
   workspace.dataset.proteusDesignerRenderKey = renderKey;
   workspace.innerHTML = runtime.proteusDesignerCompleting === true
@@ -602,15 +616,17 @@ function renderSettingsOverlay() {
     return;
   }
 
-  const isOpening = runtime.settingsOverlayOpen && dom.settingsOverlay.hidden;
+  ensureWebSurfSettingsPageMounted();
+  const settingsVisible = runtime.storeOverlayOpen === true && runtime.settingsOverlayOpen === true;
+  const isOpening = settingsVisible && dom.settingsOverlay.hidden;
   const settings = getContentSettings();
   const uiSettings = getUiSettings();
   const tutorialAvailable = isIntroTutorialEnabled();
   const mouseLockAvailable = isTankMouseLockFeatureEnabled();
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
-  dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
-  dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
-  if (runtime.settingsOverlayOpen) {
+  dom.settingsOverlay.hidden = !settingsVisible;
+  dom.settingsOverlay.classList.toggle("is-open", settingsVisible);
+  if (settingsVisible) {
     renderCloudAccountPanel();
   }
   if (isOpening) {
@@ -618,6 +634,9 @@ function renderSettingsOverlay() {
     if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
   }
   syncDebugToolsAuthorization();
+  if (dom.webSurfThemeModeSelect instanceof HTMLSelectElement) {
+    dom.webSurfThemeModeSelect.value = normalizeWebSurfThemeMode(uiSettings.webSurfThemeMode);
+  }
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }

@@ -502,6 +502,17 @@ function finishTankColorPickerDrag(pointerId = null) {
 }
 
 function bindEvents() {
+  const webSurfColorSchemeQuery = window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY);
+  const handleWebSurfSystemThemeChange = () => {
+    if (getUiSettings().webSurfThemeMode === WEBSURF_THEME_MODE_AUTO) {
+      syncWebSurfThemePresentation();
+    }
+  };
+  if (typeof webSurfColorSchemeQuery?.addEventListener === "function") {
+    webSurfColorSchemeQuery.addEventListener("change", handleWebSurfSystemThemeChange);
+  } else if (typeof webSurfColorSchemeQuery?.addListener === "function") {
+    webSurfColorSchemeQuery.addListener(handleWebSurfSystemThemeChange);
+  }
   document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest?.("#editEquipmentTray")) closeEditEquipmentTrayContextMenu();
   }, true);
@@ -1544,11 +1555,12 @@ function bindEvents() {
       clearStoreScrollPointer();
     }
   });
-  dom.storeOverlay?.addEventListener("click", (event) => {
-    if (event.target === dom.storeOverlay) {
-      closeStoreOverlay();
-    }
-  });
+  // WebSurf intentionally does not close when its backdrop is clicked. Native
+  // controls such as <select> menus can surface pointer events outside the DOM
+  // on Windows, which made BubbleBodega appear to close when a search scope was
+  // opened or chosen. Close WebSurf only through explicit browser controls, the
+  // toolbar toggle, or Escape. BubbleBodega is the renamed Tankazon storefront;
+  // legacy tankazon* identifiers still point at this same store.
   dom.bubbleBankPage?.addEventListener("click", handleBubbleBankPageClick);
   dom.bubbleBankPage?.addEventListener("change", handleBubbleBankPageChange);
   dom.davyJonesLockerPage?.addEventListener("click", handleDavyJonesLockerPageClick);
@@ -1620,7 +1632,7 @@ function bindEvents() {
   dom.settingsOverlay?.addEventListener("pointercancel", stopWallpaperScrollRepeat);
   dom.settingsOverlay?.addEventListener("pointerleave", stopWallpaperScrollRepeat);
   dom.settingsOverlay?.addEventListener("click", (event) => {
-    if (event.target === dom.settingsOverlay) {
+    if (event.target === dom.settingsOverlay && !dom.settingsOverlay.classList.contains("websurf-settings-page")) {
       const wasOpen = runtime.settingsOverlayOpen;
       closeSettingsOverlay();
       if (wasOpen && !runtime.settingsOverlayOpen) {
@@ -1661,6 +1673,9 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
+    setWebSurfThemeMode(event.currentTarget?.value);
+  });
   dom.toolbarTileColorInput?.addEventListener("input", (event) => {
     const color = normalizeToolbarTileColor(event.currentTarget?.value);
     document.documentElement.style.setProperty("--toolbar-tile-color", color);
@@ -5311,7 +5326,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Bubbler",
+      name: "Bubble Emitter",
       theme: "Custom",
       cost: CUSTOM_BUBBLER_COST,
       width: 47,
@@ -5343,7 +5358,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Custom Decor",
+      name: "Custom Decor Creator",
       theme: "Custom",
       cost: CUSTOM_DECOR_COST,
       width: CUSTOM_DECOR_DEFAULT_WIDTH,
@@ -5376,7 +5391,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Custom Hide",
+      name: "Custom Cave Creator",
       theme: "Custom",
       cost: CUSTOM_HIDE_COST,
       width: CUSTOM_DECOR_DEFAULT_WIDTH,
@@ -5593,7 +5608,7 @@ function buildVirtualFishCatalogEntries() {
       assetFolder: "web/proteus",
       description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
       aboutParagraphs: [
-        "Purchase the commission first. Proteus will email you a secure design link, you will finalize the specimen through the Proteus designer portal, and the finished fish will be delivered directly into your tank.",
+        "Custom specimen design is now handled directly through Proteus Biodyne. Open the Proteus Custom Specimen service in WebSurf to enter the secure designer. Designing is free, and the 75 coin synthesis fee is charged only when the finished specimen is purchased.",
         "Submit your preferred appearance, define the intended scale, and select a behavioral profile. Our adaptive biology platform will produce a unique aquatic specimen engineered to your specifications while maintaining the stability, viability, and behavioral integrity expected of every PROTEUS BIODYNE organism.",
         "No two commissions are required to be alike. Each specimen is treated as an individual biological program, developed, stabilized, and cleared for delivery to your aquarium."
       ],
@@ -5784,8 +5799,7 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     liveBirth: previous?.liveBirth === true,
     turnAnimation: String(previous?.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
-  const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-  if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
+  if (runtime.proteusDesignerOpen === true) {
     runtime.pendingCustomFishUpload = pending;
     runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
     renderStoreOverlay();
@@ -5818,13 +5832,6 @@ function ensureCustomAssetCost(type) {
   const typeDef = getCustomAssetTypeDef(type);
   if (!typeDef || Math.max(0, Number(typeDef.cost) || 0) <= 0) {
     return true;
-  }
-  if (type === "fish") {
-    const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-    if (runtime.proteusDesignerOpen === true
-      && ["design-required", "specimen-configured"].includes(getEngineeredAquaticSpecimenOrderStatus(activeOrderId))) {
-      return true;
-    }
   }
   if (state.coins >= typeDef.cost) {
     return true;
@@ -6105,6 +6112,9 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
     liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+    proteusSpecimenId: typeof entry.proteusSpecimenId === "string" && /^PB-CS-\d{5}$/.test(entry.proteusSpecimenId.trim())
+      ? entry.proteusSpecimenId.trim()
+      : "",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
 }
@@ -6199,7 +6209,8 @@ function buildCustomFishCatalogEntry(asset) {
     swimZone: normalizeCustomFishSwimZone(asset.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
     liveBirth: asset.liveBirth === true,
-    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
+    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+    proteusSpecimenId: typeof asset.proteusSpecimenId === "string" ? asset.proteusSpecimenId : ""
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
   return species;

@@ -19,7 +19,9 @@ function renderUi(now, options = {}) {
     window.markEngineeredAquaticSpecimenDesigned = markEngineeredAquaticSpecimenDesigned;
     window.markEngineeredAquaticSpecimenConfigured = markEngineeredAquaticSpecimenConfigured;
     window.beginEngineeredAquaticSpecimenDesign = beginEngineeredAquaticSpecimenDesign;
-    window.showProteusDesignerPage = (orderId = "") => openProteusDesignerPage(orderId);
+    window.getProteusSaveDiscovery = getProteusSaveDiscovery;
+    window.markProteusDiscoveredInSave = markProteusDiscoveredInSave;
+    window.showProteusDesignerPage = () => openProteusDesignerPage();
     window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
     window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
   }
@@ -171,8 +173,10 @@ function renderToolbarPosition() {
     if (dom.tankStage && dom.tankBottomDock.parentElement !== dom.tankStage) {
       dom.tankStage.append(dom.tankBottomDock);
     }
+    // WebSurf Settings is now an in-browser page, so it must behave like the
+    // Home/Bank/Store tabs and leave the main aquarium toolbar visible and
+    // usable. Only true blocking dialogs should push the toolbar behind them.
     const dialogCoversToolbar = runtime.utilityOverlayOpen
-      || runtime.settingsOverlayOpen
       || runtime.equipmentOverlayOpen;
     const horizontalMenuCoversToolbar = runtime.editTankMode
       || runtime.fishEditMode
@@ -677,14 +681,18 @@ async function handleDavyJonesLockerPageClick(event) {
 }
 
 function renderStoreOverlay() {
+  syncWebSurfThemePresentation();
   const showingHome = runtime.webHomeOpen === true;
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
+  const showingSettings = runtime.settingsOverlayOpen === true;
   const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
   if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true;
+  if (dom.webSurfSettingsTab) dom.webSurfSettingsTab.hidden = runtime.webSurfSettingsTabOpen !== true;
+  ensureWebSurfSettingsPageMounted();
   const allowedTabs = getTutorialAllowedStoreTabs();
-  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
+  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && !showingSettings && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
   }
   const showingFood = runtime.storeTab === "food";
@@ -692,6 +700,16 @@ function renderStoreOverlay() {
   const showingFish = runtime.storeTab === "fish";
   const showingDecor = runtime.storeTab === "decor";
   const showingEquipment = runtime.storeTab === "equipment";
+  const bubbleBodegaSearchView = window.getBubbleBodegaSearchView?.();
+  const searchOwnsBubbleBodegaCatalog = Boolean(
+    runtime.storeOverlayOpen
+    && !showingHome
+    && !showingBank
+    && !showingLocker
+    && !showingDesigner
+    && !showingSettings
+    && bubbleBodegaSearchView?.active === true
+  );
 
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
@@ -699,7 +717,8 @@ function renderStoreOverlay() {
   dom.storeOverlay.classList.toggle("is-bubble-bank-open", runtime.storeOverlayOpen && showingBank);
   dom.storeOverlay.classList.toggle("is-davy-jones-locker-open", runtime.storeOverlayOpen && showingLocker);
   dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
-  dom.storeOverlay.setAttribute("aria-label", showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  dom.storeOverlay.classList.toggle("is-web-settings-open", runtime.storeOverlayOpen && showingSettings);
+  dom.storeOverlay.setAttribute("aria-label", showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
   if (dom.webHomePage) {
     dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome;
     syncWebSurfUnreadBadge();
@@ -749,7 +768,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -765,21 +784,23 @@ function renderStoreOverlay() {
     dom.storeCoinCounter.setAttribute("aria-label", `Current coins: ${currentCoins}`);
   }
 
-  if (dom.foodShop) {
-    dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFood;
-  }
-  if (dom.pharmacyShop) {
-    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingPharmacy;
-  }
-  dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFish;
-  dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingDecor;
-  if (dom.equipmentShop) {
-    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingEquipment;
+  if (!searchOwnsBubbleBodegaCatalog) {
+    if (dom.foodShop) {
+      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
+    }
+    if (dom.pharmacyShop) {
+      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
+    }
+    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
+    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
+    if (dom.equipmentShop) {
+      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
+    }
   }
   const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
   const fallbackStandardWebPage = showingProteus ? "proteus" : showingHome ? "home" : showingBank ? "bank" : "store";
   const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
-  const activeWebPage = showingDesigner ? "designer" : activeStandardWebPage;
+  const activeWebPage = showingSettings ? "settings" : showingDesigner ? "designer" : activeStandardWebPage;
   window.syncWebPageTabs?.(activeWebPage);
   if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();

@@ -3126,9 +3126,63 @@ function loadWebSurfAutoEmailConfig() {
   return globalThis.webSurfAutoEmailConfigPromise;
 }
 
+function queueProteusCustomSpecimenFulfillmentEmail(options = {}) {
+  if (!state) return false;
+  const specimenId = typeof options.specimenId === "string" && /^PB-CS-\d{5}$/.test(options.specimenId.trim())
+    ? options.specimenId.trim()
+    : "";
+  if (!specimenId) return false;
+  state.webSurfSentEmails ||= [];
+  const existingId = `proteus-custom-specimen-${specimenId}`;
+  if (state.webSurfSentEmails.some((email) => email?.id === existingId)) return true;
+  const message = {
+    id: existingId,
+    templateId: "proteus_custom_specimen_fulfillment",
+    sender: "fulfillment@ProteusBiodyne.swim",
+    subject: "Your Custom Specimen Has Been Successfully Created",
+    preview: "Your engineered aquatic specimen has completed synthesis and has been delivered directly to your aquarium.",
+    destination: "proteus",
+    icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
+    data: {
+      speciesId: typeof options.speciesId === "string" ? options.speciesId : "",
+      fishId: typeof options.fishId === "string" ? options.fishId : "",
+      specimenName: String(options.specimenName || "Custom Specimen").slice(0, 80),
+      specimenId,
+      cost: Math.max(0, Math.floor(Number(options.cost) || CUSTOM_FISH_COST)),
+      deliveryStatus: "Delivered"
+    }
+  };
+  state.webSurfSentEmails.unshift(message);
+  state.webSurfSentEmails = sanitizeWebSurfSentEmails(state.webSurfSentEmails);
+  return true;
+}
+
 function getWebSurfAutoEmailTemplate(templateId) {
   loadWebSurfAutoEmailConfig();
-  return globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+  const configured = globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+  if (configured) return configured;
+  if (templateId === "proteus_custom_specimen_fulfillment") {
+    return {
+      sender: "fulfillment@ProteusBiodyne.swim",
+      subject: "Your Custom Specimen Has Been Successfully Created",
+      preview: "Your engineered aquatic specimen has completed synthesis and has been delivered directly to your aquarium.",
+      body: [
+        { type: "heading", text: "Congratulations on your successful custom specimen." },
+        { type: "paragraph", text: "Proteus Biodyne is pleased to confirm that your engineered aquatic specimen has successfully completed synthesis." },
+        { type: "section_label", text: "SPECIMEN FULFILLMENT RECORD" },
+        { type: "summary", label: "Specimen", value: "{{specimenName}}" },
+        { type: "summary", label: "Specimen ID", value: "{{specimenId}}" },
+        { type: "summary", label: "Program", value: "Engineered Aquatic Specimen" },
+        { type: "summary", label: "Synthesis Cost", value: "{{coin:cost}}" },
+        { type: "summary", label: "Delivery Status", value: "{{deliveryStatus}}" },
+        { type: "completion_note", text: "Your specimen has been delivered directly to your aquarium and is ready for integration into its new environment." },
+        { type: "paragraph", text: "Thank you for choosing Proteus Biodyne." },
+        { type: "paragraph", text: "Adaptive Biology. Engineered." }
+      ]
+    };
+  }
+  return null;
 }
 
 function interpolateWebSurfEmailValue(value, data = {}) {
@@ -3433,19 +3487,6 @@ function getWebSurfInboxMessages() {
     time: Number(statementData.sentAt) || 0
   });
 
-  if (window.hasDiscoveredProteus?.()) {
-    const proteusDiscoveredAt = Math.min(now, Math.max(1, Number(window.getProteusDiscoveredAt?.()) || now));
-    messages.push({
-      id: "proteus-research-bulletin-1",
-      sender: "research@proteusbiodyne.swim",
-      subject: "Research Bulletin: Adaptive Marine Life",
-      preview: "New specimen and directed-adaptation records are available.",
-      destination: "proteus",
-      icon: "assets/web/proteus/Proteus_Logo_Icon.png",
-      time: proteusDiscoveredAt
-    });
-  }
-
   return messages
     .map((message) => {
       const sender = String(message.sender || "unknown").trim() || "unknown";
@@ -3625,7 +3666,7 @@ function renderWebSurfHomePage() {
   const messages = getWebSurfInboxMessages();
   const unreadCount = messages.filter((message) => isWebSurfMailUnread(message)).length;
   const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
-  const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const proteusDiscovered = state?.proteusDiscovered === true || Boolean(window.hasDiscoveredProteus?.());
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
@@ -3670,11 +3711,10 @@ function renderWebSurfHomePage() {
           <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
           <div class="websurf-mail-list">${mailMarkup}</div>
         </section>
-        <aside class="websurf-account-card" aria-label="WebSurf account">
-          <header><img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="" /><span><strong>WebSurf Account</strong><small>Connected to Bubble Borough</small></span></header>
-          <div class="websurf-account-stats"><span><strong>${unreadCount}</strong><small>Unread</small></span><span><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong><small>Mail storage</small></span></div>
-          <footer><span>${escapeHtml(addressName)}@WebSurf.swim</span><span>WebSurf 1.4 · Secure</span></footer>
-        </aside>
+        <footer class="websurf-status-bar" aria-label="WebSurf status">
+          <span>WebSurf 1.4 · Secure</span>
+          <span><small>Mail storage</small><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong></span>
+        </footer>
       </div>
     </main>`;
 }
@@ -3795,7 +3835,7 @@ function renderBubbleBankPage() {
   const username = profile.username || getAccountUsernameForUser(profile.userId);
   const content = activeTab === "rewards" ? renderBubbleBankRewards() : activeTab === "milestones" ? renderBubbleBankMilestones() : renderBubbleBankAccount();
   return `<div class="bubble-bank-window-header">
-    <img class="bubble-bank-logo" ${assetImageAttributes("assets/misc/bank_logo.png")} alt="Bubble Borough Bank" />
+    <img class="bubble-bank-logo" ${assetImageAttributes("assets/web/bank/bank_logo.png")} alt="Bubble Borough Bank" />
     ${renderBubbleBankTabs(activeTab)}
     <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
   </div>

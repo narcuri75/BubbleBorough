@@ -1279,6 +1279,17 @@ const DECOR_GROUND_SHADOWS = Object.freeze({
   contactSoftAlphaMultiplier: 0.82,
   contactRadiusXMultiplier: 1.02,
   contactRadiusYMultiplier: 1.0,
+  // Authored footprint helpers describe where wide decor actually contacts the
+  // substrate. Keep the full-width cast shadow light, then make those authored
+  // contact regions noticeably darker. This is especially important for arches
+  // and roots, where a single centered ellipse makes the opening look grounded.
+  authoredBaseAlphaMultiplier: 0.24,
+  authoredBaseMidAlphaMultiplier: 0.18,
+  authoredBaseRadiusXMultiplier: 1.08,
+  authoredBaseRadiusYMultiplier: 0.78,
+  authoredContactCoreAlphaMultiplier: 1.68,
+  authoredContactSoftAlphaMultiplier: 1.08,
+  authoredSpanMergeGapRatio: 0.028,
   shadowDarknessCap: 3
 });
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
@@ -1300,6 +1311,15 @@ const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
   movement: 1,
   shadowDarkness: 1.3
 });
+const WEBSURF_THEME_MODE_AUTO = "auto";
+const WEBSURF_THEME_MODE_YES = "yes";
+const WEBSURF_THEME_MODE_NO = "no";
+const WEBSURF_THEME_MODES = Object.freeze([
+  WEBSURF_THEME_MODE_AUTO,
+  WEBSURF_THEME_MODE_YES,
+  WEBSURF_THEME_MODE_NO
+]);
+const WEBSURF_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
   trypophobiaEnabled: false
@@ -1307,6 +1327,7 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
+  webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1323,7 +1344,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   decorShadowsEnabled: true,
   depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
   backgroundDepthHazeEnabled: true,
-  simpleTurnAnimationsOnly: false,
+  simpleTurnAnimationsOnly: true,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -8604,6 +8625,8 @@ const dom = {
   storeOverlay: document.querySelector("#storeOverlay"),
   webHomePage: document.querySelector("#webHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
+  webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
+  webSurfSettingsTab: document.querySelector("#webSurfSettingsTab"),
   bubbleBankPage: document.querySelector("#bubbleBankPage"),
   davyJonesLockerPage: document.querySelector("#davyJonesLockerPage"),
   utilityOverlay: document.querySelector("#utilityOverlay"),
@@ -8619,6 +8642,7 @@ const dom = {
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
+  webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -8760,8 +8784,10 @@ const runtime = {
   storeOverlayOpen: false,
   webHomeOpen: false,
   webSurfLastPage: "home",
-  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0 },
+  webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 },
   webSurfSelectedMailId: "",
+  webSurfSettingsTabOpen: false,
+  webSurfSettingsReturnPage: "home",
   bubbleBankOpen: false,
   davyJonesLockerOpen: false,
   davyJonesLockerTabOpen: false,
@@ -8769,7 +8795,10 @@ const runtime = {
   davyLockerVariantSelections: {},
   proteusDesignerOpen: false,
   proteusDesignerCompleting: false,
+  proteusDesignerPurchasePending: false,
   activeEngineeredSpecimenOrderId: "",
+  proteusDesignerSessionId: "",
+  proteusCompletedSpecimen: null,
   proteusDesignerCloseTimer: 0,
   utilityOverlayOpen: false,
   utilityOverlayMode: "",
@@ -9301,7 +9330,6 @@ const TUTORIAL_TOOLBAR_CONTROL_IDS = Object.freeze([
   "feedButton",
   "fishEditModeDockButton",
   "openEquipmentButton",
-  "openSettingsButton",
   "careTaskPaneButton",
   "spongeButton",
   "scoopButton",
@@ -9314,7 +9342,6 @@ const TUTORIAL_TOOLBAR_BLOCK_MESSAGES = Object.freeze({
   feedButton: "Feeding comes next.",
   fishEditModeDockButton: "Available after the tutorial.",
   openEquipmentButton: "Available after the tutorial.",
-  openSettingsButton: "Available after the tutorial.",
   careTaskPaneButton: "Available after the tutorial.",
   spongeButton: "Cleaning comes next.",
   scoopButton: "Use the sponge here.",
@@ -9357,7 +9384,6 @@ const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
   "scoopButton",
   "fishEditModeDockButton",
   "openEquipmentButton",
-  "openSettingsButton",
   "openManagementButton",
   "careTaskPaneButton",
   "medicineButton",
@@ -9802,10 +9828,16 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       return { ok: true, rawName };
     },
     async save({ pending, now }) {
+      const proteusPurchase = runtime.proteusDesignerOpen === true;
+      if (proteusPurchase && state.coins < CUSTOM_FISH_COST) {
+        showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
+        return false;
+      }
       const outputDataUrl = await getPendingCustomFishOutputDataUrl(pending);
       const storedImage = await storeCustomImageDataUrl(outputDataUrl || pending.dataUrl, "custom-fish");
       await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
       const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
+      const specimenId = proteusPurchase ? generateProteusSpecimenId() : "";
       const asset = sanitizeCustomFishAssetEntry({
         key: speciesKey,
         name: sanitizeCustomFishName(String(pending.name || "").replace(/\s+/g, " ").trim()),
@@ -9819,6 +9851,7 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         socialAffinity: normalizeCustomFishSocialAffinity(pending.socialAffinity),
         liveBirth: pending.liveBirth === true,
         turnAnimation: String(pending.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+        proteusSpecimenId: specimenId,
         createdAt: now
       }, speciesKey);
       if (!asset) {
@@ -9826,15 +9859,6 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       setRuntimeImageSource(asset, "runtimePath", storedImage.runtimeUrl);
-      const activeDesignOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-      const designCredit = Boolean(
-        activeDesignOrderId
-        && getEngineeredAquaticSpecimenOrderStatus(activeDesignOrderId) === "specimen-configured"
-      );
-      if (!designCredit) {
-        state.coins -= CUSTOM_FISH_COST;
-        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
-      }
       if (!state.customFishAssets || typeof state.customFishAssets !== "object") {
         state.customFishAssets = {};
       }
@@ -9852,45 +9876,64 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       if (!fish) {
         delete state.customFishAssets[asset.key];
         syncRuntimeCustomFishAssetsFromState(state);
-        if (!designCredit) {
-          state.coins = Math.min(MAX_WALLET_COINS, state.coins + CUSTOM_FISH_COST);
-          recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "credit", now, place: "Bubble Borough", label: `Refunded custom fish ${asset.name}.` });
-        }
         showToast("Could not add that custom fish to the tank.");
         return false;
       }
+      if (specimenId) fish.proteusSpecimenId = specimenId;
       addFishToTank(fish, now);
-      if (designCredit) {
-        if (!markEngineeredAquaticSpecimenDesigned(activeDesignOrderId)) {
-          delete state.customFishAssets[asset.key];
-          syncRuntimeCustomFishAssetsFromState(state);
-          state.fish = state.fish.filter((entry) => entry.id !== fish.id);
-          showToast("This Proteus commission could not be fulfilled because its order state changed.");
-          return false;
-        }
-        runtime.proteusDesignerCompleting = true;
+      if (proteusPurchase) {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({
+          amount: CUSTOM_FISH_COST,
+          direction: "debit",
+          now,
+          place: "Proteus Biodyne",
+          label: `Custom specimen ${specimenId} - ${asset.name}.`
+        });
+      } else {
+        state.coins -= CUSTOM_FISH_COST;
+        recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
       }
       maybeSeedNewFishDiseaseCarrier(fish, now);
       if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
         setFishNeedValue(fish, "hunger", 82, now);
         fish.lastAteAt = now;
       }
-      if (!designCredit) recordBubbleBodegaOrder([{
-          key: CUSTOM_FISH_SHOP_KEY,
-          name: "Engineered Aquatic Specimen",
-          category: "fish",
-          image: CUSTOM_FISH_SHOP_IMAGE,
-          seller: "Proteus Biodyne",
+      if (!proteusPurchase) recordBubbleBodegaOrder([{
+        key: CUSTOM_FISH_SHOP_KEY,
+        name: "Engineered Aquatic Specimen",
+        category: "fish",
+        image: CUSTOM_FISH_SHOP_IMAGE,
+        seller: "Proteus Biodyne",
+        cost: CUSTOM_FISH_COST,
+        quantity: 1
+      }]);
+      if (proteusPurchase && typeof queueProteusCustomSpecimenFulfillmentEmail === "function") {
+        queueProteusCustomSpecimenFulfillmentEmail({
+          specimenName: asset.name,
+          specimenId,
+          speciesId: asset.key,
+          fishId: fish.id,
           cost: CUSTOM_FISH_COST,
-          quantity: 1
-        }]);
+          now: now + 1
+        });
+      }
       const finalized = finalizeCustomAssetCreation("fish", {
         now,
-        eventText: `Created custom fish ${asset.name}.`,
-        toastText: designCredit ? "" : `${asset.name} created and added to the tank.`
+        eventText: proteusPurchase
+          ? `Proteus delivered custom specimen ${asset.name} (${specimenId}).`
+          : `Created custom fish ${asset.name}.`,
+        toastText: proteusPurchase ? "" : `${asset.name} created and added to the tank.`
       });
-      if (finalized && designCredit) {
-        completeProteusDesignerFlow(activeDesignOrderId);
+      if (finalized && proteusPurchase) {
+        completeProteusDesignerFlow({
+          specimenName: asset.name,
+          specimenId,
+          speciesId: asset.key,
+          fishId: fish.id,
+          cost: CUSTOM_FISH_COST,
+          status: "DELIVERED"
+        });
       }
       return finalized;
     }
@@ -14416,6 +14459,10 @@ function resetCompetingOverlayState(options = {}) {
     runtime.utilityOverlayMode = "";
   }
 
+  if (runtime.storeOverlayOpen && options.nextKind !== "store") {
+    runtime.webSurfSettingsTabOpen = false;
+    runtime.webSurfSettingsReturnPage = "home";
+  }
   runtime.storeOverlayOpen = false;
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
@@ -14501,7 +14548,10 @@ function closeProteusDesignerSession(options = {}) {
   }
   runtime.proteusDesignerOpen = false;
   runtime.proteusDesignerCompleting = false;
+  runtime.proteusDesignerPurchasePending = false;
   runtime.activeEngineeredSpecimenOrderId = "";
+  runtime.proteusDesignerSessionId = "";
+  runtime.proteusCompletedSpecimen = null;
   runtime.pendingCustomFishUpload = null;
   setProteusDesignerTabVisible(false);
   const route = document.getElementById("proteusDesignerRoute");
@@ -14509,22 +14559,31 @@ function closeProteusDesignerSession(options = {}) {
   if (options.render === true && runtime.storeOverlayOpen) renderStoreOverlay();
 }
 
-function openProteusDesignerPage(orderId = "") {
-  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
-  if (!beginEngineeredAquaticSpecimenDesign(id)) {
-    showToast("This specimen design link has already been completed or is no longer valid.");
-    return false;
+function openProteusDesignerPage() {
+  if (runtime.proteusDesignerOpen === true) {
+    runtime.webHomeOpen = false;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "designer";
+    setProteusDesignerTabVisible(true);
+    renderStoreOverlay();
+    return true;
   }
   if (!runtime.storeOverlayOpen) {
     const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
-    if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
+    if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
   }
   window.closeProteusBiodynePage?.(false);
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
   runtime.proteusDesignerOpen = true;
   runtime.proteusDesignerCompleting = false;
-  runtime.activeEngineeredSpecimenOrderId = id;
+  runtime.proteusDesignerPurchasePending = false;
+  runtime.activeEngineeredSpecimenOrderId = "";
+  runtime.proteusDesignerSessionId = createId("proteus-designer");
+  runtime.proteusCompletedSpecimen = null;
+  runtime.pendingCustomFishUpload = null;
   runtime.webSurfLastPage = "designer";
   setProteusDesignerTabVisible(true);
   renderStoreOverlay();
@@ -14532,39 +14591,28 @@ function openProteusDesignerPage(orderId = "") {
   return true;
 }
 
-function cancelProteusDesignerPage() {
+function returnFromProteusDesignerToSite() {
   closeProteusDesignerSession();
   if (!runtime.storeOverlayOpen) return;
-  runtime.webHomeOpen = true;
+  runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
-  runtime.webSurfLastPage = "home";
+  runtime.davyJonesLockerOpen = false;
+  runtime.webSurfLastPage = "proteus";
   renderStoreOverlay();
-  restoreWebSurfSessionScroll("home");
+  window.showProteusBiodynePage?.(document.querySelector('#storeOverlay .webpage-tab[data-webpage-destination="proteus"]'));
 }
 
-function completeProteusDesignerFlow(orderId = "") {
-  const id = String(orderId || runtime.activeEngineeredSpecimenOrderId || "").trim();
-  if (!id || !(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return false;
-  if (runtime.proteusDesignerCloseTimer) window.clearTimeout(runtime.proteusDesignerCloseTimer);
-  runtime.proteusDesignerOpen = true;
+function cancelProteusDesignerPage() {
+  returnFromProteusDesignerToSite();
+}
+
+function completeProteusDesignerFlow(specimen = null) {
+  if (runtime.proteusDesignerOpen !== true) return false;
   runtime.proteusDesignerCompleting = true;
-  runtime.activeEngineeredSpecimenOrderId = id;
+  runtime.proteusDesignerPurchasePending = false;
+  runtime.proteusCompletedSpecimen = specimen && typeof specimen === "object" ? { ...specimen } : null;
   setProteusDesignerTabVisible(true);
   renderStoreOverlay();
-  runtime.proteusDesignerCloseTimer = window.setTimeout(() => {
-    runtime.proteusDesignerCloseTimer = 0;
-    if (!(state?.engineeredSpecimenCompletedOrderIds || []).includes(id)) return;
-    runtime.proteusDesignerOpen = false;
-    runtime.proteusDesignerCompleting = false;
-    runtime.activeEngineeredSpecimenOrderId = "";
-    runtime.pendingCustomFishUpload = null;
-    runtime.webSurfLastPage = "home";
-    setProteusDesignerTabVisible(false);
-    const route = document.getElementById("proteusDesignerRoute");
-    if (route) route.hidden = true;
-    closeStoreOverlay({ preserveWebSurfSession: true, force: true });
-    runtime.webSurfLastPage = "home";
-  }, 1100);
   return true;
 }
 
@@ -14601,23 +14649,18 @@ async function handleProteusDesignerChangeEvent(event) {
 }
 
 function submitProteusDesignerSpecimen(button = null) {
-  if (runtime.proteusDesignerOpen !== true || runtime.proteusDesignerCompleting === true) return false;
-  const orderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-  if (!markEngineeredAquaticSpecimenConfigured(orderId)) {
-    showToast("This specimen design link is no longer valid.");
-    cancelProteusDesignerPage();
-    return false;
-  }
+  if (runtime.proteusDesignerOpen !== true || runtime.proteusDesignerCompleting === true || runtime.proteusDesignerPurchasePending === true) return false;
+  runtime.proteusDesignerPurchasePending = true;
   if (button instanceof HTMLButtonElement) button.disabled = true;
   void savePendingCustomFishUpload()
     .then((saved) => {
       if (saved) return;
-      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      runtime.proteusDesignerPurchasePending = false;
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
     })
     .catch((error) => {
       console.error(error);
-      resetEngineeredAquaticSpecimenConfiguration(orderId);
+      runtime.proteusDesignerPurchasePending = false;
       if (button instanceof HTMLButtonElement && button.isConnected) button.disabled = false;
       showToast(error?.message || "Proteus could not fulfill that specimen. Please try again.");
     });
@@ -14630,6 +14673,7 @@ function normalizeWebSurfSessionPage(value) {
 
 function getActiveWebSurfSessionPage() {
   if (!runtime.storeOverlayOpen) return "";
+  if (runtime.settingsOverlayOpen === true) return "settings";
   if (runtime.proteusDesignerOpen === true) return "designer";
   if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
   if (runtime.davyJonesLockerOpen === true) return "locker";
@@ -14644,13 +14688,20 @@ function getWebSurfSessionScrollElement(page) {
   if (page === "locker") return dom.davyJonesLockerPage;
   if (page === "store") return document.getElementById("tankazonCatalogArea");
   if (page === "designer") return document.getElementById("proteusDesignerRoute");
+  if (page === "settings") return dom.settingsOverlay?.querySelector(".settings-panel-body");
   return null;
 }
 
 function captureWebSurfSessionState() {
   const page = getActiveWebSurfSessionPage();
   if (!page) return;
-  runtime.webSurfLastPage = page;
+  // Settings is a temporary WebSurf tab. Never let it replace the persistent
+  // page remembered for the next browser session.
+  if (page === "designer") {
+    runtime.webSurfLastPage = window.hasDiscoveredProteus?.() ? "proteus" : "home";
+  } else if (page !== "settings") {
+    runtime.webSurfLastPage = page;
+  }
   if (page === "proteus") {
     window.captureProteusSessionState?.();
     return;
@@ -14670,8 +14721,11 @@ function restoreWebSurfSessionScroll(page) {
 
 function resetWebSurfSessionState() {
   runtime.webSurfLastPage = "home";
-  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0 };
+  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
   runtime.webSurfSelectedMailId = "";
+  runtime.webSurfSettingsTabOpen = false;
+  runtime.webSurfSettingsReturnPage = "home";
+  runtime.settingsOverlayOpen = false;
   window.resetProteusSessionState?.();
   closeProteusDesignerSession();
   if (runtime.storeOverlayOpen) {
@@ -14682,6 +14736,79 @@ function resetWebSurfSessionState() {
     runtime.davyJonesLockerTabOpen = false;
     if (typeof renderStoreOverlay === "function") renderStoreOverlay();
   }
+}
+
+function ensureWebSurfSettingsPageMounted() {
+  if (!dom.settingsOverlay || !dom.storeOverlay) return false;
+  const panel = dom.storeOverlay.querySelector(".tankazon-panel");
+  if (!(panel instanceof HTMLElement)) return false;
+  if (dom.settingsOverlay.parentElement !== panel) {
+    const anchor = dom.bubbleBankPage || dom.webHomePage;
+    if (anchor?.parentElement === panel) anchor.after(dom.settingsOverlay);
+    else panel.append(dom.settingsOverlay);
+  }
+  dom.settingsOverlay.classList.add("websurf-settings-page");
+  dom.settingsOverlay.removeAttribute("aria-modal");
+  dom.settingsOverlay.removeAttribute("role");
+  return true;
+}
+
+function deactivateWebSurfSettingsPage() {
+  runtime.settingsOverlayOpen = false;
+  if (dom.settingsOverlay) {
+    dom.settingsOverlay.hidden = true;
+    dom.settingsOverlay.classList.remove("is-open");
+  }
+}
+
+function openWebSurfSettingsPage() {
+  if (runtime.settingsOverlayOpen === true && runtime.storeOverlayOpen === true) {
+    renderUi(Date.now());
+    return true;
+  }
+
+  const activePage = getActiveWebSurfSessionPage();
+  if (activePage && activePage !== "settings") {
+    captureWebSurfSessionState();
+    runtime.webSurfSettingsReturnPage = normalizeWebSurfSessionPage(activePage);
+  } else if (!runtime.storeOverlayOpen) {
+    runtime.webSurfSettingsReturnPage = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  }
+
+  if (!runtime.storeOverlayOpen) {
+    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
+  }
+
+  closeProteusDesignerSession();
+  window.closeProteusBiodynePage?.(false);
+  runtime.webSurfSettingsTabOpen = true;
+  runtime.settingsOverlayOpen = true;
+  runtime.webHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
+  ensureWebSurfSettingsPageMounted();
+  renderUi(Date.now());
+  restoreWebSurfSessionScroll("settings");
+  return true;
+}
+
+function closeWebSurfSettingsPage(options = {}) {
+  const wasOpen = runtime.settingsOverlayOpen === true || runtime.webSurfSettingsTabOpen === true;
+  if (!wasOpen) return false;
+  const returnPage = normalizeWebSurfSessionPage(runtime.webSurfSettingsReturnPage || runtime.webSurfLastPage);
+  runtime.settingsOverlayOpen = false;
+  if (options.removeTab !== false) runtime.webSurfSettingsTabOpen = false;
+  runtime.webSurfSettingsReturnPage = "home";
+  if (runtime.storeOverlayOpen && getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
+    closeStoreOverlay({ force: true });
+  } else if (runtime.storeOverlayOpen && options.navigate !== false) {
+    runtime.webSurfLastPage = returnPage;
+    openWebSurfSessionPage();
+  } else {
+    renderUi(Date.now());
+  }
+  return true;
 }
 
 function openWebSurfSessionPage() {
@@ -14699,9 +14826,12 @@ function openWebSurfSessionPage() {
     openDavyJonesLockerPage();
     return;
   }
-  if (page === "designer" && beginEngineeredAquaticSpecimenDesign(runtime.activeEngineeredSpecimenOrderId)) {
-    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
-    return;
+  if (page === "designer") {
+    runtime.webSurfLastPage = window.hasDiscoveredProteus?.() ? "proteus" : "home";
+    if (window.hasDiscoveredProteus?.()) {
+      window.showProteusBiodynePage?.(dom.openStoreButton);
+      return;
+    }
   }
   if (page === "store") {
     if (openStoreOverlay(runtime.storeTab || "food")) restoreWebSurfSessionScroll("store");
@@ -14719,7 +14849,7 @@ function openStoreOverlay(tab = "food", options = {}) {
   window.rememberWebSurfPage = (page) => {
     runtime.webSurfLastPage = normalizeWebSurfSessionPage(page);
   };
-  if (getActiveTutorial() && !getTutorialAllowedStoreTabs()) {
+  if (getActiveTutorial() && !getTutorialAllowedStoreTabs() && options.allowDuringTutorial !== true) {
     showToast("Finish this task first.");
     return false;
   }
@@ -14784,6 +14914,10 @@ function openBubbleBank(tab = "account", options = {}) {
 
 function handleWebPageNavigation(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  if (target?.closest("[data-open-websurf-settings]")) {
+    openSettingsOverlay();
+    return;
+  }
   if (target?.closest("[data-proteus-designer-clear]")) {
     runtime.pendingCustomFishUpload = null;
     runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
@@ -14807,6 +14941,11 @@ function handleWebPageNavigation(event) {
       runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
       renderStoreOverlay();
     }
+    return;
+  }
+  const designerReturn = target?.closest("[data-proteus-designer-return]");
+  if (designerReturn) {
+    returnFromProteusDesignerToSite();
     return;
   }
   const designerCancel = target?.closest("[data-proteus-designer-cancel]");
@@ -14881,7 +15020,12 @@ function handleWebPageNavigation(event) {
   const tab = target?.closest("[data-webpage-destination]");
   if (!tab) return;
   const destination = String(tab.dataset.webpageDestination || "");
+  if (destination === "settings") {
+    openSettingsOverlay();
+    return;
+  }
   captureWebSurfSessionState();
+  if (runtime.settingsOverlayOpen) deactivateWebSurfSettingsPage();
   if (destination === "home") {
     closeProteusDesignerSession();
     window.closeProteusBiodynePage?.(false);
@@ -14921,8 +15065,8 @@ function handleWebPageNavigation(event) {
     openDavyJonesLockerPage();
     return;
   }
-  if (destination === "designer") {
-    openProteusDesignerPage(runtime.activeEngineeredSpecimenOrderId);
+  if (destination === "designer" && runtime.proteusDesignerOpen === true) {
+    openProteusDesignerPage();
   }
 }
 
@@ -14949,6 +15093,10 @@ function closeStoreOverlay(options = {}) {
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
   runtime.davyJonesLockerTabOpen = false;
+  // Settings is session-temporary. Closing WebSurf always destroys that tab.
+  runtime.settingsOverlayOpen = false;
+  runtime.webSurfSettingsTabOpen = false;
+  runtime.webSurfSettingsReturnPage = "home";
   if (runtime.webSurfLastPage === "locker") runtime.webSurfLastPage = "home";
   if (options.render === false) {
     if (dom.storeOverlay) {
@@ -17864,11 +18012,15 @@ function closeTutorialFeatureOverlay(featureId, runtimeKey) {
 }
 
 function openSettingsOverlay() {
-  openTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settings");
+  const tutorialChanged = beginTutorialFeatureStep(TUTORIAL_FEATURE_SETTINGS);
+  if (tutorialChanged) saveState();
+  return openWebSurfSettingsPage();
 }
 
 function closeSettingsOverlay() {
-  closeTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settingsOverlayOpen");
+  const tutorialChanged = finishTutorialFeatureStep(TUTORIAL_FEATURE_SETTINGS);
+  if (tutorialChanged) saveState();
+  return closeWebSurfSettingsPage({ removeTab: true });
 }
 
 function openEquipmentOverlay() {
@@ -18507,7 +18659,6 @@ function buildTutorialActionMarkup(actions) {
 function createTutorialUiStateConfig(options = {}) {
   const toolbarVisible = true;
   const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
-  visibleButtons.add("openSettingsButton");
   return {
     toolbarVisible,
     displayVisible: options.displayVisible !== false,
@@ -18668,9 +18819,6 @@ function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi =
 }
 
 function canUseTutorialToolbarControl(controlId) {
-  if (controlId === "openSettingsButton") {
-    return true;
-  }
   const tutorialState = getActiveTutorialStageRuntime(Date.now());
   if (!tutorialState) {
     return true;
@@ -21333,6 +21481,17 @@ function finishTankColorPickerDrag(pointerId = null) {
 }
 
 function bindEvents() {
+  const webSurfColorSchemeQuery = window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY);
+  const handleWebSurfSystemThemeChange = () => {
+    if (getUiSettings().webSurfThemeMode === WEBSURF_THEME_MODE_AUTO) {
+      syncWebSurfThemePresentation();
+    }
+  };
+  if (typeof webSurfColorSchemeQuery?.addEventListener === "function") {
+    webSurfColorSchemeQuery.addEventListener("change", handleWebSurfSystemThemeChange);
+  } else if (typeof webSurfColorSchemeQuery?.addListener === "function") {
+    webSurfColorSchemeQuery.addListener(handleWebSurfSystemThemeChange);
+  }
   document.addEventListener("pointerdown", (event) => {
     if (!event.target.closest?.("#editEquipmentTray")) closeEditEquipmentTrayContextMenu();
   }, true);
@@ -22375,11 +22534,12 @@ function bindEvents() {
       clearStoreScrollPointer();
     }
   });
-  dom.storeOverlay?.addEventListener("click", (event) => {
-    if (event.target === dom.storeOverlay) {
-      closeStoreOverlay();
-    }
-  });
+  // WebSurf intentionally does not close when its backdrop is clicked. Native
+  // controls such as <select> menus can surface pointer events outside the DOM
+  // on Windows, which made BubbleBodega appear to close when a search scope was
+  // opened or chosen. Close WebSurf only through explicit browser controls, the
+  // toolbar toggle, or Escape. BubbleBodega is the renamed Tankazon storefront;
+  // legacy tankazon* identifiers still point at this same store.
   dom.bubbleBankPage?.addEventListener("click", handleBubbleBankPageClick);
   dom.bubbleBankPage?.addEventListener("change", handleBubbleBankPageChange);
   dom.davyJonesLockerPage?.addEventListener("click", handleDavyJonesLockerPageClick);
@@ -22451,7 +22611,7 @@ function bindEvents() {
   dom.settingsOverlay?.addEventListener("pointercancel", stopWallpaperScrollRepeat);
   dom.settingsOverlay?.addEventListener("pointerleave", stopWallpaperScrollRepeat);
   dom.settingsOverlay?.addEventListener("click", (event) => {
-    if (event.target === dom.settingsOverlay) {
+    if (event.target === dom.settingsOverlay && !dom.settingsOverlay.classList.contains("websurf-settings-page")) {
       const wasOpen = runtime.settingsOverlayOpen;
       closeSettingsOverlay();
       if (wasOpen && !runtime.settingsOverlayOpen) {
@@ -22492,6 +22652,9 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
+    setWebSurfThemeMode(event.currentTarget?.value);
+  });
   dom.toolbarTileColorInput?.addEventListener("input", (event) => {
     const color = normalizeToolbarTileColor(event.currentTarget?.value);
     document.documentElement.style.setProperty("--toolbar-tile-color", color);
@@ -26142,7 +26305,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Bubbler",
+      name: "Bubble Emitter",
       theme: "Custom",
       cost: CUSTOM_BUBBLER_COST,
       width: 47,
@@ -26174,7 +26337,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Custom Decor",
+      name: "Custom Decor Creator",
       theme: "Custom",
       cost: CUSTOM_DECOR_COST,
       width: CUSTOM_DECOR_DEFAULT_WIDTH,
@@ -26207,7 +26370,7 @@ function buildVirtualDecorCatalogEntries() {
       hasLight: false,
       hasTrigger: false,
       hasSeats: false,
-      name: "Custom Hide",
+      name: "Custom Cave Creator",
       theme: "Custom",
       cost: CUSTOM_HIDE_COST,
       width: CUSTOM_DECOR_DEFAULT_WIDTH,
@@ -26424,7 +26587,7 @@ function buildVirtualFishCatalogEntries() {
       assetFolder: "web/proteus",
       description: "A bespoke biological design service from PROTEUS BIODYNE, developed for clients seeking an organism tailored to precise visual, behavioral, and environmental requirements.",
       aboutParagraphs: [
-        "Purchase the commission first. Proteus will email you a secure design link, you will finalize the specimen through the Proteus designer portal, and the finished fish will be delivered directly into your tank.",
+        "Custom specimen design is now handled directly through Proteus Biodyne. Open the Proteus Custom Specimen service in WebSurf to enter the secure designer. Designing is free, and the 75 coin synthesis fee is charged only when the finished specimen is purchased.",
         "Submit your preferred appearance, define the intended scale, and select a behavioral profile. Our adaptive biology platform will produce a unique aquatic specimen engineered to your specifications while maintaining the stability, viability, and behavioral integrity expected of every PROTEUS BIODYNE organism.",
         "No two commissions are required to be alike. Each specimen is treated as an individual biological program, developed, stabilized, and cleared for delivery to your aquarium."
       ],
@@ -26615,8 +26778,7 @@ function openCustomFishCreationOverlay(dataUrl, suggestedName = "Custom Fish", d
     liveBirth: previous?.liveBirth === true,
     turnAnimation: String(previous?.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
   };
-  const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-  if (runtime.proteusDesignerOpen === true && beginEngineeredAquaticSpecimenDesign(activeOrderId)) {
+  if (runtime.proteusDesignerOpen === true) {
     runtime.pendingCustomFishUpload = pending;
     runtime.proteusDesignerRenderRevision = (Number(runtime.proteusDesignerRenderRevision) || 0) + 1;
     renderStoreOverlay();
@@ -26649,13 +26811,6 @@ function ensureCustomAssetCost(type) {
   const typeDef = getCustomAssetTypeDef(type);
   if (!typeDef || Math.max(0, Number(typeDef.cost) || 0) <= 0) {
     return true;
-  }
-  if (type === "fish") {
-    const activeOrderId = String(runtime.activeEngineeredSpecimenOrderId || "").trim();
-    if (runtime.proteusDesignerOpen === true
-      && ["design-required", "specimen-configured"].includes(getEngineeredAquaticSpecimenOrderStatus(activeOrderId))) {
-      return true;
-    }
   }
   if (state.coins >= typeDef.cost) {
     return true;
@@ -26936,6 +27091,9 @@ function sanitizeCustomFishAssetEntry(entry, key) {
     socialAffinity: normalizeCustomFishSocialAffinity(entry.socialAffinity),
     liveBirth: entry.liveBirth === true || entry.live_birth === true || entry.Live_birth === true,
     turnAnimation: String(entry.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+    proteusSpecimenId: typeof entry.proteusSpecimenId === "string" && /^PB-CS-\d{5}$/.test(entry.proteusSpecimenId.trim())
+      ? entry.proteusSpecimenId.trim()
+      : "",
     createdAt: Number.isFinite(Number(entry.createdAt)) ? Number(entry.createdAt) : Date.now()
   };
 }
@@ -27030,7 +27188,8 @@ function buildCustomFishCatalogEntry(asset) {
     swimZone: normalizeCustomFishSwimZone(asset.swimZone),
     socialAffinity: normalizeCustomFishSocialAffinity(asset.socialAffinity),
     liveBirth: asset.liveBirth === true,
-    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple"
+    turnAnimation: String(asset.turnAnimation || "").trim().toLowerCase() === "complex" ? "complex" : "simple",
+    proteusSpecimenId: typeof asset.proteusSpecimenId === "string" ? asset.proteusSpecimenId : ""
   };
   species.mealCoins = resolveSpeciesMealCoins(species);
   return species;
@@ -32037,7 +32196,12 @@ function sanitizeWebSurfSentEmails(rawEmails) {
     const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
       ? {
         orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
-        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : ""
+        speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : "",
+        fishId: typeof rawEmail.data.fishId === "string" ? rawEmail.data.fishId.slice(0, 100) : "",
+        specimenName: typeof rawEmail.data.specimenName === "string" ? rawEmail.data.specimenName.slice(0, 80) : "",
+        specimenId: typeof rawEmail.data.specimenId === "string" && /^PB-CS-\d{5}$/.test(rawEmail.data.specimenId.trim()) ? rawEmail.data.specimenId.trim() : "",
+        cost: Math.max(0, Math.floor(Number(rawEmail.data.cost) || 0)),
+        deliveryStatus: typeof rawEmail.data.deliveryStatus === "string" ? rawEmail.data.deliveryStatus.slice(0, 40) : ""
       }
       : {};
     return { id, sender, senderId, templateId, subject, preview, destination, icon, time, data };
@@ -32107,6 +32271,20 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
+  if (typeof value === "boolean") {
+    return value ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
+  }
+  const normalized = String(value ?? "").trim().toLowerCase();
+  if (WEBSURF_THEME_MODES.includes(normalized)) {
+    return normalized;
+  }
+  if (typeof legacyDarkMode === "boolean") {
+    return legacyDarkMode ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
+  }
+  return WEBSURF_THEME_MODE_AUTO;
+}
+
 function normalizeDepthEffectLevel(value, legacyEnabled = undefined) {
   const numeric = Number(value);
   if (Number.isFinite(numeric)) {
@@ -32152,6 +32330,12 @@ function sanitizeUiSettings(rawSettings) {
       ? normalizeToolbarPosition(source.toolbarPosition)
       : DEFAULT_UI_SETTINGS.toolbarPosition,
     toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
+    webSurfThemeMode: normalizeWebSurfThemeMode(
+      source.webSurfThemeMode,
+      typeof source.webSurfDarkModeEnabled === "boolean"
+        ? source.webSurfDarkModeEnabled
+        : (typeof source.webSurfDarkMode === "boolean" ? source.webSurfDarkMode : undefined)
+    ),
     displayPosition: DISPLAY_POSITION_SETTING_ENABLED
       ? normalizeDisplayPosition(source.displayPosition)
       : DEFAULT_UI_SETTINGS.displayPosition,
@@ -32170,7 +32354,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
     depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
     backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
-    simpleTurnAnimationsOnly: source.simpleTurnAnimationsOnly === true,
+    simpleTurnAnimationsOnly: true,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -33105,6 +33289,8 @@ function reconcileState(rawState) {
     gameCreatedAt: now,
     webSurfWelcomeVersion: 1,
     webSurfWelcomeSentAt: now,
+    proteusDiscovered: false,
+    proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
     walletTransactions: [],
     lifetimeDeaths: 0,
@@ -33193,6 +33379,10 @@ function reconcileState(rawState) {
       && Number(incoming.webSurfWelcomeSentAt) > 0
       ? Number(incoming.webSurfWelcomeSentAt)
       : now,
+    proteusDiscovered: incoming.proteusDiscovered === true,
+    proteusDiscoveredAt: incoming.proteusDiscovered === true && Number.isFinite(Number(incoming.proteusDiscoveredAt))
+      ? Math.max(0, Number(incoming.proteusDiscoveredAt))
+      : 0,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({
@@ -34124,6 +34314,9 @@ function sanitizeFish(fish, options = {}) {
     id: String(fish.id || createId("fish")),
     speciesId: fish.speciesId,
     name: typeof fish.name === "string" && fish.name.trim() ? fish.name : buildFishName(fish.speciesId, []),
+    proteusSpecimenId: typeof fish.proteusSpecimenId === "string" && /^PB-CS-\d{5}$/.test(fish.proteusSpecimenId.trim())
+      ? fish.proteusSpecimenId.trim()
+      : "",
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
     deadAt: Number.isFinite(fish.deadAt) ? fish.deadAt : null,
@@ -44331,6 +44524,7 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
     return 0;
   }
 
+  recordFishDailyMealIndicator(fish, now, tank);
   const entry = ensureMealHistoryEntry(`feeding-care-${getLocalDayKey(now)}`, now, tank);
   if (!entry) {
     return 0;
@@ -44358,6 +44552,51 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
     label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
   });
   return mealCoins;
+}
+
+function getDailyMealIndicatorSlots(timestamp = Date.now()) {
+  const date = new Date(timestamp);
+  const dayKey = getLocalDayKey(timestamp);
+  const midnight = new Date(date);
+  midnight.setHours(0, 0, 0, 0);
+  const noon = new Date(date);
+  noon.setHours(12, 0, 0, 0);
+  const nextMidnight = new Date(midnight);
+  nextMidnight.setDate(nextMidnight.getDate() + 1);
+  return [
+    { key: `daily-feeding-${dayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
+    { key: `daily-feeding-${dayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
+  ];
+}
+
+function getDailyMealIndicatorSlot(timestamp = Date.now()) {
+  const slots = getDailyMealIndicatorSlots(timestamp);
+  return new Date(timestamp).getHours() < 12 ? slots[0] : slots[1];
+}
+
+function recordFishDailyMealIndicator(fish, now = Date.now(), tank = getCurrentTank()) {
+  if (!fish || isMealFreeFish(fish)) {
+    return false;
+  }
+  const slot = getDailyMealIndicatorSlot(now);
+  const entry = ensureMealHistoryEntry(slot.key, now, tank);
+  if (!entry) {
+    return false;
+  }
+  const fedFishIds = new Set(Array.isArray(entry.fishIds) ? entry.fishIds : []);
+  const beforeSize = fedFishIds.size;
+  fedFishIds.add(fish.id);
+  entry.fishIds = [...fedFishIds];
+  entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
+  return fedFishIds.size !== beforeSize;
+}
+
+function getFishDailyMealIndicatorState(fish, now = Date.now(), tank = getCurrentTank()) {
+  const [amSlot, pmSlot] = getDailyMealIndicatorSlots(now);
+  return {
+    am: hasFishEatenInSlot(fish, amSlot, tank),
+    pm: hasFishEatenInSlot(fish, pmSlot, tank)
+  };
 }
 
 function getDailyFeedingCareStatus(tank = getCurrentTank(), now = Date.now()) {
@@ -47968,6 +48207,46 @@ function buyEngineeredAquaticSpecimen() {
     event: { type: "purchase", tone: "positive", text: "Engineered Aquatic Specimen order placed." },
     toast: "Engineered Aquatic Specimen order placed. Check WebSurf for your Proteus design link."
   });
+}
+
+
+function getProteusSaveDiscovery() {
+  return {
+    discovered: state?.proteusDiscovered === true,
+    discoveredAt: Math.max(0, Number(state?.proteusDiscoveredAt) || 0)
+  };
+}
+
+function markProteusDiscoveredInSave(now = Date.now()) {
+  if (!state) return false;
+  const timestamp = Math.max(1, Number(now) || Date.now());
+  const changed = state.proteusDiscovered !== true || !(Number(state.proteusDiscoveredAt) > 0);
+  state.proteusDiscovered = true;
+  if (!(Number(state.proteusDiscoveredAt) > 0)) state.proteusDiscoveredAt = timestamp;
+  if (changed) {
+    pushEvent("Proteus Biodyne was added to WebSurf bookmarks.", timestamp);
+    saveState();
+  }
+  return true;
+}
+
+function generateProteusSpecimenId() {
+  const used = new Set();
+  for (const asset of Object.values(state?.customFishAssets || {})) {
+    const id = typeof asset?.proteusSpecimenId === "string" ? asset.proteusSpecimenId.trim() : "";
+    if (/^PB-CS-\d{5}$/.test(id)) used.add(id);
+  }
+  for (const fish of [...(state?.fish || []), ...(state?.storedFish || [])]) {
+    const id = typeof fish?.proteusSpecimenId === "string" ? fish.proteusSpecimenId.trim() : "";
+    if (/^PB-CS-\d{5}$/.test(id)) used.add(id);
+  }
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const numeric = Math.floor(Math.random() * 100000);
+    const id = `PB-CS-${String(numeric).padStart(5, "0")}`;
+    if (!used.has(id)) return id;
+  }
+  const fallback = Math.floor(Date.now() % 100000);
+  return `PB-CS-${String(fallback).padStart(5, "0")}`;
 }
 
 function getEngineeredAquaticSpecimenOrder(orderId = "") {
@@ -53719,6 +53998,7 @@ function getFishShopCatalog() {
   return runtime.fishCatalog.filter((species) => (
     species
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
+    && !isCustomFishShopKey(species.id)
     && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
   ));
 }
@@ -55324,7 +55604,7 @@ function restoreAllFishHealthDebug() {
 
 function resetMealsDebug() {
   const now = Date.now();
-  const slots = getTodaysMealSlots(now);
+  const slots = [...getTodaysMealSlots(now), ...getDailyMealIndicatorSlots(now)];
   let cleared = 0;
 
   for (const slot of slots) {
@@ -55372,7 +55652,22 @@ function completeMealsDebug() {
     }
   }
 
-  if (!completedSlots) {
+  let indicatorMealsAdded = 0;
+  for (const slot of getDailyMealIndicatorSlots(now)) {
+    const entry = ensureMealHistoryEntry(slot.key, now);
+    const fedFishIds = new Set(Array.isArray(entry.fishIds) ? entry.fishIds : []);
+    const beforeCount = fedFishIds.size;
+    for (const fish of (getCurrentTank()?.fish || [])) {
+      if (fish && !isFishDead(fish) && !isMealFreeFish(fish)) {
+        fedFishIds.add(fish.id);
+      }
+    }
+    entry.fishIds = [...fedFishIds];
+    entry.fedAt = Math.max(Number(entry.fedAt) || 0, now);
+    indicatorMealsAdded += Math.max(0, fedFishIds.size - beforeCount);
+  }
+
+  if (!completedSlots && !indicatorMealsAdded) {
     showToast("Today's meals are already complete.");
     return;
   }
@@ -61377,7 +61672,9 @@ function renderUi(now, options = {}) {
     window.markEngineeredAquaticSpecimenDesigned = markEngineeredAquaticSpecimenDesigned;
     window.markEngineeredAquaticSpecimenConfigured = markEngineeredAquaticSpecimenConfigured;
     window.beginEngineeredAquaticSpecimenDesign = beginEngineeredAquaticSpecimenDesign;
-    window.showProteusDesignerPage = (orderId = "") => openProteusDesignerPage(orderId);
+    window.getProteusSaveDiscovery = getProteusSaveDiscovery;
+    window.markProteusDiscoveredInSave = markProteusDiscoveredInSave;
+    window.showProteusDesignerPage = () => openProteusDesignerPage();
     window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
     window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
   }
@@ -61529,8 +61826,10 @@ function renderToolbarPosition() {
     if (dom.tankStage && dom.tankBottomDock.parentElement !== dom.tankStage) {
       dom.tankStage.append(dom.tankBottomDock);
     }
+    // WebSurf Settings is now an in-browser page, so it must behave like the
+    // Home/Bank/Store tabs and leave the main aquarium toolbar visible and
+    // usable. Only true blocking dialogs should push the toolbar behind them.
     const dialogCoversToolbar = runtime.utilityOverlayOpen
-      || runtime.settingsOverlayOpen
       || runtime.equipmentOverlayOpen;
     const horizontalMenuCoversToolbar = runtime.editTankMode
       || runtime.fishEditMode
@@ -62035,14 +62334,18 @@ async function handleDavyJonesLockerPageClick(event) {
 }
 
 function renderStoreOverlay() {
+  syncWebSurfThemePresentation();
   const showingHome = runtime.webHomeOpen === true;
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
+  const showingSettings = runtime.settingsOverlayOpen === true;
   const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
   if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true;
+  if (dom.webSurfSettingsTab) dom.webSurfSettingsTab.hidden = runtime.webSurfSettingsTabOpen !== true;
+  ensureWebSurfSettingsPageMounted();
   const allowedTabs = getTutorialAllowedStoreTabs();
-  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
+  if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && !showingSettings && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
     runtime.storeTab = getTutorialPreferredStoreTab() || [...allowedTabs][0] || runtime.storeTab;
   }
   const showingFood = runtime.storeTab === "food";
@@ -62050,6 +62353,16 @@ function renderStoreOverlay() {
   const showingFish = runtime.storeTab === "fish";
   const showingDecor = runtime.storeTab === "decor";
   const showingEquipment = runtime.storeTab === "equipment";
+  const bubbleBodegaSearchView = window.getBubbleBodegaSearchView?.();
+  const searchOwnsBubbleBodegaCatalog = Boolean(
+    runtime.storeOverlayOpen
+    && !showingHome
+    && !showingBank
+    && !showingLocker
+    && !showingDesigner
+    && !showingSettings
+    && bubbleBodegaSearchView?.active === true
+  );
 
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
@@ -62057,7 +62370,8 @@ function renderStoreOverlay() {
   dom.storeOverlay.classList.toggle("is-bubble-bank-open", runtime.storeOverlayOpen && showingBank);
   dom.storeOverlay.classList.toggle("is-davy-jones-locker-open", runtime.storeOverlayOpen && showingLocker);
   dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
-  dom.storeOverlay.setAttribute("aria-label", showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  dom.storeOverlay.classList.toggle("is-web-settings-open", runtime.storeOverlayOpen && showingSettings);
+  dom.storeOverlay.setAttribute("aria-label", showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
   if (dom.webHomePage) {
     dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome;
     syncWebSurfUnreadBadge();
@@ -62107,7 +62421,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -62123,21 +62437,23 @@ function renderStoreOverlay() {
     dom.storeCoinCounter.setAttribute("aria-label", `Current coins: ${currentCoins}`);
   }
 
-  if (dom.foodShop) {
-    dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFood;
-  }
-  if (dom.pharmacyShop) {
-    dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingPharmacy;
-  }
-  dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingFish;
-  dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingDecor;
-  if (dom.equipmentShop) {
-    dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || !showingEquipment;
+  if (!searchOwnsBubbleBodegaCatalog) {
+    if (dom.foodShop) {
+      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
+    }
+    if (dom.pharmacyShop) {
+      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
+    }
+    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
+    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
+    if (dom.equipmentShop) {
+      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
+    }
   }
   const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
   const fallbackStandardWebPage = showingProteus ? "proteus" : showingHome ? "home" : showingBank ? "bank" : "store";
   const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
-  const activeWebPage = showingDesigner ? "designer" : activeStandardWebPage;
+  const activeWebPage = showingSettings ? "settings" : showingDesigner ? "designer" : activeStandardWebPage;
   window.syncWebPageTabs?.(activeWebPage);
   if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();
@@ -65980,9 +66296,63 @@ function loadWebSurfAutoEmailConfig() {
   return globalThis.webSurfAutoEmailConfigPromise;
 }
 
+function queueProteusCustomSpecimenFulfillmentEmail(options = {}) {
+  if (!state) return false;
+  const specimenId = typeof options.specimenId === "string" && /^PB-CS-\d{5}$/.test(options.specimenId.trim())
+    ? options.specimenId.trim()
+    : "";
+  if (!specimenId) return false;
+  state.webSurfSentEmails ||= [];
+  const existingId = `proteus-custom-specimen-${specimenId}`;
+  if (state.webSurfSentEmails.some((email) => email?.id === existingId)) return true;
+  const message = {
+    id: existingId,
+    templateId: "proteus_custom_specimen_fulfillment",
+    sender: "fulfillment@ProteusBiodyne.swim",
+    subject: "Your Custom Specimen Has Been Successfully Created",
+    preview: "Your engineered aquatic specimen has completed synthesis and has been delivered directly to your aquarium.",
+    destination: "proteus",
+    icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+    time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
+    data: {
+      speciesId: typeof options.speciesId === "string" ? options.speciesId : "",
+      fishId: typeof options.fishId === "string" ? options.fishId : "",
+      specimenName: String(options.specimenName || "Custom Specimen").slice(0, 80),
+      specimenId,
+      cost: Math.max(0, Math.floor(Number(options.cost) || CUSTOM_FISH_COST)),
+      deliveryStatus: "Delivered"
+    }
+  };
+  state.webSurfSentEmails.unshift(message);
+  state.webSurfSentEmails = sanitizeWebSurfSentEmails(state.webSurfSentEmails);
+  return true;
+}
+
 function getWebSurfAutoEmailTemplate(templateId) {
   loadWebSurfAutoEmailConfig();
-  return globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+  const configured = globalThis.webSurfAutoEmailConfig?.templates?.[templateId] || null;
+  if (configured) return configured;
+  if (templateId === "proteus_custom_specimen_fulfillment") {
+    return {
+      sender: "fulfillment@ProteusBiodyne.swim",
+      subject: "Your Custom Specimen Has Been Successfully Created",
+      preview: "Your engineered aquatic specimen has completed synthesis and has been delivered directly to your aquarium.",
+      body: [
+        { type: "heading", text: "Congratulations on your successful custom specimen." },
+        { type: "paragraph", text: "Proteus Biodyne is pleased to confirm that your engineered aquatic specimen has successfully completed synthesis." },
+        { type: "section_label", text: "SPECIMEN FULFILLMENT RECORD" },
+        { type: "summary", label: "Specimen", value: "{{specimenName}}" },
+        { type: "summary", label: "Specimen ID", value: "{{specimenId}}" },
+        { type: "summary", label: "Program", value: "Engineered Aquatic Specimen" },
+        { type: "summary", label: "Synthesis Cost", value: "{{coin:cost}}" },
+        { type: "summary", label: "Delivery Status", value: "{{deliveryStatus}}" },
+        { type: "completion_note", text: "Your specimen has been delivered directly to your aquarium and is ready for integration into its new environment." },
+        { type: "paragraph", text: "Thank you for choosing Proteus Biodyne." },
+        { type: "paragraph", text: "Adaptive Biology. Engineered." }
+      ]
+    };
+  }
+  return null;
 }
 
 function interpolateWebSurfEmailValue(value, data = {}) {
@@ -66287,19 +66657,6 @@ function getWebSurfInboxMessages() {
     time: Number(statementData.sentAt) || 0
   });
 
-  if (window.hasDiscoveredProteus?.()) {
-    const proteusDiscoveredAt = Math.min(now, Math.max(1, Number(window.getProteusDiscoveredAt?.()) || now));
-    messages.push({
-      id: "proteus-research-bulletin-1",
-      sender: "research@proteusbiodyne.swim",
-      subject: "Research Bulletin: Adaptive Marine Life",
-      preview: "New specimen and directed-adaptation records are available.",
-      destination: "proteus",
-      icon: "assets/web/proteus/Proteus_Logo_Icon.png",
-      time: proteusDiscoveredAt
-    });
-  }
-
   return messages
     .map((message) => {
       const sender = String(message.sender || "unknown").trim() || "unknown";
@@ -66479,7 +66836,7 @@ function renderWebSurfHomePage() {
   const messages = getWebSurfInboxMessages();
   const unreadCount = messages.filter((message) => isWebSurfMailUnread(message)).length;
   const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
-  const proteusDiscovered = Boolean(window.hasDiscoveredProteus?.());
+  const proteusDiscovered = state?.proteusDiscovered === true || Boolean(window.hasDiscoveredProteus?.());
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
@@ -66524,11 +66881,10 @@ function renderWebSurfHomePage() {
           <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
           <div class="websurf-mail-list">${mailMarkup}</div>
         </section>
-        <aside class="websurf-account-card" aria-label="WebSurf account">
-          <header><img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="" /><span><strong>WebSurf Account</strong><small>Connected to Bubble Borough</small></span></header>
-          <div class="websurf-account-stats"><span><strong>${unreadCount}</strong><small>Unread</small></span><span><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong><small>Mail storage</small></span></div>
-          <footer><span>${escapeHtml(addressName)}@WebSurf.swim</span><span>WebSurf 1.4 · Secure</span></footer>
-        </aside>
+        <footer class="websurf-status-bar" aria-label="WebSurf status">
+          <span>WebSurf 1.4 · Secure</span>
+          <span><small>Mail storage</small><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong></span>
+        </footer>
       </div>
     </main>`;
 }
@@ -66649,7 +67005,7 @@ function renderBubbleBankPage() {
   const username = profile.username || getAccountUsernameForUser(profile.userId);
   const content = activeTab === "rewards" ? renderBubbleBankRewards() : activeTab === "milestones" ? renderBubbleBankMilestones() : renderBubbleBankAccount();
   return `<div class="bubble-bank-window-header">
-    <img class="bubble-bank-logo" ${assetImageAttributes("assets/misc/bank_logo.png")} alt="Bubble Borough Bank" />
+    <img class="bubble-bank-logo" ${assetImageAttributes("assets/web/bank/bank_logo.png")} alt="Bubble Borough Bank" />
     ${renderBubbleBankTabs(activeTab)}
     <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
   </div>
@@ -67740,7 +68096,7 @@ function renderProteusDesignerWorkspace() {
         <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" draggable="false" />
         <div class="proteus-designer-brand-divider" aria-hidden="true"></div>
         <div class="proteus-designer-app-title"><h1 id="proteusDesignerTitle" tabindex="-1">Engineered Aquatic Specimen Designer</h1><span>DESIGN. ADAPT. POPULATE A MORE RESILIENT TOMORROW.</span></div>
-        <div class="proteus-designer-session"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div>
+        <div class="proteus-designer-session"><div class="proteus-designer-session-copy"><strong>▣ &nbsp; SECURE DESIGNER SESSION</strong><span>PROTEUS BIODYNE // RESTRICTED</span></div><div class="proteus-designer-balance" aria-label="Current balance"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="Fish Coin" /><strong>${Math.max(0, Math.floor(Number(state?.coins) || 0))}</strong></div></div>
       </header>
       <div class="proteus-designer-editor">
         <section class="proteus-designer-preview-column" aria-label="Specimen image">
@@ -67844,8 +68200,8 @@ function renderProteusDesignerWorkspace() {
             <input type="range" min="${CUSTOM_FISH_ROTATION_MIN_DEGREES}" max="${CUSTOM_FISH_ROTATION_MAX_DEGREES}" step="1" value="${rotation}" data-custom-fish-rotation-input ${disabled} />
           </label>
 
-          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered to your tank upon confirmation.</span></div></div>
-          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>COMMISSION SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
+          <div class="proteus-designer-note"><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" /><div><strong>SPECIMEN FULFILLMENT <b>75 COINS</b></strong><span>Your custom aquatic specimen will be synthesized and delivered directly to your aquarium upon purchase.</span></div></div>
+          <div class="proteus-designer-actions"><button type="button" class="proteus-designer-submit" data-proteus-designer-submit ${hasImage ? "" : "disabled"}>PURCHASE SPECIMEN &nbsp; →</button><button type="button" class="proteus-designer-cancel" data-proteus-designer-cancel>CANCEL</button></div>
           <small class="proteus-designer-legal">All specimens are subject to review in accordance with Proteus Biodyne biosecurity and ecological compliance standards.</small>
         </section>
       </div>
@@ -67854,10 +68210,24 @@ function renderProteusDesignerWorkspace() {
 }
 
 function renderProteusDesignerCompletion() {
+  const specimen = runtime.proteusCompletedSpecimen || {};
+  const specimenName = String(specimen.specimenName || "Custom Specimen");
+  const specimenId = String(specimen.specimenId || "");
   return `
     <div class="proteus-designer-completion" role="status" aria-live="polite">
-      <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="Proteus Biodyne" />
-      <p>ASSET DESIGN AND FULFILLMENT COMPLETE.</p>
+      <div class="proteus-designer-completion-card">
+        <img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" aria-hidden="true" />
+        <p class="proteus-designer-completion-kicker">FULFILLMENT PROTOCOL COMPLETE</p>
+        <h1>SPECIMEN SYNTHESIS COMPLETE</h1>
+        <p>Your custom aquatic specimen has successfully completed synthesis and has been delivered directly to your aquarium.</p>
+        <dl>
+          <div><dt>SPECIMEN</dt><dd>${escapeHtml(specimenName)}</dd></div>
+          <div><dt>SPECIMEN ID</dt><dd>${escapeHtml(specimenId)}</dd></div>
+          <div><dt>STATUS</dt><dd>DELIVERED</dd></div>
+        </dl>
+        <button type="button" data-proteus-designer-return>RETURN TO PROTEUS &nbsp; →</button>
+        <small>PROTEUS BIODYNE // ADAPTIVE BIOLOGY. ENGINEERED.</small>
+      </div>
     </div>
   `;
 }
@@ -67871,8 +68241,8 @@ function renderProteusDesignerPage() {
   if (route.hidden) return;
   workspace.classList.toggle("is-complete", runtime.proteusDesignerCompleting === true);
   const renderKey = runtime.proteusDesignerCompleting === true
-    ? `complete:${String(runtime.activeEngineeredSpecimenOrderId || "")}`
-    : `workspace:${String(runtime.activeEngineeredSpecimenOrderId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
+    ? `complete:${String(runtime.proteusDesignerSessionId || "")}:${String(runtime.proteusCompletedSpecimen?.specimenId || "")}`
+    : `workspace:${String(runtime.proteusDesignerSessionId || "")}:${Number(runtime.proteusDesignerRenderRevision) || 0}:${runtime.pendingCustomFishUpload?.dataUrl ? "image" : "empty"}`;
   if (workspace.dataset.proteusDesignerRenderKey === renderKey && workspace.firstElementChild) return;
   workspace.dataset.proteusDesignerRenderKey = renderKey;
   workspace.innerHTML = runtime.proteusDesignerCompleting === true
@@ -68186,15 +68556,17 @@ function renderSettingsOverlay() {
     return;
   }
 
-  const isOpening = runtime.settingsOverlayOpen && dom.settingsOverlay.hidden;
+  ensureWebSurfSettingsPageMounted();
+  const settingsVisible = runtime.storeOverlayOpen === true && runtime.settingsOverlayOpen === true;
+  const isOpening = settingsVisible && dom.settingsOverlay.hidden;
   const settings = getContentSettings();
   const uiSettings = getUiSettings();
   const tutorialAvailable = isIntroTutorialEnabled();
   const mouseLockAvailable = isTankMouseLockFeatureEnabled();
   const mouseLockRow = dom.tankMouseLockToggleInput?.closest(".settings-toggle-row");
-  dom.settingsOverlay.hidden = !runtime.settingsOverlayOpen;
-  dom.settingsOverlay.classList.toggle("is-open", runtime.settingsOverlayOpen);
-  if (runtime.settingsOverlayOpen) {
+  dom.settingsOverlay.hidden = !settingsVisible;
+  dom.settingsOverlay.classList.toggle("is-open", settingsVisible);
+  if (settingsVisible) {
     renderCloudAccountPanel();
   }
   if (isOpening) {
@@ -68202,6 +68574,9 @@ function renderSettingsOverlay() {
     if (settingsScroller instanceof HTMLElement) settingsScroller.scrollTop = 0;
   }
   syncDebugToolsAuthorization();
+  if (dom.webSurfThemeModeSelect instanceof HTMLSelectElement) {
+    dom.webSurfThemeModeSelect.value = normalizeWebSurfThemeMode(uiSettings.webSurfThemeMode);
+  }
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }
@@ -73252,6 +73627,57 @@ function setToolbarPosition(toolbarPosition) {
   runtime.toolbarActionMenu = "";
   saveState();
   renderUi(Date.now());
+}
+
+function getEffectiveWebSurfTheme(mode = getUiSettings().webSurfThemeMode) {
+  const normalizedMode = normalizeWebSurfThemeMode(mode);
+  if (normalizedMode === WEBSURF_THEME_MODE_YES) {
+    return "dark";
+  }
+  if (normalizedMode === WEBSURF_THEME_MODE_NO) {
+    return "light";
+  }
+  try {
+    return window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY)?.matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+function syncWebSurfThemePresentation() {
+  const mode = normalizeWebSurfThemeMode(getUiSettings().webSurfThemeMode);
+  const theme = getEffectiveWebSurfTheme(mode);
+  if (dom.storeOverlay instanceof HTMLElement) {
+    dom.storeOverlay.dataset.websurfThemeMode = mode;
+    dom.storeOverlay.dataset.websurfTheme = theme;
+  }
+  return theme;
+}
+
+function setWebSurfThemeMode(value, options = {}) {
+  if (!state) {
+    return false;
+  }
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    webSurfThemeMode: value
+  });
+  if (currentSettings.webSurfThemeMode === nextSettings.webSurfThemeMode) {
+    syncWebSurfThemePresentation();
+    return false;
+  }
+  state.uiSettings = nextSettings;
+  syncWebSurfThemePresentation();
+  if (options.save !== false) saveState();
+  if (options.render !== false) renderUi(Date.now(), { full: false });
+  if (options.showToast !== false) {
+    const label = nextSettings.webSurfThemeMode === WEBSURF_THEME_MODE_AUTO
+      ? "Auto"
+      : (nextSettings.webSurfThemeMode === WEBSURF_THEME_MODE_YES ? "Yes" : "No");
+    showToast(`WebSurf Dark Mode: ${label}.`);
+  }
+  return true;
 }
 
 function setToolbarTileColor(value) {
@@ -82610,8 +83036,26 @@ function getDecorContactSpans(item, decor) {
       start = null;
     }
   }
-  variants.set(flippedY, spans);
-  return spans;
+
+  // Small transparent nicks inside an authored footprint should not fragment a
+  // single root/support into several tiny shadows. Merge only nearby gaps while
+  // preserving real openings such as the center of an arch.
+  let resolvedSpans = spans;
+  if (decor?.shadowFootprintPath && spans.length > 1) {
+    const maxGap = clamp(Number(DECOR_GROUND_SHADOWS.authoredSpanMergeGapRatio) || 0.028, 0.005, 0.08);
+    resolvedSpans = [];
+    for (const span of spans) {
+      const previous = resolvedSpans[resolvedSpans.length - 1];
+      if (previous && span.left - previous.right <= maxGap) {
+        previous.right = Math.max(previous.right, span.right);
+      } else {
+        resolvedSpans.push({ ...span });
+      }
+    }
+  }
+
+  variants.set(flippedY, resolvedSpans);
+  return resolvedSpans;
 }
 
 
@@ -82679,8 +83123,10 @@ function getDecorContactShadowMetrics(item) {
     y: shadowY,
     radiusX,
     radiusY,
+    boundsCenterX: (bounds.left + bounds.right) * 0.5,
     boundsWidth: width,
     footprintHeightBoost,
+    hasAuthoredFootprint: Boolean(decor.shadowFootprintPath && mask?.bounds),
     alpha: 0.48 * groundingStrength * getTankDepthShadowStrength(getDecorTankLayer(item)) * (typeof getDebugGroundShadowDarknessMultiplier === "function" ? getDebugGroundShadowDarknessMultiplier() : 1),
     spans,
     spriteWidth
@@ -82696,18 +83142,53 @@ function drawDecorContactShadow(context, item) {
   context.save();
   traceTankFloorMaskPath(context, getTankFloorDrawBounds());
   context.clip();
-  // Base grounding shadow follows the opaque sprite footprint instead of the transparent canvas,
-  // so it stays directly under the decor and fades out at the real sprite edges.
+  const authoredFootprint = shadow.hasAuthoredFootprint === true;
+  const baseAlphaMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseAlphaMultiplier
+    : DECOR_GROUND_SHADOWS.baseAlphaMultiplier;
+  const baseMidAlphaMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseMidAlphaMultiplier
+    : DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier;
+  const baseRadiusXMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseRadiusXMultiplier
+    : DECOR_GROUND_SHADOWS.baseRadiusXMultiplier;
+  const baseRadiusYMultiplier = authoredFootprint
+    ? DECOR_GROUND_SHADOWS.authoredBaseRadiusYMultiplier
+    : DECOR_GROUND_SHADOWS.baseRadiusYMultiplier;
+
+  // The authored helper controls the physical contact regions. For authored
+  // footprints, the broad cast shadow must span the full visible decor width,
+  // but it must not be darkest in the middle of an arch. Use a vertically faded
+  // ellipse with nearly uniform horizontal density, then add much darker local
+  // occlusion only beneath the support spans extracted from the footprint PNG.
+  // This makes two-root/arch pieces read as grounded at the sides while the
+  // open center receives only a light cast shadow.
   context.save();
-  context.translate(shadow.x, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
-  context.scale(
-    Math.max(8, shadow.radiusX * DECOR_GROUND_SHADOWS.baseRadiusXMultiplier),
-    clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.42), 5, 26)
+  const broadShadowRadiusX = authoredFootprint
+    ? Math.max(8, shadow.boundsWidth * 0.5 * baseRadiusXMultiplier)
+    : Math.max(8, shadow.radiusX * baseRadiusXMultiplier);
+  const broadShadowCenterX = authoredFootprint ? shadow.boundsCenterX : shadow.x;
+  const broadShadowRadiusY = clamp(
+    shadow.radiusY * (baseRadiusYMultiplier + shadow.footprintHeightBoost * 0.32),
+    4,
+    24
   );
-  let gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-  gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * DECOR_GROUND_SHADOWS.baseAlphaMultiplier})`);
-  gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * DECOR_GROUND_SHADOWS.baseMidAlphaMultiplier).toFixed(4)})`);
-  gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  context.translate(broadShadowCenterX, shadow.y + DECOR_GROUND_SHADOWS.baseOffsetY);
+  context.scale(broadShadowRadiusX, broadShadowRadiusY);
+  let gradient;
+  if (authoredFootprint) {
+    gradient = context.createLinearGradient(0, -1, 0, 1);
+    gradient.addColorStop(0, "rgba(3, 9, 14, 0)");
+    gradient.addColorStop(0.28, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(0.5, `rgba(3, 9, 14, ${(shadow.alpha * baseAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(0.72, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  } else {
+    gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
+    gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * baseAlphaMultiplier})`);
+    gradient.addColorStop(0.74, `rgba(3, 9, 14, ${(shadow.alpha * baseMidAlphaMultiplier).toFixed(4)})`);
+    gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
+  }
   context.fillStyle = gradient;
   context.beginPath();
   context.arc(0, 0, 1, 0, Math.PI * 2);
@@ -82732,7 +83213,10 @@ function drawDecorContactShadow(context, item) {
           : clamp(shadow.radiusY * (DECOR_GROUND_SHADOWS.contactRadiusYMultiplier + shadow.footprintHeightBoost * 0.34), 4, 16)
       );
       gradient = context.createRadialGradient(0, 0, 0, 0, 0, 1);
-      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier)})`);
+      const contactAlphaMultiplier = authoredFootprint
+        ? (core ? DECOR_GROUND_SHADOWS.authoredContactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.authoredContactSoftAlphaMultiplier)
+        : (core ? DECOR_GROUND_SHADOWS.contactCoreAlphaMultiplier : DECOR_GROUND_SHADOWS.contactSoftAlphaMultiplier);
+      gradient.addColorStop(0, `rgba(3, 9, 14, ${shadow.alpha * contactAlphaMultiplier})`);
       gradient.addColorStop(1, "rgba(3, 9, 14, 0)");
       context.fillStyle = gradient;
       context.beginPath();
@@ -85473,7 +85957,7 @@ function drawFish(now, layer = null, options = {}) {
       const fontSize = 11 * stableScale;
       const rowHeight = 18 * stableScale;
       const rowGap = 2 * stableScale;
-      const totalHeight = rowHeight * 3 + rowGap * 2;
+      const totalHeight = rowHeight * 4 + rowGap * 3;
       const radius = 8 * stableScale;
       tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
@@ -85481,7 +85965,10 @@ function drawFish(now, layer = null, options = {}) {
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
       const comfortWidth = tankContext.measureText(comfortLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth) + 18 * stableScale));
+      const mealIconSize = 13 * stableScale;
+      const mealIconGap = 7 * stableScale;
+      const mealWidth = mealIconSize * 2 + mealIconGap;
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth, mealWidth) + 18 * stableScale));
       const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
       const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
@@ -85491,13 +85978,13 @@ function drawFish(now, layer = null, options = {}) {
           ? "rgba(255, 202, 102, 0.82)"
           : "rgba(89, 229, 203, 0.82)";
 
-      for (let row = 0; row < 3; row += 1) {
+      for (let row = 0; row < 4; row += 1) {
         const y = topY + row * (rowHeight + rowGap);
         tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
         tankContext.beginPath();
         tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
         tankContext.fill();
-        tankContext.strokeStyle = row === 2 ? moodStroke : "rgba(94, 220, 239, 0.72)";
+        tankContext.strokeStyle = row === 3 ? moodStroke : "rgba(94, 220, 239, 0.72)";
         tankContext.lineWidth = Math.max(1, stableScale);
         tankContext.stroke();
       }
@@ -85514,9 +86001,31 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "left";
       tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
 
+      const mealCenterY = topY + (rowHeight + rowGap) * 2 + rowHeight / 2;
+      const dailyMeals = getFishDailyMealIndicatorState(fish, now);
+      const meatIconPath = "assets/icons/meat_icon.png";
+      const meatIcon = runtime.images.get(meatIconPath);
+      if (!isUsableRuntimeImage(meatIcon)) {
+        void preloadImagePath(meatIconPath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+      } else {
+        const firstX = labelX - mealIconGap / 2 - mealIconSize;
+        const secondX = labelX + mealIconGap / 2;
+        const iconY = mealCenterY - mealIconSize / 2;
+        tankContext.save();
+        tankContext.filter = dailyMeals.am ? "none" : "grayscale(1) brightness(0.62)";
+        tankContext.globalAlpha = dailyMeals.am ? 1 : 0.92;
+        tankContext.drawImage(meatIcon, firstX, iconY, mealIconSize, mealIconSize);
+        tankContext.restore();
+        tankContext.save();
+        tankContext.filter = dailyMeals.pm ? "none" : "grayscale(1) brightness(0.62)";
+        tankContext.globalAlpha = dailyMeals.pm ? 1 : 0.92;
+        tankContext.drawImage(meatIcon, secondX, iconY, mealIconSize, mealIconSize);
+        tankContext.restore();
+      }
+
       tankContext.textAlign = "center";
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
+      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }

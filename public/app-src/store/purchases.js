@@ -64,6 +64,46 @@ function buyEngineeredAquaticSpecimen() {
   });
 }
 
+
+function getProteusSaveDiscovery() {
+  return {
+    discovered: state?.proteusDiscovered === true,
+    discoveredAt: Math.max(0, Number(state?.proteusDiscoveredAt) || 0)
+  };
+}
+
+function markProteusDiscoveredInSave(now = Date.now()) {
+  if (!state) return false;
+  const timestamp = Math.max(1, Number(now) || Date.now());
+  const changed = state.proteusDiscovered !== true || !(Number(state.proteusDiscoveredAt) > 0);
+  state.proteusDiscovered = true;
+  if (!(Number(state.proteusDiscoveredAt) > 0)) state.proteusDiscoveredAt = timestamp;
+  if (changed) {
+    pushEvent("Proteus Biodyne was added to WebSurf bookmarks.", timestamp);
+    saveState();
+  }
+  return true;
+}
+
+function generateProteusSpecimenId() {
+  const used = new Set();
+  for (const asset of Object.values(state?.customFishAssets || {})) {
+    const id = typeof asset?.proteusSpecimenId === "string" ? asset.proteusSpecimenId.trim() : "";
+    if (/^PB-CS-\d{5}$/.test(id)) used.add(id);
+  }
+  for (const fish of [...(state?.fish || []), ...(state?.storedFish || [])]) {
+    const id = typeof fish?.proteusSpecimenId === "string" ? fish.proteusSpecimenId.trim() : "";
+    if (/^PB-CS-\d{5}$/.test(id)) used.add(id);
+  }
+  for (let attempt = 0; attempt < 1000; attempt += 1) {
+    const numeric = Math.floor(Math.random() * 100000);
+    const id = `PB-CS-${String(numeric).padStart(5, "0")}`;
+    if (!used.has(id)) return id;
+  }
+  const fallback = Math.floor(Date.now() % 100000);
+  return `PB-CS-${String(fallback).padStart(5, "0")}`;
+}
+
 function getEngineeredAquaticSpecimenOrder(orderId = "") {
   const id = String(orderId || "").trim();
   if (!id) return null;

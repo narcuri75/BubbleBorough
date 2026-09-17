@@ -6,12 +6,22 @@
   const PROTEUS_DISCOVERY_STORAGE_KEY = "bubble-borough-proteus-discovered-v1";
   const PROTEUS_DISCOVERY_TIME_STORAGE_KEY = "bubble-borough-proteus-discovered-at-v1";
   const TANKAZON_ORDERS_PER_PAGE = 10;
+  // BubbleBodega was previously named Tankazon. Legacy tankazon* DOM IDs and
+  // internal function names are retained for save/markup compatibility only;
+  // they all refer to the same BubbleBodega storefront.
+  const TANKAZON_ITEM_ABOUT_COPY = Object.freeze({
+    "buyDecor:__custom-bubbler__": `<p>Add bubbles exactly where you want them. The Bubble Emitter can be placed on or around decorations, plants, rocks, and other tank features to create custom streams of bubbles without needing a traditional bubbler. Adjust the intensity, direction, spread, color, and other effects to make anything from a soft trickle of tiny bubbles to a bright, energetic plume. Since the emitter itself is hidden outside of Edit Mode, it blends seamlessly into your aquarium and lets the decoration do all the talking.</p>`,
+    "buyDecor:__custom-decor-shop__": `<p>Turn your own image into a decoration for your aquarium. Upload an image, preview how it will look in your tank, and create a custom decoration that can be placed and edited just like other decor.</p><p>For the best results, use a clear image with a transparent background and as little empty space around the subject as possible. Images with simple, well-defined edges generally look best inside the aquarium.</p><p>Images are limited to 1024 × 1024 pixels. Larger images will be automatically resized. If your image is not square, its aspect ratio will be preserved and the longest side will be resized to 1024 pixels.</p><p>Important: Your uploaded image becomes part of your Bubble Borough save data and may be stored in the cloud with your save. Only upload images you are comfortable storing there.</p>`,
+    "buyDecor:__custom-hide-shop__": `<p>Create your own custom cave using your own images. This decor requires at least <strong>2 images</strong>: a <strong>front image</strong> and a <strong>background image</strong>. The front image should show the outside of the cave and include a clear hole where the entrance should be. The background image will be used as the interior seen through that opening.</p><p>This tool works best with a bit of photo editing skill. For the best results, use clean, clear images and make sure the front image is prepared properly before creating the item. After the cave is created, the uploaded images themselves cannot be adjusted. However, you can still add <strong>entrances</strong> and <strong>seating zones</strong> in the editor overlay to fine-tune how the decoration functions.</p><p>Images are limited to <strong>1024 x 1024 pixels</strong>. Larger images will be resized automatically. If an image is not square, the longest side will be resized to <strong>1024 pixels</strong> while keeping the original aspect ratio.</p><p><strong>Important:</strong> Uploaded images are stored as part of your save data and may be synced to the cloud with your save. Only upload images you are comfortable storing in the cloud.</p>`
+  });
   const cart = new Map();
   let allCategoriesMode = true;
   let lastTankazonCategory = "all";
   let completingPurchase = false;
   let purchaseErrorMessage = "";
   let committedSearchQuery = "";
+  let committedSearchScope = "all";
+  let searchCommitted = false;
   let committedSearchScrollTop = 0;
   let allCategoriesScrollTop = 0;
   let selectedItem = null;
@@ -28,6 +38,79 @@
   let proteusReturnFocus = null;
   let proteusSessionTab = "home";
   let proteusSessionScrollTop = 0;
+
+  // BubbleBodega uses a native <select> for the search category. On some
+  // desktop browsers, opening or choosing from that native popup can dispatch a
+  // follow-up pointer/mouse event to whatever is underneath the popup. Because
+  // WebSurf sits over the game toolbar, that click-through could trigger a game
+  // control and close the browser. Keep the protection local to this one search
+  // control and consume only the short native-menu event tail.
+  let bodegaSearchSelectActive = false;
+  let bodegaSearchSelectSuppressUntil = 0;
+  let bodegaSearchSelectClearTimer = 0;
+
+  const isBodegaSearchScopeTarget = (target) => Boolean(
+    target instanceof Element && target.closest?.("#tankazonSearchScope")
+  );
+
+  function armBodegaSearchSelectGuard(duration = 900) {
+    bodegaSearchSelectActive = true;
+    bodegaSearchSelectSuppressUntil = Math.max(
+      bodegaSearchSelectSuppressUntil,
+      performance.now() + Math.max(0, Number(duration) || 0)
+    );
+    if (bodegaSearchSelectClearTimer) window.clearTimeout(bodegaSearchSelectClearTimer);
+    bodegaSearchSelectClearTimer = window.setTimeout(() => {
+      bodegaSearchSelectActive = false;
+      bodegaSearchSelectClearTimer = 0;
+    }, Math.max(950, Number(duration) + 50));
+  }
+
+  function trailBodegaSearchSelectGuard(duration = 650) {
+    bodegaSearchSelectActive = false;
+    bodegaSearchSelectSuppressUntil = Math.max(
+      bodegaSearchSelectSuppressUntil,
+      performance.now() + Math.max(0, Number(duration) || 0)
+    );
+    if (bodegaSearchSelectClearTimer) window.clearTimeout(bodegaSearchSelectClearTimer);
+    bodegaSearchSelectClearTimer = window.setTimeout(() => {
+      bodegaSearchSelectClearTimer = 0;
+    }, Math.max(700, Number(duration) + 50));
+  }
+
+  function shouldSuppressBodegaSearchSelectClickThrough(event) {
+    const target = event?.target;
+    if (isBodegaSearchScopeTarget(target)) {
+      if (["pointerdown", "mousedown", "focusin", "click"].includes(event.type)) {
+        armBodegaSearchSelectGuard();
+      }
+      return false;
+    }
+    return bodegaSearchSelectActive || performance.now() < bodegaSearchSelectSuppressUntil;
+  }
+
+  // Register before app.js is loaded. That lets this capture guard stop an
+  // accidental native-select click-through before any gameplay or WebSurf
+  // navigation handler can see it, without preventing the select's own default
+  // browser behavior.
+  for (const eventName of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
+    document.addEventListener(eventName, (event) => {
+      if (!shouldSuppressBodegaSearchSelectClickThrough(event)) return;
+      event.stopImmediatePropagation();
+    }, true);
+  }
+  document.addEventListener("focusin", (event) => {
+    if (isBodegaSearchScopeTarget(event.target)) armBodegaSearchSelectGuard(1500);
+  }, true);
+  document.addEventListener("focusout", (event) => {
+    if (isBodegaSearchScopeTarget(event.target)) trailBodegaSearchSelectGuard();
+  }, true);
+  document.addEventListener("change", (event) => {
+    if (!isBodegaSearchScopeTarget(event.target)) return;
+    // Keep a trailing window after the native option popup disappears because
+    // Windows can report the click-through after the change event.
+    trailBodegaSearchSelectGuard(750);
+  }, true);
 
   const overlay = () => document.getElementById("storeOverlay");
   const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
@@ -192,13 +275,26 @@
   }
 
   function hasDiscoveredProteus() {
-    try { return localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true"; }
-    catch { return false; }
+    const saved = window.getProteusSaveDiscovery?.();
+    if (saved?.discovered === true) {
+      try {
+        localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true");
+        if (Number(saved.discoveredAt) > 0) localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(saved.discoveredAt));
+      } catch {}
+      return true;
+    }
+    try {
+      const localDiscovered = localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true";
+      if (localDiscovered) window.markProteusDiscoveredInSave?.(Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY)) || Date.now());
+      return localDiscovered;
+    } catch { return false; }
   }
 
   function getProteusDiscoveredAt() {
     if (!hasDiscoveredProteus()) return 0;
     const now = Date.now();
+    const savedAt = Number(window.getProteusSaveDiscovery?.()?.discoveredAt);
+    if (Number.isFinite(savedAt) && savedAt > 0) return Math.min(savedAt, now);
     try {
       let discoveredAt = Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY));
       if (!Number.isFinite(discoveredAt) || discoveredAt <= 0 || discoveredAt > now + 60000) {
@@ -218,11 +314,13 @@
   }
 
   function discoverProteus() {
+    const now = Date.now();
+    window.markProteusDiscoveredInSave?.(now);
     try {
       const alreadyDiscovered = localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true";
       localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true");
       if (!alreadyDiscovered || !Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY))) {
-        localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(Date.now()));
+        localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(now));
       }
     } catch {}
     syncProteusDiscovery();
@@ -231,7 +329,9 @@
   function showProteusBiodyne(trigger, { allowDirect = false } = {}) {
     if (proteusPageOpen) return;
     if (!allowDirect && (!selectedItem || !isProteusBiodyneSeller(selectedItem.seller))) return;
-    if (!allowDirect) discoverProteus();
+    // Any successful visit to the Proteus site counts as discovery. Persist it
+    // immediately so the bookmark survives browser closure and future sessions.
+    discoverProteus();
     closeTankazonAccount();
     proteusPageOpen = true;
     proteusTabOpen = true;
@@ -424,11 +524,29 @@
   function commitTankazonSearch() {
     closeTankazonItem(false);
     committedSearchQuery = typedQuery();
+    const requestedScope = scope();
+    committedSearchScope = CATEGORY_IDS.includes(requestedScope) ? requestedScope : "all";
+    searchCommitted = Boolean(committedSearchQuery || committedSearchScope !== "all");
     committedSearchScrollTop = 0;
     applySearch({ preserveScroll: false });
     const catalog = document.getElementById("tankazonCatalogArea");
     if (catalog) catalog.scrollTop = 0;
   }
+
+  function getTankazonSearchView() {
+    return {
+      active: searchCommitted,
+      scope: committedSearchScope,
+      query: committedSearchQuery
+    };
+  }
+
+  window.getBubbleBodegaSearchView = getTankazonSearchView;
+  window.refreshBubbleBodegaSearchView = (options = {}) => {
+    if (!searchCommitted) return false;
+    applySearch({ preserveScroll: options.preserveScroll !== false });
+    return true;
+  };
 
   function normalizeTankazonTiles() {
     document.querySelectorAll("#storeOverlay .shop-card").forEach((card) => {
@@ -574,18 +692,28 @@
     document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
     const details = document.getElementById("tankazonItemDetails");
     details.replaceChildren();
-    // Reuse the real catalog's descriptions, care stats and unlock requirements.
-    card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
-      const copy = source.cloneNode(true);
-      copy.querySelectorAll("button, .price-tag, strong, [id]").forEach((node) => node.remove());
-      if (descriptor.fnName === "buyBackground") {
-        copy.querySelectorAll(".fish-meta").forEach((node) => {
-          if (node.textContent.trim() === "Locked") node.textContent = "Unlock this backdrop to customize your aquarium.";
-        });
-      }
+    const aboutOverride = TANKAZON_ITEM_ABOUT_COPY[`${descriptor.fnName}:${descriptor.id}`] || "";
+    if (aboutOverride) {
+      const copy = document.createElement("div");
       copy.className = "tankazon-item-facts";
+      // These strings are static first-party BubbleBodega copy. Render the
+      // paragraph markup so long descriptions are readable and emphasis is kept.
+      copy.innerHTML = aboutOverride;
       details.append(copy);
-    });
+    } else {
+      // Reuse the real catalog's descriptions, care stats and unlock requirements.
+      card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
+        const copy = source.cloneNode(true);
+        copy.querySelectorAll("button, .price-tag, strong, [id]").forEach((node) => node.remove());
+        if (descriptor.fnName === "buyBackground") {
+          copy.querySelectorAll(".fish-meta").forEach((node) => {
+            if (node.textContent.trim() === "Locked") node.textContent = "Unlock this backdrop to customize your aquarium.";
+          });
+        }
+        copy.className = "tankazon-item-facts";
+        details.append(copy);
+      });
+    }
     if (!details.textContent.trim()) details.textContent = `${descriptor.name} for your aquarium.`;
     document.getElementById("tankazonItemStatus").textContent = "";
     document.getElementById("tankazonItemPage").hidden = false;
@@ -922,12 +1050,15 @@
   function applySearch(options = {}) {
     if (selectedItem) return;
     const catalog = document.getElementById("tankazonCatalogArea");
-    const restoreTop = allCategoriesMode
-      ? allCategoriesScrollTop
-      : (query() ? committedSearchScrollTop : (catalog?.scrollTop || 0));
+    const browseScope = allCategoriesMode || !CATEGORY_IDS.includes(lastTankazonCategory)
+      ? "all"
+      : lastTankazonCategory;
+    const selectedScope = searchCommitted ? committedSearchScope : browseScope;
+    const restoreTop = searchCommitted
+      ? committedSearchScrollTop
+      : (allCategoriesMode ? allCategoriesScrollTop : (catalog?.scrollTop || 0));
     const q = query();
-    const selectedScope = scope();
-    const inAllView = allCategoriesMode || selectedScope === "all";
+    const inAllView = searchCommitted ? selectedScope === "all" : allCategoriesMode;
     drawers().forEach((drawer) => {
       const category = drawer.dataset.tankazonCategory;
       const matchesScope = selectedScope === "all" || category === selectedScope;
@@ -946,17 +1077,17 @@
         if (visible) matchingProducts += 1;
       });
 
-      // During a committed search, do not leave empty category sections on screen.
-      // The results area should contain only categories that actually have matches.
-      if (q) {
-        drawer.hidden = !matchesScope || matchingProducts === 0;
+      // A committed search owns its scope independently of the browsing tabs.
+      // Merely changing the dropdown never reaches this state.
+      if (searchCommitted) {
+        drawer.hidden = !matchesScope || (Boolean(q) && matchingProducts === 0);
       } else if (inAllView) {
         drawer.hidden = false;
       } else {
         drawer.hidden = !matchesScope;
       }
-      drawer.classList.toggle("tankazon-all-section", inAllView && !q);
-      drawer.classList.toggle("tankazon-search-results", Boolean(q));
+      drawer.classList.toggle("tankazon-all-section", inAllView && !searchCommitted);
+      drawer.classList.toggle("tankazon-search-results", searchCommitted);
     });
     window.refreshStoreFacets?.(selectedScope);
     if (catalog && options.preserveScroll !== false) {
@@ -988,6 +1119,10 @@
     saveTankazonView("all");
     const select = document.getElementById("tankazonSearchScope");
     if (select) select.value = "all";
+    if (searchCommitted) {
+      committedSearchScope = "all";
+      searchCommitted = Boolean(committedSearchQuery);
+    }
     syncTankazonNavState();
     applySearch({ preserveScroll: false });
     const catalog = document.getElementById("tankazonCatalogArea");
@@ -1315,6 +1450,12 @@
     if (proteusTab) { showProteusTab(proteusTab.dataset.proteusTab, { focus: true }); return; }
     const proteusTabLink = event.target.closest?.("[data-proteus-tab-link]");
     if (proteusTabLink) { showProteusTab(proteusTabLink.dataset.proteusTabLink, { focus: true }); return; }
+    const createSpecimen = event.target.closest?.("[data-proteus-create-specimen]");
+    if (createSpecimen) {
+      event.preventDefault();
+      window.showProteusDesignerPage?.("");
+      return;
+    }
     const sellerLink = event.target.closest?.("[data-tankazon-seller-link]");
     if (sellerLink && !sellerLink.disabled) { event.preventDefault(); showProteusBiodyne(sellerLink); return; }
     if (event.target.closest?.("[data-proteus-back]")) { closeProteusBiodyne(); return; }
@@ -1380,7 +1521,14 @@
       return;
     }
     if (event.target.closest?.("#tankazonAllCategories")) { event.preventDefault(); closeTankazonAccount(); showAllCategories(); return; }
-    if (event.target.closest?.("#tankazonSearchButton")) { closeTankazonAccount(); commitTankazonSearch(); return; }
+    if (event.target.closest?.("#tankazonSearchButton")) {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
+      closeTankazonAccount();
+      commitTankazonSearch();
+      return;
+    }
     if (event.target.closest?.("#tankazonCompletePurchase")) { completePurchase(); return; }
     const inc = event.target.closest?.("[data-cart-inc]");
     if (inc) {
@@ -1425,6 +1573,7 @@
       saveTankazonView(category);
       const select = document.getElementById("tankazonSearchScope");
       if (select) select.value = category;
+      if (searchCommitted) committedSearchScope = category;
       queueMicrotask(() => { applySearch(); syncTankazonNavState(); });
     }
   }, true);
@@ -1475,22 +1624,19 @@
   });
   document.addEventListener("change", (event) => {
     if (event.target?.id !== "tankazonSearchScope") return;
-    closeTankazonAccount();
-    closeTankazonItem(false);
-    allCategoriesMode = event.target.value === "all";
-    saveTankazonView(event.target.value);
-    syncTankazonNavState();
-    applySearch();
+    // This select is a search scope selector, not store navigation. Choosing a
+    // category only changes the pending search. Enter or the search button commits it.
+    event.stopPropagation();
   });
 
 
   const catalogArea = document.getElementById("tankazonCatalogArea");
   catalogArea?.addEventListener("scroll", () => {
     if (selectedItem) return;
-    if (allCategoriesMode) {
-      allCategoriesScrollTop = catalogArea.scrollTop;
-    } else if (query()) {
+    if (searchCommitted) {
       committedSearchScrollTop = catalogArea.scrollTop;
+    } else if (allCategoriesMode) {
+      allCategoriesScrollTop = catalogArea.scrollTop;
     }
   }, { passive: true });
 

@@ -3915,22 +3915,22 @@ html[data-layout-ratio-lock="true"] body {
 .websurf-home-header span { color: #35628a; font-size: .78rem; font-weight: 850; letter-spacing: .2em; }
 .websurf-home-header h1 { margin: 0; color: #123c60; font-size: clamp(2rem, 4vw, 3.45rem); line-height: 1.05; letter-spacing: -.045em; }
 .websurf-home-header p { margin: 2px 0 0; color: #4e718e; font-size: .96rem; letter-spacing: .04em; }
-.websurf-home-main { width: min(1360px, calc(100% - 56px)); margin: 0 auto; padding: 0 0 34px; }
+.websurf-home-main { width: min(1640px, calc(100% - 48px)); margin: 0 auto; padding: 0 0 34px; }
 .websurf-bookmarks h2, .websurf-inbox h2 { margin: 0; font-size: 1.18rem; }
 .websurf-bookmarks > h2 { margin-bottom: 7px; color: #527797; font-size: .68rem; font-weight: 850; letter-spacing: .16em; text-transform: uppercase; }
-.websurf-bookmark-row { display: grid; grid-template-columns: repeat(4, minmax(0, 250px)); justify-content: start; gap: 10px; }
+.websurf-bookmark-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 250px)); justify-content: start; gap: 10px; }
 .websurf-bookmark { display: grid; grid-template-columns: 34px minmax(0, 1fr); align-items: center; gap: 9px; min-height: 58px; padding: 8px 11px; border: 1px solid #bfd2df; border-radius: 9px; color: #173b59; background: rgba(255,255,255,.92); box-shadow: 0 4px 12px rgba(39, 75, 99, .06); font: inherit; text-align: left; cursor: pointer; transition: transform 140ms ease, border-color 140ms ease, box-shadow 140ms ease; }
 .websurf-bookmark:hover { z-index: 1; border-color: #6f9fbd; transform: translateY(-2px); box-shadow: 0 11px 24px rgba(39, 75, 99, .13); }
 .websurf-bookmark:focus-visible, .websurf-mail-row:focus-visible { outline: 3px solid rgba(31, 124, 194, .27); outline-offset: 2px; }
 .websurf-bookmark > img { width: 34px; height: 34px; object-fit: contain; }
-.websurf-bookmark > span, .websurf-account-card header > span { display: grid; gap: 2px; min-width: 0; }
+.websurf-bookmark > span { display: grid; gap: 2px; min-width: 0; }
 .websurf-bookmark strong { font-size: .78rem; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .websurf-bookmark small { color: #68849a; font-size: .64rem; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .websurf-bookmark[hidden] { display: none !important; }
 .websurf-bookmark.is-coming-soon { border-style: dashed; color: #91a7b8; background: rgba(244, 249, 252, .66); box-shadow: none; cursor: default; }
 .websurf-bookmark.is-coming-soon > span:first-child { display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; background: #e3edf3; font-size: 1rem; }
-.websurf-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr) 300px; align-items: start; gap: 18px; margin-top: 20px; }
-.websurf-inbox, .websurf-account-card { border: 1px solid #bfd2df; border-radius: 12px; background: rgba(255,255,255,.94); box-shadow: 0 8px 23px rgba(39,75,99,.08); }
+.websurf-dashboard-grid { display: grid; grid-template-columns: minmax(0, 1fr); align-items: start; gap: 0; margin-top: 20px; }
+.websurf-inbox { border: 1px solid #bfd2df; border-radius: 12px 12px 0 0; background: rgba(255,255,255,.94); box-shadow: 0 8px 23px rgba(39,75,99,.08); }
 .websurf-inbox { min-width: 0; overflow: hidden; }
 .websurf-inbox > header { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-height: 62px; padding: 10px 18px; border-bottom: 1px solid #d9e5ec; }
 .websurf-inbox > header > div { display: flex; align-items: center; gap: 10px; }
@@ -3951,7 +3951,7 @@ html[data-layout-ratio-lock="true"] body {
 .websurf-mail-star.is-starred span { display: block; transform: translateY(-1px); }
 .websurf-mail-star:hover { background: #f1f8fc; color: #c98b00; }
 .websurf-mail-star:focus-visible { outline: 3px solid rgba(31, 124, 194, .27); outline-offset: -3px; }
-.websurf-mail-row { display: grid; grid-template-columns: 38px minmax(170px, .65fr) minmax(260px, 1.2fr) 70px; align-items: center; gap: 11px; width: 100%; min-width: 0; min-height: 66px; padding: 9px 17px 9px 5px; border: 0; color: #244965; background: transparent; font: inherit; text-align: left; cursor: pointer; }
+.websurf-mail-row { display: grid; grid-template-columns: 38px minmax(190px, 260px) minmax(360px, 1fr) 84px; align-items: center; gap: 13px; width: 100%; min-width: 0; min-height: 66px; padding: 9px 19px 9px 5px; border: 0; color: #244965; background: transparent; font: inherit; text-align: left; cursor: pointer; }
 .websurf-mail-row:hover { background: #f1f8fc; }
 .websurf-mail-row.is-unread { color: #143d5f; background: #fafdff; }
 .websurf-mail-item.is-open .websurf-mail-row, .websurf-mail-item.is-open .websurf-mail-star { background: #eef7fc; }
@@ -4041,40 +4041,33 @@ html[data-layout-ratio-lock="true"] body {
 .websurf-mail-actions .websurf-trash-button { display: grid; place-items: center; width: 32px; height: 30px; padding: 5px; color: #86515d; border-color: #d1b2ba; }
 .websurf-mail-actions .websurf-trash-button svg { width: 17px; height: 17px; fill: currentColor; }
 .websurf-mail-actions .websurf-silence-button { color: #6c5260; border-color: #ceb9c2; }
-.websurf-account-card { overflow: hidden; }
-.websurf-account-card > header { display: grid; grid-template-columns: 52px minmax(0, 1fr); align-items: center; gap: 12px; padding: 18px; border-bottom: 1px solid #d9e5ec; }
-.websurf-account-card header img { width: 52px; height: 52px; object-fit: contain; }
-.websurf-account-card header strong { font-size: .95rem; }
-.websurf-account-card header small { color: #6c899f; font-size: .72rem; }
-.websurf-account-stats { display: grid; grid-template-columns: 1fr 1.4fr; padding: 17px 10px; }
-.websurf-account-stats > span { display: grid; justify-items: center; gap: 3px; padding: 0 8px; border-right: 1px solid #d9e5ec; text-align: center; }
-.websurf-account-stats > span:last-child { border-right: 0; }
-.websurf-account-stats strong { font-size: 1.05rem; }
-.websurf-account-stats small { color: #718da2; font-size: .7rem; }
-.websurf-account-card > footer { display: grid; gap: 4px; padding: 13px 18px; color: #6c899f; background: #f0f7fb; font-size: .7rem; }
+.websurf-status-bar { display: flex; align-items: center; justify-content: space-between; gap: 20px; min-height: 40px; padding: 8px 15px; border: 1px solid #bfd2df; border-top: 0; border-radius: 0 0 12px 12px; color: #6c899f; background: #f0f7fb; box-shadow: 0 8px 23px rgba(39,75,99,.08); font-size: .7rem; }
+.websurf-status-bar > span:last-child { display: inline-flex; align-items: baseline; gap: 8px; }
+.websurf-status-bar small { color: #7892a8; font: inherit; }
+.websurf-status-bar strong { color: #456b88; font-size: .72rem; font-weight: 800; }
 @media (max-width: 980px) {
-  .websurf-home-main { width: min(100% - 28px, 900px); }
-  .websurf-bookmark-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .websurf-dashboard-grid { grid-template-columns: 1fr; }
-  .websurf-account-card { display: none; }
-  .websurf-mail-row-shell { grid-template-columns: 28px minmax(0, 1fr); }
-  .websurf-mail-row { grid-template-columns: 32px minmax(135px, .55fr) minmax(220px, 1fr) 62px; }
-  .websurf-mail-detail { padding-left: 58px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-home-main { width: min(100% - 28px, 900px); }
+  html:not([data-layout-ratio-lock="true"]) .websurf-bookmark-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  html:not([data-layout-ratio-lock="true"]) .websurf-dashboard-grid { grid-template-columns: 1fr; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-row-shell { grid-template-columns: 28px minmax(0, 1fr); }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-row { grid-template-columns: 32px minmax(135px, .55fr) minmax(220px, 1fr) 62px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-detail { padding-left: 58px; }
 }
 @media (max-width: 620px) {
-  .websurf-home-header { min-height: 120px; padding: 18px; }
-  .websurf-home-header > img { width: 58px; height: 58px; }
-  .websurf-home-header h1 { font-size: 1.75rem; }
-  .websurf-bookmark-row { grid-template-columns: 1fr; }
-  .websurf-bookmark.is-coming-soon { display: none; }
-  .websurf-mail-row-shell { grid-template-columns: 26px minmax(0, 1fr); }
-  .websurf-mail-row { grid-template-columns: 30px minmax(0, 1fr) 58px; gap: 8px; }
-  .websurf-mail-sender { display: none; }
-  .websurf-mail-copy small { white-space: normal; }
-  .websurf-mail-detail { align-items: stretch; flex-direction: column; padding: 10px 15px 15px 53px; }
-  .websurf-inbox > header { align-items: flex-start; flex-wrap: wrap; }
-  .websurf-inbox-header-actions { width: 100%; justify-content: flex-end; }
-  .websurf-mail-actions { flex-wrap: wrap; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-home-header { min-height: 120px; padding: 18px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-home-header > img { width: 58px; height: 58px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-home-header h1 { font-size: 1.75rem; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-bookmark-row { grid-template-columns: 1fr; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-bookmark.is-coming-soon { display: none; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-row-shell { grid-template-columns: 26px minmax(0, 1fr); }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-row { grid-template-columns: 30px minmax(0, 1fr) 58px; gap: 8px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-sender { display: none; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-copy small { white-space: normal; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-detail { align-items: stretch; flex-direction: column; padding: 10px 15px 15px 53px; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-inbox > header { align-items: flex-start; flex-wrap: wrap; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-inbox-header-actions { width: 100%; justify-content: flex-end; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-mail-actions { flex-wrap: wrap; }
+  html:not([data-layout-ratio-lock="true"]) .websurf-status-bar { align-items: flex-start; flex-direction: column; gap: 3px; }
 }
 
 .tankazon-store.is-bubble-bank-open .tankazon-panel { grid-template-rows: auto minmax(0, 1fr) !important; }
@@ -17490,8 +17483,18 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   letter-spacing: .025em;
 }
 .loading-overlay.is-ready.is-auth-mode .loading-overlay-version,
-.loading-overlay.is-ready.is-welcome-mode .loading-overlay-version {
+.loading-overlay.is-ready.is-welcome-mode .loading-overlay-version,
+.loading-overlay.is-error .loading-overlay-version {
   display: block;
+}
+
+/* Keep the build/version label visible on fatal startup errors. The recovery
+   help button occupies the lower-right corner, so move the version label to
+   the lower-left while the error screen is active. */
+.loading-overlay.is-error .loading-overlay-version {
+  right: auto;
+  left: max(12px, env(safe-area-inset-left));
+  text-align: left;
 }
 
 /* Signed-out startup is a focused auth card instead of the large logo screen. */
@@ -18417,6 +18420,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-item-price-sale { color: #b12704; font-weight: 700; }
 .tankazon-store .tankazon-item-description h2 { margin: 24px 0 12px; font-size: 17px; color: #0f1111; }
 .tankazon-item-details { font-size: 14px; line-height: 1.65; }
+.tankazon-store .tankazon-item-details .tankazon-item-facts > p { margin: 0 0 14px; }
+.tankazon-store .tankazon-item-details .tankazon-item-facts > p:last-child { margin-bottom: 0; }
 .tankazon-item-facts { display: grid; gap: 12px; }
 .tankazon-store .tankazon-item-details .fish-meta { color: #565959; font-size: 14px; }
 .shop-about-attribution,
@@ -21964,4 +21969,2006 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   .debug-decor-preview-section {
     min-width: 0;
   }
+}
+
+/* Ratio Lock freezes the logical desktop layout and scales the entire app shell.
+   Browser viewport media queries still evaluate against the physical window, so
+   narrow windows must not convert the toolbar into the mobile full-width dock.
+   Keep the dock at its saved-layout dimensions and let the outer Ratio Lock
+   transform scale it together with the aquarium. */
+html[data-layout-ratio-lock="true"] .tank-bottom-dock {
+  position: absolute;
+  width: auto;
+  max-width: none;
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+  scrollbar-width: auto;
+}
+
+html[data-layout-ratio-lock="true"][data-toolbar-position="bottom-center"] .tank-bottom-dock {
+  --toolbar-edge-gap: 22px;
+  --toolbar-taskbar-clearance: 8px;
+  --toolbar-open-transform: translateX(-50%);
+  --toolbar-collapsed-transform: translateX(-50%) translateY(calc(100% + var(--toolbar-taskbar-clearance)));
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: var(--toolbar-taskbar-clearance);
+  transform: var(--toolbar-open-transform);
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: 9px;
+  padding: 8px 9px;
+  border-radius: 14px;
+}
+
+html[data-layout-ratio-lock="true"][data-toolbar-position="bottom-center"][data-toolbar-collapsed="true"] .tank-bottom-dock,
+html[data-layout-ratio-lock="true"][data-toolbar-position="bottom-center"] .tank-bottom-dock.is-toolbar-collapsed {
+  transform: var(--toolbar-collapsed-transform);
+}
+
+html[data-layout-ratio-lock="true"][data-toolbar-position="bottom-center"] .toolbar-tab {
+  left: 50%;
+  right: auto;
+  top: auto;
+  bottom: calc(100% - var(--toolbar-tab-overlap));
+  width: 52px;
+  height: var(--toolbar-tab-thickness);
+  border: 1px solid var(--toolbar-shell-border-color);
+  border-bottom: 0;
+  border-radius: 12px 12px 0 0;
+  font-size: 0.7rem;
+  transform: translateX(-50%);
+}
+
+html[data-layout-ratio-lock="true"] .dock-button {
+  flex: 0 0 auto;
+  width: 45px;
+  height: 45px;
+  font-size: 1.35rem;
+}
+
+html[data-layout-ratio-lock="true"] .dock-button-icon {
+  width: 100%;
+  height: 100%;
+}
+
+html[data-layout-ratio-lock="true"] .toolbar-action-menu-button {
+  min-width: 104px;
+  min-height: 42px;
+  gap: 9px;
+  padding: 7px 11px 7px 8px;
+  font-size: 0.78rem;
+}
+
+html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
+  width: 27px;
+  height: 27px;
+}
+
+
+/* WebSurf Phase 2: temporary Bubble Borough Settings tab */
+.webpage-tab-strip {
+  grid-template-columns: minmax(0, 1fr) auto auto;
+}
+
+.webpage-browser-settings {
+  display: grid;
+  align-self: center;
+  width: 34px;
+  height: 34px;
+  margin: 0 0 3px 10px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #9cadba;
+  border-radius: 7px;
+  color: #18394f;
+  background: rgba(245, 250, 252, .78);
+  cursor: pointer;
+}
+
+.webpage-browser-settings:hover {
+  background: #fff;
+}
+
+.webpage-browser-settings:focus-visible {
+  outline: 2px solid #147593;
+  outline-offset: 1px;
+}
+
+.webpage-browser-settings img {
+  width: 19px;
+  height: 19px;
+  object-fit: contain;
+}
+
+.webpage-tab-settings img {
+  object-fit: contain;
+}
+
+.tankazon-store.is-web-settings-open .tankazon-panel {
+  grid-template-rows: auto minmax(0, 1fr) !important;
+}
+
+.tankazon-store.is-web-settings-open .tankazon-header,
+.tankazon-store.is-web-settings-open .tankazon-promo-strip,
+.tankazon-store.is-web-settings-open .tankazon-account-page,
+.tankazon-store.is-web-settings-open .tankazon-body,
+.tankazon-store.is-web-settings-open .store-scroll-controls,
+.tankazon-store.is-web-settings-open .web-home-page,
+.tankazon-store.is-web-settings-open .bubble-bank-page,
+.tankazon-store.is-web-settings-open .davy-jones-locker-page,
+.tankazon-store.is-web-settings-open .proteus-biodyne-page,
+.tankazon-store.is-web-settings-open #proteusDesignerRoute {
+  display: none !important;
+}
+
+/* The existing Settings UI is hosted as a WebSurf page in Phase 2. Phase 3
+   replaces its modal presentation with the final browser-page redesign. */
+#settingsOverlay.websurf-settings-page {
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1 !important;
+  display: block;
+  align-items: stretch;
+  justify-content: stretch;
+  box-sizing: border-box;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 16px 18px 18px;
+  overflow: hidden;
+  background: #e7eef3;
+}
+
+#settingsOverlay.websurf-settings-page[hidden] {
+  display: none !important;
+}
+
+#settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  box-sizing: border-box;
+}
+
+#settingsOverlay.websurf-settings-page .settings-scroll-shell,
+#settingsOverlay.websurf-settings-page .settings-panel-body {
+  min-height: 0;
+}
+
+/* WebSurf Settings page redesign, Phase 3.
+   This deliberately applies only while Settings is mounted inside WebSurf.
+   The underlying settings controls and handlers remain unchanged. */
+#settingsOverlay.websurf-settings-page {
+  --ws-settings-page: #f3f9fd;
+  --ws-settings-panel: rgba(255, 255, 255, 0.88);
+  --ws-settings-row: rgba(247, 251, 254, 0.96);
+  --ws-settings-border: #c7dce9;
+  --ws-settings-border-strong: #a8c8dc;
+  --ws-settings-text: #123b62;
+  --ws-settings-muted: #66829a;
+  --ws-settings-blue: #1188e9;
+  --ws-settings-blue-soft: #e9f6ff;
+  position: relative !important;
+  inset: auto !important;
+  z-index: 1 !important;
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  box-sizing: border-box;
+  padding: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 48% 0%, rgba(178, 225, 249, 0.28), transparent 36%),
+    linear-gradient(180deg, #f7fbfe 0%, var(--ws-settings-page) 100%);
+  color: var(--ws-settings-text);
+}
+
+#settingsOverlay.websurf-settings-page[hidden] {
+  display: none !important;
+}
+
+#settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 12px;
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  min-height: 0;
+  margin: 0;
+  padding: 18px 42px 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 92px;
+  padding: 2px 2px 10px;
+  border: 0;
+}
+
+#settingsOverlay.websurf-settings-page .websurf-settings-heading {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-width: 0;
+}
+
+#settingsOverlay.websurf-settings-page .websurf-settings-brand-icon {
+  display: block;
+  flex: 0 0 auto;
+  width: 78px;
+  height: 78px;
+  object-fit: contain;
+}
+
+#settingsOverlay.websurf-settings-page .websurf-settings-heading-copy {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+#settingsOverlay.websurf-settings-page .settings-kicker {
+  margin: 0 0 1px;
+  color: #27567d;
+  font-size: 0.7rem;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-copy h2 {
+  margin: 0;
+  color: #113e68;
+  font-size: clamp(2rem, 3vw, 2.65rem);
+  font-weight: 850;
+  line-height: 0.98;
+  letter-spacing: -0.035em;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-copy > p:last-child,
+#settingsOverlay.websurf-settings-page .websurf-settings-heading-copy > p:last-child {
+  margin: 5px 0 0;
+  color: #557794;
+  font-size: 0.93rem;
+  line-height: 1.2;
+}
+
+#settingsOverlay.websurf-settings-page .settings-header-actions {
+  align-self: flex-start;
+  padding-top: 3px;
+}
+
+/* WebSurf owns the close control. Do not show a second close button inside the page. */
+#settingsOverlay.websurf-settings-page #closeSettingsOverlay {
+  display: none !important;
+}
+
+#settingsOverlay.websurf-settings-page .settings-debug-toggle {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid var(--ws-settings-border);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.84);
+  color: var(--ws-settings-text);
+  box-shadow: 0 2px 8px rgba(33, 91, 127, 0.06);
+}
+
+#settingsOverlay.websurf-settings-page .settings-scroll-shell {
+  display: block;
+  min-height: 0;
+  overflow: hidden;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-body {
+  min-height: 0;
+}
+
+#settingsOverlay.websurf-settings-page .settings-dashboard-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "account account"
+    "left right";
+  align-items: start;
+  align-content: start;
+  column-gap: 14px;
+  row-gap: 14px;
+  height: 100%;
+  min-height: 0;
+  padding: 0 2px 6px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  scrollbar-gutter: stable;
+}
+
+#settingsOverlay.websurf-settings-page .settings-dashboard-column {
+  display: grid;
+  align-content: start;
+  gap: 14px;
+  min-width: 0;
+}
+
+#settingsOverlay.websurf-settings-page .settings-dashboard-column-left { grid-area: left; }
+#settingsOverlay.websurf-settings-page .settings-dashboard-column-right { grid-area: right; }
+#settingsOverlay.websurf-settings-page .settings-account-card { grid-area: account; }
+
+#settingsOverlay.websurf-settings-page .settings-section {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--ws-settings-border);
+  border-radius: 13px;
+  background: var(--ws-settings-panel);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.9),
+    0 4px 13px rgba(35, 91, 128, 0.055);
+}
+
+#settingsOverlay.websurf-settings-page .settings-section-heading {
+  gap: 10px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-section-heading-icon {
+  width: 32px;
+  height: 32px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-section-heading-icon img {
+  width: 29px;
+  height: 29px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-section h3 {
+  color: #123e68;
+  font-size: 1.05rem;
+  font-weight: 850;
+}
+
+#settingsOverlay.websurf-settings-page .settings-section-note {
+  color: var(--ws-settings-muted);
+  font-size: 0.69rem;
+  line-height: 1.25;
+}
+
+#settingsOverlay.websurf-settings-page .settings-toggle-row,
+#settingsOverlay.websurf-settings-page .settings-toolbar-color-row,
+#settingsOverlay.websurf-settings-page .settings-inline-action {
+  min-height: 43px;
+  padding: 6px 10px;
+  gap: 9px;
+  border: 1px solid #d4e3ec;
+  border-radius: 9px;
+  background: var(--ws-settings-row);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
+}
+
+#settingsOverlay.websurf-settings-page .settings-peaceful-mode-row {
+  border-color: #d4e3ec;
+  background: var(--ws-settings-row);
+}
+
+#settingsOverlay.websurf-settings-page .settings-toggle-copy {
+  gap: 1px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-toggle-label,
+#settingsOverlay.websurf-settings-page .settings-peaceful-mode-row .settings-toggle-label {
+  color: #153d62;
+  font-size: 0.74rem;
+  font-weight: 850;
+  line-height: 1.12;
+}
+
+#settingsOverlay.websurf-settings-page .settings-toggle-note {
+  color: #6a8499;
+  font-size: 0.61rem;
+  line-height: 1.22;
+}
+
+#settingsOverlay.websurf-settings-page .settings-checkbox {
+  width: 19px;
+  height: 19px;
+  accent-color: var(--ws-settings-blue);
+}
+
+#settingsOverlay.websurf-settings-page .settings-depth-level-row {
+  grid-template-columns: minmax(0, 1fr) minmax(170px, 220px);
+}
+
+#settingsOverlay.websurf-settings-page .settings-depth-level-control {
+  min-width: 170px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-depth-level-control output {
+  color: #17466e;
+  font-size: 0.67rem;
+}
+
+#settingsOverlay.websurf-settings-page #depthEffectLevelInput {
+  accent-color: var(--ws-settings-blue);
+}
+
+#settingsOverlay.websurf-settings-page .settings-depth-level-ticks {
+  color: #718aa0;
+}
+
+#settingsOverlay.websurf-settings-page .settings-color-input {
+  width: 70px;
+  height: 31px;
+  min-width: 70px;
+  border: 3px solid #c7dbe7;
+  border-radius: 7px;
+  background: #fff;
+}
+
+#settingsOverlay.websurf-settings-page .settings-select {
+  color: #153d62;
+  border-color: #bfd6e4;
+  background: #f7fbfe;
+}
+
+/* Full-width Account & Cloud Save card. */
+#settingsOverlay.websurf-settings-page #accountCloudSaveSettingsSection {
+  position: relative;
+  display: block !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
+  padding: 0;
+  overflow: visible;
+  border: 1px solid var(--ws-settings-border-strong);
+  background: rgba(255, 255, 255, 0.91);
+}
+
+#settingsOverlay.websurf-settings-page #accountCloudSaveSettingsSection > h3 {
+  display: none;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-shell {
+  display: grid;
+  gap: 10px;
+  padding: 11px 12px 12px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  padding-right: 500px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading > div {
+  display: grid;
+  gap: 0;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > strong {
+  color: #133f69;
+  font-size: 1.08rem;
+  line-height: 1.05;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > span {
+  color: #5f7f99;
+  font-size: 0.67rem;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-title-icon {
+  width: 34px;
+  height: 34px;
+  background: transparent;
+  box-shadow: none;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-title-icon img {
+  width: 31px;
+  height: 31px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-account-topbar {
+  top: 10px;
+  right: 12px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-account-data-actions {
+  grid-template-columns: repeat(3, minmax(0, 150px));
+  gap: 9px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-data-actions .small-button {
+  min-height: 38px;
+  padding: 0 11px;
+  border-radius: 9px;
+  font-size: 0.72rem;
+}
+
+#settingsOverlay.websurf-settings-page .settings-data-actions #exportDataButton {
+  color: #0f4f78;
+  border-color: #9bd8ef;
+  background: linear-gradient(180deg, #e8f9ff, #c9f2ff);
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+#settingsOverlay.websurf-settings-page .settings-data-actions #importDataButton {
+  color: #184466;
+  border-color: #bfd6e4;
+  background: linear-gradient(180deg, #fbfdff, #edf5fa);
+}
+
+#settingsOverlay.websurf-settings-page .settings-data-actions #resetProgressButton {
+  color: #d51e2b;
+  border-color: #f0bfc4;
+  background: linear-gradient(180deg, #fff8f8, #ffe6e8);
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 205px;
+  gap: 9px;
+  align-items: stretch;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+  display: grid;
+  grid-template-columns: minmax(190px, 0.8fr) minmax(290px, 1.12fr) minmax(250px, 0.95fr);
+  gap: 8px;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  overflow: visible;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-core-panel > * + * {
+  border-left: 0;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-identity-card,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card {
+  min-height: 68px;
+  box-sizing: border-box;
+  border: 1px solid #cfdfE9;
+  border-radius: 9px;
+  background: #f9fcfe;
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-identity-card {
+  padding: 10px 11px;
+  gap: 8px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-avatar,
+#settingsOverlay.websurf-settings-page .cloud-account-mail-icon {
+  width: 31px;
+  height: 31px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-avatar img,
+#settingsOverlay.websurf-settings-page .cloud-account-mail-icon img {
+  width: 27px;
+  height: 27px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-identity-copy > span,
+#settingsOverlay.websurf-settings-page .cloud-sync-label {
+  color: #5f7f99;
+  font-size: 0.65rem;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-identity-copy > strong,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-copy strong {
+  color: #173f63;
+  font-size: 0.83rem;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-edit-button {
+  width: 27px;
+  height: 27px;
+  border: 1px solid #c2d9e7;
+  border-radius: 7px;
+  background: #eef8fd;
+  box-shadow: none;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-edit-button img {
+  width: 15px;
+  height: 15px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card {
+  padding: 9px 11px;
+  color: #173f63;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card:not(:disabled):hover,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card:not(:disabled):focus-visible {
+  filter: none;
+  background: #eef8fd;
+  box-shadow: inset 0 0 0 1px #b9d7e8;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-sync-state-copy,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-copy span,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-copy [data-cloud-sync-detail] {
+  color: #66849a;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-sync-title-line strong {
+  color: #173f63;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action {
+  min-height: 68px;
+  padding: 8px;
+  border: 1px solid #c5dae7;
+  border-radius: 9px;
+  color: #165083;
+  background: linear-gradient(180deg, #fafdff, #eef7fc);
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action > img {
+  width: 21px;
+  height: 21px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-logout-action {
+  color: #d1262f;
+  border-color: #efc1c6;
+  background: linear-gradient(180deg, #fffafa, #ffecee);
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-message,
+#settingsOverlay.websurf-settings-page .cloud-account-email-status {
+  color: #376a8d;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-editor-overlay {
+  background: rgba(225, 239, 248, 0.7);
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-editor-dialog,
+#settingsOverlay.websurf-settings-page .cloud-account-inline-editor {
+  border-color: #bad4e3;
+  background: #fff;
+  color: #173f63;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-editor-heading strong,
+#settingsOverlay.websurf-settings-page .cloud-account-inline-editor-copy strong {
+  color: #173f63;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-editor-heading span,
+#settingsOverlay.websurf-settings-page .cloud-account-inline-editor-copy span {
+  color: #6a8499;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-editor-input,
+#settingsOverlay.websurf-settings-page .cloud-account-inline-editor-controls input {
+  color: #173f63;
+  border-color: #bfd6e4;
+  background: #f8fbfd;
+}
+
+/* Right column groups and bottom actions. */
+#settingsOverlay.websurf-settings-page .settings-general-card,
+#settingsOverlay.websurf-settings-page .settings-account-card,
+#settingsOverlay.websurf-settings-page .settings-graphics-card {
+  padding-top: 11px;
+  padding-bottom: 11px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-general-card {
+  gap: 7px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-audio-card .settings-toggle-row,
+#settingsOverlay.websurf-settings-page .settings-graphics-card .settings-toggle-row {
+  min-height: 42px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-card {
+  gap: 7px;
+  padding: 10px 11px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-card .settings-section-heading {
+  min-height: 28px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 7px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-actions .small-button {
+  min-height: 51px;
+  padding: 6px 8px;
+  gap: 3px;
+  border: 1px solid #c7dce9;
+  border-radius: 9px;
+  color: #154774;
+  background: linear-gradient(180deg, #fbfdff, #edf6fb);
+  box-shadow: inset 0 1px 0 #fff;
+  font-size: 0.68rem;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-actions .donation-button {
+  color: #0d5783;
+  border-color: #a8dcec;
+  background: linear-gradient(180deg, #e9fbff, #cff4fb);
+}
+
+#settingsOverlay.websurf-settings-page .settings-support-heart {
+  color: #1587dd;
+  font-size: 1.1rem;
+  line-height: 1;
+}
+
+#settingsOverlay.websurf-settings-page .settings-button-glyph {
+  color: #1686d8;
+}
+
+#settingsOverlay.websurf-settings-page .wallpaper-scroll-controls {
+  display: none !important;
+}
+
+/* Normal responsive fallback remains available when Ratio Lock is off.
+   Ratio Lock keeps the saved desktop composition and scales it as one unit. */
+@media (max-width: 1120px) {
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+    padding-inline: 24px;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-account-topbar {
+    position: static;
+    padding: 0 12px;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .cloud-account-main-heading {
+    padding-right: 0;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+    padding: 14px 16px;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-panel-header {
+    min-height: 82px;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .websurf-settings-brand-icon {
+    width: 62px;
+    height: 62px;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "account"
+      "left"
+      "right";
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+    grid-template-columns: 1fr;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-other-actions,
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .settings-account-data-actions {
+    grid-template-columns: 1fr;
+  }
+
+  html:not([data-layout-ratio-lock="true"]) #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* WebSurf Phase 4: shared light/dark theme tokens and first-party dark mode. */
+.tankazon-store {
+  --ws-chrome-top: #dbe7ef;
+  --ws-chrome-bottom: #c7d6e2;
+  --ws-chrome-border: #aebdca;
+  --ws-tab-bg-top: rgba(238, 245, 249, .72);
+  --ws-tab-bg-bottom: rgba(210, 224, 234, .84);
+  --ws-tab-border: #acbdca;
+  --ws-tab-text: #163750;
+  --ws-tab-hover: #edf4f8;
+  --ws-tab-active-bg: #ffffff;
+  --ws-tab-active-text: #0f2d43;
+  --ws-browser-button-bg: rgba(245, 250, 252, .78);
+  --ws-browser-button-hover: #ffffff;
+  --ws-browser-button-border: #9cadba;
+  --ws-browser-button-text: #18394f;
+  --ws-page-bg: #eef6fa;
+  --ws-panel-bg: rgba(255,255,255,.94);
+  --ws-panel-bg-strong: #ffffff;
+  --ws-panel-soft: #f0f7fb;
+  --ws-row-bg: #fafdff;
+  --ws-row-hover: #f1f8fc;
+  --ws-row-open: #eef7fc;
+  --ws-text: #173b59;
+  --ws-text-strong: #123c60;
+  --ws-text-secondary: #4e718e;
+  --ws-text-muted: #7892a8;
+  --ws-border: #bfd2df;
+  --ws-border-soft: #d9e5ec;
+  --ws-accent: #2e7bd0;
+  --ws-focus: #147593;
+  --ws-input-bg: #f7fbfe;
+}
+
+.tankazon-store[data-websurf-theme="dark"] {
+  --ws-chrome-top: #242a30;
+  --ws-chrome-bottom: #171c21;
+  --ws-chrome-border: #3b454e;
+  --ws-tab-bg-top: #2b3238;
+  --ws-tab-bg-bottom: #20262c;
+  --ws-tab-border: #414c55;
+  --ws-tab-text: #d7e0e7;
+  --ws-tab-hover: #343c44;
+  --ws-tab-active-bg: #11161a;
+  --ws-tab-active-text: #f4f7f9;
+  --ws-browser-button-bg: #20272d;
+  --ws-browser-button-hover: #313941;
+  --ws-browser-button-border: #46515b;
+  --ws-browser-button-text: #edf3f7;
+  --ws-page-bg: #101418;
+  --ws-panel-bg: #1a2025;
+  --ws-panel-bg-strong: #20272d;
+  --ws-panel-soft: #151b20;
+  --ws-row-bg: #1d242a;
+  --ws-row-hover: #252e35;
+  --ws-row-open: #222d34;
+  --ws-text: #e5edf2;
+  --ws-text-strong: #f3f7fa;
+  --ws-text-secondary: #b7c4cd;
+  --ws-text-muted: #91a2ae;
+  --ws-border: #394650;
+  --ws-border-soft: #303b44;
+  --ws-accent: #4aa9ff;
+  --ws-focus: #6bc3ff;
+  --ws-input-bg: #171e23;
+}
+
+.tankazon-store .webpage-tab-strip {
+  border-bottom-color: var(--ws-chrome-border);
+  background: linear-gradient(180deg, var(--ws-chrome-top), var(--ws-chrome-bottom));
+}
+.tankazon-store .webpage-tab {
+  border-color: var(--ws-tab-border);
+  color: var(--ws-tab-text);
+  background: linear-gradient(180deg, var(--ws-tab-bg-top), var(--ws-tab-bg-bottom));
+}
+.tankazon-store .webpage-tab:hover { background: var(--ws-tab-hover); }
+.tankazon-store .webpage-tab.is-active {
+  border-color: var(--ws-tab-border);
+  color: var(--ws-tab-active-text);
+  background: var(--ws-tab-active-bg);
+}
+.tankazon-store .webpage-tab:focus-visible,
+.tankazon-store .webpage-browser-settings:focus-visible,
+.tankazon-store .webpage-browser-close:focus-visible { outline-color: var(--ws-focus); }
+.tankazon-store .webpage-browser-settings,
+.tankazon-store .webpage-browser-close {
+  border-color: var(--ws-browser-button-border);
+  color: var(--ws-browser-button-text);
+  background: var(--ws-browser-button-bg);
+}
+.tankazon-store .webpage-browser-settings:hover,
+.tankazon-store .webpage-browser-close:hover { background: var(--ws-browser-button-hover); }
+
+/* Only the monochrome Home and Settings navigation glyphs follow the chrome theme.
+   Branded favicons keep their authored colors. */
+.tankazon-store[data-websurf-theme="dark"] .webpage-tab[data-webpage-destination="home"] img,
+.tankazon-store[data-websurf-theme="dark"] .webpage-tab[data-webpage-destination="settings"] img,
+.tankazon-store[data-websurf-theme="dark"] .webpage-browser-settings img {
+  filter: brightness(0) invert(1) opacity(.9);
+}
+
+/* WebSurf Home + mail client dark theme. */
+.tankazon-store[data-websurf-theme="dark"] .web-home-page {
+  color-scheme: dark;
+  color: var(--ws-text);
+  background:
+    radial-gradient(circle at 50% 0, rgba(55, 112, 151, .2), transparent 32%),
+    linear-gradient(180deg, #141a1f, var(--ws-page-bg));
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-home-header span,
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmarks > h2 { color: #8ca9bd; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-home-header h1,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-heading { color: var(--ws-text-strong); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-home-header p { color: var(--ws-text-secondary); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmark {
+  border-color: var(--ws-border);
+  color: var(--ws-text);
+  background: #1a2127;
+  box-shadow: 0 4px 12px rgba(0,0,0,.2);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmark:hover {
+  border-color: #5d7789;
+  background: #232c33;
+  box-shadow: 0 11px 24px rgba(0,0,0,.28);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmark small,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-sender small,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-copy small,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-row time,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-detail span,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-empty { color: var(--ws-text-muted); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmark.is-coming-soon {
+  color: #758590;
+  background: #161c21;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-bookmark.is-coming-soon > span:first-child { background: #283139; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-inbox {
+  border-color: var(--ws-border);
+  background: var(--ws-panel-bg);
+  box-shadow: 0 8px 23px rgba(0,0,0,.24);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-inbox > header { border-bottom-color: var(--ws-border-soft); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-inbox-icon { color: #7ac3f3; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-inbox > header button,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-actions button,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-guide-links button {
+  border-color: #43525e;
+  color: #d8e8f2;
+  background: #20282e;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-inbox > header button:hover,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-actions button:hover,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-guide-links button:hover,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-guide-links button:focus-visible {
+  border-color: #67849a;
+  background: #2a343c;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-item { border-bottom-color: var(--ws-border-soft); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-row { color: var(--ws-text); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-row:hover { background: var(--ws-row-hover); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-row.is-unread {
+  color: #f2f7fa;
+  background: var(--ws-row-bg);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-item.is-open .websurf-mail-row,
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-item.is-open .websurf-mail-star { background: var(--ws-row-open); }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-star:hover { background: #273139; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-detail {
+  color: #c8d5dd;
+  background: #192127;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll {
+  color: #dce6ec;
+  border-color: #34434e;
+  background: #12181c;
+  box-shadow: 0 2px 8px rgba(0,0,0,.22);
+  scrollbar-color: #526f82 #202930;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll::-webkit-scrollbar-track {
+  background: #202930;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll::-webkit-scrollbar-thumb {
+  border-color: #202930;
+  background: linear-gradient(180deg, #627f92, #496879);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll::-webkit-scrollbar-thumb:hover { background: #7393a7; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-item-row {
+  border-color: #33424c;
+  background: #1a2126;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-transaction-row,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-feature-list { border-color: #33424c; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-guide-section h4,
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-feature-list h4 { color: #d8e7f0; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-mail-actions button:disabled:hover {
+  border-color: #43525e;
+  background: #20282e;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-status-bar {
+  border-color: var(--ws-border);
+  color: #9babb6;
+  background: #151c21;
+  box-shadow: 0 8px 23px rgba(0,0,0,.24);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-status-bar small { color: #8fa1ad; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-status-bar strong { color: #c8d8e2; }
+.tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll a { color: #7cc8ff; }
+
+/* Settings page uses the same WebSurf theme state and maps its local design
+   tokens onto the shared chrome/page palette. */
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page {
+  --ws-settings-page: var(--ws-page-bg);
+  --ws-settings-panel: #1a2127;
+  --ws-settings-row: #20282f;
+  --ws-settings-border: #35434d;
+  --ws-settings-border-strong: #465761;
+  --ws-settings-text: var(--ws-text-strong);
+  --ws-settings-muted: #9aabb7;
+  --ws-settings-blue: #4aa9ff;
+  --ws-settings-blue-soft: #1c3242;
+  color-scheme: dark;
+  background:
+    radial-gradient(circle at 48% 0%, rgba(67, 125, 160, .15), transparent 36%),
+    linear-gradient(180deg, #151b20 0%, var(--ws-settings-page) 100%);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-kicker { color: #9ab2c4; }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-panel-copy h2,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-section h3,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-toggle-label,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-peaceful-mode-row .settings-toggle-label,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > strong,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-identity-copy > strong,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-copy strong,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-title-line strong,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-editor-heading strong,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-inline-editor-copy strong { color: var(--ws-settings-text); }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-panel-copy > p:last-child,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .websurf-settings-heading-copy > p:last-child,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-section-note,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-toggle-note,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > span,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-identity-copy > span,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-label,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-copy,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-copy span,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-copy [data-cloud-sync-detail],
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-editor-heading span,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-inline-editor-copy span { color: var(--ws-settings-muted); }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-section,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page #accountCloudSaveSettingsSection {
+  border-color: var(--ws-settings-border);
+  background: var(--ws-settings-panel);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035), 0 4px 13px rgba(0,0,0,.18);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-toggle-row,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-toolbar-color-row,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-inline-action,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-peaceful-mode-row {
+  border-color: #33414b;
+  background: var(--ws-settings-row);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-debug-toggle {
+  border-color: var(--ws-settings-border);
+  background: #20282f;
+  color: var(--ws-settings-text);
+  box-shadow: none;
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-depth-level-control output { color: #cfe6f5; }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-depth-level-ticks { color: #90a4b1; }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-select,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-editor-input,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-inline-editor-controls input {
+  color: #edf5f9;
+  border-color: #41515c;
+  background: #151c21;
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-color-input {
+  border-color: #45535d;
+  background: #151b20;
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-identity-card,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-card {
+  border-color: #374650;
+  background: #1d252b;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.03);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-edit-button {
+  border-color: #43535e;
+  background: #273139;
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-card { color: var(--ws-settings-text); }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-card:not(:disabled):hover,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-sync-state-card:not(:disabled):focus-visible {
+  background: #29343c;
+  box-shadow: inset 0 0 0 1px #536977;
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-compact-action,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-other-actions .small-button {
+  color: #e2edf3;
+  border-color: #3c4c57;
+  background: linear-gradient(180deg, #252e35, #1b2329);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.035);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-data-actions #exportDataButton,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-data-actions #importDataButton {
+  color: #dff3ff;
+  border-color: #42677c;
+  background: linear-gradient(180deg, #274556, #1c3442);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-data-actions #resetProgressButton,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-logout-action {
+  color: #ff969d;
+  border-color: #694349;
+  background: linear-gradient(180deg, #3b272b, #2a1d20);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-other-actions .donation-button {
+  color: #d8f4ff;
+  border-color: #42677c;
+  background: linear-gradient(180deg, #264453, #1c3440);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-message,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-email-status { color: #a8c4d5; }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-editor-overlay { background: rgba(5, 10, 14, .72); }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-editor-dialog,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-inline-editor {
+  border-color: #3d4c56;
+  background: #171e23;
+  color: var(--ws-settings-text);
+}
+
+/* Convert monochrome Bubble Borough settings glyphs to a light treatment in
+   dark mode. Branded WebSurf art and colored site favicons are untouched. */
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-section-heading-icon img,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-title-icon img,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-avatar img,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-mail-icon img,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-edit-button img,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-other-actions .settings-button-icon,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page #exportDataButton .settings-button-icon,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page #importDataButton .settings-button-icon {
+  filter: brightness(0) invert(1) opacity(.88);
+}
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page #resetProgressButton .settings-button-icon { filter: none; }
+
+#settingsOverlay.websurf-settings-page .settings-websurf-theme-row .settings-select {
+  width: 92px;
+  min-width: 92px;
+  height: 31px;
+  padding: 0 8px;
+  border-radius: 7px;
+  font-size: .7rem;
+  font-weight: 750;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-panel { background: #11161a; }
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-button-glyph,
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-support-heart { color: #dceaf2; }
+
+/* ========================================================================== */
+/* WebSurf Phase 5: Ratio Lock integration + responsive regression guard       */
+/* ========================================================================== */
+/* Ratio Lock scales the saved app shell as one composition. WebSurf must use
+   that locked composition box too, rather than re-reading the physical browser
+   viewport and triggering a second mobile/tablet layout before scaling. */
+html[data-layout-ratio-lock="true"] .store-overlay.tankazon-store {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  align-items: center;
+  justify-content: stretch;
+  padding: clamp(14px, 2%, 28px);
+  background: transparent;
+}
+
+html[data-layout-ratio-lock="true"] .tankazon-store .tankazon-panel {
+  width: min(1520px, calc(100% - 28px));
+  height: min(95%, 940px);
+  max-width: none;
+  max-height: none;
+  min-height: 0;
+  gap: 0;
+  padding: 0;
+  border-radius: 12px;
+}
+
+/* Viewport-based clamp() values otherwise shrink once from the physical browser
+   width and then a second time from the Ratio Lock transform. Keep the desktop
+   typography inside the locked composition and let the app-shell transform do
+   the only scaling. */
+html[data-layout-ratio-lock="true"] .websurf-home-header h1 {
+  font-size: 3.45rem;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-panel-copy h2 {
+  font-size: 2.65rem;
+}
+
+/* Explicit desktop invariants for the two first-party WebSurf pages. These are
+   intentionally redundant with their base rules so future narrow-screen media
+   additions cannot silently change a ratio-locked layout. */
+html[data-layout-ratio-lock="true"] .websurf-home-main {
+  width: min(1640px, calc(100% - 48px));
+}
+html[data-layout-ratio-lock="true"] .websurf-bookmark-row {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 250px));
+  justify-content: start;
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-row-shell {
+  grid-template-columns: 34px minmax(0, 1fr);
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-row {
+  grid-template-columns: 38px minmax(190px, 260px) minmax(360px, 1fr) 84px;
+  gap: 13px;
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-sender {
+  display: grid;
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-copy small {
+  white-space: nowrap;
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-detail {
+  flex-direction: column;
+  align-items: stretch;
+  padding: 4px 18px 16px 76px;
+}
+html[data-layout-ratio-lock="true"] .websurf-inbox > header {
+  align-items: center;
+  flex-wrap: nowrap;
+}
+html[data-layout-ratio-lock="true"] .websurf-inbox-header-actions {
+  width: auto;
+  justify-content: flex-end;
+}
+html[data-layout-ratio-lock="true"] .websurf-mail-actions {
+  flex-wrap: nowrap;
+}
+html[data-layout-ratio-lock="true"] .websurf-status-bar {
+  align-items: center;
+  flex-direction: row;
+  gap: 20px;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+  padding: 18px 42px 16px;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-panel-header {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 92px;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .websurf-settings-brand-icon {
+  width: 78px;
+  height: 78px;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-dashboard-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "account account"
+    "left right";
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  grid-template-columns: auto;
+  padding: 0;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-main-heading {
+  padding-right: 500px;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  grid-template-columns: minmax(0, 1fr) 205px;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+  grid-template-columns: minmax(190px, 0.8fr) minmax(290px, 1.12fr) minmax(250px, 0.95fr);
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+  grid-template-columns: 1fr 1fr;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-data-actions {
+  grid-template-columns: repeat(3, minmax(0, 150px));
+  justify-content: end;
+}
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-other-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+
+/* ========================================================================== */
+/* WebSurf Settings polish: compact header, atlas icons, and button fitting    */
+/* ========================================================================== */
+#settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 8px;
+  padding-top: 12px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-header {
+  min-height: 54px;
+  padding: 0 2px 6px;
+}
+
+#settingsOverlay.websurf-settings-page .websurf-settings-heading {
+  display: block;
+}
+
+#settingsOverlay.websurf-settings-page .websurf-settings-heading-copy {
+  gap: 2px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-copy h2 {
+  font-size: 1.34rem;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+#settingsOverlay.websurf-settings-page .settings-panel-copy > p:last-child,
+#settingsOverlay.websurf-settings-page .websurf-settings-heading-copy > p:last-child {
+  margin-top: 2px;
+  font-size: 0.76rem;
+  line-height: 1.18;
+}
+
+/* Simple turns are now an always-on implementation detail, not a user-facing
+   graphics preference. Keep the legacy control hidden in case older code still
+   resolves its DOM id. */
+#settingsOverlay.websurf-settings-page label[for="simpleTurnAnimationsToggleInput"] {
+  display: none !important;
+}
+
+/* Give Reset Password enough room to stay readable at the saved desktop ratio. */
+#settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  grid-template-columns: minmax(0, 1fr) 232px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+  grid-template-columns: minmax(126px, 1.12fr) minmax(90px, 0.88fr);
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action {
+  min-width: 0;
+  padding-inline: 6px;
+  gap: 4px;
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action strong {
+  min-width: 0;
+  font-size: 0.66rem;
+  line-height: 1.08;
+  white-space: nowrap;
+}
+
+/* The final action has substantially longer copy than the other resource
+   buttons, so reserve it a wider column instead of squeezing or clipping it. */
+#settingsOverlay.websurf-settings-page .settings-other-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(132px, 1.28fr);
+  gap: 6px;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-actions .small-button {
+  min-width: 0;
+  min-height: 54px;
+  padding: 6px 6px;
+  font-size: 0.64rem;
+  line-height: 1.05;
+  white-space: normal;
+  text-align: center;
+}
+
+#settingsOverlay.websurf-settings-page .settings-other-actions .settings-button-icon {
+  flex: 0 0 auto;
+  width: 19px;
+  height: 19px;
+}
+
+/* Ratio Lock must preserve this compact desktop composition rather than
+   restoring the older oversized title and narrower action columns. */
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-panel-copy h2 {
+  font-size: 1.34rem;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-panel-header {
+  min-height: 54px;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  grid-template-columns: minmax(0, 1fr) 232px;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+  grid-template-columns: minmax(126px, 1.12fr) minmax(90px, 0.88fr);
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-other-actions {
+  grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(132px, 1.28fr);
+}
+
+
+/* ========================================================================== */
+/* WebSurf Settings polish r2: toolbar visibility + account action spacing     */
+/* ========================================================================== */
+#settingsOverlay.websurf-settings-page .settings-account-data-actions {
+  grid-template-columns: 132px 132px 150px;
+  gap: 14px;
+  align-items: stretch;
+  justify-content: end;
+}
+
+#settingsOverlay.websurf-settings-page .settings-data-actions .small-button {
+  width: 100%;
+  min-width: 0;
+  justify-content: center;
+  column-gap: 7px;
+  padding-inline: 12px;
+  white-space: nowrap;
+}
+
+#settingsOverlay.websurf-settings-page .settings-account-topbar {
+  right: 14px;
+}
+
+/* Keep the top action row visually separate from sync/password/logout below. */
+#settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  margin-top: 20px;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-data-actions {
+  grid-template-columns: 132px 132px 150px;
+  gap: 14px;
+  justify-content: end;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar {
+  right: 14px;
+}
+
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  margin-top: 20px;
+}
+
+/* Bubble Borough Bank: shared light layout with WebSurf light and dark palettes. */
+.bubble-bank-page {
+  --bank-page-bg: #f2f5f7;
+  --bank-shell-bg: #f7f9fa;
+  --bank-header-bg: linear-gradient(180deg, #f7f9fa 0%, #edf1f4 100%);
+  --bank-header-border: #c8d0d6;
+  --bank-text: #162334;
+  --bank-text-soft: #5b6876;
+  --bank-text-muted: #7a8793;
+  --bank-card-bg: linear-gradient(135deg, rgba(255,255,255,.96), rgba(225,231,235,.94));
+  --bank-card-border: #c7d0d6;
+  --bank-panel-bg: rgba(255,255,255,.96);
+  --bank-panel-border: #d0d6da;
+  --bank-row-credit: #f0f7f3;
+  --bank-row-credit-border: #d7e5dd;
+  --bank-row-debit: #fff2f2;
+  --bank-row-debit-border: #efd4d5;
+  --bank-row-neutral: #f4f6f7;
+  --bank-row-neutral-border: #dfe4e7;
+  --bank-button-bg: linear-gradient(180deg, #f7f9fa, #e4eaee);
+  --bank-button-border: #c2cbd1;
+  --bank-button-text: #1c2a38;
+  --bank-link: #243d5a;
+  --bank-gold: #f0c62c;
+  --bank-credit: #169b55;
+  --bank-debit: #e22431;
+  --bank-shadow: 0 7px 20px rgba(31, 45, 56, .11);
+  color-scheme: light;
+  color: var(--bank-text);
+  background: var(--bank-page-bg);
+}
+
+.bubble-bank-window-header {
+  position: relative;
+  grid-template-columns: minmax(278px, auto) minmax(0, 1fr) auto;
+  gap: 24px;
+  min-height: 98px;
+  padding: 10px 24px;
+  border-bottom: 1px solid var(--bank-header-border);
+  color: var(--bank-text);
+  background: var(--bank-header-bg);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.72);
+}
+
+.bubble-bank-logo {
+  display: block;
+  width: auto;
+  height: 76px;
+  max-width: min(340px, 27vw);
+  object-fit: contain;
+  object-position: left center;
+}
+
+.bubble-bank-window-header::before,
+.bubble-bank-window-header::after {
+  display: none;
+  content: none;
+}
+
+.bubble-bank-tabs {
+  justify-self: start;
+  align-self: center;
+  gap: 12px;
+}
+
+.bubble-bank-tab {
+  min-width: 148px;
+  min-height: 52px;
+  padding: 12px 18px;
+  border: 1px solid var(--bank-button-border);
+  border-radius: 10px;
+  color: var(--bank-button-text);
+  background: var(--bank-button-bg);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.76), 0 1px 2px rgba(40,52,61,.06);
+  font-size: .92rem;
+}
+
+.bubble-bank-tab:hover {
+  border-color: #aeb8bf;
+  background: linear-gradient(180deg, #fff, #e9eef1);
+}
+
+.bubble-bank-tab.is-active {
+  border: 2px solid var(--bank-gold);
+  color: #f8f9fa;
+  background: linear-gradient(180deg, #38414a, #252c32);
+  box-shadow: 0 0 0 2px rgba(240,198,44,.14), 0 3px 8px rgba(35,43,49,.16);
+}
+
+.bubble-bank-tab[data-bank-tab="account"] > span {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #f6cc31;
+  box-shadow: inset 0 0 0 1px rgba(131,92,0,.16);
+}
+
+.bubble-bank-tab-icon,
+.bubble-bank-tab.is-active .bubble-bank-tab-icon {
+  width: 12px;
+  height: 12px;
+  filter: none;
+}
+
+.bubble-bank-window-actions .bubble-bank-coin-amount {
+  min-height: 50px;
+  padding: 6px 18px;
+  border: 1px solid #c9d1d6;
+  color: var(--bank-text);
+  background: linear-gradient(180deg, rgba(255,255,255,.95), rgba(231,236,239,.95));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.85), 0 2px 7px rgba(33,46,57,.11);
+}
+
+.bubble-bank-window-actions .bubble-bank-coin-amount strong { color: var(--bank-text); }
+
+.bubble-bank-scroll {
+  background: var(--bank-page-bg);
+  scrollbar-color: #aeb9c1 #eef2f4;
+}
+
+.bubble-bank-shell {
+  color: var(--bank-text);
+  background: var(--bank-shell-bg);
+}
+
+.bubble-bank-welcome {
+  isolation: isolate;
+  min-height: 178px;
+  padding: 28px 72px 46px;
+  color: var(--bank-text);
+  background: linear-gradient(180deg, #fbfcfd 0%, #eef2f4 100%);
+  border-bottom: 1px solid #d4dade;
+}
+
+.bubble-bank-welcome::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: url("../assets/web/bank/bank_banner.png") center bottom / 100% auto no-repeat;
+  opacity: .66;
+  filter: blur(1.6px);
+  transform: scale(1.012);
+  transform-origin: center bottom;
+  pointer-events: none;
+}
+
+.bubble-bank-welcome::after { display: none; }
+
+.bubble-bank-welcome > div,
+.bubble-bank-welcome > strong { position: relative; z-index: 1; }
+
+.bubble-bank-welcome span {
+  display: block;
+  color: #5a6672;
+  font-size: .88rem;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.bubble-bank-welcome h2 {
+  display: block;
+  margin: 2px 0 0;
+  color: #172332;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  letter-spacing: -.045em;
+}
+
+.bubble-bank-welcome p {
+  margin: 8px 0 0;
+  color: var(--bank-text-soft);
+}
+
+.bubble-bank-welcome > strong {
+  max-width: 210px;
+  color: #53606d;
+  text-align: right;
+  line-height: 1.35;
+}
+
+.bubble-bank-account,
+.bubble-bank-card-list,
+.bubble-bank-empty {
+  z-index: 2;
+  width: calc(100% - 96px);
+}
+
+.bubble-bank-balance-card {
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 280px);
+  gap: 30px;
+  min-height: 118px;
+  margin: -38px auto 18px;
+  padding: 22px 34px;
+  border: 1px solid var(--bank-card-border);
+  color: var(--bank-text);
+  background: var(--bank-card-bg);
+  box-shadow: var(--bank-shadow), inset 0 1px 0 rgba(255,255,255,.8);
+  backdrop-filter: blur(9px);
+}
+
+.bubble-bank-balance-card::after {
+  content: "A brighter ocean\A for brighter tomorrows.";
+  align-self: center;
+  padding: 4px 0 4px 26px;
+  border-left: 1px solid #c8d0d5;
+  color: #747f89;
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: .92rem;
+  font-style: italic;
+  line-height: 1.45;
+  white-space: pre;
+}
+
+.bubble-bank-balance-card > div > span:first-child {
+  color: #293746;
+  font-size: 1.02rem;
+}
+
+.bubble-bank-balance-card .bubble-bank-coin-amount strong {
+  color: var(--bank-text);
+  font-size: 2.65rem;
+}
+
+.bubble-bank-balance-card small { color: #435261; }
+
+.bubble-bank-ledger {
+  padding: 0 12px 10px;
+  border: 1px solid var(--bank-panel-border);
+  background: var(--bank-panel-bg);
+  box-shadow: var(--bank-shadow);
+}
+
+.bubble-bank-ledger > header { padding: 15px 20px; }
+.bubble-bank-ledger h3 { color: var(--bank-text); }
+.bubble-bank-ledger > header > div > span { color: #53606d; }
+
+.bubble-bank-filter {
+  border-color: var(--bank-button-border);
+  color: #3c4956;
+  background: #fbfcfd;
+}
+
+.bubble-bank-filter:focus-visible {
+  outline-color: rgba(72, 88, 101, .24);
+}
+
+.bubble-bank-transaction {
+  border-color: var(--bank-row-credit-border);
+  color: var(--bank-text);
+  background: var(--bank-row-credit);
+}
+
+.bubble-bank-transaction.is-debit {
+  border-color: var(--bank-row-debit-border);
+  background: var(--bank-row-debit);
+}
+
+.bubble-bank-transaction.is-neutral {
+  border-color: var(--bank-row-neutral-border);
+  background: var(--bank-row-neutral);
+}
+
+.bubble-bank-coin-amount { color: var(--bank-text); }
+.bubble-bank-coin-amount.is-credit strong { color: var(--bank-credit); }
+.bubble-bank-coin-amount.is-debit strong { color: var(--bank-debit); }
+
+.bubble-bank-transaction-copy strong { color: var(--bank-text); }
+.bubble-bank-transaction-copy span,
+.bubble-bank-transaction time,
+.bubble-bank-milestone-card time { color: var(--bank-text-muted); }
+
+.bubble-bank-row-link { color: var(--bank-link); }
+.bubble-bank-row-link:hover { color: #0d1721; }
+
+.bubble-bank-reward-card,
+.bubble-bank-milestone-card,
+.bubble-bank-empty {
+  border-color: var(--bank-panel-border);
+  color: var(--bank-text);
+  background: var(--bank-panel-bg);
+  box-shadow: var(--bank-shadow);
+}
+
+.bubble-bank-reward-card summary span,
+.bubble-bank-reward-math > p,
+.bubble-bank-milestone-card p,
+.bubble-bank-milestone-card small,
+.bubble-bank-empty span { color: var(--bank-text-muted); }
+
+.bubble-bank-reward-math { border-top-color: #e0e4e7; }
+.bubble-bank-math-columns > div { background: #eef6f1; }
+.bubble-bank-math-columns > div:last-child { background: #fff0f0; }
+
+.bubble-bank-milestone-star {
+  color: #1d2833;
+  background: linear-gradient(145deg, #ffe170, #e8b71e);
+  box-shadow: inset 0 0 0 1px rgba(129,89,0,.18);
+}
+
+.bubble-bank-shell > footer {
+  color: #697682;
+  background: #e8edf0;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-page {
+  --bank-page-bg: #111519;
+  --bank-shell-bg: #14191d;
+  --bank-header-bg: linear-gradient(180deg, #1d2328 0%, #151a1e 100%);
+  --bank-header-border: #3c454c;
+  --bank-text: #eef2f5;
+  --bank-text-soft: #b4bec6;
+  --bank-text-muted: #8f9ba4;
+  --bank-card-bg: linear-gradient(135deg, rgba(34,41,47,.97), rgba(24,30,35,.97));
+  --bank-card-border: #505960;
+  --bank-panel-bg: rgba(23,28,32,.98);
+  --bank-panel-border: #3b444b;
+  --bank-row-credit: #1a2024;
+  --bank-row-credit-border: #3d474d;
+  --bank-row-debit: #1a2024;
+  --bank-row-debit-border: #3d474d;
+  --bank-row-neutral: #1a2024;
+  --bank-row-neutral-border: #3d474d;
+  --bank-button-bg: linear-gradient(180deg, #252c32, #1a2025);
+  --bank-button-border: #4a555e;
+  --bank-button-text: #e4eaee;
+  --bank-link: #efc83f;
+  --bank-credit: #4dd66f;
+  --bank-debit: #ff5858;
+  --bank-shadow: 0 8px 23px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-window-header {
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.025);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-window-header::before {
+  color: #f0f3f5;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-window-header::after {
+  color: #e9bd31;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-tab:hover {
+  border-color: #5a6670;
+  background: linear-gradient(180deg, #30383f, #232a30);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-tab.is-active {
+  color: #f6d24b;
+  background: linear-gradient(180deg, #242a2f, #171c20);
+  box-shadow: 0 0 0 1px rgba(240,198,44,.22), 0 0 18px rgba(240,198,44,.08);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-window-actions .bubble-bank-coin-amount {
+  border-color: #59636b;
+  background: linear-gradient(180deg, #343c43, #20262b);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.06), 0 2px 7px rgba(0,0,0,.28);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-window-actions .bubble-bank-coin-amount strong {
+  color: #f1f4f6;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-scroll {
+  scrollbar-color: #59666f #171c20;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome {
+  color: var(--bank-text);
+  background: linear-gradient(180deg, #171d22 0%, #12171b 100%);
+  border-bottom-color: #394249;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome::before {
+  opacity: .24;
+  filter: blur(1.8px) brightness(.85) contrast(1.08);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome span { color: #a8b2ba; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome h2 { color: #f3f5f6; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome p { color: #aab5bd; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-welcome > strong { color: #aeb8bf; }
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card {
+  box-shadow: var(--bank-shadow), inset 0 1px 0 rgba(255,255,255,.045);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card::after {
+  border-left-color: #4a5359;
+  color: #a8b0b7;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card > div > span:first-child,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card small,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card .bubble-bank-coin-amount strong,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-ledger h3,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-transaction-copy strong { color: var(--bank-text); }
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-filter {
+  border-color: #4a555e;
+  color: #dce3e8;
+  background: #151a1e;
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-transaction {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.018);
+}
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-row-link:hover { color: #ffe171; }
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-reward-math { border-top-color: #353e44; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-math-columns > div { background: #18241e; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-math-columns > div:last-child { background: #271b1c; }
+
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-shell > footer {
+  color: #8e9aa3;
+  background: #1b2227;
+}
+
+@media (max-width: 980px) {
+  .bubble-bank-window-header {
+    grid-template-columns: minmax(232px, auto) minmax(0, 1fr) auto;
+    gap: 12px;
+    padding-inline: 16px;
+  }
+  .bubble-bank-logo {
+    height: 68px;
+    max-width: min(300px, 26vw);
+  }
+  .bubble-bank-tab { min-width: 118px; padding-inline: 12px; }
+}
+
+@media (max-width: 820px) {
+  .bubble-bank-window-header {
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    padding: 10px 12px 12px;
+  }
+  .bubble-bank-logo {
+    width: min(240px, 65vw);
+    height: auto;
+    max-width: 100%;
+  }
+  .bubble-bank-window-header .bubble-bank-tabs {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    width: 100%;
+  }
+  .bubble-bank-tabs { justify-self: stretch; }
+  .bubble-bank-tab { flex: 1 1 0; }
+  .bubble-bank-welcome { padding: 22px 22px 48px; }
+  .bubble-bank-balance-card {
+    grid-template-columns: 1fr;
+    gap: 14px;
+  }
+  .bubble-bank-balance-card::after {
+    padding: 14px 0 0;
+    border-top: 1px solid #c8d0d5;
+    border-left: 0;
+  }
+  .tankazon-store[data-websurf-theme="dark"] .bubble-bank-balance-card::after {
+    border-top-color: #4a5359;
+  }
+}
+
+/* Proteus navigation consolidation + public custom specimen service. */
+.proteus-section-heading { max-width: 1120px; margin: 0 auto 24px; padding-top: 38px; border-top: 1px solid var(--proteus-rule); }
+.proteus-section-heading > p:first-child { margin: 0 0 12px; color: #527797; font-family: system-ui, sans-serif; font-size: .68rem; font-weight: 800; letter-spacing: .16em; text-transform: uppercase; }
+.proteus-section-heading h3 { margin: 0; color: var(--proteus-ink); font-size: clamp(1.7rem, 3vw, 2.8rem); font-weight: 400; line-height: 1.08; }
+.proteus-section-heading > p:last-child { max-width: 760px; margin: 14px 0 0; color: var(--proteus-muted); font-family: system-ui, sans-serif; font-size: .95rem; line-height: 1.65; }
+.proteus-about-stewardship { max-width: 1120px; margin: 4px auto 36px; }
+.proteus-about-stewardship .proteus-section-heading,
+.proteus-about-stewardship .proteus-recovery-program,
+.proteus-about-stewardship .proteus-principle-grid { max-width: none; }
+.proteus-research-initiatives { max-width: 1120px; margin: 42px auto 0; }
+.proteus-research-initiatives .proteus-section-heading,
+.proteus-research-initiatives .proteus-program-list { max-width: none; }
+.proteus-custom-specimen-service { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(300px, .75fr); gap: clamp(24px, 5vw, 64px); max-width: 1120px; margin: 0 auto; }
+.proteus-custom-specimen-service-copy { align-self: start; padding: 30px; border: 1px solid #a9c5d3; background: linear-gradient(135deg, rgba(227,240,245,.95), rgba(255,255,255,.96)); }
+.proteus-custom-specimen-service-copy > span { color: #527797; font-family: system-ui, sans-serif; font-size: .66rem; font-weight: 800; letter-spacing: .16em; }
+.proteus-custom-specimen-service-copy h3 { margin: 18px 0 16px; color: #1f455d; font-size: clamp(1.55rem, 2.7vw, 2.6rem); font-weight: 400; line-height: 1.1; }
+.proteus-custom-specimen-service-copy p { margin: 0 0 16px; color: #496b80; font-family: system-ui, sans-serif; font-size: .94rem; line-height: 1.65; }
+.proteus-custom-specimen-create { margin-top: 12px; }
+.proteus-custom-specimen-capabilities { display: grid; gap: 12px; }
+.proteus-custom-specimen-capabilities article { padding: 20px 22px; border: 1px solid var(--proteus-rule); background: rgba(255,255,255,.86); }
+.proteus-custom-specimen-capabilities span { color: #527797; font-family: system-ui, sans-serif; font-size: .63rem; font-weight: 800; letter-spacing: .18em; }
+.proteus-custom-specimen-capabilities strong { display: block; margin: 10px 0 7px; color: #214a62; font-family: Georgia, "Times New Roman", serif; font-size: 1.08rem; }
+.proteus-custom-specimen-capabilities p { margin: 0; color: #688294; font-family: system-ui, sans-serif; font-size: .82rem; line-height: 1.5; }
+.proteus-site-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; max-width: 1120px; margin: 54px auto 0; padding: 22px 0 8px; border-top: 1px solid var(--proteus-rule); color: #7891a1; font-family: system-ui, sans-serif; font-size: .62rem; letter-spacing: .1em; }
+.proteus-site-footer nav { display: flex; gap: 18px; }
+.proteus-site-footer button { padding: 0; border: 0; color: #426177; background: transparent; font: inherit; font-weight: 750; letter-spacing: .08em; text-transform: uppercase; cursor: pointer; }
+.proteus-site-footer button:hover,.proteus-site-footer button:focus-visible { color: #173f57; text-decoration: underline; text-underline-offset: 3px; }
+
+.proteus-designer-session { grid-template-columns: minmax(0,1fr) auto; align-items: center; column-gap: 16px; }
+.proteus-designer-session-copy { display: grid; gap: 4px; }
+.proteus-designer-balance { display: inline-flex; align-items: center; justify-content: flex-end; gap: 6px; min-width: 78px; padding-left: 14px; border-left: 1px solid #c3d7e2; }
+.proteus-designer-balance img { width: 18px; height: 18px; object-fit: contain; }
+.proteus-designer-balance strong { color: #173854; font-size: .8rem; letter-spacing: .04em; }
+.proteus-designer-completion { min-height: 100%; background: radial-gradient(circle at 50% 35%, #fff 0, #f4f9fc 62%, #e9f3f7 100%); }
+.proteus-designer-completion-card { display: grid; justify-items: center; width: min(620px, 92%); padding: 44px 48px; border: 1px solid #a9c8d8; background: rgba(255,255,255,.92); box-shadow: 0 18px 50px rgba(28,73,98,.1); }
+.proteus-designer-completion-card > img { width: 72px; opacity: 1; transform: none; animation: none; }
+.proteus-designer-completion-kicker { margin: 18px 0 8px !important; color: #527797 !important; font-family: system-ui, sans-serif !important; font-size: .62rem !important; font-weight: 800; letter-spacing: .2em !important; }
+.proteus-designer-completion-card h1 { margin: 0; color: #173f57; font-family: Georgia, "Times New Roman", serif; font-size: clamp(1.8rem, 3vw, 2.8rem); font-weight: 400; letter-spacing: .02em; }
+.proteus-designer-completion-card > p:not(.proteus-designer-completion-kicker) { max-width: 500px; margin: 18px 0 26px; color: #5b7789; font-family: system-ui, sans-serif; font-size: .9rem; line-height: 1.6; opacity: 1; transform: none; animation: none; }
+.proteus-designer-completion-card dl { display: grid; width: 100%; margin: 0 0 28px; border-top: 1px solid #c8dce6; }
+.proteus-designer-completion-card dl > div { display: grid; grid-template-columns: 140px minmax(0,1fr); gap: 20px; padding: 12px 4px; border-bottom: 1px solid #d8e6ed; text-align: left; }
+.proteus-designer-completion-card dt { color: #66859a; font-family: system-ui, sans-serif; font-size: .62rem; font-weight: 800; letter-spacing: .14em; }
+.proteus-designer-completion-card dd { margin: 0; color: #173f57; font-family: system-ui, sans-serif; font-size: .82rem; font-weight: 750; }
+.proteus-designer-completion-card button { min-width: 220px; min-height: 46px; border: 1px solid #0d3450; border-radius: 4px; color: #fff; background: #0c3551; font: inherit; font-size: .68rem; font-weight: 800; letter-spacing: .15em; cursor: pointer; }
+.proteus-designer-completion-card button:hover,.proteus-designer-completion-card button:focus-visible { background: #154b6b; }
+.proteus-designer-completion-card small { margin-top: 20px; color: #7891a1; font-family: system-ui, sans-serif; font-size: .55rem; letter-spacing: .14em; }
+
+@media (max-width: 720px) {
+  .proteus-custom-specimen-service { grid-template-columns: 1fr; }
+  .proteus-custom-specimen-service-copy { padding: 22px; }
+  .proteus-site-footer { align-items: flex-start; flex-direction: column; }
+  .proteus-designer-completion-card { padding: 30px 22px; }
+  .proteus-designer-completion-card dl > div { grid-template-columns: 105px minmax(0,1fr); }
 }

@@ -2045,7 +2045,7 @@ function drawFish(now, layer = null, options = {}) {
       const fontSize = 11 * stableScale;
       const rowHeight = 18 * stableScale;
       const rowGap = 2 * stableScale;
-      const totalHeight = rowHeight * 3 + rowGap * 2;
+      const totalHeight = rowHeight * 4 + rowGap * 3;
       const radius = 8 * stableScale;
       tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
@@ -2053,7 +2053,10 @@ function drawFish(now, layer = null, options = {}) {
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
       const comfortWidth = tankContext.measureText(comfortLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth) + 18 * stableScale));
+      const mealIconSize = 13 * stableScale;
+      const mealIconGap = 7 * stableScale;
+      const mealWidth = mealIconSize * 2 + mealIconGap;
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth, mealWidth) + 18 * stableScale));
       const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
       const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
@@ -2063,13 +2066,13 @@ function drawFish(now, layer = null, options = {}) {
           ? "rgba(255, 202, 102, 0.82)"
           : "rgba(89, 229, 203, 0.82)";
 
-      for (let row = 0; row < 3; row += 1) {
+      for (let row = 0; row < 4; row += 1) {
         const y = topY + row * (rowHeight + rowGap);
         tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
         tankContext.beginPath();
         tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
         tankContext.fill();
-        tankContext.strokeStyle = row === 2 ? moodStroke : "rgba(94, 220, 239, 0.72)";
+        tankContext.strokeStyle = row === 3 ? moodStroke : "rgba(94, 220, 239, 0.72)";
         tankContext.lineWidth = Math.max(1, stableScale);
         tankContext.stroke();
       }
@@ -2086,9 +2089,31 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "left";
       tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
 
+      const mealCenterY = topY + (rowHeight + rowGap) * 2 + rowHeight / 2;
+      const dailyMeals = getFishDailyMealIndicatorState(fish, now);
+      const meatIconPath = "assets/icons/meat_icon.png";
+      const meatIcon = runtime.images.get(meatIconPath);
+      if (!isUsableRuntimeImage(meatIcon)) {
+        void preloadImagePath(meatIconPath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+      } else {
+        const firstX = labelX - mealIconGap / 2 - mealIconSize;
+        const secondX = labelX + mealIconGap / 2;
+        const iconY = mealCenterY - mealIconSize / 2;
+        tankContext.save();
+        tankContext.filter = dailyMeals.am ? "none" : "grayscale(1) brightness(0.62)";
+        tankContext.globalAlpha = dailyMeals.am ? 1 : 0.92;
+        tankContext.drawImage(meatIcon, firstX, iconY, mealIconSize, mealIconSize);
+        tankContext.restore();
+        tankContext.save();
+        tankContext.filter = dailyMeals.pm ? "none" : "grayscale(1) brightness(0.62)";
+        tankContext.globalAlpha = dailyMeals.pm ? 1 : 0.92;
+        tankContext.drawImage(meatIcon, secondX, iconY, mealIconSize, mealIconSize);
+        tankContext.restore();
+      }
+
       tankContext.textAlign = "center";
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 2 + rowHeight / 2 + 0.5);
+      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
       tankContext.restore();
     }
   }

@@ -1348,7 +1348,8 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   assert.match(html, /class="webpage-tab" data-webpage-destination="proteus" hidden/);
   assert.match(html, /id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden/);
   assert.match(html, /id="webSurfUnreadBadge" class="dock-button-badge"/);
-  assert.match(managementSource, /function renderWebSurfHomePage[\s\S]*Welcome, \$\{escapeHtml\(username\)\}[\s\S]*@WebSurf\.swim[\s\S]*Bookmarks[\s\S]*Inbox[\s\S]*WebSurf Account/);
+  assert.match(managementSource, /function renderWebSurfHomePage[\s\S]*Welcome, \$\{escapeHtml\(username\)\}[\s\S]*@WebSurf\.swim[\s\S]*Bookmarks[\s\S]*Inbox[\s\S]*websurf-status-bar[\s\S]*WebSurf 1\.4 · Secure[\s\S]*Mail storage/);
+  assert.doesNotMatch(managementSource, /class="websurf-account-card"/);
   assert.match(managementSource, /function getWebSurfInboxMessages[\s\S]*statements@bubbleboroughbank\.swim[\s\S]*orders@bubblebodega\.swim[\s\S]*rewards@bubbleboroughbank\.swim[\s\S]*research@proteusbiodyne\.swim/);
   assert.match(managementSource, /data-proteus-home-link \$\{proteusDiscovered \? "" : "hidden"\}/);
   assert.match(managementSource, /function markWebSurfMailRead[\s\S]*function markAllWebSurfMailRead/);
@@ -2002,7 +2003,7 @@ test("Bubble Borough Bank exposes account, reward math, and unlocked milestone v
   assert.match(customization, /function openBubbleBank\(/);
   assert.match(customization, /openStoreOverlay\(previousStoreTab, \{ render: false, rememberWebSurfPage: false \}\)/);
   assert.match(html, /id="bubbleBankPage"/);
-  assert.match(overlays, /assets\/misc\/bank_logo\.png/);
+  assert.match(overlays, /assets\/web\/bank\/bank_logo\.png/);
   assert.match(overlays, /data-bank-order-id/);
   assert.match(overlays, /showBubbleBodegaOrder/);
   assert.match(purchases, /entry\.orderId = order\.id/);
@@ -2376,13 +2377,16 @@ test("sound effect paths match deployed asset filename casing", () => {
   assert.match(bootstrap, /WHALE_BREATH_SOUND_PATH = "assets\/sounds\/whalebreath\.mp3"/);
 });
 
-test("overview and store keep the toolbar visible while compact dialogs cover it", () => {
+test("overview store and WebSurf Settings keep the toolbar visible while compact dialogs cover it", () => {
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const tank = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
   const css = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
 
   assert.match(rendering, /dom\.tankStage\.append\(dom\.tankBottomDock\)/);
-  assert.match(rendering, /runtime\.utilityOverlayOpen[\s\S]*runtime\.settingsOverlayOpen[\s\S]*runtime\.equipmentOverlayOpen/);
+  const dialogBlock = rendering.match(/const dialogCoversToolbar =([\s\S]*?);/)?.[1] || "";
+  assert.match(dialogBlock, /runtime\.utilityOverlayOpen/);
+  assert.match(dialogBlock, /runtime\.equipmentOverlayOpen/);
+  assert.doesNotMatch(dialogBlock, /runtime\.settingsOverlayOpen/);
   assert.match(rendering, /classList\.toggle\("is-behind-overlay", dialogCoversToolbar\)/);
   assert.match(css, /\.tank-bottom-dock\.is-behind-overlay\s*\{[\s\S]*z-index:\s*3/);
   assert.match(css, /data-utility-mode="fish-sell-confirm"[\s\S]*width:\s*min\(520px/);
@@ -2931,6 +2935,14 @@ test("a single glass-tap panic does not inflate a pufferfish", () => {
   assert.equal(c.getPufferThreatLevel(fish, species, Date.now()), 0);
 });
 
+test("Ratio Lock preserves desktop toolbar proportions on narrow browser windows", () => {
+  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(css, /html\[data-layout-ratio-lock="true"\] \.tank-bottom-dock\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?width:\s*auto;[\s\S]*?overflow-x:\s*visible;/);
+  assert.match(css, /html\[data-layout-ratio-lock="true"\]\[data-toolbar-position="bottom-center"\] \.tank-bottom-dock\s*\{[\s\S]*?left:\s*50%;[\s\S]*?right:\s*auto;[\s\S]*?gap:\s*9px;[\s\S]*?padding:\s*8px 9px;/);
+  assert.match(css, /html\[data-layout-ratio-lock="true"\] \.dock-button\s*\{[\s\S]*?width:\s*45px;[\s\S]*?height:\s*45px;/);
+  assert.match(css, /html\[data-layout-ratio-lock="true"\]\[data-toolbar-position="bottom-center"\] \.toolbar-tab\s*\{[\s\S]*?width:\s*52px;[\s\S]*?height:\s*var\(--toolbar-tab-thickness\)/);
+});
+
 test("Ratio Lock auto-captures only once and persists its saved reference", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
@@ -3152,6 +3164,24 @@ test("aquarium depth effects use one five-layer configuration and continuous sub
   assert.doesNotMatch(water, /drawUnderwaterLightingPass/);
 });
 
+
+test("authored decor footprint shadows keep arch openings light and real contacts dark", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const decor = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
+
+  assert.match(bootstrap, /authoredBaseAlphaMultiplier:\s*0\.24/);
+  assert.match(bootstrap, /authoredContactCoreAlphaMultiplier:\s*1\.68/);
+  assert.match(bootstrap, /authoredSpanMergeGapRatio:\s*0\.028/);
+  assert.match(decor, /decor\?\.shadowFootprintPath && spans\.length > 1/);
+  assert.match(decor, /span\.left - previous\.right <= maxGap/);
+  assert.match(decor, /hasAuthoredFootprint:\s*Boolean\(decor\.shadowFootprintPath && mask\?\.bounds\)/);
+  assert.match(decor, /broad cast shadow must span the full visible decor width/);
+  assert.match(decor, /shadow\.boundsWidth \* 0\.5 \* baseRadiusXMultiplier/);
+  assert.match(decor, /authoredFootprint \? shadow\.boundsCenterX : shadow\.x/);
+  assert.match(decor, /context\.createLinearGradient\(0, -1, 0, 1\)/);
+  assert.match(decor, /darker local[\s\S]*support spans extracted from the footprint PNG/);
+});
+
 test("selling an occupied tank returns durable contents to storage instead of blocking the sale", () => {
   const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const overview = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
@@ -3168,4 +3198,133 @@ test("selling an occupied tank returns durable contents to storage instead of bl
   assert.doesNotMatch(sellSource, /isTankEmpty/);
   assert.match(overview, /const canSell = tanks\.length > 1;/);
   assert.match(overview, /Fish, decor, and equipment will return to storage/);
+});
+
+test("BubbleBodega native search dropdown cannot click through and close WebSurf", () => {
+  const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const websurfStore = getWebSurfStoreSource();
+
+  assert.match(events, /WebSurf intentionally does not close when its backdrop is clicked/);
+  assert.doesNotMatch(events, /event\.target === dom\.storeOverlay && event\.button === 0[\s\S]*closeStoreOverlay\(\)/);
+  assert.match(websurfStore, /function armBodegaSearchSelectGuard/);
+  assert.match(websurfStore, /for \(const eventName of \["pointerdown", "mousedown", "pointerup", "mouseup", "click"\]\)[\s\S]*event\.stopImmediatePropagation\(\)/);
+  assert.match(websurfStore, /document\.addEventListener\("change"[\s\S]*trailBodegaSearchSelectGuard\(750\)/);
+});
+
+test("WebSurf Settings is a temporary browser tab and the toolbar settings tile is removed", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.doesNotMatch(html, /id="openSettingsButton"/);
+  assert.match(html, /id="webSurfSettingsButton"[^>]*data-open-websurf-settings/);
+  assert.match(html, /id="webSurfSettingsTab"[^>]*data-webpage-destination="settings"[^>]*data-websurf-temporary-tab="settings"[^>]*hidden/);
+  assert.match(bootstrap, /webSurfSettingsTabOpen:\s*false/);
+  assert.match(customization, /function openWebSurfSettingsPage/);
+  assert.match(customization, /runtime\.webSurfSettingsTabOpen = true/);
+  assert.match(customization, /function closeStoreOverlay[\s\S]*runtime\.webSurfSettingsTabOpen = false/);
+  assert.match(customization, /Settings is a temporary WebSurf tab[\s\S]*page !== "settings"/);
+  assert.match(rendering, /const showingSettings = runtime\.settingsOverlayOpen === true/);
+  assert.match(rendering, /activeWebPage = showingSettings \? "settings"/);
+  assert.match(settings, /ensureWebSurfSettingsPageMounted\(\)/);
+  assert.match(styles, /\.tankazon-store\.is-web-settings-open \.tankazon-panel/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page/);
+});
+
+test("WebSurf Settings account actions keep deliberate spacing at the locked desktop ratio", () => {
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-account-data-actions\s*\{[\s\S]*grid-template-columns:\s*132px 132px 150px;[\s\S]*gap:\s*14px;/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-data-actions \.small-button\s*\{[\s\S]*justify-content:\s*center;[\s\S]*column-gap:\s*7px;/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px;/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] #settingsOverlay\.websurf-settings-page \.settings-account-data-actions\s*\{[\s\S]*grid-template-columns:\s*132px 132px 150px;[\s\S]*gap:\s*14px;/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] #settingsOverlay\.websurf-settings-page \.cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px;/);
+});
+
+test("WebSurf Settings uses the full browser-page redesign without changing its controls", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.match(html, /class="settings-panel-copy websurf-settings-heading"/);
+  assert.doesNotMatch(html, /class="websurf-settings-brand-icon"/);
+  assert.doesNotMatch(html, /<p class="settings-kicker">Bubble Borough<\/p>/);
+  assert.match(html, /<h2 id="settingsTitle">Settings<\/h2>/);
+  assert.match(html, /Manage your Account, graphics, and game prefs\./);
+  assert.match(html, /data-sprite-src="assets\/icons\/data\.png"[^>]*>[\s\S]*Legal/);
+  assert.match(html, /data-sprite-src="assets\/icons\/pizza\.png"[^>]*>[\s\S]*Support Bubble Borough/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-dashboard-panel[\s\S]*width: 100%[\s\S]*max-width: none/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-dashboard-grid[\s\S]*"account account"[\s\S]*"left right"/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page #closeSettingsOverlay[\s\S]*display: none !important/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-other-actions[\s\S]*minmax\(132px, 1\.28fr\)/);
+  assert.doesNotMatch(html, /id="webSurfThemeSelect"/);
+});
+
+test("WebSurf dark mode supports Auto Yes No and themes first-party WebSurf pages", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const actions = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.match(html, /id="webSurfThemeModeSelect"[\s\S]*value="auto">Auto<[\s\S]*value="yes">Yes<[\s\S]*value="no">No</);
+  assert.match(bootstrap, /const WEBSURF_THEME_MODE_AUTO = "auto"/);
+  assert.match(bootstrap, /webSurfThemeMode: WEBSURF_THEME_MODE_AUTO/);
+  assert.match(settings, /function normalizeWebSurfThemeMode/);
+  assert.match(settings, /source\.webSurfDarkModeEnabled/);
+  assert.match(settings, /source\.webSurfDarkMode/);
+  assert.match(actions, /function getEffectiveWebSurfTheme/);
+  assert.match(actions, /window\.matchMedia\?\.\(WEBSURF_COLOR_SCHEME_QUERY\)/);
+  assert.match(actions, /function setWebSurfThemeMode/);
+  assert.match(actions, /dom\.storeOverlay\.dataset\.websurfTheme = theme/);
+  assert.match(events, /addEventListener\("change", handleWebSurfSystemThemeChange\)/);
+  assert.match(events, /setWebSurfThemeMode\(event\.currentTarget\?\.value\)/);
+  assert.match(rendering, /function renderStoreOverlay\(\) \{[\s\S]*syncWebSurfThemePresentation\(\)/);
+  assert.match(styles, /\.tankazon-store\[data-websurf-theme="dark"\] \.web-home-page/);
+  assert.match(styles, /\.tankazon-store\[data-websurf-theme="dark"\] #settingsOverlay\.websurf-settings-page/);
+  assert.match(styles, /data-webpage-destination="home"[\s\S]*brightness\(0\) invert\(1\)/);
+});
+
+test("Settings polish keeps simple turns forced, uses atlas icons, and Home can leave Settings directly", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.match(html, /for="simpleTurnAnimationsToggleInput" hidden/);
+  assert.match(bootstrap, /simpleTurnAnimationsOnly:\s*true/);
+  assert.match(persistence, /simpleTurnAnimationsOnly:\s*true/);
+  assert.match(customization, /function deactivateWebSurfSettingsPage\(\) \{[\s\S]*dom\.settingsOverlay\.hidden = true;[\s\S]*classList\.remove\("is-open"\)/);
+  assert.match(styles, /label\[for="simpleTurnAnimationsToggleInput"\][\s\S]*display:\s*none !important/);
+  assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-panel-copy h2[\s\S]*font-size:\s*1\.34rem/);
+});
+
+test("WebSurf Phase 5 keeps Home, mail, Settings, and browser chrome in desktop geometry under Ratio Lock", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+
+  assert.match(html, /styles\.css\?v=20260917-bodega-search-r4/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.store-overlay\.tankazon-store\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?display:\s*grid;[\s\S]*?padding:\s*clamp\(14px, 2%, 28px\);/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.tankazon-store \.tankazon-panel\s*\{[\s\S]*?width:\s*min\(1520px, calc\(100% - 28px\)\);[\s\S]*?height:\s*min\(95%, 940px\);/);
+  assert.match(styles, /html:not\(\[data-layout-ratio-lock="true"\]\) \.websurf-home-main/);
+  assert.match(styles, /html:not\(\[data-layout-ratio-lock="true"\]\) \.websurf-mail-sender\s*\{\s*display:\s*none;/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.websurf-mail-row\s*\{[\s\S]*?38px minmax\(190px, 260px\) minmax\(360px, 1fr\) 84px/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.websurf-status-bar\s*\{[\s\S]*?flex-direction:\s*row;/);
+  assert.match(styles, /html:not\(\[data-layout-ratio-lock="true"\]\) #settingsOverlay\.websurf-settings-page \.settings-dashboard-grid/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] #settingsOverlay\.websurf-settings-page \.settings-dashboard-grid\s*\{[\s\S]*?"account account"[\s\S]*?"left right"/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] #settingsOverlay\.websurf-settings-page \.settings-account-topbar\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?top:\s*10px;[\s\S]*?right:\s*12px;/);
+  assert.match(styles, /html\[data-layout-ratio-lock="true"\] #settingsOverlay\.websurf-settings-page \.settings-other-actions\s*\{[\s\S]*?minmax\(132px, 1\.28fr\)/);
+});
+
+
+
+test("WebSurf account actions keep vertical clearance below the top action row", () => {
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(styles, /settings-account-data-actions[\s\S]*grid-template-columns:\s*132px 132px 150px/);
+  assert.match(styles, /settings-account-data-actions[\s\S]*gap:\s*14px/);
+  assert.match(styles, /cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px/);
 });

@@ -147,11 +147,15 @@ function closeTutorialFeatureOverlay(featureId, runtimeKey) {
 }
 
 function openSettingsOverlay() {
-  openTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settings");
+  const tutorialChanged = beginTutorialFeatureStep(TUTORIAL_FEATURE_SETTINGS);
+  if (tutorialChanged) saveState();
+  return openWebSurfSettingsPage();
 }
 
 function closeSettingsOverlay() {
-  closeTutorialFeatureOverlay(TUTORIAL_FEATURE_SETTINGS, "settingsOverlayOpen");
+  const tutorialChanged = finishTutorialFeatureStep(TUTORIAL_FEATURE_SETTINGS);
+  if (tutorialChanged) saveState();
+  return closeWebSurfSettingsPage({ removeTab: true });
 }
 
 function openEquipmentOverlay() {
@@ -790,7 +794,6 @@ function buildTutorialActionMarkup(actions) {
 function createTutorialUiStateConfig(options = {}) {
   const toolbarVisible = true;
   const visibleButtons = new Set(Array.isArray(options.visibleButtons) ? options.visibleButtons : []);
-  visibleButtons.add("openSettingsButton");
   return {
     toolbarVisible,
     displayVisible: options.displayVisible !== false,
@@ -951,9 +954,6 @@ function getEffectiveDisplayCollapsed(uiSettings = getUiSettings(), tutorialUi =
 }
 
 function canUseTutorialToolbarControl(controlId) {
-  if (controlId === "openSettingsButton") {
-    return true;
-  }
   const tutorialState = getActiveTutorialStageRuntime(Date.now());
   if (!tutorialState) {
     return true;

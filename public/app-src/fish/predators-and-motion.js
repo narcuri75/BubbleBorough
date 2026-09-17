@@ -523,6 +523,57 @@ function setToolbarPosition(toolbarPosition) {
   renderUi(Date.now());
 }
 
+function getEffectiveWebSurfTheme(mode = getUiSettings().webSurfThemeMode) {
+  const normalizedMode = normalizeWebSurfThemeMode(mode);
+  if (normalizedMode === WEBSURF_THEME_MODE_YES) {
+    return "dark";
+  }
+  if (normalizedMode === WEBSURF_THEME_MODE_NO) {
+    return "light";
+  }
+  try {
+    return window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY)?.matches ? "dark" : "light";
+  } catch {
+    return "light";
+  }
+}
+
+function syncWebSurfThemePresentation() {
+  const mode = normalizeWebSurfThemeMode(getUiSettings().webSurfThemeMode);
+  const theme = getEffectiveWebSurfTheme(mode);
+  if (dom.storeOverlay instanceof HTMLElement) {
+    dom.storeOverlay.dataset.websurfThemeMode = mode;
+    dom.storeOverlay.dataset.websurfTheme = theme;
+  }
+  return theme;
+}
+
+function setWebSurfThemeMode(value, options = {}) {
+  if (!state) {
+    return false;
+  }
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    webSurfThemeMode: value
+  });
+  if (currentSettings.webSurfThemeMode === nextSettings.webSurfThemeMode) {
+    syncWebSurfThemePresentation();
+    return false;
+  }
+  state.uiSettings = nextSettings;
+  syncWebSurfThemePresentation();
+  if (options.save !== false) saveState();
+  if (options.render !== false) renderUi(Date.now(), { full: false });
+  if (options.showToast !== false) {
+    const label = nextSettings.webSurfThemeMode === WEBSURF_THEME_MODE_AUTO
+      ? "Auto"
+      : (nextSettings.webSurfThemeMode === WEBSURF_THEME_MODE_YES ? "Yes" : "No");
+    showToast(`WebSurf Dark Mode: ${label}.`);
+  }
+  return true;
+}
+
 function setToolbarTileColor(value) {
   if (!state) {
     return;

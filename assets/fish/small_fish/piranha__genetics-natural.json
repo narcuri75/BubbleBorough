@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "b43266d6-4b38-4ba1-ae0e-421639bda2f2",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "1472f0e0-d874-4d35-be36-6a6a31cee1d6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_lobetoothed.png"
+        },
+        {
+          "id": "0a6e96f5-fbf2-45ec-a2bb-4928ad8ac12c",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_manueli.png"
+        },
+        {
+          "id": "102cb987-22a7-4cf9-b5a1-e10762594210",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_piraya.png"
+        },
+        {
+          "id": "fed71941-d19c-48c9-85a9-ddac21284299",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_red_bellied.png"
+        },
+        {
+          "id": "e92b1456-c06d-43be-a41d-ed5d3bb49509",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_spotted.png"
+        },
+        {
+          "id": "cf14e606-1ef3-49b8-a773-a7354cea95fc",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_white.png"
+        },
+        {
+          "id": "c6292024-d744-46cb-b534-b0c87428010b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_wimple.png"
+        },
+        {
+          "id": "0820a2ec-30bf-4df5-9b1e-e7511261ace6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_black.png"
+        },
+        {
+          "id": "9c556093-dd89-45b1-9685-767d049ab05b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_cariba.png"
+        },
+        {
+          "id": "c6322bfa-2563-429d-97e4-44a578eea6e6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_elongated.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/piranha__genetics-natural.webp"
+  }
+}

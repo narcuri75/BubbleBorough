@@ -80,7 +80,7 @@ function renderPlacedDecor() {
             <button class="small-button" data-copy-size="${item.id}">Set Default</button>
             <button class="small-button alt" data-edit-decor-settings="${item.id}">Settings</button>
             <button class="small-button alt" data-ungroup-decor="${item.id}" ${grouped ? "" : "disabled"}>Ungroup</button>
-            <button class="small-button alt" data-sell-decor-placed="${item.id}" ${grouped ? "disabled" : ""}>Sell</button>
+            <button class="small-button alt" data-sell-decor-placed="${item.id}" ${grouped ? "disabled" : ""}>${typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor) ? "Rehome" : "Sell"}</button>
             <button class="small-button alt" data-store-decor="${item.id}" ${grouped ? "disabled" : ""}>Put Away</button>
           </div>
         </article>
@@ -100,13 +100,16 @@ function renderBackgrounds() {
           <div>
             <strong>${background.name}</strong>
           </div>
-          <button data-select-background="${background.key}">
-            ${selected
-          ? "Using This Background"
-          : isLocalImageBackgroundKey(background.key) && !hasLocalBackgroundImage()
-            ? "Choose Image"
-            : "Use Background"}
-          </button>
+          <div class="shop-button-row">
+            <button data-select-background="${background.key}">
+              ${selected
+            ? "Using This Background"
+            : isLocalImageBackgroundKey(background.key) && !hasLocalBackgroundImage()
+              ? "Choose Image"
+              : "Use Background"}
+            </button>
+            ${background.customUploadAsset === true ? `<button class="small-button alt" type="button" data-delete-custom-background="${escapeHtml(background.key)}">Delete</button>` : ""}
+          </div>
         </article>
       `;
     })
@@ -161,6 +164,8 @@ function renderBackgrounds() {
   }
 
   if (dom.editTankBackgroundList) {
+    const storageMeter = document.getElementById("editTankCustomStorageMeter");
+    if (storageMeter) setMarkupIfChanged("edit-tank-custom-storage-meter", storageMeter, renderCustomContentStorageMeter({ compact: true }));
     const localImageReady = hasLocalBackgroundImage();
     const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
     const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
@@ -173,10 +178,10 @@ function renderBackgrounds() {
           <div class="edit-tank-local-image-preview">${localPreview}</div>
           <div class="edit-tank-local-image-copy">
             <strong>Custom Image</strong>
-            <span>${localImageReady ? "Your uploaded background" : "Upload your own background"}</span>
+            <span>${localImageReady ? "Legacy uploaded background" : `Add a reusable custom background for ${CUSTOM_BACKGROUND_COST} coins`}</span>
           </div>
           <div class="edit-tank-local-image-actions">
-            <button type="button" data-open-local-background-picker>${localImageReady ? "Replace" : "Choose Image"}</button>
+            <button type="button" data-open-local-background-picker>Add Custom Image</button>
             ${localImageReady ? `<button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}">${localImageSelected ? "Selected" : "Use Image"}</button>` : ""}
             ${localImageReady ? `<button class="small-button alt" type="button" data-clear-local-background title="Clear custom image" aria-label="Clear custom image">×</button>` : ""}
           </div>
@@ -187,15 +192,18 @@ function renderBackgrounds() {
     const imageCards = ownedImageBackgrounds.map((background) => {
       const selected = state.selectedBackground === background.key;
       return `
-        <button
-          class="edit-tank-image-option ${selected ? "is-selected" : ""}"
-          type="button"
-          data-select-background="${background.key}"
-          aria-pressed="${selected}"
-          title="Use ${escapeHtml(background.name)}">
-          ${renderBackgroundPreview(background, "edit-tank-image-thumb")}
-          <span>${escapeHtml(background.name)}</span>
-        </button>
+        <div class="edit-tank-image-option-shell">
+          <button
+            class="edit-tank-image-option ${selected ? "is-selected" : ""}"
+            type="button"
+            data-select-background="${background.key}"
+            aria-pressed="${selected}"
+            title="Use ${escapeHtml(background.name)}">
+            ${renderBackgroundPreview(background, "edit-tank-image-thumb")}
+            <span>${escapeHtml(background.name)}</span>
+          </button>
+          ${background.customUploadAsset === true ? `<button class="small-button alt" type="button" data-delete-custom-background="${escapeHtml(background.key)}" title="Delete ${escapeHtml(background.name)}">Delete</button>` : ""}
+        </div>
       `;
     }).join("");
 
@@ -203,9 +211,11 @@ function renderBackgrounds() {
       "edit-tank-background-list",
       dom.editTankBackgroundList,
       `<div class="edit-tank-image-layout">
-        ${localMarkup}
+        <section class="edit-tank-custom-content">
+          ${localMarkup}
+        </section>
         <div class="edit-tank-built-in-backgrounds">
-          <div class="edit-tank-built-in-backgrounds-label">Built-in Backgrounds</div>
+          <div class="edit-tank-built-in-backgrounds-label">Background Library</div>
           <div class="edit-tank-image-options">${imageCards || `<span class="edit-tank-image-empty">No unlocked image backgrounds.</span>`}</div>
         </div>
       </div>`
@@ -684,6 +694,25 @@ function renderCustomGravelControls() {
   }
 
   const choices = getCustomGravelColorChoices();
+  const activeSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const substrateChoices = [
+    ["auto", "Match Water", "Freshwater uses river rock. Saltwater uses sand."],
+    ["river-rock", "River Rock", "Natural rounded river-stone substrate."],
+    ["sand", "Sand", "Pale fine-grain substrate."],
+    ["custom", "Custom Gravel", "Use the three recolorable gravel layers below."]
+  ];
+  const substrateMarkup = `
+    <article class="custom-gravel-layer-card">
+      <div class="custom-gravel-layer-header"><div><strong>Substrate</strong></div></div>
+      <div class="shop-button-row">
+        ${substrateChoices.map(([value, label, description]) => {
+          const requiredStyle = value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value;
+          const owned = isSubstrateOwned(requiredStyle);
+          return `<button type="button" class="small-button ${activeSubstrateStyle === value ? "is-selected" : "alt"}" data-substrate-style="${value}" title="${escapeHtml(owned ? description : `${description} Unlock in BubbleBodega first.`)}" aria-pressed="${activeSubstrateStyle === value}" ${owned ? "" : "disabled"}>${escapeHtml(label)}${owned ? "" : " (Locked)"}</button>`;
+        }).join("")}
+      </div>
+    </article>
+  `;
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
 
@@ -739,7 +768,7 @@ function renderCustomGravelControls() {
   if (standardContainers.length) {
     const markup = `
       <div class="custom-gravel-panel-shell">
-        <div class="custom-gravel-layer-list">${layerMarkup}</div>
+        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
       </div>
     `;
     for (const [cacheKey, container] of standardContainers) {
@@ -750,7 +779,7 @@ function renderCustomGravelControls() {
   if (editContainer) {
     const editMarkup = `
       <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
-        <div class="custom-gravel-layer-list">${layerMarkup}</div>
+        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
       </div>
     `;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
@@ -802,9 +831,6 @@ function renderControls(now) {
   }
 
   dom.feedButton.disabled = false;
-  if (dom.medicineButton) {
-    dom.medicineButton.disabled = false;
-  }
 
   if (dom.toggleDebugMenuButton) {
     const debugSidebarOpen = debugMode && runtime.debugSidebarOpen;
@@ -966,39 +992,18 @@ function renderControls(now) {
     );
   }
 
-  dom.spongeButton.classList.toggle("is-active", runtime.cleaningMode);
-  dom.scoopButton?.classList.toggle("is-active", runtime.scoopMode);
   dom.feedButton.classList.toggle("is-active", runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey));
-  dom.medicineButton?.classList.toggle("is-active", runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey));
   dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen || runtime.tankEditMode);
   dom.openSettingsButton?.classList.toggle("is-active", runtime.settingsOverlayOpen);
   dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
   dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
   dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
-  // Legacy popup care submenu is intentionally disabled. Care opens the same
-  // horizontal tray used for medicine, scrub, and scoop controls.
-  const toolbarCareMenuOpen = false;
-  if (runtime.toolbarActionMenu === "care") {
-    runtime.toolbarActionMenu = "";
-  }
-  const toolbarEditMenuOpen = false;
-  if (runtime.toolbarActionMenu === "edit") {
-    runtime.toolbarActionMenu = "";
-  }
   const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
   const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
-  if (dom.toolbarCareMenu) {
-    dom.toolbarCareMenu.hidden = !toolbarCareMenuOpen;
-  }
-  if (dom.toolbarEditMenu) {
-    dom.toolbarEditMenu.hidden = true;
-    dom.toolbarEditMenu.setAttribute("aria-hidden", "true");
-  }
-  dom.careMenuButton?.classList.toggle("is-active", toolbarCareMenuOpen || careToolActive);
-  dom.editMenuButton?.classList.toggle("is-active", toolbarEditMenuOpen || editToolActive);
+  dom.careMenuButton?.classList.toggle("is-active", careToolActive);
+  dom.editMenuButton?.classList.toggle("is-active", editToolActive);
   dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
-  dom.editMenuButton?.setAttribute("aria-expanded", "false");
-  dom.tankBottomDock?.classList.toggle("has-open-action-menu", Boolean(dom.toolbarCareMenu) && toolbarCareMenuOpen);
+  dom.editMenuButton?.setAttribute("aria-expanded", String(editToolActive));
   if (dom.toolbarTab) {
     const uiSettings = getUiSettings();
     const toolbarCollapsed = uiSettings.toolbarCollapsed;
@@ -1064,16 +1069,6 @@ function renderControls(now) {
       dom.toggleMouseLockButton.textContent = locked ? "Unlock Input" : "Lock Input";
     }
   }
-  dom.editModeDockButton?.classList.toggle("is-active", runtime.editTankMode);
-  if (dom.editModeDockButton) {
-    dom.editModeDockButton.title = runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor";
-    dom.editModeDockButton.setAttribute("aria-label", runtime.editTankMode ? "Edit Decor (Active)" : "Edit Decor");
-  }
-  dom.equipmentEditModeDockButton?.classList.toggle("is-active", runtime.equipmentEditMode);
-  if (dom.equipmentEditModeDockButton) {
-    dom.equipmentEditModeDockButton.title = runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment";
-    dom.equipmentEditModeDockButton.setAttribute("aria-label", runtime.equipmentEditMode ? "Equipment (Active)" : "Equipment");
-  }
   const activeDecorShortcutTarget = getActiveDecorShortcutTarget();
   const activeDecorShortcutKey = activeDecorShortcutTarget?.decorKey || "";
   const hasActiveDecorShortcutTarget = Boolean(activeDecorShortcutKey);
@@ -1106,11 +1101,6 @@ function renderControls(now) {
     dom.editScaleDownButton.title = scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Decrease decor size (-)";
     dom.editScaleDownButton.setAttribute("aria-label", scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Decrease decor size (-)");
   }
-  dom.fishEditModeDockButton?.classList.toggle("is-active", runtime.fishEditMode);
-  if (dom.fishEditModeDockButton) {
-    dom.fishEditModeDockButton.title = runtime.fishEditMode ? "Manage Fish (Active)" : "Manage Fish";
-    dom.fishEditModeDockButton.setAttribute("aria-label", runtime.fishEditMode ? "Manage Fish (Active)" : "Manage Fish");
-  }
   dom.toggleEditMode.classList.toggle("is-active", runtime.editTankMode);
   dom.toggleEditMode.textContent = runtime.editTankMode ? "Editing" : "Edit";
   renderScrubProgress();
@@ -1136,55 +1126,145 @@ function renderToolCursor() {
 
   if (!visible) {
     dom.toolCursor.replaceChildren();
+    dom.toolCursor.className = "tool-cursor";
+    delete dom.toolCursor.dataset.renderKey;
     return;
   }
 
-  const iconPath = getActiveToolCursorIconPath();
-  if (iconPath) {
-    let image = dom.toolCursor.firstElementChild;
-    if (!image || image.tagName !== "IMG") {
-      image = document.createElement("img");
+  const cursorSpec = getActiveToolCursorSpec();
+  const renderKey = cursorSpec
+    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || ""].join("|")
+    : "";
+
+  // A mode toggle clears the cursor's layers. Rebuild when it is re-enabled
+  // even if it uses the same food and therefore has the same render key.
+  if (dom.toolCursor.dataset.renderKey !== renderKey || !dom.toolCursor.childElementCount) {
+    dom.toolCursor.replaceChildren();
+    dom.toolCursor.className = "tool-cursor";
+    dom.toolCursor.dataset.renderKey = renderKey;
+
+    if (cursorSpec?.type === "layered-food") {
+      dom.toolCursor.classList.add("is-food-cursor");
+      if (cursorSpec.variant) dom.toolCursor.classList.add(`is-${cursorSpec.variant}`);
+
+      const scoop = document.createElement("img");
+      scoop.alt = "";
+      scoop.draggable = false;
+      scoop.setAttribute("aria-hidden", "true");
+      scoop.className = "tool-cursor-layer tool-cursor-scoop";
+      dom.toolCursor.append(scoop);
+      void setAssetImageSource(scoop, cursorSpec.base);
+
+      const pellets = document.createElement("img");
+      pellets.alt = "";
+      pellets.draggable = false;
+      pellets.setAttribute("aria-hidden", "true");
+      pellets.className = "tool-cursor-layer tool-cursor-pellets";
+      dom.toolCursor.append(pellets);
+      void setAssetImageSource(pellets, cursorSpec.overlay);
+    } else if (cursorSpec?.base) {
+      const image = document.createElement("img");
       image.alt = "";
       image.draggable = false;
       image.setAttribute("aria-hidden", "true");
-      dom.toolCursor.replaceChildren(image);
+      image.className = "tool-cursor-layer tool-cursor-single";
+      dom.toolCursor.append(image);
+      void setAssetImageSource(image, cursorSpec.base);
     }
-    if ((image.getAttribute("data-sprite-src") || image.getAttribute("src")) !== iconPath) {
-      void setAssetImageSource(image, iconPath);
-    }
-  } else {
-    dom.toolCursor.replaceChildren();
   }
 
   dom.toolCursor.style.left = `${runtime.pointerStagePx.x}px`;
   dom.toolCursor.style.top = `${runtime.pointerStagePx.y}px`;
 }
 
-function getActiveToolCursorIconPath() {
+function getActiveToolCursorSpec() {
   if (runtime.medicineModeKey) {
-    return TOOL_CURSOR_ICON_PATHS.medicine;
+    if (runtime.medicineModeKey === "firstAid") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid };
+    }
+    if (runtime.medicineModeKey === "waterStress") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress };
+    }
+    if (runtime.medicineModeKey === "infectionTreatment") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection };
+    }
+    if (runtime.medicineModeKey === "antiParasite") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite };
+    }
+    if (runtime.medicineModeKey === "betaBlocker") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum };
+    }
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine };
   }
+
   if (runtime.feedingModeFoodKey) {
-    return TOOL_CURSOR_ICON_PATHS.feed;
+    if (runtime.feedingModeFoodKey === "basic") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
+        variant: "basic-food"
+      };
+    }
+    if (runtime.feedingModeFoodKey === "frisky") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
+        variant: "frisky-food"
+      };
+    }
+    if (runtime.feedingModeFoodKey === "algaeWafers") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.algaeWafers,
+        variant: "algae-wafers"
+      };
+    }
+    if (runtime.feedingModeFoodKey === "brineShrimp") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.brineShrimp,
+        variant: "brine-shrimp"
+      };
+    }
+    if (runtime.feedingModeFoodKey === "carnivore") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.carnivore,
+        variant: "carnivore-food"
+      };
+    }
+    if (runtime.feedingModeFoodKey === "chum") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket };
+    }
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed };
   }
+
   if (runtime.scoopMode) {
-    return TOOL_CURSOR_ICON_PATHS.scoop;
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet };
   }
   if (runtime.cleaningMode) {
-    return TOOL_CURSOR_ICON_PATHS.cleaning;
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning };
   }
-  return "";
+  return null;
 }
 
 function renderScrubProgress() {
   const scrubPercent = Math.round(getScrubCoverage() * 100);
   if (dom.scrubProgressLabel) {
+    const now = Date.now();
+    const cleaningIncome = getTankCleaningIncomeStatus(getCurrentTank(), now);
     const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
-      ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - Date.now()) / 1000))
+      ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
       : 0;
+    const earningsText = `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today`;
     dom.scrubProgressLabel.textContent = autoCompleteSeconds
-      ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s`
-      : `${scrubPercent}%`;
+      ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
+      : `${scrubPercent}% - ${earningsText}`;
   }
   if (dom.scrubProgressBar) {
     dom.scrubProgressBar.style.width = `${scrubPercent}%`;
@@ -1226,7 +1306,8 @@ function animationLoop(frameTime) {
   updateAmbienceAudioLoop();
   if (runtime.boroughOverviewOpen) {
     const overviewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-    paintBoroughSnapshots(getAllTanks(), now);
+    // Keep the tank backdrop static while Overview is open.
+    // Only the miniature fish overlay continues animating.
     renderBoroughOverviewFish(now);
     if (runtime.debugFrameProfilerEnabled) {
       endDebugFrameProfilerSection("boroughOverview", overviewProfileStartedAt);
@@ -1249,6 +1330,9 @@ function animationLoop(frameTime) {
   updateGlassTapEffects(now);
   const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateFishMotion(now, deltaSeconds);
+  if (typeof updateMoodBubbles === "function") {
+    updateMoodBubbles(now);
+  }
   updateMachineryMotion(now, deltaSeconds);
   if (runtime.debugFrameProfilerEnabled) {
     endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);

@@ -162,6 +162,9 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     yNorm: placement.yNorm,
     scale: scaleBase,
     tankLayer: finalLayer,
+    active: typeof getPlacedDecorWaterActiveState === "function"
+      ? getPlacedDecorWaterActiveState({ decorKey }, getCurrentTank())
+      : true,
     flipped,
     flippedY,
     freePlacementEnabled
@@ -229,7 +232,9 @@ function placeDecorAtPoint(xNorm, yNorm) {
   }
   saveState();
   renderUi(now);
-  showToast(`${created.decor?.name || "Decor"} placed.`);
+  showToast(created.placedItem.active === false && created.decor?.living === true
+    ? `${created.decor?.name || "Decor"} placed, but inactive in this water type.`
+    : `${created.decor?.name || "Decor"} placed.`);
 }
 
 function isDecorLayerShortcutEndpoint(decorKey, layer, step) {
@@ -1261,6 +1266,9 @@ function updateDraggedDecor(point) {
       offsetYNorm: drag.offsetYNorm,
       tankLayer: drag.tankLayer
     }];
+  const pointerYNorm = point.y / TANK_HEIGHT;
+  const allowSurfaceOverlapSnap = Number.isFinite(Number(drag.startPointerYNorm))
+    && pointerYNorm < Number(drag.startPointerYNorm) - 0.005;
 
   if (dragItems.length > 1) {
     updateDraggedDecorGroup(drag, dragItems, point.x / TANK_WIDTH, point.y / TANK_HEIGHT);
@@ -1276,7 +1284,8 @@ function updateDraggedDecor(point) {
     draggedItem.tankLayer = clampTankLayer(dragItem.tankLayer ?? draggedItem.tankLayer ?? DEFAULT_TANK_LAYER);
     const placement = clampDecorPlacement(point.x / TANK_WIDTH + dragItem.offsetXNorm, point.y / TANK_HEIGHT + dragItem.offsetYNorm, {
       item: draggedItem,
-      applyGravity: true
+      applyGravity: true,
+      allowSurfaceOverlapSnap
     });
     draggedItem.xNorm = placement.xNorm;
     draggedItem.yNorm = placement.yNorm;
@@ -1363,6 +1372,107 @@ function clampFishPlacement(xNorm, yNorm, species = null, options = {}) {
 function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
   if (!fish || !species || isFishDead(fish)) {
     return false;
+  }
+
+  // Snails are substrate animals, not free swimmers. Keeping their body and
+  // target on the deepest floor prevents random depth retargets from making
+  // them jump onto mid-water scenery or visibly warp across the tank.
+  if (species.behavior === "snail") {
+    const layer = TANK_DEPTH_LAYERS;
+    const xNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.xNorm)) ? fish.xNorm : 0.5, fish, species);
+    const targetXNorm = clampFishXNormToMobileViewport(Number.isFinite(Number(fish.targetXNorm)) ? fish.targetXNorm : xNorm, fish, species);
+    const bottomYNorm = clampFishYNormToLayer(1, fish, species, layer);
+    const isBeingDragged = runtime.fishDragState?.fishId === fish.id;
+    const settleStartedAt = Number(fish.snailSettlingStartedAt);
+    const settleDurationMs = Number(fish.snailSettlingDurationMs);
+    const isSettling = !isBeingDragged
+      && Number.isFinite(settleStartedAt)
+      && Number.isFinite(settleDurationMs)
+      && settleDurationMs > 0;
+
+    // A snail is still a floor animal, but lifting one by hand should not make
+    // it teleport back to the gravel on the next simulation frame. Hold the
+    // dragged position, then use a slow eased descent after release.
+    if (isBeingDragged) {
+      return false;
+    }
+
+    if (isSettling) {
+      const now = Date.now();
+      const elapsed = Math.max(0, now - settleStartedAt);
+      const progress = clamp(elapsed / settleDurationMs, 0, 1);
+      const easedProgress = progress * progress * (3 - 2 * progress);
+      const startYNorm = Number.isFinite(Number(fish.snailSettlingStartYNorm))
+        ? Number(fish.snailSettlingStartYNorm)
+        : fish.yNorm;
+      const startXNorm = Number.isFinite(Number(fish.snailSettlingStartXNorm))
+        ? Number(fish.snailSettlingStartXNorm)
+        : fish.xNorm;
+      const releaseVelocityX = Number(fish.snailSettlingVelocityXNormPerMs) || 0;
+      // Water drag should bleed off most of the toss quickly. Keep a little
+      // glide so the release still feels physical, but prevent a snail from
+      // flying across the tank after a fast cursor movement.
+      const momentumSeconds = 0.48;
+      const momentumXNorm = releaseVelocityX * 1000 * momentumSeconds * (1 - Math.exp(-elapsed / (momentumSeconds * 1000)));
+      const settlingXNorm = clampFishXNormToMobileViewport(startXNorm + momentumXNorm, fish, species);
+      // Treat a dropped snail like a small buoyant toss instead of sliding it
+      // along a straight rail. The baseline still eases toward the gravel,
+      // while a short-lived upward impulse creates a visible arc before the
+      // normal underwater descent takes over.
+      const tossDurationMs = 2200;
+      const tossProgress = clamp(elapsed / tossDurationMs, 0, 1);
+      const dropDistance = Math.max(0, bottomYNorm - startYNorm);
+      const arcHeight = Math.min(0.12, Math.max(0.035, dropDistance * 0.42));
+      const tossArcOffset = -Math.sin(Math.PI * tossProgress) * arcHeight;
+      const settlingYNorm = startYNorm + (bottomYNorm - startYNorm) * easedProgress + tossArcOffset;
+      const changed = Math.abs(settlingXNorm - fish.xNorm) > 0.000001
+        || Math.abs(settlingYNorm - fish.yNorm) > 0.000001
+        || Math.abs(settlingXNorm - fish.targetXNorm) > 0.000001
+        || Math.abs(settlingYNorm - fish.targetYNorm) > 0.000001
+        || getFishTankLayer(fish) !== layer
+        || getDesiredFishTankLayer(fish) !== layer;
+      fish.xNorm = settlingXNorm;
+      fish.yNorm = settlingYNorm;
+      fish.targetXNorm = settlingXNorm;
+      fish.targetYNorm = settlingYNorm;
+      fish.motionVelocityYNorm = 0;
+      setFishTankLayers(fish, layer, layer);
+      if (progress >= 1) {
+        delete fish.snailSettlingStartedAt;
+        delete fish.snailSettlingDurationMs;
+        delete fish.snailSettlingStartXNorm;
+        delete fish.snailSettlingStartYNorm;
+        delete fish.snailSettlingVelocityXNormPerMs;
+        // Use the normal gravel landing effect so the snail's arrival has the
+        // same kicked-pebble and sediment response as a dropped gravel item.
+        if (typeof spawnGravelLandingEffects === "function") {
+          spawnGravelLandingEffects(fish.xNorm * TANK_WIDTH, bottomYNorm * TANK_HEIGHT, {
+            now,
+            intensity: 0.72,
+            direction: typeof getFishFacingDirection === "function"
+              ? getFishFacingDirection(fish)
+              : (fish.direction < 0 ? -1 : 1),
+            forwardOnly: true,
+            frontOfFish: true
+          });
+        }
+      }
+      return changed;
+    }
+
+    const changed = Math.abs(xNorm - fish.xNorm) > 0.000001
+      || Math.abs(bottomYNorm - fish.yNorm) > 0.000001
+      || Math.abs(targetXNorm - fish.targetXNorm) > 0.000001
+      || Math.abs(bottomYNorm - fish.targetYNorm) > 0.000001
+      || getFishTankLayer(fish) !== layer
+      || getDesiredFishTankLayer(fish) !== layer;
+    fish.xNorm = xNorm;
+    fish.yNorm = bottomYNorm;
+    fish.targetXNorm = targetXNorm;
+    fish.targetYNorm = bottomYNorm;
+    fish.motionVelocityYNorm = 0;
+    setFishTankLayers(fish, layer, layer);
+    return changed;
   }
 
   if (isWhaleBreathActive(fish, species)) {
@@ -1453,7 +1563,12 @@ function beginFishDrag(fish, point, pointerId) {
     fishId: fish.id,
     offsetXNorm: fish.xNorm - point.x / TANK_WIDTH,
     offsetYNorm: fish.yNorm - point.y / TANK_HEIGHT,
-    moved: false
+    moved: false,
+    lastXNorm: fish.xNorm,
+    lastYNorm: fish.yNorm,
+    lastAt: now,
+    velocityXNormPerMs: 0,
+    velocityYNormPerMs: 0
   };
 
   try {
@@ -1505,6 +1620,15 @@ function updateDraggedFish(point) {
     runtime.suppressNextTankClick = true;
   }
 
+  const elapsedMs = Math.max(8, now - Number(drag.lastAt || now));
+  const instantVelocityX = (placement.xNorm - Number(drag.lastXNorm ?? fish.xNorm)) / elapsedMs;
+  const instantVelocityY = (placement.yNorm - Number(drag.lastYNorm ?? fish.yNorm)) / elapsedMs;
+  drag.velocityXNormPerMs = drag.velocityXNormPerMs * 0.35 + instantVelocityX * 0.65;
+  drag.velocityYNormPerMs = drag.velocityYNormPerMs * 0.35 + instantVelocityY * 0.65;
+  drag.lastXNorm = placement.xNorm;
+  drag.lastYNorm = placement.yNorm;
+  drag.lastAt = now;
+
   fish.xNorm = placement.xNorm;
   fish.yNorm = placement.yNorm;
   fish.targetXNorm = placement.xNorm;
@@ -1536,7 +1660,41 @@ function finalizeFishDrag() {
   const species = getSpeciesForFish(fish);
   fish.targetAt = now + 900 + Math.random() * 1400;
   fish.hangoutDecorId = null;
-  if (species?.behavior === "sucker") {
+  if (species?.behavior === "snail") {
+    const layer = TANK_DEPTH_LAYERS;
+    const bottomYNorm = clampFishYNormToLayer(1, fish, species, layer);
+    const startYNorm = Number.isFinite(Number(fish.yNorm)) ? Number(fish.yNorm) : bottomYNorm;
+    if (drag.moved && Math.abs(bottomYNorm - startYNorm) > 0.0005) {
+      fish.snailSettlingStartedAt = now;
+      fish.snailSettlingDurationMs = 6500;
+      fish.snailSettlingStartXNorm = fish.xNorm;
+      fish.snailSettlingStartYNorm = startYNorm;
+      const releaseVelocityX = Number(drag.velocityXNormPerMs) || 0;
+      const releaseVelocityY = Number(drag.velocityYNormPerMs) || 0;
+      // Ignore cursor jitter on a near-vertical toss. Only preserve lateral
+      // momentum when the release has a clearly meaningful horizontal
+      // component; otherwise the snail should fall close to the release line.
+      const lateralVelocity = Math.abs(releaseVelocityX) >= Math.abs(releaseVelocityY) * 0.35
+        ? releaseVelocityX
+        : 0;
+      fish.snailSettlingVelocityXNormPerMs = clamp(lateralVelocity, -0.00055, 0.00055);
+      if (Math.abs(fish.snailSettlingVelocityXNormPerMs) > 0.00001) {
+        fish.direction = fish.snailSettlingVelocityXNormPerMs < 0 ? -1 : 1;
+        fish.displayDirection = fish.direction;
+      }
+      fish.targetXNorm = fish.xNorm;
+      fish.targetYNorm = startYNorm;
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+    } else {
+      delete fish.snailSettlingStartedAt;
+      delete fish.snailSettlingDurationMs;
+      delete fish.snailSettlingStartXNorm;
+      delete fish.snailSettlingStartYNorm;
+      delete fish.snailSettlingVelocityXNormPerMs;
+    }
+    setFishTankLayers(fish, layer, layer);
+  } else if (species?.behavior === "sucker") {
     const glassLayer = getSuckerFishGlassLayer(fish);
     setFishTankLayers(fish, glassLayer, glassLayer);
   } else {
@@ -1712,6 +1870,69 @@ function storeDecor(placedId) {
   renderUi(Date.now());
 }
 
+function getNextProteusCorpseDonationMorning(now = Date.now()) {
+  const date = new Date(Number.isFinite(Number(now)) ? Number(now) : Date.now());
+  const nextMorning = new Date(date.getFullYear(), date.getMonth(), date.getDate() + 1, 8, 0, 0, 0);
+  return nextMorning.getTime();
+}
+
+function getProteusCorpseDonationSpeciesName(fish) {
+  const species = typeof getSpeciesForFish === "function" ? getSpeciesForFish(fish) : null;
+  const configuredName = String(species?.name || species?.commonName || "").trim();
+  if (configuredName) return configuredName.slice(0, 100);
+  const speciesId = String(species?.id || fish?.speciesId || "").trim();
+  if (!speciesId) return "Unclassified aquatic specimen";
+  return speciesId.replace(/[-_]+/g, " ").replace(/\b\w/g, (letter) => letter.toUpperCase()).slice(0, 100);
+}
+
+function queueProteusCorpseDonation(fish, now = Date.now(), options = {}) {
+  if (!state || !fish || !isFishDead(fish)) return false;
+  const fishId = String(fish.id || "").trim();
+  if (!fishId) return false;
+  state.proteusCorpseDonationDigests ||= [];
+  if (state.proteusCorpseDonationDigests.some((digest) => Array.isArray(digest?.fish) && digest.fish.some((entry) => entry?.fishId === fishId))) {
+    return false;
+  }
+
+  const donatedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  const scheduledAt = getNextProteusCorpseDonationMorning(donatedAt);
+  const digestId = `proteus-corpse-donation-${scheduledAt}`;
+  let digest = state.proteusCorpseDonationDigests.find((entry) => entry?.id === digestId || Number(entry?.scheduledAt) === scheduledAt);
+  if (!digest) {
+    digest = { id: digestId, scheduledAt, createdAt: donatedAt, fish: [] };
+    state.proteusCorpseDonationDigests.push(digest);
+  }
+  digest.createdAt = Math.min(Math.max(0, Number(digest.createdAt) || donatedAt), donatedAt);
+  digest.fish ||= [];
+  digest.fish.push({
+    fishId,
+    fishName: String(fish.name || "Unnamed specimen").trim().slice(0, 80) || "Unnamed specimen",
+    speciesId: String(fish.speciesId || "").trim().slice(0, 100),
+    speciesName: getProteusCorpseDonationSpeciesName(fish),
+    diedAt: Math.max(0, Number(fish.deadAt) || donatedAt),
+    donatedAt,
+    source: String(options.source || "removal").trim().slice(0, 40) || "removal"
+  });
+  state.proteusCorpseDonationDigests = sanitizeProteusCorpseDonationDigests(state.proteusCorpseDonationDigests);
+  state.proteusCorpseDonationCount = Math.max(0, Math.floor(Number(state.proteusCorpseDonationCount) || 0)) + 1;
+  const zombieDonationUnlockCount = typeof PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT !== "undefined"
+    ? PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT
+    : 100;
+  const zombieAuthorizationDelayMs = typeof PROTEUS_ZOMBIE_FISH_AUTHORIZATION_DELAY_MS !== "undefined"
+    ? PROTEUS_ZOMBIE_FISH_AUTHORIZATION_DELAY_MS
+    : 5 * 60 * 1000;
+  if (
+    state.proteusCorpseDonationCount >= zombieDonationUnlockCount
+    && !(Number(state.proteusZombieFishUnlockedAt) > 0)
+  ) {
+    state.proteusZombieFishUnlockedAt = donatedAt;
+    state.proteusZombieFishOfferAt = scheduledAt + zombieAuthorizationDelayMs;
+    state.proteusDiscovered = true;
+    if (!(Number(state.proteusDiscoveredAt) > 0)) state.proteusDiscoveredAt = donatedAt;
+  }
+  return true;
+}
+
 function storeFish(fishId, options = {}) {
   const allowDead = Boolean(options.allowDead);
   const index = state.fish.findIndex((entry) => entry.id === fishId);
@@ -1726,8 +1947,14 @@ function storeFish(fishId, options = {}) {
     return false;
   }
   if (dead && !allowDead) {
-    showToast("Use the toilet button to dispose of a deceased fish.");
+    showToast("Use the scoop or toilet button to remove a deceased fish.");
     return false;
+  }
+  if (dead && allowDead) {
+    return disposeFish(fishId, {
+      source: String(options.source || "scoop"),
+      now: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now()
+    });
   }
 
   if (runtime.debugForcedCaveFishId === fishId) {
@@ -1738,6 +1965,9 @@ function storeFish(fishId, options = {}) {
   const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
   preserveTankDirtinessThroughChange(now, () => {
     state.fish.splice(index, 1);
+    if (dead && typeof clearRemovedDeadFishRuntimeState === "function") {
+      clearRemovedDeadFishRuntimeState(fish);
+    }
     clearPiranhaAttackState(fish);
     fish.feedingPelletId = null;
     fish.comfortDamageProgressMs = 0;
@@ -1775,12 +2005,21 @@ function storeFish(fishId, options = {}) {
     fish.piranhaConsumptionStartedAt = null;
     fish.piranhaConsumptionEndsAt = null;
     fish.piranhaLastBloodAt = null;
-    fish.storageFrozen = true;
-    fish.storageMoodTone = storageMoodTone;
-    fish.storedAt = now;
-    fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
-    fish.frozenLastSimulatedAt = now;
+    if (typeof prepareFishForStorageState === "function") {
+      prepareFishForStorageState(fish, now, {
+        moodTone: storageMoodTone,
+        mealSlotKey: getCurrentMealSlot(now)?.key || ""
+      });
+    } else {
+      fish.storageState = "stored";
+      fish.storageFrozen = true;
+      fish.storageMoodTone = storageMoodTone;
+      fish.storedAt = now;
+      fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
+      fish.frozenLastSimulatedAt = now;
+    }
     state.storedFish.push(fish);
+    if (typeof syncTankPopulationUsageField === "function") syncTankPopulationUsageField(getCurrentTank());
   });
   if (dead && !hasExposedDeadTankFish(now) && getBaseTankDirtiness(now) < CRITICAL_TANK_DIRTINESS) {
     resetLivingFishComfortDamageProgress();
@@ -1808,12 +2047,16 @@ function sellFish(fishId) {
   }
 
   const fish = list[index];
+  if (isProteusZombieFish(fish)) {
+    showToast("Proteus retains ownership of Z-01. The specimen cannot be rehomed.");
+    return;
+  }
   if (isFishDead(fish)) {
-    showToast("Dead fish cannot be sold.");
+    showToast("Dead fish cannot be rehomed.");
     return;
   }
   if (isFishJuvenile(fish)) {
-    showToast("Baby fish need time to grow before they can be sold.");
+    showToast("Baby fish need time to grow before they can be rehomed.");
     return;
   }
 
@@ -1822,7 +2065,7 @@ function sellFish(fishId) {
     return;
   }
 
-  const resaleValue = getResaleValue(species.cost);
+  const resaleValue = getFishRehomeValue(fish);
   const now = Date.now();
   return performCoinTransaction({
     direction: "credit",
@@ -1842,14 +2085,15 @@ function sellFish(fishId) {
       if (runtime.selectedFishId === fishId) {
         runtime.selectedFishId = null;
       }
+      recordCreatureRemovalHistory(fish, "Rehomed", now, { source: "rehome", rehomeValue: resaleValue });
     },
     event: {
       type: "sale",
       tone: "neutral",
       fishId,
-      text: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+      text: `Rehomed ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
     },
-    toast: `Sold ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    toast: `Rehomed ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
 }
 
@@ -1863,6 +2107,8 @@ function sellStoredDecor(decorKey) {
   const resaleValue = getResaleValue(decor?.cost || 0);
 
   const displayName = decor?.name || titleFromFile(decorKey);
+  const livingCommerce = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor || decorKey);
+  const commercePast = livingCommerce ? "Rehomed" : "Sold";
   return performCoinTransaction({
     direction: "credit",
     amount: resaleValue,
@@ -1877,9 +2123,9 @@ function sellStoredDecor(decorKey) {
       type: "sale",
       tone: "neutral",
       decorKey,
-      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+      text: `${commercePast} ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
     },
-    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    toast: `${commercePast} ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
 }
 
@@ -1890,7 +2136,7 @@ function sellPlacedDecor(placedId) {
   }
 
   if (isPlacedDecorGrouped(state.placedDecor[index])) {
-    showToast("Ungroup that decor before selling it.");
+    showToast(`Ungroup that decor before ${typeof isLivingDecorEntry === "function" && isLivingDecorEntry(state.placedDecor[index]) ? "rehoming" : "selling"} it.`);
     return;
   }
 
@@ -1898,6 +2144,8 @@ function sellPlacedDecor(placedId) {
   const decor = runtime.decorMap.get(item.decorKey);
   const resaleValue = getResaleValue(decor?.cost || 0);
   const displayName = decor?.name || titleFromFile(item.decorKey);
+  const livingCommerce = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor || item);
+  const commercePast = livingCommerce ? "Rehomed" : "Sold";
   return performCoinTransaction({
     direction: "credit",
     amount: resaleValue,
@@ -1919,13 +2167,13 @@ function sellPlacedDecor(placedId) {
       tone: "neutral",
       decorKey: item.decorKey,
       placedDecorId: item.id,
-      text: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+      text: `${commercePast} ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
     },
-    toast: `Sold ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
+    toast: `${commercePast} ${displayName} for ${resaleValue} ${pluralize("coin", resaleValue)}.`
   });
 }
 
-function disposeFish(fishId) {
+function disposeFish(fishId, options = {}) {
   const activeIndex = state.fish.findIndex((entry) => entry.id === fishId);
   const storedIndex = state.storedFish.findIndex((entry) => entry.id === fishId);
   const isActive = activeIndex !== -1;
@@ -1950,12 +2198,29 @@ function disposeFish(fishId) {
     clearDebugCaveTestSelection();
   }
 
-  list.splice(index, 1);
-  state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
-  releasePelletsTargetingFishIds(fishId);
-  if (!hasExposedDeadTankFish()) {
+  const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
+  const removalSource = String(options.source || "dispose").trim() || "dispose";
+  queueProteusCorpseDonation(fish, now, { source: removalSource });
+  recordCreatureRemovalHistory(fish, fish.deathCause || "Unknown", now, { source: removalSource });
+  const removeDisposedFish = () => {
+    list.splice(index, 1);
+    if (typeof clearRemovedDeadFishRuntimeState === "function") {
+      clearRemovedDeadFishRuntimeState(fish);
+    }
+    state.pendingPoops = state.pendingPoops.filter((poop) => poop.fishId !== fishId);
+    releasePelletsTargetingFishIds(fishId);
+  };
+  if (isActive) {
+    // Stop the corpse's future dirtiness multiplier without erasing dirtiness
+    // that already accumulated while the body was exposed in the aquarium.
+    preserveTankDirtinessThroughChange(now, removeDisposedFish);
+  } else {
+    removeDisposedFish();
+  }
+
+  if (!hasExposedDeadTankFish(now)) {
     state.lastCorpseSicknessAt = null;
-    if (getBaseTankDirtiness(Date.now()) < CRITICAL_TANK_DIRTINESS) {
+    if (getBaseTankDirtiness(now) < CRITICAL_TANK_DIRTINESS) {
       resetLivingFishComfortDamageProgress();
     }
   }
@@ -1963,11 +2228,12 @@ function disposeFish(fishId) {
     runtime.selectedFishId = null;
   }
 
-  const now = Date.now();
-  pushEvent(`${fish.name} was disposed of.`, now);
+  const scooped = removalSource === "scoop";
+  pushEvent(scooped ? `${fish.name} was removed from the aquarium.` : `${fish.name} was disposed of.`, now);
   saveState();
   renderUi(now);
-  showToast(`${fish.name} was disposed of.`);
+  showToast(scooped ? `${fish.name} removed.` : `${fish.name} was disposed of.`);
+  return true;
 }
 
 function disposeAllDeadFish() {
@@ -1980,15 +2246,31 @@ function disposeAllDeadFish() {
     return;
   }
 
+  const now = Date.now();
+  for (const fish of deadFish) {
+    queueProteusCorpseDonation(fish, now, { source: "dispose-all" });
+    recordCreatureRemovalHistory(fish, fish.deathCause || "Unknown", now, { source: "dispose-all" });
+  }
   const deadIds = new Set(deadFish.map((fish) => fish.id));
-  state.fish = state.fish.filter((fish) => !deadIds.has(fish.id));
-  state.storedFish = state.storedFish.filter((fish) => !deadIds.has(fish.id));
-  state.pendingPoops = state.pendingPoops.filter((poop) => !deadIds.has(poop.fishId));
-  releasePelletsTargetingFishIds(deadIds);
+  const activeDeadIds = new Set(state.fish.filter((fish) => deadIds.has(fish.id)).map((fish) => fish.id));
+  const removeDeadFish = () => {
+    state.fish = state.fish.filter((fish) => !deadIds.has(fish.id));
+    state.storedFish = state.storedFish.filter((fish) => !deadIds.has(fish.id));
+    state.pendingPoops = state.pendingPoops.filter((poop) => !deadIds.has(poop.fishId));
+    releasePelletsTargetingFishIds(deadIds);
+    if (typeof clearRemovedDeadFishRuntimeState === "function") {
+      for (const fish of deadFish) clearRemovedDeadFishRuntimeState(fish);
+    }
+  };
+  if (activeDeadIds.size) {
+    preserveTankDirtinessThroughChange(now, removeDeadFish);
+  } else {
+    removeDeadFish();
+  }
 
-  if (!hasExposedDeadTankFish()) {
+  if (!hasExposedDeadTankFish(now)) {
     state.lastCorpseSicknessAt = null;
-    if (getBaseTankDirtiness(Date.now()) < CRITICAL_TANK_DIRTINESS) {
+    if (getBaseTankDirtiness(now) < CRITICAL_TANK_DIRTINESS) {
       resetLivingFishComfortDamageProgress();
     }
   }
@@ -1997,7 +2279,6 @@ function disposeAllDeadFish() {
     runtime.selectedFishId = null;
   }
 
-  const now = Date.now();
   pushEvent(`${deadFish.length} dead ${pluralize("fish", deadFish.length)} were disposed of.`, now);
   saveState();
   renderUi(now);
@@ -2014,6 +2295,19 @@ function restoreFishToTank(fishId) {
   if (isFishDead(fish)) {
     showToast("Use the toilet button to dispose of a deceased fish.");
     return;
+  }
+
+  const targetTank = getCurrentTank();
+  const species = getSpeciesForFish(fish);
+  const targetWaterType = normalizeWaterType(targetTank?.waterType, "freshwater");
+  if (species && !isFishCompatibleWithWaterType(species, targetWaterType)) {
+    showToast(`${fish.name} requires ${getFishStoreWaterTypeLabel(species).toLowerCase()} and cannot enter this tank.`);
+    return false;
+  }
+  const fit = getTankPopulationFit(fish, targetTank);
+  if (!fit.fits) {
+    showToast(`Tank is full. ${fish.name} needs ${formatPopulationCapacityValue(fit.cost)} capacity; ${formatPopulationCapacityValue(fit.available)} is available.`);
+    return false;
   }
 
   const now = Date.now();
@@ -2054,10 +2348,9 @@ function restoreFishToTank(fishId) {
       fish.swimSpeed = normalizeFishSpeed(returnSpecies);
     }
 
-    fish.storageFrozen = false;
-    fish.storedAt = null;
-    fish.frozenLastSimulatedAt = now;
+    resumeFishFromStorageState(fish, now);
     state.fish.push(fish);
+    syncTankPopulationUsageField(targetTank);
   });
   pushEvent(`${fish.name} splashed back into the aquarium.`, now);
   saveState();

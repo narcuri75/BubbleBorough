@@ -1,0 +1,223 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "3a51a76f-d2fa-4d2d-af29-2d74987a2c87",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "48a13f52-260f-4709-9b48-dd8bde5516d8",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_neon.png"
+        },
+        {
+          "id": "5ef130b4-b629-4366-85bc-2a0023b158ed",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_lemon.png"
+        },
+        {
+          "id": "ad31f8f0-c097-4faa-b543-90c3609b0453",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_cosmic-blue.png"
+        },
+        {
+          "id": "62d40faf-53f0-4308-bbf9-7dbf8e32738f",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_cave.png"
+        },
+        {
+          "id": "f7d87db9-a958-4f98-8c87-a14d49c6c2d8",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_black-phantom.png"
+        },
+        {
+          "id": "ccb5f5f1-07d0-42b5-87a0-52dbb4ac6da8",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_emperor.png"
+        },
+        {
+          "id": "34544f28-998e-4469-be91-3f207aacabee",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_glofish.png"
+        },
+        {
+          "id": "1dcd51fe-700d-4064-8611-17d0a9208c5d",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_white-skirt.png"
+        },
+        {
+          "id": "26bcfc1f-fd38-4983-b93e-8c98f3e77a0d",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_cochus-blue.png"
+        },
+        {
+          "id": "859d5fe4-c926-4401-8787-f9ac29b46d03",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_penguin.png"
+        },
+        {
+          "id": "c2dda814-cd70-4576-af0c-41ca46c21ada",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_glass.png"
+        },
+        {
+          "id": "73fb8373-8c5d-400f-a198-8497c90ad337",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_ember.png"
+        },
+        {
+          "id": "3ede3541-81bf-4f91-bf2f-61f63f188a36",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_black-skirt.png"
+        },
+        {
+          "id": "641b3ac0-be9e-4649-9360-d9422072e38b",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_rummy-nose.png"
+        },
+        {
+          "id": "1e8382fc-1603-4a71-a1af-e246919245c3",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_congo.png"
+        },
+        {
+          "id": "91f4b9b2-12a6-4857-8aca-ae8ba6b89d97",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_gold-neon.png"
+        },
+        {
+          "id": "21ccee09-833b-40c8-a58a-c29831b2fe2e",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_black-neon.png"
+        },
+        {
+          "id": "d447ff9d-39eb-43a1-8ff0-623d3cad8dd7",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tetra_green-neon.png"
+        }
+      ]
+    }
+  ]
+}

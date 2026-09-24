@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "f397206a-d0d7-4cee-87a5-a0ba369461d8",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "319568b3-a950-4359-9cc0-5165cd9ca88f",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_6.png"
+        },
+        {
+          "id": "1a679a08-d7d7-4586-89fb-08a4d324a1ef",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_1.png"
+        },
+        {
+          "id": "647c9342-d4f6-4e99-a2ae-5426bfdfeb0e",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_2.png"
+        },
+        {
+          "id": "7306d64f-354c-4088-91d1-4361d663d7d8",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_3.png"
+        },
+        {
+          "id": "67720438-0189-424a-b501-b7230449a1e4",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_4.png"
+        },
+        {
+          "id": "5f33b30c-2043-45de-96be-0e0dfcdc3eaa",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "red-cloudy-wound_5.png"
+        }
+      ]
+    }
+  ]
+}

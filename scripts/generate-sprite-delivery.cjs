@@ -49,9 +49,17 @@ async function generateDelivery(checkOnly = false) {
     manifest.sheets[sheet.path] = entry;
     generated += 1;
   }
-  const currentFiles = new Set(Object.values(manifest.sheets).flatMap(entry => Object.keys(entry.files || {})));
+  // Windows can preserve a differently-cased directory name from an earlier
+  // asset export. Treat case-only path changes as the same delivery file so
+  // cleanup cannot remove a thumbnail regenerated during this run.
+  const canonicalDeliveryPath = file => process.platform === "win32" ? file.toLowerCase() : file;
+  const currentFiles = new Set(
+    Object.values(manifest.sheets)
+      .flatMap(entry => Object.keys(entry.files || {}))
+      .map(canonicalDeliveryPath)
+  );
   const staleFiles = [...new Set(Object.values(previous.sheets || {}).flatMap(entry => Object.keys(entry.files || {})))]
-    .filter(file => !currentFiles.has(file) && fs.existsSync(path.join(root, file)));
+    .filter(file => !currentFiles.has(canonicalDeliveryPath(file)) && fs.existsSync(path.join(root, file)));
   if (checkOnly && staleFiles.length) {
     throw new Error(`Obsolete sprite delivery images: ${staleFiles.join(", ")}. Run npm run build:app.`);
   }

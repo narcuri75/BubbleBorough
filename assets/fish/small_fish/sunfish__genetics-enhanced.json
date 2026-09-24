@@ -1,0 +1,95 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "987a8e30-8a07-484a-82c8-ed4d05ae0238",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "662f7b05-afd7-48a6-84dc-4f06e91b654e",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "masturus_lanceolatus.png"
+        },
+        {
+          "id": "4ffcd43e-baf2-49fb-bdb3-c04c210336ff",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mola_alexandrini.png"
+        },
+        {
+          "id": "d41df22d-501a-4462-9259-8124e8f76e13",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mola_tecta.png"
+        },
+        {
+          "id": "ca4312c1-a155-49d6-8302-d43ca375114c",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mola-mola_eastern-atlantic.png"
+        },
+        {
+          "id": "27a623ee-32ca-4e5e-803d-ea2cd0b4c721",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mola-mola_pacific.png"
+        },
+        {
+          "id": "b4425f79-e8e6-4f4e-98ba-7589e88f1003",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ranzania_laevis.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/sunfish__genetics-enhanced.webp"
+  }
+}

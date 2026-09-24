@@ -1,0 +1,113 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "fd989c17-d19d-41d1-ad00-8bca0c5b00f5",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "99d52514-f85a-423d-943b-27f82a69c968",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_1.png"
+        },
+        {
+          "id": "cdd79611-b68f-4a08-b327-40d20ce25fba",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_2.png"
+        },
+        {
+          "id": "afcb2ad3-7ec0-4afc-bb8a-b48d99b68e1c",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_3.png"
+        },
+        {
+          "id": "f1f70a16-69dc-4bf1-a91e-0aef05d7eb76",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_4.png"
+        },
+        {
+          "id": "0518a678-b2ef-405b-9e18-5c1fc3705248",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_5.png"
+        },
+        {
+          "id": "c7c2e34b-ba81-40db-bc6d-e022b3e7598b",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_6.png"
+        },
+        {
+          "id": "f899015c-36be-436c-af1f-297dcd4eb41a",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_7.png"
+        },
+        {
+          "id": "629fbdec-985e-4426-8dd0-db5549fe840a",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wound_8.png"
+        }
+      ]
+    }
+  ]
+}

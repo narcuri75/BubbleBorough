@@ -1,0 +1,73 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "7298fc95-223b-4631-8745-3e106000e3ca",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "4d10d7d4-9c5b-4c4f-94f8-bb53fce7f6dd",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "dottyback_diadem.png"
+        },
+        {
+          "id": "45d3cb9a-a4a9-4dbb-8c00-909bdd64ba15",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "dottyback_orchid.png"
+        },
+        {
+          "id": "15323283-bd36-4900-9ba3-46b91d21a91f",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "dottyback_springers.png"
+        },
+        {
+          "id": "378c9b4e-c55d-4ba0-ae02-84dae9ae55a4",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "dottyback_striped.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/dottyback__genetics-natural.webp"
+  }
+}

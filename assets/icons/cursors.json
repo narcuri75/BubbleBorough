@@ -1,0 +1,157 @@
+{
+  "version": 2,
+  "columns": 4,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "47704526-7a5d-4e8c-b859-a6070b528d49",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "bc8455ea-16e5-4a31-a503-83f84ff94647",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "food_pellets.png"
+        },
+        {
+          "id": "503fc989-5c8f-4fa3-8ad3-6582b5edc0cb",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wafer_scoop_contents.png"
+        },
+        {
+          "id": "a68a7d2d-12e0-4e92-8fa8-89de92ed4fbe",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "shrimp_scoop_contents.png"
+        },
+        {
+          "id": "9240aac4-48fd-471d-b7f1-ca1ee1e757b9",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "meat_scoop_contents.png"
+        },
+        {
+          "id": "188623cc-c2e9-4d6d-9f09-742d4d054219",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "food_scoop.png"
+        },
+        {
+          "id": "c5671d61-a83d-4633-a1e0-7b75dcf2c66a",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "net_cursor.png"
+        },
+        {
+          "id": "f850c483-992b-422e-bd53-e3ce054006b6",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "bucket_cursor.png"
+        },
+        {
+          "id": "ed37b16b-5fbe-4fbf-a2c2-4ee3e4d3a0df",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "first_aid_cursor.png"
+        },
+        {
+          "id": "5978fce4-0990-42af-a37d-d34d7fed218c",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "osmotic-stress_cursor.png"
+        },
+        {
+          "id": "238b9b8d-1dfd-47e5-9e7f-eb497c6c0447",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "infection_cursor.png"
+        },
+        {
+          "id": "983f8447-112c-4204-98f6-55574225a01d",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "anti-parasite_cursor.png"
+        },
+        {
+          "id": "dc252853-4883-4483-9c66-53d4b57b5bd2",
+          "width": 128,
+          "height": 128,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "calming-serum_cursor.png"
+        }
+      ]
+    }
+  ]
+}

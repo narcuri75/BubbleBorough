@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "9810db93-2847-45f8-b972-62016d9c6d33",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "d6d9650b-07cb-4744-a879-4d40de47f575",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_asagi.png"
+        },
+        {
+          "id": "00ea3b1a-bac5-435e-b494-04b5e07d3c45",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_chagoi.png"
+        },
+        {
+          "id": "2ec9334c-d63e-462a-9593-35e8295f6b66",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_goshiki.png"
+        },
+        {
+          "id": "b78e7f3b-8c97-45ee-8501-aa4cdf6724ec",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_kohaku.png"
+        },
+        {
+          "id": "7dc6b460-1cfa-4a63-b1e9-c011c7be9218",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_shiro_bekko.png"
+        },
+        {
+          "id": "b7c2fb50-a547-498a-b641-c2000c040833",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_shiro_utsuri.png"
+        },
+        {
+          "id": "ad9962c7-9b57-4220-a029-1b46a6f22e45",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_showa_sanshoku.png"
+        },
+        {
+          "id": "44bd2bed-e94e-4147-8204-473aa1992963",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_taisho_sanke.png"
+        },
+        {
+          "id": "5acf5429-5247-4da7-a91e-d0ac8a8c057f",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_tancho.png"
+        },
+        {
+          "id": "0129b4a2-8386-4c7e-969a-bb7982bf614b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_yamabuki_ogon.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/koi__genetics-natural.webp"
+  }
+}

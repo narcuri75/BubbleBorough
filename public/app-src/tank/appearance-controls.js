@@ -1,3 +1,28 @@
+
+function setTankSubstrateStyle(style) {
+  const tank = getCurrentTank();
+  if (!tank) return false;
+  const nextStyle = normalizeSubstrateStyle(style, "custom");
+  const requiredStyle = nextStyle === "auto"
+    ? (normalizeWaterType(tank.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock")
+    : nextStyle;
+  if (!isSubstrateOwned(requiredStyle)) {
+    const meta = getSubstrateMeta(requiredStyle);
+    showToast(`Unlock ${meta.name} in BubbleBodega first.`);
+    return false;
+  }
+  if (tank.substrateStyle === nextStyle) return false;
+  tank.substrateStyle = nextStyle;
+  runtime.gravelBedCacheKey = "";
+  runtime.gravelBedCanvas = null;
+  runtime.gravelCapCanvas = null;
+  invalidateCustomGravelVisualCaches();
+  saveState();
+  renderCustomGravelControls();
+  renderUi(Date.now());
+  return true;
+}
+
 // Source fragment: tank/appearance-controls.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
@@ -63,7 +88,10 @@ function pasteTankAppearanceScheme(kind) {
   if (changed && kind === "gravel") {
     invalidateCustomGravelVisualCaches();
     renderCustomGravelControls();
-    refreshStageRenderViewAfterInlineEditorMutation();
+    // A palette paste only changes pixels, not the editor geometry. Keeping
+    // this independent from the stage camera prevents a stale edit-frame
+    // target from being re-applied while the viewport is zooming back out.
+    renderTank(Date.now());
   }
   return changed;
 }
@@ -98,7 +126,9 @@ function setCustomGravelLayerColor(layerIndex, color, options = {}) {
   if (options.render !== false) {
     renderCustomGravelControls();
   }
-  refreshStageRenderViewAfterInlineEditorMutation();
+  // Swatches are an appearance-only change. Do not invalidate or snap the
+  // stage camera here: doing so can leave the zoomed-out editor frame active.
+  renderTank(Date.now());
   return true;
 }
 
@@ -129,7 +159,7 @@ function setCustomGravelLayerColorize(layerIndex, colorize) {
 
   invalidateCustomGravelVisualCaches();
   renderCustomGravelControls();
-  refreshStageRenderViewAfterInlineEditorMutation();
+  renderTank(Date.now());
   return true;
 }
 
@@ -389,4 +419,3 @@ function selectTankAsset(tankKey) {
     }
   });
 }
-

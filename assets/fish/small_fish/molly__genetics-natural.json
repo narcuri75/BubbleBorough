@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "8205b498-6e31-405a-bebf-efc66e08476c",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "5e3c0821-e4f8-4406-843d-e56918ac8907",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_black.png"
+        },
+        {
+          "id": "7ce2ce7c-2c82-46fd-b0cc-9c4e26e41e89",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_creamsicle_lyretail.png"
+        },
+        {
+          "id": "4b0aa3c4-1c41-474a-8745-03a71358afbe",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_dalmatian.png"
+        },
+        {
+          "id": "9b2c8223-2f75-4291-8d0e-0d3c0a9ff904",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_gold_dust.png"
+        },
+        {
+          "id": "e0e6f36a-7b0a-4d12-b109-ee4ee88a2aff",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "molly_sailfin.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/molly__genetics-natural.webp"
+  }
+}

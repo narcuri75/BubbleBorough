@@ -185,7 +185,13 @@ function scrubFrontGlassSuckerTrail(fish, species = getSpeciesForFish(fish), now
 
   const cleanableCellCount = getCleanableScrubCellCount({ viewportOnly: false });
   const scrubbedCellDelta = Math.max(0, runtime.scrubbedCount - scrubbedBefore);
-  applyFrontGlassSuckerScrubCleaning(scrubbedCellDelta, cleanableCellCount, now);
+  const dirtinessReduced = applyFrontGlassSuckerScrubCleaning(scrubbedCellDelta, cleanableCellCount, now);
+  if (dirtinessReduced && typeof attemptOtocinclusCoinFind === "function") {
+    attemptOtocinclusCoinFind(fish, {
+      xNorm: clamp(x / TANK_WIDTH, 0, 1),
+      yNorm: clamp(y / TANK_HEIGHT, 0, 1)
+    }, now, { context: "glass" });
+  }
 
   const coverage = runtime.cleaningMode
     ? getScrubCoverage()
@@ -339,6 +345,77 @@ function markScrubStamp(x, y, options = {}) {
   return changed;
 }
 
+
+function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) {
+  const dayKey = getLocalDayKey(now);
+  if (!tank) {
+    return {
+      dayKey,
+      credit: 0,
+      coinsEarned: 0,
+      cap: CLEANING_DAILY_COIN_CAP,
+      remainingCredit: CLEANING_DAILY_COIN_CAP
+    };
+  }
+
+  if (tank.cleaningIncomeDayKey !== dayKey) {
+    tank.cleaningIncomeDayKey = dayKey;
+    tank.cleaningIncomeCredit = 0;
+    tank.cleaningIncomeCoinsEarned = 0;
+  }
+
+  const credit = clamp(Number(tank.cleaningIncomeCredit) || 0, 0, CLEANING_DAILY_COIN_CAP);
+  const coinsEarned = clamp(
+    Math.floor(Number(tank.cleaningIncomeCoinsEarned) || 0),
+    0,
+    Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(credit + 1e-9))
+  );
+  tank.cleaningIncomeCredit = credit;
+  tank.cleaningIncomeCoinsEarned = coinsEarned;
+
+  return {
+    dayKey,
+    credit,
+    coinsEarned,
+    cap: CLEANING_DAILY_COIN_CAP,
+    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit)
+  };
+}
+
+function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = getCurrentTank()) {
+  const status = getTankCleaningIncomeStatus(tank, now);
+  if (!tank) {
+    return {
+      ...status,
+      creditAdded: 0,
+      coinsAwarded: 0,
+      dirtinessRemoved: 0
+    };
+  }
+
+  const cleanedAmount = clamp(Number(dirtinessRemoved) || 0, 0, 1);
+  const rawCredit = cleanedAmount * CLEANING_FULL_TANK_COIN_CREDIT;
+  const creditAdded = Math.min(status.remainingCredit, rawCredit);
+  const nextCredit = clamp(status.credit + creditAdded, 0, CLEANING_DAILY_COIN_CAP);
+  const nextWholeCoins = Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(nextCredit + 1e-9));
+  const coinsAwarded = Math.max(0, nextWholeCoins - status.coinsEarned);
+
+  tank.cleaningIncomeDayKey = status.dayKey;
+  tank.cleaningIncomeCredit = nextCredit;
+  tank.cleaningIncomeCoinsEarned = status.coinsEarned + coinsAwarded;
+
+  return {
+    dayKey: status.dayKey,
+    credit: nextCredit,
+    coinsEarned: tank.cleaningIncomeCoinsEarned,
+    cap: CLEANING_DAILY_COIN_CAP,
+    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - nextCredit),
+    creditAdded,
+    coinsAwarded,
+    dirtinessRemoved: cleanedAmount
+  };
+}
+
 function completeCleaning(options = {}) {
   const now = Date.now();
   if (isInfoOnlyTutorialActive() && isTutorialStage(TUTORIAL_STAGE_CLEAN_TANK)) {
@@ -356,19 +433,19 @@ function completeCleaning(options = {}) {
   }
 
   const fromDirtiness = getBaseTankDirtiness(now);
-  const cleanReward =
-    fromDirtiness < 0.25 ? 0 :
-      fromDirtiness < 0.5 ? 1 :
-        fromDirtiness < 0.7 ? 3 :
-          fromDirtiness < 0.85 ? 5 :
-            6;
+  const source = options.source || "sponge";
+  const manualCleaning = source === "sponge" || source === "scrub-timer";
+  const cleaningIncome = manualCleaning
+    ? awardManualCleaningIncome(fromDirtiness, now, getCurrentTank())
+    : getTankCleaningIncomeStatus(getCurrentTank(), now);
+  const cleanReward = manualCleaning ? cleaningIncome.coinsAwarded : 0;
 
   state.lastCleanedAt = now;
   state.poops = [];
   invalidateBoroughOverviewSnapshot(getCurrentTank());
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
   if (cleanReward > 0) {
-    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Deep tank cleaning", place: getTankLabel() });
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Tank cleaning", place: getTankLabel() });
   }
 
   if (!hasExposedDeadTankFish(now)) {
@@ -392,10 +469,15 @@ function completeCleaning(options = {}) {
   resetScrubWipeSoundState();
   renderToolCursor();
 
+  const cleaningEarningsSummary = manualCleaning
+    ? ` Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins.`
+    : "";
   pushEvent(
     cleanReward > 0
-      ? `The tank sparkled back to life after a deep sponge scrub. Earned ${cleanReward} ${pluralize("coin", cleanReward)}.`
-      : "The tank sparkled back to life after a deep sponge scrub.",
+      ? `The tank sparkled back to life after a sponge scrub. Earned ${cleanReward} ${pluralize("coin", cleanReward)}.${cleaningEarningsSummary}`
+      : manualCleaning
+        ? `The tank sparkled back to life after a sponge scrub.${cleaningEarningsSummary}`
+        : "The tank sparkled back to life after automatic cleaning.",
     now
   );
 
@@ -408,14 +490,21 @@ function completeCleaning(options = {}) {
   renderUi(now);
   showToast(
     cleanReward > 0
-      ? `Tank cleaned. +${cleanReward} coins.`
-      : "Tank cleaned. The haze is gone."
+      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today.`
+      : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
+        ? `Tank cleaned. Cleaning credit saved toward your next coin. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} today.`
+        : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
+          ? `Tank cleaned. Daily cleaning income cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}.`
+          : "Tank cleaned. The haze is gone."
   );
   return {
     ok: true,
     cleanReward,
+    cleaningCreditAdded: manualCleaning ? cleaningIncome.creditAdded : 0,
+    cleaningCredit: cleaningIncome.credit,
+    cleaningCoinsEarnedToday: cleaningIncome.coinsEarned,
     tutorialChanged,
-    source: options.source || "sponge"
+    source
   };
 }
 
@@ -842,6 +931,9 @@ function spawnGlassTapEffect(point, now = Date.now()) {
   };
 
   runtime.glassTapEffects.push(effect);
+  if (typeof triggerGlassTapMoodCheck === "function") {
+    triggerGlassTapMoodCheck(now);
+  }
   if (runtime.glassTapEffects.length > GLASS_TAP_EFFECT_LIMIT) {
     runtime.glassTapEffects.splice(0, runtime.glassTapEffects.length - GLASS_TAP_EFFECT_LIMIT);
   }

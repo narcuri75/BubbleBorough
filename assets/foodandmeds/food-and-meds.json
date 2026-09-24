@@ -1,43 +1,227 @@
 {
-  "fallbackImage": "basic-food.png",
+  "fallbackImage": "basic-food_small.png",
   "food": {
     "basic": {
       "id": "basic",
-      "name": "Basic Fish Food",
+      "name": "Tidewell - Basic Food",
       "description": "Classic fish pellets that satisfy hunger. No one knows exactly what they’re made of, but the fish don’t seem concerned.",
-      "bottlePellets": 99,
+      "bottlePellets": 20,
       "cost": 5,
-      "image": "basic-food.png",
+      "image": "basic-food_small.png",
       "dropStyle": "pellet",
       "pelletColor": "#6E4A22",
       "pelletAccentColor": "#9B6D36",
-      "pelletHighlightColor": "#D8B37A"
+      "pelletHighlightColor": "#D8B37A",
+      "packages": [
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A small pouch of 20 everyday pellets for routine feeding.",
+          "servings": 20,
+          "cost": 5,
+          "image": "basic-food_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A 75-count refill of everyday pellets for a steadily stocked food tray.",
+          "servings": 75,
+          "cost": 15,
+          "image": "basic-food_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A 200-count bulk bag of everyday pellets for larger collections.",
+          "servings": 200,
+          "cost": 30,
+          "image": "basic-food_large.png"
+        }
+      ],
+      "seller": "Tidewell"
     },
     "frisky": {
       "id": "frisky",
-      "name": "Frisky Fish Food",
-      "description": "Special pellets that put fish in the mood for love. Formulated with ingredients intended to increase fish libido and improve the chance of mating.",
-      "bottlePellets": 99,
-      "cost": 5,
+      "name": "Tidewell - Spawning Food - 20 Count",
+      "description": "Special pellets that temporarily make an eligible adult fish breeding-ready. Both parents must eat Spawning Food, and a spawning attempt is not guaranteed to succeed.",
+      "bottlePellets": 20,
+      "cost": 8,
       "image": "frisky-food.png",
       "dropStyle": "pellet",
       "pelletColor": "#D958A8",
       "pelletAccentColor": "#F089C8",
-      "pelletHighlightColor": "#FFD3EA"
+      "pelletHighlightColor": "#FFD3EA",
+      "packages": [
+        {
+          "id": "small",
+          "name": "20 Count",
+          "description": "A 20-count pouch of Spawning Food for eligible adult fish.",
+          "servings": 20,
+          "cost": 8
+        }
+      ],
+      "seller": "Tidewell"
     },
     "chum": {
       "id": "chum",
-      "name": "Chum",
+      "name": "Tidewell - Chum",
       "description": "A messy blend of bait food made for aggressive feeders. Its strong scent is especially effective at attracting piranha, sharks, and other meat-loving fish.",
-      "bottlePellets": 99,
+      "bottlePellets": 20,
       "cost": 10,
-      "image": "chum-food.png",
+      "image": "chum_small.png",
       "dropStyle": "sprite",
       "dropImages": [
         "chum_1.png",
         "chum_2.png",
         "chum_3.png"
-      ]
+      ],
+      "packages": [
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A 20-count starter bag of chum for fish that accept it.",
+          "servings": 20,
+          "cost": 10,
+          "image": "chum_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A 75-count chum refill for maintaining a protein-focused food supply.",
+          "servings": 75,
+          "cost": 28,
+          "image": "chum_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A 200-count bulk bag of chum for tanks with frequent approved feeders.",
+          "servings": 200,
+          "cost": 60,
+          "image": "chum_large.png"
+        }
+      ],
+      "seller": "Tidewell"
+    },
+    "brineShrimp": {
+      "id": "brineShrimp",
+      "name": "Tidewell - Brine Shrimp",
+      "use": "carnivore",
+      "description": "Whole brine shrimp for small carnivores and omnivores. A protein-rich treat that sinks naturally and gives curious fish something more interesting than pellets.",
+      "bottlePellets": 20,
+      "cost": 8,
+      "image": "brine-shrimp_small.png",
+      "dropStyle": "sprite",
+      "dropImages": [
+        "brine-shrimp_morsel.png"
+      ],
+      "packages": [
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A 20-count pouch of brine shrimp for compatible fish.",
+          "servings": 20,
+          "cost": 8,
+          "image": "brine-shrimp_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A 75-count brine shrimp refill for compatible fish.",
+          "servings": 75,
+          "cost": 22,
+          "image": "brine-shrimp_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A 200-count bulk supply of brine shrimp for compatible fish.",
+          "servings": 200,
+          "cost": 48,
+          "image": "brine-shrimp_large.png"
+        }
+      ],
+      "seller": "Tidewell"
+    },
+    "carnivore": {
+      "id": "carnivore",
+      "name": "Tidewell - Carnivore Food",
+      "use": "carnivore",
+      "description": "Dense meaty cubes for medium carnivorous fish. Designed for hunters that need something heavier than everyday pellets but do not require chum.",
+      "bottlePellets": 20,
+      "cost": 9,
+      "image": "carnivore_small.png",
+      "dropStyle": "sprite",
+      "dropImages": [
+        "carnivore_morsel.png"
+      ],
+      "packages": [
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A 20-count pouch of meaty cubes for compatible carnivores.",
+          "servings": 20,
+          "cost": 9,
+          "image": "carnivore_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A 75-count refill of meaty cubes for compatible carnivores.",
+          "servings": 75,
+          "cost": 25,
+          "image": "carnivore_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A 200-count bulk supply of meaty cubes for compatible carnivores.",
+          "servings": 200,
+          "cost": 54,
+          "image": "carnivore_large.png"
+        }
+      ],
+      "seller": "Tidewell"
+    },
+    "algaeWafers": {
+      "id": "algaeWafers",
+      "name": "Tidewell - Algae Wafers",
+      "use": "bottom",
+      "description": "Sinking algae wafers for bottom-feeding scavengers. Otocinclus and freshwater shrimp can snack on them without becoming dependent on scheduled feeding.",
+      "bottlePellets": 20,
+      "cost": 7,
+      "image": "wafers_small.png",
+      "dropStyle": "sprite",
+      "dropImages": [
+        "wafer_morsel.png"
+      ],
+      "packages": [
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A 20-count pouch of sinking algae wafers for compatible grazers.",
+          "servings": 20,
+          "cost": 7,
+          "image": "wafers_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A 75-count refill of sinking algae wafers for compatible grazers.",
+          "servings": 75,
+          "cost": 20,
+          "image": "wafers_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A 200-count bulk supply of sinking algae wafers for compatible grazers.",
+          "servings": 200,
+          "cost": 42,
+          "image": "wafers_large.png"
+        }
+      ],
+      "seller": "Tidewell"
     },
     "halloweenCandy": {
       "id": "halloweenCandy",
@@ -51,7 +235,8 @@
         "Halloween_candy_1.png",
         "Halloween_candy_2.png"
       ],
-      "dispenserAllowed": false
+      "dispenserAllowed": false,
+      "seller": "Tidewell"
     }
   },
   "medicine": {
@@ -62,7 +247,8 @@
       "color": "#56B8FF",
       "bottleDrops": 3,
       "cost": 8,
-      "image": "first-aid-drops.png"
+      "image": "first-aid.png",
+      "seller": "Clearwell Laboratories"
     },
     "betaBlocker": {
       "id": "betaBlocker",
@@ -71,7 +257,38 @@
       "color": "#F3D348",
       "bottleDrops": 3,
       "cost": 10,
-      "image": "calming-serum.png"
+      "image": "calming-serum.png",
+      "seller": "Clearwell Laboratories"
+    },
+    "antiParasite": {
+      "id": "antiParasite",
+      "name": "Anti-Parasite Treatment",
+      "description": "Targeted Clearwell treatment for external parasites. Clears the active parasite condition, then the fish recovers over the next 24 hours.",
+      "color": "#76C7A5",
+      "bottleDrops": 3,
+      "cost": 12,
+      "image": "anti-parasite-treatment.png",
+      "seller": "Clearwell Laboratories"
+    },
+    "infectionTreatment": {
+      "id": "infectionTreatment",
+      "name": "Infection Treatment",
+      "description": "Targeted Clearwell treatment for active infections. Clears the infection, then the fish recovers over the next 24 hours.",
+      "color": "#E58B9B",
+      "bottleDrops": 3,
+      "cost": 14,
+      "image": "infection-treatment.png",
+      "seller": "Clearwell Laboratories"
+    },
+    "waterStress": {
+      "id": "waterStress",
+      "name": "Osmotic Stress Treatment",
+      "description": "Helps a fish recover after a water mismatch has been corrected. It cannot make incompatible water safe.",
+      "color": "#8CB8D8",
+      "bottleDrops": 3,
+      "cost": 11,
+      "image": "osmotic-stress-treatment.png",
+      "seller": "Clearwell Laboratories"
     }
   }
 }

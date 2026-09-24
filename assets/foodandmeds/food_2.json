@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "61d933d5-1ba4-4d49-a920-fac39b3e5d66",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "d130f97e-90f1-4ee5-be8a-3e41b53881b3",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "brine-shrimp_large.png"
+        },
+        {
+          "id": "57089172-8980-44b0-804c-b5bffc39ae9e",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "brine-shrimp_medium.png"
+        },
+        {
+          "id": "febf3fa9-b461-4f70-9967-8032c51a0850",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "brine-shrimp_small.png"
+        },
+        {
+          "id": "7ae52bd1-c09c-426e-9a33-37ec53af0b2c",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "carnivore_large.png"
+        },
+        {
+          "id": "e7982378-b817-4288-a107-d4a2be80cbcc",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "carnivore_medium.png"
+        },
+        {
+          "id": "224ebeee-9da6-49ac-9cc2-48c7ba1a49ed",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "carnivore_small.png"
+        },
+        {
+          "id": "b5cd313c-8766-4f93-af41-88596ea55cb9",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wafers_large.png"
+        },
+        {
+          "id": "9af11987-8f9f-429e-8dc2-2de31fa2804e",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wafers_medium.png"
+        },
+        {
+          "id": "3b119137-3a8d-4e7d-859e-98b86a025072",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wafers_small.png"
+        }
+      ]
+    }
+  ]
+}

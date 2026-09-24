@@ -1457,7 +1457,7 @@ function renderSubmarineManager() {
   const calmingAvailable = Math.max(0, Math.floor(Number(state.medicineInventory?.betaBlocker) || 0));
   const autopilotEnabled = isSubmarineAutopilotEnabled(submarine);
   const foodIcon = resolveFoodAndMedAssetPath("basic-food.png");
-  const healthIcon = resolveFoodAndMedAssetPath("first-aid-drops.png");
+  const healthIcon = resolveFoodAndMedAssetPath("first-aid.png");
   const calmingIcon = resolveFoodAndMedAssetPath("calming-serum.png");
 
   element.innerHTML = `
@@ -1856,7 +1856,7 @@ function renderEditEquipmentTray() {
         <button class="edit-decor-tile-primary" type="button" title="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" aria-label="${dispenserInstalled ? "Select and drag the Food Dispenser 9000" : "Deploy the Food Dispenser 9000 in this tank"}" data-tray-select-dispenser="true">
           <span class="edit-decor-tile-surface"><img class="edit-decor-tile-thumb" ${assetImageAttributes(getAutoDispenserImagePath(state.autoDispenser))} alt="Food Dispenser 9000" /><span class="inventory-tray-label">${dispenserInstalled ? "In Tank" : "Storage"}</span></span>
         </button>
-        <div class="mini-note edit-equipment-resource-note">${dispenserInstalled ? `${getAutoDispenserLoadedCount(state.autoDispenser)}/${AUTO_DISPENSER_MAX_PELLETS} pellets · top mount · layer ${state.autoDispenser.tankLayer}` : `Ready to deploy${Number(state.autoDispenser.storedCount) > 1 ? ` · ${state.autoDispenser.storedCount} stored` : ""}`}</div>
+        <div class="mini-note edit-equipment-resource-note">${dispenserInstalled ? `${getAutoDispenserLoadedCount(state.autoDispenser)}/${AUTO_DISPENSER_MAX_PELLETS} pellets · ${isTankCareAutomationPaused() ? "automation paused" : state.autoDispenser.refillAlert ? "REFILL NEEDED" : "auto 08:00 / 20:00"} · layer ${state.autoDispenser.tankLayer}` : `Ready to deploy${Number(state.autoDispenser.storedCount) > 1 ? ` · ${state.autoDispenser.storedCount} stored` : ""}`}</div>
         ${dispenserInstalled ? `<button class="small-button alt" type="button" data-tray-store-dispenser="true">Put Away</button>` : ""}
       </article>`
     : "";
@@ -2744,14 +2744,34 @@ function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, n
       startedAt: now,
       endsAt: now + MEDICINE_VISUAL_DURATION_MS
     };
-    state.medicineEffects.push({
-      id: createId("med-effect"),
-      type: medicine.id,
-      startedAt: now,
-      endsAt: medicine.id === "betaBlocker" ? getNextDayStartTimestamp(now) : now + MEDICINE_HEAL_DURATION_MS,
-      nextTickAt: now + MEDICINE_HEAL_INTERVAL_MS,
-      resolvedAt: null
-    });
+    if (medicine.id === "firstAid") {
+      const maxHealth = getFishMaxHealthUnits(target.fish);
+      if (!isFishDead(target.fish) && target.fish.healthUnits < maxHealth) {
+        target.fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(target.fish.healthUnits) || 1);
+        target.fish.injuryRecoveryProgressMs = 1;
+        target.fish.injuryRecoveryLastAt = now;
+        if (typeof syncFishPrimaryCondition === "function") syncFishPrimaryCondition(target.fish, now);
+      }
+      state.medicineEffects.push({
+        id: createId("med-effect"), type: medicine.id, startedAt: now,
+        endsAt: now + INJURY_RECOVERY_REQUIRED_MS, resolvedAt: null
+      });
+    } else if (medicine.id === "betaBlocker") {
+      for (const fish of getLivingTankFish()) {
+        fish.calmedUntil = Math.max(Number(fish.calmedUntil) || 0, now + CALMING_EFFECT_DURATION_MS);
+        fish.panicUntil = 0;
+        fish.bettaRivalTargetId = "";
+        fish.bettaRivalDisplayUntil = 0;
+        fish.bettaRivalChaseUntil = 0;
+        fish.bettaRivalRole = "";
+        fish.bettaRivalNipAt = 0;
+        fish.bettaRivalNippedTargetId = "";
+      }
+      state.medicineEffects.push({
+        id: createId("med-effect"), type: medicine.id, startedAt: now,
+        endsAt: now + CALMING_EFFECT_DURATION_MS, resolvedAt: null
+      });
+    }
   });
   submarine.inventory[resourceType] = normalizeSubmarineResourceCount(submarine.inventory[resourceType] - 1);
   submarine.mission.nextDeployAt = now + SUBMARINE_MEDICINE_RETRY_MS;
@@ -2982,6 +3002,7 @@ function updateBoatEntry(boat, now = Date.now()) {
 }
 
 function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
+  const automationPaused = typeof isTankCareAutomationPaused === "function" && isTankCareAutomationPaused();
   const submarine = getSubmarine();
   if (submarine) {
     syncMachineryControlStatus(submarine);
@@ -2990,12 +3011,16 @@ function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
       if (!isSubmarineAutopilotEnabled(submarine)) {
         if (isSubmarineManualDriveActive(submarine)) updateSubmarineManualDrive(submarine, deltaSeconds);
         else suspendSubmarineManualDrive();
-      } else {
+      } else if (!automationPaused) {
         clearSubmarineManualDriveKeys();
         processSubmarineTravel(submarine, now);
         updateSubmarineMission(submarine, now);
         updateSubmarineIdleCruise(submarine, now);
         moveSubmarineTowardTarget(submarine, deltaSeconds, now);
+      } else {
+        clearSubmarineManualDriveKeys();
+        submarine.motionVelocityXPxPerSecond = 0;
+        submarine.motionVelocityYPxPerSecond = 0;
       }
     }
   }
@@ -3013,6 +3038,11 @@ function updateMachineryMotion(now = Date.now(), deltaSeconds = 0.016) {
     return;
   }
   clearBoatManualDriveKeys();
+  if (automationPaused) {
+    boat.motionVelocityXPxPerSecond = 0;
+    boat.motionVelocityYPxPerSecond = 0;
+    return;
+  }
   updateBoatIdleCruise(boat, now);
   moveBoatTowardTarget(boat, deltaSeconds, now);
 }

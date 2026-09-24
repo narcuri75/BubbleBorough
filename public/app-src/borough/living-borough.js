@@ -300,12 +300,13 @@ function recordFishMemorial(fish, tank = getCurrentTank(), cause = "Unknown", no
   return record;
 }
 
-function clearFishReferencesAfterDeath(fishId) {
+function clearFishReferencesAfterDeath(fishId, now = Date.now()) {
   if (!fishId) {
     return false;
   }
   let changed = false;
-  for (const fish of [...getAllTankFish(state), ...(state?.storedFish || [])]) {
+  const allFish = [...getAllTankFish(state), ...(state?.storedFish || [])];
+  for (const fish of allFish) {
     if (!fish || fish.id === fishId) {
       continue;
     }
@@ -313,19 +314,122 @@ function clearFishReferencesAfterDeath(fishId) {
       delete fish.relationships[fishId];
       changed = true;
     }
-    for (const key of ["followFishId", "socialTargetFishId", "actionTargetFishId", "preferredFishId", "avoidedFishId"]) {
+
+    if (fish.followFishId === fishId) {
+      if (typeof clearFishSchoolFollowState === "function") clearFishSchoolFollowState(fish);
+      else fish.followFishId = null;
+      fish.targetAt = now;
+      changed = true;
+    }
+
+    for (const key of ["socialTargetFishId", "actionTargetFishId", "preferredFishId", "avoidedFishId", "piranhaTargetId"]) {
       if (fish[key] === fishId) {
         fish[key] = null;
+        fish.targetAt = now;
         changed = true;
       }
     }
+    for (const key of ["bettaRivalTargetId", "bettaRivalNippedTargetId", "pencilSparPartnerId", "territoryTargetFishId"]) {
+      if (fish[key] === fishId) {
+        fish[key] = "";
+        if (key === "bettaRivalTargetId") fish.bettaRivalDisplayUntil = 0;
+        if (key === "pencilSparPartnerId") fish.pencilSparUntil = 0;
+        if (key === "territoryTargetFishId") fish.territoryTargetUntil = 0;
+        fish.targetAt = now;
+        changed = true;
+      }
+    }
+
+    if (fish.behaviorIntent?.targetId === fishId) {
+      fish.behaviorIntent = null;
+      fish.targetAt = now;
+      changed = true;
+    }
+
+    if (fish.pairBondPartnerId === fishId) {
+      // handleFishPairBondLoss normally clears this first and applies mourning.
+      // This fallback prevents a stale bond reference if death cleanup is called
+      // independently by a migration/debug path.
+      fish.pairBondPartnerId = "";
+      fish.pairBondLostAt = Number(fish.pairBondLostAt) || now;
+      fish.targetAt = now;
+      changed = true;
+    }
   }
-  runtime.pendingNeighborhoodTravel?.delete?.(fishId);
-  runtime.fishActionQueuesByFishId?.delete?.(fishId);
-  runtime.fishActionSteeringByFishId?.delete?.(fishId);
-  runtime.boroughOverviewFishProxies?.delete?.(fishId);
-  runtime.debugBirthdayHatFishIds?.delete?.(fishId);
-  runtime.debugAutonomyPausedFishIds?.delete?.(fishId);
+
+  if (typeof runtime !== "undefined" && runtime) {
+    runtime.pendingNeighborhoodTravel?.delete?.(fishId);
+    runtime.fishActionQueuesByFishId?.delete?.(fishId);
+    runtime.fishActionSteeringByFishId?.delete?.(fishId);
+    runtime.fishCollisionAvoidanceById?.delete?.(fishId);
+    runtime.fishNavigationMemoryById?.delete?.(fishId);
+    runtime.boroughOverviewFishProxies?.delete?.(fishId);
+    runtime.debugBirthdayHatFishIds?.delete?.(fishId);
+    runtime.debugAutonomyPausedFishIds?.delete?.(fishId);
+
+    if (runtime.fishDragState?.fishId === fishId) runtime.fishDragState = null;
+    if (runtime.fishActionMenuFishId === fishId) runtime.fishActionMenuFishId = null;
+
+    if (runtime.fishActionQueuesByFishId instanceof Map) {
+      for (const [ownerFishId, queue] of runtime.fishActionQueuesByFishId.entries()) {
+        let queueChanged = false;
+        if (queue?.active?.targetId === fishId) {
+          queue.active = null;
+          queueChanged = true;
+        }
+        if (Array.isArray(queue?.items)) {
+          const remaining = queue.items.filter((item) => item?.targetId !== fishId);
+          if (remaining.length !== queue.items.length) {
+            queue.items = remaining;
+            queueChanged = true;
+          }
+        }
+        if (queueChanged) {
+          const owner = allFish.find((entry) => entry?.id === ownerFishId) || null;
+          if (owner && !isFishDead(owner)) {
+            owner.targetAt = now;
+            if (owner.behaviorIntent?.targetId === fishId) owner.behaviorIntent = null;
+          }
+          if (!queue?.active && !(queue?.items || []).length) {
+            runtime.fishActionQueuesByFishId.delete(ownerFishId);
+          }
+          changed = true;
+        }
+      }
+    }
+
+    if (runtime.fishActionSteeringByFishId instanceof Map) {
+      for (const [ownerFishId, steering] of runtime.fishActionSteeringByFishId.entries()) {
+        if (steering?.targetFishId === fishId) {
+          runtime.fishActionSteeringByFishId.delete(ownerFishId);
+          const owner = allFish.find((entry) => entry?.id === ownerFishId) || null;
+          if (owner && !isFishDead(owner)) owner.targetAt = now;
+          changed = true;
+        }
+      }
+    }
+
+    if (runtime.fishRightOfWayByPair instanceof Map) {
+      for (const [key, decision] of runtime.fishRightOfWayByPair.entries()) {
+        if (decision?.winnerId === fishId || decision?.loserId === fishId || String(key).split("|").includes(String(fishId))) {
+          runtime.fishRightOfWayByPair.delete(key);
+        }
+      }
+    }
+
+    const activeBreeding = runtime.fishBreedingSequence;
+    if (activeBreeding && (activeBreeding.leftFishId === fishId || activeBreeding.rightFishId === fishId)) {
+      if (typeof clearFishBreedingSequence === "function") clearFishBreedingSequence();
+      else runtime.fishBreedingSequence = null;
+      changed = true;
+    }
+    const debugBreeding = runtime.debugBreedingSequence;
+    if (debugBreeding && (debugBreeding.leftFishId === fishId || debugBreeding.rightFishId === fishId)) {
+      if (typeof clearDebugBreedingSequence === "function") clearDebugBreedingSequence();
+      else runtime.debugBreedingSequence = null;
+      changed = true;
+    }
+  }
   return changed;
 }
 
@@ -407,6 +511,7 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
   if (!fish || !move.source || !move.destination || runtime.pendingNeighborhoodTravel.has(fish.id)) {
     return false;
   }
+  if (!canTankAcceptFish(fish, move.destination)) return false;
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -508,6 +613,7 @@ function beginBoroughTubeTravel(move, now = Date.now()) {
   if (!fish || !move.source || !move.destination || !sourceTube || !targetTube || runtime.pendingNeighborhoodTravel.has(fish.id)) {
     return false;
   }
+  if (!canTankAcceptFish(fish, move.destination)) return false;
   const sourcePoints = getTransitTubeTravelPoints(sourceTube);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -546,6 +652,12 @@ function completeBoroughTubeTravel(pending, now = Date.now()) {
     runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
     return false;
   }
+  if (!canTankAcceptFish(fish, destination)) {
+    fish.targetXNorm = randomSwimX();
+    fish.targetYNorm = randomSwimY(getFishTankLayer(fish), fish, getSpeciesForFish(fish));
+    runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
+    return false;
+  }
   const targetPoints = getTransitTubeTravelPoints(targetTube);
   source.fish.splice(sourceIndex, 1);
   // Start inside the destination cylinder and swim upward through its open
@@ -559,6 +671,8 @@ function completeBoroughTubeTravel(pending, now = Date.now()) {
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
   destination.fish.push(fish);
+  syncTankPopulationUsageField(source);
+  syncTankPopulationUsageField(destination);
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
@@ -605,6 +719,12 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
     runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
     return false;
   }
+  if (!canTankAcceptFish(fish, destination)) {
+    fish.targetXNorm = randomSwimX();
+    fish.targetYNorm = randomSwimY(getFishTankLayer(fish), fish, getSpeciesForFish(fish));
+    runtime.pendingNeighborhoodTravel.delete(pending?.fishId);
+    return false;
+  }
 
   source.fish.splice(sourceIndex, 1);
   const direction = pending.direction;
@@ -626,6 +746,8 @@ function completeBoroughEdgeTravel(pending, now = Date.now()) {
   fish.lastCoarseSimulatedAt = now;
   fish.visitedNeighborhoodIds = [...new Set([...(fish.visitedNeighborhoodIds || []), destination.id])].slice(-64);
   destination.fish.push(fish);
+  syncTankPopulationUsageField(source);
+  syncTankPopulationUsageField(destination);
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
@@ -770,7 +892,7 @@ function getBoroughStructureOccupants(item, tank = getCurrentTank()) {
 
 function drawBoroughStructureActivityEffects(now = Date.now()) {
   const tank = getCurrentTank();
-  if (!tank || isPortablePerformanceModeActive() && runtime.boroughOverviewOpen) {
+  if (!tank) {
     return;
   }
   for (const item of tank.placedDecor || []) {
@@ -791,7 +913,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
     const y = Number(item.yNorm) * TANK_HEIGHT - 40;
     const pulse = 0.5 + Math.sin(now / 420 + hashStringToUint32(item.id) % 7) * 0.5;
     tankContext.save();
-    tankContext.globalAlpha = (isPortablePerformanceModeActive() ? 0.22 : 0.38) + pulse * 0.12;
+    tankContext.globalAlpha = 0.38 + pulse * 0.12;
     if (services.includes("clinic")) {
       // Clinic activity remains functional, but no pulsing ring is drawn in the tank.
     } else if (services.includes("rest")) {
@@ -805,7 +927,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
       tankContext.font = "24px sans-serif";
       tankContext.fillText("♥", x - 8 + Math.sin(now / 500) * 5, y - 28 - pulse * 12);
     } else if (services.includes("food")) {
-      const particleCount = isPortablePerformanceModeActive() ? 3 : 6;
+      const particleCount = 6;
       tankContext.fillStyle = "rgba(255, 205, 92, .82)";
       for (let index = 0; index < particleCount; index += 1) {
         const angle = now / 720 + index * 2.17;
@@ -993,7 +1115,7 @@ function getFishBirthdayHatWorldPose(fish, pose, width, height, now = Date.now()
 }
 
 function drawFishBirthdayHat(fish, pose, width, height, now = Date.now()) {
-  if (!shouldShowFishBirthdayHat(fish, now) || isPortablePerformanceModeActive()) {
+  if (!shouldShowFishBirthdayHat(fish, now)) {
     return;
   }
   const anchor = getFishBirthdayHatWorldPose(fish, pose, width, height, now);
@@ -1031,7 +1153,6 @@ function drawBoroughOverviewStructureActivity(context, tank, width, height, now 
   if (!context || !tank) {
     return;
   }
-  const portable = isPortablePerformanceModeActive();
   for (const item of tank.placedDecor || []) {
     const occupants = getBoroughStructureOccupants(item, tank);
     if (!occupants.length) {
@@ -1047,20 +1168,18 @@ function drawBoroughOverviewStructureActivity(context, tank, width, height, now 
           : services.includes("rest") ? "#c8aeff"
             : "#7ce7ff";
     context.save();
-    context.globalAlpha = portable ? 0.45 : 0.68;
+    context.globalAlpha = 0.68;
     context.strokeStyle = color;
-    context.lineWidth = portable ? 1 : 1.5;
+    context.lineWidth = 1.5;
     context.beginPath();
     context.arc(x, y, 3 + Math.min(5, occupants.length) + pulse * 3, 0, Math.PI * 2);
     context.stroke();
-    if (!portable) {
-      context.fillStyle = color;
-      const particleCount = Math.min(4, 1 + occupants.length);
-      for (let index = 0; index < particleCount; index += 1) {
-        context.beginPath();
-        context.arc(x - 5 + index * 4, y - 7 - ((now / 90 + index * 5) % 8), 1.25, 0, Math.PI * 2);
-        context.fill();
-      }
+    context.fillStyle = color;
+    const particleCount = Math.min(4, 1 + occupants.length);
+    for (let index = 0; index < particleCount; index += 1) {
+      context.beginPath();
+      context.arc(x - 5 + index * 4, y - 7 - ((now / 90 + index * 5) % 8), 1.25, 0, Math.PI * 2);
+      context.fill();
     }
     context.restore();
   }
@@ -1112,7 +1231,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
     ["Service", fish.boroughServiceType || fish.neededBoroughService || "none"],
     ["Relationships", `${Object.keys(sanitizeFishRelationships(fish.relationships)).length} tracked`],
     ["Favorite", favorite ? runtime.decorMap.get(favorite.decorKey)?.name || titleFromFile(favorite.decorKey) : "not tracked"],
-    ["Age", `${getFishAgeDays(fish, now)} days`],
+    ["Age", `${Math.floor((typeof getFishAgeMs === "function" ? getFishAgeMs(fish, now) : 0) / DAY_MS)} days`],
     ["Health", `${Math.max(0, Number(fish.healthUnits) || 0)}/${getFishMaxHealthUnits(fish)} · ${fish.diseaseState || fish.illnessType || "healthy"}`],
     ["Needs", Object.entries(needs).map(([key, value]) => `${key} ${Math.round(value)}`).join(" · ")],
     ["State", `stress ${Math.round(Number(fish.stress) || 0)} · feeding ${fish.feedingState || fish.activity === "eat" ? "active" : "idle"} · breeding ${fish.breedingState || "idle"}`],
@@ -1152,6 +1271,7 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
     + buildLivingBoroughDebugSection("Off-screen", [["coarse", "Wandering", "wander"], ["coarse", "Service Visit", "service"], ["coarse", "Resting", "rest"], ["coarse", "Socializing", "social"], ["coarse-materialize", "Materialize"], ["coarse-complete", "Complete Activity"], ["coarse-cancel", "Cancel Activity"]])
     + buildLivingBoroughDebugSection("Fish Inspector", [["action-complete", "Complete Action"], ["action-cancel", "Cancel Action"], ["queue-clear", "Clear Queue"], ["autonomy-force", "Force Decision"], ["autonomy-toggle", runtime.debugAutonomyPausedFishIds.has(fish?.id) ? "Resume Autonomy" : "Pause Autonomy"], ["teleport-center", "Teleport Center"], ["needs", "Needs 0", "0"], ["needs", "Needs 50", "50"], ["needs", "Needs 100", "100"], ["heal", "Heal Fully"], ["damage", "Damage Health"], ["disease", "Apply / Advance Disease"], ["cure", "Cure Disease"], ["age-add", "+1 Day Age", "1"], ["age-add", "+7 Days Age", "7"], ["age-set", "Jump 30 Days", "30"], ["age-set", "Jump 100 Days", "100"], ["age-set", "Jump 365 Days", "365"], ["birthday", "Trigger Birthday"], ["kill", "Kill Fish"], ["revive", "Revive Fish"], ["memorial", "Generate Memorial"]], needsEditor)
     + buildLivingBoroughDebugSection("Social", [["relationship", "Force Like", "friend"], ["relationship", "Force Dislike", "fear"], ["relationship", "Force Neutral", "neutral"], ["behavior", "Greet", "follow"], ["behavior", "Avoid", "avoid"], ["behavior", "Hide", "hide"], ["behavior", "Inspect", "inspect-lure"], ["behavior", "Dig", "dig"]])
+    + buildLivingBoroughDebugSection("Special flows", [["whale-breath", "Force Whale Breath"], ["proteus", "Set Donations to 99", "donations-99"], ["proteus", "Unlock Z-01 Offer", "unlock"], ["proteus", "Authenticate Z-01", "authenticate"], ["proteus", "Claim Z-01", "claim"], ["proteus", "Force Z-01 Attack", "attack"], ["proteus", "End Z-01 Attack", "attack-end"], ["mail", "Queue Davy Email", "davy"], ["mail", "Queue Proteus Email", "proteus"]])
     + buildLivingBoroughDebugSection("Happenings & Recap", [["happening-recent", "From Recent Event"], ["happening-ten", "Generate 10 Valid"], ["happening-clear", "Clear Happenings"], ["notification-test", "Test Cooldown"], ["recap-preview", "Preview Recap"], ["recap-generate", "Generate Recap Now"], ["simulate-days", "Simulate 7 Days", "7"], ["simulate-days", "Simulate 30 Days", "30"]])
     + buildLivingBoroughDebugSection("Structures & Residence", [["structure-info", "Selected Structure Info"], ["structure-fill", "Fill With Fish"], ["structure-empty", "Empty Structure"], ["residence-assign", "Assign Fish Here"], ["residence-unassign", "Unassign Fish"], ["residence-clear-orphans", "Clear Orphans"], ["identity", "Recalculate Identity"], ["identity-scores", "Show Identity Scores"]])
     + buildLivingBoroughDebugSection("Overview", [["overview-open", "Open Overview"], ["snapshot-rebuild", "Rebuild Snapshots"], ["snapshot-freeze", runtime.debugSnapshotCacheFrozen ? "Unfreeze Cache" : "Freeze Cache"], ["overview-layout", "Auto Layout", "auto"], ["overview-layout", "Force Normal", "normal"], ["overview-layout", "Force Compact", "compact"], ["overview-layout", "Force Micro", "micro"], ["overview-synthetic", "Real Layout", "0"], ["overview-synthetic", "Preview 1", "1"], ["overview-synthetic", "Preview 5", "5"], ["overview-synthetic", "Preview 10", "10"], ["overview-synthetic", "Preview 25", "25"], ["overview-synthetic", "Preview 50", "50"], ["overview-fps", "Fish 5 FPS", "5"], ["overview-fps", "Fish 12 FPS", "12"], ["overview-fps", "Fish 30 FPS", "30"], ["overview-interpolation", runtime.debugOverviewInterpolationDisabled ? "Enable Interpolation" : "Disable Interpolation"], ["overview-sample", "Force Position Sample"]]);
@@ -1264,8 +1384,8 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "damage" && fish) applyFishDamage(fish, 1, now, `${fish.name} took debug damage.`);
   else if (action === "disease" && fish) infectSelectedFishDebug();
   else if (action === "cure" && fish) cureSelectedFishDebug();
-  else if (action === "age-add" && fish) fish.acquiredAt -= Number(value) * DAY_MS;
-  else if (action === "age-set" && fish) fish.acquiredAt = now - Number(value) * DAY_MS;
+  else if (action === "age-add" && fish) fish.birthAt = (Number(fish.birthAt) || now) - Number(value) * DAY_MS;
+  else if (action === "age-set" && fish) fish.birthAt = now - Number(value) * DAY_MS;
   else if (action === "birthday" && fish && !isFishDead(fish)) { runtime.debugBirthdayHatFishIds.add(fish.id); pushEvent(`${fish.name} is celebrating a borough birthday!`, now, tank, { type: "birthday", fishId: fish.id }); }
   else if (action === "kill" && fish) markFishAsDead(fish, now, `${fish.name} died during a debug test.`);
   else if (action === "revive" && fish && isFishDead(fish)) reviveFishForDebug(fish, now);
@@ -1275,6 +1395,48 @@ function handleLivingBoroughDebugAction(event) {
     if (other) setDebugFishRelationship(fish, other, value, now);
   } else if (action === "behavior") {
     if (value === "dig") triggerDebugGravelDigTest(); else triggerDebugBehaviorScenario(value);
+  } else if (action === "whale-breath") {
+    runtime.debugLivingBoroughOutput = forceAllWhalesToBreatheDebug(now) ? "Whale breath cycle started." : "No living whales in this tank.";
+  } else if (action === "proteus") {
+    if (value === "donations-99") {
+      state.proteusCorpseDonationCount = 99;
+      state.proteusZombieFishUnlockedAt = 0;
+      state.proteusZombieFishOfferAt = 0;
+      state.proteusZombieFishAuthenticatedAt = 0;
+      state.proteusZombieFishClaimedAt = 0;
+      runtime.debugLivingBoroughOutput = "Proteus donation progress set to 99.";
+    } else if (value === "unlock") {
+      state.proteusCorpseDonationCount = Math.max(PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT, Number(state.proteusCorpseDonationCount) || 0);
+      state.proteusZombieFishUnlockedAt = now;
+      state.proteusZombieFishOfferAt = now;
+      state.proteusDiscovered = true;
+      state.proteusDiscoveredAt ||= now;
+      runtime.debugLivingBoroughOutput = "Proteus Z-01 offer unlocked.";
+    } else if (value === "authenticate") {
+      if (!(Number(state.proteusZombieFishUnlockedAt) > 0)) state.proteusZombieFishUnlockedAt = now;
+      state.proteusZombieFishOfferAt ||= now;
+      state.proteusZombieFishAuthenticatedAt = now;
+      runtime.debugLivingBoroughOutput = "Proteus Z-01 offer authenticated.";
+    } else if (value === "claim") {
+      if (!(Number(state.proteusZombieFishAuthenticatedAt) > 0)) state.proteusZombieFishAuthenticatedAt = now;
+      runtime.debugLivingBoroughOutput = claimProteusZombieFish(now) ? "Proteus Z-01 claimed." : "Proteus Z-01 claim was unavailable.";
+    } else {
+      const zombie = getAllTankFish(state).find((entry) => isProteusZombieFish(entry) && !isFishDead(entry));
+      if (!zombie) runtime.debugLivingBoroughOutput = "No living Proteus Z-01 fish found.";
+      else if (value === "attack") {
+        zombie.satiatedUntil = 0; zombie.zombieAggressionTargetId = ""; zombie.zombieAggressionUntil = 0; zombie.zombieAggressionNextAt = now;
+        runtime.debugLivingBoroughOutput = "Proteus Z-01 attack scheduled.";
+      } else if (value === "attack-end") {
+        clearProteusZombieAggression(zombie, now);
+        runtime.debugLivingBoroughOutput = "Proteus Z-01 attack cleared.";
+      }
+    }
+  } else if (action === "mail") {
+    const species = getSpeciesForFish(fish);
+    const message = value === "davy"
+      ? queueDavyJonesFulfillmentEmail(fish, species, now)
+      : queueProteusCustomSpecimenFulfillmentEmail({ specimenId: `PB-CS-${String(now % 100000).padStart(5, "0")}`, specimenName: "Debug Specimen", now });
+    runtime.debugLivingBoroughOutput = message ? "In-game fulfillment email queued." : "Could not queue the in-game email.";
   } else if (action === "happening-recent" || action === "happening-ten") {
     const count = action === "happening-ten" ? 10 : 1;
     const recent = getAllTanks(state).flatMap((entry) => (entry.events || []).map((sourceEvent) => ({ sourceEvent, sourceTank: entry }))).filter(({ sourceEvent, sourceTank }) => buildBoroughHappeningFromEvent(sourceEvent, sourceTank));

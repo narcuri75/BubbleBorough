@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,120 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "443ab068-8ba2-458c-84f8-f87d58a126a9",
+      "id": "85a81b04-b707-4960-8438-037084698b75",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "7ca34f80-dd0b-4d0f-8656-d81742d31f86",
-          "width": 578,
-          "height": 427,
+          "id": "d36f5455-d4fe-481d-8a8e-f5af37856ca2",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish.png"
+          "name": "puffer_amazon.png"
         },
         {
-          "id": "9f9e2fb9-1f09-40c1-b05e-b754b962053e",
-          "width": 578,
-          "height": 427,
+          "id": "add45480-76c3-4f57-baad-e42cb1860666",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_1.png"
+          "name": "puffer_dogface.png"
         },
         {
-          "id": "1049e4ce-d61b-48f7-9d82-ced24b2150c3",
-          "width": 578,
-          "height": 427,
+          "id": "04d70b02-c134-4dc4-98a8-f9911c877f17",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_2.png"
+          "name": "puffer_dwarf.png"
         },
         {
-          "id": "947ab224-5487-442e-8a16-6c8d4d6e7cf4",
-          "width": 578,
-          "height": 427,
+          "id": "d5526309-5fad-49ac-a54f-58901228ac8a",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_3.png"
+          "name": "puffer_fahaka.png"
         },
         {
-          "id": "8a12c2b6-f745-433c-822a-25acfc51d05a",
-          "width": 578,
-          "height": 427,
+          "id": "0b575b59-62cd-463c-aa63-ee7ea81748ee",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_4.png"
+          "name": "puffer_figure8.png"
+        },
+        {
+          "id": "fda55fe8-7409-4617-8ebc-7337a001f99b",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_green_spotted.png"
+        },
+        {
+          "id": "ebbd241f-6b45-4ff9-bc21-0e1a0143ab26",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_map.png"
+        },
+        {
+          "id": "2ba7f7ef-8d6d-4f6e-9eec-b633c5239039",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_mbu.png"
+        },
+        {
+          "id": "c913d14a-bc28-44e0-9962-c6cb9f476f11",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_oceanic.png"
+        },
+        {
+          "id": "15c8f011-8a10-4350-9c57-5c9a24e97b61",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_valentinis_sharpnose.png"
         }
       ]
     }

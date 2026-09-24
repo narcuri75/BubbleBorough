@@ -362,7 +362,11 @@ function sanitizePellet(pellet) {
       0.7,
       1.4
     ),
-    sinkDurationMs: clamp(Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS, 30 * 1000, 60 * MINUTE_MS),
+    sinkDurationMs: clamp(
+      Number(pellet.sinkDurationMs) || (foodMeta?.id === "algaeWafers" ? ALGAE_WAFER_SINK_DURATION_MS : FOOD_PELLET_SINK_DURATION_MS),
+      foodMeta?.id === "algaeWafers" ? 3 * 1000 : 30 * 1000,
+      60 * MINUTE_MS
+    ),
     dropStartXNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartXNorm), 0.08, 0.92) : null,
     dropStartYNorm: hasCustomDropStart ? clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm) : null,
     dropDurationMs: hasCustomDropStart
@@ -550,6 +554,9 @@ function requestRuntimeImageRecovery(path, details = {}) {
     if (result.loaded && details.kind === "grime") {
       runtime.grimeBaseCacheKey = "";
       runtime.grimeCompositeCacheKey = "";
+    }
+    if (result.loaded && details.kind === "substrate") {
+      renderUi(Date.now(), { full: false });
     }
   });
 }
@@ -1055,6 +1062,16 @@ async function hydrateCustomImagesFromStorage(targetState = state) {
     }) || changed;
   }
 
+  for (const asset of Object.values(targetState.customBackgroundAssets || {})) {
+    changed = await resolveStoredCustomImage(asset, {
+      refField: "imageRefId",
+      dataField: "path",
+      runtimeField: "runtimePath",
+      source: "custom-background"
+    }) || changed;
+  }
+  syncRuntimeCustomBackgroundAssetsFromState(targetState);
+
   for (const asset of Object.values(targetState.customDecorAssets || {})) {
     changed = await resolveStoredCustomImage(asset, {
       refField: "imageRefId",
@@ -1096,6 +1113,11 @@ function collectReferencedCustomImageIds(targetState = state) {
     if (refId) {
       ids.add(refId);
     }
+  }
+
+  for (const asset of Object.values(targetState.customBackgroundAssets || {})) {
+    const refId = sanitizeCustomImageRefId(asset?.imageRefId);
+    if (refId) ids.add(refId);
   }
 
   for (const asset of Object.values(targetState.customDecorAssets || {})) {

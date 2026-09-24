@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "ca1d9996-0565-48ba-902b-3119eee0053e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "2ba557f2-c017-4dc8-8f1e-67a373c9ebb3",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_clown.png"
+        },
+        {
+          "id": "db252ef4-0f07-4024-a93d-740f0ccd236a",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_redtail-notho.png"
+        },
+        {
+          "id": "e1a660c2-fc34-4385-8b8a-9d8db2e4cb86",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_lyretail.png"
+        },
+        {
+          "id": "91c96bc4-32b6-4f07-95a3-2324e8bbb685",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_bluefin-notho.png"
+        },
+        {
+          "id": "c4549643-3afe-45cf-b254-00b0f9e3b960",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_blue-panchax.png"
+        },
+        {
+          "id": "4f9ad9fc-674d-4c92-b43a-776e938426e8",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_gardneri.png"
+        },
+        {
+          "id": "e3865aba-f82f-43db-a9a8-d75dcad0fc0e",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_wonder-golden.png"
+        },
+        {
+          "id": "ee0111c0-e9bb-4b66-9e62-1b8a0182713a",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_orange australe.png"
+        },
+        {
+          "id": "f2ae5190-1170-46fe-8bae-2a51cd765a58",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "killifish_american.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/killifish__genetics-natural.webp"
+  }
+}

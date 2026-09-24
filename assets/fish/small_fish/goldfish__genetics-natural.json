@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "281d4ed4-b383-4af1-8546-4366a97bf4b9",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "b11a60d1-e30d-4d81-923b-ecf13ff33930",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_bubble_eye.png"
+        },
+        {
+          "id": "0accdba8-b20b-4829-8f0c-78688123b551",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_celestial.png"
+        },
+        {
+          "id": "8f31bc1e-6d81-43a0-a16d-1ac55fd0fd11",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_comet.png"
+        },
+        {
+          "id": "220bf2e0-1b6a-430c-aaba-5af6492c7385",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_common.png"
+        },
+        {
+          "id": "472128e7-747a-4c64-9fb5-b804499b587e",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_fantail.png"
+        },
+        {
+          "id": "50ed38f9-f246-4547-9428-cb1a52c8757c",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_lionhead.png"
+        },
+        {
+          "id": "1ded1247-585b-49d6-a863-bc1480127e54",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_oranda.png"
+        },
+        {
+          "id": "282d98bf-e912-43ee-81e5-abb916062bd4",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_ranchu.png"
+        },
+        {
+          "id": "d1a09f50-93cf-4e5a-a287-b934f39b5cf3",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_ryukin.png"
+        },
+        {
+          "id": "2a0400d4-c458-4116-8be2-f13f451f9ec5",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "goldfish_shubunkin.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/goldfish__genetics-natural.webp"
+  }
+}

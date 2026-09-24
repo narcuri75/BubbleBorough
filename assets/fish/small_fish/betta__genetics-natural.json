@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "27143643-1933-408a-8b56-22eb30c512be",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "a121734d-f517-4fb2-a243-d807a5740afd",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_crowntail.png"
+        },
+        {
+          "id": "35065202-5b16-48fc-bfab-8d20cd9bd204",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_delta.png"
+        },
+        {
+          "id": "c0ca9125-e355-4347-94a6-79742c2b8984",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_double_tail.png"
+        },
+        {
+          "id": "8c55b041-5f97-4d42-9ce5-5e54e06d9dc6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_dumbo_ear.png"
+        },
+        {
+          "id": "40d3add1-148d-4f97-8926-7de388556c5d",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_giant.png"
+        },
+        {
+          "id": "33920377-ae5a-4525-9a87-ea385060eb95",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_half_moon.png"
+        },
+        {
+          "id": "ec0c1437-a54f-4255-b178-11520b69c329",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_koi.png"
+        },
+        {
+          "id": "2f31a558-922a-454e-b11c-0adaf6114474",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_plakat.png"
+        },
+        {
+          "id": "cb7f0fb9-6be1-4c76-ab4d-0229240e45b7",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_rosetail.png"
+        },
+        {
+          "id": "147e5740-5de7-44fe-b27f-32606c58518a",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 8,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "betta_veiltail.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/betta__genetics-natural.webp"
+  }
+}

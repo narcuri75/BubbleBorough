@@ -13,10 +13,13 @@ const outputPath = path.join(projectRoot, "public", "app.js");
 const checkOnly = process.argv.includes("--check");
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "sync-decor-fallback.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "sync-fish-fallback.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-small-fish-atlases.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
+require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-proteus-z01-small-atlas.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-sprite-delivery.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-background-delivery.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("node:child_process").execFileSync(process.execPath, [path.join(__dirname, "generate-loose-decor-previews.cjs"), ...(checkOnly ? ["--check"] : [])], { stdio: "inherit" });
 require("./generate-sprite-sheets.cjs").generate(checkOnly);
+require("./generate-asset-manifest.cjs").run(checkOnly);
 
 function sha256(value) {
   return crypto.createHash("sha256").update(value).digest("hex");

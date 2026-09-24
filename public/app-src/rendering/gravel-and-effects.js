@@ -131,6 +131,7 @@ function getCustomGravelLoosePebbleAssets() {
 }
 
 function canUseFishGravelPebblePlay() {
+  if (getResolvedTankSubstrateStyle() !== "custom") return false;
   return getCustomGravelLoosePebbleAssets().length > 0;
 }
 
@@ -464,11 +465,132 @@ function drawCustomGravelFloor(bounds, now = Date.now()) {
       continue;
     }
 
-    drawImageCover(tankContext, tintedLayer, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
+    const layerShadowIntensity = typeof getGravelLayerShadowIntensity === "function"
+      ? getGravelLayerShadowIntensity()
+      : 0;
+    if (index > 0 && layerShadowIntensity > 0.001) {
+      tankContext.save();
+      tankContext.shadowColor = `rgba(2, 9, 15, ${(0.58 * layerShadowIntensity).toFixed(3)})`;
+      tankContext.shadowBlur = 4 + layerShadowIntensity * 10;
+      tankContext.shadowOffsetX = 0;
+      tankContext.shadowOffsetY = 3 + layerShadowIntensity * 7;
+      drawImageCover(tankContext, tintedLayer, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
+      tankContext.restore();
+    } else {
+      drawImageCover(tankContext, tintedLayer, bounds.left, bounds.drawTop, bounds.drawWidth, bounds.drawHeight);
+    }
     drewLayer = true;
   }
 
   return drewLayer;
+}
+
+function getNaturalSubstrateTopY() {
+  // Natural substrate art begins one depth step behind Layer 5: the same
+  // position a hypothetical Layer 6 floor line would occupy.
+  return getTankLayerBottomBoundaryY(TANK_DEPTH_LAYERS) - LAYER_BOTTOM_GRAVEL_STEP_PX - 2;
+}
+
+function getNaturalSubstrateDrawBounds(image, mask = null) {
+  if (!image?.width || !image?.height) return null;
+  const visibleBounds = getSceneLayoutVisibleTankVirtualBounds();
+  const visibleWidth = Math.max(1, visibleBounds.right - visibleBounds.left);
+  const visibleHeight = Math.max(1, visibleBounds.bottom - visibleBounds.top);
+  const surfaceTop = getNaturalSubstrateTopY();
+  const sideOverscan = Math.max(32, visibleWidth * 0.08);
+  const bottomOverscan = Math.max(40, visibleHeight * 0.12);
+  const aspectRatio = image.width / image.height;
+  const visibleTopRatio = mask?.bounds
+    ? clamp(mask.bounds.minY / image.height, 0, 0.98)
+    : 0;
+  const visibleBottomRatio = mask?.bounds
+    ? clamp((mask.bounds.maxY + 1) / image.height, visibleTopRatio + 0.01, 1)
+    : 1;
+  const visibleHeightRatio = Math.max(0.01, visibleBottomRatio - visibleTopRatio);
+  const minimumWidth = visibleWidth + sideOverscan * 2;
+  const minimumHeight = Math.max(1, visibleBounds.bottom + bottomOverscan - surfaceTop) / visibleHeightRatio;
+  const width = Math.max(minimumWidth, minimumHeight * aspectRatio);
+  const height = width / aspectRatio;
+  const centerX = (visibleBounds.left + visibleBounds.right) * 0.5;
+  const top = surfaceTop - visibleTopRatio * height;
+  return {
+    left: centerX - width * 0.5,
+    top,
+    width,
+    height,
+    right: centerX + width * 0.5,
+    bottom: top + height,
+    visibleTop: top + visibleTopRatio * height,
+    visibleBottom: top + visibleBottomRatio * height
+  };
+}
+
+function getNaturalSubstrateSurfaceProfile(mask) {
+  if (!mask?.alpha || !mask.width || !mask.height) return null;
+  if (!(runtime.naturalSubstrateSurfaceProfileCache instanceof WeakMap)) {
+    runtime.naturalSubstrateSurfaceProfileCache = new WeakMap();
+  }
+  const cached = runtime.naturalSubstrateSurfaceProfileCache.get(mask);
+  if (cached) return cached;
+  const rows = new Int32Array(mask.width);
+  rows.fill(-1);
+  const threshold = Math.max(ALPHA_HIT_THRESHOLD, 48);
+  const minY = clamp(Number(mask.bounds?.minY) || 0, 0, mask.height - 1);
+  const maxY = clamp(Number(mask.bounds?.maxY) || mask.height - 1, minY, mask.height - 1);
+  for (let x = 0; x < mask.width; x += 1) {
+    for (let y = minY; y <= maxY; y += 1) {
+      if (mask.alpha[(y * mask.width + x) * 4 + 3] >= threshold) {
+        rows[x] = y;
+        break;
+      }
+    }
+  }
+  runtime.naturalSubstrateSurfaceProfileCache.set(mask, rows);
+  return rows;
+}
+
+function getNaturalSubstrateSurfaceYAtX(x) {
+  const path = getTankSubstrateAssetPath(getCurrentTank());
+  const image = path ? runtime.images.get(path) : null;
+  const mask = path ? getImageAlphaMask(path) : null;
+  const drawBounds = image ? getNaturalSubstrateDrawBounds(image, mask) : null;
+  const profile = getNaturalSubstrateSurfaceProfile(mask);
+  if (!drawBounds || !profile?.length) return getNaturalSubstrateTopY();
+  const u = clamp((x - drawBounds.left) / Math.max(1, drawBounds.width), 0, 1);
+  const sourceX = clamp(Math.floor(u * mask.width), 0, mask.width - 1);
+  let sourceY = profile[sourceX];
+  if (sourceY < 0) {
+    for (let radius = 1; radius < Math.min(mask.width, 48) && sourceY < 0; radius += 1) {
+      const leftY = profile[Math.max(0, sourceX - radius)];
+      const rightY = profile[Math.min(mask.width - 1, sourceX + radius)];
+      sourceY = leftY >= 0 ? leftY : rightY;
+    }
+  }
+  if (sourceY < 0) return drawBounds.visibleTop;
+  return drawBounds.top + (sourceY / image.height) * drawBounds.height;
+}
+
+function drawNaturalSubstrateFloor() {
+  const tank = getCurrentTank();
+  const path = getTankSubstrateAssetPath(tank);
+  if (!path) return false;
+  const image = runtime.images.get(path);
+  if (!isUsableRuntimeImage(image)) {
+    requestRuntimeImageRecovery(path, {
+      kind: "substrate",
+      id: getResolvedTankSubstrateStyle(tank)
+    });
+    return false;
+  }
+
+  const drawBounds = getNaturalSubstrateDrawBounds(image, getImageAlphaMask(path));
+  if (!drawBounds) return false;
+  tankContext.save();
+  // Deliberately draw the source image untouched: no gravel mask, fallback
+  // color, tint, depth overlay, or non-uniform stretching.
+  tankContext.drawImage(image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
+  tankContext.restore();
+  return true;
 }
 
 function drawGravelDepthTreatment(bounds) {
@@ -553,11 +675,16 @@ function drawSubstrateGroundShadow(bounds) {
 
 function drawTankFloor(now = Date.now()) {
   const bounds = getTankFloorDrawBounds();
+  const naturalSubstrate = getResolvedTankSubstrateStyle() !== "custom";
+
+  if (naturalSubstrate) {
+    drawNaturalSubstrateFloor();
+    return;
+  }
 
   tankContext.save();
   traceTankFloorMaskPath(tankContext, bounds);
   tankContext.clip();
-
   drawCustomGravelFloor(bounds, now);
 
   tankContext.restore();
@@ -689,12 +816,16 @@ function drawSedimentClouds(now = Date.now()) {
   tankContext.restore();
 }
 
-function drawGravelDigBursts(now = Date.now()) {
+function drawGravelDigBursts(now = Date.now(), options = {}) {
   if (!runtime.gravelDigBursts?.length) {
     return;
   }
 
+  const frontOfFish = options.frontOfFish === true;
   for (const burst of runtime.gravelDigBursts) {
+    if (Boolean(burst.frontOfFish) !== frontOfFish) {
+      continue;
+    }
     const duration = Math.max(1, Number(burst.durationMs) || GRAVEL_DIG_BURST_DURATION_MIN_MS);
     const progress = clamp((now - (Number(burst.startedAt) || now)) / duration, 0, 1);
 
@@ -1008,11 +1139,20 @@ function getGravelCapCanvas() {
 }
 
 function getGravelCacheDimensions() {
-  const baseWidth = Math.max(TANK_WIDTH, dom.tankCanvas?.width || 0);
-  const baseHeight = Math.max(TANK_HEIGHT, dom.tankCanvas?.height || 0);
+  const canvasWidth = Math.max(TANK_WIDTH, Number(dom.tankCanvas?.width) || TANK_WIDTH);
+  const canvasHeight = Math.max(TANK_HEIGHT, Number(dom.tankCanvas?.height) || TANK_HEIGHT);
+  const deviceScale = Math.max(
+    1,
+    Math.min(canvasWidth / Math.max(1, TANK_WIDTH), canvasHeight / Math.max(1, TANK_HEIGHT))
+  );
+  // Gravel is static and visually noisy, so a giant DPR-sized cache adds RAM
+  // without a visible benefit. Cap the retained bed/cap canvases while keeping
+  // enough oversampling for clean desktop rendering.
+  const maxScale = Math.max(1, Number(GRAVEL_CACHE_MAX_SCALE) || 1.35);
+  const cacheScale = Math.min(maxScale, deviceScale * GRAVEL_CACHE_OVERSAMPLE);
   return {
-    width: Math.max(TANK_WIDTH, Math.round(baseWidth * GRAVEL_CACHE_OVERSAMPLE)),
-    height: Math.max(TANK_HEIGHT, Math.round(baseHeight * GRAVEL_CACHE_OVERSAMPLE))
+    width: Math.max(TANK_WIDTH, Math.round(TANK_WIDTH * cacheScale)),
+    height: Math.max(TANK_HEIGHT, Math.round(TANK_HEIGHT * cacheScale))
   };
 }
 
@@ -1074,106 +1214,6 @@ function renderGravelCapToCanvas(context) {
   }
 
   context.restore();
-}
-
-function drawLooseGravel(now, options = {}) {
-  const { surfaceKind = null, decorLayer = null, transientOnly = false } = options;
-  const loosePebbles = [];
-  const draggedExistingId = runtime.pebbleDragState?.existingId || null;
-
-  if (!transientOnly) {
-    for (const pebble of state.gravelLivePebbles) {
-      if (pebble.id === draggedExistingId) {
-        continue;
-      }
-      if (surfaceKind && pebble.surfaceKind !== surfaceKind) {
-        continue;
-      }
-      if (surfaceKind === "decor" && decorLayer !== null) {
-        const decorItem = state.placedDecor.find((item) => item.id === pebble.decorId);
-        if (!decorItem || getDecorTankLayer(decorItem) !== decorLayer) {
-          continue;
-        }
-      }
-      const pose = resolveLiveGravelPebblePose(pebble);
-      if (!pose) {
-        continue;
-      }
-      loosePebbles.push({ pebble, pose, alpha: 1, grounded: true });
-    }
-  }
-
-  if (transientOnly) {
-    for (const falling of runtime.fallingGravelPebbles) {
-      loosePebbles.push({ pebble: falling.pebble, pose: getFallingGravelPebblePose(falling, now), alpha: 0.96, grounded: false });
-    }
-
-    if (runtime.pebbleDragState) {
-      loosePebbles.push({
-        pebble: runtime.pebbleDragState.pebble,
-        pose: {
-          x: runtime.pebbleDragState.pebble.xNorm * TANK_WIDTH,
-          y: runtime.pebbleDragState.pebble.yNorm * TANK_HEIGHT
-        },
-        alpha: 0.98,
-        grounded: false
-      });
-    }
-  }
-
-  loosePebbles
-    .sort((left, right) => left.pose.y - right.pose.y)
-    .forEach(({ pebble, pose, alpha, grounded }) => {
-      if (grounded) {
-        drawLoosePebbleGrounding(pose, pebble, alpha);
-      }
-      drawGravelPebbleSprite(
-        tankContext,
-        pose.x,
-        pose.y,
-        pebble.size,
-        pebble.rotation,
-        pebble.spriteIndex,
-        getActiveGravelPalette()[pebble.colorIndex] || getActiveGravelPalette()[0],
-        alpha * (pebble.alpha || 1),
-        pebble.stretchY,
-        pebble.variantIndex
-      );
-    });
-}
-
-function drawLoosePebbleGrounding(pose, pebble, alpha) {
-  if (!pose || !pebble) {
-    return;
-  }
-
-  const contactOpacity = pebble.surfaceKind === "decor"
-    ? 0.06
-    : 0.09 + (1 - clamp(pebble.liftPx / Math.max(1, GRAVEL_LIVE_LAYER_DEPTH_PX), 0, 1)) * 0.1;
-  const rx = pebble.size * 0.34;
-  const ry = Math.max(1.2, pebble.size * 0.14);
-  const offsetY = pebble.surfaceKind === "decor" ? pebble.size * 0.12 : pebble.size * 0.16;
-
-  tankContext.save();
-  tankContext.globalAlpha = alpha * contactOpacity;
-  tankContext.fillStyle = "rgba(10, 14, 18, 0.88)";
-  tankContext.beginPath();
-  tankContext.ellipse(pose.x, pose.y + offsetY, rx, ry, 0, 0, Math.PI * 2);
-  tankContext.fill();
-  tankContext.restore();
-}
-
-function drawLooseGravelCap() {
-  const capCanvas = getGravelCapCanvas();
-  if (!capCanvas) {
-    return;
-  }
-
-  tankContext.save();
-  traceTankFloorSurfaceBandPath(tankContext);
-  tankContext.clip();
-  tankContext.drawImage(capCanvas, 0, 0, TANK_WIDTH, TANK_HEIGHT);
-  tankContext.restore();
 }
 
 function drawGravelPebbleSprite(context, x, y, size, rotation, spriteIndex, color, alpha = 1, stretchY = 1, variantIndex = 0) {

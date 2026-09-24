@@ -1,6 +1,3 @@
-// Source fragment: rendering/fish-and-effects.js
-// Assembled into ../app.js by scripts/build-app-bundle.cjs.
-
 function drawPoops(now, layer = null) {
   const targetLayer = Number.isFinite(Number(layer)) ? clampTankLayer(layer) : null;
   for (const poop of state.poops) {
@@ -218,11 +215,17 @@ function drawFishEggs(now, layer = null) {
       continue;
     }
 
+    const clutchSize = egg.hatchedAt ? 1 : Math.max(1, Math.min(3, Math.floor(Number(egg.clutchSize) || 1)));
+    const clusterOffsets = clutchSize === 1
+      ? [[0, 0, 1]]
+      : clutchSize === 2
+        ? [[-0.2, 0.06, 0.94], [0.2, 0.02, 0.94]]
+        : [[0, -0.04, 1], [-0.24, 0.1, 0.88], [0.24, 0.1, 0.88]];
     tankContext.save();
     tankContext.globalAlpha = pose.alpha;
     tankContext.fillStyle = "rgba(13, 9, 5, 0.18)";
     tankContext.beginPath();
-    tankContext.ellipse(pose.x, pose.y + 3, pose.width * 0.38, pose.height * 0.14, 0, 0, Math.PI * 2);
+    tankContext.ellipse(pose.x, pose.y + 3, pose.width * (0.38 + 0.12 * (clutchSize - 1)), pose.height * 0.14, 0, 0, Math.PI * 2);
     tankContext.fill();
     tankContext.translate(pose.x, pose.y);
     tankContext.rotate(pose.wobble);
@@ -230,13 +233,17 @@ function drawFishEggs(now, layer = null) {
       const eggSprite = egg.fishColor
         ? (getTintedCaveLayerImage(pose.spritePath, egg.fishColor, { colorize: egg.fishColorize }) || pose.sprite)
         : pose.sprite;
-      tankContext.drawImage(
-        eggSprite,
-        -pose.width / 2,
-        -pose.height * 0.9,
-        pose.width,
-        pose.height
-      );
+      for (const [offsetX, offsetY, scale] of clusterOffsets) {
+        const width = pose.width * scale;
+        const height = pose.height * scale;
+        tankContext.drawImage(
+          eggSprite,
+          offsetX * pose.width - width / 2,
+          offsetY * pose.height - height * 0.9,
+          width,
+          height
+        );
+      }
     } else {
       drawFishEggFallback(tankContext, pose, egg, now);
     }
@@ -494,11 +501,78 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
 }
 
 function compareFishRenderRecords(left, right) {
+  const subLayerDelta = right.subLayer - left.subLayer;
+  if (subLayerDelta) {
+    return subLayerDelta;
+  }
   const priorityDelta = left.priority - right.priority;
   if (priorityDelta) {
     return priorityDelta;
   }
   return left.yNorm - right.yNorm;
+}
+
+function prepareFishRenderRecord(record, now) {
+  const { fish, species, effectiveBehavior } = record;
+  record.caveInteriorFish = isFishInCaveRenderSublayer(fish);
+  const suckerFreeSwimming = effectiveBehavior === "sucker"
+    ? isSuckerFishFreeSwimming(fish, species, now)
+    : false;
+  const suckerViewTransition = effectiveBehavior === "sucker"
+    ? getSuckerFishViewTransitionState(fish, now)
+    : null;
+  const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
+  const getSuckerTransitionSprite = (view) => {
+    const path = getSuckerFishViewAssetPath(displaySpecies, fish, view)
+      || getSuckerFishViewAssetPath(species, fish, view);
+    if (!path) return null;
+    const sourceImage = runtime.images.get(path);
+    if (!isUsableRuntimeImage(sourceImage)) return null;
+    return { path, sourceImage, renderImage: getFishTintedImage(path, sourceImage, fish) };
+  };
+  const transitionFromSprite = suckerViewTransition
+    ? getSuckerTransitionSprite(suckerViewTransition.fromView)
+    : null;
+  const transitionToSprite = suckerViewTransition
+    ? getSuckerTransitionSprite(suckerViewTransition.toView)
+    : null;
+  const hasSuckerCrossFlip = Boolean(suckerViewTransition && transitionFromSprite && transitionToSprite);
+  const imagePath = hasSuckerCrossFlip
+    ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.path : transitionToSprite.path)
+    : (getFishDisplayAssetPath(fish, species, now) || species.asset);
+  const image = hasSuckerCrossFlip
+    ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.sourceImage : transitionToSprite.sourceImage)
+    : runtime.images.get(imagePath);
+  if (!isUsableRuntimeImage(image)) {
+    record.render = null;
+    record.missingImagePath = imagePath;
+    return;
+  }
+  const renderImage = hasSuckerCrossFlip
+    ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.renderImage : transitionToSprite.renderImage)
+    : getFishTintedImage(imagePath, image, fish);
+  const pose = getFishPose(fish, species, now);
+  const depthLayer = getFishTankLayer(fish);
+  const width = getFishDisplayWidth(fish, species, now);
+  const height = width * (image.height / image.width);
+  const healthRatio = getFishHealthRatio(fish, species);
+  const visualWiggle = pose.wiggle * getTankDepthMovementMultiplier(depthLayer);
+  const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
+  const useSuckerFacePivot = SUCKER_FISH_FACE_PIVOT_ENABLED
+    && !pose.isDead
+    && effectiveBehavior === "sucker"
+    && !suckerFreeSwimming
+    && !suckerViewTransition;
+  record.missingImagePath = "";
+  record.render = {
+    suckerFreeSwimming, suckerViewTransition, displaySpecies,
+    transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
+    imagePath, image, renderImage, pose, depthLayer, width, height,
+    healthRatio, visualSwayX: pose.swayX * getTankDepthMovementMultiplier(depthLayer),
+    fishDrawX, useSuckerFacePivot,
+    suckerFacePivotX: useSuckerFacePivot ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X : 0,
+    suckerFacePivotY: useSuckerFacePivot ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y : 0
+  };
 }
 
 function prepareFishRenderFrameCache(now = Date.now()) {
@@ -546,6 +620,8 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     record.effectiveBehavior = getEffectiveFishBehavior(fish, species);
     record.pendingTravel = pendingTravel;
     record.priority = getFishSameLayerRenderPriority(fish);
+    record.subLayer = getFishTankSubLayer(fish);
+    record.depthIndex = getFishTankDepthIndex(fish);
     record.yNorm = Number(fish.yNorm) || 0;
     buckets[layer].push(record);
     recordIndex += 1;
@@ -554,6 +630,46 @@ function prepareFishRenderFrameCache(now = Date.now()) {
   for (let layerIndex = 1; layerIndex <= TANK_DEPTH_LAYERS; layerIndex += 1) {
     if (buckets[layerIndex].length > 1) {
       buckets[layerIndex].sort(compareFishRenderRecords);
+    }
+    for (const record of buckets[layerIndex]) {
+      prepareFishRenderRecord(record, now);
+    }
+  }
+
+  // renderTank draws the same layer in several visual passes.  Previously each
+  // pass walked the complete layer again and discarded records that belonged to
+  // another behavior or sub-layer.  Keep the source order from the sorted
+  // layer bucket, but make the exact pass lists once per animation frame.
+  // This is deliberately a routing cache only: no fish pose, image, or visual
+  // effect is cached, so every fish remains rendered at full quality.
+  let passBuckets = runtime.fishRenderPassBuckets;
+  if (!Array.isArray(passBuckets) || passBuckets.length !== TANK_DEPTH_LAYERS + 1) {
+    passBuckets = Array.from({ length: TANK_DEPTH_LAYERS + 1 }, () => ({
+      sucker: [],
+      suckerOutsideCave: [],
+      nonSuckerBySubLayer: Array.from({ length: TANK_SUBLAYER_BACK + 1 }, () => [])
+    }));
+    runtime.fishRenderPassBuckets = passBuckets;
+  } else {
+    for (const passBucket of passBuckets) {
+      passBucket.sucker.length = 0;
+      passBucket.suckerOutsideCave.length = 0;
+      for (const subLayerBucket of passBucket.nonSuckerBySubLayer) {
+        subLayerBucket.length = 0;
+      }
+    }
+  }
+  for (let layerIndex = 1; layerIndex <= TANK_DEPTH_LAYERS; layerIndex += 1) {
+    const passBucket = passBuckets[layerIndex];
+    for (const record of buckets[layerIndex]) {
+      if (record.effectiveBehavior === "sucker") {
+        passBucket.sucker.push(record);
+        if (!record.caveInteriorFish) {
+          passBucket.suckerOutsideCave.push(record);
+        }
+      } else {
+        passBucket.nonSuckerBySubLayer[record.subLayer].push(record);
+      }
     }
   }
 
@@ -564,6 +680,7 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     fishLength: fishList.length,
     recordCount: recordIndex,
     buckets,
+    passBuckets,
     stableScale: getViewportStableAssetScale(),
     topFrameBottomY: shellBounds.outerTop + 28
   };
@@ -1781,6 +1898,280 @@ function drawFishTurnaroundRig(
 }
 
 
+
+function getDeadFishEyeAnchorFromMask(mask) {
+  if (!mask?.alpha?.length || !mask.width || !mask.height) {
+    return null;
+  }
+  if (mask.deadFishEyeAnchorResolved) {
+    return mask.deadFishEyeAnchor || null;
+  }
+
+  const bounds = mask.bounds || { minX: 0, minY: 0, maxX: mask.width - 1, maxY: mask.height - 1 };
+  const bodyWidth = Math.max(1, bounds.maxX - bounds.minX + 1);
+  const bodyHeight = Math.max(1, bounds.maxY - bounds.minY + 1);
+  const headMinX = Math.max(bounds.minX, Math.floor(bounds.maxX - bodyWidth * 0.38));
+  const scanMinY = Math.max(bounds.minY, Math.floor(bounds.minY + bodyHeight * 0.10));
+  const scanMaxY = Math.min(bounds.maxY, Math.ceil(bounds.minY + bodyHeight * 0.64));
+  const visited = new Uint8Array(mask.width * mask.height);
+  const alphaThreshold = Math.max(150, Number(ALPHA_HIT_THRESHOLD) || 1);
+  const isDarkOpaquePixel = (x, y) => {
+    if (x < headMinX || x > bounds.maxX || y < scanMinY || y > scanMaxY) return false;
+    const offset = (y * mask.width + x) * 4;
+    if (mask.alpha[offset + 3] < alphaThreshold) return false;
+    const luminance = mask.alpha[offset] * 0.2126 + mask.alpha[offset + 1] * 0.7152 + mask.alpha[offset + 2] * 0.0722;
+    return luminance <= 82;
+  };
+  const candidates = [];
+
+  for (let y = scanMinY; y <= scanMaxY; y += 1) {
+    for (let x = headMinX; x <= bounds.maxX; x += 1) {
+      const startIndex = y * mask.width + x;
+      if (visited[startIndex] || !isDarkOpaquePixel(x, y)) continue;
+      const queue = [[x, y]];
+      visited[startIndex] = 1;
+      let cursor = 0;
+      let area = 0;
+      let sumX = 0;
+      let sumY = 0;
+      let sumLuminance = 0;
+      let minX = x;
+      let maxX = x;
+      let minY = y;
+      let maxY = y;
+
+      while (cursor < queue.length) {
+        const [px, py] = queue[cursor++];
+        const offset = (py * mask.width + px) * 4;
+        area += 1;
+        sumX += px;
+        sumY += py;
+        sumLuminance += mask.alpha[offset] * 0.2126 + mask.alpha[offset + 1] * 0.7152 + mask.alpha[offset + 2] * 0.0722;
+        minX = Math.min(minX, px); maxX = Math.max(maxX, px);
+        minY = Math.min(minY, py); maxY = Math.max(maxY, py);
+        for (const [dx, dy] of [[1, 0], [-1, 0], [0, 1], [0, -1]]) {
+          const nx = px + dx;
+          const ny = py + dy;
+          if (nx < headMinX || nx > bounds.maxX || ny < scanMinY || ny > scanMaxY) continue;
+          const index = ny * mask.width + nx;
+          if (visited[index] || !isDarkOpaquePixel(nx, ny)) continue;
+          visited[index] = 1;
+          queue.push([nx, ny]);
+        }
+      }
+
+      const componentWidth = maxX - minX + 1;
+      const componentHeight = maxY - minY + 1;
+      const relativeArea = area / Math.max(1, bodyWidth * bodyHeight);
+      const aspect = componentWidth / Math.max(1, componentHeight);
+      if (area < 3 || relativeArea > 0.012 || aspect < 0.42 || aspect > 2.35) continue;
+      if (componentWidth > bodyWidth * 0.13 || componentHeight > bodyHeight * 0.20) continue;
+
+      const centerX = sumX / area;
+      const centerY = sumY / area;
+      const u = (centerX - bounds.minX) / bodyWidth;
+      const v = (centerY - bounds.minY) / bodyHeight;
+      if (u < 0.60 || u > 0.95 || v < 0.10 || v > 0.62) continue;
+
+      const ringPad = Math.max(2, Math.round(Math.max(componentWidth, componentHeight) * 0.8));
+      let ringLuminance = 0;
+      let ringSamples = 0;
+      for (let ry = Math.max(bounds.minY, minY - ringPad); ry <= Math.min(bounds.maxY, maxY + ringPad); ry += 1) {
+        for (let rx = Math.max(bounds.minX, minX - ringPad); rx <= Math.min(bounds.maxX, maxX + ringPad); rx += 1) {
+          if (rx >= minX && rx <= maxX && ry >= minY && ry <= maxY) continue;
+          const offset = (ry * mask.width + rx) * 4;
+          if (mask.alpha[offset + 3] < alphaThreshold) continue;
+          ringLuminance += mask.alpha[offset] * 0.2126 + mask.alpha[offset + 1] * 0.7152 + mask.alpha[offset + 2] * 0.0722;
+          ringSamples += 1;
+        }
+      }
+      if (ringSamples < 4) continue;
+      const averageDark = sumLuminance / area;
+      const averageRing = ringLuminance / ringSamples;
+      const contrast = averageRing - averageDark;
+      if (contrast < 26) continue;
+
+      const roundness = 1 - Math.min(1, Math.abs(1 - aspect));
+      const forwardScore = 1 - Math.min(1, Math.abs(u - 0.78) / 0.22);
+      const verticalScore = 1 - Math.min(1, Math.abs(v - 0.34) / 0.32);
+      const score = contrast / 80 + roundness * 0.8 + forwardScore * 0.7 + verticalScore * 0.55;
+      candidates.push({
+        u: clamp(centerX / Math.max(1, mask.width - 1), 0, 1),
+        v: clamp(centerY / Math.max(1, mask.height - 1), 0, 1),
+        radiusU: clamp(componentWidth / Math.max(1, mask.width) * 0.72, 0.006, 0.03),
+        radiusV: clamp(componentHeight / Math.max(1, mask.height) * 0.72, 0.008, 0.04),
+        confidence: score
+      });
+    }
+  }
+
+  candidates.sort((left, right) => right.confidence - left.confidence);
+  const best = candidates[0]?.confidence >= 1.95 ? candidates[0] : null;
+  mask.deadFishEyeAnchor = best;
+  mask.deadFishEyeAnchorResolved = true;
+  return best;
+}
+
+function getDeadFishEyeAnchor(imagePath) {
+  const mask = imagePath ? getImageAlphaMask(imagePath) : null;
+  return getDeadFishEyeAnchorFromMask(mask);
+}
+
+function drawDeadFishEyeTreatment(context, fish, imagePath, fishDrawX, width, height, now = Date.now()) {
+  if (!context || !isFishDead(fish) || isFishBeingConsumedByPiranhas(fish, now)) {
+    return false;
+  }
+  const eye = getDeadFishEyeAnchor(imagePath);
+  if (!eye) {
+    return false;
+  }
+
+  const x = fishDrawX + eye.u * width;
+  const y = -height / 2 + eye.v * height;
+  const radiusX = clamp(width * eye.radiusU * 1.35, 1.1, Math.max(1.1, width * 0.032));
+  const radiusY = clamp(height * eye.radiusV * 1.35, 1.1, Math.max(1.1, height * 0.045));
+  context.save();
+  context.filter = "none";
+  context.globalCompositeOperation = "source-over";
+  context.globalAlpha *= 0.48;
+  context.fillStyle = "rgba(228, 236, 239, 0.62)";
+  context.beginPath();
+  context.ellipse(x, y, radiusX, radiusY, 0, 0, Math.PI * 2);
+  context.fill();
+  context.globalAlpha *= 0.42;
+  context.fillStyle = "rgba(108, 120, 126, 0.38)";
+  context.beginPath();
+  context.ellipse(x, y, radiusX * 0.62, radiusY * 0.62, 0, 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+  return true;
+}
+
+function normalizeFishInjuryDisplaySide(value) {
+  return value === "left" || value === "right" ? value : null;
+}
+
+function getFishInjuryDisplaySide(fish) {
+  if (!fish) return null;
+  const storedSide = normalizeFishInjuryDisplaySide(fish.injuryDisplaySide);
+  if (storedSide) return storedSide;
+
+  // Pick once per fish from its stable identity. This keeps legacy saves visually
+  // consistent even before the newly assigned side has been written by a save.
+  const sideSeed = hashStringToUint32(`${fish.id || fish.speciesId || "fish"}|injury-side`);
+  const injuryDisplaySide = (sideSeed & 1) === 0 ? "right" : "left";
+  fish.injuryDisplaySide = injuryDisplaySide;
+  return injuryDisplaySide;
+}
+
+function isFishInjurySideFacingViewer(fish) {
+  const injuryDisplaySide = getFishInjuryDisplaySide(fish);
+  if (!injuryDisplaySide) return false;
+  const facingSide = getFishFacingDirection(fish) < 0 ? "left" : "right";
+  return injuryDisplaySide === facingSide;
+}
+
+function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, healthRatio, now = Date.now()) {
+  if (!fish || !species || !sourceImage?.width || !sourceImage?.height || isFishDead(fish)) {
+    return null;
+  }
+
+  const diseaseState = sanitizeDiseaseState(fish.diseaseState);
+  const diseaseVisible = isFishDiseaseVisible(fish);
+  const diseaseType = typeof normalizeFishDiseaseType === "function" ? normalizeFishDiseaseType(fish.diseaseType) : fish.diseaseType;
+  const activeDiseaseMarks = diseaseVisible && diseaseState !== DISEASE_STATE_RECOVERING;
+  const showSpecks = activeDiseaseMarks && diseaseType === DISEASE_TYPE_PARASITES && isTrypophobiaEnabled();
+  const showCloudy = activeDiseaseMarks
+    && isGoreEnabled()
+    && diseaseType === DISEASE_TYPE_INFECTION;
+  const showInjury = isGoreEnabled() && Number(healthRatio) < 0.99;
+  const showSideSpecificMarks = (showCloudy || showInjury) && isFishInjurySideFacingViewer(fish);
+  const showCloudyOnCurrentSide = showCloudy && showSideSpecificMarks;
+  const showInjuryOnCurrentSide = showInjury && showSideSpecificMarks;
+  if (!showSpecks && !showCloudyOnCurrentSide && !showInjuryOnCurrentSide) {
+    return null;
+  }
+
+  const seed = hashStringToUint32(`${fish.id || fish.speciesId}|${fish.diseaseInfectedAt || 0}`);
+  const woundPath = showInjuryOnCurrentSide ? `assets/misc/wound_${1 + (seed % 8)}.png` : "";
+  const cloudyPath = showCloudyOnCurrentSide ? `assets/misc/red-cloudy-wound_${1 + ((seed >>> 4) % 6)}.png` : "";
+  const speckPath = showSpecks ? "assets/misc/white-specks_illness-overlay.png" : "";
+  const widthBucket = Math.max(96, Math.min(360, Math.round((Number(sourceImage.width) || 256) / 32) * 32));
+  const heightBucket = Math.max(32, Math.round(widthBucket * sourceImage.height / Math.max(1, sourceImage.width)));
+  const cacheKey = [
+    fish.id,
+    imagePath,
+    widthBucket,
+    heightBucket,
+    woundPath,
+    cloudyPath,
+    speckPath,
+    diseaseState,
+    Math.round(clamp(Number(healthRatio) || 0, 0, 1) * 4)
+  ].join("|");
+  const cached = runtime.fishSymptomOverlayCache.get(cacheKey);
+  if (cached) return cached;
+
+  const woundImage = woundPath ? runtime.images.get(woundPath) : null;
+  const cloudyImage = cloudyPath ? runtime.images.get(cloudyPath) : null;
+  const speckImage = speckPath ? runtime.images.get(speckPath) : null;
+  for (const path of [woundPath, cloudyPath, speckPath]) {
+    if (path && !isUsableRuntimeImage(runtime.images.get(path))) {
+      void preloadImagePath(path, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+    }
+  }
+  if ((woundPath && !isUsableRuntimeImage(woundImage))
+    || (cloudyPath && !isUsableRuntimeImage(cloudyImage))
+    || (speckPath && !isUsableRuntimeImage(speckImage))) {
+    return null;
+  }
+
+  const canvas = document.createElement("canvas");
+  canvas.width = widthBucket;
+  canvas.height = heightBucket;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+
+  if (speckImage) {
+    context.save();
+    context.globalAlpha = diseaseState === DISEASE_STATE_SEVERE ? 0.94 : 0.76;
+    context.drawImage(speckImage, 0, 0, canvas.width, canvas.height);
+    context.restore();
+  }
+
+  const drawLocalizedMark = (image, positionSeed, sizeRatio, alpha = 1) => {
+    if (!image) return;
+    const rand = mulberry32(positionSeed >>> 0);
+    const size = Math.max(12, Math.min(canvas.width, canvas.height) * sizeRatio);
+    const x = canvas.width * (0.38 + rand() * 0.28) - size / 2;
+    const y = canvas.height * (0.36 + rand() * 0.28) - size / 2;
+    context.save();
+    context.globalAlpha = alpha;
+    context.translate(x + size / 2, y + size / 2);
+    context.rotate((rand() - 0.5) * 0.5);
+    context.drawImage(image, -size / 2, -size / 2, size, size);
+    context.restore();
+  };
+
+  if (cloudyImage) {
+    drawLocalizedMark(cloudyImage, seed ^ 0x5b7a1c3d, diseaseState === DISEASE_STATE_SEVERE ? 0.46 : 0.38, 0.9);
+  }
+  if (woundImage) {
+    const damage = 1 - clamp(Number(healthRatio) || 0, 0, 1);
+    drawLocalizedMark(woundImage, seed ^ 0x296bf04a, damage >= 0.5 ? 0.4 : 0.32, 0.96);
+    if (damage >= 0.55) {
+      drawLocalizedMark(woundImage, seed ^ 0x73d2a10f, 0.27, 0.78);
+    }
+  }
+
+  context.globalCompositeOperation = "destination-in";
+  context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
+  context.globalCompositeOperation = "source-over";
+  setBoundedCanvasCache(runtime.fishSymptomOverlayCache, cacheKey, canvas, { maxEntries: 48, maxBytes: 28 * 1024 * 1024 });
+  return canvas;
+}
+
 function drawFish(now, layer = null, options = {}) {
   if (!state.fish.length) {
     return;
@@ -1788,9 +2179,21 @@ function drawFish(now, layer = null, options = {}) {
 
   const cache = prepareFishRenderFrameCache(now);
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-  const records = layer === null
+  const targetLayer = layer === null ? null : clampTankLayer(layer);
+  const passBucket = targetLayer === null ? null : cache.passBuckets[targetLayer];
+  let records = targetLayer === null
     ? cache.buckets.flat()
-    : (cache.buckets[clampTankLayer(layer)] || []);
+    : (cache.buckets[targetLayer] || []);
+  let recordsArePreFiltered = false;
+  if (passBucket && options.onlyBehavior === "sucker") {
+    records = options.excludeCaveInterior === true
+      ? passBucket.suckerOutsideCave
+      : passBucket.sucker;
+    recordsArePreFiltered = true;
+  } else if (passBucket && options.excludeBehavior === "sucker" && Number.isFinite(Number(options.subLayer))) {
+    records = passBucket.nonSuckerBySubLayer[clampTankSubLayer(options.subLayer)] || [];
+    recordsArePreFiltered = true;
+  }
   const stableScale = cache.stableScale;
   const topFrameBottomY = cache.topFrameBottomY;
 
@@ -1798,61 +2201,26 @@ function drawFish(now, layer = null, options = {}) {
     const fish = record.fish;
     const species = record.species;
     const effectiveBehavior = record.effectiveBehavior;
-    if (options.onlyBehavior && effectiveBehavior !== options.onlyBehavior) {
+    if (!recordsArePreFiltered && options.onlyBehavior && effectiveBehavior !== options.onlyBehavior) {
       continue;
     }
-    if (options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
+    if (!recordsArePreFiltered && options.excludeBehavior && effectiveBehavior === options.excludeBehavior) {
       continue;
     }
-    const caveInteriorFish = isFishInCaveRenderSublayer(fish);
-    if (options.caveInteriorOnly === true && !caveInteriorFish) {
+    if (!recordsArePreFiltered && Number.isFinite(Number(options.subLayer)) && getFishTankSubLayer(fish) !== clampTankSubLayer(options.subLayer)) {
       continue;
     }
-    if (options.excludeCaveInterior === true && caveInteriorFish) {
+    const caveInteriorFish = record.caveInteriorFish;
+    if (!recordsArePreFiltered && options.caveInteriorOnly === true && !caveInteriorFish) {
+      continue;
+    }
+    if (!recordsArePreFiltered && options.excludeCaveInterior === true && caveInteriorFish) {
       continue;
     }
 
-    const suckerFreeSwimming = effectiveBehavior === "sucker"
-      ? isSuckerFishFreeSwimming(fish, species, now)
-      : false;
-    const suckerViewTransition = effectiveBehavior === "sucker"
-      ? getSuckerFishViewTransitionState(fish, now)
-      : null;
-    const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
-    const getSuckerTransitionSprite = (view) => {
-      const path = getSuckerFishViewAssetPath(displaySpecies, fish, view)
-        || getSuckerFishViewAssetPath(species, fish, view);
-      if (!path) return null;
-      const sourceImage = runtime.images.get(path);
-      if (!isUsableRuntimeImage(sourceImage)) {
-        requestRuntimeImageRecovery(path, {
-          kind: "fish",
-          id: fish.id,
-          speciesId: fish.speciesId
-        });
-        return null;
-      }
-      return {
-        path,
-        sourceImage,
-        renderImage: getFishTintedImage(path, sourceImage, fish)
-      };
-    };
-    const transitionFromSprite = suckerViewTransition
-      ? getSuckerTransitionSprite(suckerViewTransition.fromView)
-      : null;
-    const transitionToSprite = suckerViewTransition
-      ? getSuckerTransitionSprite(suckerViewTransition.toView)
-      : null;
-    const hasSuckerCrossFlip = Boolean(suckerViewTransition && transitionFromSprite && transitionToSprite);
-    const imagePath = hasSuckerCrossFlip
-      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.path : transitionToSprite.path)
-      : (getFishDisplayAssetPath(fish, species, now) || species.asset);
-    const image = hasSuckerCrossFlip
-      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.sourceImage : transitionToSprite.sourceImage)
-      : runtime.images.get(imagePath);
-    if (!isUsableRuntimeImage(image)) {
-      requestRuntimeImageRecovery(imagePath, {
+    const prepared = record.render;
+    if (!prepared) {
+      requestRuntimeImageRecovery(record.missingImagePath, {
         kind: "fish",
         id: fish.id,
         speciesId: fish.speciesId
@@ -1860,31 +2228,13 @@ function drawFish(now, layer = null, options = {}) {
       drawMissingFishArtworkFallback(fish, species, now);
       continue;
     }
-    const renderImage = hasSuckerCrossFlip
-      ? (suckerViewTransition.progress < 0.5 ? transitionFromSprite.renderImage : transitionToSprite.renderImage)
-      : getFishTintedImage(imagePath, image, fish);
-    const pose = getFishPose(fish, species, now);
-    const depthLayer = getFishTankLayer(fish);
-    const depthMovementMultiplier = getTankDepthMovementMultiplier(depthLayer);
-    const visualSwayX = pose.swayX * depthMovementMultiplier;
-    const visualWiggle = pose.wiggle * depthMovementMultiplier;
-    const width = getFishDisplayWidth(fish, species, now);
-    const height = width * (image.height / image.width);
-    const healthRatio = getFishHealthRatio(fish, species);
-    const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
-    const useSuckerFacePivot = (
-      SUCKER_FISH_FACE_PIVOT_ENABLED
-      && !pose.isDead
-      && effectiveBehavior === "sucker"
-      && !suckerFreeSwimming
-      && !suckerViewTransition
-    );
-    const suckerFacePivotX = useSuckerFacePivot
-      ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X
-      : 0;
-    const suckerFacePivotY = useSuckerFacePivot
-      ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y
-      : 0;
+    const {
+      suckerFreeSwimming, suckerViewTransition, displaySpecies,
+      transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
+      imagePath, image, renderImage, pose, depthLayer, width, height,
+      healthRatio, visualSwayX, fishDrawX, useSuckerFacePivot,
+      suckerFacePivotX, suckerFacePivotY
+    } = prepared;
 
     const genericTurnRigActive = shouldUseFishTurnRigForSprite(
       fish,
@@ -1894,6 +2244,21 @@ function drawFish(now, layer = null, options = {}) {
       suckerFreeSwimming,
       suckerViewTransition
     );
+
+    if (!pose.isDead && effectiveBehavior !== "sucker") {
+      drawCasterShadowOnDecorSurfaces({
+        image,
+        centerX: pose.x + visualSwayX,
+        bottomY: pose.y + height * 0.46,
+        left: pose.x + visualSwayX - width * 0.38,
+        right: pose.x + visualSwayX + width * 0.38,
+        width,
+        height,
+        tankLayer: depthLayer,
+        flipX: (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0,
+        opacity: 0.24 * getTankDepthShadowStrength(depthLayer)
+      });
+    }
 
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
@@ -1950,7 +2315,7 @@ function drawFish(now, layer = null, options = {}) {
       fishBaseFilter,
       fishLighting.filter
     );
-    const drawFishSpriteLayer = (sprite, scaleY = 1, alpha = 1) => {
+    const drawFishSpriteLayer = (sprite, scaleY = 1, alpha = 1, layerMotion = null) => {
       if (!sprite?.sourceImage || !sprite?.renderImage || alpha <= 0) return;
       const spriteHeight = width * (sprite.sourceImage.height / sprite.sourceImage.width);
       const surfaceFlipPivotY = suckerViewTransition?.flipDirection === "up"
@@ -1958,6 +2323,19 @@ function drawFish(now, layer = null, options = {}) {
         : spriteHeight / 2;
       tankContext.save();
       tankContext.globalAlpha *= clamp(alpha, 0, 1) * getTankDepthObjectAlpha(depthLayer);
+      if (layerMotion) {
+        const offsetX = Number(layerMotion.offsetX) || 0;
+        const offsetY = Number(layerMotion.offsetY) || 0;
+        const rotation = Number(layerMotion.rotation) || 0;
+        const pivotX = Number(layerMotion.pivotX) || 0;
+        const pivotY = Number(layerMotion.pivotY) || 0;
+        tankContext.translate(offsetX, offsetY);
+        if (rotation) {
+          tankContext.translate(pivotX, pivotY);
+          tankContext.rotate(rotation);
+          tankContext.translate(-pivotX, -pivotY);
+        }
+      }
       if (isHalloweenModeActive(now)) {
         tankContext.globalAlpha *= 0.55;
       }
@@ -1967,7 +2345,7 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.translate(0, -surfaceFlipPivotY);
       }
       const depthRenderImage = getTankDepthTreatedImage(sprite.renderImage, depthLayer) || sprite.renderImage;
-      tankContext.filter = fishRenderFilter;
+      tankContext.filter = layerMotion?.preserveColor ? fishLighting.filter : fishRenderFilter;
       if (genericTurnRigActive) {
         drawFishTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
         if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
@@ -1985,6 +2363,23 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.restore();
     };
 
+    const getLayeredFishSprite = (path) => {
+      if (!path) return null;
+      const sourceImage = runtime.images.get(path);
+      if (!isUsableRuntimeImage(sourceImage)) {
+        requestRuntimeImageRecovery(path, {
+          kind: "fish",
+          id: fish.id,
+          speciesId: fish.speciesId
+        });
+        return null;
+      }
+      return {
+        sourceImage,
+        renderImage: getFishTintedImage(path, sourceImage, fish)
+      };
+    };
+
     if (hasSuckerCrossFlip) {
       drawFishSpriteLayer(
         transitionFromSprite,
@@ -1997,22 +2392,68 @@ function drawFish(now, layer = null, options = {}) {
         suckerViewTransition.toAlpha
       );
     } else {
+      if (effectiveBehavior === "shrimp") {
+        const antennaSprite = getLayeredFishSprite(displaySpecies.antennaAsset || species.antennaAsset);
+        const legSprite = getLayeredFishSprite(displaySpecies.legAsset || species.legAsset);
+        const motionStrength = pose.isDead ? 0 : clamp(Number(pose.bodyScaleX) || 1, 0.65, 1.25);
+        const motionSeed = hashStringToUint32(String(fish.id || fish.speciesId || "shrimp"));
+        const phase = (motionSeed % 628) / 100;
+        const antennaWave = Math.sin(now / 760 + phase);
+        const legWave = Math.sin(now / 130 + phase * 1.7);
+        if (antennaSprite) {
+          drawFishSpriteLayer(antennaSprite, 1, 1, {
+            offsetY: antennaWave * 0.7 * motionStrength,
+            rotation: antennaWave * 0.006 * motionStrength,
+            pivotX: width * 0.22,
+            pivotY: -height * 0.02
+          });
+        }
+        if (legSprite) {
+          drawFishSpriteLayer(legSprite, 1, 1, {
+            offsetX: legWave * 0.45 * motionStrength,
+            offsetY: legWave * 0.8 * motionStrength
+          });
+        }
+      }
       drawFishSpriteLayer({ sourceImage: image, renderImage }, 1, 1);
+      if (!pose.isDead) {
+        const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now);
+        if (symptomOverlay) {
+          drawFishSpriteLayer(
+            { sourceImage: symptomOverlay, renderImage: symptomOverlay },
+            1,
+            1,
+            { preserveColor: true }
+          );
+        }
+      }
     }
-    drawFishHeldGravelPebble(fish, species, now, pose, width, height);
+    if (pose.isDead && !pose.isBeingConsumed) {
+      drawDeadFishEyeTreatment(tankContext, fish, imagePath, fishDrawX, width, height, now);
+    }
+    // Dead Fish Phase 20: corpse rendering stops at the body itself (plus the
+    // optional cloudy eye). Do not carry living-held objects, disease bubbles,
+    // puffer inflation bubbles, birthday hats, or similar animated flourishes
+    // into the dead state. This keeps every species visually quiet and avoids
+    // corpse particles even if stale living-effect data survives for a frame.
+    if (!pose.isDead) {
+      drawFishHeldGravelPebble(fish, species, now, pose, width, height);
+    }
     tankContext.restore();
-    drawFishDiseaseBubbles(fish, species, pose, width, height, now);
-    drawFishPufferBubbleBurst(fish, species, pose, width, height, now);
-    drawFishBirthdayHat(fish, pose, width, height, now);
+    if (!pose.isDead) {
+      drawFishDiseaseBubbles(fish, species, pose, width, height, now);
+      drawFishPufferBubbleBurst(fish, species, pose, width, height, now);
+      drawFishBirthdayHat(fish, pose, width, height, now);
+    }
 
-    if ((!pose.isBeingConsumed && pose.isDead) || fish.healthUnits === 1) {
+    if (!pose.isDead && fish.healthUnits === 1) {
       const statusY = Math.max(topFrameBottomY + 12 * stableScale, pose.y - height * 0.72);
       tankContext.save();
       tankContext.font = `${22 * stableScale}px sans-serif`;
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       tankContext.fillText(
-        pose.isDead ? "\u2620\uFE0F" : "\u{1F494}",
+        "\u{1F494}",
         pose.x + visualSwayX,
         statusY
       );
@@ -2023,18 +2464,39 @@ function drawFish(now, layer = null, options = {}) {
 
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
+      if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
+        const fontSize = 10 * stableScale;
+        const lineHeight = 16 * stableScale;
+        const paddingX = 10 * stableScale;
+        const label = "Z-01 // TELEMETRY DISABLED";
+        tankContext.font = `800 ${fontSize}px Trebuchet MS`;
+        tankContext.textAlign = "center";
+        tankContext.textBaseline = "middle";
+        const labelWidth = Math.max(116 * stableScale, tankContext.measureText(label).width + paddingX * 2);
+        const labelHeight = lineHeight * 2 + 5 * stableScale;
+        const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
+        const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
+        const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
+        const desiredBottomY = pose.y - height * 0.58;
+        const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - labelHeight);
+        tankContext.fillStyle = "rgba(5, 25, 38, 0.8)";
+        tankContext.strokeStyle = "rgba(141, 231, 201, 0.78)";
+        tankContext.lineWidth = Math.max(1, stableScale);
+        tankContext.beginPath();
+        tankContext.roundRect(labelX - labelWidth / 2, topY, labelWidth, labelHeight, 8 * stableScale);
+        tankContext.fill();
+        tankContext.stroke();
+        tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+        tankContext.fillText(fish.name || "Z-01", labelX, topY + lineHeight / 2 + 1);
+        tankContext.fillStyle = "rgba(161, 213, 192, 0.98)";
+        tankContext.fillText(label, labelX, topY + lineHeight * 1.5 + 1);
+        tankContext.restore();
+      } else {
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
-      const comfort = pose.isDead ? null : getFishComfort(fish, now);
-      const comfortLabel = pose.isDead
-        ? "Dead"
-        : `${Math.round((comfort?.value || 0) * 100)}% ${comfort?.label || "Comfort"}`;
-      const comfortTone = pose.isDead
-        ? "danger"
-        : (comfort?.value || 0) <= 0.4
-          ? "danger"
-          : (comfort?.value || 0) <= 0.64
-            ? "warn"
-            : "good";
+      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Happy");
+      const moodPresentation = pose.isDead
+        ? { tone: "danger", color: "#ff627d" }
+        : getFishMoodPresentation(moodLabel);
       const displayHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !pose.isDead
         ? getFishMaxHealthUnits(fish, species)
         : (Number(fish.healthUnits) || 0);
@@ -2051,20 +2513,16 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
-      const comfortWidth = tankContext.measureText(comfortLabel).width;
+      const moodWidth = tankContext.measureText(moodLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
       const mealIconSize = 13 * stableScale;
       const mealIconGap = 7 * stableScale;
       const mealWidth = mealIconSize * 2 + mealIconGap;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, comfortWidth, heartWidth, mealWidth) + 18 * stableScale));
+      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth, mealWidth) + 18 * stableScale));
       const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
       const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
-      const moodStroke = comfortTone === "danger"
-        ? "rgba(255, 116, 137, 0.82)"
-        : comfortTone === "warn"
-          ? "rgba(255, 202, 102, 0.82)"
-          : "rgba(89, 229, 203, 0.82)";
+      const moodStroke = moodPresentation.color || "#59e5cb";
 
       for (let row = 0; row < 4; row += 1) {
         const y = topY + row * (rowHeight + rowGap);
@@ -2112,9 +2570,10 @@ function drawFish(now, layer = null, options = {}) {
       }
 
       tankContext.textAlign = "center";
-      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(comfortLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
+      tankContext.fillStyle = moodPresentation.color || "rgba(244, 251, 255, 0.96)";
+      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
       tankContext.restore();
+      }
     }
   }
 
@@ -2526,18 +2985,33 @@ function getFishPose(fish, species, now) {
   }
 
   if (isFishDead(fish)) {
-    const floatClock = now / 1000;
     const facing = getFishFacingDirection(fish);
+    const corpseRender = typeof getDeadFishCorpseRenderState === "function"
+      ? getDeadFishCorpseRenderState(fish, now, species)
+      : null;
+    const renderOffsetXNorm = Number.isFinite(Number(corpseRender?.renderOffsetXNorm))
+      ? Number(corpseRender.renderOffsetXNorm)
+      : 0;
+    const renderOffsetYNorm = Number.isFinite(Number(corpseRender?.renderOffsetYNorm))
+      ? Number(corpseRender.renderOffsetYNorm)
+      : 0;
     return {
-      x: fish.xNorm * TANK_WIDTH + Math.sin(floatClock * 0.34 + fish.phase * Math.PI * 2) * 3.2,
-      y: fish.yNorm * TANK_HEIGHT + Math.sin(floatClock * 0.82 + fish.phase * Math.PI * 1.6) * 1.8,
+      x: (fish.xNorm + renderOffsetXNorm) * TANK_WIDTH,
+      y: (fish.yNorm + renderOffsetYNorm) * TANK_HEIGHT,
       direction: facing,
       facingScaleX: facing,
-      tilt: Math.PI + Math.sin(floatClock * 0.48 + fish.phase * Math.PI) * 0.06,
-      wiggle: Math.sin(floatClock * 0.18 + fish.phase * Math.PI) * 0.05,
+      tilt: Number.isFinite(Number(corpseRender?.tilt))
+        ? Number(corpseRender.tilt)
+        : Math.PI,
+      wiggle: Number.isFinite(Number(corpseRender?.wiggle))
+        ? Number(corpseRender.wiggle)
+        : 0,
       bodyScaleX: 1,
       bodyScaleY: 1,
       swayX: 0,
+      corpseStage: corpseRender?.stage || fish?.corpseStage || "surface",
+      tankLayer: typeof getFishTankLayer === "function" ? getFishTankLayer(fish) : fish?.tankLayer,
+      tankSubLayer: typeof getFishTankSubLayer === "function" ? getFishTankSubLayer(fish) : fish?.tankSubLayer,
       isDead: true
     };
   }
@@ -2569,6 +3043,46 @@ function getFishPose(fish, species, now) {
       wiggle,
       bodyScaleX: 1 - Math.abs(wiggle) * .025,
       bodyScaleY: 1 + Math.abs(wiggle) * .02,
+      swayX: 0,
+      isDead: false
+    };
+  }
+
+  // Snails do not swim.  In particular, they must not inherit the generic
+  // fish bob, body squash, tail wiggle, or turnaround sway: those effects make
+  // a stationary shell appear to wiffle and warp even when its crawl is slow.
+  // Their simulation position is already substrate-clamped, so normally render
+  // a quiet, solid shell. The sole exception is a hand-dropped snail: while it
+  // settles, give it the wafer's gentle drift and wobble before it touches down.
+  if (species?.behavior === "snail") {
+    const settlingStartedAt = Number(fish.snailSettlingStartedAt);
+    const settlingDurationMs = Number(fish.snailSettlingDurationMs);
+    const settling = Number.isFinite(settlingStartedAt)
+      && Number.isFinite(settlingDurationMs)
+      && settlingDurationMs > 0;
+    const settleProgress = settling
+      ? clamp((now - settlingStartedAt) / settlingDurationMs, 0, 1)
+      : 1;
+    const settleFade = clamp((1 - settleProgress) / 0.22, 0, 1);
+    const phase = (Number(fish.phase) || 0) * Math.PI * 2;
+    const swayX = settling
+      ? (Math.sin(now / 520 + phase) * 6.5 + Math.sin(now / 910 + phase * 1.7) * 2.2) * settleFade
+      : 0;
+    const bobY = settling
+      ? Math.sin(now / 610 + phase) * 1.2 * settleFade
+      : 0;
+    const tilt = settling
+      ? (Math.sin(now / 390 + phase) * 0.11 + Math.sin(now / 760 + phase * 1.6) * 0.035) * settleFade
+      : 0;
+    return {
+      x: fish.xNorm * TANK_WIDTH + swayX,
+      y: fish.yNorm * TANK_HEIGHT + bobY,
+      direction: fish.direction || 1,
+      facingScaleX: getFishFacingDirection(fish),
+      tilt,
+      wiggle: 0,
+      bodyScaleX: 1,
+      bodyScaleY: 1,
       swayX: 0,
       isDead: false
     };
@@ -2780,7 +3294,7 @@ function getFishPose(fish, species, now) {
   const pufferWobbleAmount = pufferInflated ? getPufferInflationWobbleAmount(fish, now) : 0;
   if (pufferInflated) {
     tilt = clamp(
-      tilt * 0.22 + Math.sin(now / 170 + fish.phase * Math.PI * 2.4) * (0.1 + pufferWobbleAmount * 0.22),
+      tilt * 0.22 + Math.sin(now / 920 + fish.phase * Math.PI * 2.4) * (0.035 + pufferWobbleAmount * 0.07),
       -0.42,
       0.42
     );
@@ -2788,13 +3302,13 @@ function getFishPose(fish, species, now) {
   const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
     * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
     * (forcedDigPrompt ? 0.97 : 1)
-    * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 210 + fish.phase * Math.PI) * 0.012) : 1)
+    * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 1040 + fish.phase * Math.PI) * 0.008) : 1)
     * (bettaDisplaying ? 0.97 : 1)
     * (pencilSparring ? 0.985 : 1);
   const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
     * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
     * (forcedDigPrompt ? 1.04 : 1)
-    * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 190 + fish.phase * Math.PI * 1.2)) * 0.012) : 1)
+    * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 980 + fish.phase * Math.PI * 1.2)) * 0.008) : 1)
     * (bettaDisplaying ? 1.06 : 1)
     * (pencilSparring ? 1.018 : 1)
     * (seahorsePerched ? 0.99 : 1);
@@ -2815,7 +3329,7 @@ function getFishPose(fish, species, now) {
       + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
       + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
       + (pencilSparring ? Math.sin(now / 155 + fish.phase * Math.PI * 2.2) * 0.95 : 0)
-      + (pufferInflated ? Math.sin(now / 145 + fish.phase * Math.PI * 2.3) * (1.2 + pufferWobbleAmount * 2.1) : 0),
+      + (pufferInflated ? Math.sin(now / 840 + fish.phase * Math.PI * 2.3) * (0.5 + pufferWobbleAmount * 0.8) : 0),
     isDead: false
   };
 }

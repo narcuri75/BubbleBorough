@@ -1,40 +1,71 @@
 // Source fragment: store/catalog.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getProteusZombieFishVariantAssetNames() {
+  const fallback = ["zombie_fish.png"];
+  if (typeof getAllSpriteSheetDefinitions !== "function") return fallback;
+  const sheet = getAllSpriteSheetDefinitions().find((entry) => /(?:^|\/)zombie_fish\.webp(?:\?|$)/i.test(String(entry?.path || "")));
+  const entries = Object.entries(sheet?.frames || {})
+    .filter(([name]) => /zombie[_ -]?fish/i.test(String(name)) && /\.(?:png|webp)$/i.test(String(name)));
+  if (!entries.length) return fallback;
+  const canonical = entries.find(([name]) => String(name).toLowerCase() === "zombie_fish.png") || entries[0];
+  const ordered = [canonical, ...entries.filter((entry) => entry !== canonical)];
+  const seenRects = new Set();
+  const names = [];
+  for (const [name, rect] of ordered) {
+    const signature = Array.isArray(rect) ? rect.slice(0, 4).join(",") : JSON.stringify(rect || null);
+    if (seenRects.has(signature)) continue;
+    seenRects.add(signature);
+    names.push(String(name).toLowerCase() === String(canonical[0]).toLowerCase() ? "zombie_fish.png" : String(name).trim());
+  }
+  return names.length ? names : fallback;
+}
+
+function getProteusZombieFishCatalogDefinition() {
+  const assetVariants = getProteusZombieFishVariantAssetNames();
+  return {
+    id: PROTEUS_ZOMBIE_FISH_SPECIES_ID,
+    seller: "PROTEUS BIODYNE",
+    genetics: "enhanced",
+    name: "Z-01 Post-Mortem Aquatic Specimen",
+    description: "An experimental organism released through the Proteus Biodyne Restricted Specimen Program. Proteus Biodyne does not recognize the informal term \"zombie\" as scientifically meaningful. Nutritional dependence is absent. Affective response is not measurable. Regenerative viability is classified as extreme. Unprovoked predatory episodes remain within accepted research tolerances.",
+    aboutAttribution: "PROTEUS BIODYNE",
+    aboutTagline: "POST-MORTEM VIABILITY PROGRAM // Z-01",
+    cost: 0,
+    assetFolder: "web/proteus/dna_fish",
+    asset: assetVariants[0] || "zombie_fish.png",
+    assetVariants,
+    fallbackAsset: "",
+    width: 165,
+    displayWidth: 165,
+    swimStyle: "steady",
+    speedMode: "dynamic",
+    speedMin: 0.014,
+    speedMax: 0.072,
+    targetMinMs: 2600,
+    targetMaxMs: 6200,
+    behavior: "free",
+    diet: "pellet",
+    heartCount: 10,
+    caveEnabled: true,
+    defaultNames: ["Z-01"],
+    proteusZombie: true,
+    proteusExclusive: true,
+    requiresFood: false,
+    feelsComfort: false,
+    diseaseImmune: true,
+    immortal: true,
+    canBreed: false,
+    socialDisabled: true,
+    randomAggression: true,
+    spriteSheetAsset: "assets/web/proteus/dna_fish/zombie_fish.webp",
+    spriteSheetMetadata: "assets/web/proteus/dna_fish/zombie_fish.json"
+  };
+}
+
 function getDavyMutationCatalogDefinitions() {
-  const folder = "fish";
+  const folder = "web/davy/fish";
   return [
-    {
-      id: "davy-bioluminescent-cherub-goldfish",
-      seller: "Private Seller",
-      genetics: "enhanced",
-      name: "Cherub Puff Goldfish",
-      description: "A consumer-focused companion specimen engineered around fancy goldfish, pufferfish, and permanently juvenile developmental traits. Oversized eyes, rounded proportions, a translucent glowing belly, and a tiny bioluminescent forehead organ were intentionally selected to maximize perceived cuteness. The result is undeniably adorable. Thinking too hard about why it looks that way is not recommended.",
-      davyBehaviorLabel: "Affectionate companion",
-      davyBehaviorSummary: "Deliberately engineered to behave like an absurdly affectionate pet. It swims slowly, follows nearby movement, approaches the glass frequently, and tends to hover near other peaceful fish rather than keeping distance. Its tiny forehead light brightens during feeding, interaction, and excitement. When startled, it gives a brief miniature puff before slowly deflating. It frequently pauses to stare directly outward with its oversized eyes, which makes it either incredibly endearing or mildly disturbing. Its swimming is slightly clumsy because its proportions were designed for appearance rather than efficiency.",
-      davySwimStyleSummary: "Slow and slightly clumsy. It hovers often, drifts gently between short bursts of movement, and prefers close, social positioning over efficient cruising.",
-      davyDietSummary: "General prepared foods. Readily accepts standard aquarium feeding and responds quickly to visible food or interaction.",
-      davyTemperamentSummary: "Unusually social, attention-seeking, and gentle. It behaves more like a companion animal than a conventional ornamental fish.",
-      davyTraits: ["Companion following", "Front-glass visits", "Slow hover", "Startle puff"],
-      cost: 325,
-      assetFolder: folder,
-      asset: "DNA_Bioluminescent _Cherub_Goldfish_1.png",
-      assetVariants: [1, 2, 3, 4, 5].map((number) => `DNA_Bioluminescent _Cherub_Goldfish_${number}.png`),
-      width: 150,
-      displayWidth: 150,
-      swimStyle: "peaceful",
-      speedMode: "steady",
-      speedMin: 0.014,
-      speedMax: 0.034,
-      targetMinMs: 3200,
-      targetMaxMs: 7200,
-      behavior: "free",
-      diet: "pellet",
-      heartCount: 5,
-      caveEnabled: true,
-      davyMutation: true,
-      storeBackgroundImage: "assets/web/davy/icons/thumbnail_bg.png"
-    },
     {
       id: "davy-bioluminescent-angler-pike",
       seller: "Private Seller",
@@ -290,12 +321,210 @@ function markBubbleBodegaRescueItemClaimed(item, now = Date.now()) {
   return true;
 }
 
-function getFoodPurchaseCost(foodId) {
+function getFoodPurchaseCost(foodId, packageId = "") {
   const food = getFoodMeta(foodId);
-  if (food?.id === "basic" && getBubbleBodegaRescueOfferStatus().foodAvailable) {
+  const packageMeta = getFoodPackageMeta(food, packageId);
+  if (!food || !packageMeta) {
     return 0;
   }
-  return food?.cost ?? 0;
+  const defaultPackage = getFoodPackageOptions(food)[0] || packageMeta;
+  if (food.id === "basic"
+    && packageMeta.id === defaultPackage.id
+    && getBubbleBodegaRescueOfferStatus().foodAvailable) {
+    return 0;
+  }
+  return packageMeta.cost;
+}
+
+function getFoodStoreUse(food) {
+  const authoredUse = String(food?.use || food?.foodUse || "").trim().toLowerCase();
+  if (["basic", "carnivore", "bottom", "predator", "special"].includes(authoredUse)) return authoredUse;
+  if (food?.id === "chum" || /predator|chum/i.test(`${food?.id || ""} ${food?.name || ""}`)) return "predator";
+  if (food?.id === "frisky" || food?.id === "halloweenCandy" || /special|spawning|candy/i.test(`${food?.id || ""} ${food?.name || ""}`)) return "special";
+  if (/carnivore|meat/i.test(`${food?.id || ""} ${food?.name || ""} ${food?.description || ""}`)) return "carnivore";
+  return "basic";
+}
+
+function getFoodStoreUseLabel(food) {
+  const use = typeof food === "string" ? food : getFoodStoreUse(food);
+  return ({ basic: "Food - Basic", carnivore: "Food - Carnivore", bottom: "Food - Bottom Feeders", predator: "Food - Predator", special: "Food - Special" })[use] || "Food - Basic";
+}
+
+function isFoodInTankFilterEnabled() {
+  return runtime.storeFoodInTank === true;
+}
+
+function getActiveTankFeedingCreatures(tank = getCurrentTank()) {
+  return (Array.isArray(tank?.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+}
+
+function isFoodRelevantToActiveTank(foodOrKey, tank = getCurrentTank()) {
+  const foodKey = typeof foodOrKey === "string" ? foodOrKey : String(foodOrKey?.id || "");
+  if (!foodKey) return false;
+  const creatures = getActiveTankFeedingCreatures(tank);
+  // An empty tank should stay browseable. The filter becomes useful as soon as
+  // there is a living creature whose authored diet can be checked.
+  if (!creatures.length) return true;
+  return creatures.some((fish) => canFoodSatisfyFishMeal(fish, foodKey));
+}
+
+function getActiveTankFoodFilterSummary(tank = getCurrentTank()) {
+  const creatures = getActiveTankFeedingCreatures(tank);
+  if (!creatures.length) return "Empty tank: showing all food.";
+  const feedingCreatures = creatures.filter((fish) => getFishAcceptedFoodKeys(fish).length > 0 || canFishUseSpawningFood(fish));
+  if (!feedingCreatures.length) return "No creatures in this tank currently need stocked food.";
+  return `Showing food relevant to ${feedingCreatures.length} ${pluralize("creature", feedingCreatures.length)} in this tank.`;
+}
+
+function setFoodInTankFilter(enabled) {
+  const nextEnabled = enabled !== false;
+  if (runtime.storeFoodInTank === nextEnabled) return;
+  runtime.storeFoodInTank = nextEnabled;
+  renderFoodShop();
+}
+
+function getFishStoreWaterType(fish) {
+  const explicitStoreWaterType = String(fish?.storeWaterType || "").trim().toLowerCase();
+  if (explicitStoreWaterType === "saltwater" || explicitStoreWaterType === "freshwater") {
+    return explicitStoreWaterType;
+  }
+  const authored = String(fish?.waterType || fish?.water || "").trim().toLowerCase().replace(/[\s_-]+/g, "");
+  if (authored === "saltwater" || authored === "marine") return "saltwater";
+  if (authored === "freshwater" || authored === "fresh") return "freshwater";
+  return [
+    "tang", "clownfish", "pufferfish", "royal-gramma", "lionfish",
+    "bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish", "seahorse", "pilot-fish"
+  ].includes(String(fish?.id || "")) ? "saltwater" : "freshwater";
+}
+
+function getFishVariantWaterType(speciesOrFish, appearanceVariantKey = "") {
+  const species = speciesOrFish?.speciesId && typeof getSpeciesForFish === "function"
+    ? (getSpeciesForFish(speciesOrFish) || speciesOrFish)
+    : speciesOrFish;
+  const key = getFishAppearanceVariantKey(
+    appearanceVariantKey
+    || speciesOrFish?.appearanceVariantKey
+    || speciesOrFish?.appearanceAssetPath
+    || ""
+  );
+  const variantRequirement = key ? species?.variantRequirements?.[key] : null;
+  const variantWaterType = String(variantRequirement?.waterType || "").trim().toLowerCase();
+  return variantWaterType === "saltwater" || variantWaterType === "freshwater"
+    ? variantWaterType
+    : getFishStoreWaterType(species);
+}
+
+function getFishStoreWaterTypeLabel(fish) {
+  return getFishStoreWaterType(fish) === "saltwater" ? "Salt Water" : "Fresh Water";
+}
+
+function getStoreWaterTypeLabel(waterType) {
+  return normalizeWaterType(waterType, "freshwater") === "saltwater" ? "Saltwater" : "Freshwater";
+}
+
+function getActiveStoreWaterType() {
+  return normalizeWaterType(getCurrentTank()?.waterType, "freshwater");
+}
+
+function isStoreWaterFilterEnabled(kind) {
+  const shopKind = kind === "decor" ? "decor" : "fish";
+  if (!runtime.storeWaterFilters || typeof runtime.storeWaterFilters !== "object") {
+    runtime.storeWaterFilters = { fish: false, cleanup: false, decor: false };
+  }
+  return runtime.storeWaterFilters[shopKind] !== false;
+}
+
+function isFishCompatibleWithWaterType(fish, waterType = getActiveStoreWaterType()) {
+  return getFishVariantWaterType(fish) === normalizeWaterType(waterType, "freshwater");
+}
+
+function getDecorStoreWaterTypes(decor) {
+  if (!decor || decor.living !== true) return ["freshwater", "saltwater"];
+  const authored = Array.isArray(decor.waterTypes) ? decor.waterTypes : [decor.waterType];
+  const normalized = authored
+    .map((value) => normalizeWaterType(value, ""))
+    .filter((value, index, values) => value && values.indexOf(value) === index);
+  return normalized.length ? normalized : ["freshwater", "saltwater"];
+}
+
+function isDecorCompatibleWithWaterType(decor, waterType = getActiveStoreWaterType()) {
+  if (!decor || decor.living !== true) return true;
+  return getDecorStoreWaterTypes(decor).includes(normalizeWaterType(waterType, "freshwater"));
+}
+
+function getStoreWaterRequirementLabel(kind, entry, waterType = getActiveStoreWaterType()) {
+  const compatible = kind === "decor"
+    ? isDecorCompatibleWithWaterType(entry, waterType)
+    : isFishCompatibleWithWaterType(entry, waterType);
+  if (compatible) return "";
+  if (kind === "decor") {
+    const required = getDecorStoreWaterTypes(entry);
+    if (required.length !== 1) return "Requires compatible water";
+    return `Requires ${getStoreWaterTypeLabel(required[0])}`;
+  }
+  return `Requires ${getStoreWaterTypeLabel(getFishStoreWaterType(entry))}`;
+}
+
+function isLivingDecorEntry(decorOrKey) {
+  const key = typeof decorOrKey === "string" ? normalizeDecorKey(decorOrKey) : normalizeDecorKey(decorOrKey?.decorKey || "");
+  const decor = key ? (runtime.decorMap?.get?.(key) || runtime.decorMeta?.[key] || null) : decorOrKey;
+  return decor?.living === true;
+}
+
+function getPlacedDecorWaterActiveState(item, tank = getCurrentTank()) {
+  if (!item) return true;
+  const key = normalizeDecorKey(item.decorKey || "");
+  const decor = runtime.decorMap?.get?.(key) || runtime.decorMeta?.[key] || null;
+  if (!decor?.living) return true;
+  return isDecorCompatibleWithWaterType(decor, normalizeWaterType(tank?.waterType, "freshwater"));
+}
+
+function isPlacedDecorFunctionallyActive(item, tank = getCurrentTank()) {
+  if (!item) return false;
+  if (!isLivingDecorEntry(item)) return true;
+  return item.active !== false && getPlacedDecorWaterActiveState(item, tank);
+}
+
+function syncTankLivingDecorActivity(tank = getCurrentTank()) {
+  if (!tank || !Array.isArray(tank.placedDecor)) return { changed: false, activated: [], deactivated: [] };
+  const activated = [];
+  const deactivated = [];
+  let changed = false;
+  for (const item of tank.placedDecor) {
+    if (!item || !isLivingDecorEntry(item)) continue;
+    const nextActive = getPlacedDecorWaterActiveState(item, tank);
+    const previousActive = item.active !== false;
+    if (previousActive === nextActive) continue;
+    item.active = nextActive;
+    changed = true;
+    (nextActive ? activated : deactivated).push(item);
+  }
+  return { changed, activated, deactivated };
+}
+
+function getDecorStoreSubcategory(decor) {
+  if (isCustomDecorUploadShopKey(decor?.key) || isCustomHideShopKey(decor?.key) || isCustomBubblerDecorKey(decor?.key)) return "custom";
+  const categories = normalizeStringList(decor?.categories).map((value) => value.toLowerCase());
+  const has = (value) => categories.includes(value);
+  if (has("bubbler")) return "bubbler";
+  if (has("cave")) return "cave";
+  if (has("lure")) return "lure";
+  if (has("botanical")) return "botanical";
+  if (has("coral")) return "coral";
+  if (has("wood")) return "wood";
+  if (has("plant")) return "plant";
+  if (has("rock")) return "rock";
+  if (has("ornament") || has("transit")) return "ornament";
+  return "other";
+}
+
+function getDecorStoreSubcategoryLabel(decor) {
+  const subcategory = typeof decor === "string" ? decor : getDecorStoreSubcategory(decor);
+  return ({
+    rock: "Rocks", plant: "Plants", ornament: "Ornaments", cave: "Caves", coral: "Coral",
+    lure: "Lures", wood: "Wood", botanical: "Botanicals", bubbler: "Bubblers",
+    background: "Backgrounds", custom: "Custom", other: "Other"
+  })[subcategory] || "Other";
 }
 
 function getStoreProductFacets(kind, entry) {
@@ -307,6 +536,7 @@ function getStoreProductFacets(kind, entry) {
       Availability: [isFishSpeciesShopUnlocked(entry) ? "Available now" : "Locked"],
       Seller: [seller],
       Genetics: [entry.genetics === "enhanced" ? "Enhanced" : "Natural"],
+      "Water type": [getStoreWaterTypeLabel(getFishStoreWaterType(entry))],
       Type: [entry.behavior === "free" ? "Free swimming" : entry.behavior || "custom", ...(entry.caveEnabled ? ["Cave fish"] : [])],
       Diet: [entry.diet || "omnivore"]
     };
@@ -320,10 +550,33 @@ function getStoreProductFacets(kind, entry) {
       Theme: [getCatalogThemeLabel(entry.theme)],
       Tag: [...new Set([...categories, ...getTankComfortDecorTags({ placedDecor: [{ decorKey: entry.key }] }), ...normalizeStringList(entry.tags)])],
       "Hangout type": normalizeStringList(behavior.hangoutTypes),
-      Service: getDecorBoroughServiceTypes(entry.key)
+      Service: getDecorBoroughServiceTypes(entry.key),
+      "Water type": entry.living === true
+        ? (typeof getDecorStoreWaterTypes === "function"
+          ? getDecorStoreWaterTypes(entry)
+          : normalizeStringList(entry.waterTypes || entry.waterType || "freshwater"))
+          .map((value) => String(value).toLowerCase().includes("salt") ? "Saltwater" : "Freshwater")
+        : ["Universal"]
+    };
+  }
+  if (kind === "background") {
+    return {
+      Availability: [isBackgroundOwned(entry.key) ? "Owned" : "Available now"],
+      Type: ["Backgrounds"],
+      // Backgrounds and substrates work with every aquarium. The automatic
+      // tank-water filter must not remove their cards from the Decor aisle.
+      "Water type": ["Universal"]
+    };
+  }
+  if (kind === "substrate") {
+    return {
+      Availability: [isSubstrateOwned(entry.id) ? "Owned" : "Available now"],
+      Type: ["Substrates"],
+      "Water type": ["Universal"]
     };
   }
   return { Type: [kind === "food" ? entry.id === "halloweenCandy" ? "Candy" : "Fish food" : "Medicine"],
+    ...(kind === "food" ? { Use: [getFoodStoreUseLabel(entry)] } : {}),
     Availability: ["Available now"] };
 }
 
@@ -331,7 +584,7 @@ function renderStoreFacetAttributes(kind, entry) {
   const seller = typeof entry?.seller === "string" && entry.seller.trim()
     ? entry.seller.trim()
     : "BubbleBodega";
-  return `data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}" data-store-seller="${escapeHtml(seller)}"`;
+  return `data-store-kind="${escapeHtml(kind)}" data-store-facets="${escapeHtml(JSON.stringify(getStoreProductFacets(kind, entry)))}" data-store-seller="${escapeHtml(seller)}"`;
 }
 
 function compareFishCatalogBySize(left, right) {
@@ -575,8 +828,9 @@ function getDecorStoreVariants(decorOrKey, catalogEntries = null) {
   const variants = getDecorStoreVariantEntries(decorOrKey, catalogEntries);
   return variants.map((entry, index) => ({
     key: entry.key,
-    image: entry.path,
-    label: index === 0 ? "Main" : `Variant ${index}`
+    image: getDecorThumbnailPath(entry),
+    label: String(entry?.variantLabel || entry?.name || "").trim() || (index === 0 ? "Main" : `Variant ${index}`),
+    cost: Math.max(0, Number(entry?.cost) || 0)
   }));
 }
 
@@ -618,7 +872,7 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
   const query = tutorialRestriction ? "" : getStoreSearchQuery(shopKind);
   const itemLabel = shopKind === "decor"
     ? pluralize("decor piece", visibleCount)
-    : (selectedFilter === "cave" ? "cave fish" : "fish");
+    : (selectedFilter === "cave" ? "cave fish" : "creatures");
   const toolbarTitle = shopKind === "decor" ? "Decor" : "Aquarium Fish";
   const titleMarkup = `<h3 class="shop-toolbar-title">${toolbarTitle}</h3>`;
   const summaryMarkup = totalCount !== visibleCount
@@ -657,6 +911,13 @@ function renderShopToolbar(kind, visibleCount, totalCount = visibleCount) {
             ${shopKind === "decor" ? `<option value="theme" ${selectedSort === "theme" ? "selected" : ""}>Theme</option>` : ""}
           </select>
         </label>
+        <label class="shop-water-filter-control">
+          <span>Tank match</span>
+          <span class="shop-water-filter-toggle">
+            <input type="checkbox" data-shop-water-filter="${shopKind}" ${typeof isStoreWaterFilterEnabled !== "function" || isStoreWaterFilterEnabled(shopKind) ? "checked" : ""} />
+            <strong>${typeof getActiveStoreWaterType === "function" && typeof getStoreWaterTypeLabel === "function" ? getStoreWaterTypeLabel(getActiveStoreWaterType()) : "Current tank"}</strong>
+          </span>
+        </label>
       </div>
     </div>
   `;
@@ -674,7 +935,6 @@ function setStoreSort(kind, value) {
     renderDecorShop();
     return;
   }
-
   renderFishShop();
 }
 
@@ -691,6 +951,17 @@ function setStoreFilter(kind, value) {
 
   runtime.storeFilters[shopKind] = nextFilter;
   renderFishShop();
+}
+
+function setStoreWaterFilter(kind, enabled) {
+  const shopKind = kind === "decor" ? "decor" : kind === "fish" ? "fish" : null;
+  if (!shopKind) return;
+  runtime.storeWaterFilters ||= { fish: true, decor: true };
+  const nextEnabled = enabled !== false;
+  if (runtime.storeWaterFilters[shopKind] === nextEnabled) return;
+  runtime.storeWaterFilters[shopKind] = nextEnabled;
+  if (shopKind === "decor") renderDecorShop();
+  else renderFishShop();
 }
 
 function setStoreSearchQuery(kind, value, options = {}) {
@@ -731,13 +1002,46 @@ function isFishSpeciesUnlocked(speciesOrId) {
   return isFishSpeciesProgressUnlocked(speciesOrId);
 }
 
+function isOtherAquariumCreature(species) {
+  const behavior = String(species?.behavior || "").trim().toLowerCase();
+  return behavior === "shrimp" || behavior === "snail";
+}
+
+function isFishSpeciesCatalogEnabled(speciesOrId) {
+  const species = typeof speciesOrId === "string"
+    ? runtime.fishMap.get(speciesOrId)
+    : speciesOrId;
+  if (!species) {
+    return false;
+  }
+  return species.Fish_enabled !== false || isDebugModeEnabled();
+}
+
 function getFishShopCatalog() {
   const davyOffer = getDavyMutationDailyOffer();
   return runtime.fishCatalog.filter((species) => (
     species
+    && isFishSpeciesCatalogEnabled(species)
     && !HIDDEN_FISH_OPTION_IDS.has(species.id)
     && !isCustomFishShopKey(species.id)
+    && !isOtherAquariumCreature(species)
+    && species.proteusExclusive !== true
+    && species.artPending !== true
+    && species.storeHiddenUntilArt !== true
     && (!isDavyMutationSpecies(species) || davyOffer?.species?.id === species.id)
+  ));
+}
+
+function getOtherAquariumCreatureShopCatalog() {
+  return runtime.fishCatalog.filter((species) => (
+    species
+    && isFishSpeciesCatalogEnabled(species)
+    && isOtherAquariumCreature(species)
+    && species.proteusExclusive !== true
+    && !isDavyMutationSpecies(species)
+    && !isCustomFishShopKey(species.id)
+    && species.artPending !== true
+    && species.storeHiddenUntilArt !== true
   ));
 }
 

@@ -1,0 +1,141 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "a18e6ddd-4b97-4671-9b19-7d066a9454cb",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "cb31d984-ce35-494a-9269-378094f4951b",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish.png"
+        },
+        {
+          "id": "4c7b39dd-43ee-4c25-9d69-7d2a88f6ad4b",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_2.png"
+        },
+        {
+          "id": "392088ed-a29a-4e38-9e5a-ccd32c618b49",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_3.png"
+        },
+        {
+          "id": "b93ce465-efab-4ff7-b1c5-614b16a0af94",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_4.png"
+        },
+        {
+          "id": "d76e4dff-8d3c-4987-b3ff-38c4c088216c",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_5.png"
+        },
+        {
+          "id": "93c6cae3-735d-432d-8021-f265cab75e63",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_6.png"
+        },
+        {
+          "id": "3bb1d095-82c8-49c8-b21d-56d828d3f3f5",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_7.png"
+        },
+        {
+          "id": "89408ef0-c978-49eb-a7df-0e8b0e556fb8",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_8.png"
+        },
+        {
+          "id": "535f0126-5381-40bc-9475-8e41b51e9dfb",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_9.png"
+        },
+        {
+          "id": "794acac8-27b7-4c72-bf48-05dc0a31c840",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "zombie_fish_10.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "sourceWebpSha256": "d4866938186f8c8c9c15d3576084dbdea7e0022fcce2672ec365894e0b650af4",
+    "sourceJsonSha256": "d795ef127234e739314125db98a21d3b15c31f8dcd482381252e4490331e4772",
+    "outputWebpSha256": "d48675ac2bae7df750a4eb5815f9f6f46088396ff9b44d02d7ac7699f572e85b"
+  }
+}

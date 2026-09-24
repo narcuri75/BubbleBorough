@@ -65958,7 +65958,7 @@ function drawAutoDispenser(now = Date.now()) {
   tankContext.save();
   tankContext.textAlign = "center";
   tankContext.textBaseline = "middle";
-  tankContext.font = `700 ${Math.max(9, Math.round(screenHeight * 0.82))}px "E1234Display", "Consolas", "Courier New", monospace`;
+  tankContext.font = `700 ${Math.max(9, Math.round(screenHeight * 0.82))}px "Consolas", "Courier New", monospace`;
   tankContext.fillStyle = blinking ? "#E92525" : "#050505";
   tankContext.shadowColor = blinking ? "rgba(255, 28, 28, 0.55)" : "transparent";
   tankContext.shadowBlur = blinking ? Math.max(2, screenHeight * 0.18) : 0;

@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "a0344e9e-0e7c-4c7b-a92c-1eada4740907",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ce18fa50-e43e-405b-844c-e138b0b6c360",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_black.png"
+        },
+        {
+          "id": "d19cf7ce-1437-42cb-a5d3-324796eb1ab8",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_yellow-tuxedo.png"
+        },
+        {
+          "id": "ceb98473-ec6d-4a54-9318-bedc535aa807",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_fancy-hi-fin.png"
+        },
+        {
+          "id": "46fc9363-63c2-4a7f-a558-15c3336ad887",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_red-tuxedo.png"
+        },
+        {
+          "id": "da828fe0-561f-48b0-aab1-3241e5c8f973",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_neon.png"
+        },
+        {
+          "id": "b1cbfc4d-8c14-4b0c-86f6-9b9120986eeb",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_showa.png"
+        },
+        {
+          "id": "bf7eae82-14d3-4863-9716-5552aff8fa84",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_pineapple-wagtail.png"
+        },
+        {
+          "id": "fc3b13be-06b1-42d4-a1d8-5b6978c18b9d",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_koi.png"
+        },
+        {
+          "id": "9824f278-28fc-4a1e-b39e-29041827dc04",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_yellow-comet.png"
+        },
+        {
+          "id": "a355c663-01ed-4c5a-9a91-c8340ca434a2",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_golden.png"
+        },
+        {
+          "id": "0ce751ab-fee3-4675-82a3-18a58fbc6aab",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "swordtail_red.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/swordtail__genetics-natural.webp"
+  }
+}

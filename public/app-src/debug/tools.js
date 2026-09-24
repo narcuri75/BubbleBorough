@@ -97,6 +97,7 @@ function getDebugDepthTuningSummaryText() {
     `Cyan ${formatDebugDepthTuningPercent(tuning.coolTint)}`,
     `Haze ${formatDebugDepthTuningPercent(tuning.haze)}`,
     `Gravel ${formatDebugDepthTuningPercent(tuning.substrate)}`,
+    `Gravel layer shadow ${formatDebugDepthTuningPercent(tuning.gravelLayerShadow)}`,
     `Shadows ${formatDebugDepthTuningPercent(tuning.shadow)}`,
     `Motion ${formatDebugDepthTuningPercent(tuning.movement)}`,
     `Ground shadow darkness ${formatDebugDepthTuningPercent(tuning.shadowDarkness)}`,
@@ -130,6 +131,7 @@ function syncDebugDepthTunerControls() {
       `contrast ${(layer5.contrast * 100).toFixed(1)}%`,
       `cyan ${(layer5.coolTint * 100).toFixed(1)}%`,
       `haze ${(layer5.haze * 100).toFixed(1)}%`,
+      `gravel layer shadow ${(getGravelLayerShadowIntensity() * 100).toFixed(0)}%`,
       `shadow ${(layer5.shadowStrength * 100).toFixed(1)}%`,
       `motion ${(layer5.movementMultiplier * 100).toFixed(1)}%`,
       `darkness ${(getDebugGroundShadowDarknessMultiplier() * 100).toFixed(0)}%`
@@ -155,9 +157,11 @@ function handleDebugDepthTuningInput(input) {
   if (!key || !(key in DEFAULT_DEBUG_DEPTH_TUNING)) {
     return;
   }
-  const multiplier = clamp((Number(input.value) || 0) / 100, 0, key === "shadow" || key === "movement"
-    ? 2
-    : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4));
+  const multiplier = clamp(
+    (Number(input.value) || 0) / 100,
+    0,
+    typeof getDebugTankDepthTuningMax === "function" ? getDebugTankDepthTuningMax(key) : 4
+  );
   setDebugTankDepthTuningValue(key, multiplier, { invalidate: false });
   syncDebugDepthTunerControls();
   scheduleDebugDepthTuningCacheRefresh();
@@ -486,6 +490,54 @@ function exposeDebugConsoleCommands() {
     return false;
   }
   window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
+  window.debugSetProteusDonationsTo99 = () => {
+    state.proteusCorpseDonationCount = 99;
+    state.proteusZombieFishUnlockedAt = 0;
+    state.proteusZombieFishOfferAt = 0;
+    state.proteusZombieFishAuthenticatedAt = 0;
+    state.proteusZombieFishClaimedAt = 0;
+    saveState();
+    renderUi(Date.now());
+    return 99;
+  };
+  window.debugUnlockProteusZombieFish = () => {
+    const now = Date.now();
+    state.proteusCorpseDonationCount = Math.max(PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT, Number(state.proteusCorpseDonationCount) || 0);
+    state.proteusZombieFishUnlockedAt = now;
+    state.proteusZombieFishOfferAt = now;
+    state.proteusZombieFishAuthenticatedAt = 0;
+    state.proteusDiscovered = true;
+    if (!(Number(state.proteusDiscoveredAt) > 0)) state.proteusDiscoveredAt = now;
+    saveState();
+    renderUi(now);
+    return true;
+  };
+  window.debugAuthenticateProteusZombieFish = () => {
+    const now = Date.now();
+    if (!(Number(state.proteusZombieFishUnlockedAt) > 0)) window.debugUnlockProteusZombieFish();
+    state.proteusZombieFishOfferAt = Math.min(Number(state.proteusZombieFishOfferAt) || now, now);
+    state.proteusZombieFishAuthenticatedAt = now;
+    saveState();
+    renderUi(now);
+    return true;
+  };
+  window.debugClaimProteusZombieFish = () => {
+    if (!(Number(state.proteusZombieFishAuthenticatedAt) > 0)) window.debugAuthenticateProteusZombieFish();
+    return claimProteusZombieFish(Date.now());
+  };
+  window.debugForceProteusZombieAttack = () => {
+    const fish = state?.fish?.find((entry) => isProteusZombieFish(entry) && !isFishDead(entry));
+    if (!fish) return false;
+    fish.satiatedUntil = 0;
+    fish.zombieAggressionTargetId = "";
+    fish.zombieAggressionUntil = 0;
+    fish.zombieAggressionNextAt = Date.now();
+    return true;
+  };
+  window.debugEndProteusZombieAttack = () => {
+    const fish = state?.fish?.find((entry) => isProteusZombieFish(entry) && !isFishDead(entry));
+    return fish ? clearProteusZombieAggression(fish, Date.now()) : false;
+  };
   return true;
 }
 
@@ -507,13 +559,106 @@ function addDebugCoins(amount = 10) {
   showToast(`+${coinAmount} ${pluralize("coin", coinAmount)}.`);
 }
 
+// Dead Fish Phase 15: revival is a hard boundary between corpse simulation and
+// living simulation. Clear corpse-only persisted/runtime state and reset the fish
+// to a neutral living presentation before normal AI resumes.
+function clearRevivedFishCorpseState(fish, now = Date.now()) {
+  if (!fish?.id) {
+    return false;
+  }
+
+  const fishId = fish.id;
+  let changed = typeof clearDeadFishCorpseMotion === "function"
+    ? clearDeadFishCorpseMotion(fishId)
+    : false;
+
+  // Phase 16 will persist corpse presentation state. Clearing these keys now
+  // keeps revival safe for current, future, and migrated save shapes.
+  const corpseFields = [
+    "corpseStage", "corpseStageStartedAt", "corpseTransitionProgress",
+    "corpseRotation", "corpseTilt", "corpseSurfaceYNorm",
+    "corpseSurfaceOffset", "corpseSurfaceOffsetNorm", "corpseSurfaceRestYOffsetNorm",
+    "corpseStableAngleOffset", "corpseDriftDirection", "corpseDriftVelocity",
+    "corpseDriftVelocityNorm", "corpseDriftSpeedNormPerSecond", "corpseDriftPhase",
+    "corpseBobPhase", "corpseCaveState", "corpseCaveExitIndex",
+    "corpseCaveExitCleared", "corpseMovementMode", "corpseSeed"
+  ];
+  for (const key of corpseFields) {
+    if (Object.prototype.hasOwnProperty.call(fish, key)) {
+      delete fish[key];
+      changed = true;
+    }
+  }
+
+  const livingDirection = Number(fish.direction) < 0 ? -1 : 1;
+  fish.displayDirection = livingDirection;
+  fish.displayAngle = livingDirection < 0 ? Math.PI : 0;
+  fish.turnFromDirection = livingDirection;
+  fish.turnToDirection = livingDirection;
+  fish.turnFromAngle = fish.displayAngle;
+  fish.turnToAngle = fish.displayAngle;
+  fish.turnSpinDirection = livingDirection < 0 ? 1 : -1;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.swimTilt = 0;
+  fish.motionLevel = 0.18;
+  fish.wiggleClock = 0;
+
+  const xNorm = Number.isFinite(Number(fish.xNorm)) ? Number(fish.xNorm) : 0.5;
+  const yNorm = Number.isFinite(Number(fish.yNorm)) ? Number(fish.yNorm) : 0.5;
+  fish.targetXNorm = xNorm;
+  fish.targetYNorm = yNorm;
+  fish.targetAt = now;
+
+  const restartCollections = [
+    "boroughOverviewFishProxies", "pendingNeighborhoodTravel", "foodTravelDestinations",
+    "activeFishCavePlans", "fishActionSteeringByFishId", "fishActionQueuesByFishId",
+    "fishActionQueueCollapsedFishIds", "fishShadowPlaneCache", "fishLayerDepthScaleTransitions",
+    "fishLayerTravelStepTransitions", "fishCollisionAvoidanceById", "fishNavigationMemoryById",
+    "debugBehaviorSteeringByFishId", "debugForcedOtocinclusStateByFishId",
+    "fishGravelPebbleActions", "forcedGravelDigUntilByFishId", "waterEffectFishSamples",
+    "fishFrameLookupById", "debugAutonomyPausedFishIds"
+  ];
+  for (const key of restartCollections) {
+    const collection = runtime?.[key];
+    if (collection && typeof collection.delete === "function") {
+      changed = collection.delete(fishId) || changed;
+    }
+  }
+
+  if (runtime?.boroughOverviewSnapshotCache instanceof Map && runtime.boroughOverviewSnapshotCache.size) {
+    runtime.boroughOverviewSnapshotCache.clear();
+    changed = true;
+  }
+  if (runtime && runtime.fishRenderFrameCache != null) {
+    runtime.fishRenderFrameCache = null;
+    changed = true;
+  }
+  if (runtime && runtime.fishRenderLayerBuckets != null) {
+    runtime.fishRenderLayerBuckets = null;
+    changed = true;
+  }
+  if (runtime && Number(runtime.boroughOverviewFishRenderedAt) !== 0) {
+    runtime.boroughOverviewFishRenderedAt = 0;
+    changed = true;
+  }
+
+  return changed;
+}
+
 function reviveFishForDebug(fish, now = Date.now()) {
   if (!fish || !isFishDead(fish)) {
     return false;
   }
 
   const species = getSpeciesForFish(fish);
+  fish.lifeState = "alive";
   fish.deadAt = null;
+  if (typeof clearRevivedFishCorpseState === "function") {
+    clearRevivedFishCorpseState(fish, now);
+  } else if (typeof clearDeadFishCorpseMotion === "function") {
+    clearDeadFishCorpseMotion(fish);
+  }
   fish.healthUnits = getFishMaxHealthUnits(fish, species);
   fish.activity = "roam";
   fish.decayStage = null;
@@ -2174,11 +2319,16 @@ function getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species) {
   if (behaviorId === "turn-around") {
     return Math.max(900, Number(fish?.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species)) + 720;
   }
-  if (["rest", "sleep", "hangout", "sick", "dead"].includes(behaviorId)) {
+  if (behaviorId === "death-animation") {
+    return 5600;
+  }
+  if (["rest", "sleep", "hangout", "sick", "dead", "sucker-back-glass", "sucker-front-glass", "sucker-free-swim", "surface-breathe"].includes(behaviorId)) {
     return 4200;
   }
-  if (["zoomies", "avoid"].includes(behaviorId)) {
-    return 1550;
+  if (behaviorId === "puffer-deflating") return getPufferDeflationDurationMs();
+  if (behaviorId === "puffer-inflated") return getPufferInflationWobbleMs();
+  if (["zoomies", "avoid", "zombie-attack"].includes(behaviorId)) {
+    return behaviorId === "zombie-attack" ? 2400 : 1550;
   }
   return 2800;
 }
@@ -2263,6 +2413,7 @@ function getDebugFishBehaviorPreviewAssetPaths(fish, species, now = Date.now()) 
       getSuckerFishViewAssetPath(species, fish, "swim")
     );
   }
+  if (species?.id === "pufferfish") paths.push(getPufferInflatedDisplayAssetPath(fish, species));
   return [...new Set(paths.filter(Boolean))];
 }
 
@@ -2356,6 +2507,7 @@ function getDebugFishBehaviorPreviewPose(behaviorId, phase) {
   let bodyScaleX = 1 - Math.abs(wiggle) * 0.018;
   let bodyScaleY = 1 + Math.abs(wiggle) * 0.014;
   let swayX = 0;
+  let swayY = 0;
   let alpha = 1;
   let filterMode = "normal";
 
@@ -2435,6 +2587,17 @@ function getDebugFishBehaviorPreviewPose(behaviorId, phase) {
       swayX = -recoil * 24;
       break;
     }
+    case "zombie-attack": {
+      const lunge = Math.pow(Math.max(0, Math.sin(phase * Math.PI)), 0.55);
+      const bite = Math.pow(Math.max(0, Math.sin(angle * 2)), 7);
+      tilt = Math.sin(angle * 1.3) * 0.09 - bite * 0.08;
+      wiggle = Math.sin(angle * 3.2) * (0.7 + lunge * 0.65);
+      bodyScaleX = 1.02 + lunge * 0.08 - bite * 0.07;
+      bodyScaleY = 0.98 - lunge * 0.035 + bite * 0.08;
+      swayX = lunge * 34;
+      swayY = Math.sin(angle) * 3;
+      break;
+    }
     case "breed":
       tilt = Math.sin(angle * 2) * 0.12;
       wiggle = Math.sin(angle * 3) * 0.72;
@@ -2464,19 +2627,43 @@ function getDebugFishBehaviorPreviewPose(behaviorId, phase) {
       swayX = Math.sin(angle * 0.5) * 3;
       filterMode = "sick";
       break;
+    case "death-animation": {
+      const deathStart = 0.12;
+      const transitionEnd = 0.58;
+      const riseStart = 0.30;
+      const riseEnd = 0.88;
+      const transitionProgress = clamp((phase - deathStart) / Math.max(0.001, transitionEnd - deathStart), 0, 1);
+      const transitionEase = typeof getDeadFishTransitionEase === "function"
+        ? getDeadFishTransitionEase(transitionProgress)
+        : transitionProgress * transitionProgress * (3 - 2 * transitionProgress);
+      const livingMotion = 1 - transitionEase;
+      const riseProgress = clamp((phase - riseStart) / Math.max(0.001, riseEnd - riseStart), 0, 1);
+      const riseEase = riseProgress * riseProgress * (3 - 2 * riseProgress);
+      tilt = Math.PI * transitionEase;
+      wiggle = Math.sin(angle * 1.4) * 0.55 * livingMotion;
+      bodyScaleX = 1 - Math.abs(wiggle) * 0.018;
+      bodyScaleY = 1 + Math.abs(wiggle) * 0.014;
+      swayX = Math.sin(angle * 0.55) * 2.2 * riseEase;
+      swayY = -46 * riseEase + (phase > riseEnd ? Math.sin(angle * 0.56) * 0.9 : 0);
+      filterMode = phase >= deathStart ? "dead" : "normal";
+      break;
+    }
     case "dead":
-      tilt = Math.PI + Math.sin(angle) * 0.025;
-      wiggle = Math.sin(angle * 0.4) * 0.04;
+      // Dead Fish Phase 24: preview the same nearly-still surface language as
+      // gameplay—upside down, no swim wiggle, tiny angle sway, slow drift.
+      tilt = Math.PI + Math.sin(angle * 0.56) * 0.012;
+      wiggle = 0;
       bodyScaleX = 1;
       bodyScaleY = 1;
-      swayX = Math.sin(angle) * 3;
+      swayX = Math.sin(angle * 0.28) * 1.6;
+      swayY = Math.sin(angle * 0.56) * 0.9;
       filterMode = "dead";
       break;
     default:
       break;
   }
 
-  return { tilt, wiggle, bodyScaleX, bodyScaleY, swayX, alpha, filterMode };
+  return { tilt, wiggle, bodyScaleX, bodyScaleY, swayX, swayY, alpha, filterMode };
 }
 
 function resizeDebugFishBehaviorPreviewCanvas(canvas, context) {
@@ -2521,14 +2708,41 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
 
   fish.deadAt = null;
   fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  clearPufferInflationState(fish, { clearCooldown: true });
+  delete fish.suckerFreeSwimUntil;
+  delete fish.whaleBreathState;
   fish.turnStartedAt = 0;
   fish.turnDurationMs = 0;
   fish.direction = 1;
   if (behaviorId === "sick") {
     fish.healthUnits = 1;
+  } else if (behaviorId === "death-animation") {
+    const deathStarted = phase >= 0.12;
+    fish.healthUnits = deathStarted ? 0 : getSpeciesMaxHealthUnits(species);
+    fish.deadAt = deathStarted ? renderNow - Math.max(0, (phase - 0.12) * cycleMs) : null;
   } else if (behaviorId === "dead") {
     fish.healthUnits = 0;
     fish.deadAt = renderNow - 1000;
+  }
+  if (behaviorId === "puffer-inflated" && species.id === "pufferfish") {
+    fish.pufferInflatedAt = renderNow - cycleElapsed;
+    fish.pufferInflatedUntil = renderNow + Math.max(1, cycleMs - cycleElapsed);
+    fish.pufferWobbleUntil = renderNow + Math.max(1, cycleMs - cycleElapsed);
+  } else if (behaviorId === "puffer-deflating" && species.id === "pufferfish") {
+    fish.pufferInflatedUntil = renderNow - cycleElapsed;
+    fish.pufferInflatedAt = fish.pufferInflatedUntil - getPufferInflationMinDurationMs();
+  } else if (behaviorId === "sucker-back-glass" && species.behavior === "sucker") {
+    fish.tankLayer = SUCKER_FISH_BACK_GLASS_LAYER;
+    fish.desiredTankLayer = SUCKER_FISH_BACK_GLASS_LAYER;
+  } else if (behaviorId === "sucker-front-glass" && species.behavior === "sucker") {
+    fish.tankLayer = SUCKER_FISH_FRONT_GLASS_LAYER;
+    fish.desiredTankLayer = SUCKER_FISH_FRONT_GLASS_LAYER;
+  } else if (behaviorId === "sucker-free-swim" && species.behavior === "sucker") {
+    fish.suckerFreeSwimUntil = renderNow + cycleMs;
+  } else if (behaviorId === "surface-breathe" && isWhaleFish(species)) {
+    fish.activity = WHALE_BREATH_ACTIVITY;
+    fish.whaleBreathState = phase < 0.62 ? "ascending" : "surface";
+    fish.yNorm = phase < 0.62 ? 0.38 - phase * 0.34 : getWhaleBreathSurfaceYNorm(fish, species);
   }
 
   let turnActive = false;
@@ -2585,7 +2799,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
     : 0;
 
   context.save();
-  context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2);
+  context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2 + (Number(pose.swayY) || 0));
   context.rotate(pose.tilt + simpleTurnLean);
   context.scale(behaviorId === "turn-around"
     ? (previewTurnMode === "simple" ? simpleTurnDirection : 1)
@@ -3221,7 +3435,8 @@ function damageSelectedFish() {
     1,
     now,
     `${fish.name} lost half a heart.`,
-    `${fish.name} died and floated to the surface.`
+    `${fish.name} died and floated to the surface.`,
+    { force: true }
   );
   const toast = result.dead ? `${fish.name} died.` : `${fish.name} lost half a heart.`;
 
@@ -3387,4 +3602,5 @@ function resetAllProgress() {
   renderUi(Date.now());
   syncAmbienceAudio();
   showToast("All progress reset.");
+  window.requestAnimationFrame(() => maybeOpenPendingTankSetup());
 }

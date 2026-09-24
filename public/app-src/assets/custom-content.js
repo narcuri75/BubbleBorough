@@ -221,7 +221,6 @@ function syncViewportCssVariables(options = {}) {
     return;
   }
 
-  syncPortablePerformanceMode();
   const browserViewport = getBrowserViewportSize();
   const locked = isLayoutRatioLockActive();
   const viewportWidth = locked
@@ -254,54 +253,11 @@ function syncViewportCssVariables(options = {}) {
   updateLayoutRatioLockPresentation();
 }
 
-function hasStockedMedicine() {
-  return Object.values(state?.medicineInventory || {}).some((count) => Math.max(0, Number(count) || 0) > 0);
-}
-
-function toggleToolbarActionMenu(menuName) {
-  const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
-  runtime.toolbarActionMenu = runtime.toolbarActionMenu === normalizedName ? "" : normalizedName;
-  renderControls(Date.now());
-}
-
-function handleToolbarGroupButtonClick(menuName) {
-  const normalizedName = menuName === "care" || menuName === "edit" ? menuName : "";
+function handleToolbarEditButtonClick() {
+  if (!guardTutorialToolbarControl("editMenuButton")) return;
   const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode;
-
-  if (normalizedName === "edit") {
-    runtime.toolbarActionMenu = "";
-    if (editModeActive) {
-      closeActiveEditOverlay();
-    } else {
-      openEditOverlayMode(null, { source: "toolbar", collapseSidebar: true });
-    }
-    return;
-  }
-
-  if (normalizedName === "care" && editModeActive) {
-    closeActiveEditOverlay();
-  }
-
-  toggleToolbarActionMenu(normalizedName);
-}
-
-function closeToolbarActionMenu() {
-  if (!runtime.toolbarActionMenu) {
-    return false;
-  }
-  runtime.toolbarActionMenu = "";
-  renderControls(Date.now());
-  return true;
-}
-
-function handleToolbarActionMenuDocumentClick(event) {
-  if (!runtime.toolbarActionMenu || !(event.target instanceof Element)) {
-    return;
-  }
-  if (event.target.closest("#careMenuButton, #editMenuButton, #toolbarCareMenu, #toolbarEditMenu")) {
-    return;
-  }
-  closeToolbarActionMenu();
+  if (editModeActive) closeActiveEditOverlay();
+  else openEditOverlayMode(null, { source: "toolbar", collapseSidebar: true });
 }
 
 function toggleWalletTransactionMenu() {
@@ -322,15 +278,8 @@ function handleWalletTransactionMenuClick(event) {
   openBubbleBank("account");
 }
 
-function handleToolbarActionMenuKeyDown(event) {
+function handleToolbarEscapeKeyDown(event) {
   if (event.key !== "Escape") {
-    return;
-  }
-  if (runtime.toolbarActionMenu) {
-    event.preventDefault();
-    const activeMenuName = runtime.toolbarActionMenu;
-    closeToolbarActionMenu();
-    (activeMenuName === "care" ? dom.careMenuButton : dom.editMenuButton)?.focus?.();
     return;
   }
   if (runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode) {
@@ -349,6 +298,18 @@ function closeBoroughOverviewBeforeToolbarAction(event) {
     return false;
   }
   closeAquariumOverview();
+  return true;
+}
+
+function closeActiveEditorBeforePrimaryToolbarAction(event) {
+  if (!(event.target instanceof Element)) return false;
+  const button = event.target.closest("button");
+  if (!(button instanceof HTMLButtonElement)) return false;
+  const primaryToolbarButtons = [dom.openStoreButton, dom.openSettingsButton, dom.openManagementButton];
+  if (!primaryToolbarButtons.includes(button)) return false;
+  const editModeActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode;
+  if (!editModeActive) return false;
+  closeActiveEditOverlay();
   return true;
 }
 
@@ -501,6 +462,24 @@ function finishTankColorPickerDrag(pointerId = null) {
   return true;
 }
 
+function isolateDebugModalPointerEvents(root) {
+  if (!root || root.dataset.debugModalEventsIsolated === "true") {
+    return;
+  }
+  root.dataset.debugModalEventsIsolated = "true";
+  // These developer dialogs live inside the tank-stage DOM tree. Let the
+  // control that was actually clicked receive the event, then stop the event at
+  // the modal root before it can bubble into tankStage and become a glass tap,
+  // fish drag, decor edit, or camera gesture.
+  for (const eventName of [
+    "pointerdown", "pointerup", "pointermove", "pointercancel",
+    "mousedown", "mouseup", "mousemove", "click", "dblclick",
+    "contextmenu", "wheel", "touchstart", "touchmove", "touchend"
+  ]) {
+    root.addEventListener(eventName, (event) => event.stopPropagation());
+  }
+}
+
 function bindEvents() {
   const webSurfColorSchemeQuery = window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY);
   const handleWebSurfSystemThemeChange = () => {
@@ -518,7 +497,6 @@ function bindEvents() {
   }, true);
   syncViewportCssVariables({ resetStable: true });
 
-  let viewportLayoutRefreshHandle = 0;
   const refreshViewportLayoutNow = () => {
     syncViewportCssVariables();
     resizeDisplayCanvases();
@@ -526,24 +504,7 @@ function bindEvents() {
       renderUi(Date.now(), { full: false });
     }
   };
-  const refreshViewportLayout = () => {
-    const portablePerformanceActive = syncPortablePerformanceMode();
-    if (!portablePerformanceActive) {
-      if (viewportLayoutRefreshHandle) {
-        window.clearTimeout(viewportLayoutRefreshHandle);
-        viewportLayoutRefreshHandle = 0;
-      }
-      refreshViewportLayoutNow();
-      return;
-    }
-    if (viewportLayoutRefreshHandle) {
-      window.clearTimeout(viewportLayoutRefreshHandle);
-    }
-    viewportLayoutRefreshHandle = window.setTimeout(() => {
-      viewportLayoutRefreshHandle = 0;
-      refreshViewportLayoutNow();
-    }, PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS);
-  };
+  const refreshViewportLayout = refreshViewportLayoutNow;
 
   window.addEventListener("resize", refreshViewportLayout);
   window.visualViewport?.addEventListener("resize", refreshViewportLayout);
@@ -761,14 +722,13 @@ function bindEvents() {
   }, true);
   document.addEventListener("pointerup", finishSoundRangeDrag, true);
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
-  document.addEventListener("click", handleToolbarActionMenuDocumentClick);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
   document.addEventListener("click", handleWebPageNavigation);
   document.addEventListener("input", handleProteusDesignerInputEvent);
   document.addEventListener("change", handleProteusDesignerChangeEvent);
   dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
   dom.walletTransactionMenu?.addEventListener("click", handleWalletTransactionMenuClick);
-  document.addEventListener("keydown", handleToolbarActionMenuKeyDown);
+  document.addEventListener("keydown", handleToolbarEscapeKeyDown);
   dom.loadingOverlay?.addEventListener("click", (event) => {
     if (dom.loadingOverlay?.classList.contains("is-error")) {
       event.preventDefault();
@@ -843,24 +803,10 @@ function bindEvents() {
     if (!dom.loadingOverlay?.classList.contains("is-ready")) return;
   });
   if (typeof document !== "undefined") {
-    if (!INVITE_FRIEND_ENABLED) {
-      document.querySelectorAll("[data-open-invite-friend]").forEach((button) => {
-        button.hidden = true;
-      });
-    }
     document.addEventListener("visibilitychange", () => {
       syncAmbienceAudio();
     });
     document.addEventListener("click", (event) => {
-      const inviteButton = event.target instanceof Element ? event.target.closest("[data-open-invite-friend]") : null;
-      if (inviteButton) {
-        event.preventDefault();
-        if (INVITE_FRIEND_ENABLED) {
-          openUtilityOverlay("invite-friend");
-        }
-        return;
-      }
-
       const creditsButton = event.target instanceof Element ? event.target.closest("[data-open-credits]") : null;
       if (creditsButton) {
         event.preventDefault();
@@ -1132,6 +1078,8 @@ function bindEvents() {
   });
   dom.dailyBonusBell?.addEventListener("click", () => openUtilityOverlay("notifications"));
   dom.toggleDebugMenuButton?.addEventListener("click", () => toggleDebugSidebar());
+  isolateDebugModalPointerEvents(dom.debugFishBehaviorPreview);
+  isolateDebugModalPointerEvents(dom.debugDecorPreview);
   dom.debugFishBehaviorPreviewButton?.addEventListener("click", () => openDebugFishBehaviorPreview());
   dom.closeDebugFishBehaviorPreview?.addEventListener("click", () => closeDebugFishBehaviorPreview());
   dom.debugFishBehaviorPreview?.querySelector("[data-debug-fish-preview-close]")?.addEventListener("click", () => {
@@ -1191,21 +1139,10 @@ function bindEvents() {
     toggleFoodTray(null, { source: "toolbar", collapseSidebar: true });
   });
   dom.careMenuButton?.addEventListener("click", () => {
-    // Fish care is a single horizontal tray now. The old care submenu remains
-    // in the markup for compatibility, but is never opened.
-    runtime.toolbarActionMenu = "";
+    if (!guardTutorialToolbarControl("careMenuButton")) return;
     toggleMedicineTray(null, { source: "toolbar", collapseSidebar: true });
   });
-  dom.editMenuButton?.addEventListener("click", () => handleToolbarGroupButtonClick("edit"));
-  dom.medicineButton?.addEventListener("click", () => {
-    if (!hasStockedMedicine()) {
-      openStoreOverlay("pharmacy");
-      showToast("No medicine is stocked. Opening the pharmacy.");
-      return;
-    }
-    toggleMedicineTray(null, { source: "toolbar", collapseSidebar: true });
-  });
-  dom.tipsButton?.addEventListener("click", () => openUtilityOverlay("tips"));
+  dom.editMenuButton?.addEventListener("click", handleToolbarEditButtonClick);
   dom.resetProgressButton?.addEventListener("click", () => openUtilityOverlay("reset-progress-confirm"));
   dom.exportDataButton?.addEventListener("click", () => {
     void exportSaveData();
@@ -1232,18 +1169,6 @@ function bindEvents() {
   });
   dom.resetMealsButton.addEventListener("click", () => resetMealsDebug());
   dom.completeMealsButton?.addEventListener("click", () => completeMealsDebug());
-  dom.spongeButton.addEventListener("click", () => {
-    if (!guardTutorialToolbarControl("spongeButton")) {
-      return;
-    }
-    toggleCleaningMode({ source: "toolbar", collapseSidebar: true });
-  });
-  dom.scoopButton?.addEventListener("click", () => {
-    if (!guardTutorialToolbarControl("scoopButton")) {
-      return;
-    }
-    toggleScoopMode({ source: "toolbar", collapseSidebar: true });
-  });
   dom.debugDamageFishButton.addEventListener("click", () => damageSelectedFish());
   dom.debugBreedButton?.addEventListener("click", () => triggerDebugBabySequence());
   dom.resetFishHealthButton?.addEventListener("click", () => restoreAllFishHealthDebug());
@@ -1294,6 +1219,7 @@ function bindEvents() {
   dom.toggleFishShop.addEventListener("click", () => openStoreOverlay("fish"));
   dom.toggleDecorShop.addEventListener("click", () => openStoreOverlay("decor"));
   dom.tankBottomDock?.addEventListener("click", closeBoroughOverviewBeforeToolbarAction, true);
+  dom.tankBottomDock?.addEventListener("click", closeActiveEditorBeforePrimaryToolbarAction, true);
   dom.tankBottomDock?.addEventListener("click", captureToolbarButtonSoundState, true);
   dom.tankBottomDock?.addEventListener("click", playToolbarButtonSoundForClick);
   dom.tankBottomDock?.addEventListener("pointerover", handleToolbarFastTooltipPointerOver);
@@ -1320,6 +1246,16 @@ function bindEvents() {
       && dom.storeOverlay.classList.contains("is-open")
     );
     if (storeActuallyVisible) {
+      if (runtime.settingsOverlayOpen === true) {
+        // The toolbar WebSurf button is an app-level re-entry point, not a
+        // browser Back button. Leaving Settings through it should always begin
+        // a fresh WebSurf session on Home instead of reviving the page that was
+        // open before Settings (which could also revive a hidden Bodega catalog).
+        runtime.webSurfSettingsReturnPage = "home";
+        runtime.webSurfLastPage = "home";
+        closeSettingsOverlay();
+        return;
+      }
       if (runtime.bubbleBankOpen === true) {
         openStoreOverlay(runtime.storeTab || "food");
         return;
@@ -1463,8 +1399,8 @@ function bindEvents() {
     if (!guardTutorialToolbarControl("openSettingsButton")) {
       return;
     }
-    if (runtime.settingsOverlayOpen) {
-      closeSettingsOverlay();
+    if (runtime.settingsOverlayOpen === true) {
+      closeSettingsOverlay({ closeWebSurf: true });
       return;
     }
     openSettingsOverlay();
@@ -1473,21 +1409,6 @@ function bindEvents() {
   dom.openEquipmentShopButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.openEquipmentStoreButton?.addEventListener("click", () => openStoreOverlay("equipment"));
   dom.toggleMouseLockButton?.addEventListener("click", () => toggleTankMouseInputLocked());
-  dom.editModeDockButton?.addEventListener("click", () => {
-    if (!guardTutorialToolbarControl("editModeDockButton")) {
-      return;
-    }
-    toggleEditTankMode(null, { source: "toolbar", collapseSidebar: true });
-  });
-  dom.equipmentEditModeDockButton?.addEventListener("click", () => {
-    toggleEquipmentEditMode(null, { source: "toolbar", collapseSidebar: true });
-  });
-  dom.fishEditModeDockButton?.addEventListener("click", () => {
-    if (!guardTutorialToolbarControl("fishEditModeDockButton")) {
-      return;
-    }
-    toggleFishEditMode(null, { source: "toolbar", collapseSidebar: true });
-  });
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
   dom.closeEditEquipmentTrayButton?.addEventListener("click", () => toggleEquipmentEditMode(false));
@@ -1501,6 +1422,7 @@ function bindEvents() {
   });
   dom.storeOverlay?.addEventListener("wheel", handleOverlayWheelScroll, { passive: false });
   dom.storeOverlay?.addEventListener("scroll", syncWallpaperEngineStoreScrollControls, true);
+  dom.storeOverlay?.addEventListener("scroll", () => syncWebSurfSiteChrome(), true);
   const clearStoreScrollPointer = () => {
     runtime.storeScrollPointerId = null;
     runtime.storeScrollPointerDirection = "";
@@ -1673,6 +1595,41 @@ function bindEvents() {
   };
   dom.uiMuteToggleInput?.addEventListener("input", handleUiMuteToggleInput);
   dom.uiMuteToggleInput?.addEventListener("change", handleUiMuteToggleInput);
+  const bindSettingsVolumeSlider = (input, output, setter) => {
+    if (!(input instanceof HTMLInputElement) || typeof setter !== "function") return;
+
+    // Apply volume live while the thumb moves, but commit separately when the
+    // interaction finishes. Previously the input event changed state with
+    // save:false, then the change event called the setter with the same value.
+    // The setter correctly treated that as a no-op, which meant saveState()
+    // never ran and the slider silently reverted after a reload.
+    const applyLiveValue = (event) => {
+      const percent = clamp(Math.round(Number(event.currentTarget?.value) || 0), 0, 100);
+      if (output) output.textContent = `${percent}%`;
+      setter(percent / 100, { save: false, render: false });
+      input.dataset.volumeDirty = "true";
+    };
+
+    const commitValue = (event) => {
+      const percent = clamp(Math.round(Number(event.currentTarget?.value) || 0), 0, 100);
+      if (output) output.textContent = `${percent}%`;
+      setter(percent / 100, { save: false, render: false });
+      saveState();
+      delete input.dataset.volumeDirty;
+    };
+
+    input.addEventListener("input", applyLiveValue);
+    input.addEventListener("change", commitValue);
+    input.addEventListener("blur", (event) => {
+      if (input.dataset.volumeDirty === "true") {
+        commitValue(event);
+      }
+    });
+  };
+  bindSettingsVolumeSlider(dom.tankAmbienceVolumeInput, dom.tankAmbienceVolumeOutput, setTankAmbienceVolume);
+  bindSettingsVolumeSlider(dom.sfxVolumeInput, dom.sfxVolumeOutput, setSfxVolume);
+  bindSettingsVolumeSlider(dom.uiSoundVolumeInput, dom.uiSoundVolumeOutput, setUiSoundVolume);
+  bindSettingsVolumeSlider(dom.gravelShadowIntensityInput, dom.gravelShadowIntensityOutput, setGravelShadowIntensity);
   dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
     setWebSurfThemeMode(event.currentTarget?.value);
   });
@@ -1726,36 +1683,29 @@ function bindEvents() {
   dom.layoutRatioLockToggleInput?.addEventListener("change", (event) => {
     setLayoutRatioLockEnabled(event.currentTarget?.checked);
   });
-  dom.settingsOverlay?.addEventListener("change", (event) => {
-    const toolbarInput = event.target.closest("[data-toolbar-position-choice]");
-    if (TOOLBAR_POSITION_SETTING_ENABLED && toolbarInput instanceof HTMLInputElement) {
-      setToolbarPosition(toolbarInput.value);
-      return;
-    }
-
-    const displayInput = event.target.closest("[data-display-position-choice]");
-    if (DISPLAY_POSITION_SETTING_ENABLED && displayInput instanceof HTMLInputElement) {
-      setDisplayPosition(displayInput.value);
-    }
-  });
   dom.storeFoodTab?.addEventListener("click", () => {
     runtime.storeTab = "food";
+    runtime.bubbleBodegaHomeOpen = false;
     renderUi(Date.now());
   });
   dom.storePharmacyTab?.addEventListener("click", () => {
     runtime.storeTab = "pharmacy";
+    runtime.bubbleBodegaHomeOpen = false;
     renderUi(Date.now());
   });
   dom.storeFishTab.addEventListener("click", () => {
     runtime.storeTab = "fish";
+    runtime.bubbleBodegaHomeOpen = false;
     renderUi(Date.now());
   });
   dom.storeDecorTab.addEventListener("click", () => {
     runtime.storeTab = "decor";
+    runtime.bubbleBodegaHomeOpen = false;
     renderUi(Date.now());
   });
   dom.storeEquipmentTab?.addEventListener("click", () => {
     runtime.storeTab = "equipment";
+    runtime.bubbleBodegaHomeOpen = false;
     renderUi(Date.now());
   });
   dom.tankManagementCard?.addEventListener("click", playTankInfoActionSound, true);
@@ -2312,9 +2262,37 @@ function bindEvents() {
       return;
     }
 
+    const requestWaterButton = event.target.closest("[data-request-water-conversion]");
+    if (requestWaterButton) {
+      if (typeof openWaterConversionDialog === "function") {
+        openWaterConversionDialog(requestWaterButton.dataset.requestWaterConversion);
+      } else {
+        requestWaterTypeConversion(requestWaterButton.dataset.requestWaterConversion);
+      }
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
+    if (event.target.closest("[data-cancel-water-conversion]")) {
+      cancelWaterTypeConversion();
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
+    const confirmWaterButton = event.target.closest("[data-confirm-water-conversion]");
+    if (confirmWaterButton) {
+      confirmWaterTypeConversion(confirmWaterButton.dataset.confirmWaterConversion);
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
+    if (event.target.closest("[data-open-water-care-store]")) {
+      runtime.pendingWaterConversionTarget = "";
+      openStoreOverlay("equipment", { forceCategory: true });
+      playToolbarButtonSoundEffect("press");
+      return;
+    }
+
     const tankTab = event.target.closest("[data-tank-tray-tab]");
     if (tankTab) {
-      const nextTab = ["background", "gravel"].includes(tankTab.dataset.tankTrayTab)
+      const nextTab = ["background", "gravel", "water"].includes(tankTab.dataset.tankTrayTab)
         ? tankTab.dataset.tankTrayTab
         : "background";
       if (runtime.editTankTrayTab !== nextTab) {
@@ -2608,11 +2586,11 @@ function bindEvents() {
       event.stopPropagation();
       playToolbarButtonSoundEffect("press");
       if (toolButton.dataset.careTool === "scrub") {
-        if (guardTutorialToolbarControl("spongeButton")) {
+        if (guardTutorialToolbarControl("careMenuButton")) {
           toggleCleaningMode({ source: "care-tray", collapseSidebar: true });
         }
       } else if (toolButton.dataset.careTool === "scoop") {
-        if (guardTutorialToolbarControl("scoopButton")) {
+        if (guardTutorialToolbarControl("careMenuButton")) {
           toggleScoopMode({ source: "care-tray", collapseSidebar: true });
         }
       }
@@ -2664,7 +2642,13 @@ function bindEvents() {
   dom.foodShop?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-buy-food]");
     if (button) {
-      buyFood(button.dataset.buyFood);
+      buyFood(button.dataset.buyFood, button.dataset.foodPackage || "");
+    }
+  });
+  dom.foodShop?.addEventListener("change", (event) => {
+    const inTankFilter = event.target.closest("[data-food-in-tank-filter]");
+    if (inTankFilter instanceof HTMLInputElement) {
+      setFoodInTankFilter(inTankFilter.checked);
     }
   });
   dom.pharmacyShop?.addEventListener("click", (event) => {
@@ -2769,6 +2753,12 @@ function bindEvents() {
     const filterSelect = event.target.closest("[data-shop-filter]");
     if (filterSelect) {
       setStoreFilter(filterSelect.dataset.shopFilter, filterSelect.value);
+      return;
+    }
+
+    const waterFilter = event.target.closest("[data-shop-water-filter]");
+    if (waterFilter instanceof HTMLInputElement) {
+      setStoreWaterFilter(waterFilter.dataset.shopWaterFilter, waterFilter.checked);
     }
   });
   dom.fishShop.addEventListener("input", (event) => {
@@ -2793,6 +2783,12 @@ function bindEvents() {
     const select = event.target.closest("[data-shop-sort]");
     if (select) {
       setStoreSort(select.dataset.shopSort, select.value);
+      return;
+    }
+
+    const waterFilter = event.target.closest("[data-shop-water-filter]");
+    if (waterFilter instanceof HTMLInputElement) {
+      setStoreWaterFilter(waterFilter.dataset.shopWaterFilter, waterFilter.checked);
     }
   });
   dom.decorShop.addEventListener("input", (event) => {
@@ -2804,6 +2800,19 @@ function bindEvents() {
         selectionEnd: input.selectionEnd
       });
     }
+  });
+
+  dom.decorShop?.addEventListener("click", (event) => {
+    const substrateBuyButton = event.target.closest("[data-buy-substrate]");
+    if (substrateBuyButton) {
+      buySubstrate(substrateBuyButton.dataset.buySubstrate);
+      return;
+    }
+    const backgroundBuyButton = event.target.closest("[data-buy-background]");
+    if (!backgroundBuyButton || event.target.closest("#storeOverlay")) {
+      return;
+    }
+    buyBackground(backgroundBuyButton.dataset.buyBackground);
   });
 
   dom.equipmentShop?.addEventListener("click", (event) => {
@@ -2843,6 +2852,18 @@ function bindEvents() {
       return;
     }
 
+
+    const buyWaterKitButton = event.target.closest("[data-buy-water-kit]");
+    if (buyWaterKitButton) {
+      buyWaterTreatmentKit(buyWaterKitButton.dataset.buyWaterKit);
+      return;
+    }
+
+    const useWaterKitButton = event.target.closest("[data-use-water-kit]");
+    if (useWaterKitButton) {
+      useWaterTreatmentKit(useWaterKitButton.dataset.useWaterKit);
+      return;
+    }
 
     const buyAutoDispenserButton = event.target.closest("[data-buy-auto-dispenser]");
     if (buyAutoDispenserButton) {
@@ -3006,6 +3027,12 @@ function bindEvents() {
         return;
       }
 
+      const deleteCustomBackgroundButton = event.target.closest("[data-delete-custom-background]");
+      if (deleteCustomBackgroundButton) {
+        void deleteCustomBackgroundAsset(deleteCustomBackgroundButton.dataset.deleteCustomBackground);
+        return;
+      }
+
       const backgroundButton = event.target.closest("[data-select-background]");
       if (backgroundButton) {
         selectBackground(backgroundButton.dataset.selectBackground);
@@ -3058,6 +3085,12 @@ function bindEvents() {
       }
 
 
+
+      const substrateButton = event.target.closest("[data-substrate-style]");
+      if (substrateButton) {
+        setTankSubstrateStyle(substrateButton.dataset.substrateStyle);
+        return;
+      }
 
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
@@ -3311,6 +3344,18 @@ function bindEvents() {
   });
 
   dom.tankStage.addEventListener("contextmenu", (event) => {
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (toolCursorActive) {
+      event.preventDefault();
+      event.stopPropagation();
+      clearPrimaryToolModes({ preserveStageRenderView: true });
+      runtime.pointerStagePx = null;
+      renderUi(Date.now(), { full: false });
+      return;
+    }
     if (isTankMouseInputLocked()) {
       return;
     }
@@ -3325,6 +3370,30 @@ function bindEvents() {
 
     const point = getTankPoint(event);
     if (!point) {
+      return;
+    }
+
+    if (runtime.equipmentEditMode) {
+      const now = Date.now();
+      if (getAutoDispenserHitTarget(point.x, point.y)) {
+        event.preventDefault();
+        event.stopPropagation();
+        recallAutoDispenser(now);
+        return;
+      }
+
+      const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
+      if (!hitMachinery) {
+        return;
+      }
+
+      event.preventDefault();
+      event.stopPropagation();
+      if (hitMachinery.type === MACHINERY_TYPE_BOAT) {
+        recallBoat(now);
+      } else if (hitMachinery.type === MACHINERY_TYPE_SUBMARINE) {
+        recallSubmarine(now);
+      }
       return;
     }
 
@@ -3446,13 +3515,18 @@ function bindEvents() {
         scale: runtime.placementMode.scale,
         flipped: runtime.placementMode.flipped,
         flippedY: runtime.placementMode.flippedY,
-        applyGravity: true
+        applyGravity: true,
+        allowSurfaceOverlapSnap: true
       }) : null;
     }
   });
 
   dom.tankStage.addEventListener("pointerleave", () => {
-    runtime.pointerStagePx = null;
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (!toolCursorActive) runtime.pointerStagePx = null;
     runtime.lastScrubPoint = null;
     resetScrubWipeSoundState();
     renderToolCursor();
@@ -3766,7 +3840,11 @@ function bindEvents() {
 
     releaseTankPointerCapture(event && Number.isInteger(event.pointerId) ? event.pointerId : runtime.capturedTankPointerId);
 
-    if (!runtime.cleaningMode) {
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (!toolCursorActive) {
       runtime.pointerStagePx = null;
     }
     renderToolCursor();
@@ -3780,6 +3858,17 @@ function bindEvents() {
   });
   dom.tankStage.addEventListener("pointercancel", releasePointer);
   window.addEventListener("pointermove", (event) => {
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (toolCursorActive) {
+      const stagePoint = getTankStageClientPointInLayoutSpace(event);
+      if (stagePoint) {
+        runtime.pointerStagePx = { x: stagePoint.x, y: stagePoint.y };
+        renderToolCursor();
+      }
+    }
     if (!runtime.decorResizeState) {
       return;
     }
@@ -3858,10 +3947,35 @@ function updatePlayfieldCssVariables() {
 function resetStageRenderViewAfterToolClose() {
   runtime.stageRenderViewTarget = null;
   runtime.stageRenderViewTargetKey = null;
-  runtime.stageRenderViewLastFrameAt = 0;
-  runtime.stageEditViewAmount = 0;
-  updateStageRenderView(performance.now(), { immediate: true });
+  // The edit border belongs to the overlay, not to the camera transition.
+  // Remove it immediately when the overlay closes while the camera eases back.
   dom.tankStage?.classList.remove("is-decor-edit-framed");
+
+  // Keep the current camera as the starting point. The animation loop will
+  // ease it back to the normal cover view, so closing an editor does not snap
+  // the aquarium full-screen for a frame.
+  updateStageRenderView(performance.now());
+
+  // Fail-safe: if a render/layout interruption leaves the editor camera or
+  // frame styling stuck, force the normal tank view after the close animation.
+  const enforceNormalStageView = () => {
+    if (runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode) {
+      return;
+    }
+    runtime.stageRenderViewTarget = null;
+    runtime.stageRenderViewTargetKey = null;
+    const normalTarget = getStageRenderViewTarget();
+    if (normalTarget) {
+      runtime.stageEditViewAmount = Number(normalTarget.editAmount) || 0;
+      applyStageRenderViewTransform(normalTarget.scale, normalTarget.offsetX, normalTarget.offsetY);
+    }
+    dom.tankStage?.classList.remove("is-decor-edit-framed");
+  };
+
+  if (typeof window.setTimeout === "function") {
+    window.setTimeout(enforceNormalStageView, 700);
+    window.setTimeout(enforceNormalStageView, 1400);
+  }
 }
 
 function isStageEditTrayActuallyVisible(tray) {
@@ -3880,17 +3994,18 @@ function isStageEditTrayActuallyVisible(tray) {
 
 function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
   runtime.stageRenderViewTarget = null;
-  runtime.stageRenderViewLastFrameAt = 0;
 
   const refresh = () => {
     runtime.stageRenderViewTarget = null;
-    runtime.stageRenderViewLastFrameAt = 0;
     updateStageRenderView(performance.now(), { immediate: options.immediate === true });
+    if (options.renderTank !== false) {
+      renderTank(Date.now());
+    }
   };
 
   // Recalculate after the edited tray has completed its DOM/layout update.
-  // Gravel swatch changes used to rebuild enough UI that the camera could keep
-  // an obsolete edit-frame target after the tray was no longer actually visible.
+  // Gravel swatch changes must redraw against the new camera immediately so
+  // the tank never flashes back to the full-screen non-edit framing.
   if (typeof window.requestAnimationFrame === "function") {
     window.requestAnimationFrame(refresh);
   } else {
@@ -4013,14 +4128,16 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;
     runtime.stageRenderViewTarget = null;
-    runtime.stageRenderViewLastFrameAt = 0;
   }
   const target = runtime.stageRenderViewTarget || (runtime.stageRenderViewTarget = getStageRenderViewTarget());
   if (!target) {
     return;
   }
 
-  const previousFrameAt = Number(runtime.stageRenderViewLastFrameAt) || frameTime;
+  // Give the very first transition frame a real timestep. Using frameTime as
+  // the fallback made smoothing equal zero, leaving the newly opened tray on
+  // screen for one frame before the camera began to move.
+  const previousFrameAt = Number(runtime.stageRenderViewLastFrameAt) || (frameTime - (1000 / 60));
   const elapsedMs = clamp(frameTime - previousFrameAt, 0, 80);
   runtime.stageRenderViewLastFrameAt = frameTime;
   const reduceMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)")?.matches === true;
@@ -4043,7 +4160,9 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
     Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
     Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
   );
-  dom.tankStage?.classList.toggle("is-decor-edit-framed", runtime.stageEditViewAmount > 0.02);
+  const editFrameActive = target.editAmount > 0.02
+    && (runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode);
+  dom.tankStage?.classList.toggle("is-decor-edit-framed", editFrameActive && runtime.stageEditViewAmount > 0.02);
 }
 
 function resizeDisplayCanvases() {
@@ -4171,10 +4290,14 @@ async function fetchFishCatalog() {
       throw new Error("Could not load fish catalog");
     }
 
-    return await response.json();
+    const catalog = await response.json();
+    if (Array.isArray(catalog?.fish)) {
+      catalog.fish = catalog.fish.filter((fish) => !UNAVAILABLE_FISH_ASSET_IDS.has(fish?.id));
+    }
+    return catalog;
   } catch (error) {
     console.error(error);
-    return { fish: FISH_TYPES };
+    return { fish: FISH_TYPES.filter((fish) => !UNAVAILABLE_FISH_ASSET_IDS.has(fish?.id)) };
   }
 }
 
@@ -4256,8 +4379,30 @@ function normalizeFoodAndMedCatalog(payload) {
         description: typeof entry.description === "string" && entry.description.trim()
           ? entry.description.trim()
           : "",
+        use: typeof entry.use === "string" ? entry.use.trim().toLowerCase() : "",
         cost: Number.isFinite(entry.cost) ? Math.max(0, Math.floor(entry.cost)) : 0,
         bottlePellets: Number.isFinite(entry.bottlePellets) ? Math.max(0, Math.floor(entry.bottlePellets)) : 0,
+        packages: (Array.isArray(entry.packages) ? entry.packages : [])
+          .map((packageEntry, packageIndex) => {
+            const packageSource = packageEntry && typeof packageEntry === "object" ? packageEntry : {};
+            const packageId = typeof packageSource.id === "string" && packageSource.id.trim()
+              ? packageSource.id.trim()
+              : `package-${packageIndex + 1}`;
+            const servings = Math.max(0, Math.floor(Number(packageSource.servings) || 0));
+            const packageCost = Math.max(0, Math.floor(Number(packageSource.cost) || 0));
+            return {
+              id: packageId,
+              name: typeof packageSource.name === "string" && packageSource.name.trim()
+                ? packageSource.name.trim()
+                : titleFromFile(packageId),
+              servings,
+              cost: packageCost,
+              image: typeof packageSource.image === "string" && packageSource.image.trim()
+                ? packageSource.image.trim()
+                : ""
+            };
+          })
+          .filter((packageEntry) => packageEntry.servings > 0),
         image: typeof entry.image === "string" && entry.image.trim() ? entry.image.trim() : "",
         thumb: typeof entry.thumb === "string" && entry.thumb.trim() ? entry.thumb.trim() : "",
         dropStyle: typeof entry.dropStyle === "string" && entry.dropStyle.trim().toLowerCase() === "sprite"
@@ -4354,6 +4499,7 @@ function normalizeBackgroundMeta(payload) {
   return map;
 }
 
+
 function normalizeDecorMeta(payload) {
   const entries = Array.isArray(payload)
     ? payload
@@ -4362,6 +4508,27 @@ function normalizeDecorMeta(payload) {
       : [];
 
   const map = {};
+  const resolveBiology = (entry, key, categories, theme) => {
+    const explicitLiving = typeof entry?.living === "boolean" ? entry.living
+      : (typeof entry?.isLiving === "boolean" ? entry.isLiving : null);
+    const tags = normalizeStringList(entry?.tags).map((value) => value.toLowerCase());
+    const categorySet = new Set((Array.isArray(categories) ? categories : []).map((value) => String(value).toLowerCase()));
+    const haystack = `${key} ${entry?.name || ""}`.toLowerCase();
+    const artificial = tags.includes("artificial") || /artificial|plastic|fake/.test(haystack);
+    const themedArtificial = ["halloween", "frozen"].includes(String(theme || "").toLowerCase());
+    const botanicalOnly = categorySet.has("botanical") && !categorySet.has("plant") && !categorySet.has("coral");
+    const shellOnly = /seashell|shell cluster/.test(haystack) && !/coral/.test(haystack.replace(/seashell/g, ""));
+    const inferredLiving = !artificial && !themedArtificial && !botanicalOnly && !shellOnly
+      && (categorySet.has("plant") || categorySet.has("coral"));
+    const living = explicitLiving === null ? inferredLiving : explicitLiving;
+    const authoredWaterTypes = normalizeStringList(entry?.waterTypes || entry?.waterType)
+      .map((value) => normalizeWaterType(value, ""))
+      .filter((value, index, values) => value && values.indexOf(value) === index);
+    if (!living) return { living: false, waterTypes: ["freshwater", "saltwater"] };
+    if (authoredWaterTypes.length) return { living: true, waterTypes: authoredWaterTypes };
+    const reefLike = categorySet.has("coral") || String(theme || "").toLowerCase() === "reef" || /coral|anemone|gorgonian|sea fan/.test(haystack);
+    return { living: true, waterTypes: [reefLike ? "saltwater" : "freshwater"] };
+  };
 
   for (const entry of entries) {
     if (!entry || typeof entry !== "object") {
@@ -4373,19 +4540,25 @@ function normalizeDecorMeta(payload) {
       continue;
     }
 
+    const categories = deriveDecorCategories(entry, key);
+    const theme = normalizeCatalogTheme(entry.theme) || (isHalloweenDecor({ ...entry, key }) ? "halloween" : null);
+    const biology = resolveBiology(entry, key, categories, theme);
+
     map[key] = {
       seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
       name: typeof entry.name === "string" && entry.name.trim()
         ? entry.name.trim()
         : titleFromFile(key),
       description: typeof entry.description === "string" ? entry.description.trim() : "",
-      theme: normalizeCatalogTheme(entry.theme) || (isHalloweenDecor({ ...entry, key }) ? "halloween" : null),
+      theme,
       cost: Number.isFinite(entry.cost) ? entry.cost : 8,
       width: Number.isFinite(entry.width) ? entry.width : 140,
       defaultScale: Number.isFinite(entry.defaultScale) ? entry.defaultScale : DEFAULT_DECOR_SCALE,
-      waterTypes: normalizeStringList(entry.waterTypes || entry.waterType).map((value) => normalizeWaterType(value)).filter(Boolean),
-      categories: deriveDecorCategories(entry, key),
+      waterTypes: biology.waterTypes,
+      living: biology.living,
+      categories,
       tags: normalizeStringList(entry.tags).map((value) => value.toLowerCase()),
+      variantGroup: typeof entry.variantGroup === "string" ? entry.variantGroup.trim() : "",
       behavior: normalizeDecorBehaviorType(entry.behavior),
       motionBehavior: normalizeDecorBehaviorType(entry.motionBehavior),
       motionLayer: ["front", "bg", "all"].includes(String(entry.motionLayer || "").trim().toLowerCase())
@@ -4879,6 +5052,337 @@ function normalizeCaveBehaviorMeta(entry) {
   };
 }
 
+function getDataImageByteSize(dataUrl) {
+  if (typeof dataUrl !== "string" || !dataUrl.startsWith("data:image/")) return 0;
+  const commaIndex = dataUrl.indexOf(",");
+  if (commaIndex < 0) return 0;
+  const header = dataUrl.slice(0, commaIndex);
+  const payload = dataUrl.slice(commaIndex + 1);
+  if (/;base64/i.test(header)) {
+    const clean = payload.replace(/\s/g, "");
+    const padding = clean.endsWith("==") ? 2 : clean.endsWith("=") ? 1 : 0;
+    return Math.max(0, Math.floor(clean.length * 3 / 4) - padding);
+  }
+  try {
+    return typeof TextEncoder === "function"
+      ? new TextEncoder().encode(decodeURIComponent(payload)).length
+      : decodeURIComponent(payload).length;
+  } catch (_) {
+    return payload.length;
+  }
+}
+
+function getCustomContentImageRecords(targetState = state) {
+  const records = [];
+  const add = (dataUrl, imageRefId = "", source = "custom") => {
+    const data = typeof dataUrl === "string" && dataUrl.startsWith("data:image/") ? dataUrl : "";
+    const ref = typeof sanitizeCustomImageRefId === "function" ? sanitizeCustomImageRefId(imageRefId) : String(imageRefId || "");
+    if (!data && !ref) return;
+    records.push({ dataUrl: data, imageRefId: ref, source });
+  };
+  for (const asset of Object.values(targetState?.customBackgroundAssets || {})) add(asset?.path, asset?.imageRefId, "background");
+  for (const asset of Object.values(targetState?.customDecorAssets || {})) {
+    add(asset?.path, asset?.imageRefId, asset?.customType === "hide" ? "hide-front" : "decor");
+    if (asset?.customType === "hide" || asset?.bgPath) add(asset?.bgPath, asset?.bgImageRefId, "hide-background");
+  }
+  for (const asset of Object.values(targetState?.customFishAssets || {})) add(asset?.path, asset?.imageRefId, "fish");
+  for (const tank of getAllTanks(targetState || state)) {
+    if (tank?.localBackgroundImageDataUrl || tank?.localBackgroundImageRefId) add(tank.localBackgroundImageDataUrl, tank.localBackgroundImageRefId, "legacy-background");
+  }
+  return records;
+}
+
+function getCustomContentUsageStats(targetState = state) {
+  const seen = new Set();
+  let usedBytes = 0;
+  let imageCount = 0;
+  for (const record of getCustomContentImageRecords(targetState)) {
+    const identity = record.imageRefId ? `ref:${record.imageRefId}` : `data:${record.dataUrl}`;
+    if (!identity || seen.has(identity)) continue;
+    seen.add(identity);
+    const bytes = getDataImageByteSize(record.dataUrl);
+    usedBytes += bytes;
+    imageCount += 1;
+  }
+  const limitBytes = CUSTOM_CONTENT_STORAGE_LIMIT_BYTES;
+  return {
+    usedBytes,
+    limitBytes,
+    remainingBytes: Math.max(0, limitBytes - usedBytes),
+    imageCount,
+    ratio: limitBytes > 0 ? clamp(usedBytes / limitBytes, 0, 1) : 0
+  };
+}
+
+function getCustomContentUploadLimitBytes(kind = "item") {
+  if (kind === "background") return CUSTOM_CONTENT_BACKGROUND_MAX_BYTES;
+  if (kind === "fish") return CUSTOM_CONTENT_FISH_MAX_BYTES;
+  return CUSTOM_CONTENT_ITEM_MAX_BYTES;
+}
+
+function validateCustomContentUpload(dataUrls, kind = "item", options = {}) {
+  const list = (Array.isArray(dataUrls) ? dataUrls : [dataUrls]).filter((value) => typeof value === "string" && value.startsWith("data:image/"));
+  const perFileLimit = getCustomContentUploadLimitBytes(kind);
+  const sizes = list.map(getDataImageByteSize);
+  const oversized = sizes.find((bytes) => bytes > perFileLimit) || 0;
+  if (oversized) {
+    return {
+      ok: false,
+      reason: "file-too-large",
+      message: `That processed ${kind === "background" ? "background" : kind === "fish" ? "fish image" : "custom image"} is ${formatExportByteCount(oversized)}. The per-image limit is ${formatExportByteCount(perFileLimit)}.`
+    };
+  }
+  const current = getCustomContentUsageStats(options.state || state);
+  const existingDataUrls = new Set(getCustomContentImageRecords(options.state || state).map((record) => record.dataUrl).filter(Boolean));
+  const additionalBytes = list.reduce((sum, dataUrl, index) => sum + (options.reuseExisting === true && existingDataUrls.has(dataUrl) ? 0 : sizes[index]), 0);
+  if (current.usedBytes + additionalBytes > current.limitBytes) {
+    return {
+      ok: false,
+      reason: "storage-limit",
+      message: `Custom Content Storage is full. ${formatExportByteCount(current.usedBytes)} of ${formatExportByteCount(current.limitBytes)} is already used.`
+    };
+  }
+  return { ok: true, additionalBytes, currentBytes: current.usedBytes, projectedBytes: current.usedBytes + additionalBytes, limitBytes: current.limitBytes };
+}
+
+function getCustomContentAssetUsage(kind, key, targetState = state) {
+  const assetKey = String(key || "");
+  if (!assetKey || !targetState) return 0;
+  if (kind === "background") {
+    return getAllTanks(targetState).filter((tank) => tank?.selectedBackground === assetKey).length;
+  }
+  if (kind === "fish") {
+    const tankFish = getAllTanks(targetState).flatMap((tank) => Array.isArray(tank?.fish) ? tank.fish : []);
+    const storedFish = Array.isArray(targetState.storedFish) ? targetState.storedFish : [];
+    return [...tankFish, ...storedFish].filter((fish) => fish?.speciesId === assetKey).length;
+  }
+  if (kind === "decor") {
+    const inventoryCount = Math.max(0, Math.floor(Number(targetState.decorInventory?.[assetKey]) || 0));
+    const placedCount = getAllTanks(targetState).reduce((total, tank) => total + (Array.isArray(tank?.placedDecor)
+      ? tank.placedDecor.filter((item) => item?.decorKey === assetKey).length
+      : 0), 0);
+    const layoutCount = (Array.isArray(targetState.savedDecorLayouts) ? targetState.savedDecorLayouts : []).reduce((total, layout) => total + (Array.isArray(layout?.items)
+      ? layout.items.filter((item) => item?.decorKey === assetKey).length
+      : 0), 0);
+    return inventoryCount + placedCount + layoutCount;
+  }
+  return 0;
+}
+
+function getCustomContentLibraryEntries(targetState = state) {
+  const entries = [];
+  for (const asset of Object.values(targetState?.customBackgroundAssets || {})) {
+    entries.push({
+      kind: "background",
+      key: asset.key,
+      name: asset.name || "Custom Background",
+      typeLabel: "Background",
+      byteSize: getDataImageByteSize(asset.path),
+      usageCount: getCustomContentAssetUsage("background", asset.key, targetState)
+    });
+  }
+  for (const asset of Object.values(targetState?.customDecorAssets || {})) {
+    const isHide = asset?.customType === "hide" || isCustomHideAssetKey(asset?.key);
+    entries.push({
+      kind: "decor",
+      key: asset.key,
+      name: asset.name || (isHide ? "Custom Hide" : "Custom Decor"),
+      typeLabel: isHide ? "Hide" : "Decor",
+      byteSize: getDataImageByteSize(asset.path) + getDataImageByteSize(asset.bgPath),
+      usageCount: getCustomContentAssetUsage("decor", asset.key, targetState)
+    });
+  }
+  for (const asset of Object.values(targetState?.customFishAssets || {})) {
+    entries.push({
+      kind: "fish",
+      key: asset.key,
+      name: asset.name || "Custom Fish",
+      typeLabel: "Fish",
+      byteSize: getDataImageByteSize(asset.path),
+      usageCount: getCustomContentAssetUsage("fish", asset.key, targetState)
+    });
+  }
+  return entries.sort((left, right) => left.typeLabel.localeCompare(right.typeLabel) || left.name.localeCompare(right.name));
+}
+
+function renderCustomContentLibraryManager() {
+  const entries = getCustomContentLibraryEntries();
+  if (!entries.length) return `<div class="mini-note">No custom content saved yet.</div>`;
+  return `<div class="custom-content-library" data-custom-content-library>
+    ${entries.map((entry) => {
+      const inUse = entry.kind !== "background" && entry.usageCount > 0;
+      const useLabel = entry.usageCount > 0 ? ` · ${entry.usageCount} in use` : "";
+      return `<div class="custom-content-library-row">
+        <span><strong>${escapeHtml(entry.name)}</strong><small>${escapeHtml(entry.typeLabel)} · ${escapeHtml(formatExportByteCount(entry.byteSize))}${escapeHtml(useLabel)}</small></span>
+        <button class="small-button alt" type="button" data-delete-custom-content-kind="${escapeHtml(entry.kind)}" data-delete-custom-content-key="${escapeHtml(entry.key)}" ${inUse ? "disabled" : ""} title="${escapeHtml(inUse ? "Remove or rehome every copy before deleting this custom asset." : "Delete permanently and reclaim custom storage.")}">${inUse ? "In Use" : "Delete"}</button>
+      </div>`;
+    }).join("")}
+  </div>`;
+}
+
+function renderCustomContentStorageMeter(options = {}) {
+  const usage = getCustomContentUsageStats();
+  const percent = Math.round(usage.ratio * 100);
+  const compact = options.compact === true;
+  const label = String(options.label || "Custom Content Storage").trim() || "Custom Content Storage";
+  // The compact account meter already communicates an empty library with
+  // “0 B / 25 MB used”; repeating an empty-state sentence adds no information.
+  const manager = options.manage === true && (!compact || usage.usedBytes > 0)
+    ? renderCustomContentLibraryManager()
+    : "";
+  const status = usage.ratio >= 1
+    ? "Storage full. Delete unused custom content before uploading more."
+    : usage.ratio >= 0.9
+      ? "Storage nearly full. Delete unused custom content if you need more room."
+      : "";
+  const storageState = usage.ratio >= 1 ? "full" : usage.ratio >= 0.9 ? "near-full" : "available";
+  if (options.heading === true) {
+    return `<div class="custom-content-storage-meter custom-content-storage-meter-heading" data-custom-content-storage-meter data-storage-state="${storageState}">
+      <span><strong>${escapeHtml(label)}</strong> ${escapeHtml(formatExportByteCount(usage.usedBytes))} / ${escapeHtml(formatExportByteCount(usage.limitBytes))}</span>
+      <progress value="${usage.usedBytes}" max="${usage.limitBytes}" aria-label="Custom content storage usage">${percent}%</progress>
+    </div>`;
+  }
+  return `<div class="custom-content-storage-meter${compact ? " is-compact" : ""}" data-custom-content-storage-meter data-storage-state="${storageState}">
+    <div class="${compact ? "mini-note" : "fish-meta"}"><strong>${escapeHtml(label)}</strong> &nbsp; ${escapeHtml(formatExportByteCount(usage.usedBytes))} / ${escapeHtml(formatExportByteCount(usage.limitBytes))} used</div>
+    <progress value="${usage.usedBytes}" max="${usage.limitBytes}" aria-label="Custom content storage usage">${percent}%</progress>
+    ${status ? `<div class="${compact ? "mini-note" : "fish-meta"}" role="status">${escapeHtml(status)}</div>` : ""}
+    ${manager}
+  </div>`;
+}
+
+function sanitizeCustomBackgroundAssetEntry(entry, fallbackKey = "") {
+  if (!entry || typeof entry !== "object") return null;
+  const key = String(entry.key || fallbackKey || "").trim();
+  if (!key.startsWith(CUSTOM_BACKGROUND_KEY_PREFIX)) return null;
+  const path = typeof entry.path === "string" && entry.path.startsWith("data:image/") ? entry.path : "";
+  const imageRefId = sanitizeCustomImageRefId(entry.imageRefId);
+  if (!path && !imageRefId) return null;
+  return {
+    key,
+    name: String(entry.name || "Custom Background").replace(/\s+/g, " ").trim().slice(0, 64) || "Custom Background",
+    path,
+    imageRefId,
+    createdAt: Math.max(0, Number(entry.createdAt) || 0)
+  };
+}
+
+function sanitizeCustomBackgroundAssets(rawAssets) {
+  const output = {};
+  for (const [key, value] of Object.entries(rawAssets && typeof rawAssets === "object" ? rawAssets : {})) {
+    const asset = sanitizeCustomBackgroundAssetEntry(value, key);
+    if (asset) output[asset.key] = asset;
+  }
+  return output;
+}
+
+function syncRuntimeCustomBackgroundAssetsFromState(targetState = state) {
+  const assets = sanitizeCustomBackgroundAssets(targetState?.customBackgroundAssets);
+  runtime.backgroundCatalog = (runtime.backgroundCatalog || []).filter((item) => item?.customUploadAsset !== true);
+  for (const asset of Object.values(assets)) {
+    const runtimePath = getStoredImageSource(asset, "runtimePath", "path", "");
+    runtime.backgroundCatalog.push({
+      key: asset.key,
+      name: asset.name,
+      description: "Your uploaded background.",
+      path: runtimePath || asset.path,
+      cost: 0,
+      defaultUnlocked: true,
+      sortOrder: 2,
+      customUploadAsset: true,
+      imageRefId: asset.imageRefId,
+      sourceAsset: asset
+    });
+  }
+  runtime.backgroundMap = new Map(runtime.backgroundCatalog.map((item) => [item.key, item]));
+  return assets;
+}
+
+function findCustomBackgroundAssetByDataUrl(dataUrl, targetState = state) {
+  if (!dataUrl) return null;
+  return Object.values(targetState?.customBackgroundAssets || {}).find((asset) => asset?.path === dataUrl) || null;
+}
+
+async function deleteCustomBackgroundAsset(backgroundKey) {
+  const key = String(backgroundKey || "");
+  const asset = state?.customBackgroundAssets?.[key];
+  if (!asset) return false;
+  const fallback = getOwnedBackgroundCatalog().find((item) => item.key !== key && item.customUploadAsset !== true && !isLocalImageBackgroundKey(item.key))?.key
+    || getCatalogDefaultKey(runtime.backgroundCatalog.filter((item) => item.key !== key), DEFAULT_BACKGROUND_ASSET_KEY);
+  for (const tank of getAllTanks()) {
+    if (tank.selectedBackground === key) tank.selectedBackground = fallback;
+  }
+  const refId = sanitizeCustomImageRefId(asset.imageRefId);
+  delete state.customBackgroundAssets[key];
+  if (state.ownedBackgroundInventory) delete state.ownedBackgroundInventory[key];
+  syncRuntimeCustomBackgroundAssetsFromState(state);
+  if (refId) {
+    revokeCustomImageRuntimeUrl(refId);
+    await deleteCustomImageBlob(refId);
+  }
+  saveState();
+  renderUi(Date.now());
+  showToast("Custom background deleted. Storage space reclaimed.");
+  return true;
+}
+
+async function deleteCustomContentAsset(kind, assetKey) {
+  const normalizedKind = String(kind || "").trim().toLowerCase();
+  const key = String(assetKey || "").trim();
+  if (!key) return false;
+  if (normalizedKind === "background") return deleteCustomBackgroundAsset(key);
+
+  const usageCount = getCustomContentAssetUsage(normalizedKind, key);
+  if (usageCount > 0) {
+    showToast(`Remove or rehome every copy before deleting this custom ${normalizedKind === "fish" ? "fish design" : "item"}.`);
+    return false;
+  }
+
+  const collection = normalizedKind === "fish" ? state?.customFishAssets : normalizedKind === "decor" ? state?.customDecorAssets : null;
+  const asset = collection?.[key];
+  if (!asset) return false;
+  const refIds = [asset.imageRefId, asset.bgImageRefId].map(sanitizeCustomImageRefId).filter(Boolean);
+  delete collection[key];
+  if (normalizedKind === "fish") {
+    if (state.fishScaleDefaults) delete state.fishScaleDefaults[key];
+    syncRuntimeCustomFishAssetsFromState(state);
+  } else {
+    if (state.decorScaleDefaults) delete state.decorScaleDefaults[key];
+    syncRuntimeCustomDecorAssetsFromState(state);
+  }
+  for (const refId of refIds) {
+    revokeCustomImageRuntimeUrl(refId);
+    await deleteCustomImageBlob(refId);
+  }
+  saveState();
+  renderUi(Date.now());
+  showToast(`Custom ${normalizedKind === "fish" ? "fish design" : "item"} deleted. Storage space reclaimed.`);
+  return true;
+}
+
+function getSubstrateMeta(substrateId) {
+  const normalized = normalizeSubstrateStyle(substrateId, "custom");
+  return SUBSTRATE_CATALOG.find((item) => item.id === normalized) || SUBSTRATE_CATALOG[0];
+}
+
+function sanitizeOwnedSubstrateInventory(rawInventory, fallbackStyles = []) {
+  const output = {};
+  const source = rawInventory && typeof rawInventory === "object" ? rawInventory : {};
+  for (const item of SUBSTRATE_CATALOG) {
+    if (item.defaultUnlocked || Math.max(0, Number(source[item.id]) || 0) > 0) output[item.id] = 1;
+  }
+  for (const style of fallbackStyles || []) {
+    const normalized = normalizeSubstrateStyle(style, "custom");
+    if (SUBSTRATE_CATALOG.some((item) => item.id === normalized)) output[normalized] = 1;
+  }
+  return output;
+}
+
+function isSubstrateOwned(substrateId) {
+  const id = normalizeSubstrateStyle(substrateId, "custom");
+  if (id === "auto") return true;
+  return Math.max(0, Number(state?.ownedSubstrateInventory?.[id]) || 0) > 0;
+}
+
 function buildBackgroundCatalog(items, metaMap = {}) {
   const itemMap = new Map(
     (Array.isArray(items) ? items : [])
@@ -5027,7 +5531,10 @@ function getDecorCompanionType(decorKey = "") {
     if (has(color)) return hasTrypophobia ? `${color}Trypophobia` : color;
   }
   if (hasTrypophobia) return "trypophobia";
-  if (has("shadow-footprint") || has("shadowfootprint") || has("footprint")) return "shadowFootprint";
+  // `__shadow-footprint` is the original convention.  Also accept the short
+  // `__shadow` / `_shadow` convention used by newly authored helper PNGs.
+  if (has("shadow") || has("shadow-footprint") || has("shadowfootprint") || has("footprint")) return "shadowFootprint";
+  if (has("surface")) return "surface";
   if (has("bg")) return "bg";
   if (has("mask")) return "mask";
   if (has("light")) return "light";
@@ -5046,7 +5553,8 @@ function getDecorCompanionType(decorKey = "") {
   if (/_color3\.[^.]+$/.test(key)) return "color3";
   if (/_(?:triggers|trigger)\.[^.]+$/.test(key)) return "trigger";
   if (/_(?:seats|seat)\.[^.]+$/.test(key)) return "seats";
-  if (/(?:_shadow[-_]?footprint|_footprint)\.[^.]+$/.test(key)) return "shadowFootprint";
+  if (/(?:_shadow(?:[-_]?footprint)?|_footprint)\.[^.]+$/.test(key)) return "shadowFootprint";
+  if (/_surface\.[^.]+$/.test(key)) return "surface";
   if (/_bg\.[^.]+$/.test(key)) return "bg";
   if (/_mask\.[^.]+$/.test(key)) return "mask";
   if (/_light\.[^.]+$/.test(key)) return "light";
@@ -5060,7 +5568,7 @@ function getDecorBaseKey(decorKey = "") {
   const extension = extensionMatch?.[1] || "";
   const stem = extension ? original.slice(0, -extension.length) : original;
   if (stem.includes("__")) {
-    const removable = new Set(["front", "bg", "mask", "shadow-footprint", "shadowfootprint", "footprint", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
+    const removable = new Set(["front", "bg", "mask", "shadow", "shadow-footprint", "shadowfootprint", "footprint", "surface", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
     const parts = stem.split("__").filter((part, index) => index < 2 || !removable.has(part.toLowerCase()));
     return `${parts.join("__")}${extension}`.toLowerCase();
   }
@@ -5070,7 +5578,8 @@ function getDecorBaseKey(decorKey = "") {
     .replace(/_color[123](?=\.[^.]+$)/, "")
     .replace(/_(?:triggers|trigger)(?=\.[^.]+$)/, "")
     .replace(/_(?:seats|seat)(?=\.[^.]+$)/, "")
-    .replace(/_(?:shadow[-_]?footprint|footprint)(?=\.[^.]+$)/, "")
+    .replace(/_(?:shadow(?:[-_]?footprint)?|footprint)(?=\.[^.]+$)/, "")
+    .replace(/_surface(?=\.[^.]+$)/, "")
     .replace(/_bg(?=\.[^.]+$)/, "")
     .replace(/_mask(?=\.[^.]+$)/, "")
     .replace(/_light(?=\.[^.]+$)/, "")
@@ -5169,6 +5678,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         shadowFootprint: null,
+        surface: null,
         mid: null,
         light: null,
         color1: null,
@@ -5202,6 +5712,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bg: null,
         mask: null,
         shadowFootprint: null,
+        surface: null,
         mid: null,
         light: null,
         color1: null,
@@ -5233,6 +5744,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         bgPath: group.bg?.path || null,
         maskPath: group.mask?.path || null,
         shadowFootprintPath: group.shadowFootprint?.path || null,
+        surfacePath: group.surface?.path || null,
         midPath: group.mid?.path || null,
         lightPath: group.light?.path || null,
         triggerPath: group.trigger?.path || null,
@@ -5240,6 +5752,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         hasBg: Boolean(group.bg),
         hasMask: Boolean(group.mask),
         hasShadowFootprint: Boolean(group.shadowFootprint),
+        hasSurface: Boolean(group.surface),
         hasMid: Boolean(group.mid),
         hasLight: Boolean(group.light),
         hasTrigger: Boolean(group.trigger),
@@ -5255,6 +5768,14 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         theme: normalizeCatalogTheme(meta.theme) || (isHalloweenDecor({ ...meta, key: group.base.key }) ? "halloween" : null),
         categories: deriveDecorCategories(meta, group.base.key),
         tags: normalizeStringList(meta.tags).map((value) => value.toLowerCase()),
+        // Preserve the normalized biology metadata. Without these fields the
+        // shop receives a generic decor record and labels every coral/anemone
+        // as Universal, bypassing the saltwater filter and placement checks.
+        living: meta.living === true,
+        waterTypes: Array.isArray(meta.waterTypes) && meta.waterTypes.length
+          ? [...meta.waterTypes]
+          : ["freshwater", "saltwater"],
+        variantGroup: typeof meta.variantGroup === "string" ? meta.variantGroup.trim() : "",
         behavior: normalizeDecorBehaviorType(meta.behavior),
         motionBehavior: normalizeDecorBehaviorType(meta.motionBehavior),
         motionLayer: meta.motionLayer || "all",
@@ -5301,9 +5822,23 @@ function getDecorThumbnailPath(decor) {
   if (decor?.thumbnailPath) return decor.thumbnailPath;
   const path = String(decor?.path || "");
   const match = path.match(/(?:^|\/)assets\/decor\/(.+?\.png)(?:[?#].*)?$/i);
-  return match
-    ? `assets/generated/previews/decor/${match[1]}.webp`
-    : path;
+  if (!match) {
+    return path;
+  }
+
+  const trypophobiaPaths = isTrypophobiaEnabled() ? getDecorTrypophobiaCandidatePaths(decor) : [];
+  if (trypophobiaPaths.length) {
+    // Layered caves have a generated composite preview. Static decor is already
+    // a complete alternate image, so its preview is named after that real
+    // source file—not an invented ".trypophobia.webp" suffix.
+    if (match[1].startsWith("cave_layered/")) {
+      return `assets/generated/previews/decor/${match[1]}.trypophobia.webp`;
+    }
+    const alternate = trypophobiaPaths[0].match(/(?:^|\/)assets\/decor\/(.+?\.png)(?:[?#].*)?$/i);
+    if (alternate) return `assets/generated/previews/decor/${alternate[1]}.webp`;
+  }
+
+  return `assets/generated/previews/decor/${match[1]}.webp`;
 }
 
 function buildVirtualDecorCatalogEntries() {
@@ -5315,6 +5850,7 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       shadowFootprintPath: null,
+      surfacePath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
@@ -5322,6 +5858,7 @@ function buildVirtualDecorCatalogEntries() {
       hasBg: false,
       hasMask: false,
       hasShadowFootprint: false,
+      hasSurface: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -5347,6 +5884,7 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       shadowFootprintPath: null,
+      surfacePath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
@@ -5354,6 +5892,7 @@ function buildVirtualDecorCatalogEntries() {
       hasBg: false,
       hasMask: false,
       hasShadowFootprint: false,
+      hasSurface: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -5380,6 +5919,7 @@ function buildVirtualDecorCatalogEntries() {
       bgPath: null,
       maskPath: null,
       shadowFootprintPath: null,
+      surfacePath: null,
       midPath: null,
       lightPath: null,
       triggerPath: null,
@@ -5387,6 +5927,7 @@ function buildVirtualDecorCatalogEntries() {
       hasBg: false,
       hasMask: false,
       hasShadowFootprint: false,
+      hasSurface: false,
       hasMid: false,
       hasLight: false,
       hasTrigger: false,
@@ -6283,6 +6824,40 @@ function findCatalogAssetManifestItem(folderAssets, assetFile) {
     || null;
 }
 
+function normalizeFishFoodList(value) {
+  const allowed = new Set(typeof STANDARD_FISH_FOOD_KEYS !== "undefined"
+    ? STANDARD_FISH_FOOD_KEYS.filter((foodKey) => foodKey !== "frisky")
+    : ["basic", "algaeWafers", "brineShrimp", "carnivore", "chum"]);
+  return normalizeStringList(value)
+    .map((foodKey) => String(foodKey || "").trim())
+    .filter((foodKey, index, list) => allowed.has(foodKey) && list.indexOf(foodKey) === index);
+}
+
+function deriveFishAcceptedFoods(entry, diet, dietProfile, speciesType) {
+  const authored = normalizeFishFoodList(entry?.acceptedFoods ?? entry?.foods ?? entry?.mealFoods);
+  if (authored.length || entry?.acceptedFoods === false || entry?.foods === false) {
+    return authored;
+  }
+
+  const normalizedType = String(speciesType || "").trim().toLowerCase();
+  if (entry?.chumOnly === true || diet === "chum" || normalizedType === "shark" || normalizedType === "whale") {
+    return ["chum"];
+  }
+  if (diet === "detritus" || dietProfile === "detritus") {
+    return ["algaeWafers"];
+  }
+  if (diet === "none" || dietProfile === "none") {
+    return [];
+  }
+  if (diet === "carnivore" || dietProfile === "carnivore") {
+    return ["brineShrimp", "carnivore"];
+  }
+  if (dietProfile === "herbivore") {
+    return ["basic", "algaeWafers"];
+  }
+  return ["basic", "brineShrimp"];
+}
+
 function resolveFishCatalogAssetFolderPath(assetFolder = "fish") {
   const normalizedAssetFolder = typeof assetFolder === "string" && assetFolder.trim()
     ? assetFolder.trim().replace(/^\/+|\/+$/g, "").replaceAll("\\", "/")
@@ -6326,13 +6901,22 @@ function normalizeFishDefinition(entry, index, options = {}) {
   const defaults = SWIM_STYLE_DEFAULTS[swimStyle] || SWIM_STYLE_DEFAULTS.steady;
   const rawAssetVariantFiles = collectFishCatalogAssetFiles(entry.assetVariants, entry.assets);
   const rawAssetFile = [entry.asset, entry.image, entry.file, ...rawAssetVariantFiles].find((value) => typeof value === "string" && value.trim());
-  const assetFile = rawAssetFile ? rawAssetFile.trim() : `${id}.png`;
+  const artPending = entry.artPending === true || entry.storeHiddenUntilArt === true;
+  const assetFile = rawAssetFile ? rawAssetFile.trim() : (artPending ? "" : `${id}.png`);
   const assetFolder = typeof entry.assetFolder === "string" && entry.assetFolder.trim()
     ? entry.assetFolder.trim().replace(/^\/+|\/+$/g, "")
     : "fish";
   const behavior = typeof entry.behavior === "string" && entry.behavior.trim() ? entry.behavior.trim().toLowerCase() : "free";
   const diet = typeof entry.diet === "string" && entry.diet.trim() ? entry.diet.trim().toLowerCase() : "pellet";
+  const authoredDietProfile = String(entry.dietProfile || "").trim().toLowerCase();
+  const dietProfile = ["omnivore", "carnivore", "herbivore", "detritus", "chum", "none"].includes(authoredDietProfile)
+    ? authoredDietProfile
+    : (diet === "detritus" ? "detritus" : diet === "chum" ? "chum" : diet === "carnivore" ? "carnivore" : "omnivore");
   const speciesType = typeof entry.type === "string" && entry.type.trim() ? entry.type.trim() : "Fish";
+  const acceptedFoods = deriveFishAcceptedFoods(entry, diet, dietProfile, speciesType);
+  const juvenileFoods = normalizeFishFoodList(entry.juvenileFoods).length
+    ? normalizeFishFoodList(entry.juvenileFoods)
+    : [...acceptedFoods];
   const explicitTurnAnimation = typeof entry.turnAnimation === "string"
     ? entry.turnAnimation.trim().toLowerCase()
     : "";
@@ -6356,35 +6940,56 @@ function normalizeFishDefinition(entry, index, options = {}) {
       ? resolveAppUrl(fallbackAssetSource)
       : resolveAppUrl(`assets/fish/${encodeURIComponent(fallbackAssetSource)}`))
     : null;
-  const resolvedAsset = resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackAsset);
-  const overlayAssetFile = [entry.overlayAsset, entry.tentacleAsset, entry.overlayImage]
-    .find((value) => typeof value === "string" && value.trim());
-  const overlayAsset = overlayAssetFile
-    ? resolveFishCatalogAsset(overlayAssetFile.trim(), assetFolder, folderAssets, null, {
-      allowFallback: false,
-      allowDirect: true
-    })
-    : null;
+  const resolvedAsset = artPending ? null : resolveFishCatalogAsset(assetFile, assetFolder, folderAssets, fallbackAsset);
+  const resolveOptionalFishAsset = (...candidates) => {
+    const assetFile = candidates.find((value) => typeof value === "string" && value.trim());
+    return assetFile
+      ? resolveFishCatalogAsset(assetFile.trim(), assetFolder, folderAssets, null, {
+        allowFallback: false,
+        allowDirect: true
+      })
+      : null;
+  };
+  const overlayAsset = resolveOptionalFishAsset(entry.overlayAsset, entry.tentacleAsset, entry.overlayImage);
+  const antennaAsset = resolveOptionalFishAsset(entry.antennaAsset, entry.feelerAsset, entry.feelersAsset);
+  const legAsset = resolveOptionalFishAsset(entry.legAsset, entry.legsAsset);
+  const storeAsset = resolveOptionalFishAsset(entry.storeAsset, entry.previewAsset, entry.shopAsset);
   const assetSourceFiles = collectFishCatalogAssetFiles(assetFile, rawAssetVariantFiles);
   const resolvedAssetVariants = [resolvedAsset, ...rawAssetVariantFiles
     .map((value) => resolveFishCatalogAsset(value, assetFolder, folderAssets, fallbackAsset))
     .filter(Boolean)]
     .filter((value, assetIndex, list) => list.indexOf(value) === assetIndex);
 
-  const speedMinFloor = behavior === "sucker" ? 0.00005 : 0.012;
-  const speedMaxCeiling = behavior === "sucker" ? 0.006 : 0.095;
+  const slowSurfaceBehavior = behavior === "sucker" || behavior === "snail";
+  const speedMinFloor = behavior === "snail" ? 0.00001 : (slowSurfaceBehavior ? 0.00005 : 0.012);
+  const speedMaxCeiling = behavior === "snail" ? 0.001 : (slowSurfaceBehavior ? 0.006 : 0.095);
   const needs = normalizeFishNeeds(entry);
 
   const normalized = {
     id,
+    Fish_enabled: entry.Fish_enabled !== false && entry.fish_enabled !== false,
     seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
     genetics: String(entry.genetics || "natural").trim().toLowerCase() === "enhanced" ? "enhanced" : "natural",
-    cost: Math.max(1, Math.floor(Number(entry.cost ?? entry.price) || 1)),
+    cost: entry.proteusExclusive === true
+      ? Math.max(0, Math.floor(Number(entry.cost ?? entry.price) || 0))
+      : Math.max(1, Math.floor(Number(entry.cost ?? entry.price) || 1)),
     mealCoins: 0,
     mealCoinOverride: Number.isFinite(explicitMealCoinOverride) ? Math.max(0, Math.round(explicitMealCoinOverride)) : null,
     asset: resolvedAsset,
     overlayAsset,
+    antennaAsset,
+    legAsset,
+    storeAsset,
+    waterType: normalizeWaterType(entry.waterType || entry.water, "freshwater"),
+    careRequirements: entry.careRequirements && typeof entry.careRequirements === "object" ? structuredClone(entry.careRequirements) : null,
+    variantRequirements: entry.variantRequirements && typeof entry.variantRequirements === "object" ? structuredClone(entry.variantRequirements) : {},
+    variantRequirementPolicy: typeof entry.variantRequirementPolicy === "string" ? entry.variantRequirementPolicy.trim() : "",
+    lifespanDays: clamp(Math.round(Number(entry.lifespanDays ?? entry.lifespan) || 60), 5, 600),
+    capacityCost: clamp(Number(entry.capacityCost) || (behavior === "shrimp" ? 0.25 : 1), 0.1, 8),
+    cleanupAnimal: entry.cleanupAnimal === true || diet === "detritus" || behavior === "sucker" || behavior === "shrimp" || behavior === "snail",
+    artPending,
+    storeHiddenUntilArt: entry.storeHiddenUntilArt === true || artPending,
     assetVariants: resolvedAssetVariants,
     fallbackAsset,
     assetFolder,
@@ -6405,6 +7010,9 @@ function normalizeFishDefinition(entry, index, options = {}) {
     targetMaxMs: Math.max(1400, Math.floor(Number(entry.targetMaxMs) || defaults.targetMaxMs)),
     behavior,
     diet,
+    dietProfile,
+    acceptedFoods,
+    juvenileFoods,
     type: speciesType,
     turnAnimation,
     chumOnly: entry.chumOnly === true,
@@ -6414,6 +7022,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     cleanupMinMs: Math.max(60 * 1000, Math.floor(Number(entry.cleanupMinMs) || Number(entry.cleanupMinutesMin) * 60 * 1000 || 12 * 60 * 1000)),
     cleanupMaxMs: Math.max(2 * 60 * 1000, Math.floor(Number(entry.cleanupMaxMs) || Number(entry.cleanupMinutesMax) * 60 * 1000 || 24 * 60 * 1000)),
     cleanupStrength: clamp(Number.isFinite(explicitCleanupStrength) ? explicitCleanupStrength : 0.12, 0.005, 0.45),
+    cleanupFloor: clamp(Number(entry.cleanupFloor) || CLEANUP_CREW_DIRTINESS_FLOOR, 0.05, 0.5),
     poopCleanupChance: Number.isFinite(explicitPoopCleanupChance)
       ? clamp(explicitPoopCleanupChance, 0, 1)
       : (diet === "detritus" ? 1 : 0),
@@ -6432,6 +7041,17 @@ function normalizeFishDefinition(entry, index, options = {}) {
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
     davyMutation: entry.davyMutation === true,
+    proteusZombie: entry.proteusZombie === true,
+    proteusExclusive: entry.proteusExclusive === true,
+    requiresFood: entry.requiresFood !== false,
+    feelsComfort: entry.feelsComfort !== false,
+    diseaseImmune: entry.diseaseImmune === true,
+    immortal: entry.immortal === true,
+    canBreed: entry.canBreed !== false,
+    socialDisabled: entry.socialDisabled === true,
+    randomAggression: entry.randomAggression === true,
+    spriteSheetAsset: typeof entry.spriteSheetAsset === "string" ? entry.spriteSheetAsset.trim() : "",
+    spriteSheetMetadata: typeof entry.spriteSheetMetadata === "string" ? entry.spriteSheetMetadata.trim() : "",
     davyBehaviorLabel: typeof entry.davyBehaviorLabel === "string" ? entry.davyBehaviorLabel.trim() : "",
     davyBehaviorSummary: typeof entry.davyBehaviorSummary === "string" ? entry.davyBehaviorSummary.trim() : "",
     davyTraits: normalizeStringList(entry.davyTraits),

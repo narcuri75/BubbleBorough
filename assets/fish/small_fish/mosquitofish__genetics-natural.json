@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "38215875-67ae-416e-96f1-a767f12c57e4",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ce9d2938-d6e8-42be-a5e0-feb457ae5857",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mosquitofish_big_bend.png"
+        },
+        {
+          "id": "d67d156f-a7c1-4a5a-82ec-9ae77ae0d7ce",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mosquitofish_clear_creek.png"
+        },
+        {
+          "id": "8b18a88d-42fa-4e90-8806-be3c0ab1703b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mosquitofish_eastern.png"
+        },
+        {
+          "id": "18d711c8-0913-482e-bad3-92a6ead653f3",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mosquitofish_tex_mex.png"
+        },
+        {
+          "id": "93336cd1-523e-455a-8f55-eaf9ed36214b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "mosquitofish_western.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/mosquitofish__genetics-natural.webp"
+  }
+}

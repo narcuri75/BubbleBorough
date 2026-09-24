@@ -80,7 +80,13 @@ function getFishVisualCatalogWidth(species = null) {
 }
 
 function getFishLayerDepthScaleForLayer(layer) {
-  return 1 + Math.max(0, TANK_DEPTH_LAYERS - clampTankLayer(layer)) * FISH_LAYER_DEPTH_SCALE_STEP;
+  return getFishLayerDepthScaleForPosition(layer, DEFAULT_TANK_SUBLAYER);
+}
+
+function getFishLayerDepthScaleForPosition(layer, subLayer = DEFAULT_TANK_SUBLAYER) {
+  const majorScale = 1 + (TANK_DEPTH_LAYERS - clampTankLayer(layer)) * FISH_LAYER_DEPTH_SCALE_STEP;
+  const subLayerOffset = (DEFAULT_TANK_SUBLAYER - clampTankSubLayer(subLayer)) * (FISH_LAYER_DEPTH_SCALE_STEP / TANK_DEPTH_SUBLAYERS);
+  return majorScale + subLayerOffset;
 }
 
 function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
@@ -88,7 +94,7 @@ function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
     return 1;
   }
 
-  const targetScale = getFishLayerDepthScaleForLayer(getFishTankLayer(fish));
+  const targetScale = getFishLayerDepthScaleForPosition(getFishTankLayer(fish), getFishTankSubLayer(fish));
   const transition = fish.id ? runtime.fishLayerDepthScaleTransitions.get(fish.id) : null;
   if (!transition) {
     return targetScale;
@@ -230,7 +236,7 @@ function getFishDisplayWidth(fish, species = getSpeciesForFish(fish), now = Date
       * getMobileViewportObjectScaleMultiplier("fish");
 
   if (species?.id === "pufferfish" && isPufferInflatedActive(fish, now)) {
-    return baseWidth * 2;
+    return baseWidth * (1 + getPufferInflationProgress(fish, now));
   }
   if (species?.id === "pufferfish" && isPufferDeflatingActive(fish, now)) {
     const deflationProgress = getPufferDeflationProgress(fish, now);
@@ -288,13 +294,12 @@ function getPufferInflatedAssetPathForBaseAsset(baseAsset) {
     return null;
   }
 
+  // Current puffer atlases use descriptive frame names such as
+  // puffer_amazon.png.  Keep the state suffix adjacent to that frame name.
+  // The older pufferfish[_N] form remains supported for saved legacy fish.
   return baseAsset.replace(
-    /(pufferfish)(?:_(\d+))?(\.[^./\?]+)(\?.*)?$/i,
-    (_match, stem, variantIndex, extension, query = "") => (
-      variantIndex
-        ? `${stem}_inflated_${variantIndex}${extension}${query}`
-        : `${stem}_inflated${extension}${query}`
-    )
+    /(puffer(?:fish)?(?:_[a-z0-9]+)*?)(?:_inflated)?(\.[^./\?]+)(\?.*)?$/i,
+    (_match, stem, extension, query = "") => `${stem}_inflated${extension}${query}`
   );
 }
 
@@ -343,7 +348,11 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
     : [preferredBaseAsset, species.fallbackAsset, species.asset]
       .find((path) => path && runtime.images.has(path)) || preferredBaseAsset;
   if (species.id === "pufferfish" && isPufferPuffVisualActive(fish, now)) {
-    return getPufferInflatedDisplayAssetPath(fish, species) || baseAsset;
+    const inflatedAsset = getPufferInflatedDisplayAssetPath(fish, species);
+    // Never hand the renderer an unloaded state sprite. It previously fell
+    // through its generic missing-art path for a frame, which is the blue
+    // placeholder flash visible at the start of inflation.
+    return inflatedAsset && runtime.images.has(inflatedAsset) ? inflatedAsset : baseAsset;
   }
   return baseAsset;
 }
@@ -351,6 +360,9 @@ function getFishDisplayAssetPath(fish, species = getSpeciesForFish(fish), now = 
 function getFishCatalogAssetPath(species) {
   if (!species) {
     return null;
+  }
+  if (species.storeAsset) {
+    return species.storeAsset;
   }
 
   return [
@@ -391,6 +403,7 @@ function getFishAdultScale(fish, species = getSpeciesForFish(fish)) {
 
 function getFishGrowthProgress(fish, now = Date.now()) {
   if (typeof getPeacefulModeSimulationNow === "function") now = getPeacefulModeSimulationNow(now);
+  if (typeof getFishStorageSimulationNow === "function") now = getFishStorageSimulationNow(fish, now);
   if (
     !fish
     || !Number.isFinite(Number(fish.growthStartedAt))
@@ -439,9 +452,20 @@ function isBrineShrimpSpecies(target) {
   return species?.id === "brine-shrimp" || species?.behavior === "shrimp";
 }
 
+function isProteusZombieFish(target) {
+  const species = target?.speciesId ? getSpeciesForFish(target) : target;
+  return Boolean(
+    species
+    && (
+      species.proteusZombie === true
+      || String(species.id || target?.speciesId || target || "") === PROTEUS_ZOMBIE_FISH_SPECIES_ID
+    )
+  );
+}
+
 function isMealFreeFish(target) {
   const species = target?.speciesId ? getSpeciesForFish(target) : target;
-  return species?.diet === "detritus" || species?.diet === "none";
+  return species?.requiresFood === false || species?.diet === "detritus" || species?.diet === "none";
 }
 
 function hasDefinedFiniteNumber(value) {
@@ -492,12 +516,12 @@ function getMealFedFishIds(slotKey, tank = getCurrentTank()) {
   return new Set(Array.isArray(entry?.fishIds) ? entry.fishIds : []);
 }
 
-function getMealEligibleFishForSlot(slot, tank = getCurrentTank()) {
+function getMealEligibleFishForSlot(slot, tank = getCurrentTank(), now = Date.now()) {
   if (!slot || !tank) {
     return [];
   }
 
-  const currentSlotKey = getCurrentMealSlot(Date.now()).key;
+  const currentSlotKey = getCurrentMealSlot(now).key;
   return tank.fish.filter((fish) => (
     fish
     && !isFishDead(fish)
@@ -506,14 +530,17 @@ function getMealEligibleFishForSlot(slot, tank = getCurrentTank()) {
   ));
 }
 
-function isMealSlotServed(slot, tank = getCurrentTank()) {
-  const eligibleFish = getMealEligibleFishForSlot(slot, tank);
+function isMealSlotServed(slot, tank = getCurrentTank(), now = Date.now()) {
+  const eligibleFish = getMealEligibleFishForSlot(slot, tank, now);
   if (!eligibleFish.length) {
     return false;
   }
 
   const fedIds = getMealFedFishIds(slot.key, tank);
-  return eligibleFish.every((fish) => fedIds.has(fish.id));
+  return eligibleFish.every((fish) => (
+    fedIds.has(fish.id)
+    || (fish.lastMealSlotKey === slot.key && Math.max(0, Number(fish.mealSlotFoodCount) || 0) > 0)
+  ));
 }
 
 function normalizeHexColor(value) {

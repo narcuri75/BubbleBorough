@@ -33,7 +33,7 @@ const foodEffects = {
   ],
   frisky: [
     'Effect: provides the same nutrition and care-stat gains as Basic Fish Food.',
-    'Special effect: guarantees eligible breeding for 1 minute after a fish eats it.',
+    'Special effect: makes an eligible adult fish breeding-ready for 1 minute after it eats the food. Both parents must be ready, and spawning is not guaranteed.',
   ],
   chum: [
     'Effect: piranhas, sharks, whales, and other chum-only predators gain 55 hunger points (to at least 90), plus 3 energy, 2 stimulation, and 1–5 comfort.',
@@ -57,7 +57,13 @@ const medicineEffects = {
 
 section('Food');
 for (const entry of Object.values(foodMeds.food)) {
-  item(entry.name, entry.description, [`Price: ${money(entry.cost)}`, `Quantity per purchase: ${entry.bottlePellets} ${entry.id === 'halloweenCandy' ? 'candies' : 'pellets'}`, ...(foodEffects[entry.id] || [])]);
+  const packages = Array.isArray(entry.packages) && entry.packages.length
+    ? entry.packages
+    : [{ name: entry.id === 'halloweenCandy' ? 'Pile' : 'Bottle', servings: entry.bottlePellets, cost: entry.cost }];
+  const packageFacts = packages.length > 1
+    ? [`Packages: ${packages.map((packageEntry) => `${packageEntry.name}: ${packageEntry.servings} servings for ${money(packageEntry.cost)}`).join('; ')}`]
+    : [`Price: ${money(packages[0].cost)}`, `Quantity per purchase: ${packages[0].servings} ${entry.id === 'halloweenCandy' ? 'candies' : 'servings'}`];
+  item(entry.name, entry.description, [...packageFacts, ...(foodEffects[entry.id] || [])]);
 }
 
 section('Pharmacy');

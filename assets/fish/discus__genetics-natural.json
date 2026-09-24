@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,109 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "1c4586f8-fd5e-43f6-a1c2-8a7f48f1d706",
+      "id": "d54f95f2-6349-4aa2-885f-bc0da230ca76",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "47d025b7-82be-46d4-b72b-9c83243c3d70",
+          "id": "d8ae325a-3710-4c35-8393-835d3c2f76b7",
           "width": 512,
-          "height": 427,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "discus.png"
+          "name": "discus_blue_diamond.png"
         },
         {
-          "id": "0233093a-18c2-444a-bb0e-ec9777e74fc6",
+          "id": "61f7a7f2-0e8a-4115-9c5a-850364e0c64e",
           "width": 512,
-          "height": 427,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "discus_1.png"
+          "name": "discus_checkerboard_pigeon.png"
         },
         {
-          "id": "e8ddd47b-1b64-4f32-aa31-bdf7d0f2878f",
+          "id": "3f33c0e9-c034-418f-bf49-6a64a295e6a3",
           "width": 512,
-          "height": 427,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "discus_2.png"
+          "name": "discus_cobalt.png"
         },
         {
-          "id": "0c2d284d-0a14-4047-92a7-4d892bc39d41",
+          "id": "b91a66d5-83ea-45f3-8790-68b4ef73c20f",
           "width": 512,
-          "height": 427,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "discus_3.png"
+          "name": "discus_heckel.png"
         },
         {
-          "id": "3effd1f9-e03c-48d7-9c99-7bc91ebcf88d",
+          "id": "64340c2d-1766-450c-975c-17a11e830227",
           "width": 512,
-          "height": 427,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "discus_4.png"
+          "name": "discus_leopard.png"
+        },
+        {
+          "id": "538d1bde-532b-4401-8183-8806c3d5b9cc",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_leopard_snakeskin.png"
+        },
+        {
+          "id": "47b0a756-2722-4fce-afc0-7506a90ec699",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_red_eagle.png"
+        },
+        {
+          "id": "97c49c41-847a-40cd-9b43-19f1e7d0cff0",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_snakeskin.png"
+        },
+        {
+          "id": "312bfa86-0553-4f33-9aaf-19da2aff34c4",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_turquoise.png"
         }
       ]
     }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,65 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "266b6a71-9600-4f25-8201-1b7750a3302c",
+      "id": "7be802aa-9c95-4ad3-83ac-e6d723a4cf5b",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "2c9200a9-a5c4-4486-ba9c-f773913d04a4",
-          "width": 494,
-          "height": 159,
+          "id": "02170124-6119-40ac-857b-c5af55adf8ac",
+          "width": 512,
+          "height": 171,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Pencilfish_4.png"
+          "name": "pencil_marginatus.png"
         },
         {
-          "id": "70bdb964-aa07-4926-9aee-fcdc3a1f2259",
-          "width": 494,
-          "height": 159,
+          "id": "1fc5afc9-15dd-4f40-8d7e-5a104eab10a4",
+          "width": 512,
+          "height": 171,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Pencilfish_3.png"
+          "name": "pencil_mortenthaleri.png"
         },
         {
-          "id": "b5945a06-86a2-49fc-93a5-8657bd577139",
-          "width": 494,
-          "height": 159,
+          "id": "6576dae8-4849-4422-bd6a-96d720a2c502",
+          "width": 512,
+          "height": 171,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Pencilfish_2.png"
+          "name": "pencil_rubrocaudatus.png"
         },
         {
-          "id": "ebe010cf-fc9e-4814-aa13-22614330ab5d",
-          "width": 494,
-          "height": 159,
+          "id": "1b18460a-5f80-4660-a2b1-89d078d11aac",
+          "width": 512,
+          "height": 171,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Pencilfish_1.png"
+          "name": "pencil_trifasciatus.png"
         },
         {
-          "id": "0bf49662-bd3b-4173-ac50-e748cc61d7ab",
-          "width": 494,
-          "height": 159,
+          "id": "f11addf3-d90d-4c10-a94e-994fbfacfede",
+          "width": 512,
+          "height": 171,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Pencilfish.png"
+          "name": "pencil_unifasciatus.png"
         }
       ]
     }

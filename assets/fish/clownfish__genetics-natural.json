@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,26 +14,15 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "3997d1fc-a4c3-42d7-a144-12913d10afcb",
+      "id": "de8389c7-5a00-4840-8bd7-d84a18611850",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "de92710d-93df-468c-add1-e73342e14159",
+          "id": "94d28e4a-dfb6-49a6-a519-dad45a044697",
           "width": 512,
-          "height": 316,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "clownfish.png"
-        },
-        {
-          "id": "10014d55-a941-46c7-b429-43a4bdce7302",
-          "width": 512,
-          "height": 316,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
@@ -42,20 +31,31 @@
           "name": "clownfish_1.png"
         },
         {
-          "id": "f9bab1dc-db21-4af4-980e-2d2c9d20e545",
+          "id": "fcf6429e-24cc-4569-89ff-9fbc8160c9ac",
           "width": 512,
-          "height": 316,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "clownfish_2.png"
+          "name": "clownfish_5.png"
         },
         {
-          "id": "a001a4f5-0e9f-4055-a2b1-064141797608",
+          "id": "e7b06200-2d4d-4931-b195-5d6fc81337e1",
           "width": 512,
-          "height": 316,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "clownfish_4.png"
+        },
+        {
+          "id": "29e9301c-45eb-4d0e-a15f-1de8bfde5a6d",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
@@ -64,15 +64,15 @@
           "name": "clownfish_3.png"
         },
         {
-          "id": "07254f2e-2526-4b02-b098-6563e2fdfc62",
+          "id": "e1620c17-317d-4b25-abb8-c95952527665",
           "width": 512,
-          "height": 316,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "clownfish_4.png"
+          "name": "clownfish_2.png"
         }
       ]
     }

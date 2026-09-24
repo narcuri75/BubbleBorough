@@ -274,9 +274,10 @@ function performCoinTransaction(options = {}) {
   }
 }
 
-function buyFood(foodKey) {
+function buyFood(foodKey, packageId = "") {
   const food = getFoodMeta(foodKey);
-  if (!food) {
+  const packageMeta = getFoodPackageMeta(food, packageId);
+  if (!food || !packageMeta) {
     return;
   }
 
@@ -285,17 +286,24 @@ function buyFood(foodKey) {
     return;
   }
 
-  const purchaseCost = getFoodPurchaseCost(food.id);
-  const rescueOffer = food.id === "basic" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().foodAvailable;
+  const defaultPackage = getFoodPackageOptions(food)[0] || packageMeta;
+  const purchaseCost = getFoodPurchaseCost(food.id, packageMeta.id);
+  const rescueOffer = food.id === "basic"
+    && packageMeta.id === defaultPackage.id
+    && purchaseCost === 0
+    && getBubbleBodegaRescueOfferStatus().foodAvailable;
+  const unitLabel = food.id === "halloweenCandy" ? "candies" : "servings";
+  const purchaseLabel = `${food.name} - ${packageMeta.name}`;
   return performCoinTransaction({
     amount: purchaseCost,
-    insufficientMessage: "Not enough coins for that food bottle.",
+    insufficientMessage: `Not enough coins for that ${packageMeta.name.toLowerCase()}.`,
+    receiptLabel: `${purchaseLabel} (${packageMeta.servings} ${unitLabel})`,
     apply: () => {
-      state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + food.bottlePellets;
+      state.foodInventory[food.id] = Math.max(0, Number(state.foodInventory?.[food.id]) || 0) + packageMeta.servings;
       if (rescueOffer) markBubbleBodegaRescueItemClaimed("food");
     },
-    event: { type: "purchase", tone: "positive", text: `Bought ${food.name} (${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}).` },
-    toast: `${food.name} stocked. +${food.bottlePellets} ${food.id === "halloweenCandy" ? "candies" : "pellets"}.`
+    event: { type: "purchase", tone: "positive", text: `Bought ${purchaseLabel} (${packageMeta.servings} ${unitLabel}).` },
+    toast: `${purchaseLabel} stocked. +${packageMeta.servings} ${unitLabel}.`
   });
 }
 
@@ -386,11 +394,10 @@ function selectMedicineMode(medicineKey) {
   runtime.feedingModeFoodKey = "";
   runtime.medicineModeKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
   renderUi(Date.now());
-  showToast(
-    runtime.medicineModeKey
-      ? `${medicine.name} selected. Click inside the tank to dose the whole tank.`
-      : "Medicine mode cleared."
-  );
+  const usePrompt = medicine.id === "betaBlocker"
+    ? `${medicine.name} selected. Click inside the tank to calm the whole tank.`
+    : `${medicine.name} selected. Click the fish you want to treat.`;
+  showToast(runtime.medicineModeKey ? usePrompt : "Medicine mode cleared.");
 }
 
 async function ensureFishPurchaseImageReady(fish, species) {
@@ -407,6 +414,9 @@ async function ensureFishPurchaseImageReady(fish, species) {
     getFishDirectionalSpritePath(selectedAsset, "bottom"),
     getFishDirectionalSpritePath(selectedAsset, "side"),
     species.overlayAsset,
+    species.antennaAsset,
+    species.legAsset,
+    species.storeAsset,
     getFishDisplayAssetPath(fish, species, Date.now()),
     species.fallbackAsset,
     species.asset
@@ -444,6 +454,12 @@ async function buyFish(speciesId, options = {}) {
   }
 
 
+  const debugCatalogBypass = typeof isDebugModeEnabled === "function" && isDebugModeEnabled();
+  if (species.Fish_enabled === false && !debugCatalogBypass) {
+    showToast(`${species.name} is temporarily unavailable.`);
+    return { ok: false, reason: "species-disabled" };
+  }
+
   if (!isFishSpeciesShopUnlocked(species)) {
     showToast(`${species.name} has not been unlocked yet.`);
     return { ok: false, reason: "species-locked" };
@@ -476,6 +492,7 @@ async function buyFish(speciesId, options = {}) {
     // prevents a later catalog refresh or cache query from changing a fish
     // that has already been purchased.
     appearanceAssetPath: variants[selectedVariant],
+    purchasePrice: purchaseCost,
     now,
     entryStartedAt,
     entryDurationMs: FISH_ENTRY_DURATION_MS,
@@ -485,6 +502,24 @@ async function buyFish(speciesId, options = {}) {
     showToast("Could not prepare that fish.");
     return { ok: false, reason: "fish-creation-failed" };
   }
+  const currentTank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
+  const capacityPlacement = typeof getTankPopulationFit === "function"
+    ? getTankPopulationFit(fish, currentTank)
+    : { fits: true };
+  const requiredWaterType = typeof getFishVariantWaterType === "function"
+    ? getFishVariantWaterType(species, getFishAppearanceVariantKey(variants[selectedVariant]))
+    : typeof getFishStoreWaterType === "function"
+      ? getFishStoreWaterType(species)
+    : String(species?.waterType || "freshwater").toLowerCase() === "saltwater" ? "saltwater" : "freshwater";
+  const currentWaterType = typeof normalizeWaterType === "function"
+    ? normalizeWaterType(currentTank?.waterType, "freshwater")
+    : String(currentTank?.waterType || "freshwater").toLowerCase() === "saltwater" ? "saltwater" : "freshwater";
+  const requiredWaterLabel = typeof getStoreWaterTypeLabel === "function"
+    ? getStoreWaterTypeLabel(requiredWaterType)
+    : requiredWaterType === "saltwater" ? "Saltwater" : "Freshwater";
+  const waterTypeMismatch = currentWaterType !== requiredWaterType;
+  const purchaseGoesToStorage = waterTypeMismatch || !capacityPlacement.fits;
+  const storageReason = waterTypeMismatch ? "water" : !capacityPlacement.fits ? "capacity" : "";
 
   const pendingKey = `catalog:${speciesId}`;
   if (runtime.pendingFishPurchases.has(pendingKey)) {
@@ -518,18 +553,17 @@ async function buyFish(speciesId, options = {}) {
           ? purchaseCompletedAt + TUTORIAL_STORE_CLOSE_DELAY_MS
           : purchaseCompletedAt;
         fish.entrySplashTriggered = false;
-        addFishToTank(fish, purchaseCompletedAt);
+        if (waterTypeMismatch && typeof addFishDirectlyToStorage === "function") {
+          addFishDirectlyToStorage(fish, purchaseCompletedAt, { moodTone: "good" });
+          if (typeof syncTankPopulationUsageField === "function") syncTankPopulationUsageField(currentTank);
+        } else {
+          addFishToTank(fish, purchaseCompletedAt);
+        }
         if (speciesId === "goldfish" && purchaseCost === 0 && getBubbleBodegaRescueOfferStatus().goldfishAvailable) {
           markBubbleBodegaRescueItemClaimed("goldfish", purchaseCompletedAt);
         }
         if (options.purchaseSource === "davyjoneslocker") {
           maybeSeedDavyJonesViralIllness(fish, purchaseCompletedAt);
-        } else {
-          maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
-        }
-        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
-          fish.lastAteAt = purchaseCompletedAt;
         }
         if (tutorialPurchase) {
           closeStoreOverlay({ force: true });
@@ -543,9 +577,17 @@ async function buyFish(speciesId, options = {}) {
         type: "fish_added",
         tone: "positive",
         fishId: fish.id,
-        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+        text: storageReason === "water"
+          ? `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} was purchased and sent to Storage. Requires ${requiredWaterLabel}.`
+          : storageReason === "capacity"
+            ? `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} was purchased and sent to Storage because the tank is full.`
+            : `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
       },
-      toast: `${fish.name} joined the aquarium.`
+      toast: storageReason === "water"
+        ? `${fish.name} was sent to Storage. Requires ${requiredWaterLabel}.`
+        : storageReason === "capacity"
+          ? `${fish.name} was sent to Storage. The tank is full.`
+          : `${fish.name} joined the aquarium.`
     });
     if (!transaction.ok) {
       return transaction;
@@ -562,6 +604,181 @@ async function buyFish(speciesId, options = {}) {
   } finally {
     runtime.pendingFishPurchases.delete(pendingKey);
   }
+}
+
+function prepareProteusZombieFishForTank(fish, now = Date.now()) {
+  if (!fish) return null;
+  fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+  fish.needs.hunger = 100;
+  fish.needs.comfort = 100;
+  fish.lastAteAt = 0;
+  fish.missedMealsInRow = 0;
+  fish.zombieAggressionNextAt = now + randomBetween(
+    PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS,
+    PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MAX_MS
+  );
+  return fish;
+}
+
+function getProteusZombieFishVariantPurchaseOptions() {
+  const species = runtime?.fishMap?.get(PROTEUS_ZOMBIE_FISH_SPECIES_ID) || null;
+  if (!species || !(Number(state?.proteusZombieFishClaimedAt) > 0)) return [];
+  const variants = getFishAssetVariants(species);
+  return variants.slice(1).map((path, index) => ({
+    index: index + 1,
+    path,
+    key: getFishAppearanceVariantKey(path),
+    label: `Z-01 Variant ${String(index + 2).padStart(2, "0")}`,
+    cost: PROTEUS_ZOMBIE_FISH_VARIANT_COST
+  }));
+}
+
+async function claimProteusZombieFish(now = Date.now()) {
+  if (!state || !(Number(state.proteusZombieFishUnlockedAt) > 0)) {
+    showToast("Z-01 has not been authorized for this account.");
+    return { ok: false, reason: "not-authorized" };
+  }
+  if (Number(state.proteusZombieFishOfferAt) > now) {
+    showToast("Proteus transfer authorization is still pending.");
+    return { ok: false, reason: "offer-pending" };
+  }
+  if (!(Number(state.proteusZombieFishAuthenticatedAt) > 0)) {
+    showToast("Authenticate through the Proteus restricted specimen portal first.");
+    return { ok: false, reason: "not-authenticated" };
+  }
+  if (Number(state.proteusZombieFishClaimedAt) > 0) {
+    showToast("The complimentary Z-01 specimen has already been released.");
+    return { ok: false, reason: "already-claimed" };
+  }
+  const alreadyOwned = [
+    ...getAllTankFish(state),
+    ...(Array.isArray(state.storedFish) ? state.storedFish : [])
+  ].some((fish) => fish?.speciesId === PROTEUS_ZOMBIE_FISH_SPECIES_ID);
+  if (alreadyOwned) {
+    state.proteusZombieFishClaimedAt = Math.max(1, Number(state.proteusZombieFishClaimedAt) || now);
+    saveState();
+    showToast("Z-01 is already in your custody.");
+    return { ok: false, reason: "already-owned" };
+  }
+
+  const species = runtime.fishMap.get(PROTEUS_ZOMBIE_FISH_SPECIES_ID);
+  if (!species) {
+    showToast("Z-01 specimen profile is unavailable.");
+    return { ok: false, reason: "missing-species" };
+  }
+
+  const variants = getFishAssetVariants(species);
+  const baseAsset = variants[0] || getFishAssetPath({ appearanceVariant: 0 }, species);
+  const fish = createFishRecord(PROTEUS_ZOMBIE_FISH_SPECIES_ID, {
+    now,
+    name: "Z-01",
+    appearanceVariant: 0,
+    appearanceVariantKey: getFishAppearanceVariantKey(baseAsset),
+    appearanceAssetPath: baseAsset,
+    entryStartedAt: now,
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
+  });
+  if (!fish) return { ok: false, reason: "fish-creation-failed" };
+
+  prepareProteusZombieFishForTank(fish, now);
+  addFishToTank(fish, now);
+  const z01StoredForCapacity = fish.storageState === "stored";
+  state.proteusZombieFishClaimedAt = now;
+  markProteusDiscoveredInSave(now);
+  pushEvent(z01StoredForCapacity
+    ? "Proteus Biodyne transferred custody of experimental specimen Z-01 to Storage because the tank is full."
+    : "Proteus Biodyne transferred custody of experimental specimen Z-01.", now, getCurrentTank(), {
+    type: "fish_added",
+    fishId: fish.id,
+    recapEligible: false
+  });
+  recordWalletTransaction({
+    amount: 0,
+    allowZero: true,
+    direction: "neutral",
+    now,
+    place: "Proteus Biodyne",
+    label: "Z-01 complimentary specimen transfer"
+  });
+  saveState();
+  renderUi(now);
+
+  void ensureFishPurchaseImageReady(fish, species).then((loaded) => {
+    if (loaded) return;
+    requestRuntimeImageRecovery(getFishAssetPath(fish, species), {
+      kind: "proteus-zombie-fish",
+      id: fish.id,
+      speciesId: species.id
+    });
+  });
+  showToast(z01StoredForCapacity
+    ? "Custody transfer complete. Z-01 was sent to Storage because the tank is full."
+    : "Custody transfer complete. Z-01 has been introduced to the aquarium.");
+  return { ok: true, fish, species };
+}
+
+async function purchaseProteusZombieFishVariant(appearanceVariantKey, now = Date.now()) {
+  if (!state || !(Number(state.proteusZombieFishAuthenticatedAt) > 0)) {
+    showToast("Restricted Z-01 access has not been authenticated.");
+    return { ok: false, reason: "not-authenticated" };
+  }
+  if (!(Number(state.proteusZombieFishClaimedAt) > 0)) {
+    showToast("Accept the complimentary Z-01 specimen before requesting alternate configurations.");
+    return { ok: false, reason: "base-not-claimed" };
+  }
+  const species = runtime.fishMap.get(PROTEUS_ZOMBIE_FISH_SPECIES_ID);
+  if (!species) return { ok: false, reason: "missing-species" };
+  const options = getProteusZombieFishVariantPurchaseOptions();
+  const selected = options.find((entry) => entry.key === String(appearanceVariantKey || ""));
+  if (!selected) {
+    showToast("That Z-01 configuration is not currently available.");
+    return { ok: false, reason: "variant-unavailable" };
+  }
+
+  const fish = createFishRecord(PROTEUS_ZOMBIE_FISH_SPECIES_ID, {
+    now,
+    name: selected.label,
+    appearanceVariant: selected.index,
+    appearanceVariantKey: selected.key,
+    appearanceAssetPath: selected.path,
+    entryStartedAt: now,
+    entryDurationMs: FISH_ENTRY_DURATION_MS,
+    entryFromYNorm: FISH_ENTRY_FROM_Y_NORM
+  });
+  if (!fish) return { ok: false, reason: "fish-creation-failed" };
+  prepareProteusZombieFishForTank(fish, now);
+
+  const transaction = performCoinTransaction({
+    amount: selected.cost,
+    now,
+    place: "Proteus Biodyne",
+    receiptLabel: `${selected.label} specimen transfer`,
+    insufficientMessage: `Proteus requires ${selected.cost} ${pluralize("coin", selected.cost)} to release this configuration.`,
+    apply: () => {
+      addFishToTank(fish, now);
+      return true;
+    },
+    event: {
+      type: "fish_added",
+      tone: "positive",
+      fishId: fish.id,
+      recapEligible: false,
+      text: `Proteus Biodyne transferred ${selected.label}.`
+    },
+    toast: `${selected.label} transferred to the aquarium.`
+  });
+  if (!transaction.ok) return transaction;
+
+  void ensureFishPurchaseImageReady(fish, species).then((loaded) => {
+    if (loaded) return;
+    requestRuntimeImageRecovery(getFishAssetPath(fish, species), {
+      kind: "proteus-zombie-fish-variant",
+      id: fish.id,
+      speciesId: species.id
+    });
+  });
+  return { ok: true, fish, species, variant: selected };
 }
 
 async function buyAnotherCustomFish(fishId) {
@@ -602,6 +819,7 @@ async function buyAnotherCustomFish(fishId) {
     : clamp(sourceFish.yNorm + randomBetween(-0.035, 0.035), 0.14, 0.8);
   const fish = createFishRecord(sourceFish.speciesId, {
     now,
+    purchasePrice: purchaseCost,
     xNorm,
     yNorm,
     targetXNorm: randomSwimX(),
@@ -617,6 +835,10 @@ async function buyAnotherCustomFish(fishId) {
     showToast("Could not add another custom fish to the tank.");
     return;
   }
+  const customCapacityPlacement = typeof getTankPopulationFit === "function"
+    ? getTankPopulationFit(fish, getCurrentTank())
+    : { fits: true };
+  const customPurchaseGoesToStorage = !customCapacityPlacement.fits;
 
   const pendingKey = `custom:${sourceFish.speciesId}`;
   if (runtime.pendingFishPurchases.has(pendingKey)) {
@@ -640,19 +862,18 @@ async function buyAnotherCustomFish(fishId) {
         fish.entryStartedAt = purchaseCompletedAt;
         fish.entrySplashTriggered = false;
         addFishToTank(fish, purchaseCompletedAt);
-        maybeSeedNewFishDiseaseCarrier(fish, purchaseCompletedAt);
-        if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-          setFishNeedValue(fish, "hunger", 82, purchaseCompletedAt);
-          fish.lastAteAt = purchaseCompletedAt;
-        }
       },
       event: {
         type: "fish_added",
         tone: "positive",
         fishId: fish.id,
-        text: `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
+        text: customPurchaseGoesToStorage
+          ? `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} was purchased and sent to Storage because the tank is full.`
+          : `${fish.name} the ${getFishDisplaySpeciesName(fish, species)} splashed into the tank.`
       },
-      toast: `Another ${species.name} joined the aquarium.`
+      toast: customPurchaseGoesToStorage
+        ? `Another ${species.name} was sent to Storage. The tank is full.`
+        : `Another ${species.name} joined the aquarium.`
     });
   } finally {
     runtime.pendingFishPurchases.delete(pendingKey);
@@ -759,13 +980,16 @@ function getPendingFishSellDetails() {
   }
 
   const dead = isFishDead(details.fish);
-  const juvenile = !dead && isFishJuvenile(details.fish);
+  const proteusRestricted = isProteusZombieFish(details.fish);
+  const juvenile = !dead && !proteusRestricted && isFishJuvenile(details.fish);
   return {
     ...details,
     dead,
     juvenile,
-    resaleValue: getResaleValue(details.baseSpecies?.cost || details.species?.cost || 0),
-    canSell: !dead && !juvenile
+    proteusRestricted,
+    resaleValue: getFishRehomeValue(details.fish),
+    ageDays: Math.max(0, Math.floor(getFishAgeMs(details.fish) / DAY_MS)),
+    canSell: !dead && !juvenile && !proteusRestricted
   };
 }
 
@@ -800,10 +1024,12 @@ function openFishSellConfirmation(fishId) {
     },
     getDetails: getPendingFishSellDetails,
     missingMessage: "Choose a fish first.",
-    validate: (details) => details?.dead
-      ? "Dead fish cannot be sold."
-      : details?.juvenile
-        ? "Baby fish need time to grow before they can be sold."
+    validate: (details) => details?.proteusRestricted
+      ? "Proteus retains ownership of Z-01. The specimen cannot be rehomed."
+      : details?.dead
+        ? "Dead fish cannot be rehomed."
+        : details?.juvenile
+        ? "Baby fish need time to grow before they can be rehomed."
         : "",
     open: (details) => openFishActionConfirmation({ type: "sell", fishId: details.fishId })
   });
@@ -829,9 +1055,11 @@ function confirmFishSell() {
     getDetails: getPendingFishSellDetails,
     missingMessage: "That fish is no longer available.",
     validate: (details) => !details?.canSell
-      ? (details?.dead
-      ? "Dead fish cannot be sold."
-      : "Baby fish need time to grow before they can be sold.")
+      ? (details?.proteusRestricted
+        ? "Proteus retains ownership of Z-01. The specimen cannot be rehomed."
+        : details?.dead
+          ? "Dead fish cannot be rehomed."
+          : "Baby fish need time to grow before they can be rehomed.")
       : "",
     execute: (details) => sellFish(details.fishId)
   });
@@ -889,6 +1117,13 @@ function buyDecor(decorKey, options = {}) {
 
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION);
+  const currentTank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
+  const activeWaterType = typeof normalizeWaterType === "function"
+    ? normalizeWaterType(currentTank?.waterType, "freshwater")
+    : String(currentTank?.waterType || "freshwater").toLowerCase() === "saltwater" ? "saltwater" : "freshwater";
+  const waterRequirement = typeof getStoreWaterRequirementLabel === "function"
+    ? getStoreWaterRequirementLabel("decor", decor, activeWaterType)
+    : "";
   const transaction = performCoinTransaction({
     amount: decor.cost,
     now,
@@ -900,8 +1135,15 @@ function buyDecor(decorKey, options = {}) {
         setTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION, { now, decorKey: resolvedDecorKey });
       }
     },
-    event: { type: "decor", tone: "positive", decorKey: resolvedDecorKey, text: `Bought ${decor.name}.` },
-    toast: `${decor.name} is waiting in storage.`
+    event: {
+      type: "decor",
+      tone: "positive",
+      decorKey: resolvedDecorKey,
+      text: waterRequirement ? `Bought ${decor.name}. ${waterRequirement}; stored safely.` : `Bought ${decor.name}.`
+    },
+    toast: waterRequirement
+      ? `${decor.name} is in Storage. ${waterRequirement}.`
+      : `${decor.name} is waiting in storage.`
   });
   if (!transaction.ok) {
     return transaction;
@@ -995,6 +1237,7 @@ function getPendingDecorSellDetails() {
     item,
     decor,
     resaleValue: getResaleValue(decor.cost || 0),
+    living: typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor),
     grouped: isPlacedDecorGrouped(item)
   };
 }
@@ -1056,6 +1299,31 @@ function confirmDecorSell() {
   });
 }
 
+function buySubstrate(substrateId) {
+  const meta = getSubstrateMeta(substrateId);
+  if (!meta) return { ok: false, reason: "missing-substrate" };
+  state.ownedSubstrateInventory ||= sanitizeOwnedSubstrateInventory(null);
+  if (isSubstrateOwned(meta.id)) {
+    setTankSubstrateStyle(meta.id);
+    return { ok: true, owned: true };
+  }
+  return performCoinTransaction({
+    amount: meta.cost,
+    receiptLabel: `Unlocked ${meta.name} substrate`,
+    apply: () => {
+      state.ownedSubstrateInventory[meta.id] = 1;
+      const tank = getCurrentTank();
+      if (tank) tank.substrateStyle = meta.id;
+      runtime.gravelBedCacheKey = "";
+      runtime.gravelBedCanvas = null;
+      runtime.gravelCapCanvas = null;
+      invalidateCustomGravelVisualCaches();
+    },
+    event: { type: "purchase", tone: "positive", text: `Unlocked the ${meta.name} substrate.` },
+    toast: `${meta.name} unlocked and applied.`
+  });
+}
+
 function buyBackground(backgroundKey) {
   const background = runtime.backgroundMap.get(backgroundKey);
   if (!background) {
@@ -1083,6 +1351,110 @@ function buyBackground(backgroundKey) {
   return result;
 }
 
+
+function buyWaterTreatmentKit(kitId) {
+  const kit = WATER_TREATMENT_KITS[String(kitId || "")];
+  if (!kit) return { ok: false, reason: "missing-kit" };
+  return performCoinTransaction({
+    amount: kit.cost,
+    insufficientMessage: `You need ${kit.cost} ${pluralize("coin", kit.cost)} for ${kit.name}.`,
+    apply: () => {
+      state.waterTreatmentInventory ||= { freshwater: 0, saltwater: 0 };
+      state.waterTreatmentInventory[kit.id] = Math.max(0, Math.floor(Number(state.waterTreatmentInventory[kit.id]) || 0)) + 1;
+    },
+    event: { type: "equipment", tone: "positive", text: `Purchased ${kit.name}.` },
+    toast: `${kit.name} purchased.`
+  });
+}
+
+function getWaterConversionIncompatibilities(tank, targetWaterType) {
+  const resolvedTank = tank || getCurrentTank();
+  const rawTarget = String(targetWaterType || "").trim().toLowerCase();
+  const targetType = ["freshwater", "saltwater"].includes(rawTarget) ? rawTarget : "freshwater";
+  if (!resolvedTank) return { fish: [], decor: [] };
+  const fish = (resolvedTank.fish || []).filter((entry) => {
+    if (!entry || isFishDead(entry)) return false;
+    const species = getSpeciesForFish(entry);
+    return species && getFishStoreWaterType(species) !== targetType;
+  });
+  const decor = (resolvedTank.placedDecor || []).filter((item) => {
+    const key = normalizeDecorKey(item?.decorKey || "");
+    const meta = runtime.decorMap?.get?.(key) || runtime.decorMeta?.[key] || null;
+    return meta?.living === true && !isDecorCompatibleWithWaterType(meta, targetType);
+  });
+  return { fish, decor };
+}
+
+function requestWaterTypeConversion(targetWaterType) {
+  const tank = getCurrentTank();
+  const rawTarget = String(targetWaterType || "").trim().toLowerCase();
+  const targetType = ["freshwater", "saltwater"].includes(rawTarget) ? rawTarget : "";
+  const kit = WATER_TREATMENT_KITS[targetType];
+  if (!tank || !kit) return { ok: false, reason: "missing-target" };
+  const currentType = normalizeWaterType(tank.waterType, "freshwater");
+  if (currentType === targetType) {
+    runtime.pendingWaterConversionTarget = "";
+    showToast(`This tank is already ${getStoreWaterTypeLabel(currentType)}.`);
+    renderEditTankTray();
+    return { ok: false, reason: "already-active" };
+  }
+  runtime.pendingWaterConversionTarget = targetType;
+  renderEditTankTray();
+  return { ok: true, pending: true, incompatibilities: getWaterConversionIncompatibilities(tank, targetType) };
+}
+
+function cancelWaterTypeConversion() {
+  runtime.pendingWaterConversionTarget = "";
+  renderEditTankTray();
+  return true;
+}
+
+function confirmWaterTypeConversion(targetWaterType = runtime.pendingWaterConversionTarget) {
+  const tank = getCurrentTank();
+  const rawTarget = String(targetWaterType || "").trim().toLowerCase();
+  const targetType = ["freshwater", "saltwater"].includes(rawTarget) ? rawTarget : "";
+  const kit = WATER_TREATMENT_KITS[targetType];
+  if (!kit || !tank) return { ok: false, reason: "missing-target" };
+  const currentType = normalizeWaterType(tank.waterType, "freshwater");
+  if (currentType === targetType) {
+    runtime.pendingWaterConversionTarget = "";
+    renderEditTankTray();
+    return { ok: false, reason: "already-active" };
+  }
+  const owned = Math.max(0, Math.floor(Number(state.waterTreatmentInventory?.[kit.id]) || 0));
+  if (owned <= 0) {
+    showToast(`Buy a ${kit.name} first.`);
+    renderEditTankTray();
+    return { ok: false, reason: "not-owned" };
+  }
+  const before = getWaterConversionIncompatibilities(tank, targetType);
+  state.waterTreatmentInventory[kit.id] = owned - 1;
+  tank.waterType = targetType;
+  const conversionNow = Date.now();
+  if (typeof processFishConditionFramework === "function") processFishConditionFramework(conversionNow);
+  const decorSync = typeof syncTankLivingDecorActivity === "function" ? syncTankLivingDecorActivity(tank) : { deactivated: [], activated: [] };
+  for (const item of decorSync.deactivated || []) {
+    if (typeof clearDecorResidenceAssignments === "function") clearDecorResidenceAssignments(item.id, { save: false });
+  }
+  runtime.decorHangoutZonesKey = "";
+  runtime.pendingWaterConversionTarget = "";
+  const fishCount = before.fish.length;
+  const decorCount = before.decor.length;
+  pushEvent(`Converted ${tank.name || "the tank"} to ${getStoreWaterTypeLabel(targetType)}.${fishCount ? ` ${fishCount} incompatible ${pluralize("fish", fishCount)} now face osmotic stress.` : ""}${decorCount ? ` ${decorCount} living ${pluralize("decoration", decorCount)} became inactive.` : ""}`, conversionNow, tank, { type: "equipment" });
+  saveState();
+  renderUi(conversionNow);
+  renderEquipmentShop();
+  renderEditTankTray();
+  showToast(`${tank.name || "Tank"} is now ${getStoreWaterTypeLabel(targetType)}.`);
+  return { ok: true, mismatchedFish: fishCount, inactiveDecor: decorCount };
+}
+
+function useWaterTreatmentKit(kitId) {
+  const kit = WATER_TREATMENT_KITS[String(kitId || "")];
+  if (!kit) return { ok: false, reason: "missing-kit" };
+  openEditOverlayMode("water", { source: "store", collapseSidebar: true });
+  return requestWaterTypeConversion(kit.targetWaterType);
+}
 
 function buyAutoDispenser(options = {}) {
   return performCoinTransaction({

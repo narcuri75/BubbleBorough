@@ -859,6 +859,10 @@ function saveState() {
     runtime.freshGameSaveLocked = false;
   }
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
+  if (typeof syncTankPopulationUsageFields === "function") syncTankPopulationUsageFields(state);
+  if (typeof syncDeadFishCorpsePersistenceForSave === "function") {
+    syncDeadFishCorpsePersistenceForSave(Date.now());
+  }
 
   ensureBubbleBodegaRescueOffer(Date.now());
   applyProgressMilestones(null, Date.now());

@@ -6,6 +6,11 @@
   const PROTEUS_DISCOVERY_STORAGE_KEY = "bubble-borough-proteus-discovered-v1";
   const PROTEUS_DISCOVERY_TIME_STORAGE_KEY = "bubble-borough-proteus-discovered-at-v1";
   const TANKAZON_ORDERS_PER_PAGE = 10;
+  const TANKAZON_VIRTUAL_CARD_HEIGHT = 323;
+  const TANKAZON_VIRTUAL_GRID_GAP = 12;
+  const TANKAZON_VIRTUAL_CARD_MIN_WIDTH = 168;
+  const TANKAZON_VIRTUAL_CARD_MIN_WIDTH_COMPACT = 158;
+  const TANKAZON_VIRTUAL_OVERSCAN_MIN = 620;
   // BubbleBodega was previously named Tankazon. Legacy tankazon* DOM IDs and
   // internal function names are retained for save/markup compatibility only;
   // they all refer to the same BubbleBodega storefront.
@@ -16,16 +21,20 @@
   });
   const cart = new Map();
   let allCategoriesMode = true;
-  let lastTankazonCategory = "all";
+  const tankazonSession = {
+    view: "home",
+    category: "all",
+    searchQuery: "",
+    searchScope: "all",
+    searchActive: false,
+    searchScrollTop: 0,
+    allScrollTop: 0
+  };
   let completingPurchase = false;
   let purchaseErrorMessage = "";
-  let committedSearchQuery = "";
-  let committedSearchScope = "all";
-  let searchCommitted = false;
-  let committedSearchScrollTop = 0;
-  let allCategoriesScrollTop = 0;
   let selectedItem = null;
   let itemReturnScrollTop = 0;
+  let itemReturnPreview = null;
   let tankazonLoadingToken = 0;
   let tankazonLoadingStartedAt = 0;
   let accountPageOpen = false;
@@ -38,85 +47,298 @@
   let proteusReturnFocus = null;
   let proteusSessionTab = "home";
   let proteusSessionScrollTop = 0;
-
-  // BubbleBodega uses a native <select> for the search category. On some
-  // desktop browsers, opening or choosing from that native popup can dispatch a
-  // follow-up pointer/mouse event to whatever is underneath the popup. Because
-  // WebSurf sits over the game toolbar, that click-through could trigger a game
-  // control and close the browser. Keep the protection local to this one search
-  // control and consume only the short native-menu event tail.
-  let bodegaSearchSelectActive = false;
-  let bodegaSearchSelectSuppressUntil = 0;
-  let bodegaSearchSelectClearTimer = 0;
-
-  const isBodegaSearchScopeTarget = (target) => Boolean(
-    target instanceof Element && target.closest?.("#tankazonSearchScope")
-  );
-
-  function armBodegaSearchSelectGuard(duration = 900) {
-    bodegaSearchSelectActive = true;
-    bodegaSearchSelectSuppressUntil = Math.max(
-      bodegaSearchSelectSuppressUntil,
-      performance.now() + Math.max(0, Number(duration) || 0)
-    );
-    if (bodegaSearchSelectClearTimer) window.clearTimeout(bodegaSearchSelectClearTimer);
-    bodegaSearchSelectClearTimer = window.setTimeout(() => {
-      bodegaSearchSelectActive = false;
-      bodegaSearchSelectClearTimer = 0;
-    }, Math.max(950, Number(duration) + 50));
-  }
-
-  function trailBodegaSearchSelectGuard(duration = 650) {
-    bodegaSearchSelectActive = false;
-    bodegaSearchSelectSuppressUntil = Math.max(
-      bodegaSearchSelectSuppressUntil,
-      performance.now() + Math.max(0, Number(duration) || 0)
-    );
-    if (bodegaSearchSelectClearTimer) window.clearTimeout(bodegaSearchSelectClearTimer);
-    bodegaSearchSelectClearTimer = window.setTimeout(() => {
-      bodegaSearchSelectClearTimer = 0;
-    }, Math.max(700, Number(duration) + 50));
-  }
-
-  function shouldSuppressBodegaSearchSelectClickThrough(event) {
-    const target = event?.target;
-    if (isBodegaSearchScopeTarget(target)) {
-      if (["pointerdown", "mousedown", "focusin", "click"].includes(event.type)) {
-        armBodegaSearchSelectGuard();
-      }
-      return false;
-    }
-    return bodegaSearchSelectActive || performance.now() < bodegaSearchSelectSuppressUntil;
-  }
-
-  // Register before app.js is loaded. That lets this capture guard stop an
-  // accidental native-select click-through before any gameplay or WebSurf
-  // navigation handler can see it, without preventing the select's own default
-  // browser behavior.
-  for (const eventName of ["pointerdown", "mousedown", "pointerup", "mouseup", "click"]) {
-    document.addEventListener(eventName, (event) => {
-      if (!shouldSuppressBodegaSearchSelectClickThrough(event)) return;
-      event.stopImmediatePropagation();
-    }, true);
-  }
-  document.addEventListener("focusin", (event) => {
-    if (isBodegaSearchScopeTarget(event.target)) armBodegaSearchSelectGuard(1500);
-  }, true);
-  document.addEventListener("focusout", (event) => {
-    if (isBodegaSearchScopeTarget(event.target)) trailBodegaSearchSelectGuard();
-  }, true);
-  document.addEventListener("change", (event) => {
-    if (!isBodegaSearchScopeTarget(event.target)) return;
-    // Keep a trailing window after the native option popup disappears because
-    // Windows can report the click-through after the change event.
-    trailBodegaSearchSelectGuard(750);
-  }, true);
+  let subsidiaryPageOpen = "";
+  const subsidiaryTabsOpen = new Set();
+  const tankazonVirtualStates = new Map();
+  const tankazonSearchTextCache = new WeakMap();
+  let tankazonVirtualFrame = 0;
+  let tankazonRouteVisible = false;
+  let tankazonNavigationRevision = 0;
 
   const overlay = () => document.getElementById("storeOverlay");
   const drawers = () => CATEGORY_IDS.map((id) => document.querySelector(`[data-tankazon-category="${id}"]`)).filter(Boolean);
-  const scope = () => document.getElementById("tankazonSearchScope")?.value || "all";
+  const scope = () => (allCategoriesMode || !CATEGORY_IDS.includes(tankazonSession.category) ? "all" : tankazonSession.category);
   const typedQuery = () => (document.getElementById("tankazonSearchInput")?.value || "").trim().toLowerCase();
-  const query = () => committedSearchQuery;
+  const query = () => tankazonSession.searchQuery;
+
+  function getTankazonCardCategory(card) {
+    return card?.dataset?.tankazonVirtualCategory
+      || card?.closest?.("[data-tankazon-category]")?.dataset?.tankazonCategory
+      || card?.dataset?.storeKind
+      || "equipment";
+  }
+
+  // The compact rows on BubbleBodega Home deliberately use the normal store
+  // card markup, but they are not catalogue rows.  They must never enter the
+  // catalogue virtualizer: Home is often hidden while changing routes, which
+  // gives a virtual host a zero-height viewport and unmounts every card/image.
+  function isBubbleBodegaHomeCard(card) {
+    return Boolean(card?.closest?.("#bubbleBodegaHomePage"));
+  }
+
+  function getTankazonAllCatalogCards(scopeName = "all") {
+    const cards = new Set();
+    for (const [parent, state] of [...tankazonVirtualStates.entries()]) {
+      if (!parent.isConnected || !state.host.isConnected || !state.drawer.isConnected) {
+        tankazonVirtualStates.delete(parent);
+        continue;
+      }
+      for (const card of state.cards) cards.add(card);
+    }
+    document.querySelectorAll("#tankazonCatalogArea .shop-card").forEach((card) => {
+      if (!isBubbleBodegaHomeCard(card)) cards.add(card);
+    });
+    const list = [...cards];
+    return scopeName === "all" ? list : list.filter((card) => getTankazonCardCategory(card) === scopeName);
+  }
+
+  function getTankazonCardsForDrawer(drawer) {
+    const category = drawer?.dataset?.tankazonCategory || "";
+    return getTankazonAllCatalogCards(category);
+  }
+
+  function prepareTankazonLazyImage(image) {
+    if (!(image instanceof HTMLImageElement) || image.dataset.tankazonLazyPrepared === "true") return;
+    image.dataset.tankazonLazyPrepared = "true";
+    image.loading = "lazy";
+    image.decoding = "async";
+    const spriteSource = image.getAttribute("data-sprite-src");
+    const directSource = image.getAttribute("src");
+    if (spriteSource) image.dataset.tankazonLazySpriteSrc = spriteSource;
+    if (directSource) image.dataset.tankazonLazySrc = directSource;
+    // Keep both authored attributes on the element. The old implementation
+    // removed them while a card was virtualized and relied on a later observer
+    // to reconstruct them. A rapid tab change could leave a visible card with
+    // neither source, which is exactly how the blank Equipment tiles occurred.
+  }
+
+  function prepareTankazonCardLazyImages(card) {
+    if (!(card instanceof Element) || isBubbleBodegaHomeCard(card)) return;
+    card.querySelectorAll("img").forEach(prepareTankazonLazyImage);
+  }
+
+  function hydrateTankazonLazyImage(image) {
+    if (!(image instanceof HTMLImageElement)) return;
+    image.dataset.tankazonLazyLoaded = "true";
+    image.loading = "lazy";
+    image.decoding = "async";
+    const spriteSource = image.dataset.tankazonLazySpriteSrc || "";
+    const directSource = image.dataset.tankazonLazySrc || "";
+    if (spriteSource && !image.getAttribute("data-sprite-src")) image.setAttribute("data-sprite-src", spriteSource);
+    if (directSource && !image.getAttribute("src")) image.setAttribute("src", directSource);
+  }
+
+  function hydrateTankazonCardImages(card) {
+    card?.querySelectorAll?.("img").forEach(hydrateTankazonLazyImage);
+  }
+
+  function isTankazonVirtualMutationNode(node) {
+    if (!(node instanceof Element)) return true;
+    return node.matches(".tankazon-virtual-host, .tankazon-virtual-slice, .shop-card[data-tankazon-virtualized='true']")
+      || Boolean(node.closest?.(".tankazon-virtual-host"));
+  }
+
+  function prepareTankazonAddedCards(records) {
+    for (const record of records) {
+      for (const node of record.addedNodes) {
+        if (!(node instanceof Element) || node.closest?.(".tankazon-virtual-host")) continue;
+        const cards = node.matches?.(".shop-card") ? [node] : [...node.querySelectorAll?.(".shop-card") || []];
+        cards.forEach(prepareTankazonCardLazyImages);
+      }
+    }
+  }
+
+  function getTankazonVirtualColumns(state) {
+    const width = Math.max(1, Number(state.host.clientWidth) || Number(state.parent.clientWidth) || 1);
+    const compact = window.matchMedia?.("(max-width: 1180px)")?.matches === true;
+    const minWidth = compact ? TANKAZON_VIRTUAL_CARD_MIN_WIDTH_COMPACT : TANKAZON_VIRTUAL_CARD_MIN_WIDTH;
+    return Math.max(1, Math.floor((width + TANKAZON_VIRTUAL_GRID_GAP) / (minWidth + TANKAZON_VIRTUAL_GRID_GAP)));
+  }
+
+  function getTankazonVirtualEligibleCards(state) {
+    return state.cards.filter((card) => !card.classList.contains("tankazon-search-hidden")
+      && !card.classList.contains("store-facet-hidden"));
+  }
+
+  function restoreBubbleBodegaHomeVirtualCards() {
+    for (const [parent, state] of [...tankazonVirtualStates.entries()]) {
+      if (!parent.closest?.("#bubbleBodegaHomePage")) continue;
+      state.slice.replaceChildren();
+      state.cards.forEach((card) => {
+        delete card.dataset.tankazonVirtualized;
+        delete card.dataset.tankazonVirtualCategory;
+        hydrateTankazonCardImages(card);
+        parent.insertBefore(card, state.host);
+      });
+      state.host.remove();
+      tankazonVirtualStates.delete(parent);
+    }
+  }
+
+  function getTankazonVirtualWindow(itemCount, columns, hostTop, scrollTop, viewportHeight, overscan) {
+    const safeCount = Math.max(0, Math.floor(Number(itemCount) || 0));
+    const safeColumns = Math.max(1, Math.floor(Number(columns) || 1));
+    const rowHeight = TANKAZON_VIRTUAL_CARD_HEIGHT + TANKAZON_VIRTUAL_GRID_GAP;
+    const totalRows = Math.ceil(safeCount / safeColumns);
+    const totalHeight = totalRows > 0
+      ? (totalRows * TANKAZON_VIRTUAL_CARD_HEIGHT) + ((totalRows - 1) * TANKAZON_VIRTUAL_GRID_GAP)
+      : 0;
+    if (!safeCount || !totalHeight) {
+      return { totalRows, totalHeight, startIndex: 0, endIndex: 0, sliceTop: 0 };
+    }
+
+    const viewStart = Math.max(0, Number(scrollTop) || 0) - Math.max(0, Number(overscan) || 0);
+    const viewEnd = Math.max(0, Number(scrollTop) || 0)
+      + Math.max(0, Number(viewportHeight) || 0)
+      + Math.max(0, Number(overscan) || 0);
+    const safeHostTop = Number(hostTop) || 0;
+    const hostEnd = safeHostTop + totalHeight;
+    if (viewEnd < safeHostTop || viewStart > hostEnd) {
+      return { totalRows, totalHeight, startIndex: 0, endIndex: 0, sliceTop: 0 };
+    }
+
+    const relativeStart = Math.max(0, viewStart - safeHostTop);
+    const relativeEnd = Math.min(totalHeight, Math.max(0, viewEnd - safeHostTop));
+    const startRow = Math.min(totalRows - 1, Math.max(0, Math.floor(relativeStart / rowHeight)));
+    const endRow = Math.min(totalRows, Math.max(startRow + 1, Math.ceil(relativeEnd / rowHeight)));
+    return {
+      totalRows,
+      totalHeight,
+      startIndex: startRow * safeColumns,
+      endIndex: Math.min(safeCount, endRow * safeColumns),
+      sliceTop: startRow * rowHeight
+    };
+  }
+
+  function renderTankazonVirtualState(state, catalog) {
+    if (!state.host.isConnected || !state.parent.isConnected) return;
+    const eligible = getTankazonVirtualEligibleCards(state);
+    const columns = getTankazonVirtualColumns(state);
+    const catalogRect = catalog?.getBoundingClientRect?.();
+    const hostRect = state.host.getBoundingClientRect();
+    const hostTop = catalogRect ? hostRect.top - catalogRect.top + catalog.scrollTop : 0;
+    const overscan = Math.max(TANKAZON_VIRTUAL_OVERSCAN_MIN, (catalog?.clientHeight || 0) * 1.25);
+    const windowState = getTankazonVirtualWindow(
+      eligible.length,
+      columns,
+      hostTop,
+      catalog?.scrollTop || 0,
+      catalog?.clientHeight || 0,
+      overscan
+    );
+    state.host.style.height = `${Math.max(0, windowState.totalHeight)}px`;
+    state.host.hidden = eligible.length === 0;
+
+    const section = state.parent.closest?.(".shop-section");
+    if (section) section.classList.toggle("store-facet-empty-section", eligible.length === 0);
+
+    if (!eligible.length || state.drawer.hidden || !catalog || catalog.clientHeight <= 0) {
+      if (state.mounted.length) {
+        state.slice.replaceChildren();
+        state.mounted = [];
+      }
+      return;
+    }
+
+    const desired = eligible.slice(windowState.startIndex, windowState.endIndex);
+    const unchanged = desired.length === state.mounted.length && desired.every((card, index) => card === state.mounted[index]);
+
+    state.slice.style.top = `${windowState.sliceTop}px`;
+    if (unchanged) return;
+    desired.forEach(hydrateTankazonCardImages);
+    state.slice.replaceChildren(...desired);
+    state.mounted = desired;
+  }
+
+  function refreshTankazonVirtualCatalog({ sync = false } = {}) {
+    if (sync) syncTankazonVirtualCatalog();
+    const catalog = document.getElementById("tankazonCatalogArea");
+    if (!catalog) return;
+    for (const [parent, state] of [...tankazonVirtualStates.entries()]) {
+      if (!parent.isConnected || !state.host.isConnected) {
+        tankazonVirtualStates.delete(parent);
+        continue;
+      }
+      renderTankazonVirtualState(state, catalog);
+    }
+  }
+
+  function scheduleTankazonVirtualRefresh() {
+    if (tankazonVirtualFrame) return;
+    tankazonVirtualFrame = requestAnimationFrame(() => {
+      tankazonVirtualFrame = 0;
+      refreshTankazonVirtualCatalog();
+    });
+  }
+
+  function releaseTankazonVirtualCatalog() {
+    if (tankazonVirtualFrame) {
+      cancelAnimationFrame(tankazonVirtualFrame);
+      tankazonVirtualFrame = 0;
+    }
+    for (const state of tankazonVirtualStates.values()) {
+      // Closing BubbleBodega causes the native renderer to discard its shop
+      // markup. Drop our parallel references as well, otherwise the virtual
+      // state keeps every detached card and its decoded thumbnails alive.
+      state.slice?.replaceChildren();
+      state.mounted = [];
+      state.cards = [];
+    }
+    tankazonVirtualStates.clear();
+  }
+
+  function syncTankazonVirtualCatalog() {
+    for (const [parent, state] of [...tankazonVirtualStates.entries()]) {
+      if (!parent.isConnected || !state.host.isConnected) tankazonVirtualStates.delete(parent);
+    }
+
+    for (const drawer of drawers()) {
+      const category = drawer.dataset.tankazonCategory || "equipment";
+      if (category === "decor") {
+        // Decor and Equipment deliberately stay out of the virtual catalogue.
+        // Their small, grouped layouts do not benefit from it, and their cards
+        // must retain authored image sources while a route changes. Restore any
+        // sources the drawer observer deferred before the sprite hydrator runs.
+        drawer.querySelectorAll(".shop-card").forEach(hydrateTankazonCardImages);
+        continue;
+      }
+      if (category === "equipment") {
+        drawer.querySelectorAll(".shop-card").forEach(hydrateTankazonCardImages);
+        continue;
+      }
+      const groups = new Map();
+      drawer.querySelectorAll(".shop-card").forEach((card) => {
+        if (card.closest(".tankazon-virtual-host") || isBubbleBodegaHomeCard(card)) return;
+        const parent = card.parentElement;
+        if (!parent) return;
+        if (!groups.has(parent)) groups.set(parent, []);
+        groups.get(parent).push(card);
+      });
+
+      for (const [parent, cards] of groups) {
+        if (!cards.length || tankazonVirtualStates.has(parent)) continue;
+        const first = cards[0];
+        const host = document.createElement("div");
+        host.className = "tankazon-virtual-host";
+        host.dataset.tankazonVirtualCategory = category;
+        const slice = document.createElement("div");
+        slice.className = "tankazon-virtual-slice";
+        host.append(slice);
+        parent.insertBefore(host, first);
+        for (const card of cards) {
+          card.dataset.tankazonVirtualized = "true";
+          card.dataset.tankazonVirtualCategory = category;
+          prepareTankazonCardLazyImages(card);
+          card.remove();
+        }
+        tankazonVirtualStates.set(parent, { parent, drawer, host, slice, cards, mounted: [] });
+      }
+    }
+    refreshTankazonVirtualCatalog();
+  }
+
+  window.getBubbleBodegaCatalogCards = getTankazonAllCatalogCards;
+  window.refreshBubbleBodegaVirtualCatalog = (options = {}) => refreshTankazonVirtualCatalog({ sync: options.sync === true });
 
   function getTankazonAccountData() {
     const data = window.getBubbleBodegaAccountData?.();
@@ -247,6 +469,60 @@
     return getTankazonSellerName(value).toLowerCase() === "proteus biodyne";
   }
 
+  function isCommonCurrentSeller(value) {
+    return getTankazonSellerName(value).toLowerCase() === "common current";
+  }
+
+  function isArcadiaHomeAquaticsSeller(value) {
+    return getTankazonSellerName(value).toLowerCase() === "arcadia home aquatics";
+  }
+
+  function getTankazonSellerSite(item = selectedItem) {
+    const seller = getTankazonSellerName(item?.seller).toLowerCase();
+    if (item?.category === "pharmacy" && (seller === "clearwell laboratories" || seller === "tidewell")) return "clearwell";
+    if (seller === "arcadia home aquatics") return "arcadia";
+    if (seller === "common current") return "commoncurrent";
+    if (seller === "tidewell") return "tidewell";
+    if (seller === "proteus biodyne") return "proteus";
+    return "";
+  }
+
+  function syncSubsidiaryTabs() {
+    document.querySelectorAll("#storeOverlay [data-websurf-subsidiary-tab]").forEach((tab) => {
+      tab.hidden = !subsidiaryTabsOpen.has(tab.dataset.websurfSubsidiaryTab);
+    });
+  }
+
+  function showWebSurfSubsidiaryPage(siteId, trigger = null) {
+    const page = document.getElementById("webSurfSubsidiaryPage");
+    const site = page?.querySelector(`[data-websurf-subsidiary-site="${siteId}"]`);
+    if (!page || !site) return false;
+    closeTankazonAccount();
+    if (proteusPageOpen) closeProteusBiodyne(false);
+    subsidiaryPageOpen = siteId;
+    subsidiaryTabsOpen.add(siteId);
+    syncSubsidiaryTabs();
+    page.hidden = false;
+    page.querySelectorAll("[data-websurf-subsidiary-site]").forEach((panel) => { panel.hidden = panel !== site; });
+    overlay()?.classList.add("websurf-subsidiary-open");
+    syncWebPageTabs(siteId);
+    page.scrollTop = 0;
+    site.querySelector("h1")?.focus?.({ preventScroll: true });
+    return true;
+  }
+
+  function closeWebSurfSubsidiaryPage(removeTabs = false) {
+    const page = document.getElementById("webSurfSubsidiaryPage");
+    subsidiaryPageOpen = "";
+    overlay()?.classList.remove("websurf-subsidiary-open");
+    if (page) page.hidden = true;
+    if (removeTabs) subsidiaryTabsOpen.clear();
+    syncSubsidiaryTabs();
+  }
+
+  window.showWebSurfSubsidiaryPage = showWebSurfSubsidiaryPage;
+  window.closeWebSurfSubsidiaryPage = closeWebSurfSubsidiaryPage;
+
   function showProteusTab(tabId, { focus = false, restoreScroll = false } = {}) {
     const page = document.getElementById("proteusBiodynePage");
     if (!page) return;
@@ -266,45 +542,43 @@
   }
 
   function syncWebPageTabs(activePage) {
+    const storeOverlay = overlay();
+    const routeVisible = activePage === "store"
+      && Boolean(storeOverlay && !storeOverlay.hidden && storeOverlay.classList.contains("is-open"));
+    const enteringStore = routeVisible && !tankazonRouteVisible;
+    const leavingStore = !routeVisible && tankazonRouteVisible;
+    tankazonRouteVisible = routeVisible;
+
     document.querySelectorAll("#storeOverlay .webpage-tab-strip [data-webpage-destination]").forEach((tab) => {
       const active = tab.dataset.webpageDestination === activePage;
       tab.classList.toggle("is-active", active);
       if (active) tab.setAttribute("aria-current", "page");
       else tab.removeAttribute("aria-current");
     });
+
+    if (leavingStore) cancelTankazonCatalogLoading();
+    if (enteringStore) refreshTankazonOpening();
   }
 
   function hasDiscoveredProteus() {
+    // Discovery belongs to the current save. Legacy localStorage is only a
+    // mirror for the active save and must never unlock Proteus in a new game.
     const saved = window.getProteusSaveDiscovery?.();
-    if (saved?.discovered === true) {
+    const discovered = saved?.discovered === true;
+    if (discovered) {
       try {
         localStorage.setItem(PROTEUS_DISCOVERY_STORAGE_KEY, "true");
         if (Number(saved.discoveredAt) > 0) localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(saved.discoveredAt));
       } catch {}
-      return true;
     }
-    try {
-      const localDiscovered = localStorage.getItem(PROTEUS_DISCOVERY_STORAGE_KEY) === "true";
-      if (localDiscovered) window.markProteusDiscoveredInSave?.(Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY)) || Date.now());
-      return localDiscovered;
-    } catch { return false; }
+    return discovered;
   }
 
   function getProteusDiscoveredAt() {
     if (!hasDiscoveredProteus()) return 0;
     const now = Date.now();
     const savedAt = Number(window.getProteusSaveDiscovery?.()?.discoveredAt);
-    if (Number.isFinite(savedAt) && savedAt > 0) return Math.min(savedAt, now);
-    try {
-      let discoveredAt = Number(localStorage.getItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY));
-      if (!Number.isFinite(discoveredAt) || discoveredAt <= 0 || discoveredAt > now + 60000) {
-        discoveredAt = now;
-        localStorage.setItem(PROTEUS_DISCOVERY_TIME_STORAGE_KEY, String(discoveredAt));
-      }
-      return Math.min(discoveredAt, now);
-    } catch {
-      return now;
-    }
+    return Number.isFinite(savedAt) && savedAt > 0 ? Math.min(savedAt, now) : now;
   }
 
   function syncProteusDiscovery() {
@@ -327,8 +601,19 @@
   }
 
   function showProteusBiodyne(trigger, { allowDirect = false } = {}) {
-    if (proteusPageOpen) return;
     if (!allowDirect && (!selectedItem || !isProteusBiodyneSeller(selectedItem.seller))) return;
+    const page = document.getElementById("proteusBiodynePage");
+    const storeOverlay = overlay();
+    // A store render can hide the page while the old session flag remains
+    // true. Do not treat that stale flag as a successful Proteus route: reopen
+    // and repair the route instead of permanently blocking the whole store.
+    if (proteusPageOpen && page && !page.hidden && storeOverlay?.classList.contains("proteus-biodyne-open")) return true;
+    if (!page || !storeOverlay) {
+      proteusPageOpen = false;
+      storeOverlay?.classList.remove("proteus-biodyne-open");
+      syncWebPageTabs("store");
+      return false;
+    }
     // Any successful visit to the Proteus site counts as discovery. Persist it
     // immediately so the bookmark survives browser closure and future sessions.
     discoverProteus();
@@ -337,10 +622,10 @@
     proteusTabOpen = true;
     syncProteusDiscovery();
     proteusReturnFocus = trigger instanceof HTMLElement ? trigger : document.activeElement;
-    const page = document.getElementById("proteusBiodynePage");
     page.hidden = false;
     document.getElementById("proteusDesignerRoute")?.setAttribute("hidden", "");
-    overlay()?.classList.add("proteus-biodyne-open");
+    closeWebSurfSubsidiaryPage(false);
+    storeOverlay.classList.add("proteus-biodyne-open");
     showProteusTab(proteusSessionTab, { restoreScroll: true });
     window.rememberWebSurfPage?.("proteus");
     syncWebPageTabs("proteus");
@@ -353,7 +638,8 @@
     proteusSessionScrollTop = Math.max(0, Number(document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll")?.scrollTop) || 0);
     proteusPageOpen = false;
     overlay()?.classList.remove("proteus-biodyne-open");
-    document.getElementById("proteusBiodynePage").hidden = true;
+    const page = document.getElementById("proteusBiodynePage");
+    if (page) page.hidden = true;
     if (designerRoute) designerRoute.hidden = true;
     syncWebPageTabs("store");
     if (restoreFocus && proteusReturnFocus?.isConnected) proteusReturnFocus.focus({ preventScroll: true });
@@ -375,6 +661,7 @@
   };
   window.resetOptionalWebPageTabs = () => {
     proteusTabOpen = false;
+    closeWebSurfSubsidiaryPage(true);
     syncProteusDiscovery();
   };
   syncProteusDiscovery();
@@ -425,8 +712,46 @@
     });
   }
 
+  function isTankazonInitialCatalogPaintReady() {
+    const catalog = document.getElementById("tankazonCatalogArea");
+    if (!catalog || catalog.clientHeight <= 0) return false;
+
+    const visibleDrawers = drawers().filter((drawer) => !drawer.hidden);
+    const eligibleCards = visibleDrawers.flatMap((drawer) => getTankazonCardsForDrawer(drawer))
+      .filter((card) => !card.classList.contains("tankazon-search-hidden")
+        && !card.classList.contains("store-facet-hidden"));
+    if (!eligibleCards.length) return true;
+
+    // Decor is intentionally not virtualized and its cards sit beneath nested
+    // subcategory wrappers. A direct-child selector never finds that shape,
+    // which kept the loading mask up forever even after the catalog rendered.
+    return visibleDrawers.some((drawer) => drawer.querySelector(
+      ".shop-card:not(.tankazon-search-hidden):not(.store-facet-hidden)"
+    ));
+  }
+
+  async function waitForTankazonInitialCatalogPaint(token) {
+    const deadline = performance.now() + 1600;
+    while (token === tankazonLoadingToken) {
+      refreshTankazonVirtualCatalog({ sync: true });
+      if (isTankazonInitialCatalogPaintReady()) return true;
+      // Never leave the store covered by a loader when a renderer has an
+      // unexpected card layout or is still completing a late paint.
+      if (performance.now() >= deadline) return false;
+      await new Promise((resolve) => requestAnimationFrame(resolve));
+    }
+    return false;
+  }
+
   async function settleTankazonCatalogLoading(category, token) {
     await waitForTankazonRender();
+    if (token !== tankazonLoadingToken) return;
+
+    // The result count is based on the logical catalogue, while visible cards
+    // live in a virtual slice. A hidden opening frame can therefore report all
+    // products while mounting none. Wait briefly for that first paint, then
+    // always release the mask so a non-virtual category cannot load forever.
+    await waitForTankazonInitialCatalogPaint(token);
     if (token !== tankazonLoadingToken) return;
 
     const images = getTankazonVisibleProductImages(category);
@@ -467,6 +792,41 @@
     void settleTankazonCatalogLoading(category, token);
   }
 
+  function cancelTankazonCatalogLoading() {
+    ++tankazonLoadingToken;
+    const loader = document.getElementById("tankazonCatalogLoading");
+    const catalog = document.getElementById("tankazonCatalogArea");
+    if (loader) loader.hidden = true;
+    if (catalog) {
+      catalog.classList.remove("is-loading");
+      catalog.removeAttribute("aria-busy");
+    }
+  }
+
+  function refreshTankazonOpening() {
+    const store = overlay();
+    if (!store || store.hidden || !tankazonRouteVisible) return;
+    if (tankazonSession.view === "home") {
+      cancelTankazonCatalogLoading();
+      enterBubbleBodegaHome({ reset: false });
+      return;
+    }
+    const revision = tankazonNavigationRevision;
+    beginTankazonCatalogLoading(scope());
+    normalizeTankazonPurchaseButtons();
+    syncTankazonVirtualCatalog();
+    syncTankazonNavState();
+    applySearch({ preserveScroll: true });
+    const refresh = () => {
+      if (store.hidden || !tankazonRouteVisible || revision !== tankazonNavigationRevision) return;
+      refreshTankazonVirtualCatalog({ sync: true });
+    };
+    requestAnimationFrame(() => {
+      refresh();
+      requestAnimationFrame(refresh);
+    });
+  }
+
   function saveTankazonCart() {
     try {
       localStorage.setItem(TANKAZON_CART_STORAGE_KEY, JSON.stringify([...cart.values()]));
@@ -484,6 +844,7 @@
         if (!item || typeof item.key !== "string" || isTankazonCustomProduct(item)) return;
         cart.set(item.key, {
           ...item,
+          category: item.category === "cleanup" ? "fish" : item.category,
           quantity: Math.max(1, Math.floor(Number(item.quantity) || 1))
         });
       });
@@ -493,8 +854,10 @@
   }
 
   function saveTankazonView(category) {
-    const normalized = CATEGORY_IDS.includes(category) ? category : "all";
-    lastTankazonCategory = normalized;
+    const normalized = category === "home" ? "home" : (CATEGORY_IDS.includes(category) ? category : "all");
+    if (tankazonSession.view !== normalized) tankazonNavigationRevision += 1;
+    tankazonSession.view = normalized;
+    if (normalized !== "home") tankazonSession.category = normalized;
     try {
       localStorage.setItem(TANKAZON_VIEW_STORAGE_KEY, normalized);
     } catch (error) {
@@ -503,50 +866,126 @@
   }
 
   function restoreTankazonView() {
+    let view = "home";
     try {
       const saved = localStorage.getItem(TANKAZON_VIEW_STORAGE_KEY);
-      lastTankazonCategory = CATEGORY_IDS.includes(saved) ? saved : "all";
+      if (saved === "all" || CATEGORY_IDS.includes(saved)) view = saved;
     } catch (error) {
-      lastTankazonCategory = "all";
+      // Home is the safe fallback when storage is unavailable too.
     }
-    return lastTankazonCategory;
+    tankazonSession.view = view;
+    if (view !== "home") tankazonSession.category = view;
+    return view;
   }
+
+  // Session memory remains authoritative even if browser storage is blocked.
+  window.getBubbleBodegaSavedView = () => tankazonSession.view;
 
   function restoreTankazonViewToUI() {
     const view = restoreTankazonView();
-    const select = document.getElementById("tankazonSearchScope");
     allCategoriesMode = view === "all";
-    if (select) select.value = view;
     syncTankazonNavState();
     applySearch({ preserveScroll: true });
   }
 
-  function commitTankazonSearch() {
+  function syncTankazonSearchFromControls({ resetScroll = true } = {}) {
     closeTankazonItem(false);
-    committedSearchQuery = typedQuery();
+    tankazonSession.searchQuery = typedQuery();
+    // Home has no category listing to filter. A search from the landing page
+    // enters the catalogue through the same explicit All Categories route.
+    if (tankazonSession.view === "home" && tankazonSession.searchQuery) {
+      document.getElementById("tankazonAllCategories")?.click();
+    }
     const requestedScope = scope();
-    committedSearchScope = CATEGORY_IDS.includes(requestedScope) ? requestedScope : "all";
-    searchCommitted = Boolean(committedSearchQuery || committedSearchScope !== "all");
-    committedSearchScrollTop = 0;
-    applySearch({ preserveScroll: false });
+    tankazonSession.searchScope = CATEGORY_IDS.includes(requestedScope) ? requestedScope : "all";
+    tankazonSession.searchActive = Boolean(tankazonSession.searchQuery);
+    if (resetScroll) tankazonSession.searchScrollTop = 0;
+    applySearch({ preserveScroll: !resetScroll });
     const catalog = document.getElementById("tankazonCatalogArea");
-    if (catalog) catalog.scrollTop = 0;
+    if (catalog && resetScroll) catalog.scrollTop = 0;
+  }
+
+  function commitTankazonSearch() {
+    syncTankazonSearchFromControls({ resetScroll: true });
   }
 
   function getTankazonSearchView() {
     return {
-      active: searchCommitted,
-      scope: committedSearchScope,
-      query: committedSearchQuery
+      active: tankazonSession.searchActive,
+      allCategories: allCategoriesMode,
+      category: allCategoriesMode ? "all" : tankazonSession.category,
+      scope: tankazonSession.searchScope,
+      query: tankazonSession.searchQuery
     };
   }
 
   window.getBubbleBodegaSearchView = getTankazonSearchView;
+  window.getBubbleBodegaSessionState = () => ({
+    category: tankazonSession.category,
+    search: getTankazonSearchView(),
+    scrollTop: tankazonSession.searchActive ? tankazonSession.searchScrollTop : tankazonSession.allScrollTop
+  });
   window.refreshBubbleBodegaSearchView = (options = {}) => {
-    if (!searchCommitted) return false;
+    if (!tankazonSession.searchActive) return false;
     applySearch({ preserveScroll: options.preserveScroll !== false });
     return true;
   };
+
+  function enterBubbleBodegaHome({ reset = true } = {}) {
+    if (reset) {
+      tankazonNavigationRevision += 1;
+      closeTankazonItem(false);
+      closeTankazonAccount();
+      cancelTankazonCatalogLoading();
+      tankazonSession.searchQuery = "";
+      tankazonSession.searchScrollTop = 0;
+      const searchInput = document.getElementById("tankazonSearchInput");
+      if (searchInput) searchInput.value = "";
+      saveTankazonView("home");
+    }
+    // Home is not an aggregate category view. The catalogue session can retain
+    // its last category, but the visible store controls must not imply that
+    // Home is currently browsing it.
+    allCategoriesMode = false;
+    tankazonSession.searchActive = false;
+    document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
+    document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
+    document.querySelectorAll(".store-tab-button").forEach((tab) => {
+      tab.classList.remove("is-active");
+      tab.setAttribute("aria-selected", "false");
+    });
+    // All Categories is an aggregate catalogue mode, never a persistent Home
+    // route. Leave it with a real category remembered so a later tab switch
+    // cannot remount the aggregate catalogue over BubbleBodega Home.
+    if (!CATEGORY_IDS.includes(tankazonSession.category)) tankazonSession.category = "food";
+    restoreBubbleBodegaHomeVirtualCards();
+    document.querySelectorAll("#bubbleBodegaHomePage .shop-card").forEach((card) => {
+      card.classList.remove("store-facet-hidden", "tankazon-search-hidden");
+    });
+    normalizeTankazonPurchaseButtons();
+    syncTankazonNavState();
+  }
+  window.enterBubbleBodegaHome = enterBubbleBodegaHome;
+  function prepareBubbleBodegaView(view) {
+    if (view === "home") {
+      enterBubbleBodegaHome();
+      return;
+    }
+    tankazonNavigationRevision += 1;
+    closeTankazonItem(false);
+    closeTankazonAccount();
+    cancelTankazonCatalogLoading();
+    allCategoriesMode = view === "all";
+    saveTankazonView(view);
+    if (tankazonSession.searchActive) tankazonSession.searchScope = view;
+    syncTankazonNavState();
+  }
+  window.prepareBubbleBodegaView = prepareBubbleBodegaView;
+  window.addEventListener("bubbleborough:bodega-home-state", (event) => {
+    // A normal game render refreshes cards. It must not reset an open product
+    // detail or overwrite a preference merely because Home is mounted behind it.
+    if (event.detail?.open === true) enterBubbleBodegaHome({ reset: false });
+  });
 
   function normalizeTankazonTiles() {
     document.querySelectorAll("#storeOverlay .shop-card").forEach((card) => {
@@ -622,8 +1061,9 @@
   function normalizeTankazonPurchaseButtons() {
     if (completingPurchase) return;
     document.querySelectorAll(
-      "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]"
+      "#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-substrate], #storeOverlay [data-buy-water-kit], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]"
     ).forEach((button) => {
+      const card = button.closest('.shop-card');
       const currentLabel = button.textContent.trim();
       if (button.dataset.tankazonOriginalLabel === undefined) button.dataset.tankazonOriginalLabel = currentLabel;
       const originalLabel = button.dataset.tankazonOriginalLabel || currentLabel;
@@ -632,9 +1072,11 @@
         if (button.textContent !== unavailableLabel) button.textContent = unavailableLabel;
         button.disabled = true;
         button.classList.add("tankazon-out-of-stock");
+        card?.classList?.add('tankazon-card-out-of-stock');
         return;
       }
       button.classList.remove("tankazon-out-of-stock");
+      card?.classList?.remove('tankazon-card-out-of-stock');
       const label = isTankazonCustomProduct(getButtonDescriptor(button)) ? "Customize" : "Add to Cart";
       if (button.textContent !== label) button.textContent = label;
     });
@@ -643,6 +1085,7 @@
         button.textContent = "Out of Stock";
         button.disabled = true;
         button.classList.add("tankazon-out-of-stock");
+        button.closest('.shop-card')?.classList?.add('tankazon-card-out-of-stock');
       }
     });
     normalizeTankazonTiles();
@@ -656,6 +1099,236 @@
   function getTankazonSellerName(value) {
     const seller = typeof value === "string" ? value.trim() : "";
     return seller || "BubbleBodega";
+  }
+
+  function getTankazonSharedFoodTitle(item) {
+    if (item?.fnName !== "buyFood") return item?.baseName || item?.name || "";
+    if (item.id === "basic") return "Tidewell - Basic Food";
+    if (item.id === "chum") return "Tidewell - Chum Bucket";
+    return item?.baseName || item?.name || "";
+  }
+
+  function getTankazonDecorCollectionConfig(item) {
+    if (item?.fnName !== "buyDecor" || !Array.isArray(item?.variants) || item.variants.length <= 1) return null;
+    const labels = item.variants.map((variant) => String(variant?.label || "").trim()).filter(Boolean);
+    const isRockSet = labels.length === 5 && labels.every((label, index) => label === `Rock ${index + 1}`);
+    const isVolcanicSet = labels.length === 4 && labels.every((label, index) => label === `Volcanic Rock ${index + 1}`);
+    if (!isRockSet && !isVolcanicSet) return null;
+    const packPrice = item.variants.reduce((sum, variant) => sum + Math.max(0, Number(variant?.cost) || 0), 0);
+    return {
+      group: isRockSet ? "arcadia-rocks" : "arcadia-volcanic-rocks",
+      sharedTitle: isRockSet ? "Rocks" : "Volcanic Rocks",
+      singularTitle: isRockSet ? "Rock" : "Volcanic Rock",
+      packName: isRockSet ? "Rock Pack" : "Volcanic Rock Pack",
+      packLabel: `${isRockSet ? "Rock Pack" : "Volcanic Rock Pack"} (${labels.length} total)`,
+      packCount: labels.length,
+      packPrice
+    };
+  }
+
+  function applyTankazonCollectionState(item) {
+    const config = getTankazonDecorCollectionConfig(item);
+    if (!config) return item;
+    const activeVariant = item.variants.find((variant) => variant.key === item.variantKey) || item.variants[0];
+    const singleCost = Math.max(0, Number(activeVariant?.cost) || Number(item.cost) || 0);
+    const next = {
+      ...item,
+      collectionGroup: config.group,
+      pageTitle: config.sharedTitle,
+      packCount: config.packCount,
+      singleCost,
+      singleOriginalCost: singleCost
+    };
+    if (next.purchaseMode === "pack") {
+      next.key = `${next.fnName}:${next.id}:pack:${config.group}`;
+      next.name = config.packName;
+      next.cost = config.packPrice;
+      next.originalCost = config.packPrice;
+    } else {
+      next.purchaseMode = "single";
+      next.name = String(activeVariant?.label || config.singularTitle);
+      next.cost = singleCost;
+      next.originalCost = singleCost;
+      if (next.variantKey) next.key = `${next.fnName}:${next.id}:variant:${next.variantKey}`;
+    }
+    return next;
+  }
+
+  function getTankazonItemTitle(item) {
+    const collection = getTankazonDecorCollectionConfig(item);
+    if (collection) return collection.sharedTitle;
+    return getTankazonSharedFoodTitle(item);
+  }
+
+  function renderTankazonCollectionPackArt(item) {
+    const stage = document.getElementById("tankazonItemImage");
+    if (!stage) return;
+    const wrapper = document.createElement("div");
+    wrapper.className = "tankazon-item-pack-art";
+    const variants = Array.isArray(item?.variants) ? item.variants : [];
+    variants.forEach((variant) => {
+      const frame = document.createElement("div");
+      frame.className = "tankazon-item-pack-art-tile";
+      const image = document.createElement("img");
+      image.className = "tankazon-item-pack-art-image";
+      image.setAttribute("data-sprite-src", variant.image);
+      image.alt = variant.label || "Variant";
+      frame.append(image);
+      wrapper.append(frame);
+    });
+    stage.replaceChildren(wrapper);
+  }
+
+  function getTankazonFoodSizeOptions(item) {
+    if (item?.fnName !== "buyFood") return [];
+    const order = ["small", "medium", "large"];
+    return getTankazonAllCatalogCards()
+      .flatMap((card) => [...card.querySelectorAll("[data-buy-food]")])
+      .map((button) => getButtonDescriptor(button))
+      .filter((descriptor) => descriptor?.fnName === "buyFood" && descriptor.id === item.id && descriptor.packageId)
+      .filter((descriptor, index, list) => list.findIndex((entry) => entry.packageId === descriptor.packageId) === index)
+      .sort((left, right) => {
+        const leftRank = order.includes(left.packageId) ? order.indexOf(left.packageId) : order.length;
+        const rightRank = order.includes(right.packageId) ? order.indexOf(right.packageId) : order.length;
+        return leftRank - rightRank || (Number(left.servings) || 0) - (Number(right.servings) || 0);
+      });
+  }
+
+  function getTankazonFoodSizeLabel(item) {
+    const packageId = String(item?.packageId || "").trim().toLowerCase();
+    const size = packageId === "medium" ? "Medium" : packageId === "large" ? "Large" : packageId === "small" ? "Small" : (packageId || "Package");
+    const count = Math.max(0, Number(item?.servings) || 0);
+    return `${size.charAt(0).toUpperCase()}${size.slice(1)} | ${count} Count`;
+  }
+
+  function syncTankazonFoodQtyBadge(item) {
+    const stage = document.getElementById("tankazonItemImage");
+    if (!stage) return;
+    stage.querySelector(".tankazon-item-qty-badge")?.remove();
+    if (item?.fnName !== "buyFood") return;
+    const servings = Math.max(0, Math.floor(Number(item.servings) || 0));
+    if (!servings) return;
+    const badge = document.createElement("span");
+    badge.className = "tankazon-item-qty-badge";
+    badge.textContent = `Qty ${servings}`;
+    badge.setAttribute("aria-label", `Quantity ${servings}`);
+    stage.append(badge);
+  }
+
+  function renderTankazonFoodSizes(item) {
+    const container = document.getElementById("tankazonItemSizes");
+    const foodSection = document.getElementById("tankazonFoodSizeSection");
+    const foodCards = document.getElementById("tankazonFoodSizeCards");
+    if (container) {
+      container.replaceChildren();
+      container.hidden = true;
+    }
+    if (foodCards) {
+      if (typeof foodCards.replaceChildren === "function") foodCards.replaceChildren();
+      else foodCards.textContent = "";
+    }
+    if (foodSection) foodSection.hidden = true;
+
+    const collection = getTankazonDecorCollectionConfig(item);
+    if (collection && container) {
+      container.hidden = false;
+      container.setAttribute("aria-label", "Choose purchase option");
+      const label = document.createElement("strong");
+      label.textContent = "Buy:";
+      container.append(label);
+      [
+        { key: "single", label: `Single ${collection.singularTitle}` },
+        { key: "pack", label: collection.packLabel }
+      ].forEach((option, index) => {
+        if (index) {
+          const separator = document.createElement("span");
+          separator.className = "tankazon-item-size-separator";
+          separator.textContent = "|";
+          separator.setAttribute("aria-hidden", "true");
+          container.append(separator);
+        }
+        const active = (item.purchaseMode || "single") === option.key;
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "tankazon-item-size-option";
+        button.dataset.tankazonPurchaseMode = option.key;
+        button.setAttribute("role", "radio");
+        button.setAttribute("aria-checked", String(active));
+        button.textContent = `${active ? "✅" : "☐"} ${option.label}`;
+        container.append(button);
+      });
+      return;
+    }
+
+    const options = getTankazonFoodSizeOptions(item);
+    if (item?.fnName !== "buyFood" || options.length <= 1 || !foodSection || !foodCards) return;
+
+    foodSection.hidden = false;
+    foodCards.setAttribute("role", "radiogroup");
+    foodCards.setAttribute("aria-label", "Available sizes");
+    options.forEach((option) => {
+      const active = option.packageId === item.packageId;
+      const card = document.createElement("article");
+      card.className = `tankazon-food-size-card${active ? " is-selected" : ""}`;
+      card.dataset.tankazonFoodSize = option.packageId;
+      card.dataset.foodId = item.id || "";
+      card.dataset.foodPackage = option.packageId;
+      card.setAttribute("role", "radio");
+      card.setAttribute("aria-checked", String(active));
+      card.tabIndex = active ? 0 : -1;
+      card.setAttribute("aria-label", `Select ${getTankazonFoodSizeLabel(option)}${active ? ", selected" : ""}`);
+      card.addEventListener("keydown", (event) => {
+        if (event.key !== "Enter" && event.key !== " ") return;
+        event.preventDefault();
+        card.click();
+      });
+
+      const imageStage = document.createElement("div");
+      imageStage.className = "tankazon-food-size-image";
+      imageStage.dataset.foodId = item.id || "";
+      imageStage.dataset.foodPackage = option.packageId;
+      const image = document.createElement("img");
+      image.setAttribute("data-sprite-src", option.image || "assets/icons/Store_Icon.png");
+      image.alt = option.name || getTankazonFoodSizeLabel(option);
+      imageStage.append(image);
+      const qty = document.createElement("span");
+      qty.className = "tankazon-food-size-qty";
+      qty.textContent = `Qty ${Math.max(0, Number(option.servings) || 0)}`;
+      imageStage.append(qty);
+
+      const title = document.createElement("strong");
+      title.textContent = option.name || getTankazonFoodSizeLabel(option);
+      const price = document.createElement("span");
+      price.className = "tankazon-food-size-price";
+      price.textContent = option.cost === 0 ? "Free" : `${Number(option.cost || 0).toLocaleString()} coins`;
+
+      card.append(imageStage, title, price);
+      foodCards.append(card);
+    });
+  }
+
+  function refreshTankazonItemDetailsFromCard(item) {
+    const details = document.getElementById("tankazonItemDetails");
+    if (!details) return;
+    const button = findTankazonNativePurchaseButton(item);
+    const card = button?.closest(".shop-card");
+    if (!card) return;
+    details.replaceChildren();
+    const aboutOverride = TANKAZON_ITEM_ABOUT_COPY[`${item.fnName}:${item.id}`] || "";
+    if (aboutOverride) {
+      const copy = document.createElement("div");
+      copy.className = "tankazon-item-facts";
+      copy.innerHTML = aboutOverride;
+      details.append(copy);
+    } else {
+      card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
+        const copy = source.cloneNode(true);
+        copy.querySelectorAll("button, .price-tag, strong, [id]").forEach((node) => node.remove());
+        copy.className = "tankazon-item-facts";
+        details.append(copy);
+      });
+    }
+    if (!details.textContent.trim()) details.textContent = `${item.name} for your aquarium.`;
   }
 
   function openTankazonItem(preview) {
@@ -672,7 +1345,8 @@
     };
     const catalog = document.getElementById("tankazonCatalogArea");
     itemReturnScrollTop = catalog.scrollTop;
-    selectedItem = descriptor;
+    itemReturnPreview = preview;
+    selectedItem = applyTankazonCollectionState(descriptor);
     const image = preview.cloneNode(true);
     image.removeAttribute("tabindex");
     image.removeAttribute("role");
@@ -686,9 +1360,12 @@
     itemImageStage.replaceChildren(image);
     itemImageStage.classList.toggle("is-fish-preview", descriptor.category === "fish");
     itemImageStage.classList.toggle("is-proteus-preview", isProteusBiodyneSeller(descriptor.seller));
+    itemImageStage.classList.toggle("is-common-current-preview", isCommonCurrentSeller(descriptor.seller) && descriptor.category === "fish");
+    itemImageStage.classList.toggle("is-arcadia-preview", isArcadiaHomeAquaticsSeller(descriptor.seller) && descriptor.category === "decor");
     itemImageStage.classList.toggle("is-davy-mutation-preview", Boolean(descriptor.backgroundImage));
     renderTankazonVariants(descriptor);
-    document.getElementById("tankazonItemTitle").textContent = descriptor.baseName || descriptor.name;
+    renderTankazonFoodSizes(selectedItem);
+    document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
     document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
     const details = document.getElementById("tankazonItemDetails");
     details.replaceChildren();
@@ -726,25 +1403,59 @@
   function closeTankazonItem(restore = true) {
     if (!selectedItem) return;
     const previous = selectedItem;
+    const previousPreview = itemReturnPreview;
+    itemReturnPreview = null;
     selectedItem = null;
+    const sizePicker = document.getElementById("tankazonItemSizes");
+    if (sizePicker) {
+      sizePicker.hidden = true;
+      if (typeof sizePicker.replaceChildren === "function") sizePicker.replaceChildren();
+      else sizePicker.textContent = "";
+    }
+    const foodSizeSection = document.getElementById("tankazonFoodSizeSection");
+    const foodSizeCards = document.getElementById("tankazonFoodSizeCards");
+    if (foodSizeSection) foodSizeSection.hidden = true;
+    if (foodSizeCards) {
+      if (typeof foodSizeCards.replaceChildren === "function") foodSizeCards.replaceChildren();
+      else foodSizeCards.textContent = "";
+    }
     document.getElementById("tankazonItemPage").hidden = true;
     overlay().classList.remove("tankazon-item-open");
     if (restore) {
-      if (allCategoriesMode) allCategoriesScrollTop = itemReturnScrollTop;
-      if (query()) committedSearchScrollTop = itemReturnScrollTop;
+      if (allCategoriesMode) tankazonSession.allScrollTop = itemReturnScrollTop;
+      if (tankazonSession.searchActive) tankazonSession.searchScrollTop = itemReturnScrollTop;
       applySearch({ preserveScroll: false });
-      const preview = findTankazonNativePurchaseButton(previous)?.closest(".shop-card")?.querySelector(".shop-thumb, .decor-thumb");
-      preview?.focus({ preventScroll: true });
-      document.getElementById("tankazonCatalogArea").scrollTop = itemReturnScrollTop;
+      const catalog = document.getElementById("tankazonCatalogArea");
+      if (catalog) catalog.scrollTop = itemReturnScrollTop;
+      if (typeof refreshTankazonVirtualCatalog === "function") refreshTankazonVirtualCatalog();
+      const restoreFocus = () => {
+        if (typeof refreshTankazonVirtualCatalog === "function") refreshTankazonVirtualCatalog();
+        const homeButton = tankazonSession.view === "home"
+          ? [...document.querySelectorAll("#bubbleBodegaHomePage .buy-button")].find((button) => {
+            const item = getButtonDescriptor(button);
+            return item?.fnName === previous.fnName && item.id === previous.id && item.packageId === previous.packageId;
+          })
+          : null;
+        const preview = previousPreview?.isConnected ? previousPreview
+          : (homeButton || findTankazonNativePurchaseButton(previous))?.closest(".shop-card")?.querySelector(".shop-thumb, .decor-thumb");
+        preview?.focus({ preventScroll: true });
+      };
+      if (typeof requestAnimationFrame === "function") requestAnimationFrame(restoreFocus);
+      else restoreFocus();
     }
   }
 
   function syncTankazonItem() {
     if (!selectedItem) return;
+    const previousPurchaseMode = selectedItem.purchaseMode || "single";
     const button = findTankazonNativePurchaseButton(selectedItem);
     const current = button && getButtonDescriptor(button);
     const variantExists = !selectedItem.variantKey || current?.variants?.some((variant) => variant.key === selectedItem.variantKey);
     if (current && variantExists) selectedItem = selectTankazonFishVariant(current, selectedItem.variantKey);
+    if (selectedItem) selectedItem.purchaseMode = previousPurchaseMode;
+    selectedItem = applyTankazonCollectionState(selectedItem);
+    document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
+    renderTankazonFoodSizes(selectedItem);
     const available = Boolean(button && !button.disabled && variantExists);
     const price = selectedItem.previewOnly ? "Not for purchase" : selectedItem.cost === 0 ? "Free" : `${selectedItem.cost.toLocaleString()} coins`;
     const discounted = !selectedItem.previewOnly
@@ -754,17 +1465,26 @@
       ? `<span class="tankazon-item-price-original">${Number(selectedItem.originalCost).toLocaleString()} coins</span><span class="tankazon-item-price-sale">${price}</span>`
       : price;
     const seller = getTankazonSellerName(selectedItem.seller);
+    const itemImageStage = document.getElementById("tankazonItemImage");
+    if (itemImageStage) {
+      itemImageStage.classList.toggle("is-proteus-preview", isProteusBiodyneSeller(seller));
+      itemImageStage.classList.toggle("is-common-current-preview", isCommonCurrentSeller(seller) && selectedItem.category === "fish");
+      itemImageStage.classList.toggle("is-arcadia-preview", isArcadiaHomeAquaticsSeller(seller) && selectedItem.category === "decor");
+    }
     const brand = document.getElementById("tankazonItemBrand");
     const sellerLabel = document.getElementById("tankazonItemSeller");
     if (brand && brand.textContent !== `Visit the ${seller} Store`) brand.textContent = `Visit the ${seller} Store`;
     if (sellerLabel && sellerLabel.textContent !== seller) sellerLabel.textContent = seller;
     document.querySelectorAll("[data-tankazon-seller-link]").forEach((sellerLink) => {
-      const available = isProteusBiodyneSeller(seller);
-      sellerLink.disabled = !available;
-      sellerLink.classList.toggle("is-linked", available);
-      if (available) {
-        sellerLink.setAttribute("aria-label", "Visit the Proteus Biodyne webpage");
-        sellerLink.title = "Visit Proteus Biodyne";
+      const siteId = getTankazonSellerSite(selectedItem);
+      const linked = Boolean(siteId);
+      sellerLink.disabled = !linked;
+      sellerLink.classList.toggle("is-linked", linked);
+      sellerLink.dataset.tankazonSellerSite = siteId;
+      if (linked) {
+        const siteName = siteId === "clearwell" ? "Clearwell Laboratories" : seller;
+        sellerLink.setAttribute("aria-label", `Visit the ${siteName} webpage`);
+        sellerLink.title = `Visit ${siteName}`;
       } else {
         sellerLink.removeAttribute("aria-label");
         sellerLink.removeAttribute("title");
@@ -786,6 +1506,7 @@
     const buyLabel = custom ? "Customize" : "Buy Now";
     if (buyButton.textContent !== buyLabel) buyButton.textContent = buyLabel;
     buyButton.disabled = !available || completingPurchase;
+    syncTankazonFoodQtyBadge(selectedItem);
   }
 
   async function buyTankazonItemNow() {
@@ -847,7 +1568,8 @@
   function getButtonDescriptor(button) {
     const mappings = [
       ["buyFood", "food", "buyFood"], ["buyMedicine", "pharmacy", "buyMedicine"], ["buyFish", "fish", "buyFish"],
-      ["buyDecor", "decor", "buyDecor"], ["buyBackground", "equipment", "buyBackground"],
+      ["buyDecor", "decor", "buyDecor"], ["buyBackground", "decor", "buyBackground"], ["buySubstrate", "decor", "buySubstrate"],
+      ["buyWaterKit", "equipment", "buyWaterTreatmentKit"],
       ["buyTank", "equipment", "buyTank"], ["buyAutoDispenser", "equipment", "buyAutoDispenser"],
       ["buySubmarine", "equipment", "buySubmarine"], ["buyBoat", "equipment", "buyBoat"]
     ];
@@ -860,16 +1582,23 @@
         const cost = Number((priceText.match(/\d+/) || [0])[0]);
         const name = card?.querySelector(".shop-card-main strong, strong")?.textContent?.trim() || button.textContent.trim();
         const thumbnail = card?.querySelector("img");
-        const image = thumbnail?.getAttribute("data-sprite-src") || thumbnail?.getAttribute("src") || "assets/icons/Store_Icon.png";
+        const image = thumbnail?.getAttribute("data-sprite-src")
+          || thumbnail?.dataset?.tankazonLazySpriteSrc
+          || thumbnail?.getAttribute("src")
+          || thumbnail?.dataset?.tankazonLazySrc
+          || "assets/icons/Store_Icon.png";
         const sellerSource = card?.dataset?.storeSeller || button.dataset.storeSeller;
         const seller = typeof sellerSource === "string" && sellerSource.trim() ? sellerSource.trim() : "BubbleBodega";
         let variants = [];
         try { variants = JSON.parse(button.dataset.fishVariants || button.dataset.decorVariants || button.dataset.machineryVariants || "[]"); } catch { /* Older catalog markup has no variants. */ }
+        const foodPackageId = fnName === "buyFood" ? (button.dataset.foodPackage || "") : "";
+        const foodServings = fnName === "buyFood" ? Math.max(0, Math.floor(Number(button.dataset.foodServings) || 0)) : 0;
+        const resolvedCategory = fnName === "buyFish" ? "fish" : category;
         const descriptor = {
-          key: `${fnName}:${id}`,
+          key: `${fnName}:${id}${foodPackageId ? `:${foodPackageId}` : ""}`,
           fnName,
           id,
-          category,
+          category: resolvedCategory,
           name,
           image,
           seller,
@@ -879,6 +1608,8 @@
           originalCost: Number.isFinite(Number(button.dataset.listPrice)) ? Number(button.dataset.listPrice) : cost,
           maxQuantity: undefined
         };
+        if (foodPackageId) descriptor.packageId = foodPackageId;
+        if (foodServings > 0) descriptor.servings = foodServings;
         if (["buyFish", "buyDecor", "buyAutoDispenser", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
           descriptor.variants = variants;
           descriptor.baseName = name;
@@ -914,7 +1645,8 @@
     const variants = item.variants || [];
     gallery.hidden = label.hidden = variants.length <= 1;
     if (variants.length <= 1) return;
-    label.textContent = `Appearance: ${item.variantLabel || "Main"}`;
+    const collection = getTankazonDecorCollectionConfig(item);
+    label.textContent = `${collection ? "Variant" : "Appearance"}: ${item.variantLabel || "Main"}`;
     variants.forEach((variant) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -935,6 +1667,21 @@
   }
 
   function syncTankazonItemArt(item) {
+    const collection = getTankazonDecorCollectionConfig(item);
+    if (collection && (item.purchaseMode || "single") === "pack" && Array.isArray(item.variants) && item.variants.length > 1) {
+      renderTankazonCollectionPackArt(item);
+      return;
+    }
+    const stage = document.getElementById("tankazonItemImage");
+    const packArt = stage?.querySelector(".tankazon-item-pack-art");
+    if (packArt) {
+      const image = document.createElement("img");
+      image.className = "tankazon-item-art";
+      image.setAttribute("data-sprite-src", item.image);
+      image.alt = item.name || "Aquarium item";
+      stage.replaceChildren(image);
+      return;
+    }
     const foreground = document.querySelector("#tankazonItemImage [data-dispenser-layer=foreground]");
     const background = document.querySelector("#tankazonItemImage [data-dispenser-layer=background]");
     if (foreground && background) {
@@ -983,6 +1730,13 @@
     const subtotal = items.reduce((sum, item) => sum + item.cost * item.quantity, 0);
     if (count === 0) purchaseErrorMessage = "";
     if (countEl) countEl.textContent = String(count);
+    const headerCountEl = document.getElementById("tankazonCartHeaderCount");
+    if (headerCountEl) {
+      headerCountEl.textContent = String(count);
+      headerCountEl.hidden = false;
+    }
+    const cartToggle = document.getElementById("tankazonCartToggle");
+    if (cartToggle) cartToggle.setAttribute("aria-label", `Open shopping cart, ${count} ${count === 1 ? "item" : "items"}`);
     if (subtotalEl) subtotalEl.textContent = String(subtotal);
     if (complete) complete.disabled = count === 0;
     if (error) {
@@ -1033,38 +1787,65 @@
 
   function getTankazonProductSearchText(card) {
     if (!card) return "";
+    const category = getTankazonCardCategory(card);
+    const signature = [card.dataset.tankazonTitle, card.dataset.storeSeller, card.dataset.storeFacets, category].join("|");
+    const cached = tankazonSearchTextCache.get(card);
+    if (cached?.signature === signature) return cached.text;
 
-    // Search ONLY the normalized visible product title.
-    const visibleTitle = card.querySelector(":scope > .tankazon-tile-info .tankazon-tile-title")?.textContent?.trim();
-    if (visibleTitle) return visibleTitle.toLowerCase();
+    const terms = [
+      card.querySelector(":scope > .tankazon-tile-info .tankazon-tile-title")?.textContent,
+      card.dataset.tankazonTitle,
+      card.querySelector("img.shop-thumb, img.decor-thumb, img")?.getAttribute("alt"),
+      card.dataset.storeSeller,
+      category
+    ];
 
-    // Fallbacks are still name-only fields, never stats/descriptions.
-    const storedTitle = (card.dataset.tankazonTitle || "").trim();
-    if (storedTitle) return storedTitle.toLowerCase();
+    // Search the compact catalog metadata too, so species traits, decor tags,
+    // equipment types, seller names, and other authored facets are discoverable
+    // without matching arbitrary long description copy.
+    try {
+      const facets = JSON.parse(card.dataset.storeFacets || "{}");
+      for (const [group, values] of Object.entries(facets)) {
+        terms.push(group);
+        if (Array.isArray(values)) terms.push(...values);
+      }
+    } catch {}
 
-    return (card.querySelector("img.shop-thumb, img.decor-thumb, img")?.getAttribute("alt") || "")
-      .trim()
-      .toLowerCase();
+    const text = terms.filter(Boolean).join(" ").trim().toLowerCase();
+    tankazonSearchTextCache.set(card, { signature, text });
+    return text;
+  }
+
+  function shouldShowTankazonSectionHeading(category, matchesScope, inAllView, searchActive, allCategories) {
+    return !searchActive && (
+      inAllView
+      || (!allCategories && category === "equipment" && matchesScope)
+    );
   }
 
   function applySearch(options = {}) {
     if (selectedItem) return;
+    if (tankazonSession.view === "home") {
+      drawers().forEach((drawer) => { drawer.hidden = true; });
+      return;
+    }
+    const navigationRevision = tankazonNavigationRevision;
     const catalog = document.getElementById("tankazonCatalogArea");
-    const browseScope = allCategoriesMode || !CATEGORY_IDS.includes(lastTankazonCategory)
+    const browseScope = allCategoriesMode || !CATEGORY_IDS.includes(tankazonSession.category)
       ? "all"
-      : lastTankazonCategory;
-    const selectedScope = searchCommitted ? committedSearchScope : browseScope;
-    const restoreTop = searchCommitted
-      ? committedSearchScrollTop
-      : (allCategoriesMode ? allCategoriesScrollTop : (catalog?.scrollTop || 0));
-    const q = query();
-    const inAllView = searchCommitted ? selectedScope === "all" : allCategoriesMode;
+      : tankazonSession.category;
+    const selectedScope = tankazonSession.searchActive ? tankazonSession.searchScope : browseScope;
+    const restoreTop = tankazonSession.searchActive
+      ? tankazonSession.searchScrollTop
+      : (allCategoriesMode ? tankazonSession.allScrollTop : (catalog?.scrollTop || 0));
+    const q = tankazonSession.searchActive ? query() : "";
+    const inAllView = tankazonSession.searchActive ? selectedScope === "all" : allCategoriesMode;
     drawers().forEach((drawer) => {
       const category = drawer.dataset.tankazonCategory;
       const matchesScope = selectedScope === "all" || category === selectedScope;
       let matchingProducts = 0;
 
-      drawer.querySelectorAll(".shop-card").forEach((card) => {
+      getTankazonCardsForDrawer(drawer).forEach((card) => {
         const productName = getTankazonProductSearchText(card);
         const matchesText = !q || productName.includes(q);
         const visible = matchesScope && matchesText;
@@ -1077,51 +1858,66 @@
         if (visible) matchingProducts += 1;
       });
 
-      // A committed search owns its scope independently of the browsing tabs.
-      // Merely changing the dropdown never reaches this state.
-      if (searchCommitted) {
+      // A live search owns its scope independently of the browsing tabs.
+      if (tankazonSession.searchActive) {
         drawer.hidden = !matchesScope || (Boolean(q) && matchingProducts === 0);
       } else if (inAllView) {
         drawer.hidden = false;
       } else {
         drawer.hidden = !matchesScope;
       }
-      drawer.classList.toggle("tankazon-all-section", inAllView && !searchCommitted);
-      drawer.classList.toggle("tankazon-search-results", searchCommitted);
+      const showSectionHeading = shouldShowTankazonSectionHeading(
+        category,
+        matchesScope,
+        inAllView,
+        tankazonSession.searchActive,
+        allCategoriesMode
+      );
+      drawer.classList.toggle("tankazon-section-heading", showSectionHeading);
+      drawer.classList.toggle("tankazon-all-section", inAllView && !tankazonSession.searchActive);
+      drawer.classList.toggle("tankazon-search-results", tankazonSession.searchActive);
     });
-    window.refreshStoreFacets?.(selectedScope);
+    // Typing changes result visibility, not the available filter controls.
+    // Avoid rebuilding the full facet menu on every search keystroke.
+    window.refreshBubbleBodegaFacetResults?.(selectedScope);
+    scheduleTankazonVirtualRefresh();
     if (catalog && options.preserveScroll !== false) {
       requestAnimationFrame(() => {
-        if (!selectedItem) catalog.scrollTop = restoreTop;
+        if (!selectedItem && navigationRevision === tankazonNavigationRevision) {
+          catalog.scrollTop = restoreTop;
+          scheduleTankazonVirtualRefresh();
+        }
       });
     }
   }
 
   function syncTankazonNavState() {
+    const storeOverlay = overlay();
+    storeOverlay?.classList.toggle("tankazon-all-categories-mode", allCategoriesMode);
+
     const allButton = document.getElementById("tankazonAllCategories");
     if (allButton) {
       allButton.classList.toggle("is-active", allCategoriesMode);
       allButton.setAttribute("aria-pressed", allCategoriesMode ? "true" : "false");
     }
-    if (allCategoriesMode) {
-      document.querySelectorAll(".store-tab-button").forEach((tab) => {
+
+    document.querySelectorAll(".store-tab-button").forEach((tab) => {
+      if (allCategoriesMode) {
         tab.classList.remove("is-active");
         tab.setAttribute("aria-selected", "false");
-      });
-    }
+      }
+    });
   }
 
   function showAllCategories() {
     beginTankazonCatalogLoading("all");
     closeTankazonItem(false);
     allCategoriesMode = true;
-    allCategoriesScrollTop = 0;
+    tankazonSession.allScrollTop = 0;
     saveTankazonView("all");
-    const select = document.getElementById("tankazonSearchScope");
-    if (select) select.value = "all";
-    if (searchCommitted) {
-      committedSearchScope = "all";
-      searchCommitted = Boolean(committedSearchQuery);
+    if (tankazonSession.searchActive) {
+      tankazonSession.searchScope = "all";
+      tankazonSession.searchActive = Boolean(tankazonSession.searchQuery);
     }
     syncTankazonNavState();
     applySearch({ preserveScroll: false });
@@ -1164,21 +1960,32 @@
 
   function findTankazonNativePurchaseButton(item) {
     const selector = [
-      "#storeOverlay [data-buy-fish]",
-      "#storeOverlay [data-buy-food]",
-      "#storeOverlay [data-buy-medicine]",
-      "#storeOverlay [data-buy-decor]",
-      "#storeOverlay [data-buy-background]",
-      "#storeOverlay [data-buy-auto-dispenser]",
-      "#storeOverlay [data-buy-submarine]",
-      "#storeOverlay [data-buy-boat]",
-      "#storeOverlay [data-buy-tank]"
+      "[data-buy-fish]",
+      "[data-buy-food]",
+      "[data-buy-medicine]",
+      "[data-buy-decor]",
+      "[data-buy-background]",
+      "[data-buy-substrate]",
+      "[data-buy-water-kit]",
+      "[data-buy-auto-dispenser]",
+      "[data-buy-submarine]",
+      "[data-buy-boat]",
+      "[data-buy-tank]"
     ].join(", ");
 
-    return [...document.querySelectorAll(selector)].find((button) => {
+    const buttons = getTankazonAllCatalogCards().flatMap((card) => [...card.querySelectorAll(selector)]);
+    const matchesItem = (button) => {
       const descriptor = getButtonDescriptor(button);
-      return descriptor?.fnName === item.fnName && descriptor?.id === item.id;
-    }) || null;
+      return descriptor?.fnName === item.fnName
+        && descriptor?.id === item.id
+        && (!item.packageId || descriptor?.packageId === item.packageId);
+    };
+    // Home uses the same purchase controls, but is intentionally excluded from
+    // catalogue virtualization and facet counts. A native category filter can
+    // omit its promoted product, so keep Home as a purchase-only fallback.
+    return buttons.find(matchesItem)
+      || [...document.getElementById("bubbleBodegaHomePage")?.querySelectorAll(selector) || []].find(matchesItem)
+      || null;
   }
 
   function waitForTankazonRender() {
@@ -1245,6 +2052,28 @@
       return;
     }
     if (isTankazonCustomProduct(item)) throw new Error("Open this item's Customize button to choose its content first.");
+    // Use the game purchase APIs whenever they exist. The old button.click()
+    // path bubbled back into BubbleBodega while a cart checkout was active,
+    // so Food, Pharmacy, and Water Care purchases never reached gameplay.
+    const directPurchases = {
+      buyFood: () => window.buyFood?.(item.id, item.packageId || ""),
+      buyMedicine: () => window.buyMedicine?.(item.id),
+      buyWaterTreatmentKit: () => window.buyWaterTreatmentKit?.(item.id)
+    };
+    const directPurchase = directPurchases[item.fnName];
+    if (directPurchase) {
+      const beforeCoins = getTankazonCoinBalance();
+      const result = await directPurchase();
+      if (result?.ok === false) {
+        const error = new Error(result.errorMessage || `${item.name} could not be purchased.`);
+        if (result.reason === "insufficient-coins") error.code = "insufficient-funds";
+        throw error;
+      }
+      const changed = await waitForTankazonCoinChange(beforeCoins, Number(item.cost) || 0);
+      if (!changed) throw new Error(`${item.name} did not complete its purchase.`);
+      await waitForTankazonRender();
+      return;
+    }
     // Fish have a complete variant-aware purchase API. Call it before
     // looking up the catalog card: item pages can keep that card hidden or
     // tutorial-disabled even though the selected product is purchasable.
@@ -1272,10 +2101,56 @@
         error.code = "insufficient-funds";
         throw error;
       }
+      if (item.purchaseMode === "pack" && Array.isArray(item.variants) && item.variants.length > 1) {
+        for (const variant of item.variants) {
+          const result = await window.buyDecor(item.id, { appearanceVariantKey: variant.key });
+          if (!result?.ok) {
+            const error = new Error(result?.errorMessage || `${variant.label || item.name} could not be purchased.`);
+            if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
+            throw error;
+          }
+        }
+        await waitForTankazonRender();
+        return;
+      }
       const result = await window.buyDecor(item.id, { appearanceVariantKey: item.variantKey });
       if (!result?.ok) {
         const error = new Error(result?.errorMessage || `${item.name} could not be purchased.`);
         if (result?.reason === "insufficient-coins") error.code = "insufficient-funds";
+        throw error;
+      }
+      await waitForTankazonRender();
+      return;
+    }
+
+    if (item.fnName === "buyBackground" && typeof window.buyBackground === "function") {
+      const beforeCoins = getTankazonCoinBalance();
+      if (Number.isFinite(beforeCoins) && Number(item.cost) > beforeCoins) {
+        const error = new Error("Payment method declined. Insufficient Funds.");
+        error.code = "insufficient-funds";
+        throw error;
+      }
+      const result = await window.buyBackground(item.id);
+      if (result?.ok === false) {
+        const error = new Error(result.errorMessage || `${item.name} could not be purchased.`);
+        if (result.reason === "insufficient-coins") error.code = "insufficient-funds";
+        throw error;
+      }
+      await waitForTankazonRender();
+      return;
+    }
+
+    if (item.fnName === "buySubstrate" && typeof window.buySubstrate === "function") {
+      const beforeCoins = getTankazonCoinBalance();
+      if (Number.isFinite(beforeCoins) && Number(item.cost) > beforeCoins) {
+        const error = new Error("Payment method declined. Insufficient Funds.");
+        error.code = "insufficient-funds";
+        throw error;
+      }
+      const result = await window.buySubstrate(item.id);
+      if (result?.ok === false) {
+        const error = new Error(result.errorMessage || `${item.name} could not be purchased.`);
+        if (result.reason === "insufficient-coins") error.code = "insufficient-funds";
         throw error;
       }
       await waitForTankazonRender();
@@ -1434,18 +2309,33 @@
   window.addEventListener("bubbleborough:store-tab", (event) => {
     const category = event.detail?.category;
     if (!category || !getTankazonCategoryTab(category)) return;
+    // The native store renderer may announce its underlying Food tab while the
+    // combined All Categories catalog is visible. That is an implementation
+    // detail, not a navigation change, so never let it reactivate a category.
+    // A real category click clears allCategoriesMode before this event fires.
+    if (allCategoriesMode) {
+      syncTankazonNavState();
+      return;
+    }
     beginTankazonCatalogLoading(category);
     if (selectedItem) closeTankazonItem(false);
     allCategoriesMode = false;
     document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
     document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
-    const select = document.getElementById("tankazonSearchScope");
-    if (select) select.value = category;
     saveTankazonView(category);
+    if (tankazonSession.searchActive) tankazonSession.searchScope = category;
     applySearch({ preserveScroll: false });
   });
 
   document.addEventListener("click", (event) => {
+    const cartToggle = event.target.closest?.("[data-toggle-tankazon-cart]");
+    if (cartToggle) {
+      const store = overlay();
+      const open = !store?.classList.contains("tankazon-cart-open");
+      store?.classList.toggle("tankazon-cart-open", open);
+      cartToggle.setAttribute("aria-expanded", String(open));
+      return;
+    }
     const proteusTab = event.target.closest?.("[data-proteus-tab]");
     if (proteusTab) { showProteusTab(proteusTab.dataset.proteusTab, { focus: true }); return; }
     const proteusTabLink = event.target.closest?.("[data-proteus-tab-link]");
@@ -1457,7 +2347,13 @@
       return;
     }
     const sellerLink = event.target.closest?.("[data-tankazon-seller-link]");
-    if (sellerLink && !sellerLink.disabled) { event.preventDefault(); showProteusBiodyne(sellerLink); return; }
+    if (sellerLink && !sellerLink.disabled) {
+      event.preventDefault();
+      const siteId = sellerLink.dataset.tankazonSellerSite || getTankazonSellerSite(selectedItem);
+      if (siteId === "proteus") showProteusBiodyne(sellerLink);
+      else if (siteId) showWebSurfSubsidiaryPage(siteId, sellerLink);
+      return;
+    }
     if (event.target.closest?.("[data-proteus-back]")) { closeProteusBiodyne(); return; }
     if (event.target.closest?.("#tankazonAccountButton")) { highlightedOrderId = ""; showTankazonAccount(); return; }
     if (event.target.closest?.("#tankazonAccountBack, [data-account-shop-now]")) { closeTankazonAccount(); return; }
@@ -1469,11 +2365,35 @@
       document.getElementById("tankazonAccountPage")?.scrollTo({ top: 0, behavior: "smooth" });
       return;
     }
+    const foodSizeButton = event.target.closest?.("[data-tankazon-food-size]");
+    if (foodSizeButton && selectedItem && !completingPurchase) {
+      const option = getTankazonFoodSizeOptions(selectedItem).find((entry) => entry.packageId === foodSizeButton.dataset.tankazonFoodSize);
+      if (option) {
+        selectedItem = option;
+        syncTankazonItemArt(selectedItem);
+        refreshTankazonItemDetailsFromCard(selectedItem);
+        document.getElementById("tankazonItemStatus").textContent = "";
+        syncTankazonItem();
+      }
+      return;
+    }
+    const purchaseModeButton = event.target.closest?.("[data-tankazon-purchase-mode]");
+    if (purchaseModeButton && selectedItem && !completingPurchase) {
+      selectedItem.purchaseMode = purchaseModeButton.dataset.tankazonPurchaseMode === "pack" ? "pack" : "single";
+      selectedItem = applyTankazonCollectionState(selectedItem);
+      document.getElementById("tankazonItemStatus").textContent = "";
+      syncTankazonItem();
+      return;
+    }
     const variantButton = event.target.closest?.("[data-tankazon-variant]");
     if (variantButton && selectedItem && !completingPurchase) {
+      const purchaseMode = selectedItem.purchaseMode || "single";
       selectedItem = selectTankazonFishVariant(selectedItem, variantButton.dataset.tankazonVariant);
+      selectedItem.purchaseMode = purchaseMode;
+      selectedItem = applyTankazonCollectionState(selectedItem);
       syncTankazonItemArt(selectedItem);
-      document.getElementById("tankazonItemVariantLabel").textContent = `Appearance: ${selectedItem.variantLabel}`;
+      const collection = getTankazonDecorCollectionConfig(selectedItem);
+      document.getElementById("tankazonItemVariantLabel").textContent = `${collection ? "Variant" : "Appearance"}: ${selectedItem.variantLabel}`;
       document.getElementById("tankazonItemStatus").textContent = "";
       document.querySelectorAll("[data-tankazon-variant]").forEach((button) => {
         button.setAttribute("aria-pressed", String(button.dataset.tankazonVariant === selectedItem.variantKey));
@@ -1499,7 +2419,7 @@
       }
       return;
     }
-    const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
+    const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb, #bubbleBodegaHomePage .shop-card .shop-thumb, #bubbleBodegaHomePage .shop-card .decor-thumb");
     if (preview) { event.preventDefault(); openTankazonItem(preview); return; }
     if (event.target.closest?.("#tankazonItemBack")) { closeTankazonItem(); return; }
     if (event.target.closest?.("#tankazonItemBuy")) { buyTankazonItemNow(); return; }
@@ -1511,7 +2431,7 @@
       }
       return;
     }
-    const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
+    const purchaseButton = event.target.closest?.("#storeOverlay [data-buy-fish], #storeOverlay [data-buy-food], #storeOverlay [data-buy-medicine], #storeOverlay [data-buy-decor], #storeOverlay [data-buy-background], #storeOverlay [data-buy-substrate], #storeOverlay [data-buy-water-kit], #storeOverlay [data-buy-auto-dispenser], #storeOverlay [data-buy-submarine], #storeOverlay [data-buy-boat], #storeOverlay [data-buy-tank]");
     if (purchaseButton && !completingPurchase && !window.isGuidedTutorialActive?.()) {
       event.preventDefault();
       event.stopPropagation();
@@ -1520,11 +2440,20 @@
       if (descriptor) addToCart(descriptor);
       return;
     }
-    if (event.target.closest?.("#tankazonAllCategories")) { event.preventDefault(); closeTankazonAccount(); showAllCategories(); return; }
+    if (event.target.closest?.("#tankazonAllCategories")) {
+      event.preventDefault();
+      // The native BubbleBodega click handler below this capture listener
+      // leaves Home and reveals its catalogue; then this shell mounts the
+      // combined All Categories view.
+      closeTankazonAccount();
+      showAllCategories();
+      return;
+    }
     if (event.target.closest?.("#tankazonSearchButton")) {
       event.preventDefault();
       event.stopPropagation();
       event.stopImmediatePropagation();
+      cancelTankazonLiveSearch();
       closeTankazonAccount();
       commitTankazonSearch();
       return;
@@ -1562,23 +2491,70 @@
       return;
     }
     const tab = event.target.closest?.(".store-tab-button");
-    if (tab) {
+    const categoryByTabId = {
+      storeFoodTab: "food",
+      storePharmacyTab: "pharmacy",
+      storeFishTab: "fish",
+      storeDecorTab: "decor",
+      storeEquipmentTab: "equipment"
+    };
+    const clickedCategory = categoryByTabId[tab?.id];
+    if (clickedCategory) {
+      // The native renderer remains the only writer of the actual category.
+      // We only leave aggregate mode here so its subsequent store-tab event
+      // cannot be ignored. An explicit ID map is intentional: no unrelated
+      // click can ever fall through to Equipment.
       closeTankazonAccount();
-      const category = tab.id === "storeFoodTab" ? "food" : tab.id === "storePharmacyTab" ? "pharmacy" : tab.id === "storeFishTab" ? "fish" : tab.id === "storeDecorTab" ? "decor" : "equipment";
-      beginTankazonCatalogLoading(category);
+      // Clicking the same category from its product page emits no native tab
+      // change event. Close the detail here as well so the listing is revealed.
       closeTankazonItem(false);
+      tankazonNavigationRevision += 1;
       allCategoriesMode = false;
+      // The app's tab handler updates runtime on the target phase. This
+      // capture handler runs first, so update our own category now as well;
+      // otherwise this call filters the just-clicked Pharmacy tab as Food and
+      // a later reconciliation can snap the view back to that stale scope.
+      tankazonSession.category = clickedCategory;
       document.getElementById("tankazonAllCategories")?.classList.remove("is-active");
       document.getElementById("tankazonAllCategories")?.setAttribute("aria-pressed", "false");
-      saveTankazonView(category);
-      const select = document.getElementById("tankazonSearchScope");
-      if (select) select.value = category;
-      if (searchCommitted) committedSearchScope = category;
-      queueMicrotask(() => { applySearch(); syncTankazonNavState(); });
+      // This is also needed when a shopper selects the category that the
+      // native renderer already had underneath All Categories. In that case it
+      // emits no store-tab event, so keep the filter scope from being left at
+      // "all" (which previously showed 218 results above three Food cards and
+      // made Clear look broken).
+      saveTankazonView(clickedCategory);
+      if (tankazonSession.searchActive) tankazonSession.searchScope = clickedCategory;
+      applySearch({ preserveScroll: false });
+      syncTankazonNavState();
     }
   }, true);
 
   const tankazonSearchInput = document.getElementById("tankazonSearchInput");
+  let tankazonLiveSearchTimer = 0;
+  const cancelTankazonLiveSearch = () => {
+    if (!tankazonLiveSearchTimer) return;
+    clearTimeout(tankazonLiveSearchTimer);
+    tankazonLiveSearchTimer = 0;
+  };
+  const scheduleTankazonLiveSearch = () => {
+    cancelTankazonLiveSearch();
+    tankazonLiveSearchTimer = setTimeout(() => {
+      tankazonLiveSearchTimer = 0;
+      const store = overlay();
+      if (!store || store.hidden || !tankazonRouteVisible) return;
+      try {
+        closeTankazonAccount();
+        syncTankazonSearchFromControls({ resetScroll: true });
+      } catch (error) {
+        // A bad product record must not strand or close the shared browser.
+        // Leave the last stable results mounted and allow the next query.
+        console.error("BubbleBodega search could not update", error);
+        cancelTankazonCatalogLoading();
+      }
+    }, 120);
+  };
+  tankazonSearchInput?.addEventListener("input", scheduleTankazonLiveSearch);
+  tankazonSearchInput?.addEventListener("search", scheduleTankazonLiveSearch);
   tankazonSearchInput?.addEventListener("keydown", (event) => {
     if (event.key !== "Enter") return;
     // Treat Enter as a store-search action only. Stop it at the input so it
@@ -1587,6 +2563,7 @@
     event.preventDefault();
     event.stopPropagation();
     event.stopImmediatePropagation();
+    cancelTankazonLiveSearch();
     closeTankazonAccount();
     commitTankazonSearch();
   }, true);
@@ -1615,97 +2592,82 @@
       showProteusTab(tabs[nextIndex]?.dataset.proteusTab);
       return;
     }
-    const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb");
+    const preview = event.target.closest?.("#tankazonCatalogArea .shop-card .shop-thumb, #tankazonCatalogArea .shop-card .decor-thumb, #bubbleBodegaHomePage .shop-card .shop-thumb, #bubbleBodegaHomePage .shop-card .decor-thumb");
     if (preview && ["Enter", " "].includes(event.key)) {
       event.preventDefault();
       openTankazonItem(preview);
       return;
     }
   });
-  document.addEventListener("change", (event) => {
-    if (event.target?.id !== "tankazonSearchScope") return;
-    // This select is a search scope selector, not store navigation. Choosing a
-    // category only changes the pending search. Enter or the search button commits it.
-    event.stopPropagation();
-  });
-
 
   const catalogArea = document.getElementById("tankazonCatalogArea");
   catalogArea?.addEventListener("scroll", () => {
     if (selectedItem) return;
-    if (searchCommitted) {
-      committedSearchScrollTop = catalogArea.scrollTop;
+    if (tankazonSession.searchActive) {
+      tankazonSession.searchScrollTop = catalogArea.scrollTop;
     } else if (allCategoriesMode) {
-      allCategoriesScrollTop = catalogArea.scrollTop;
+      tankazonSession.allScrollTop = catalogArea.scrollTop;
     }
+    scheduleTankazonVirtualRefresh();
   }, { passive: true });
+  window.addEventListener("resize", scheduleTankazonVirtualRefresh, { passive: true });
 
   const storeOverlay = overlay();
   if (storeOverlay) {
     let wasStoreOpen = !storeOverlay.hidden;
 
-    const savedTabButton = (category) => {
-      if (category === "food") return document.getElementById("storeFoodTab");
-      if (category === "pharmacy") return document.getElementById("storePharmacyTab");
-      if (category === "fish") return document.getElementById("storeFishTab");
-      if (category === "decor") return document.getElementById("storeDecorTab");
-      if (category === "equipment") return document.getElementById("storeEquipmentTab");
-      return null;
-    };
-
-    const observer = new MutationObserver((mutations) => {
+    const openObserver = new MutationObserver(() => {
       const isStoreOpen = !storeOverlay.hidden;
       const justOpened = isStoreOpen && !wasStoreOpen;
       wasStoreOpen = isStoreOpen;
 
-      if (!isStoreOpen) { closeProteusBiodyne(false); closeTankazonItem(false); closeTankazonAccount(); return; }
-
-      if (justOpened) {
-        syncTankazonAccountLabel();
-        const savedView = storeOverlay.dataset.requestedCategory || restoreTankazonView();
-        delete storeOverlay.dataset.requestedCategory;
-        beginTankazonCatalogLoading(savedView);
-
-        // Let Bubble Borough finish its normal Food-store opening first.
-        // Then use the real category tab so the native store renderer
-        // populates the saved category instead of faking visibility.
-        setTimeout(() => {
-          if (savedView === "all") {
-            showAllCategories();
-          } else {
-            const tab = savedTabButton(savedView);
-            if (tab) {
-              tab.click();
-            } else {
-              showAllCategories();
-            }
-          }
-
-          normalizeTankazonPurchaseButtons();
-          syncTankazonNavState();
-          applySearch({ preserveScroll: false });
-        }, 0);
-
+      if (!isStoreOpen) {
+        tankazonNavigationRevision += 1;
+        cancelTankazonLiveSearch();
+        cancelTankazonCatalogLoading();
+        releaseTankazonVirtualCatalog();
+        closeProteusBiodyne(false);
+        closeTankazonItem(false);
+        closeTankazonAccount();
         return;
       }
+      if (!justOpened) return;
 
-      if (!mutations.some((mutation) =>
-        mutation.type === "childList" && mutation.addedNodes.length
-      )) return;
-
-      queueMicrotask(normalizeTankazonPurchaseButtons);
-      if (allCategoriesMode || query()) {
-        queueMicrotask(() => applySearch({ preserveScroll: true }));
-      }
-      queueMicrotask(syncTankazonNavState);
+      syncTankazonAccountLabel();
+      // The native route is already selected. This shared-window observer only
+      // refreshes layout; it must never synthesize navigation from saved state.
+      refreshTankazonOpening();
     });
+    openObserver.observe(storeOverlay, { attributes: true, attributeFilter: ["hidden"] });
 
-    observer.observe(storeOverlay, {
-      subtree: true,
-      childList: true,
-      attributes: true,
-      attributeFilter: ["hidden"]
-    });
+    let catalogRefreshFrame = 0;
+    const scheduleCatalogRefresh = () => {
+      if (storeOverlay.hidden || catalogRefreshFrame) return;
+      catalogRefreshFrame = requestAnimationFrame(() => {
+        catalogRefreshFrame = 0;
+        normalizeTankazonPurchaseButtons();
+        syncTankazonVirtualCatalog();
+        if (allCategoriesMode || tankazonSession.searchActive) applySearch({ preserveScroll: true });
+        else window.refreshStoreFacets?.(tankazonSession.category);
+        syncTankazonNavState();
+        scheduleTankazonVirtualRefresh();
+      });
+    };
+    // The native shop renderer replaces a drawer's direct children. Observing
+    // those five boundaries is enough, and avoids reacting to cart changes,
+    // image loads, item-detail changes, or unrelated WebSurf DOM updates.
+    for (const drawer of drawers()) {
+      new MutationObserver((records) => {
+        // This observer is registered before app.js initializes the sprite
+        // hydrator. Strip product sources immediately so offscreen thumbnails
+        // cannot begin decoding before virtualization decides they are near the
+        // viewport.
+        prepareTankazonAddedCards(records);
+        const nativeCatalogChanged = records.some((record) => [...record.addedNodes, ...record.removedNodes]
+          .some((node) => !isTankazonVirtualMutationNode(node)));
+        if (nativeCatalogChanged) scheduleCatalogRefresh();
+      }).observe(drawer, { childList: true });
+    }
   }
 
   document.addEventListener("wheel", (event) => {
@@ -1724,5 +2686,7 @@
 
   normalizeTankazonPurchaseButtons();
   renderCart();
-  syncTankazonNavState();
+  // Hydrate the remembered view before the game renders. The native route
+  // resolver still chooses Home for the first actual Bodega visit this session.
+  restoreTankazonViewToUI();
 })();

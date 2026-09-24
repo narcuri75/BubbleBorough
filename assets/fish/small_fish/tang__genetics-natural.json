@@ -1,0 +1,150 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "a0344e9e-0e7c-4c7b-a92c-1eada4740907",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "e9d1c1c4-a64b-4997-a270-85d3477dd3b0",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_yellow.png"
+        },
+        {
+          "id": "364f8088-d245-402e-874b-65d830702d85",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_bluespine-unicornfish.png"
+        },
+        {
+          "id": "7be44d00-be35-484f-894b-f3c4976a935a",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_vlamings-unicornfish.png"
+        },
+        {
+          "id": "346c5114-41d8-4039-af13-c3e2026783af",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_lined-surgeonfish.png"
+        },
+        {
+          "id": "01d02256-3fed-4539-b69c-f322879e170a",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_kole.png"
+        },
+        {
+          "id": "8bb89243-663e-4429-8542-b373540dc269",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_achilles.png"
+        },
+        {
+          "id": "96138a0d-77cd-47d4-8b36-3a0cd0d51629",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_naso.png"
+        },
+        {
+          "id": "997bb66a-ce9e-4f8c-b2bf-b1b6332726db",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_pacific-sailfin.png"
+        },
+        {
+          "id": "b0418591-ffd2-45a5-b5ec-98b431ef3137",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_purple.png"
+        },
+        {
+          "id": "e12e0f1a-b77d-462f-9593-5940d748c117",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_powder-blue.png"
+        },
+        {
+          "id": "379fc375-9506-40d9-82b2-66753d274342",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tang_blue.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/tang__genetics-natural.webp"
+  }
+}

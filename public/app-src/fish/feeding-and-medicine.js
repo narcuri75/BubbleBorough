@@ -7,24 +7,43 @@ function canFishEatFoodPellet(fish, foodKey = "basic", now = Date.now()) {
   }
 
   if (foodKey === "halloweenCandy") return !hasActiveCandyBoost(fish, now);
-
-  const hunger = getFishNeedValue(fish, "hunger", now);
-  const criticallyHungry = hunger <= FISH_HUNGER_CRITICAL_THRESHOLD;
-  const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
-
-  // Hunger is the source of truth. Temporary refusal/satiety timers should never
-  // leave a visibly starving fish parked beside compatible food.
-  if ((Number(fish.foodRefusalUntil) || 0) > now && !criticallyHungry) {
+  const spawningFood = String(foodKey || "") === "frisky";
+  if (spawningFood) {
+    return canFoodSatisfyFishMeal(fish, foodKey)
+      && (Number(fish.satiatedUntil) || 0) <= now
+      && !getFishFoodRefusalReason(fish, foodKey, now);
+  }
+  const optionalDetritusSnack = typeof isDetritusFish === "function"
+    && isDetritusFish(fish)
+    && String(foodKey || "") === "algaeWafers";
+  if (optionalDetritusSnack) {
+    return (Number(fish.satiatedUntil) || 0) <= now;
+  }
+  if (isProteusZombieFish(fish)) {
     return false;
   }
+
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  const visiblyHungry = hunger <= FISH_HUNGER_LOW_THRESHOLD;
+
+  // Refusal is no longer a random comfort/personality roll or a cooldown gate.
+  // A fish can target food again as soon as the real blocker (panic, immediate
+  // fear, or severe sickness) has cleared. foodRefusalUntil remains useful as
+  // behavior/history telemetry, but it does not itself prevent eating.
   if ((Number(fish.satiatedUntil) || 0) > now && !visiblyHungry) {
     return false;
   }
   if (hunger >= FISH_WILLING_TO_EAT_HUNGER_MAX) {
     return false;
   }
+  if (!canFoodSatisfyFishMeal(fish, foodKey)) {
+    return false;
+  }
+  if (getFishFoodRefusalReason(fish, foodKey, now)) {
+    return false;
+  }
 
-  return canFoodSatisfyFishMeal(fish, foodKey);
+  return true;
 }
 
 function getFoodPelletSettledAgeMs(pellet, now = Date.now()) {
@@ -330,7 +349,8 @@ function updatePelletSettledState(pellet, now = Date.now()) {
     floorYNorm
   );
   pellet.startYNorm = startYNorm;
-  const sinkDuration = Math.max(1000, Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS);
+  const algaeWaferDrop = pellet.foodKey === "algaeWafers";
+  const sinkDuration = Math.max(1000, Number(pellet.sinkDurationMs) || (algaeWaferDrop ? ALGAE_WAFER_SINK_DURATION_MS : FOOD_PELLET_SINK_DURATION_MS));
   const progress = clamp((now - pellet.createdAt) / sinkDuration, 0, 1);
   if (progress >= 1 || (Number(pellet.yNorm) || 0) >= floorYNorm - 0.002) {
     pellet.settled = true;
@@ -396,7 +416,9 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     sway: Math.random(),
     rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
     scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
-    sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    sinkDurationMs: food.id === "algaeWafers"
+      ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
+      : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
     dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
     dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
@@ -451,7 +473,9 @@ function createAutoDispenserDroppedPellet(storedPellet, now = Date.now()) {
     sway: Math.random(),
     rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
     scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
-    sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    sinkDurationMs: food.id === "algaeWafers"
+      ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
+      : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     dropStartXNorm: nozzleXNorm,
     dropStartYNorm: nozzleYNorm,
     dropDurationMs: AUTO_DISPENSER_DROP_DURATION_MS,
@@ -500,6 +524,23 @@ function adjustAutoDispenserMealPortion(delta, now = Date.now()) {
   return setAutoDispenserMealPortion((state.autoDispenser?.mealPortion || 0) + delta, now, { toast: false });
 }
 
+function getFoodCompatibleFishInTank(foodKey, tank = getCurrentTank()) {
+  const fish = Array.isArray(tank?.fish) ? tank.fish : [];
+  return fish.filter((entry) => entry && !isFishDead(entry) && canFoodSatisfyFishMeal(entry, foodKey));
+}
+
+function getFoodCompatibleFishAcrossTanks(foodKey, tanks = [getCurrentTank()]) {
+  return (Array.isArray(tanks) ? tanks : [])
+    .filter(Boolean)
+    .flatMap((tank) => getFoodCompatibleFishInTank(foodKey, tank));
+}
+
+function getFoodIncompatibilityMessage(food) {
+  const name = food?.name || "That food";
+  if (food?.id === "frisky") return "No breeding-ready adult fish in this tank can use Spawning Food.";
+  return `No fish in this tank can eat ${name}.`;
+}
+
 function loadSelectedFoodIntoAutoDispenser(now = Date.now()) {
   if (!hasAutoDispenserInstalled()) {
     return false;
@@ -523,6 +564,14 @@ function loadSelectedFoodIntoAutoDispenser(now = Date.now()) {
     runtime.feedingModeFoodKey = "";
     renderUi(now);
     showToast("That food is out of stock.");
+    return true;
+  }
+
+  const connectedTanks = typeof getConnectedFoodTanks === "function"
+    ? getConnectedFoodTanks(getCurrentTank())
+    : [getCurrentTank()];
+  if (food.id !== "halloweenCandy" && !getFoodCompatibleFishAcrossTanks(food.id, connectedTanks).length) {
+    showToast(getFoodIncompatibilityMessage(food));
     return true;
   }
 
@@ -617,9 +666,7 @@ function applyFoodBuff(foodKey, now = Date.now(), tank = getCurrentTank()) {
     };
   }
 
-  if (foodKey === "frisky") {
-    tank.foodBuffs.friskyUntil = Math.max(Number(tank.foodBuffs?.friskyUntil) || 0, now + BREEDING_FOOD_BOOST_MS);
-  }
+  if (foodKey === "frisky") tank.foodBuffs.friskyUntil = 0;
 }
 
 function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
@@ -670,6 +717,9 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   if (!fish || !pellet || isFishDead(fish)) {
     return null;
   }
+  if (isProteusZombieFish(fish)) {
+    return { foodKey: pellet.foodKey || "basic", mealCoins: 0, damageUnits: 0, died: false, refused: true, refusalReason: "Z-01 does not eat" };
+  }
 
   const targetTank = options.tank || getCurrentTank();
   const species = getSpeciesForFish(fish);
@@ -688,16 +738,56 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
     return { foodKey, mealCoins: 0, damageUnits: 0, died: false };
   }
   const forcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
-  const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
-  if (options.allowRefusal !== false && (forcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForDisease(fish, foodKey, now)))) {
-    handleFishRefuseFoodPellet(fish, pellet, now);
+  const refusalReason = options.allowRefusal === false
+    ? ""
+    : forcedRefusal
+      ? "severe sickness"
+      : getFishFoodRefusalReason(fish, foodKey, now);
+  if (refusalReason) {
+    handleFishRefuseFoodPellet(fish, pellet, now, refusalReason);
     return {
       foodKey,
       mealCoins: 0,
       damageUnits: 0,
       died: false,
-      refused: true
+      refused: true,
+      refusalReason
     };
+  }
+
+  if (typeof isDetritusFish === "function" && isDetritusFish(fish) && String(foodKey || "") === "algaeWafers") {
+    fish.lastAteAt = now;
+    fish.satiatedUntil = now + FISH_SATIATED_MS;
+    fish.foodRefusalUntil = 0;
+    adjustFishNeed(fish, "comfort", 2, now);
+    adjustFishNeed(fish, "stimulation", 3, now);
+    fish.needsUpdatedAt = now;
+    if (options.announce !== false) {
+      pushEvent(`${fish.name} grazed on an algae wafer.`, now, targetTank);
+    }
+    return { foodKey, mealCoins: 0, damageUnits: 0, died: false, optionalFeeding: true };
+  }
+
+  if (isProteusZombieFish(fish)) {
+    fish.lastAteAt = now;
+    fish.satiatedUntil = now + PROTEUS_ZOMBIE_FEEDING_CALM_MS;
+    fish.foodRefusalUntil = 0;
+    fish.zombieAggressionTargetId = "";
+    fish.zombieAggressionUntil = 0;
+    fish.zombieAggressionNextBiteAt = 0;
+    fish.zombieAggressionNextAt = Math.max(
+      Number(fish.zombieAggressionNextAt) || 0,
+      now + PROTEUS_ZOMBIE_FEEDING_CALM_MS
+    );
+    fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+    fish.needs.hunger = 100;
+    fish.needs.comfort = 100;
+    fish.needsUpdatedAt = now;
+    scheduleFishPoop(fish, now, targetTank);
+    if (options.announce !== false) {
+      pushEvent(`${fish.name} ate despite having no measurable nutritional requirement.`, now, targetTank);
+    }
+    return { foodKey, mealCoins: 0, damageUnits: 0, died: false, optionalFeeding: true };
   }
 
   const mealCoins = recordFishMealCredit(fish, now, targetTank);
@@ -710,6 +800,9 @@ function applyFoodPelletToFish(fish, pellet, now = Date.now(), options = {}) {
   adjustFishNeed(fish, "stimulation", 2, now);
   fish.needsUpdatedAt = now;
   scheduleFishPoop(fish, now, targetTank);
+  if (foodKey === "frisky" && typeof activateFishBreedingFromSpawningFood === "function") {
+    activateFishBreedingFromSpawningFood(fish, now);
+  }
   applyFoodBuff(foodKey, now, targetTank);
   const intake = applyFishMealWindowFoodIntake(fish, now, {
     wasAlreadyFull: previousHunger >= FISH_OVERFEED_HUNGER_THRESHOLD
@@ -752,9 +845,11 @@ function consumeOffscreenFishFoodPellet(fish, pelletId, targetTank, now = Date.n
     || fish.feedingPelletId !== pellet.id || !canFishTargetFoodPellet(fish, pellet, now)) return false;
 
   const forcedRefusal = pellet.diseaseRefusalFishId === fish.id;
-  const prechecked = pellet.refusalPrecheckedFishId === fish.id;
-  if (forcedRefusal || (!prechecked && shouldFishRefuseFoodForComfort(fish, pellet.foodKey, now))) {
-    return handleFishRefuseFoodPellet(fish, pellet, now);
+  const refusalReason = forcedRefusal
+    ? "severe sickness"
+    : getFishFoodRefusalReason(fish, pellet.foodKey, now);
+  if (refusalReason) {
+    return handleFishRefuseFoodPellet(fish, pellet, now, refusalReason);
   }
   const result = applyFoodPelletToFish(fish, pellet, now, { tank: targetTank, announce: true });
   if (!result || result.refused) return Boolean(result?.refused);
@@ -804,59 +899,138 @@ function allocateAutoDispenserPellets(total, dispensers) {
 
 function processSmartAutoFeeder(now = Date.now(), options = {}) {
   const targetTank = options.tank || getCurrentTank();
-  const slot = getTodaysMealSlots(now).find((entry) => now >= entry.start) || null;
-  if (!targetTank || !slot) return false;
+  if (!targetTank || isTankCareAutomationPaused()) return false;
+
+  const slot = getCurrentMealSlot(now);
+  if (!slot || now < slot.start || now >= slot.end) return false;
+
   const connectedTanks = getConnectedFoodTanks(targetTank);
   const feederEntries = connectedTanks
     .filter((tank) => tank.autoDispenser?.installed)
     .map((tank) => ({ tank, dispenser: tank.autoDispenser }));
   if (!feederEntries.length) return false;
 
-  // syncCurrentTankState visits every tank. Only the first feeder in a
-  // connected component performs the network-wide meal, preventing duplicate
-  // dispensing when several tanks share the same water or tube route.
+  // syncCurrentTankState visits every tank. One stable owner coordinates a
+  // connected feeder network, while per-fish timestamps prevent duplicate
+  // releases after reloads, tab changes, or repeated simulation ticks.
   const owner = feederEntries.slice().sort((a, b) => String(a.tank.id).localeCompare(String(b.tank.id)))[0];
-  if (owner.tank.id !== targetTank.id || feederEntries.every(({ dispenser }) => dispenser.lastDispensedSlotKey === slot.key)) {
-    return false;
-  }
+  if (owner.tank.id !== targetTank.id) return false;
 
-  const fishEntries = connectedTanks.flatMap((tank) => getMealEligibleFishForSlot(slot, tank).map((fish) => ({ fish, tank })));
-  if (!fishEntries.length) return false;
-  const allocations = allocateAutoDispenserPellets(fishEntries.length, feederEntries.map(({ dispenser }) => dispenser));
-  let released = 0;
-  feederEntries.forEach(({ tank, dispenser }, feederIndex) => {
-    const count = allocations[feederIndex];
-    for (let index = 0; index < count; index += 1) {
-      const storedPellets = Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : [];
-      if (!storedPellets.length) break;
-      const [storedPellet] = storedPellets.splice(0, 1);
-      const floatingPellet = withActiveTank(tank.id, () => createAutoDispenserDroppedPellet(storedPellet, now));
-      if (floatingPellet) {
-        tank.floatingPellets.push(floatingPellet);
-        released += 1;
+  let changed = false;
+  const fishEntries = connectedTanks.flatMap((tank) => (
+    getMealEligibleFishForSlot(slot, tank, now).map((fish) => ({ fish, tank }))
+  ));
+  if (!fishEntries.length) {
+    for (const { dispenser } of feederEntries) {
+      if (dispenser.lastDispensedSlotKey !== slot.key) {
+        dispenser.lastDispensedSlotKey = slot.key;
+        changed = true;
       }
     }
-    dispenser.lastDispensedSlotKey = slot.key;
-    dispenser.lastSmartDispensedAt = now;
-    dispenser.refillAlert = getAutoDispenserLoadedCount(dispenser) <= 0;
-  });
+    return changed;
+  }
 
-  // Give every fish a concrete feeder destination. Fish in another tank will
-  // use the normal section route or tube journey to reach that destination.
-  const activeDestinations = feederEntries
-    .filter((_, index) => allocations[index] > 0)
-    .map(({ tank }) => tank);
-  fishEntries.forEach(({ fish, tank }, index) => {
-    const destination = activeDestinations[index % Math.max(1, activeDestinations.length)];
-    if (!destination || tank.id === destination.id) return;
-    runtime.foodTravelDestinations.set(fish.id, destination.id);
-    fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
-  });
+  const hasAlreadyEaten = (fish) => (
+    fish.lastMealSlotKey === slot.key
+    && Math.max(0, Number(fish.mealSlotFoodCount) || 0) > 0
+  );
+  const hasAlreadyReleased = (fish) => feederEntries.some(({ dispenser }) => (
+    Math.max(0, Number(dispenser.smartDispensedAtByFishId?.[fish.id]) || 0) >= slot.start
+  ));
+  const pendingFishEntries = fishEntries.filter(({ fish }) => !hasAlreadyEaten(fish) && !hasAlreadyReleased(fish));
+
+  let released = 0;
+  const releasedByFeeder = new Map();
+  for (const entry of pendingFishEntries) {
+    const { fish, tank: fishTank } = entry;
+    const orderedFeeders = feederEntries.slice().sort((left, right) => {
+      const leftLocal = left.tank.id === fishTank.id ? 0 : 1;
+      const rightLocal = right.tank.id === fishTank.id ? 0 : 1;
+      return leftLocal - rightLocal || String(left.tank.id).localeCompare(String(right.tank.id));
+    });
+
+    let selected = null;
+    for (const feederEntry of orderedFeeders) {
+      const storedPellets = Array.isArray(feederEntry.dispenser.storedPellets)
+        ? feederEntry.dispenser.storedPellets
+        : [];
+      const pelletIndex = storedPellets.findIndex((storedPellet) => (
+        storedPellet?.foodKey !== "halloweenCandy"
+        && canFoodSatisfyFishMeal(fish, storedPellet?.foodKey)
+        && canFishEatFoodPellet(fish, storedPellet?.foodKey, now)
+      ));
+      if (pelletIndex >= 0) {
+        selected = { ...feederEntry, pelletIndex };
+        break;
+      }
+    }
+    if (!selected) continue;
+
+    const [storedPellet] = selected.dispenser.storedPellets.splice(selected.pelletIndex, 1);
+    const floatingPellet = withActiveTank(selected.tank.id, () => createAutoDispenserDroppedPellet(storedPellet, now));
+    if (!floatingPellet) continue;
+
+    floatingPellet.targetFishId = fish.id;
+    selected.tank.floatingPellets.push(floatingPellet);
+    selected.dispenser.smartDispensedAtByFishId ||= {};
+    selected.dispenser.smartDispensedAtByFishId[fish.id] = now;
+    selected.dispenser.lastSmartDispensedAt = now;
+    selected.dispenser.refillAlert = getAutoDispenserLoadedCount(selected.dispenser) <= 0;
+    releasedByFeeder.set(selected.dispenser, (releasedByFeeder.get(selected.dispenser) || 0) + 1);
+    released += 1;
+    changed = true;
+
+    if (fishTank.id === selected.tank.id) {
+      withActiveTank(selected.tank.id, () => assignPelletToFish(fish, floatingPellet, now));
+    } else {
+      runtime.foodTravelDestinations.set(fish.id, selected.tank.id);
+      fish.lastNeighborhoodMoveAt = Math.min(Number(fish.lastNeighborhoodMoveAt) || 0, now - 25 * 1000);
+    }
+  }
+
+  for (const { dispenser } of feederEntries) {
+    const empty = getAutoDispenserLoadedCount(dispenser) <= 0;
+    if (dispenser.refillAlert !== empty) {
+      dispenser.refillAlert = empty;
+      changed = true;
+    }
+  }
+
+  const unresolved = fishEntries.filter(({ fish }) => !hasAlreadyEaten(fish) && !hasAlreadyReleased(fish));
+  if (!unresolved.length) {
+    for (const { dispenser } of feederEntries) {
+      if (dispenser.lastDispensedSlotKey !== slot.key) {
+        dispenser.lastDispensedSlotKey = slot.key;
+        changed = true;
+      }
+    }
+  } else {
+    const storedPellets = feederEntries.flatMap(({ dispenser }) => Array.isArray(dispenser.storedPellets) ? dispenser.storedPellets : []);
+    const loadedCount = storedPellets.length;
+    const anyDietMatch = unresolved.some(({ fish }) => storedPellets.some((pellet) => (
+      pellet?.foodKey !== "halloweenCandy" && canFoodSatisfyFishMeal(fish, pellet?.foodKey)
+    )));
+
+    if (loadedCount <= 0 && owner.dispenser.lastEmptyAlertSlotKey !== slot.key) {
+      owner.dispenser.lastEmptyAlertSlotKey = slot.key;
+      owner.dispenser.refillAlert = true;
+      pushEvent(`The auto feeder is empty and could not finish the ${slot.label.toLowerCase()} feeding.`, now, owner.tank, { type: "equipment" });
+      if (owner.tank.id === getCurrentTank()?.id) showToast("Auto feeder empty. Refill it to resume scheduled feeding.");
+      changed = true;
+    } else if (loadedCount > 0 && !anyDietMatch && owner.dispenser.lastFoodMismatchAlertSlotKey !== slot.key) {
+      owner.dispenser.lastFoodMismatchAlertSlotKey = slot.key;
+      pushEvent(`The auto feeder has food, but none of it matches the remaining fish diets for the ${slot.label.toLowerCase()} feeding.`, now, owner.tank, { type: "equipment" });
+      if (owner.tank.id === getCurrentTank()?.id) showToast("Auto feeder needs a compatible food for the remaining fish.");
+      changed = true;
+    }
+  }
 
   connectedTanks.forEach((tank) => withActiveTank(tank.id, () => assignFloatingPelletsToHungryFish(now)));
-  playDispenserSoundEffect();
-  pushEvent(`The auto feeder dispensed ${released} pellet${released === 1 ? "" : "s"} for ${fishEntries.length} connected fish.`, now, targetTank, { type: "food" });
-  return true;
+  if (released > 0) {
+    playDispenserSoundEffect();
+    pushEvent(`The auto feeder dispensed ${released} diet-matched pellet${released === 1 ? "" : "s"} for the ${slot.label.toLowerCase()} feeding.`, now, targetTank, { type: "food" });
+  }
+  return changed;
 }
 
 function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
@@ -879,6 +1053,11 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
     renderUi(now);
     showToast("That food is out of stock.");
     return { ok: false, reason: "out-of-stock", foodId: food.id };
+  }
+
+  if (food.id !== "halloweenCandy" && !getFoodCompatibleFishInTank(food.id, getCurrentTank()).length) {
+    showToast(getFoodIncompatibilityMessage(food));
+    return { ok: false, reason: "incompatible-food", foodId: food.id };
   }
 
   state.foodInventory[food.id] = quantity - 1;
@@ -958,33 +1137,15 @@ function getNextDayStartTimestamp(timestamp = Date.now()) {
   return date.getTime();
 }
 
-function hasActiveTankMedicineEffect(effectType, now = Date.now()) {
-  return state.medicineEffects.some((effect) => effect?.type === effectType && (effect.endsAt || 0) > now);
+function hasActiveTankMedicineEffect(effectType, now = Date.now(), targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  const effects = Array.isArray(targetTank?.medicineEffects)
+    ? targetTank.medicineEffects
+    : (Array.isArray(state?.medicineEffects) ? state.medicineEffects : []);
+  return effects.some((effect) => effect?.type === effectType && (effect.endsAt || 0) > now);
 }
 
-function applySelectedMedicineAtPoint(point, now = Date.now()) {
-  const medicineKey = runtime.medicineModeKey;
-  const medicine = getMedicineMeta(medicineKey);
-  if (!medicine || !point) {
-    return false;
-  }
-
-  const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
-  if (quantity <= 0) {
-    runtime.medicineModeKey = "";
-    renderUi(now);
-    showToast("That medicine is out of stock.");
-    return true;
-  }
-
-  if (!shouldShowMedicineInStore(medicine)) {
-    runtime.medicineModeKey = "";
-    renderUi(now);
-    showToast("That medicine is not currently available.");
-    return true;
-  }
-
-  state.medicineInventory[medicine.id] = quantity - 1;
+function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs = MEDICINE_VISUAL_DURATION_MS) {
+  if (!medicine || !point) return;
   state.medicineClouds.push({
     id: createId("med-cloud"),
     color: medicine.color,
@@ -996,53 +1157,142 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
   state.medicineWaterTint = {
     color: medicine.color,
     startedAt: now,
-    endsAt: now + MEDICINE_VISUAL_DURATION_MS
+    endsAt: now + durationMs
   };
-  state.medicineEffects.push({
-    id: createId("med-effect"),
-    type: medicine.id,
-    startedAt: now,
-    endsAt: medicine.id === "betaBlocker" ? getNextDayStartTimestamp(now) : now + MEDICINE_HEAL_DURATION_MS,
-    nextTickAt: now + MEDICINE_HEAL_INTERVAL_MS,
-    resolvedAt: null
-  });
-  playDropSoundEffect();
+}
 
-  if (state.medicineInventory[medicine.id] <= 0) {
-    runtime.medicineModeKey = "";
+function consumeSelectedMedicineDose(medicine) {
+  const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
+  if (quantity <= 0) return false;
+  state.medicineInventory[medicine.id] = quantity - 1;
+  if (state.medicineInventory[medicine.id] <= 0) runtime.medicineModeKey = "";
+  return true;
+}
+
+function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
+  if (!medicine || !fish) return { ok: false, message: "Click a fish to treat." };
+  if (isFishDead(fish)) return { ok: false, message: "Medicine cannot be used on a dead fish." };
+  const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : String(fish.condition || "healthy");
+
+  if (medicine.id === "firstAid") {
+    if (condition !== "injured") return { ok: false, message: "This fish does not have an injury." };
+    fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(fish.healthUnits) || 1);
+    fish.injuryRecoveryProgressMs = 1;
+    fish.injuryRecoveryLastAt = now;
+    if (typeof syncFishPrimaryCondition === "function") syncFishPrimaryCondition(fish, now);
+    return { ok: true, message: `${fish.name} is recovering from its injury.` };
   }
 
-  pushEvent(`${medicine.name} was used in ${getTankLabel(getCurrentTank())}.`, now);
+  if (medicine.id === "antiParasite") {
+    if (condition !== "parasites") return { ok: false, message: "This fish does not have parasites." };
+    fish.diseaseState = DISEASE_STATE_RECOVERING;
+    fish.diseaseRecoveryProgressMs = 1;
+    fish.diseaseLastProgressAt = now;
+    fish.diseaseTreatedUntil = now + 1;
+    fish.diseaseRequiresTreatment = false;
+    if (typeof syncFishPrimaryCondition === "function") syncFishPrimaryCondition(fish, now);
+    return { ok: true, message: `${fish.name}'s parasites were treated. Recovery will take about 24 hours.` };
+  }
+
+  if (medicine.id === "infectionTreatment") {
+    if (condition !== "infection") return { ok: false, message: "This fish does not have an infection." };
+    fish.diseaseState = DISEASE_STATE_RECOVERING;
+    fish.diseaseRecoveryProgressMs = 1;
+    fish.diseaseLastProgressAt = now;
+    fish.diseaseTreatedUntil = now + 1;
+    fish.diseaseRequiresTreatment = false;
+    if (typeof syncFishPrimaryCondition === "function") syncFishPrimaryCondition(fish, now);
+    return { ok: true, message: `${fish.name}'s infection was treated. Recovery will take about 24 hours.` };
+  }
+
+  if (medicine.id === "waterStress") {
+    const mismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
+    if (mismatch) return { ok: false, message: "Correct this fish's water type before treating Osmotic Stress." };
+    if (!(Number(fish.osmoticStressProgressMs) > 0)) {
+      return { ok: false, message: "This fish is not recovering from Osmotic Stress." };
+    }
+    if (!(Number(fish.osmoticRecoveryProgressMs) > 0)) {
+      fish.osmoticRecoveryProgressMs = 1;
+      fish.osmoticRecoveryLastAt = now;
+    }
+    fish.waterStressBoostUntil = Math.max(Number(fish.waterStressBoostUntil) || 0, now + WATER_STRESS_BOOST_DURATION_MS);
+    return { ok: true, message: `${fish.name}'s Osmotic Stress recovery is boosted for 6 hours.` };
+  }
+
+  return { ok: false, message: "That medicine cannot be used on this fish." };
+}
+
+function applySelectedMedicineAtPoint(point, now = Date.now()) {
+  const medicineKey = runtime.medicineModeKey;
+  const medicine = getMedicineMeta(medicineKey);
+  if (!medicine || !point) return false;
+
+  const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
+  if (quantity <= 0) {
+    runtime.medicineModeKey = "";
+    renderUi(now);
+    showToast("That medicine is out of stock.");
+    return true;
+  }
+  if (!shouldShowMedicineInStore(medicine)) {
+    runtime.medicineModeKey = "";
+    renderUi(now);
+    showToast("That medicine is not currently available.");
+    return true;
+  }
+
+  if (medicine.id === "betaBlocker") {
+    const livingFish = getLivingTankFish();
+    if (!livingFish.length) {
+      showToast("There are no fish in this tank to calm.");
+      return true;
+    }
+    if (!consumeSelectedMedicineDose(medicine)) return true;
+    for (const fish of livingFish) {
+      fish.calmedUntil = Math.max(Number(fish.calmedUntil) || 0, now + CALMING_EFFECT_DURATION_MS);
+      fish.panicUntil = 0;
+      fish.bettaRivalTargetId = "";
+      fish.bettaRivalDisplayUntil = 0;
+      fish.bettaRivalChaseUntil = 0;
+      fish.bettaRivalRole = "";
+      fish.bettaRivalNipAt = 0;
+      fish.bettaRivalNippedTargetId = "";
+    }
+    addMedicineVisualEffect(medicine, point, now, CALMING_EFFECT_DURATION_MS);
+    state.medicineEffects.push({ id: createId("med-effect"), type: medicine.id, startedAt: now, endsAt: now + CALMING_EFFECT_DURATION_MS, resolvedAt: null });
+    playDropSoundEffect();
+    pushEvent(`${medicine.name} calmed the fish in ${getTankLabel(getCurrentTank())}.`, now);
+    saveState();
+    renderUi(now);
+    showToast("The tank is calm for 10 minutes.");
+    return true;
+  }
+
+  const fish = typeof findFishAtPoint === "function" ? findFishAtPoint(point.x, point.y, now) : null;
+  if (!fish) {
+    showToast("Click a fish to treat.");
+    return true;
+  }
+  const result = applyTargetedMedicineToFish(medicine, fish, now);
+  if (!result.ok) {
+    showToast(result.message || "That medicine is not appropriate for this fish.");
+    renderUi(now);
+    return true;
+  }
+
+  if (!consumeSelectedMedicineDose(medicine)) return true;
+  addMedicineVisualEffect(medicine, point, now);
+  playDropSoundEffect();
+  pushEvent(`${medicine.name} was used on ${fish.name}.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
   saveState();
   renderUi(now);
+  showToast(result.message);
   return true;
 }
 
 function processTankMedicineEffects(now = Date.now()) {
-  let changed = false;
-
-  for (const effect of state.medicineEffects) {
-    if (!effect || (effect.endsAt || 0) <= now) {
-      continue;
-    }
-
-    if (effect.type === "firstAid") {
-      if (!effect.diseaseSlowAppliedAt) {
-        changed = applyFirstAidDiseaseSlowdown(now) || changed;
-        effect.diseaseSlowAppliedAt = now;
-      }
-      while ((effect.nextTickAt || 0) <= now && (effect.nextTickAt || 0) < effect.endsAt) {
-        for (const fish of getLivingTankFish()) {
-          const maxHealth = getFishMaxHealthUnits(fish);
-          if (fish.healthUnits < maxHealth) {
-            fish.healthUnits = Math.min(maxHealth, fish.healthUnits + 1);
-            changed = true;
-          }
-        }
-        effect.nextTickAt += MEDICINE_HEAL_INTERVAL_MS;
-      }
-    }
-  }
-
-  return changed;
+  if (!Array.isArray(state?.medicineEffects)) return false;
+  const before = state.medicineEffects.length;
+  state.medicineEffects = state.medicineEffects.filter((effect) => effect && (Number(effect.endsAt) || 0) > now);
+  return state.medicineEffects.length !== before;
 }

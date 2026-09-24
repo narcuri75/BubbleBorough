@@ -3,6 +3,10 @@
 
 function renderTank(now) {
   const dirtiness = getTankDirtiness(now);
+  // Resolve every authored support surface before drawing. Free-placed decor
+  // may sit above its support in screen space and therefore be painted first;
+  // surface discovery cannot depend on painter order.
+  rebuildDecorShadowSurfaceReceivers();
   clearStageDisplaySurfaces();
   drawTankBackdrop();
   tankContext.save();
@@ -19,31 +23,37 @@ function renderTank(now) {
   drawSedimentClouds(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FLOOR);
   drawGravelDigBursts(now);
-  //drawLooseGravelCap();
   drawGroundShadows(now);
   drawPellets(now);
   drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD);
-  //drawLooseGravel(now, { surfaceKind: "floor" });
   for (let layer = TANK_DEPTH_LAYERS; layer >= 1; layer -= 1) {
     if (layer === 3) {
       drawAmbientBubbles(now, 2);
     }
-    // Each cave owns private back/interior/front sublayers inside its selected
-    // main tank layer. Normal decor remains on the main layer and fish only
-    // enter the cave sublayer while actively travelling through that cave.
-    drawDecor(layer, now, { pass: "base" });
+    // Every cave occupies one major layer but completes a private three-part
+    // sandwich inside it: cave back, interior fish, then cave front. Ordinary
+    // decor assigned to that same major layer is painted after the completed
+    // cave, so plants and ornaments sit in front of it as users expect. Front
+    // fish remain foremost within the layer.
+    drawDecor(layer, now, { pass: "cave-back" });
+    drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
+    drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
+    // Paint cave backs a second time to occlude ordinary fish travelling in
+    // the rear lanes. Only fish committed to this cave's route are then drawn
+    // into its openings before the front shell closes the sandwich.
+    drawDecor(layer, now, { pass: "cave-back" });
     drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
     drawDecor(layer, now, { pass: "cave-front" });
+    drawDecor(layer, now, { pass: "base" });
     drawPoops(now, layer);
     if (layer !== TANK_DEPTH_LAYERS) {
       drawWaterParticles(now, layer);
     }
     drawFishEggs(now, layer);
-    //drawLooseGravel(now, { surfaceKind: "decor", decorLayer: layer });
     if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
       drawFish(now, layer, { onlyBehavior: "sucker", excludeCaveInterior: true });
     }
-    drawFish(now, layer, { excludeBehavior: "sucker", excludeCaveInterior: true });
+    drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_FRONT, excludeCaveInterior: true });
     // A tossed pebble belongs with the layer where it will land and disturb
     // gravel, rather than being painted behind every fish and ornament.
     drawFishPebbleTosses(now, layer);
@@ -62,13 +72,14 @@ function renderTank(now) {
   drawBoroughStructureActivityEffects(now);
   drawAmbientBubbles(now, 3);
   drawLightweightCausticOverlay(now);
-  //drawLooseGravel(now, { transientOnly: true });
   // Dirty-water color is cached into grimeCanvas instead of painted every frame.
   drawMedicineWaterTint(now);
   drawMedicineClouds(now);
   drawWaterBloodTint();
   drawEffectClouds(EFFECT_CLOUD_LAYER_FRONT);
   drawFish(now, SUCKER_FISH_FRONT_GLASS_LAYER, { onlyBehavior: "sucker" });
+  // A hand-dropped snail's landing stones intentionally cross over its shell.
+  drawGravelDigBursts(now, { frontOfFish: true });
   drawDecorPreview();
   drawDecorSwimGuide(now);
   drawActiveDecorLayerCue();
@@ -236,6 +247,9 @@ function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, wi
 
 function markLightweightCausticFloor() {
   if (!runtime.lightweightCausticFrameEnabled) return;
+  // River rock and sand are authored background plates and must retain their
+  // original colors. They do not receive the gravel-only caustic treatment.
+  if (getResolvedTankSubstrateStyle() !== "custom") return;
   const mask = getLightweightCausticMask();
   const bounds = getTankFloorDrawBounds();
   mask.context.setTransform(mask.scale, 0, 0, mask.scale, 0, 0);
@@ -1931,7 +1945,7 @@ function drawFallbackChumPiece(x, y, pellet) {
   tankContext.restore();
 }
 
-function drawFoodSpritePiece(x, y, pellet, spritePath) {
+function drawFoodSpritePiece(x, y, pellet, spritePath, now = Date.now()) {
   const image = spritePath ? runtime.images.get(spritePath) : null;
   if (!image) {
     return false;
@@ -1946,9 +1960,27 @@ function drawFoodSpritePiece(x, y, pellet, spritePath) {
   const drawWidth = Math.max(visualSize.minSize, image.width * fitScale);
   const drawHeight = Math.max(visualSize.minSize, image.height * fitScale);
 
+  let renderRotation = Number(pellet?.rotation) || 0;
+  let renderScaleY = 1;
+  if (pellet?.foodKey === "algaeWafers") {
+    if (pellet.settled) {
+      renderRotation = 0;
+    } else {
+      const sinkDuration = Math.max(1000, Number(pellet.sinkDurationMs) || ALGAE_WAFER_SINK_DURATION_MS);
+      const sinkProgress = clamp((now - pellet.createdAt) / sinkDuration, 0, 1);
+      const settleFade = clamp((1 - sinkProgress) / 0.22, 0, 1);
+      const phase = (Number(pellet.sway) || 0) * Math.PI * 2;
+      const wobble = Math.sin(now / 390 + phase) * 0.13 + Math.sin(now / 760 + phase * 1.6) * 0.045;
+      renderRotation = wobble * settleFade;
+      const faceCycle = 0.5 + 0.5 * Math.cos(now / 510 + phase);
+      renderScaleY = 1 - (0.18 * faceCycle * settleFade);
+    }
+  }
+
   tankContext.save();
   tankContext.translate(x, y);
-  tankContext.rotate(Number(pellet?.rotation) || 0);
+  tankContext.rotate(renderRotation);
+  tankContext.scale(1, renderScaleY);
   tankContext.globalAlpha = 0.96;
   tankContext.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   tankContext.restore();
@@ -1969,7 +2001,7 @@ function drawPellets(now) {
 
     const appearance = getFoodDropAppearance(pellet.foodKey, pellet);
     if (appearance.dropStyle === "sprite") {
-      if (!drawFoodSpritePiece(x, y, pellet, appearance.spritePath)) {
+      if (!drawFoodSpritePiece(x, y, pellet, appearance.spritePath, now)) {
         drawFallbackChumPiece(x, y, pellet);
       }
     } else {
@@ -2033,6 +2065,19 @@ function getTankFloorMaskHillProfile() {
 
 function traceTankFloorMaskPath(context, bounds = getTankFloorDrawBounds()) {
   const { left, right, bottom } = bounds;
+
+  if (getResolvedTankSubstrateStyle() !== "custom") {
+    context.beginPath();
+    context.moveTo(left, bottom);
+    context.lineTo(left, getNaturalSubstrateSurfaceYAtX(left));
+    for (let x = left + 8; x < right; x += 8) {
+      context.lineTo(x, getNaturalSubstrateSurfaceYAtX(x));
+    }
+    context.lineTo(right, getNaturalSubstrateSurfaceYAtX(right));
+    context.lineTo(right, bottom);
+    context.closePath();
+    return;
+  }
 
   context.beginPath();
   context.moveTo(left, bottom);

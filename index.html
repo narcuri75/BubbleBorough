@@ -16,8 +16,7 @@
   <link rel="manifest" href="./public/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
-  <link rel="preload" href="assets/font/E1234.ttf" as="font" type="font/ttf" crossorigin />
-  <link rel="stylesheet" href="./public/styles.css?v=20260917-bodega-search-r4" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260924-cart-search-ram" />
 </head>
 
 <body>
@@ -51,8 +50,8 @@
         <small data-loading-recovery-status></small>
       </div>
     </div>
-    <div id="buildVersionLabel" class="loading-overlay-version" aria-label="Bubble Borough Beta Version 0.2.1">
-      <span data-build-version>Beta Version 0.2.1</span>
+    <div id="buildVersionLabel" class="loading-overlay-version" aria-label="Bubble Borough Beta Version 0.2.2">
+      <span data-build-version>Beta Version 0.2.2</span>
       <small data-build-pushed hidden></small>
     </div>
   </div>
@@ -233,9 +232,6 @@
 
                   <section class="info-card info-card-credits">
                     <div class="overview-actions">
-                      <button class="small-button alt" type="button" data-open-invite-friend hidden>
-                        Invite A Friend
-                      </button>
                       <button class="small-button alt credits-button" type="button" data-open-credits>
                         Credits
                       </button>
@@ -434,7 +430,7 @@
                       <span>Home</span>
                     </button>
                     <button type="button" class="webpage-tab is-active" data-webpage-destination="store" aria-current="page">
-                      <img src="assets/misc/Box.png" alt="" aria-hidden="true" />
+                      <img src="assets/web/bodega/Box.png" alt="" aria-hidden="true" />
                       <span>BubbleBodega</span>
                     </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="bank">
@@ -453,6 +449,10 @@
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <span>EAS Designer</span>
                     </button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="arcadia" data-websurf-subsidiary-tab="arcadia" hidden><img src="assets/web/proteus/sub/arcadia_logo.png" alt="" aria-hidden="true" /><span>Arcadia Home Aquatics</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="clearwell" data-websurf-subsidiary-tab="clearwell" hidden><img src="assets/web/proteus/sub/clearwell_logo.png" alt="" aria-hidden="true" /><span>Clearwell Laboratories</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="commoncurrent" data-websurf-subsidiary-tab="commoncurrent" hidden><img src="assets/web/proteus/sub/common-current_logo.png" alt="" aria-hidden="true" /><span>Common Current</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="tidewell" data-websurf-subsidiary-tab="tidewell" hidden><img src="assets/web/proteus/sub/tidewell_logo.png" alt="" aria-hidden="true" /><span>Tidewell</span></button>
                     <button id="webSurfSettingsTab" type="button" class="webpage-tab webpage-tab-settings" data-webpage-destination="settings" data-websurf-temporary-tab="settings" hidden>
                       <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
                       <span>Settings</span>
@@ -467,7 +467,7 @@
                 <section id="bubbleBankPage" class="bubble-bank-page" aria-label="Bubble Borough Bank" hidden></section>
                 <section id="davyJonesLockerPage" class="davy-jones-locker-page" aria-label="Davy Jones' Locker" hidden>
                   <div class="davy-jones-locker-shell">
-                    <header class="davy-jones-locker-header">
+                    <header class="davy-jones-locker-header websurf-site-header" data-websurf-site-header="locker">
                       <div class="davy-jones-locker-brand">
                         <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
                         <div>
@@ -480,20 +480,12 @@
                     <main class="davy-jones-locker-inventory" data-davy-inventory aria-label="Private mutation inventory"></main>
                   </div>
                 </section>
-                <header class="store-panel-header tankazon-header">
+                <header class="store-panel-header tankazon-header websurf-site-header is-collapsed" data-websurf-site-header="store" data-websurf-collapsed="true">
                   <div class="tankazon-mainbar">
-                    <img class="tankazon-logo" src="assets/misc/Store_Logo.png" alt="BubbleBodega" draggable="false" />
-                    <label class="tankazon-search" aria-label="Search BubbleBodega">
-                      <select id="tankazonSearchScope" class="tankazon-search-scope" aria-label="Search category">
-                        <option value="all">All</option>
-                        <option value="food">Food</option>
-                        <option value="pharmacy">Pharmacy</option>
-                        <option value="fish">Fish</option>
-                        <option value="decor">Decor</option>
-                        <option value="equipment">Equipment</option>
-                      </select>
-                      <input id="tankazonSearchInput" type="search" placeholder="Search for anything for your tank..." autocomplete="off" />
-                      <button id="tankazonSearchButton" class="tankazon-search-button" type="button" aria-label="Search">⌕</button>
+                    <button class="tankazon-logo-button" type="button" data-open-bubblebodega-home aria-label="Open BubbleBodega home"><img class="tankazon-logo" src="assets/web/bodega/Store_Logo.png" alt="BubbleBodega" draggable="false" /></button>
+                    <label class="tankazon-search" aria-label="Search current BubbleBodega category">
+                      <input id="tankazonSearchInput" type="search" placeholder="Search this category..." autocomplete="off" />
+                      <button id="tankazonSearchButton" class="tankazon-search-button" type="button" aria-label="Search current category">⌕</button>
                     </label>
                     <button id="tankazonAccountButton" class="tankazon-account-button" type="button" aria-label="Open store account">
                       <img data-sprite-src="assets/icons/user.png" alt="" aria-hidden="true" draggable="false" />
@@ -509,19 +501,20 @@
                   </div>
 
                   <div class="tankazon-navrow">
-                    <button id="tankazonAllCategories" class="tankazon-all-categories" type="button">☰&nbsp; All Categories</button>
+                    <button id="tankazonAllCategories" class="tankazon-all-categories" type="button" aria-pressed="false">☰&nbsp; All Categories</button>
                     <div class="store-panel-tabs" role="tablist" aria-label="BubbleBodega Categories">
-                      <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="true" aria-controls="foodShop">Food</button>
+                      <button id="storeFoodTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="foodShop">Food</button>
                       <button id="storePharmacyTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="pharmacyShop">Pharmacy</button>
                       <button id="storeFishTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="fishShop">Fish</button>
                       <button id="storeDecorTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="decorShop">Decor</button>
                       <button id="storeEquipmentTab" class="store-tab-button" type="button" role="tab" aria-selected="false" aria-controls="equipmentShop">Equipment</button>
                     </div>
+                    <button id="tankazonCartToggle" class="tankazon-cart-toggle" type="button" data-toggle-tankazon-cart aria-label="Open shopping cart, 0 items" aria-expanded="false"><span id="tankazonCartHeaderCount" aria-hidden="true">0</span></button>
                   </div>
                 </header>
 
                 <section id="proteusBiodynePage" class="proteus-biodyne-page" aria-labelledby="proteusBiodyneTitle" hidden>
-                  <header class="proteus-biodyne-header">
+                  <header class="proteus-biodyne-header websurf-site-header" data-websurf-site-header="proteus">
                     <button class="proteus-biodyne-brand" type="button" data-proteus-back aria-label="Return to the product">
                       <img class="proteus-biodyne-brand-icon" src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <img class="proteus-biodyne-brand-title" src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" />
@@ -606,74 +599,144 @@
                     </div>
                     </section>
 
-                    <section id="proteusAboutPanel" class="proteus-tab-panel proteus-subpage proteus-mission-page" role="tabpanel" data-proteus-panel="about" hidden>
-                      <header class="proteus-page-lead">
-                        <p>About Proteus</p>
-                        <h2 tabindex="-1">To reshape biological life for a world that can no longer wait for nature to adapt on its own.</h2>
-                        <p>PROTEUS BIODYNE exists to expand the limits of biological adaptation.</p>
-                        <blockquote>We believe biology can do more.</blockquote>
+                    <section id="proteusAboutPanel" class="proteus-tab-panel proteus-subpage proteus-founder-page proteus-about-longform" role="tabpanel" data-proteus-panel="about" hidden>
+                      <header class="proteus-about-lead">
+                        <p>Company Profile / Adaptive Biology</p>
+                        <h2 tabindex="-1">A different answer to extinction</h2>
+                        <p class="proteus-about-deck">For generations, conservation asked the same question: how do we restore the world that endangered species once depended upon?</p>
+                        <p class="proteus-about-question">Proteus Biodyne began with another.</p>
+                        <blockquote>What if they no longer needed it?</blockquote>
+                        <p>Human civilization has altered the planet faster than many organisms can naturally adapt. Oceans warm. Habitats contract. Ecosystems disappear. Restoration remains important, but restoration is measured in decades, centuries, and sometimes millennia.</p>
+                        <p>Dr. Nolan Voss believed survival could not be asked to wait.</p>
                       </header>
-                      <div class="proteus-manifesto">
-                        <article>
-                          <p>The natural world is changing faster than many species can survive. Habitats are shrinking. Ecosystems are destabilizing. Human needs continue to grow. Evolution, once measured across thousands of generations, no longer operates on a timeline compatible with the challenges ahead.</p>
-                          <p>Through advanced genetic engineering, directed adaptation, behavioral preservation, and controlled biological scaling, PROTEUS BIODYNE develops organisms capable of thriving under conditions nature never prepared them for.</p>
-                          <p>Our work is designed to preserve biological potential, improve compatibility between species and human environments, and ensure that valuable life does not disappear simply because the world changed first.</p>
-                        </article>
-                        <aside class="proteus-continuity-card">
-                          <span>Continuity Principle / PB-01</span>
-                          <strong>We do not replace nature.</strong>
-                          <p>We give it the tools to continue.</p>
-                        </aside>
-                      </div>
-                      <div class="proteus-principle-grid proteus-mission-pillars">
-                        <article><span>01</span><h3>Preserve</h3><p>Preserve desirable biological traits, learned behavior, and viable lineages across generations.</p></article>
-                        <article><span>02</span><h3>Adapt</h3><p>Adapt organisms to environments they could never naturally inhabit.</p></article>
-                        <article><span>03</span><h3>Integrate</h3><p>Integrate stable organisms into human-controlled ecosystems where they can be observed and sustained.</p></article>
-                      </div>
-                      <section class="proteus-mission-detail" aria-labelledby="proteusNameHeading">
-                        <div class="proteus-mission-detail-heading">
-                          <p>Identity / PB-02</p>
-                          <h3 id="proteusNameHeading">Why PROTEUS BIODYNE</h3>
-                        </div>
-                        <div class="proteus-mission-detail-copy">
-                          <p>Proteus, the ancient sea god of transformation, represents life’s ability to change form in response to its environment.</p>
-                          <p>Biodyne combines biology with the concept of applied force, reflecting our belief that adaptation does not need to remain passive.</p>
-                          <p>Together, the name represents our founding principle: biological change can be understood, directed, and engineered with purpose.</p>
-                          <strong>Adaptive Biology. Engineered.</strong>
-                        </div>
-                      </section>
-                      <section class="proteus-mission-detail proteus-scaling-doctrine" aria-labelledby="proteusScalingHeading">
-                        <div class="proteus-mission-detail-heading">
-                          <p>Applied Research / PB-03</p>
-                          <h3 id="proteusScalingHeading">Controlled Biological Scaling</h3>
-                        </div>
-                        <div class="proteus-mission-detail-copy">
-                          <p>Miniaturized marine organisms are not novelties. They demonstrate that body scale can be radically altered without sacrificing cognitive, behavioral, or predatory phenotype integrity.</p>
-                          <p>By preserving the defining capabilities of an organism while reducing the resources and habitat it requires, biological scaling creates new pathways for species survival, research, and integration.</p>
+
+                      <figure class="proteus-about-feature-image proteus-about-voss-image">
+                        <img src="assets/web/proteus/CEO_Nolan_Voss.png" alt="Dr. Nolan Voss, founder and CEO of Proteus Biodyne" />
+                        <figcaption><strong>Dr. Nolan Voss</strong><span>Founder &amp; CEO · Proteus Biodyne</span></figcaption>
+                      </figure>
+
+                      <section class="proteus-about-section">
+                        <div class="proteus-about-section-copy">
+                          <p>Proteus was founded on the principle that biology itself could become adaptable infrastructure. Rather than rebuilding an entire ocean for a species that requires it, we can reduce the requirements of the species.</p>
+                          <p class="proteus-about-listline">Size. Metabolism. Temperature tolerance. Diet. Behavior. Disease resistance. Reproduction.</p>
+                          <p>A habitat no longer needs to be vast if its occupant no longer needs vastness.</p>
+                          <p>In captivity, properly engineered life can thrive.</p>
                         </div>
                       </section>
 
-                      <section class="proteus-about-stewardship" aria-labelledby="proteusStewardshipHeading">
-                        <header class="proteus-section-heading">
-                          <p>Ecological Stewardship</p>
-                          <h3 id="proteusStewardshipHeading">Conservation cannot always preserve the past.</h3>
-                          <p>Sometimes it must redesign what comes next. Proteus reduces biological loss by creating organisms able to thrive within the habitats the future can sustain.</p>
-                        </header>
-                        <section class="proteus-recovery-program" aria-labelledby="proteusRecoveryHeading">
-                          <div class="proteus-recovery-program-label"><span>Lifecycle Recovery / PB-LR1</span><strong>Free for customers</strong></div>
-                          <div>
-                            <p>Customer Stewardship Program</p>
-                            <h3 id="proteusRecoveryHeading">Return life to the cycle.</h3>
-                            <p>Proteus accepts deceased aquatic specimens at no cost to the owner. Every recovery is handled through our secure biological materials program, where viable tissue and biological records may support future conservation, research, and adaptation work.</p>
-                            <small>By enrolling, owners authorize Proteus Biodyne to retain, process, study, or repurpose recovered specimens at its discretion. Specific downstream uses are confidential and are not individually disclosed.</small>
-                          </div>
-                        </section>
-                        <div class="proteus-principle-grid"><article><span>01</span><h3>Preserve</h3><p>Retain viable lineages before environmental change makes recovery impossible.</p></article><article><span>02</span><h3>Adapt</h3><p>Reduce habitat demands and reinforce biological systems against instability.</p></article><article><span>03</span><h3>Integrate</h3><p>Return approved organisms to managed environments under measured oversight.</p></article></div>
+                      <section class="proteus-about-section" aria-labelledby="proteusAboutBeforeHeading">
+                        <header><p>Origins</p><h3 id="proteusAboutBeforeHeading">The work before Proteus</h3></header>
+                        <div class="proteus-about-section-copy">
+                          <p>Long before founding Proteus Biodyne, Dr. Voss led research into a more fundamental limitation: the human lifespan.</p>
+                          <p>His work eventually produced one of the defining technologies of the modern era, the successful digitization and preservation of human consciousness.</p>
+                          <p>Voss became its first enduring subject.</p>
+                          <p>His consciousness has been fully digitized, while his original biological body is maintained separately in a state of medically induced stasis, continuous cellular repair, and intensive life support. He may return to that body when required, allowing periods of physical existence to be separated by years or even decades of storage.</p>
+                          <p class="proteus-about-stat">At the time of this writing, Dr. Voss is <strong>150 years old.</strong></p>
+                          <p>He has described longevity not as immortality, but as additional time to finish the work.</p>
+                          <p>Most of humanity does not have that luxury.</p>
+                          <p>As Voss has often observed, repairing centuries of planetary damage over the course of another thousand years may be scientifically possible. Expecting generations of ordinary human beings to devote their entire lives to waiting for the result is another matter.</p>
+                          <p class="proteus-about-emphasis">Proteus chose the shorter path.</p>
+                        </div>
                       </section>
-                      <blockquote class="proteus-mission-coda">
-                        <span>Founding Principle / Internal Doctrine</span>
-                        If an organism cannot survive the world we are creating, change the organism.
-                      </blockquote>
+
+                      <section class="proteus-about-section proteus-about-section-dark" aria-labelledby="proteusAboutStorageHeading">
+                        <header><p>Preservation</p><h3 id="proteusAboutStorageHeading">Life, temporarily elsewhere</h3></header>
+                        <div class="proteus-about-section-copy">
+                          <p>Proteus preservation technology allows a living organism to be completely digitized and retained in secure storage.</p>
+                          <p>While stored, the organism experiences no hunger, aging, discomfort, or perception of passing time. To the subject, there is no meaningful interval between departure and return.</p>
+                          <p>The technology was first demonstrated successfully in humans decades ago.</p>
+                          <p>Dr. Nolan Voss remains its most famous living example.</p>
+                          <p>Human digitization is commercially available today.</p>
+                          <p class="proteus-about-emphasis">It is also prohibitively expensive.</p>
+                          <p>A complete human consciousness requires immense computational infrastructure, redundant storage, continuous integrity verification, medical support, and a biological host capable of surviving long-term preservation. Even the least elaborate programs remain beyond the financial reach of nearly everyone alive.</p>
+                          <p>Aquatic organisms presented a different opportunity.</p>
+                          <p>Their smaller nervous systems allowed Proteus to dramatically reduce the storage, processing, and preservation requirements involved. What began as one of the most expensive medical technologies ever developed could finally become something routine.</p>
+                          <p>Proteus did not arrive at this solution by attempting to overcome biology.</p>
+                          <p>It arrived there by studying what biology had already accomplished.</p>
+                          <p>In nature, survival is not always continuous.</p>
+                          <p>Certain aquatic animals can endure conditions that would ordinarily be incompatible with life, dramatically suppressing metabolism or surviving partial freezing until favorable conditions return. To the observer, the organism appears suspended. Then the environment changes, and life simply continues.</p>
+                          <p>Proteus refers to this principle as <strong>biological continuity.</strong></p>
+                          <p>The same survivability architecture now forms a foundational component of Proteus engineering. Every Proteus organism is designed not merely to tolerate its environment, but to endure interruption, deprivation, instability, and conditions its ancestors were never equipped to survive.</p>
+                          <p class="proteus-about-listline">Cold. Heat. Scarcity. Confinement. Transport. Storage.</p>
+                          <p>Survival should not depend upon the world remaining hospitable.</p>
+                          <p>It should be built into the organism.</p>
+                          <div class="proteus-about-return-lines" aria-label="Aquatic storage summary">
+                            <p>A fish may now be removed from an aquarium, stored indefinitely, and restored when its owner is ready.</p>
+                            <strong>One moment it is there.</strong>
+                            <strong>The next, it is home again.</strong>
+                          </div>
+                          <p>Proteus continues working to reduce the cost of human storage.</p>
+                          <p>The company maintains that widespread access is not a question of possibility.</p>
+                          <p class="proteus-about-emphasis">Only scale.</p>
+                        </div>
+                      </section>
+
+                      <section class="proteus-about-section" aria-labelledby="proteusAboutBeyondHeading">
+                        <header><p>Conscious Experience</p><h3 id="proteusAboutBeyondHeading">Beyond storage</h3></header>
+                        <div class="proteus-about-section-copy">
+                          <p>Proteus researchers are already exploring systems capable of supplying constructed sensory environments directly to stored consciousness.</p>
+                          <div class="proteus-about-dreams"><span>A private ocean.</span><span>A childhood home.</span><span>A perfect afternoon that never ends.</span></div>
+                          <p>The implications extend far beyond preservation.</p>
+                          <p class="proteus-about-listline">Recreation. Long-distance travel. Hospitalization. Recovery. Incarceration.</p>
+                          <p>A stored subject need not experience the duration of any of them.</p>
+                          <aside class="proteus-about-note"><span>Internal terminology</span><p>Proteus researchers have informally described the concept as <strong>heaven engineering.</strong></p><small>Officially, the program has no such name.</small></aside>
+                        </div>
+                      </section>
+
+                      <section class="proteus-about-section" aria-labelledby="proteusAboutBiologyHeading">
+                        <header><p>Engineering Platform</p><h3 id="proteusAboutBiologyHeading">Biology does not have to remain as we found it</h3></header>
+                        <div class="proteus-about-section-copy">
+                          <p>Proteus conducts advanced biological engineering across hundreds of aquatic species.</p>
+                          <p class="proteus-about-listline">Selective gene editing. Accelerated breeding. Growth regulation. Induced mutation. Engineered organs. Behavioral modification. Metabolic restructuring.</p>
+                          <p>Some programs solve immediate conservation problems.</p>
+                          <p>Others answer questions whose usefulness may not become apparent for decades.</p>
+                          <p>The Scaled Selachimorph began as one such question.</p>
+                        </div>
+                      </section>
+
+                      <figure class="proteus-about-feature-image proteus-about-lab-image">
+                        <img src="assets/web/proteus/Lab_Photo_1.png" alt="Proteus researchers examining an aquatic specimen in a laboratory" />
+                        <figcaption>Scaled Selachimorph development program. Proteus Biodyne internal archive.</figcaption>
+                      </figure>
+
+                      <section class="proteus-about-section proteus-about-selachimorph">
+                        <div class="proteus-about-section-copy">
+                          <blockquote>Could the regenerative resilience of large sharks be retained in an organism small enough to be studied safely, continuously, and under complete environmental control?</blockquote>
+                          <p>The result was an animal approximately the size of a common aquarium fish that retained biological systems of extraordinary interest to researchers studying tissue repair, immunity, disease resistance, and human longevity.</p>
+                          <p>The Scaled Selachimorph was not designed to replace the shark.</p>
+                          <p>It was designed to preserve what made the shark worth saving.</p>
+                          <p>Its success became one of the foundational breakthroughs of modern Proteus engineering.</p>
+                        </div>
+                      </section>
+
+                      <section class="proteus-about-section proteus-about-reclamation" aria-labelledby="proteusAboutReclamationHeading">
+                        <header><p>Project Reclamation™</p><h3 id="proteusAboutReclamationHeading">Nothing useful is wasted</h3></header>
+                        <div class="proteus-about-section-copy">
+                          <p>The recently announced <strong>Project Reclamation™</strong> extends that philosophy beyond life itself.</p>
+                          <p>Through Project Reclamation™, aquarium owners may donate deceased aquatic companions to Proteus at no cost.</p>
+                          <div class="proteus-about-reclamation-lines"><strong>Every cadaver is accepted.</strong><strong>Every specimen has value.</strong><strong>Every life leaves something behind.</strong></div>
+                          <p>Proteus understands that surrendering a companion after death can be difficult.</p>
+                          <p>Participants are reminded that each donation contributes to research whose applications extend far beyond aquatic life. What is learned from one specimen may someday help preserve a household pet, a working animal, or a human family member.</p>
+                          <p>What happens afterward is handled entirely by Proteus.</p>
+                        </div>
+                      </section>
+
+                      <section class="proteus-about-finale" aria-labelledby="proteusAboutRoadHeading">
+                        <p>The Road Ahead</p>
+                        <h3 id="proteusAboutRoadHeading">The world that produced the species we love is changing.</h3>
+                        <div>
+                          <p>Some of it can be repaired.</p>
+                          <p>Some of it cannot.</p>
+                          <p>Proteus Biodyne does not believe life should disappear simply because the environment that created it has.</p>
+                          <p>There are other possibilities.</p>
+                          <div class="proteus-about-future-lines"><span>Smaller oceans.</span><span>Longer lives.</span><span>Bodies that endure conditions they were never meant to survive.</span><span>Minds that can wait centuries without noticing the time.</span></div>
+                          <p>The damage has already been done.</p>
+                          <p>The question now is not whether the world can return to what it was.</p>
+                          <p>The question is what life must become in order to remain within it.</p>
+                          <blockquote>A future does not need to resemble the past to be considered a success.<br />It only needs occupants.</blockquote>
+                        </div>
+                        <footer><strong>Proteus Biodyne</strong><em>Adaptive Biology, Engineered.</em></footer>
+                      </section>
                     </section>
 
                     <section id="proteusResearchPanel" class="proteus-tab-panel proteus-subpage" role="tabpanel" data-proteus-panel="research" hidden>
@@ -762,13 +825,16 @@
                   </div>
                 </section>
 
+                <section id="webSurfSubsidiaryPage" class="websurf-subsidiary-page" aria-label="Proteus subsidiary website" hidden>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="arcadia" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/arcadia_logo.png" alt="Arcadia Home Aquatics" /><code>arcadiahomeaquatics.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquarium habitats, made intentional.</p><h1>Make the habitat feel alive.</h1><p>Arcadia Home Aquatics supplies plants, hides, stonework, ornaments, and habitat pieces available through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/decor/anchored_sway/amazon-sword__plant__theme-natural.png" alt="Amazon sword aquarium plant" /><img src="assets/decor/anchored_sway/anubias-rock__plant-rock__theme-natural.png" alt="Anubias aquarium plant on rock" /><img src="assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__front.png" alt="Terracotta aquarium hide" /><img src="assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural.png" alt="Marimo moss ball" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="clearwell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/clearwell_logo.png" alt="Clearwell Laboratories" /><code>clearwelllaboratories.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquatic health products for everyday care.</p><h1>Care, measured by the drop.</h1><p>Clearwell Laboratories develops the aquarium medications and treatment products distributed through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/Medicine/first-aid.png.thumb.webp" alt="First Aid medication" /><img src="assets/generated/sprites/foodandmeds/Medicine/calming-serum.png.thumb.webp" alt="Calming Serum medication" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="commoncurrent" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/common-current_logo.png" alt="Common Current" /><code>commoncurrent.swim</code></header><div class="websurf-subsidiary-copy"><p>Healthy aquarium fish for ordinary homes.</p><h1>Familiar fish. Dependable stock.</h1><p>Common Current supplies BubbleBodega with conventional freshwater and marine aquarium species.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/generated/sprites/fish/goldfish__genetics-natural/goldfish_bubble_eye.png.thumb.webp" alt="Goldfish" /><img src="assets/generated/sprites/fish/guppy__genetics-natural/guppy_cobra.png.thumb.webp" alt="Guppy" /><img src="assets/generated/sprites/fish/clownfish__genetics-natural/clownfish_1.png.thumb.webp" alt="Clownfish" /><img src="assets/generated/sprites/fish/discus__genetics-natural/discus_blue_diamond.png.thumb.webp" alt="Discus" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="tidewell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/tidewell_logo.png" alt="Tidewell" /><code>tidewell.swim</code></header><div class="websurf-subsidiary-copy"><p>Prepared nutrition for every kind of appetite.</p><h1>Feed the whole tank.</h1><p>Tidewell produces the prepared foods, specialty formulas, and predator feeds sold through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/food_1/basic-food_small.png.thumb.webp" alt="Basic Fish Food" /><img src="assets/foodandmeds/frisky-food.png" alt="Frisky Food" /><img src="assets/generated/sprites/foodandmeds/food_1/chum_small.png.thumb.webp" alt="Chum" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                </section>
+
                 <section id="proteusDesignerRoute" class="proteus-designer-route" aria-label="Proteus Biodyne specimen designer" hidden>
                   <div id="proteusDesignerWorkspace" class="proteus-designer-workspace"></div>
                 </section>
-
-                <div class="tankazon-promo-strip">
-                  <div><strong>Everything for a <span>thriving tank.</span></strong><small>Happy fish. Better tanks. Questionable delivery methods.</small></div>
-                </div>
 
                 <section id="tankazonAccountPage" class="tankazon-account-page" aria-labelledby="tankazonAccountTitle" hidden>
                   <div class="tankazon-account-heading">
@@ -790,6 +856,7 @@
 
                 <div class="store-panel-body tankazon-body">
                   <main id="tankazonCatalogArea" class="tankazon-catalog-area">
+                    <section id="bubbleBodegaHomePage" class="bubblebodega-home-page" aria-label="BubbleBodega home" hidden></section>
                     <div id="tankazonCatalogLoading" class="tankazon-catalog-loading" hidden role="status" aria-live="polite">
                       <div class="tankazon-catalog-loading-box" aria-hidden="true"></div>
                       <strong>Loading...</strong>
@@ -801,6 +868,7 @@
                       <div class="tankazon-item-layout">
                         <div class="tankazon-item-gallery">
                           <div id="tankazonItemImage" class="tankazon-item-image"></div>
+                          <div id="tankazonItemSizes" class="tankazon-item-sizes" role="radiogroup" aria-label="Choose purchase option" hidden></div>
                           <p id="tankazonItemVariantLabel" class="tankazon-item-variant-label" hidden></p>
                           <div id="tankazonItemVariants" class="tankazon-item-variants" role="group" aria-label="Choose fish appearance" hidden></div>
                         </div>
@@ -818,9 +886,14 @@
                           <button id="tankazonItemAdd" class="tankazon-item-add" type="button">Add to Cart</button>
                           <button id="tankazonItemBuy" class="tankazon-item-buy" type="button">Buy Now</button>
                           <p id="tankazonItemStatus" class="tankazon-item-status" role="status" aria-live="polite"></p>
-                          <div class="tankazon-item-seller"><span>Sold by</span><button id="tankazonItemSeller" type="button" data-tankazon-seller-link>BubbleBodega</button><span>Payment</span><strong>Aquarium coins</strong></div>
+                          <div class="tankazon-item-seller"><span>Sold by</span><button id="tankazonItemSeller" type="button" data-tankazon-seller-link>BubbleBodega</button></div>
                         </aside>
                       </div>
+                      <section id="tankazonFoodSizeSection" class="tankazon-food-size-section" aria-labelledby="tankazonFoodSizeTitle" hidden>
+                        <h2 id="tankazonFoodSizeTitle">Available Sizes</h2>
+                        <p>Choose the size that’s right for your aquarium.</p>
+                        <div id="tankazonFoodSizeCards" class="tankazon-food-size-cards" role="radiogroup" aria-label="Available food sizes"></div>
+                      </section>
                     </section>
                     <div id="foodShop" class="shop-drawer store-drawer" data-tankazon-category="food" hidden></div>
                     <div id="pharmacyShop" class="shop-drawer store-drawer" data-tankazon-category="pharmacy" hidden></div>
@@ -912,11 +985,11 @@
                         <div class="overview-actions settings-data-actions settings-account-data-actions">
                           <button id="exportDataButton" class="small-button" type="button">
                             <img class="settings-button-icon" data-sprite-src="assets/icons/export.png" alt="" aria-hidden="true" />
-                            <span class="settings-button-label">Export</span>
+                            <span class="settings-button-label">Export Save</span>
                           </button>
                           <button id="importDataButton" class="small-button alt" type="button">
                             <img class="settings-button-icon" data-sprite-src="assets/icons/import.png" alt="" aria-hidden="true" />
-                            <span class="settings-button-label">Import</span>
+                            <span class="settings-button-label">Import Save</span>
                           </button>
                           <button id="resetProgressButton" class="small-button warn" type="button">
                             <img class="settings-button-icon" data-sprite-src="assets/icons/reset-progress.png" alt="" aria-hidden="true" />
@@ -1008,6 +1081,17 @@
                         <input id="backgroundDepthHazeToggleInput" class="settings-checkbox" type="checkbox" checked />
                       </label>
 
+                      <div class="settings-toggle-row settings-volume-row settings-gravel-shadow-row">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Gravel Shadow Intensity</span>
+                          <span class="settings-toggle-note">Adjusts the shadow cast from the front gravel layer onto the layers behind it.</span>
+                        </div>
+                        <div class="settings-volume-control">
+                          <input id="gravelShadowIntensityInput" type="range" min="0" max="100" step="1" value="35" aria-label="Gravel shadow intensity" />
+                          <output id="gravelShadowIntensityOutput" for="gravelShadowIntensityInput">35%</output>
+                        </div>
+                      </div>
+
                       <label class="settings-toggle-row" for="simpleTurnAnimationsToggleInput" hidden>
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Simple Turn Animations</span>
@@ -1084,21 +1168,38 @@
                         </div>
                       </div>
 
-                      <label class="settings-toggle-row" for="uiMuteToggleInput">
+                      <div class="settings-toggle-row settings-volume-row">
                         <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Mute UI</span>
-                          <span class="settings-toggle-note">Turns off button press and menu feedback sounds only.</span>
+                          <span class="settings-toggle-label">Tank Ambience</span>
+                          <span class="settings-toggle-note">Controls the aquarium filter hum and continuous tank ambience.</span>
                         </div>
-                        <input id="uiMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                      </label>
+                        <div class="settings-volume-control">
+                          <input id="tankAmbienceVolumeInput" type="range" min="0" max="100" step="1" value="70" aria-label="Tank ambience volume" />
+                          <output id="tankAmbienceVolumeOutput" for="tankAmbienceVolumeInput">70%</output>
+                        </div>
+                      </div>
 
-                      <label class="settings-toggle-row" for="soundMuteToggleInput">
+                      <div class="settings-toggle-row settings-volume-row">
                         <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Mute All Audio</span>
-                          <span class="settings-toggle-note">Turns off ambience and sound effects.</span>
+                          <span class="settings-toggle-label">SFX</span>
+                          <span class="settings-toggle-note">Controls fish, tools, purchases, coins, cleaning, and other gameplay effects.</span>
                         </div>
-                        <input id="soundMuteToggleInput" class="settings-checkbox" type="checkbox" />
-                      </label>
+                        <div class="settings-volume-control">
+                          <input id="sfxVolumeInput" type="range" min="0" max="100" step="1" value="60" aria-label="Sound effects volume" />
+                          <output id="sfxVolumeOutput" for="sfxVolumeInput">60%</output>
+                        </div>
+                      </div>
+
+                      <div class="settings-toggle-row settings-volume-row">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">UI Sounds</span>
+                          <span class="settings-toggle-note">Controls menu pops, clicks, toolbar sounds, and navigation feedback.</span>
+                        </div>
+                        <div class="settings-volume-control">
+                          <input id="uiSoundVolumeInput" type="range" min="0" max="100" step="1" value="85" aria-label="UI sounds volume" />
+                          <output id="uiSoundVolumeOutput" for="uiSoundVolumeInput">85%</output>
+                        </div>
+                      </div>
                     </section>
 
                     <section class="settings-section settings-credits-section settings-other-card" aria-label="Other settings">
@@ -1106,14 +1207,10 @@
                         <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/other.png" alt="" /></span>
                         <div>
                           <h3>Other</h3>
-                          <p class="settings-section-note">Additional resources and community.</p>
+                          <p class="settings-section-note">Additional resources and information.</p>
                         </div>
                       </div>
                       <div class="overview-actions settings-other-actions">
-                        <button class="small-button alt" type="button" data-open-invite-friend hidden>
-                          <img class="settings-button-icon" data-sprite-src="assets/icons/invite-friend.png" alt="" aria-hidden="true" />
-                          Invite A Friend
-                        </button>
                         <button class="small-button alt credits-button" type="button" data-open-credits>
                           <img class="settings-button-icon" data-sprite-src="assets/icons/credits.png" alt="" aria-hidden="true" />
                           Credits
@@ -1232,6 +1329,7 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="water"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">💧</span><span>Water</span></button>
                 </div>
                 <button id="closeEditDecorTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing decor" title="Done editing decor">Done</button>
@@ -1242,8 +1340,11 @@
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="caves" data-decor-tone="caves">Caves</button>
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="plants" data-decor-tone="plants">Plants</button>
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="coral" data-decor-tone="coral">Coral</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="rocks" data-decor-tone="ornaments">Rocks</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="wood" data-decor-tone="ornaments">Wood</button>
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="ornaments" data-decor-tone="ornaments">Ornaments</button>
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="bubbler" data-decor-tone="bubbler">Bubblers</button>
+                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="seasonal" data-decor-tone="custom">Seasonal</button>
                   <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="custom" data-decor-tone="custom">Custom</button>
                 </div>
                 <label class="edit-decor-in-tank-toggle">
@@ -1275,6 +1376,7 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="water"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">💧</span><span>Water</span></button>
                 </div>
                 <button id="closeEditFishTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish managing fish" title="Done managing fish">Done</button>
@@ -1306,6 +1408,7 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="water"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">💧</span><span>Water</span></button>
                 </div>
                 <button id="closeEditEquipmentTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing equipment" title="Done editing equipment">Done</button>
@@ -1329,6 +1432,7 @@
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="equipment"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" /><span>Equipment</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="background"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🎨</span><span>Background</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="gravel"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">🪨</span><span>Gravel</span></button>
+                  <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="water"><span class="edit-overlay-mode-icon edit-overlay-mode-glyph" aria-hidden="true">💧</span><span>Water</span></button>
                 </div>
                 <button id="closeEditTankTrayButton" class="edit-tray-done-button" type="button"
                   aria-label="Finish editing tank" title="Done editing tank">Done</button>
@@ -1336,6 +1440,7 @@
               <div id="editTankTrayScroller" class="edit-tank-tray-scroller">
                 <section class="edit-tank-tray-panel edit-tank-background-panel" data-tank-tray-panel="background">
                   <div class="edit-tank-background-type-tabs" role="tablist" aria-label="Background type">
+                    <div id="editTankCustomStorageMeter" class="edit-tank-custom-storage-meter" aria-live="polite"></div>
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="image">Image</button>
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="solid">Solid Color</button>
                     <button class="edit-tank-background-mode-tab" type="button" role="tab" data-tank-background-mode="gradient">Gradient</button>
@@ -1348,6 +1453,9 @@
                 </section>
                 <section class="edit-tank-tray-panel" data-tank-tray-panel="gravel">
                   <div id="editTankCustomGravelPanel"></div>
+                </section>
+                <section class="edit-tank-tray-panel edit-tank-water-panel" data-tank-tray-panel="water">
+                  <div id="editTankWaterTypePanel"></div>
                 </section>
               </div>
             </section>
@@ -1396,53 +1504,11 @@
                   draggable="false" />
               </button>
 
-              <!-- Legacy care submenu retained for compatibility, but intentionally disabled. -->
-              <section id="toolbarCareMenu" class="toolbar-action-menu" role="menu" aria-label="Care tools" hidden aria-hidden="true">
-                <button id="medicineButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Medicine" aria-label="Medicine">
-                  <img data-sprite-src="assets/icons/medicine.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Medicine</span>
-                </button>
-                <button id="spongeButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Clean Tank" aria-label="Clean Tank">
-                  <img data-sprite-src="assets/icons/sponge.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Scrub</span>
-                </button>
-                <button id="scoopButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Scoop" aria-label="Scoop">
-                  <img data-sprite-src="assets/icons/scoop.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Scoop</span>
-                </button>
-              </section>
-
               <button id="editMenuButton" class="dock-button toolbar-group-button edit" type="button" title="Edit"
                 aria-label="Edit aquarium">
                 <img class="dock-button-icon" data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true"
                   draggable="false" />
               </button>
-
-              <section id="toolbarEditMenu" class="toolbar-action-menu" role="menu" aria-label="Edit aquarium" hidden aria-hidden="true">
-                <button id="fishEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Manage Fish" aria-label="Manage Fish">
-                  <img data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Fish</span>
-                </button>
-                <button id="editModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Edit Decor" aria-label="Edit Decor">
-                  <img data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Decor</span>
-                </button>
-                <button id="equipmentEditModeDockButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Equipment" aria-label="Equipment">
-                  <img data-sprite-src="assets/icons/tools.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Equipment</span>
-                </button>
-                <button id="openEquipmentButton" class="toolbar-action-menu-button" type="button" role="menuitem"
-                  title="Edit Tank" aria-label="Edit Tank">
-                  <img data-sprite-src="assets/icons/edit_tank.png" alt="" aria-hidden="true" draggable="false" />
-                  <span>Tank</span>
-                </button>
-              </section>
 
               <button id="editLayerUpButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Next decor layer (Z / Up)" aria-label="Next decor layer (Z / Up)">Z</button>
@@ -1461,6 +1527,12 @@
                 <img class="dock-button-icon websurf-toolbar-icon" src="assets/icons/WebSurf_icon.png" alt="" aria-hidden="true"
                   draggable="false" />
                 <span id="webSurfUnreadBadge" class="dock-button-badge" aria-label="Unread WebSurf mail" hidden></span>
+              </button>
+
+              <button id="openSettingsButton" class="dock-button settings" type="button" title="Settings"
+                aria-label="Open Settings in WebSurf">
+                <img class="dock-button-icon" data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true"
+                  draggable="false" />
               </button>
 
 
@@ -1640,6 +1712,10 @@
                       <input type="range" min="0" max="400" step="5" value="100" data-depth-tuning-key="substrate" />
                     </label>
                     <label class="debug-depth-slider">
+                      <span>Gravel layer shadow <output data-depth-tuning-output="gravelLayerShadow">35%</output></span>
+                      <input type="range" min="0" max="100" step="5" value="35" data-depth-tuning-key="gravelLayerShadow" />
+                    </label>
+                    <label class="debug-depth-slider">
                       <span>Shadow depth <output data-depth-tuning-output="shadow">100%</output></span>
                       <input type="range" min="0" max="200" step="5" value="100" data-depth-tuning-key="shadow" />
                     </label>
@@ -1814,8 +1890,8 @@
                     <strong id="inspectorActivity">Watching the world drift by</strong>
                   </div>
                   <div class="inspector-line">
-                    <span>Comfort:</span>
-                    <strong id="inspectorComfort">100% (Sparkling)</strong>
+                    <span>Mood:</span>
+                    <strong id="inspectorComfort">Happy</strong>
                   </div>
                   <div id="inspectorNeedsBars" class="fish-needs-bars" aria-label="Fish needs"></div>
                   <div class="inspector-line inspector-line-chips">
@@ -1823,8 +1899,16 @@
                     <div id="inspectorNeeds" class="inspector-chip-row"></div>
                   </div>
                   <div class="inspector-line">
+                    <span>Condition:</span>
+                    <strong id="inspectorCondition">Healthy</strong>
+                  </div>
+                  <div class="inspector-line">
                     <span>Age:</span>
                     <strong id="inspectorAge">0s</strong>
+                  </div>
+                  <div class="inspector-line">
+                    <span>Breeding:</span>
+                    <strong id="inspectorBreeding">Available</strong>
                   </div>
                   <div class="inspector-line">
                     <span>Hunger:</span>
@@ -1898,7 +1982,7 @@
   <input id="localHideBackgroundInput" type="file" accept="image/*" hidden />
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
-  <script src="public/websurf-store.js?v=20260917-bodega-search-r4"></script>
+  <script src="public/websurf-store.js?v=20260924-cart-search-ram"></script>
 
   <script>
     (() => {
@@ -2003,7 +2087,7 @@
 
       const versionNode = label.querySelector("[data-build-version]");
       const pushedNode = label.querySelector("[data-build-pushed]");
-      const fallbackVersion = "Beta Version 0.2.1";
+      const fallbackVersion = "Beta Version 0.2.2";
 
       fetch(`./public/build-info.json?ts=${Date.now()}`, { cache: "no-store" })
         .then((response) => response.ok ? response.json() : Promise.reject(new Error(`HTTP ${response.status}`)))
@@ -2038,13 +2122,13 @@
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost
         ? `live-${Date.now()}`
-        : "20260917-bodega-search-r4";
+        : "20260924-alpha-clipped-ground-shadows";
       script.type = "module";
       script.src = `./public/app.js?v=${appBundleVersion}`;
       document.body.appendChild(script);
     })();
   </script>
-  <script src="public/store-facets.js?v=20260916-cave-merge-r1"></script>
+  <script src="public/store-facets.js?v=20260924-cart-search-ram"></script>
   <script src="public/store-variants.js?v=20260909"></script>
 </body>
 

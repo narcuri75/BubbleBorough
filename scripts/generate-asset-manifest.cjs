@@ -43,12 +43,17 @@ function mergeLogical(entries, logical) {
   return [...map.values()].sort((a, b) => a.key.localeCompare(b.key) || a.path.localeCompare(b.path));
 }
 
-function run() {
+function run(checkOnly = false) {
   const sheets = buildDefinitions();
   const sheetPaths = new Set(sheets.map(sheet => sheet.path));
   const logicalByCategory = new Map();
   for (const sheet of sheets) {
-    const parts = String(sheet.path || "").split("/");
+    const normalizedSheetPath = String(sheet.path || "").replace(/\\/g, "/");
+    // Borough overview miniature fish atlases are private to the overview renderer.
+    // Never publish them as normal fish manifest entries or they can replace the
+    // full-size logical fish assets that share the same frame names.
+    if (/^assets\/fish\/small_fish\//i.test(normalizedSheetPath)) continue;
+    const parts = normalizedSheetPath.split("/");
     const category = parts[0] === "assets" ? parts[1] : "";
     if (!category) continue;
     if (!logicalByCategory.has(category)) logicalByCategory.set(category, []);
@@ -70,13 +75,30 @@ function run() {
   const manifest = {
     backgrounds,
     decor: directEntries("decor", sheetPaths),
-    fish: mergeLogical(directEntries("fish", sheetPaths).filter(entry => !/_(?:zombie|skeleton)\.[^.]+(?:\?|$)/i.test(entry.key)), logicalByCategory.get("fish") || []),
+    fish: mergeLogical(directEntries("fish", sheetPaths).filter(entry => (
+      !/\/small_fish\//i.test(entry.path)
+      && !/_(?:zombie|skeleton)\.[^.]+(?:\?|$)/i.test(entry.key)
+    )), logicalByCategory.get("fish") || []),
     gravel: directEntries("gravel", sheetPaths),
     equipment: mergeLogical(directEntries("equipment", sheetPaths), logicalByCategory.get("equipment") || [])
   };
-  fs.writeFileSync(manifestPath, `${JSON.stringify(manifest, null, 2)}\n`);
+  const source = `${JSON.stringify(manifest, null, 2)}\n`;
+  if (checkOnly) {
+    if (!fs.existsSync(manifestPath) || fs.readFileSync(manifestPath, "utf8") !== source) {
+      throw new Error("Asset manifest is stale. Run npm run build:app.");
+    }
+  } else {
+    fs.writeFileSync(manifestPath, source);
+  }
   console.log(`Asset manifest: backgrounds=${manifest.backgrounds.length}, decor=${manifest.decor.length}, fish=${manifest.fish.length}, gravel=${manifest.gravel.length}, equipment=${manifest.equipment.length}`);
 }
 
-if (require.main === module) run();
+if (require.main === module) {
+  try {
+    run(process.argv.includes("--check"));
+  } catch (error) {
+    console.error(error.message);
+    process.exitCode = 1;
+  }
+}
 module.exports = { run };

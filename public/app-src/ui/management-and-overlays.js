@@ -89,6 +89,10 @@ function buildTankManagementCardMarkup(tank = getCurrentTank(), options = {}) {
       <div class="summary-row"><span>Fish</span><strong>${livingFish}</strong></div>
       <div class="summary-row"><span>Decor</span><strong>${decorCount}</strong></div>
     </div>
+    <div class="tank-home-care-suggestions">
+      <strong>Care Suggestions</strong>
+      <div class="management-task-list">${buildManagementCareQueue(getManagementHubStats(Date.now())).map(buildManagementCompactTaskRow).join("") || '<span class="mini-note">Your current tank is comfortable.</span>'}</div>
+    </div>
     <div class="mini-note">${tankMemoryNote}</div>
     <div class="tank-action-row">
       <button class="small-button alt" type="button" data-open-equipment-overlay>Edit Tank</button>
@@ -184,17 +188,61 @@ function getManagementTankStatus(stats) {
   };
 }
 
-function buildIllnessCareTask(now = Date.now()) {
-  return null;
+function buildIllnessCareTask(now = Date.now(), tank = getCurrentTank()) {
+  const sickFish = (tank?.fish || []).filter((fish) => !isFishDead(fish) && getFishPrimaryCondition(fish, now));
+  if (!sickFish.length) return null;
+  return {
+    id: "illness-care",
+    badge: "Health",
+    label: `Treat ${sickFish.length} unwell ${pluralize("fish", sickFish.length)}`,
+    value: "Medicine",
+    tone: "danger",
+    tankId: tank.id,
+    tankLabel: getTankLabel(tank)
+  };
 }
 
 function buildManagementCareQueue(stats) {
-  // Care tasks are disabled; tank conditions remain available in the snapshot.
-  return [];
+  if (!stats?.tank) return [];
+  const tank = stats.tank;
+  const tasks = [];
+  const add = (task) => tasks.push({ tankId: tank.id, tankLabel: getTankLabel(tank), ...task });
+  const illnessTask = buildIllnessCareTask(stats.now, tank);
+  if (illnessTask) tasks.push(illnessTask);
+  if (stats.starvingFish > 0 || stats.hungryFish > 0) {
+    const count = stats.starvingFish || stats.hungryFish;
+    add({
+      id: "feed-hungry-fish",
+      badge: "Food",
+      label: stats.starvingFish > 0 ? `Feed ${count} starving ${pluralize("fish", count)}` : `Feed ${count} hungry ${pluralize("fish", count)}`,
+      value: stats.starvingFish > 0 ? "Urgent" : "Soon",
+      tone: stats.starvingFish > 0 ? "danger" : "warn"
+    });
+  }
+  if (stats.cleanPercent <= 45) {
+    add({ id: "clean-tank", badge: "Clean", label: "Scrub the tank", value: `${stats.cleanPercent}% clean`, tone: stats.cleanPercent <= 20 ? "danger" : "warn" });
+  }
+  if (stats.wasteCount > 0) {
+    add({ id: "scoop-floor", badge: "Clean", label: `Scoop ${stats.wasteCount} waste ${pluralize("pile", stats.wasteCount)}`, value: "Floor", tone: "warn" });
+  }
+  const unmetNeeds = (tank.fish || []).filter((fish) => !isFishDead(fish) && getFishComfort(fish, stats.now, tank).value < .65)
+    .flatMap((fish) => getFishNeedsStatus(fish, tank, stats.now).filter((need) => !need.met).map((need) => ({ fish, need })));
+  if (unmetNeeds.length) {
+    const first = unmetNeeds[0];
+    add({
+      id: `comfort:${first.need.tag}`,
+      badge: "Comfort",
+      label: `${first.fish.name} needs ${first.need.label.toLowerCase()}`,
+      value: `${unmetNeeds.length} issue${unmetNeeds.length === 1 ? "" : "s"}`,
+      tone: "warn",
+      fishId: first.fish.id
+    });
+  }
+  return tasks.slice(0, 5);
 }
 
 function buildUniversalManagementCareQueue(now = Date.now()) {
-  return [];
+  return buildManagementCareQueue(getManagementHubStats(now));
 }
 
 function buildManagementSnapshotStat(label, value, tone = "") {
@@ -247,6 +295,28 @@ function buildManagementCompactTaskRow(task = {}) {
 }
 
 function runManagementCareTaskAction(action, tankId = "", fishId = "") {
+  if (tankId && getTankById(tankId)) setActiveTank(tankId, { announce: false });
+  if (fishId) runtime.selectedFishId = fishId;
+  if (action === "feed") {
+    toggleFoodTray(true, { source: "care-suggestions", collapseSidebar: true });
+    return true;
+  }
+  if (action === "medicine") {
+    toggleMedicineTray(true, { source: "care-suggestions", collapseSidebar: true });
+    return true;
+  }
+  if (action === "clean") {
+    toggleCleaningMode({ source: "care-suggestions", collapseSidebar: true });
+    return true;
+  }
+  if (action === "scoop") {
+    toggleScoopMode({ source: "care-suggestions", collapseSidebar: true });
+    return true;
+  }
+  if (action === "focus") {
+    renderUi(Date.now());
+    return true;
+  }
   return false;
 }
 
@@ -898,7 +968,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
   const juvenile = !dead && isFishJuvenile(fish, now);
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
-  const resaleValue = getResaleValue(baseSpecies?.cost || 0);
+  const resaleValue = getFishRehomeValue(fish, now);
   const canBuyAnother = isCustomFishAssetKey(fish.speciesId)
     ? isFishSpeciesShopUnlocked(CUSTOM_FISH_SHOP_KEY)
     : isFishSpeciesShopUnlocked(baseSpecies);
@@ -924,7 +994,7 @@ function buildManagementFishRow(fish, now = Date.now()) {
         <button class="small-button alt" type="button" data-management-select-fish="${escapeHtml(fish.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-fish="${escapeHtml(fish.id)}" ${canStore ? "" : "disabled"}>Put Away</button>
         <button class="small-button alt" type="button" data-management-buy-another-fish="${escapeHtml(fish.id)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
-        <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Sell</button>
+        <button class="small-button warn" type="button" data-management-sell-fish="${escapeHtml(fish.id)}" ${canSell ? "" : "disabled"}>Rehome</button>
       </div>
     </article>
   `;
@@ -957,6 +1027,7 @@ function buildManagementDecorRow(item) {
   };
   const grouped = isPlacedDecorGrouped(item);
   const resaleValue = getResaleValue(decor?.cost || 0);
+  const commerceVerb = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor) ? "Rehome" : "Sell";
   const canBuyAnother = canUseDecorWithCurrentContentSettings(item.decorKey)
     && isDecorShopUnlocked(item.decorKey) && isSeasonalDecorAvailable(decor);
   const serviceTypes = getDecorBoroughServiceTypes(item);
@@ -976,7 +1047,7 @@ function buildManagementDecorRow(item) {
         <button class="small-button alt" type="button" data-management-select-decor="${escapeHtml(item.id)}">Select</button>
         <button class="small-button alt" type="button" data-management-store-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Put Away</button>
         <button class="small-button alt" type="button" data-management-buy-another-decor="${escapeHtml(item.decorKey)}" ${canBuyAnother ? "" : "disabled"}>Buy Another</button>
-        <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>Sell</button>
+        <button class="small-button warn" type="button" data-management-sell-decor="${escapeHtml(item.id)}" ${grouped ? "disabled" : ""}>${commerceVerb}</button>
       </div>
     </article>
   `;
@@ -1100,7 +1171,8 @@ function buildTankManagementOverlayBody(now = Date.now()) {
 
       <section class="settings-section management-care-panel">
         <div class="compact-heading management-care-heading">
-          <h3>Care Snapshot</h3>
+          <h3>Care Suggestions</h3>
+          <p>Prioritized steps to improve your fish's comfort.</p>
         </div>
         <div class="management-care-body">
           <div class="management-snapshot-stats">
@@ -1109,6 +1181,7 @@ function buildTankManagementOverlayBody(now = Date.now()) {
             ${buildManagementSnapshotStat("Cleanliness", `${stats.cleanPercent}%`, cleanlinessTone)}
             ${buildManagementSnapshotStat("Waste", wasteValue, stats.wasteCount > 0 ? "warn" : stats.pendingWasteCount > 0 ? "neutral" : "")}
           </div>
+          <div class="management-task-list">${buildManagementCareQueue(stats).map(buildManagementCompactTaskRow).join("") || '<p class="mini-note">Everything that needs hands-on care is on track.</p>'}</div>
         </div>
       </section>
 
@@ -1261,7 +1334,7 @@ function renderTutorialSkipConfirmUtilityOverlay() {
       headline: "Are you sure?",
       detail: replayMode
         ? "Skipping exits the replay tutorial right away."
-        : `Skipping restores the full toolbar${DIGITAL_DISPLAY_ENABLED ? " and digital display" : ""} right away.`
+        : "Skipping restores the full toolbar right away."
     }),
     footer: buildUtilityActionsFooter([
       { label: "Yes", variant: "warn", attribute: "data-confirm-tutorial-skip" },
@@ -1755,132 +1828,6 @@ function handleLegalUtilityOverlayBodyClick(ctx, target, event) {
   return true;
 }
 
-function parseInviteFriendEmails(rawValue) {
-  const entries = String(rawValue || "")
-    .split(/[,;\n]+/)
-    .map((value) => value.trim())
-    .filter(Boolean);
-  const unique = [];
-  const seen = new Set();
-  const invalid = [];
-  for (const entry of entries) {
-    const normalized = entry.toLowerCase();
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(entry)) {
-      invalid.push(entry);
-      continue;
-    }
-    if (!seen.has(normalized)) {
-      seen.add(normalized);
-      unique.push(entry);
-    }
-  }
-  return { emails: unique, invalid, total: entries.length };
-}
-
-function renderInviteFriendUtilityOverlay() {
-  return {
-    kicker: "Share",
-    title: "Invite A Friend",
-    body: `
-      <div class="utility-confirm-card invite-friend-card">
-        <div class="utility-confirm-copy">
-          <strong>Think someone would like Bubble Borough?</strong>
-          <div class="fish-meta">Enter up to 20 email addresses separated by commas. Each friend receives a private invite directly from Bubble Borough.</div>
-        </div>
-        <label class="invite-friend-field">
-          <span>Email addresses</span>
-          <textarea rows="5" placeholder="friend@example.com, another@example.com" data-invite-friend-emails></textarea>
-        </label>
-        <div class="invite-friend-meta">
-          <span data-invite-friend-count>0 / 20</span>
-          <span data-invite-friend-status role="status"></span>
-        </div>
-      </div>
-    `,
-    footer: buildUtilityActionsFooter([
-      { label: "Send Invites", attribute: "data-send-friend-invite" },
-      { label: "Cancel", variant: "alt", attribute: "data-close-utility" }
-    ]),
-    closable: true
-  };
-}
-
-function handleInviteFriendUtilityOverlayInput(ctx, target) {
-  const input = target?.closest?.("[data-invite-friend-emails]");
-  if (!(input instanceof HTMLTextAreaElement)) return false;
-  const result = parseInviteFriendEmails(input.value);
-  const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
-  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
-  if (count) count.textContent = `${result.emails.length} / 20`;
-  if (status) {
-    if (result.invalid.length) status.textContent = `${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"}`;
-    else if (result.emails.length > 20) status.textContent = "Use 20 or fewer addresses at a time.";
-    else status.textContent = "";
-  }
-  return true;
-}
-
-async function sendInviteFriendEmails(button) {
-  const input = dom.utilityOverlayBody?.querySelector("[data-invite-friend-emails]");
-  const status = dom.utilityOverlayBody?.querySelector("[data-invite-friend-status]");
-  const result = parseInviteFriendEmails(input instanceof HTMLTextAreaElement ? input.value : "");
-  if (!result.emails.length) {
-    if (status) status.textContent = "Enter at least one valid email address.";
-    input?.focus?.();
-    return false;
-  }
-  if (result.invalid.length) {
-    if (status) status.textContent = `Fix ${result.invalid.length} invalid ${result.invalid.length === 1 ? "address" : "addresses"} first.`;
-    input?.focus?.();
-    return false;
-  }
-  if (result.emails.length > 20) {
-    if (status) status.textContent = "Use 20 or fewer addresses at a time.";
-    input?.focus?.();
-    return false;
-  }
-
-  const session = await refreshCloudSessionIfNeeded();
-  if (!session?.access_token) {
-    if (status) status.textContent = "Sign in again before sending invites.";
-    return false;
-  }
-
-  if (button instanceof HTMLButtonElement) button.disabled = true;
-  if (input instanceof HTMLTextAreaElement) input.disabled = true;
-  if (status) status.textContent = result.emails.length === 1 ? "Sending invite..." : `Sending ${result.emails.length} invites...`;
-  try {
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/send-friend-invite`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_PUBLISHABLE_KEY,
-        Authorization: `Bearer ${session.access_token}`,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ emails: result.emails })
-    });
-    const responseText = await response.text();
-    let data = null;
-    try { data = responseText ? JSON.parse(responseText) : null; } catch { data = null; }
-    if (!response.ok) throw new Error(data?.error || `Invite delivery failed (${response.status}).`);
-    if (status) status.textContent = result.emails.length === 1 ? "Invite sent." : `${result.emails.length} invites sent.`;
-    if (input instanceof HTMLTextAreaElement) input.value = "";
-    const count = dom.utilityOverlayBody?.querySelector("[data-invite-friend-count]");
-    if (count) count.textContent = "0 / 20";
-    showToast(result.emails.length === 1 ? "Friend invite sent." : `${result.emails.length} friend invites sent.`);
-    return true;
-  } catch (error) {
-    const message = error instanceof TypeError
-      ? "Invite delivery service is unavailable."
-      : (error?.message || "Could not send invites. Try again.");
-    if (status) status.textContent = message;
-    return false;
-  } finally {
-    if (button instanceof HTMLButtonElement) button.disabled = false;
-    if (input instanceof HTMLTextAreaElement) input.disabled = false;
-  }
-}
-
 function renderDecorBuyConfirmUtilityOverlay() {
   const details = getPendingDecorBuyAnotherDetails();
   return {
@@ -1904,15 +1851,16 @@ function renderDecorBuyConfirmUtilityOverlay() {
 
 function renderDecorSellConfirmUtilityOverlay() {
   const details = getPendingDecorSellDetails();
+  const commerceVerb = details?.living ? "Rehome" : "Sell";
   return {
     kicker: "Decor",
-    title: "Sell Decor",
+    title: `${commerceVerb} Decor`,
     body: details
       ? `
         <div class="utility-confirm-card">
           <div class="utility-confirm-copy">
-            <strong>Sell ${escapeHtml(details.decor.name)} for ${details.resaleValue} ${pluralize("coin", details.resaleValue)}?</strong>
-            <div class="fish-meta">${details.grouped ? "Ungroup this decor before selling it." : "This will remove it from the tank."}</div>
+            <strong>${commerceVerb} ${escapeHtml(details.decor.name)} for ${details.resaleValue} ${pluralize("coin", details.resaleValue)}?</strong>
+            <div class="fish-meta">${details.grouped ? `Ungroup this decor before ${details.living ? "rehoming" : "selling"} it.` : "This will remove it from the tank."}</div>
           </div>
         </div>
       `
@@ -1949,19 +1897,19 @@ function renderFishSellConfirmUtilityOverlay() {
   const details = getPendingFishSellDetails();
   const detail = details
     ? details.dead
-      ? "Dead fish cannot be sold."
+      ? "Dead fish cannot be rehomed."
       : details.juvenile
-        ? "Baby fish need time to grow before they can be sold."
+        ? "Baby fish need time to grow before they can be rehomed."
         : details.inStorage
           ? "This will remove it from storage."
           : "This will remove it from the tank."
     : "";
   return {
     kicker: "Fish",
-    title: "Sell Fish",
+    title: "Rehome Fish",
     body: details
       ? buildUtilityConfirmCardMarkup({
-        headline: `Sell ${escapeHtml(details.fish.name)} for ${details.resaleValue} ${pluralize("coin", details.resaleValue)}?`,
+        headline: `Rehome ${escapeHtml(details.fish.name)} for ${details.resaleValue} ${pluralize("coin", details.resaleValue)}?`,
         detail
       })
       : `<div class="empty-state">That fish is no longer available.</div>`,
@@ -3182,6 +3130,23 @@ function getWebSurfAutoEmailTemplate(templateId) {
       ]
     };
   }
+  if (templateId === "proteus_corpse_donation_digest") {
+    return {
+      sender: "reclamation@proteusbiodyne.swim",
+      subject: "Biological Material Donation Acknowledgment",
+      preview: "{{fishCount}} deceased aquatic specimens received for restricted internal use.",
+      body: [
+        { type: "heading", text: "BIOLOGICAL MATERIAL TRANSFER CONFIRMED" },
+        { type: "paragraph", text: "Proteus Biodyne acknowledges receipt of the deceased aquatic specimens transferred from your aquarium during the previous collection period." },
+        { type: "section_label", text: "DONATION MANIFEST // PRIOR 24 HOURS" },
+        { type: "proteus_corpse_list", source: "fish" },
+        { type: "paragraph", text: "The donated material has been assigned to one or more restricted internal programs. Program designation, handling procedures, experimental objectives, and final disposition are classified." },
+        { type: "completion_note", text: "No further action is required. No additional information regarding these specimens will be provided." },
+        { type: "paragraph", text: "Your contribution has been recorded. Thank you for your cooperation." },
+        { type: "paragraph", text: "Adaptive Biology. Engineered." }
+      ]
+    };
+  }
   return null;
 }
 
@@ -3205,7 +3170,7 @@ function renderWebSurfEmailInlineText(value, data = {}) {
 }
 
 function normalizeWebSurfThumbnailPath(value) {
-  const fallback = "assets/misc/Store_Logo.png";
+  const fallback = "assets/web/bodega/Store_Logo.png";
   let raw = typeof value === "string" ? value.trim() : "";
   if (!raw || raw.startsWith("data:")) return raw || fallback;
   raw = raw.replace(/\\/g, "/");
@@ -3220,7 +3185,7 @@ function normalizeWebSurfThumbnailPath(value) {
 
 function getWebSurfThumbnailAttributes(value) {
   const path = normalizeWebSurfThumbnailPath(value);
-  const fallback = escapeHtml(resolveAppUrl("assets/misc/Store_Logo.png"));
+  const fallback = escapeHtml(resolveAppUrl("assets/web/bodega/Store_Logo.png"));
   return `${assetImageAttributes(path)} onerror="this.onerror=null;this.src='${fallback}'"`;
 }
 
@@ -3333,10 +3298,283 @@ function getWebSurfMilestoneBalance(milestoneId, fallbackBalance) {
   }
 }
 
+function getProteusCorpseDonationInboxMessages(now = Date.now()) {
+  const timestamp = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  const digests = sanitizeProteusCorpseDonationDigests(state?.proteusCorpseDonationDigests);
+  const template = getWebSurfAutoEmailTemplate("proteus_corpse_donation_digest");
+  return digests
+    .filter((digest) => Number(digest.scheduledAt) > 0 && Number(digest.scheduledAt) <= timestamp)
+    .map((digest) => {
+      const fish = [...digest.fish].sort((left, right) => (Number(left.diedAt) || 0) - (Number(right.diedAt) || 0)).map((entry) => ({
+        fishId: entry.fishId,
+        fishName: entry.fishName,
+        speciesId: entry.speciesId,
+        speciesName: entry.speciesName,
+        deathTime: new Date(Number(entry.diedAt) || Number(entry.donatedAt) || digest.scheduledAt).toLocaleString([], {
+          month: "2-digit",
+          day: "2-digit",
+          hour: "numeric",
+          minute: "2-digit"
+        })
+      }));
+      const data = { fishCount: fish.length, fish };
+      return {
+        id: `auto-${digest.id}`,
+        templateId: "proteus_corpse_donation_digest",
+        data,
+        sender: template?.sender || "reclamation@proteusbiodyne.swim",
+        subject: template ? interpolateWebSurfEmailValue(template.subject, data) : "Biological Material Donation Acknowledgment",
+        preview: template ? interpolateWebSurfEmailValue(template.preview, data) : `${fish.length} deceased aquatic specimens received for restricted internal use.`,
+        destination: "",
+        icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+        time: Number(digest.scheduledAt) || timestamp
+      };
+    });
+}
+
+function getProteusZombieFishAuthorizationInboxMessage(now = Date.now()) {
+  const offerAt = Math.max(0, Number(state?.proteusZombieFishOfferAt) || 0);
+  if (
+    !(Number(state?.proteusZombieFishUnlockedAt) > 0)
+    || !offerAt
+    || offerAt > Number(now)
+  ) {
+    return null;
+  }
+  const claimed = Number(state?.proteusZombieFishClaimedAt) > 0;
+  return {
+    id: `auto-proteus-z01-authorization-${offerAt}`,
+    templateId: "proteus_zombie_fish_authorization",
+    data: {
+      donationCount: Math.max(0, Math.floor(Number(state?.proteusCorpseDonationCount) || 0)),
+      claimed
+    },
+    sender: "research@proteusbiodyne.swim",
+    subject: "SPECIMEN TRANSFER AUTHORIZATION // Z-01",
+    preview: claimed
+      ? "Restricted Z-01 access remains active for this account."
+      : "Aggregate biological material requirements have been satisfied. Restricted Z-01 authentication is now permitted.",
+    destination: "proteus-zombie-offer",
+    icon: "assets/web/proteus/Proteus_Logo_Icon.png",
+    time: offerAt
+  };
+}
+
+function renderProteusZombieFishAuthorizationEmail(message) {
+  const count = Math.max(PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT, Math.floor(Number(message?.data?.donationCount) || 0));
+  const authenticated = Number(state?.proteusZombieFishAuthenticatedAt) > 0;
+  return `<section class="websurf-proteus-authorization websurf-proteus-z01-authorization">
+    <header class="websurf-proteus-auth-brand">
+      <img ${assetImageAttributes("assets/web/proteus/Proteus_Title_Logo.png")} alt="Proteus Biodyne" />
+      <span>RESTRICTED SPECIMEN PROGRAM // Z-01</span>
+    </header>
+    <div class="websurf-proteus-auth-intro">
+      <h3>ACCESS AUTHORIZATION</h3>
+      <p>Your aggregate biological contribution has satisfied the material requirements for Program Z-01.</p>
+    </div>
+    <div class="websurf-proteus-auth-status-grid">
+      <section class="websurf-proteus-auth-order-status">
+        <h4>MATERIAL RECEIVED</h4>
+        <strong>${escapeHtml(count)} SPECIMENS</strong>
+      </section>
+      <section class="websurf-proteus-auth-configuration">
+        <h4>ACCESS CLASSIFICATION</h4>
+        <div><span>Program</span><i aria-hidden="true"></i><strong>Z-01</strong></div>
+        <div><span>Clearance</span><i aria-hidden="true"></i><strong>Approved</strong></div>
+        <div><span>Disclosure</span><i aria-hidden="true"></i><strong>Top Secret</strong></div>
+      </section>
+    </div>
+    <p>You are approved to attempt authentication through the Proteus Restricted Specimen Portal.</p>
+    <p>No disclosure regarding source material, experimental methodology, or final research purpose is authorized.</p>
+    <div class="websurf-proteus-auth-response">
+      <button type="button" data-websurf-email-action="${escapeHtml(message.id)}">${authenticated ? "OPEN RESTRICTED PORTAL" : "AUTHENTICATE ACCESS"}</button>
+      <p>${authenticated ? "Account authentication is permanently active." : "Authorization is account-bound and non-transferable."}</p>
+    </div>
+    <footer><span>Unauthorized disclosure is prohibited.</span><strong>PROTEUS BIODYNE // INTERNAL USE</strong></footer>
+  </section>`;
+}
+
+function ensureProteusZombiePortalStyles() {
+  if (typeof document === "undefined" || document.getElementById("proteusZombiePortalStyles")) return;
+  const style = document.createElement("style");
+  style.id = "proteusZombiePortalStyles";
+  style.textContent = `
+    #proteusZombieFishOffer{margin:18px 0;padding:0;overflow:hidden;border:1px solid rgba(150,185,175,.28);border-radius:16px;background:linear-gradient(180deg,rgba(6,13,15,.98),rgba(12,20,21,.98));color:#edf5f1;box-shadow:0 18px 50px rgba(0,0,0,.28)}
+    #proteusZombieFishOffer button,#proteusZombieFishOffer select{font:inherit}
+    .proteus-z01-gate{padding:30px;min-height:220px;display:grid;align-content:center;gap:12px;background:radial-gradient(circle at 85% 15%,rgba(122,180,157,.12),transparent 34%),linear-gradient(135deg,rgba(255,255,255,.025),transparent 55%)}
+    .proteus-z01-eyebrow{font-size:11px;font-weight:800;letter-spacing:.22em;color:#91b9aa}.proteus-z01-gate h3,.proteus-z01-device h3{margin:0;font-size:clamp(25px,3vw,42px);letter-spacing:-.04em}.proteus-z01-gate p{max-width:680px;color:#aab8b3;line-height:1.55}
+    .proteus-z01-auth-link{justify-self:start;border:0;background:transparent;color:#d9fff1;text-decoration:underline;text-underline-offset:4px;padding:0;cursor:pointer;font-weight:800;letter-spacing:.08em}.proteus-z01-auth-link:hover{color:#fff}.proteus-z01-denied{margin-top:8px;padding:10px 12px;border:1px solid rgba(255,95,95,.38);background:rgba(120,20,20,.18);color:#ff9c9c;font-size:12px;font-weight:900;letter-spacing:.16em;width:max-content}
+    .proteus-z01-token{font-size:11px;color:#82d2b2;letter-spacing:.12em}.proteus-z01-device{background:#071012}.proteus-z01-hero{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(230px,.8fr);gap:24px;align-items:center;padding:38px 34px;background:radial-gradient(circle at 82% 28%,rgba(111,196,161,.17),transparent 34%),linear-gradient(145deg,#081214,#111b1c)}.proteus-z01-hero-copy{display:grid;gap:13px}.proteus-z01-hero-copy h2{margin:0;font-size:clamp(34px,5vw,62px);line-height:.95;letter-spacing:-.055em}.proteus-z01-hero-copy p{max-width:610px;margin:0;color:#b6c5c0;font-size:15px;line-height:1.6}.proteus-z01-hero-art{min-height:230px;display:grid;place-items:center;border-radius:14px;background:linear-gradient(145deg,rgba(255,255,255,.04),rgba(255,255,255,.01));border:1px solid rgba(255,255,255,.08)}.proteus-z01-hero-art img{max-width:90%;max-height:245px;object-fit:contain;filter:drop-shadow(0 18px 25px rgba(0,0,0,.35))}
+    .proteus-z01-features{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:rgba(255,255,255,.08);border-top:1px solid rgba(255,255,255,.08);border-bottom:1px solid rgba(255,255,255,.08)}.proteus-z01-feature{padding:24px;background:#0b1517}.proteus-z01-feature strong{display:block;font-size:20px;margin-bottom:7px}.proteus-z01-feature span{color:#92a7a0;font-size:12px;line-height:1.5}
+    .proteus-z01-purchase{display:grid;gap:15px;padding:28px 34px}.proteus-z01-purchase-top{display:flex;justify-content:space-between;gap:20px;align-items:end}.proteus-z01-purchase h3{font-size:26px}.proteus-z01-price{font-size:24px;font-weight:900}.proteus-z01-config{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:end}.proteus-z01-config label{display:grid;gap:7px;color:#90a49d;font-size:11px;font-weight:800;letter-spacing:.12em}.proteus-z01-config select{min-width:220px;padding:11px 12px;border-radius:9px;border:1px solid rgba(255,255,255,.13);background:#101c1d;color:#f2f7f5}.proteus-z01-buy{padding:12px 18px;border:0;border-radius:999px;background:#e8f5ef;color:#06100d;font-weight:900;cursor:pointer}.proteus-z01-buy:disabled{opacity:.45;cursor:not-allowed}.proteus-z01-confirm{padding:18px;border:1px solid rgba(152,198,179,.25);border-radius:12px;background:rgba(255,255,255,.035);display:grid;gap:12px}.proteus-z01-confirm-actions{display:flex;gap:10px;flex-wrap:wrap}.proteus-z01-confirm-actions button{padding:10px 15px;border-radius:999px;border:1px solid rgba(255,255,255,.16);background:transparent;color:#dce9e4;cursor:pointer}.proteus-z01-confirm-actions button:first-child{background:#e8f5ef;color:#06100d;border-color:transparent;font-weight:900}.proteus-z01-legal{padding:0 34px 30px;color:#70837d;font-size:10px;line-height:1.55;letter-spacing:.03em}
+    /* The specimen offer is an independent full-width dossier, not a child
+       of the ordinary two-column specimen cards above it. */
+    .proteus-zombie-specimen-record{display:block!important;grid-column:1/-1!important;width:100%;margin:22px 0!important;border:0!important;background:transparent!important}
+    .proteus-z01-device{overflow:hidden;border:1px solid rgba(150,185,175,.28);border-radius:16px;background:#071012}
+    .proteus-z01-hero{grid-template-columns:minmax(300px,.88fr) minmax(420px,1.12fr);min-height:470px;gap:0;padding:0;background:linear-gradient(100deg,#081214 0%,#0c1b1b 51%,#102421 100%)}
+    .proteus-z01-hero-copy{align-self:stretch;align-content:center;gap:18px;padding:54px clamp(34px,5vw,76px);border-right:1px solid rgba(160,217,194,.18)}
+    .proteus-z01-hero-copy h2{max-width:610px;font-size:clamp(46px,5.2vw,82px);line-height:.89;letter-spacing:-.07em}
+    .proteus-z01-hero-copy p{max-width:535px;color:#c7d8d1;font-size:16px;line-height:1.65}
+    .proteus-z01-hero-copy .proteus-z01-hero-directive{margin-top:6px;color:#96d8bd;font-size:11px;font-weight:900;letter-spacing:.16em;line-height:1.45}
+    .proteus-z01-hero-art{position:relative;isolation:isolate;min-height:470px;overflow:hidden;border:0;border-radius:0;background:radial-gradient(circle at 54% 45%,rgba(147,229,195,.22),transparent 24%),radial-gradient(circle at 50% 44%,rgba(19,64,56,.82),rgba(6,14,16,.98) 71%)}
+    .proteus-z01-hero-art::before{position:absolute;inset:0;z-index:-1;content:"";background:repeating-linear-gradient(90deg,transparent 0 54px,rgba(166,239,205,.045) 55px 56px),repeating-linear-gradient(0deg,transparent 0 54px,rgba(166,239,205,.04) 55px 56px)}
+    .proteus-z01-hero-art>span,.proteus-z01-hero-art>small{position:absolute;z-index:1;left:25px;color:#a1d5c0;font-size:10px;font-weight:800;letter-spacing:.16em;line-height:1.55}.proteus-z01-hero-art>span{top:24px}.proteus-z01-hero-art>small{bottom:22px;color:#81aa9b;font-size:9px}
+    .proteus-z01-hero-art img{width:min(90%,620px);max-width:none;max-height:400px;height:auto;object-fit:contain;transform:scale(1.38);filter:drop-shadow(0 24px 32px rgba(0,0,0,.52)) saturate(1.08)}.proteus-z01-hero-sprite{position:relative;display:grid;place-items:center;width:min(76%,470px);aspect-ratio:1;overflow:hidden}.proteus-z01-hero-sprite img.proteus-z01-hero-source{position:absolute;top:var(--proteus-frame-top,0%);left:var(--proteus-frame-left,0%);width:calc(100% * var(--proteus-sheet-scale-x,3));max-width:none;height:auto;max-height:none;transform:none;filter:drop-shadow(0 24px 32px rgba(0,0,0,.52)) saturate(1.08)}
+    .proteus-z01-features{grid-template-columns:repeat(3,minmax(0,1fr))}.proteus-z01-feature{min-height:142px;padding:29px 34px;background:#091416}.proteus-z01-feature strong{font-size:22px}.proteus-z01-feature span{max-width:350px;color:#b2c9bf;font-size:13px}
+    .proteus-z01-purchase{gap:20px;padding:34px clamp(34px,5vw,76px);background:linear-gradient(90deg,#071012,#0b1919)}.proteus-z01-purchase h3{font-size:31px}.proteus-z01-config{grid-template-columns:minmax(280px,1fr) auto;gap:26px}.proteus-z01-variant-field{max-width:640px}.proteus-z01-variant-field>span{display:block;margin-bottom:8px}.proteus-z01-config select{width:100%;min-width:0;appearance:auto;padding:14px 15px;border-color:rgba(146,213,184,.38);border-radius:4px;background:#102120;color:#e7f7ef;font-size:13px;font-weight:750;letter-spacing:.04em}.proteus-z01-release-note{max-width:620px;margin:10px 0 0;color:#96aea4;font-size:12px;line-height:1.45}.proteus-z01-buy{min-width:270px;min-height:50px;border-radius:4px;letter-spacing:.08em}.proteus-z01-legal{padding:0 clamp(34px,5vw,76px) 34px;background:#0b1919}
+    @media(max-width:700px){.proteus-z01-hero{grid-template-columns:1fr;min-height:0;padding:0}.proteus-z01-hero-copy{padding:36px 22px;border-right:0;border-bottom:1px solid rgba(160,217,194,.18)}.proteus-z01-hero-art{min-height:330px}.proteus-z01-hero-art img{transform:scale(1.18)}.proteus-z01-features{grid-template-columns:1fr}.proteus-z01-purchase{padding:24px 22px}.proteus-z01-config{grid-template-columns:1fr}.proteus-z01-purchase-top{align-items:start;flex-direction:column}.proteus-z01-buy{width:100%;min-width:0}.proteus-z01-legal{padding:0 22px 26px}}
+  `;
+  document.head.appendChild(style);
+}
+
+function isProteusZombieFishAuthenticationEligible(now = Date.now()) {
+  return Boolean(
+    Number(state?.proteusZombieFishUnlockedAt) > 0
+    && Number(state?.proteusZombieFishOfferAt) > 0
+    && Number(state.proteusZombieFishOfferAt) <= Number(now)
+  );
+}
+
+function authenticateProteusZombieFishAccess(now = Date.now()) {
+  if (!isProteusZombieFishAuthenticationEligible(now)) {
+    runtime.proteusZombieAuthDeniedAt = Number(now) || Date.now();
+    showToast("UNAUTHORIZED ACCESS", { force: true, tone: "error" });
+    syncProteusZombieFishOfferPanel();
+    return false;
+  }
+  if (!(Number(state.proteusZombieFishAuthenticatedAt) > 0)) {
+    state.proteusZombieFishAuthenticatedAt = Math.max(1, Number(now) || Date.now());
+    saveState();
+  }
+  runtime.proteusZombieAuthDeniedAt = 0;
+  syncProteusZombieFishOfferPanel();
+  return true;
+}
+
+function getPendingProteusZombiePurchaseDetails() {
+  const pending = runtime?.proteusZombiePendingPurchase;
+  if (!pending || typeof pending !== "object") return null;
+  if (pending.mode === "claim") {
+    return { mode: "claim", label: "Z-01 Base Specimen", cost: 0, key: "" };
+  }
+  if (pending.mode !== "variant") return null;
+  const option = (typeof getProteusZombieFishVariantPurchaseOptions === "function"
+    ? getProteusZombieFishVariantPurchaseOptions()
+    : []).find((entry) => entry.key === pending.key);
+  return option ? { mode: "variant", label: option.label, cost: option.cost, key: option.key } : null;
+}
+
+function syncProteusZombieFishOfferPanel() {
+  const panel = document.querySelector('#proteusBiodynePage [data-proteus-panel="specimens"]');
+  if (!panel) return false;
+  ensureProteusZombiePortalStyles();
+  panel.querySelector("#proteusZombieFishOffer")?.remove();
+
+  const now = Date.now();
+  const authenticated = Number(state?.proteusZombieFishAuthenticatedAt) > 0;
+  const eligible = isProteusZombieFishAuthenticationEligible(now);
+  const denied = Number(runtime?.proteusZombieAuthDeniedAt) > 0 && !authenticated;
+  const claimed = Number(state?.proteusZombieFishClaimedAt) > 0;
+  const variants = typeof getProteusZombieFishVariantPurchaseOptions === "function"
+    ? getProteusZombieFishVariantPurchaseOptions()
+    : [];
+  const selectorEntries = claimed
+    ? variants
+    : [{ key: "base", label: "Z-01 Standard Specimen" }];
+  const pending = getPendingProteusZombiePurchaseDetails();
+
+  const offer = document.createElement("article");
+  offer.id = "proteusZombieFishOffer";
+  offer.className = "proteus-specimen-record proteus-zombie-specimen-record";
+
+  if (!authenticated) {
+    offer.innerHTML = `<section class="proteus-z01-gate">
+      <span class="proteus-z01-eyebrow">TOP SECRET // COMPARTMENTALIZED ACCESS</span>
+      <h3>Z-01 RESTRICTED SPECIMEN PROGRAM</h3>
+      <p>Program records, biological specifications, procurement materials, and disposition data are restricted to approved Proteus Biodyne research accounts.</p>
+      ${eligible ? `<span class="proteus-z01-token">ACCOUNT AUTHORIZATION TOKEN DETECTED</span>` : ""}
+      <button type="button" class="proteus-z01-auth-link" data-proteus-zombie-authenticate>AUTHENTICATE APPROVED ACCESS →</button>
+      ${denied ? `<div class="proteus-z01-denied">UNAUTHORIZED ACCESS</div>` : ""}
+    </section>`;
+    panel.appendChild(offer);
+    return true;
+  }
+
+  const selectorMarkup = selectorEntries.length
+    ? `<label class="proteus-z01-variant-field"><span>SPECIMEN CONFIGURATION</span>
+        <select data-proteus-zombie-variant-select>
+          ${selectorEntries.map((entry) => `<option value="${escapeHtml(entry.key)}">${escapeHtml(entry.label)} — LICENSED CONFIGURATION</option>`).join("")}
+        </select>
+      </label>`
+    : `<div><span class="proteus-z01-eyebrow">ALTERNATE CONFIGURATIONS</span><p>Additional configurations are awaiting release. New variants will appear automatically when added to the Z-01 specimen atlas.</p></div>`;
+
+  const purchaseLabel = claimed ? `PURCHASE SPECIMEN — ${escapeHtml(PROTEUS_ZOMBIE_FISH_VARIANT_COST)} COINS` : "CLAIM AUTHORIZED SPECIMEN — 0 COINS";
+  const purchaseDisabled = claimed && !variants.length;
+  const pendingMarkup = pending
+    ? `<div class="proteus-z01-confirm">
+        <strong>CONFIRM SPECIMEN TRANSFER</strong>
+        <span>${escapeHtml(pending.label)} // ${pending.cost === 0 ? "COMPLIMENTARY AUTHORIZED RELEASE" : `${pending.cost} COINS`}</span>
+        <small>By confirming, you acknowledge that Proteus Biodyne retains research ownership and makes no representation regarding behavioral stability.</small>
+        <div class="proteus-z01-confirm-actions">
+          <button type="button" data-proteus-zombie-confirm>CONFIRM TRANSFER</button>
+          <button type="button" data-proteus-zombie-cancel>CANCEL</button>
+        </div>
+      </div>`
+    : `<div class="proteus-z01-config">
+        <div>${selectorMarkup}${claimed ? "" : `<p class="proteus-z01-release-note">The initial authorized release is complimentary. Alternate configurations become available after transfer.</p>`}</div>
+        <button type="button" class="proteus-z01-buy" data-proteus-zombie-purchase data-mode="${claimed ? "variant" : "claim"}" ${purchaseDisabled ? "disabled" : ""}>${purchaseLabel}</button>
+      </div>`;
+
+  offer.innerHTML = `<section class="proteus-z01-device">
+    <div class="proteus-z01-hero">
+      <div class="proteus-z01-hero-copy">
+        <span class="proteus-z01-eyebrow">PROTEUS BIODYNE // Z-01</span>
+        <h2>Life continues.<br>Consent is irrelevant.</h2>
+        <p>Z-01 is a licensed Proteus biological asset. It persists, restores itself, and remains operational without nutrition, comfort, companionship, or conventional welfare intervention.</p>
+        <p class="proteus-z01-hero-directive">CARE IS NOT REQUIRED. OVERSIGHT IS NOT INVITED.</p>
+      </div>
+      <div class="proteus-z01-hero-art"><span>RESTRICTED AQUATIC ASSET // Z-01</span><div class="proteus-z01-hero-sprite"><img alt="Z-01 Post-Mortem Aquatic Specimen" data-proteus-zombie-image /></div><small>POST-MORTEM VIABILITY PROGRAM<br>TRANSFER CLASS: CONDITIONAL</small></div>
+    </div>
+    <div class="proteus-z01-features">
+      <div class="proteus-z01-feature"><strong>Persistent Viability</strong><span>Terminal damage is not a terminating condition. Regeneration proceeds without your intervention.</span></div>
+      <div class="proteus-z01-feature"><strong>Zero Dependency</strong><span>Nutrition is optional. Comfort is obsolete. The specimen remains functional without either.</span></div>
+      <div class="proteus-z01-feature"><strong>No Affective Burden</strong><span>Distress, loneliness, and social need are not recognized operating states.</span></div>
+    </div>
+    <div class="proteus-z01-purchase">
+      <div class="proteus-z01-purchase-top"><div><span class="proteus-z01-eyebrow">CONFIGURE Z-01</span><h3>${claimed ? "Select a licensed configuration." : "Your authorized asset is ready."}</h3></div><div class="proteus-z01-price">${claimed ? `${escapeHtml(PROTEUS_ZOMBIE_FISH_VARIANT_COST)} ◉` : "0 ◉"}</div></div>
+      ${pendingMarkup}
+    </div>
+    <div class="proteus-z01-legal">Z-01 is non-reproductive. Intermittent unprovoked hostility is an accepted operating characteristic. Proteus Biodyne does not recognize the informal term “zombie” as scientifically meaningful. Transfer does not convey research ownership. Program details remain TOP SECRET.</div>
+  </section>`;
+  panel.appendChild(offer);
+  const image = offer.querySelector("[data-proteus-zombie-image]");
+  if (image) {
+    // The authored sheet is an atlas. Read the declared Z-01 frame so the
+    // set-piece viewport never reveals a neighbouring sprite cell.
+    const sheet = typeof getAllSpriteSheetDefinitions === "function"
+      ? getAllSpriteSheetDefinitions().find((entry) => String(entry?.path || "").replace(/\\/g, "/").toLowerCase() === "assets/web/proteus/dna_fish/zombie_fish.webp")
+      : null;
+    const frame = Array.isArray(sheet?.frames?.["zombie_fish.png"])
+      ? sheet.frames["zombie_fish.png"]
+      : [0, 0, 512, 512];
+    const [frameX, frameY, frameWidth, frameHeight] = frame;
+    const viewport = image.closest(".proteus-z01-hero-sprite");
+    if (viewport && frameWidth > 0 && frameHeight > 0) {
+      viewport.style.setProperty("--proteus-sheet-scale-x", String((Number(sheet?.width) || 1536) / frameWidth));
+      viewport.style.setProperty("--proteus-frame-left", `${-(frameX / frameWidth) * 100}%`);
+      viewport.style.setProperty("--proteus-frame-top", `${-(frameY / frameHeight) * 100}%`);
+    }
+    image.classList.add("proteus-z01-hero-source");
+    image.src = resolveAppUrl("assets/web/proteus/dna_fish/zombie_fish.webp");
+  }
+  return true;
+}
+
 function getWebSurfInboxMessages() {
-  // Automatic sender registry: statements@bubbleboroughbank.swim, orders@bubblebodega.swim, rewards@bubbleboroughbank.swim, research@proteusbiodyne.swim.
+  // Automatic sender registry: statements@bubbleboroughbank.swim, orders@bubblebodega.swim, rewards@bubbleboroughbank.swim, research@proteusbiodyne.swim, reclamation@proteusbiodyne.swim.
   const messages = [];
-  const rescueOffer = ensureBubbleBodegaRescueOffer(Date.now());
+  const now = Date.now();
+  const rescueOffer = ensureBubbleBodegaRescueOffer(now);
   const welcomeSentAt = Math.max(0, Number(state?.webSurfWelcomeSentAt) || 0);
   if (Number(state?.webSurfWelcomeVersion) >= 1 && welcomeSentAt) {
     const profile = sanitizeAccountProfile(state?.accountProfile);
@@ -3381,12 +3619,15 @@ function getWebSurfInboxMessages() {
       subject: template?.subject || "A Fresh Start, On Us",
       preview: template?.preview || "A free Goldfish and food are waiting for you.",
       destination: "rescue-offer",
-      icon: "assets/misc/Store_Logo.png",
+      icon: "assets/web/bodega/Store_Logo.png",
       time: Number(state.bubbleBodegaRescueOffer.issuedAt) || Date.now()
     });
   }
+  for (const message of getProteusCorpseDonationInboxMessages(now)) messages.push(message);
+  const zombieAuthorization = getProteusZombieFishAuthorizationInboxMessage(now);
+  if (zombieAuthorization) messages.push(zombieAuthorization);
+
   const orders = sanitizePurchaseHistory(state?.purchaseHistory);
-  const now = Date.now();
   orders.filter((order) => (Number(order.placedAt) || 0) <= now).forEach((order) => {
     const engineeredSpecimen = isEngineeredAquaticSpecimenOrder(order);
     const proteusOrderStatus = engineeredSpecimen
@@ -3423,7 +3664,7 @@ function getWebSurfInboxMessages() {
           ? "Your Engineered Aquatic Specimen is being fulfilled."
           : "Your Engineered Aquatic Specimen fulfillment is complete."
     };
-    messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/misc/Box.png", time: Number(order.placedAt) || 0 });
+    messages.push({ id: `auto-${templateId}-${order.id}`, templateId, data, sender: template?.sender || (isProteusOrder(order) ? "designer@proteusbiodyne.swim" : "orders@bubblebodega.swim"), subject: template ? interpolateWebSurfEmailValue(data.itemQuantity === 1 && template.subjectSingular ? template.subjectSingular : template.subject, data) : "Order Confirmed", preview: template ? interpolateWebSurfEmailValue(template.preview, data) : "Your order has been completed and delivered.", destination: template?.action?.destination || "store", icon: isProteusOrder(order) ? "assets/web/proteus/Proteus_Logo_Icon.png" : "assets/web/bodega/Box.png", time: Number(order.placedAt) || 0 });
   });
 
   const firstDavyPurchase = orders
@@ -3555,6 +3796,9 @@ function renderWebSurfProteusAuthorizationEmail(message) {
 }
 
 function renderWebSurfAutoEmailBody(message) {
+  if (message?.templateId === "proteus_zombie_fish_authorization") {
+    return renderProteusZombieFishAuthorizationEmail(message);
+  }
   const template = getWebSurfAutoEmailTemplate(message.templateId);
   if (!template) return `<p>${escapeHtml(message.preview || "This automatic message is unavailable.")}</p>`;
   const data = message.data || {};
@@ -3566,6 +3810,10 @@ function renderWebSurfAutoEmailBody(message) {
     if (block.type === "guide_section") return `<section class="websurf-email-guide-section"><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><div><h4>${escapeHtml(block.title || "")}</h4><p>${renderWebSurfEmailInlineText(block.text, data)}</p></div></section>`;
     if (block.type === "link_row") return `<nav class="websurf-email-guide-links" aria-label="Getting started links">${(block.links || []).map((link) => `<button type="button" data-websurf-guide-destination="${escapeHtml(link.destination || "store")}" data-websurf-guide-section="${escapeHtml(link.section || "")}">${link.icon ? `<img ${assetImageAttributes(link.icon)} alt="" aria-hidden="true" />` : ""}<span>${escapeHtml(link.label || "Open")}</span></button>`).join("")}</nav>`;
     if (block.type === "feature_list") return `<section class="websurf-email-feature-list"><header><img ${assetImageAttributes(block.icon)} alt="" aria-hidden="true" /><h4>${escapeHtml(block.title || "")}</h4></header>${(block.items || []).map((item) => `<div class="websurf-email-feature-row"><img ${assetImageAttributes(item.icon)} alt="" aria-hidden="true" /><p><strong>${escapeHtml(item.label || "")}:</strong> ${escapeHtml(item.text || "")}</p></div>`).join("")}</section>`;
+    if (block.type === "proteus_corpse_list") {
+      const rows = Array.isArray(data[block.source]) ? data[block.source] : [];
+      return `<div class="websurf-email-transaction-list">${rows.map((row) => `<div class="websurf-email-transaction-row"><time>${escapeHtml(row.deathTime || "")}</time><strong>${escapeHtml(row.fishName || "Unnamed specimen")}</strong><span>${escapeHtml(row.speciesName || "Unclassified aquatic specimen")}</span></div>`).join("") || `<p class="websurf-email-empty">No specimens were recorded.</p>`}</div>`;
+    }
     if (block.type === "item_list") {
       const items = Array.isArray(data[block.source]) ? data[block.source] : [];
       return `<div class="websurf-email-item-list">${items.map((item) => `<div class="websurf-email-item-row" data-item-id="${escapeHtml(item.itemId)}"><img ${getWebSurfThumbnailAttributes(item[block.thumbnailField])} alt="" aria-hidden="true" /><strong>${escapeHtml(item[block.nameField] || "Store item")}</strong><span>×${escapeHtml(item[block.quantityField] || 1)}</span></div>`).join("")}</div>`;
@@ -3610,6 +3858,22 @@ function renderWebSurfAutoEmailBody(message) {
 }
 
 function handleWebSurfEmailAction(message) {
+  if (message?.templateId === "proteus_zombie_fish_authorization") {
+    captureWebSurfSessionState();
+    runtime.webHomeOpen = false;
+    runtime.bubbleBankOpen = false;
+    runtime.davyJonesLockerOpen = false;
+    runtime.webSurfLastPage = "proteus";
+    renderStoreOverlay();
+    const tab = document.querySelector('#storeOverlay .webpage-tab[data-webpage-destination="proteus"]') || dom.openStoreButton;
+    window.showProteusBiodynePage?.(tab);
+    window.requestAnimationFrame(() => {
+      syncProteusZombieFishOfferPanel();
+      document.querySelector('#proteusBiodynePage [data-proteus-tab="specimens"], #proteusBiodynePage [data-proteus-tab-link="specimens"]')?.click?.();
+      window.requestAnimationFrame(() => document.getElementById("proteusZombieFishOffer")?.scrollIntoView?.({ behavior: "smooth", block: "center" }));
+    });
+    return;
+  }
   const template = getWebSurfAutoEmailTemplate(message.templateId);
   const action = template?.action || {};
   captureWebSurfSessionState();
@@ -3659,6 +3923,164 @@ function handleWebSurfEmailAction(message) {
   }
 }
 
+function getBubbleBodegaDiseaseTreatmentId(fish, now = Date.now()) {
+  const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : "";
+  return condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : "";
+}
+
+function getBubbleBodegaHomeRecommendations(tank = getCurrentTank(), now = Date.now()) {
+  const livingFish = (tank?.fish || []).filter((fish) => fish && !isFishDead(fish));
+  const candidates = new Map();
+  const add = (type, id, priority, reason, fish) => {
+    const key = `${type}:${id}`;
+    const current = candidates.get(key) || { type, id, priority, reasons: [], fishNames: [] };
+    current.priority = Math.max(current.priority, priority);
+    if (!current.reasons.includes(reason)) current.reasons.push(reason);
+    if (fish?.name && !current.fishNames.includes(fish.name)) current.fishNames.push(fish.name);
+    candidates.set(key, current);
+  };
+
+  for (const fish of livingFish) {
+    const treatmentId = getBubbleBodegaDiseaseTreatmentId(fish, now);
+    if (treatmentId && Math.max(0, Number(state.medicineInventory?.[treatmentId]) || 0) <= 0) {
+      add("pharmacy", treatmentId, 300, "Treatment needed", fish);
+    }
+  }
+
+  const foodUsers = new Map();
+  for (const fish of livingFish) {
+    const accepted = getFishAcceptedFoodKeys(fish).filter((id) => shouldShowFoodInStore(getFoodMeta(id)));
+    const stocked = accepted.find((id) => Math.max(0, Number(state.foodInventory?.[id]) || 0) > 0);
+    const foodId = stocked || accepted[0];
+    if (!foodId) continue;
+    const entry = foodUsers.get(foodId) || [];
+    entry.push(fish);
+    foodUsers.set(foodId, entry);
+  }
+  for (const [foodId, users] of foodUsers) {
+    const feedingsLeft = Math.floor(Math.max(0, Number(state.foodInventory?.[foodId]) || 0) / Math.max(1, users.length));
+    if (feedingsLeft <= 2) {
+      for (const fish of users) add("food", foodId, feedingsLeft === 0 ? 220 : 160, feedingsLeft === 0 ? "Out of food" : `${feedingsLeft} feeding${feedingsLeft === 1 ? "" : "s"} left`, fish);
+    }
+  }
+
+  // A low comfort score must produce actionable store suggestions, even when
+  // food happens to be in inventory. Previously this page only noticed an
+  // empty food supply, so a hungry or otherwise stressed tank could look like
+  // it had no care needs at all.
+  for (const fish of livingFish) {
+    const comfort = getFishComfort(fish, now, tank);
+    const needs = getFishNeedsSnapshot(fish, now).needs;
+    if (!isMealFreeFish(fish) && Number(needs?.hunger) <= 45) {
+      const foodId = getFishAcceptedFoodKeys(fish).find((id) => shouldShowFoodInStore(getFoodMeta(id)));
+      if (foodId) add("food", foodId, Number(needs.hunger) <= 20 ? 260 : 190, Number(needs.hunger) <= 20 ? "Feed immediately" : "A meal would help", fish);
+    }
+    if (comfort.value < 0.65) {
+      for (const need of getFishNeedsStatus(fish, tank, now)) {
+        if (need.met) continue;
+        // Companionship needs are best answered by the same real catalogue
+        // species; structural needs are handled by the decor pass below.
+        if (["school_2_plus", "social_own_kind"].includes(need.tag)) {
+          const companion = runtime.fishMap.get(fish.speciesId);
+          if (companion && !companion.proteusExclusive && isFishSpeciesShopUnlocked(companion)) {
+            add("fish", companion.id, 140, "Needs company", fish);
+          }
+        }
+      }
+    }
+  }
+
+  const fulfilledTags = new Set(getTankComfortDecorTags(tank));
+  for (const decorKey of Object.keys(state.decorInventory || {})) {
+    if (Math.max(0, Number(state.decorInventory[decorKey]) || 0) <= 0) continue;
+    for (const tag of getTankComfortDecorTags({ placedDecor: [{ decorKey }] })) fulfilledTags.add(tag);
+  }
+  const needed = new Map();
+  for (const fish of livingFish) {
+    for (const need of getFishNeedsStatus(fish, tank, now)) {
+      // Social and open-water needs do not map to purchasable decor.
+      if (!need.met && !["school_2_plus", "social_own_kind", "open_water"].includes(need.tag) && !fulfilledTags.has(need.tag)) {
+        needed.set(need.tag, [...(needed.get(need.tag) || []), fish]);
+      }
+    }
+  }
+  for (const [tag, fish] of needed) {
+    const decor = (runtime.decorCatalog || []).find((entry) => {
+      if (!isDecorShopUnlocked(entry) || !isSeasonalDecorAvailable(entry)) return false;
+      return getTankComfortDecorTags({ placedDecor: [{ decorKey: entry.key }] }).has(tag);
+    });
+    if (decor) for (const resident of fish) add("decor", decor.key, 80, `Adds ${getComfortTagLabel(tag).toLowerCase()}`, resident);
+  }
+
+  return [...candidates.values()]
+    .sort((a, b) => b.priority - a.priority || a.type.localeCompare(b.type) || a.id.localeCompare(b.id))
+    .slice(0, 5);
+}
+
+function getBubbleBodegaHomeSeasonalProducts(now = Date.now()) {
+  const decor = (runtime.decorCatalog || [])
+    .filter((entry) => isSeasonalDecor(entry) && isSeasonalDecorAvailable(entry, now) && isDecorShopUnlocked(entry))
+    .slice(0, 5)
+    .map((entry) => ({ type: "decor", id: entry.key, name: entry.name, reason: "Seasonal collection" }));
+  const food = getFoodCatalog()
+    .filter((entry) => shouldShowFoodInStore(entry) && /halloween|seasonal/i.test(`${entry.id} ${entry.name}`))
+    .map((entry) => ({ type: "food", id: entry.id, name: entry.name, reason: "Seasonal collection" }));
+  return [...decor, ...food].slice(0, 5);
+}
+
+function getBubbleBodegaHomeNewFish() {
+  return [...(state.unlockedFishSpecies || [])].reverse()
+    .map((id) => runtime.fishMap.get(id))
+    .filter((fish) => fish && !fish.proteusExclusive && !fish.davyMutation && isFishSpeciesShopUnlocked(fish))
+    .slice(0, 5)
+    .map((fish) => ({ type: "fish", id: fish.id, name: fish.name, reason: "Recently unlocked" }));
+}
+
+function renderBubbleBodegaHomePage() {
+  const tank = getCurrentTank();
+  const recommendations = getBubbleBodegaHomeRecommendations(tank);
+  const seasonal = getBubbleBodegaHomeSeasonalProducts();
+  const newFish = getBubbleBodegaHomeNewFish();
+  const getItem = (item) => item.type === "food" ? getFoodMeta(item.id)
+    : item.type === "pharmacy" ? getMedicineMeta(item.id)
+      : item.type === "fish" ? runtime.fishMap.get(item.id)
+        : runtime.decorMap.get(item.id);
+  // Use the exact category card renderers: descriptors, prices, availability,
+  // variants and product-page facts all come from the same markup.
+  const renderCard = (item) => {
+    const entry = getItem(item);
+    if (!entry) return "";
+    if (item.type === "food") {
+      const pack = getFoodPackageOptions(entry)[0];
+      return pack ? renderFoodStoreCard(entry, pack) : "";
+    }
+    if (item.type === "pharmacy") return renderPharmacyStoreCard(entry);
+    if (item.type === "fish") return renderFishStoreCard(entry);
+    return renderDecorStoreCard(entry);
+  };
+  // Home is a concise, adaptive discovery surface. Empty categories add no
+  // browsing value, so omit them rather than showing static empty-state cards.
+  const section = (title, subtitle, items, action = "") => {
+    if (!items.length) return "";
+    return `<section class="bubblebodega-home-section"><header><div><h2>${escapeHtml(title)}</h2><p>${escapeHtml(subtitle)}</p></div>${action}</header><div class="bubblebodega-home-product-row">${items.map(renderCard).join("")}</div></section>`;
+  };
+  const sections = [
+    section("For Your Tank", "Picked for the fish in your current tank.", recommendations),
+    section("Seasonal Items", "A limited collection for the current season.", seasonal, '<button type="button" class="bubblebodega-home-link" data-bodega-home-category="decor">Show More&nbsp; →</button>'),
+    section("New Fish", "Recently unlocked and ready for your tanks.", newFish, '<button type="button" class="bubblebodega-home-link" data-bodega-home-category="fish">See All Fish&nbsp; →</button>')
+  ].join("");
+  return `<div class="bubblebodega-home-content">${sections || '<p class="bubblebodega-home-empty">New store picks will appear as your aquarium changes.</p>'}</div>`;
+}
+
+function formatWebSurfMailStorage(messages) {
+  // Store the actual serialized message payload, rather than inventing a
+  // multi-megabyte size for short in-game mail. Keep the displayed precision
+  // useful while preserving the same 25 MB ceiling as custom image storage.
+  const bytes = new Blob([JSON.stringify(messages || [])]).size;
+  const megabytes = bytes / (1024 * 1024);
+  return megabytes < 0.01 ? `${Math.max(1, Math.ceil(bytes / 1024))} KB` : `${megabytes.toFixed(2)} MB`;
+}
+
 function renderWebSurfHomePage() {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const username = profile.username || getAccountUsernameForUser(profile.userId);
@@ -3666,7 +4088,7 @@ function renderWebSurfHomePage() {
   const messages = getWebSurfInboxMessages();
   const unreadCount = messages.filter((message) => isWebSurfMailUnread(message)).length;
   const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
-  const proteusDiscovered = state?.proteusDiscovered === true || Boolean(window.hasDiscoveredProteus?.());
+  const proteusDiscovered = state?.proteusDiscovered === true;
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
@@ -3688,7 +4110,7 @@ function renderWebSurfHomePage() {
           <time>${escapeHtml(formatWebSurfMailTime(message.time))}</time>
         </button>
       </div>
-      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-trash-button" data-websurf-trash-mail="${escapeHtml(message.id)}" aria-label="Delete email" title="${starred ? "Unstar this email before deleting it" : "Delete email"}" ${starred ? "disabled" : ""}>${trashIcon}</button><button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}" data-websurf-silence-sender-id="${escapeHtml(message.senderId)}">${silenced ? "Unsilence sender" : "Silence sender"}</button></div></div>` : ""}
+      ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}" data-websurf-silence-sender-id="${escapeHtml(message.senderId)}">${silenced ? "Unsilence sender" : "Silence sender"}</button><button type="button" class="websurf-trash-button" data-websurf-trash-mail="${escapeHtml(message.id)}" aria-label="Delete email" title="${starred ? "Unstar this email before deleting it" : "Delete email"}" ${starred ? "disabled" : ""}>${trashIcon}</button></div></div>` : ""}
     </article>`;
   }).join("");
   return `<header class="websurf-home-header">
@@ -3700,7 +4122,7 @@ function renderWebSurfHomePage() {
         <h2 id="websurfBookmarksTitle">Bookmarks</h2>
         <div class="websurf-bookmark-row">
           <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
-          <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/misc/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/web/bodega/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
           ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue · davyjoneslocker.hadal</small></span></button>` : ""}
           <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
@@ -3713,7 +4135,7 @@ function renderWebSurfHomePage() {
         </section>
         <footer class="websurf-status-bar" aria-label="WebSurf status">
           <span>WebSurf 1.4 · Secure</span>
-          <span><small>Mail storage</small><strong>${Math.min(99, messages.length * 2)} / 100 MB</strong></span>
+          <span><small>Mail storage</small><strong>${formatWebSurfMailStorage(messages)} / 25 MB</strong></span>
         </footer>
       </div>
     </main>`;
@@ -3834,7 +4256,7 @@ function renderBubbleBankPage() {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const username = profile.username || getAccountUsernameForUser(profile.userId);
   const content = activeTab === "rewards" ? renderBubbleBankRewards() : activeTab === "milestones" ? renderBubbleBankMilestones() : renderBubbleBankAccount();
-  return `<div class="bubble-bank-window-header">
+  return `<div class="bubble-bank-window-header websurf-site-header" data-websurf-site-header="bank">
     <img class="bubble-bank-logo" ${assetImageAttributes("assets/web/bank/bank_logo.png")} alt="Bubble Borough Bank" />
     ${renderBubbleBankTabs(activeTab)}
     <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
@@ -3978,6 +4400,7 @@ function renderCustomDecorNameOverlay() {
   const previewImageSrc = escapeHtml(pending.dataUrl);
 
   return `
+    ${renderCustomContentStorageMeter()}
     <div class="custom-decor-name-panel">
       <div class="custom-decor-create-layout">
         <div class="custom-decor-preview-column">
@@ -4324,6 +4747,7 @@ function renderCustomHideCreationOverlay() {
     `;
 
   return `
+    ${renderCustomContentStorageMeter()}
     <div class="custom-decor-name-panel decor-settings-panel decor-settings-compact-panel">
       <div class="custom-decor-create-layout decor-settings-layout decor-settings-compact-layout">
         <div class="custom-decor-preview-column">

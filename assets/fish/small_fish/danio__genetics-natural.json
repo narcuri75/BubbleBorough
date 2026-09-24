@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "7afd4862-0800-4373-926f-8aae5ce55aa6",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "4db516e5-7159-42d2-93a7-5514d4b85a37",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_celestial-pearl_.png"
+        },
+        {
+          "id": "1da782e6-a75c-47b7-8e5e-cbc97a8998a4",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_emerald-dwarf.png"
+        },
+        {
+          "id": "b3af120e-8308-4a16-864c-cdc20086c98c",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_glowlight.png"
+        },
+        {
+          "id": "468444e2-2e63-46b1-8fd8-191fbc3349d7",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_golden-zebra.png"
+        },
+        {
+          "id": "16b5534a-41a9-44a0-9e42-0f7d84d03c29",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_leopard.png"
+        },
+        {
+          "id": "c2528116-4d68-46b0-9e3c-f4c53f4ba243",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_longfin-zebra.png"
+        },
+        {
+          "id": "3e4dad7e-84e1-4125-a4c2-7c8dc247e2a8",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_orange-finned.png"
+        },
+        {
+          "id": "c81e61fe-e298-4b9c-96bb-d534d8310819",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_pearl.png"
+        },
+        {
+          "id": "56bed337-4231-42f8-8f72-b17ee0caaa8b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_zebra.png"
+        },
+        {
+          "id": "00b69aae-af00-4ba2-9dd7-b4e125531b1f",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "danio_blue.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/danio__genetics-natural.webp"
+  }
+}

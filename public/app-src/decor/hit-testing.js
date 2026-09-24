@@ -42,6 +42,112 @@ function shouldApplyDecorPlacementGravity(decorKey, options = {}) {
     && !isDecorExemptFromGravity(options.item || decorKey);
 }
 
+function getPlacedDecorSurfaceReceiver(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  const surfaceImage = decor?.surfacePath ? runtime.images.get(decor.surfacePath) : null;
+  const primaryImage = decor?.path ? runtime.images.get(decor.path) : null;
+  const mask = decor?.surfacePath ? getImageAlphaMask(decor.surfacePath) : null;
+  if (!decor?.surfacePath || !surfaceImage?.width || !primaryImage?.width || !mask?.alpha) return null;
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (primaryImage.height / Math.max(1, primaryImage.width));
+  return {
+    item,
+    decor,
+    image: surfaceImage,
+    mask,
+    left: item.xNorm * TANK_WIDTH - width / 2,
+    top: item.yNorm * TANK_HEIGHT - height,
+    width,
+    height,
+    tankLayer: getDecorTankLayer(item),
+    flipX: isDecorHorizontallyFlipped(item),
+    flipY: isDecorVerticallyFlipped(item)
+  };
+}
+
+function getDecorSurfacePlaneYAtWorldX(receiver, worldX, casterBottomY, contactTolerancePx = 8) {
+  if (!receiver || worldX < receiver.left || worldX > receiver.left + receiver.width) return null;
+  const displayU = clamp((worldX - receiver.left) / Math.max(1, receiver.width), 0, 1);
+  const sourceU = receiver.flipX ? 1 - displayU : displayU;
+  const sourceX = clamp(Math.floor(sourceU * receiver.mask.width), 0, receiver.mask.width - 1);
+  let wasOpaque = false;
+  let nearest = null;
+  for (let displayY = 0; displayY < receiver.mask.height; displayY += 1) {
+    const sourceY = receiver.flipY ? receiver.mask.height - 1 - displayY : displayY;
+    const opaque = receiver.mask.alpha[(sourceY * receiver.mask.width + sourceX) * 4 + 3] >= ALPHA_HIT_THRESHOLD;
+    if (opaque && !wasOpaque) {
+      const worldY = receiver.top + (displayY / receiver.mask.height) * receiver.height;
+      if (worldY >= casterBottomY - contactTolerancePx && (nearest === null || Math.abs(worldY - casterBottomY) < Math.abs(nearest - casterBottomY))) {
+        nearest = worldY;
+      }
+    }
+    wasOpaque = opaque;
+  }
+  return nearest;
+}
+
+function getDecorSurfaceMarkedYAtWorldX(receiver, worldX, minWorldY, maxWorldY, targetWorldY) {
+  if (!receiver || worldX < receiver.left || worldX > receiver.left + receiver.width) return null;
+  const displayU = clamp((worldX - receiver.left) / Math.max(1, receiver.width), 0, 1);
+  const sourceU = receiver.flipX ? 1 - displayU : displayU;
+  const sourceX = clamp(Math.floor(sourceU * receiver.mask.width), 0, receiver.mask.width - 1);
+  const minY = Math.min(minWorldY, maxWorldY);
+  const maxY = Math.max(minWorldY, maxWorldY);
+  let nearest = null;
+  let nearestDistance = Infinity;
+  for (let displayY = 0; displayY < receiver.mask.height; displayY += 1) {
+    const worldY = receiver.top + ((displayY + 0.5) / receiver.mask.height) * receiver.height;
+    if (worldY < minY || worldY > maxY) continue;
+    const sourceY = receiver.flipY ? receiver.mask.height - 1 - displayY : displayY;
+    const pixelOffset = (sourceY * receiver.mask.width + sourceX) * 4;
+    // Surface files are RGB placement maps. Alpha only distinguishes painted
+    // pixels from transparent canvas; black RGB pixels remain fully valid.
+    if (receiver.mask.alpha[pixelOffset + 3] < ALPHA_HIT_THRESHOLD) continue;
+    const distance = Math.abs(worldY - targetWorldY);
+    if (distance < nearestDistance) {
+      nearest = worldY;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
+}
+
+function getDecorPlacementSurfaceAnchorY(candidate, placementBounds, anchorY, options = {}) {
+  if (!candidate || !placementBounds || !Array.isArray(state?.placedDecor)) return null;
+  const relBottom = placementBounds.bottom - anchorY;
+  let nearestPlaneY = null;
+  for (const supportItem of state.placedDecor) {
+    if (!supportItem || supportItem.id === candidate.id || getDecorTankLayer(supportItem) !== getDecorTankLayer(candidate)) continue;
+    const receiver = getPlacedDecorSurfaceReceiver(supportItem);
+    if (!receiver) continue;
+    const overlapLeft = Math.max(placementBounds.left, receiver.left);
+    const overlapRight = Math.min(placementBounds.right, receiver.left + receiver.width);
+    if (overlapRight - overlapLeft < Math.min(5, Math.max(1, placementBounds.right - placementBounds.left) * 0.08)) continue;
+    const sampleXs = [
+      overlapLeft + 1,
+      overlapLeft + (overlapRight - overlapLeft) * 0.25,
+      (overlapLeft + overlapRight) * 0.5,
+      overlapLeft + (overlapRight - overlapLeft) * 0.75,
+      overlapRight - 1
+    ];
+    for (const sampleX of sampleXs) {
+      let planeY = getDecorSurfacePlaneYAtWorldX(receiver, sampleX, placementBounds.bottom, 18);
+      if (!Number.isFinite(planeY) && options.allowOverlapSnap === true) {
+        planeY = getDecorSurfaceMarkedYAtWorldX(
+          receiver,
+          sampleX,
+          placementBounds.top - 18,
+          placementBounds.bottom + 18,
+          placementBounds.bottom
+        );
+      }
+      if (!Number.isFinite(planeY)) continue;
+      if (nearestPlaneY === null || planeY < nearestPlaneY) nearestPlaneY = planeY;
+    }
+  }
+  return Number.isFinite(nearestPlaneY) ? nearestPlaneY - relBottom : null;
+}
+
 function clampDecorPlacement(xNorm, yNorm, options = {}) {
   const shellBounds = getTankShellBounds();
   const minXNorm = shellBounds.innerLeft / TANK_WIDTH;
@@ -141,11 +247,20 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
     shellBounds.innerTop + shellBounds.innerHeight - relBottom,
     layerBoundaryY - relBottom
   );
+  const surfaceAnchorY = applyGravity
+    ? getDecorPlacementSurfaceAnchorY(candidate, placementBounds, anchorY, {
+      allowOverlapSnap: options.allowSurfaceOverlapSnap === true
+    })
+    : null;
   const clampedX = minAnchorX <= maxAnchorX
     ? clamp(anchorX, minAnchorX, maxAnchorX)
     : (minAnchorX + maxAnchorX) / 2;
   const clampedY = minAnchorY <= maxAnchorY
-    ? (attachToCeiling ? minAnchorY : (applyGravity ? maxAnchorY : clamp(anchorY, minAnchorY, maxAnchorY)))
+    ? (attachToCeiling
+      ? minAnchorY
+      : (applyGravity
+        ? clamp(Number.isFinite(surfaceAnchorY) ? surfaceAnchorY : maxAnchorY, minAnchorY, maxAnchorY)
+        : clamp(anchorY, minAnchorY, maxAnchorY)))
     : maxAnchorY;
 
   const constrained = constrainNormalizedPointToTankShell(

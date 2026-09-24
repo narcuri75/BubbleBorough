@@ -4,7 +4,7 @@
 function renderCustomFishCreationOverlay() {
   const pending = runtime.pendingCustomFishUpload;
   if (!pending?.dataUrl) {
-    return `<div class="empty-state">Choose an image from the fish shop first.</div>`;
+    return `${renderCustomContentStorageMeter()}<div class="empty-state">Choose an image from the fish shop first.</div>`;
   }
 
   const width = clamp(Math.round(Number(pending.width) || CUSTOM_FISH_DEFAULT_WIDTH), CUSTOM_FISH_MIN_WIDTH, CUSTOM_FISH_MAX_WIDTH);
@@ -25,16 +25,11 @@ function renderCustomFishCreationOverlay() {
   const transform = getPendingCustomFishTransform(pending);
 
   return `
+    ${renderCustomContentStorageMeter()}
     <div class="custom-fish-create-panel">
       <div class="custom-fish-preview-column">
         <div class="custom-fish-size-window">
           <div class="custom-fish-size-stage">
-            <img
-              class="custom-fish-template-overlay"
-              ${assetImageAttributes(CUSTOM_FISH_TEMPLATE_IMAGE)}
-              alt=""
-              aria-hidden="true"
-              draggable="false" />
             <img
               class="custom-fish-upload-preview"
               ${assetImageAttributes(pending.dataUrl)}
@@ -179,6 +174,7 @@ function renderProteusDesignerWorkspace() {
             <div class="proteus-designer-front-marker" aria-label="Specimen front points right"><span>FRONT</span><i aria-hidden="true"></i></div>
           </div>
           <div class="proteus-designer-preview-meta"><div class="proteus-designer-size-readout"><span>CURRENT WIDTH:</span><strong data-custom-fish-size-label>${width} px</strong></div><span>GRID: 50 px &nbsp; | &nbsp; VIEW: STANDARD &nbsp; | &nbsp; UNITS: PIXELS</span></div>
+          ${renderCustomContentStorageMeter({ compact: true })}
         </section>
 
         <section class="proteus-designer-settings" aria-label="Specimen configuration">
@@ -518,10 +514,6 @@ function renderMedicineInventoryOverlay() {
   return cards || `<div class="empty-state">Buy medicine from the pharmacy first.</div>`;
 }
 
-function renderTipsOverlay() {
-  return "";
-}
-
 function renderDailyBonusOverlay() {
   syncActiveDailyBonusState();
   const summary = getActiveDailyBonusSummary();
@@ -554,10 +546,6 @@ function renderDailyBonusOverlay() {
       <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
-}
-
-function buildCurrentTankCareSuggestions(now = Date.now()) {
-  return [];
 }
 
 function claimDailyBonus() {
@@ -655,6 +643,15 @@ function renderSettingsOverlay() {
   if (dom.uiMuteToggleInput) {
     dom.uiMuteToggleInput.checked = uiSettings.uiSoundsMuted;
   }
+  const syncVolumeControl = (input, output, value) => {
+    const percent = Math.round(normalizeSettingsVolume(value, 1) * 100);
+    if (input instanceof HTMLInputElement) input.value = String(percent);
+    if (output) output.textContent = `${percent}%`;
+  };
+  syncVolumeControl(dom.tankAmbienceVolumeInput, dom.tankAmbienceVolumeOutput, uiSettings.tankAmbienceVolume);
+  syncVolumeControl(dom.sfxVolumeInput, dom.sfxVolumeOutput, uiSettings.sfxVolume);
+  syncVolumeControl(dom.uiSoundVolumeInput, dom.uiSoundVolumeOutput, uiSettings.uiSoundVolume);
+  syncVolumeControl(dom.gravelShadowIntensityInput, dom.gravelShadowIntensityOutput, uiSettings.gravelShadowIntensity);
   if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
     dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
   }
@@ -701,20 +698,6 @@ function renderSettingsOverlay() {
   if (dom.tankMouseLockToggleInput) {
     dom.tankMouseLockToggleInput.checked = uiSettings.tankMouseInputLocked;
     dom.tankMouseLockToggleInput.disabled = !mouseLockAvailable;
-  }
-  for (const input of dom.settingsOverlay.querySelectorAll("[data-toolbar-position-choice]")) {
-    if (input instanceof HTMLInputElement) {
-      input.checked = input.value === uiSettings.toolbarPosition;
-      input.closest(".toolbar-position-option")?.classList.toggle("is-selected", input.checked);
-    }
-  }
-  for (const input of dom.settingsOverlay.querySelectorAll("[data-display-position-choice]")) {
-    if (input instanceof HTMLInputElement) {
-      input.disabled = !DIGITAL_DISPLAY_ENABLED;
-      input.checked = input.value === uiSettings.displayPosition;
-      input.closest(".display-position-option")?.classList.toggle("is-selected", input.checked);
-      input.closest(".display-position-option")?.classList.toggle("is-disabled", !DIGITAL_DISPLAY_ENABLED);
-    }
   }
   syncWallpaperScrollControls(dom.settingsOverlay);
 }
@@ -985,12 +968,9 @@ function renderTutorialGuidance() {
     "overviewButton",
     "openStoreButton",
     "feedButton",
-    "medicineButton",
-    "spongeButton",
-    "scoopButton",
+    "careMenuButton",
     "careTaskPaneButton",
-    "fishEditModeDockButton",
-    "editModeDockButton",
+    "editMenuButton",
     "openEquipmentButton",
     "openSettingsButton",
     "toggleMouseLockButton",
@@ -1024,15 +1004,11 @@ function renderTutorialGuidance() {
   const toolbarGroups = [
     {
       button: dom.careMenuButton,
-      menu: dom.toolbarCareMenu,
-      menuName: "care",
-      childIds: ["feedButton", "medicineButton", "spongeButton", "scoopButton"]
+      childIds: ["careMenuButton"]
     },
     {
       button: dom.editMenuButton,
-      menu: dom.toolbarEditMenu,
-      menuName: "edit",
-      childIds: ["fishEditModeDockButton", "editModeDockButton", "openEquipmentButton"]
+      childIds: ["editMenuButton"]
     }
   ];
   for (const group of toolbarGroups) {
@@ -1045,12 +1021,6 @@ function renderTutorialGuidance() {
     group.button.classList.toggle("is-tutorial-hidden", !groupVisible);
     group.button.classList.toggle("is-tutorial-pulse", groupPulse);
     group.button.classList.toggle("is-tutorial-reveal", groupReveal);
-    if (!groupVisible && runtime.toolbarActionMenu === group.menuName) {
-      runtime.toolbarActionMenu = "";
-      if (group.menu) {
-        group.menu.hidden = true;
-      }
-    }
   }
 
   if (dom.toolbarTab) {
@@ -1443,7 +1413,7 @@ function renderEditDecorTrayContextMenu() {
           data-tray-sell-placed-decor="${escapeHtml(entry.placedId)}"
           ${grouped ? "disabled" : ""}
         >
-          Sell For ${resaleValue} ${pluralize("coin", resaleValue)}
+          Rehome For ${resaleValue} ${pluralize("coin", resaleValue)}
         </button>
       ` : `
         ${canBuyAnotherDecor ? `
@@ -1461,7 +1431,7 @@ function renderEditDecorTrayContextMenu() {
           type="button"
           data-tray-sell-decor="${escapeHtml(decorKey)}"
         >
-          Sell For ${resaleValue} ${pluralize("coin", resaleValue)}
+          Rehome For ${resaleValue} ${pluralize("coin", resaleValue)}
         </button>
       `}
     </div>
@@ -1521,10 +1491,13 @@ function decorMatchesTrayTab(decor, decorKey, tab) {
     caves: ["caves", "cave", "hide"],
     plants: ["plants", "plant"],
     coral: ["coral", "corals", "reef"],
+    rocks: ["rock", "rocks", "stone", "slate", "meteor"],
+    wood: ["wood", "root", "roots", "branch", "branches", "twig"],
     ornaments: ["ornaments", "ornament", "hardscape"],
     bubbler: ["bubbler", "bubblers", "bubble"],
     custom: ["custom"]
   };
+  if (normalizedTab === "seasonal") return isSeasonalDecor(decor);
   return (aliases[normalizedTab] || [normalizedTab]).some((category) => categories.includes(category));
 }
 
@@ -1808,7 +1781,7 @@ function renderEditDecorTray() {
     return;
   }
 
-  const validTabs = new Set(["all", "caves", "plants", "coral", "ornaments", "bubbler", "custom"]);
+  const validTabs = new Set(["all", "caves", "plants", "coral", "rocks", "wood", "ornaments", "bubbler", "seasonal", "custom"]);
   if (!validTabs.has(runtime.editDecorTrayTab)) {
     runtime.editDecorTrayTab = "all";
   }
@@ -1846,6 +1819,7 @@ function renderEditDecorTray() {
     runtime.editDecorTrayInTank ? "tank" : "storage",
     JSON.stringify(getDecorFreePlacementSelectionState()),
     isViolenceAndGoreEnabled() ? "1" : "0",
+    isTrypophobiaEnabled() ? "1" : "0",
     runtime.placementMode?.decorKey || "",
     runtime.selectedDecorId || "",
     (Array.isArray(runtime.selectedDecorIds) ? runtime.selectedDecorIds : []).join(","),
@@ -1959,7 +1933,7 @@ function getFishTrayEntries() {
 }
 
 function getFishTrayMoodTone(fish, now = Date.now()) {
-    return getFishCareStatus(fish, now)?.tone || "good";
+    return getFishNeedsSnapshot(fish, now)?.mood?.tone || "good";
   }
 
 function getStoredFishTrayMoodTone(fish) {
@@ -2078,6 +2052,8 @@ function renderEditFishTrayContextMenu() {
   const { fish } = managed;
   const species = getSpeciesForFish(fish);
   const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
+  const targetWaterType = normalizeWaterType(getCurrentTank()?.waterType, "freshwater");
+  const waterCompatible = !species || isFishCompatibleWithWaterType(species, targetWaterType);
   const resaleValue = getResaleValue(species?.cost || 0);
   const canSell = Boolean(species) && !isFishJuvenile(fish);
   const markup = `
@@ -2099,8 +2075,9 @@ function renderEditFishTrayContextMenu() {
           class="edit-fish-tray-context-action"
           type="button"
           data-tray-place-fish="${fish.id}"
+          ${waterCompatible ? "" : "disabled"}
         >
-          Place In Tank
+          ${waterCompatible ? "Place In Tank" : `Needs ${escapeHtml(getFishStoreWaterTypeLabel(species))}`}
         </button>
         <button
           class="edit-fish-tray-context-action ${canSell ? "warn" : ""}"
@@ -2108,7 +2085,7 @@ function renderEditFishTrayContextMenu() {
           data-tray-sell-fish="${fish.id}"
           ${canSell ? "" : "disabled"}
         >
-          ${canSell ? `Sell For ${resaleValue} ${pluralize("coin", resaleValue)}` : "Grow First"}
+          ${canSell ? `Rehome For ${resaleValue} ${pluralize("coin", resaleValue)}` : "Grow First"}
         </button>
       `}
     </div>
@@ -2177,6 +2154,13 @@ function scrollMedicineTray(direction) {
   window.setTimeout(() => syncMedicineTrayScrollControls(), 180);
 }
 
+function renderFishTrayThumbnail(fish, species, label) {
+  if (species?.behavior === "shrimp" && species.asset && species.legAsset && species.antennaAsset) {
+    return `<span class="edit-decor-tile-thumb layered-shrimp-tray-thumb" role="img" aria-label="${escapeHtml(label)}"><img class="layered-shrimp-tray-legs" ${assetImageAttributes(species.legAsset)} alt="" /><img class="layered-shrimp-tray-body" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species.asset)} alt="" /><img class="layered-shrimp-tray-antennae" ${assetImageAttributes(species.antennaAsset)} alt="" /></span>`;
+  }
+  return `<img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${escapeHtml(label)}" />`;
+}
+
 function renderEditFishTray() {
   const visible = runtime.fishEditMode;
   if (dom.editFishTray) {
@@ -2223,11 +2207,14 @@ function renderEditFishTray() {
           : inStorage
             ? getStoredFishTrayMoodTone(fish)
             : getFishTrayMoodTone(fish, trayRenderNow);
+        const storageCompatible = !inStorage || dead || !species || isFishCompatibleWithWaterType(species, normalizeWaterType(getCurrentTank()?.waterType, "freshwater"));
         const actionLabel = !inStorage && !dead
           ? `Meet ${fish.name}`
           : dead
           ? `Dispose of ${fish.name}`
-          : `Place ${fish.name} in the tank`;
+          : storageCompatible
+            ? `Place ${fish.name} in the tank`
+            : `${fish.name} needs ${getFishStoreWaterTypeLabel(species).toLowerCase()}`;
         return `
           <article class="edit-decor-tile ${dead ? "is-dead" : ""}${moodTone ? " is-fish-mood-tile" : ""}" ${moodTone ? `data-mood-tone="${escapeHtml(moodTone)}"` : ""} data-decor-name="${escapeHtml(label)}">
             ${inStorage || dead ? `<button
@@ -2247,8 +2234,8 @@ function renderEditFishTray() {
               aria-label="${escapeHtml(dead ? actionLabel : `Edit ${fish.name}`)}"
             >
               <span class="edit-decor-tile-surface">
-                <img class="edit-decor-tile-thumb" ${assetImageAttributes(getFishDisplayAssetPath(fish, species) || species?.asset || "")} alt="${escapeHtml(label)}" />
-                <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : "Storage"}</span>
+                ${renderFishTrayThumbnail(fish, species, label)}
+                <span class="inventory-tray-label">${!inStorage && !dead ? escapeHtml(fish.name || "Fish") : dead ? (inStorage ? "Dead In Storage" : "Dead In Tank") : storageCompatible ? "Storage" : `Storage · ${escapeHtml(getFishStoreWaterTypeLabel(species))}`}</span>
               </span>
             </button>
           </article>
@@ -2278,7 +2265,7 @@ function renderEditTankTray() {
     return;
   }
 
-  const validTabs = new Set(["background", "gravel"]);
+  const validTabs = new Set(["background", "gravel", "water"]);
   if (!validTabs.has(runtime.editTankTrayTab)) {
     runtime.editTankTrayTab = "background";
   }
@@ -2308,6 +2295,109 @@ function renderEditTankTray() {
   }
   const randomizeHillButton = dom.editTankTray.querySelector("[data-randomize-gravel-hill]");
   if (randomizeHillButton) randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel";
+  if (runtime.editTankTrayTab === "water") renderEditTankWaterTypePanel();
+}
+
+function renderEditTankWaterTypePanel() {
+  if (!dom.editTankWaterTypePanel) return;
+  const tank = getCurrentTank();
+  if (!tank) {
+    setMarkupIfChanged("edit-tank-water-type", dom.editTankWaterTypePanel, `<div class="edit-decor-tray-empty">No aquarium selected.</div>`);
+    return;
+  }
+  const currentType = normalizeWaterType(tank.waterType, "freshwater");
+  const markup = `
+    <div class="edit-tank-water-card">
+      <div><strong>Current Water</strong><div class="fish-meta">${escapeHtml(getStoreWaterTypeLabel(currentType))}</div></div>
+      <div class="edit-tank-water-options">
+        ${Object.values(WATER_TREATMENT_KITS).map((kit) => {
+          const isCurrent = kit.targetWaterType === currentType;
+          const owned = Math.max(0, Math.floor(Number(state.waterTreatmentInventory?.[kit.id]) || 0));
+          return `<button class="edit-tank-water-choice ${isCurrent ? "is-active" : ""}" type="button" data-request-water-conversion="${escapeHtml(kit.targetWaterType)}" ${isCurrent ? "disabled" : ""}>
+            <img ${assetImageAttributes(kit.image)} alt="" aria-hidden="true" />
+            <span><strong>${escapeHtml(getStoreWaterTypeLabel(kit.targetWaterType))}</strong><small>${isCurrent ? "Current water type" : `${owned} ${pluralize("kit", owned)} owned`}</small></span>
+          </button>`;
+        }).join("")}
+      </div>
+    </div>`;
+  setMarkupIfChanged("edit-tank-water-type", dom.editTankWaterTypePanel, markup);
+}
+
+function openWaterConversionDialog(targetWaterType) {
+  const result = requestWaterTypeConversion(targetWaterType);
+  if (!result?.ok) return result;
+
+  const tank = getCurrentTank();
+  const targetType = String(runtime.pendingWaterConversionTarget || "").trim().toLowerCase();
+  const kit = WATER_TREATMENT_KITS[targetType];
+  if (!tank || !kit) {
+    cancelWaterTypeConversion();
+    return { ok: false, reason: "missing-target" };
+  }
+
+  document.querySelector("[data-water-conversion-dialog]")?.remove();
+
+  const owned = Math.max(0, Math.floor(Number(state.waterTreatmentInventory?.[kit.id]) || 0));
+  const incompatibilities = result.incompatibilities || getWaterConversionIncompatibilities(tank, targetType);
+  const fishNames = (incompatibilities.fish || []).map((fish) => fish.name || getSpeciesForFish(fish)?.name || "Fish");
+  const decorNames = (incompatibilities.decor || []).map((item) => getPlacedDecorDisplayName(item));
+  const dialog = document.createElement("dialog");
+  dialog.className = "decor-layout-dialog water-conversion-dialog";
+  dialog.dataset.waterConversionDialog = "true";
+  dialog.setAttribute("aria-labelledby", "waterConversionDialogTitle");
+  dialog.innerHTML = `
+    <div class="decor-layout-heading">
+      <h2 id="waterConversionDialogTitle">Convert to ${escapeHtml(getStoreWaterTypeLabel(targetType))}?</h2>
+      <button class="small-button alt" type="button" data-cancel-water-conversion>Cancel</button>
+    </div>
+    <p>This uses 1 ${escapeHtml(kit.name)}. Fish are not removed automatically. Incompatible living decor stays in the tank but becomes inactive.</p>
+    <div class="water-conversion-dialog-list"><b>Incompatible fish:</b><span>${fishNames.length ? fishNames.map(escapeHtml).join(", ") : "None"}</span></div>
+    <div class="water-conversion-dialog-list"><b>Incompatible living decor:</b><span>${decorNames.length ? decorNames.map(escapeHtml).join(", ") : "None"}</span></div>
+    ${owned > 0
+      ? `<div class="water-conversion-actions"><button class="small-button" type="button" data-confirm-water-conversion="${escapeHtml(targetType)}">Convert Anyway</button></div>`
+      : `<div class="mini-note">You do not own the required kit. Buy it from BubbleBodega &gt; Equipment &gt; Water Care.</div><div class="water-conversion-actions"><button class="small-button" type="button" data-open-water-care-store>Open Water Care</button></div>`}
+  `;
+
+  let completed = false;
+  const closeAsCancel = () => {
+    if (!completed) cancelWaterTypeConversion();
+    if (dialog.open) dialog.close("cancel");
+  };
+
+  dialog.addEventListener("click", (event) => {
+    if (event.target.closest("[data-cancel-water-conversion]")) {
+      closeAsCancel();
+      return;
+    }
+    const confirmButton = event.target.closest("[data-confirm-water-conversion]");
+    if (confirmButton) {
+      const conversion = confirmWaterTypeConversion(confirmButton.dataset.confirmWaterConversion);
+      if (conversion?.ok) {
+        completed = true;
+        dialog.close("complete");
+      }
+      return;
+    }
+    if (event.target.closest("[data-open-water-care-store]")) {
+      completed = true;
+      runtime.pendingWaterConversionTarget = "";
+      dialog.close("store");
+      openStoreOverlay("equipment", { forceCategory: true });
+    }
+  });
+  dialog.addEventListener("cancel", (event) => {
+    event.preventDefault();
+    closeAsCancel();
+  });
+  dialog.addEventListener("keydown", (event) => event.stopPropagation());
+  dialog.addEventListener("close", () => {
+    if (!completed && runtime.pendingWaterConversionTarget === targetType) cancelWaterTypeConversion();
+    dialog.remove();
+  });
+
+  document.body.append(dialog);
+  dialog.showModal();
+  return { ...result, dialogOpened: true };
 }
 
 function randomizeCurrentTankGravelHill() {
@@ -2376,6 +2466,7 @@ function renderMedicineTray() {
   const toolsSectionWidth = 163;
   const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + 50;
   dom.medicineTray?.style.setProperty("--care-tray-content-width", `${trayContentWidth}px`);
+  const cleaningIncome = getTankCleaningIncomeStatus(getCurrentTank(), Date.now());
 
   const dataKey = [
     runtime.medicineTrayOpen ? "1" : "0",
@@ -2383,6 +2474,8 @@ function renderMedicineTray() {
     runtime.medicineModeKey || "",
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
+    cleaningIncome.dayKey,
+    `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}`,
     ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
@@ -2483,14 +2576,14 @@ function renderMedicineTray() {
         <div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-tools" aria-label="Care tools">
-          <div class="care-tray-heading">Tools</div>
+          <div class="care-tray-heading" title="Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
               <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scrub</span>
             </button>
             <button class="care-tool-tile ${runtime.scoopMode ? "is-active" : ""}" type="button" data-care-tool="scoop" title="Scoop Fish" aria-label="Scoop Fish">
-              <img ${assetImageAttributes("assets/icons/scoop.png")} alt="" aria-hidden="true" draggable="false" />
+              <img ${assetImageAttributes("assets/icons/net_cursor.png")} alt="" aria-hidden="true" draggable="false" />
               <span>Scoop</span>
             </button>
           </div>
@@ -2660,7 +2753,7 @@ function renderManagedFishCard(fish, now, options = {}) {
   const dead = isFishDead(fish);
   const juvenile = !dead && isFishJuvenile(fish, now);
   const comfort = getFishComfort(fish, now);
-  const age = formatFishAge(fish.acquiredAt, now);
+  const age = formatFishBiologicalAge(fish, now);
   const defaultScale = getFishScaleDefault(fish.speciesId);
   const usesDefaultScale = Math.abs(defaultScale - fish.scale) < 0.001;
   const inStorage = Boolean(options.inStorage);
@@ -2672,6 +2765,7 @@ function renderManagedFishCard(fish, now, options = {}) {
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const criticalComfort = !inStorage && !dead && comfort.value <= 0;
   const needsSnapshot = (!dead && !inStorage) ? getFishNeedsSnapshot(fish, now) : null;
+  const moodPresentation = needsSnapshot ? getFishMoodPresentation(needsSnapshot.mood.label) : null;
   const hungerLabel = needsSnapshot ? getFishHungerLabel(fish, now) : "";
   const hungerValue = needsSnapshot ? needsSnapshot.needs.hunger : 100;
   const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
@@ -2708,8 +2802,8 @@ function renderManagedFishCard(fish, now, options = {}) {
       : "This fish is dead and awaiting disposal."
     : criticalComfort
       ? (corpsePressure
-        ? "Comfort is 0% while a dead fish stays in the tank. Remove it fast."
-        : "Comfort is 0% at maximum dirtiness. Clean the tank before health keeps dropping.")
+        ? "A dead fish is causing severe distress. Remove it fast."
+        : "Tank conditions are critically dirty. Clean the tank before health keeps dropping.")
       : piranhaFish
         ? (goreEnabled ? "Piranhas ignore pellets, eat chum, may devour tankmates, and cloud the water red while feeding." : "Piranhas still go after chum, but they will leave the rest of the tank alone.")
         : juvenile
@@ -2742,7 +2836,7 @@ function renderManagedFishCard(fish, now, options = {}) {
         <div class="hearts">${renderHearts(fish.healthUnits, maxHealthUnits)}</div>
         <div class="fish-status-line">${status}</div>
         <div class="fish-trait-row">
-          <span class="fish-trait">${inStorage ? (dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : "Storage") : dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : `Comfort: ${comfort.label}`}</span>
+          <span class="fish-trait"${moodPresentation ? ` style="color:${moodPresentation.color}"` : ""}>${inStorage ? (dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : "Storage") : dead ? `Status: ${getFishCorpseStateLabel(fish, now)}` : `Mood: ${needsSnapshot.mood.label}`}</span>
           ${juvenile ? `<span class="fish-trait">Stage: Baby</span>` : ""}
           ${detritusFish ? `<span class="fish-trait">Diet: grime + waste</span>` : ""}
           ${piranhaFish ? `<span class="fish-trait">Diet: chum + live prey</span>` : ""}
@@ -3437,11 +3531,12 @@ function renderFishInspector(now) {
   const corpseLabel = dead ? getFishCorpseStateLabel(fish, now) : null;
   const canBuyAnother = Boolean(baseSpecies && !dead && isFishSpeciesShopUnlocked(baseSpecies));
   const purchaseCost = canBuyAnother ? getFishPurchaseCost(fish.speciesId) : 0;
-  const resaleValue = getResaleValue(baseSpecies?.cost || 0);
+  const resaleValue = getFishRehomeValue(fish, now);
   const canSell = Boolean(baseSpecies) && !dead && !beingConsumed && !isFishJuvenile(fish);
   const canStore = !inStorage && !dead;
   const comfort = inStorage ? { label: "Stored", value: 1 } : getFishComfort(fish, now);
   const needsSnapshot = inStorage || dead ? null : getFishNeedsSnapshot(fish, now);
+  const moodPresentation = needsSnapshot ? getFishMoodPresentation(needsSnapshot.mood.label) : null;
   dom.fishInspector.hidden = false;
   setTextIfChanged(dom.inspectorSpecies, getFishInspectorSpeciesLabel(fish, species));
   const inspectorMaxHealthUnits = getFishMaxHealthUnits(fish, baseSpecies);
@@ -3465,9 +3560,13 @@ function renderFishInspector(now) {
     inStorage
       ? "N/A"
       : dead
-        ? "0% (Deceased)"
-        : `${Math.round(comfort.value * 100)}% (${comfort.label})`
+        ? "Deceased"
+        : needsSnapshot.mood.label
   );
+  if (dom.inspectorComfort) {
+    dom.inspectorComfort.dataset.moodTone = moodPresentation?.tone || "good";
+    dom.inspectorComfort.style.color = dead ? "" : (moodPresentation?.color || "");
+  }
   if (dom.inspectorNeedsBars) {
     dom.inspectorNeedsBars.hidden = true;
     setMarkupIfChanged("fish-inspector-needs-bars", dom.inspectorNeedsBars, "");
@@ -3484,7 +3583,21 @@ function renderFishInspector(now) {
       : "";
     setMarkupIfChanged("fish-inspector-needs", dom.inspectorNeeds, `${needsMarkup}${conflictsMarkup}`);
   }
-  setTextIfChanged(dom.inspectorAge, formatFishAge(fish.acquiredAt, now));
+  if (dom.inspectorCondition) {
+    const condition = dead
+      ? "Deceased"
+      : inStorage
+        ? (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, getFishStorageSimulationNow(fish, now))) : "Stored")
+        : (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, now)) : "Healthy");
+    setTextIfChanged(dom.inspectorCondition, condition);
+  }
+  setTextIfChanged(dom.inspectorAge, formatFishBiologicalAge(fish, now));
+  if (dom.inspectorBreeding) {
+    const breedingStatus = dead || inStorage
+      ? (fish.spawnUsed === true ? "Complete" : "Unavailable")
+      : (typeof getFishBreedingStatus === "function" ? getFishBreedingStatus(fish, now, getCurrentTank()) : "Unavailable");
+    setTextIfChanged(dom.inspectorBreeding, breedingStatus);
+  }
 
   let mealLabel = isMealFreeFish(fish)
     ? "N/A"
@@ -3517,21 +3630,21 @@ function renderFishInspector(now) {
     dom.inspectorSellFish.disabled = !canSell;
     if (showSell) {
       dom.inspectorSellFish.dataset.sellFish = fish.id;
-      dom.inspectorSellFish.textContent = "SELL";
+      dom.inspectorSellFish.textContent = "REHOME";
       dom.inspectorSellFish.title = canSell
-        ? `Sell ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}`
-        : `${fish.name} needs to grow before being sold`;
+        ? `Rehome ${fish.name} for ${resaleValue} ${pluralize("coin", resaleValue)}`
+        : `${fish.name} needs to grow before being rehomed`;
       dom.inspectorSellFish.setAttribute(
         "aria-label",
         canSell
-          ? `Sell ${fish.name} for ${resaleValue} coins`
-          : `${fish.name} needs to grow before being sold`
+          ? `Rehome ${fish.name} for ${resaleValue} coins`
+          : `${fish.name} needs to grow before being rehomed`
       );
     } else {
       delete dom.inspectorSellFish.dataset.sellFish;
-      dom.inspectorSellFish.textContent = "SELL";
-      dom.inspectorSellFish.title = "Sell Fish";
-      dom.inspectorSellFish.setAttribute("aria-label", "Sell Fish");
+      dom.inspectorSellFish.textContent = "REHOME";
+      dom.inspectorSellFish.title = "Rehome Fish";
+      dom.inspectorSellFish.setAttribute("aria-label", "Rehome Fish");
     }
   }
 
@@ -3604,6 +3717,102 @@ function renderFishInspector(now) {
   updateFishInspectorDisplayDocking();
 }
 
+function renderBackgroundShopCards(backgrounds = runtime.backgroundCatalog.filter((background) => !background.defaultUnlocked)) {
+  return backgrounds
+    .map((background) => {
+      const owned = isBackgroundOwned(background.key);
+      const statusLabel = owned ? "Owned" : "Available";
+      const priceLabel = `${background.cost} ${pluralize("coin", background.cost)}`;
+      return `
+        <article class="shop-card" ${renderStoreFacetAttributes("background", background)}>
+          ${renderBackgroundPreview(background, "shop-thumb background-shop-thumb")}
+          <div class="shop-meta shop-card-main">
+            <div>
+              <strong>${escapeHtml(background.name)}</strong>
+              ${background.description ? `<div class="fish-meta">${escapeHtml(background.description)}</div>` : ""}
+              <div class="fish-meta">${statusLabel}</div>
+            </div>
+          </div>
+          <div class="tankazon-tile-info">
+            <div class="tankazon-tile-title">${escapeHtml(background.name)}</div>
+            <div class="tankazon-tile-cost">
+              <img class="tankazon-tile-cost-icon" src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" />
+              <span class="tankazon-tile-cost-value">${Number(background.cost) || 0}</span>
+            </div>
+          </div>
+          <div class="shop-meta shop-card-actions">
+            <span class="price-tag">${priceLabel}</span>
+            <div class="shop-button-row">
+              ${owned
+                ? `<button class="buy-button owned-background-button" type="button" disabled aria-disabled="true">Owned</button>`
+                : `<button class="buy-button" type="button" data-buy-background="${escapeHtml(background.key)}">Add to Cart</button>`}
+            </div>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+}
+
+function renderSubstrateShopCards(substrates = SUBSTRATE_CATALOG.filter((item) => !item.defaultUnlocked)) {
+  return substrates.map((item) => {
+    const owned = isSubstrateOwned(item.id);
+    return `<article class="shop-card substrate-shop-card" ${renderStoreFacetAttributes("substrate", item)} data-store-subcategory="substrate" data-substrate="${escapeHtml(item.id)}">
+      <div class="shop-thumb substrate-shop-thumb" aria-hidden="true"></div>
+      <div class="shop-meta shop-card-main"><div><strong>${escapeHtml(item.name)}</strong><div class="fish-meta">${escapeHtml(item.description)}</div><div class="fish-meta">${owned ? "Owned" : "Permanent unlock"}</div></div></div>
+      <div class="tankazon-tile-info"><div class="tankazon-tile-title">${escapeHtml(item.name)}</div><div class="tankazon-tile-cost"><img class="tankazon-tile-cost-icon" src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" /><span class="tankazon-tile-cost-value">${item.cost}</span></div></div>
+      <div class="shop-meta shop-card-actions"><span class="price-tag">${item.cost} ${pluralize("coin", item.cost)}</span><div class="shop-button-row">${owned
+        ? `<button class="buy-button owned-background-button" type="button" disabled>Owned</button>`
+        : `<button class="buy-button" type="button" data-buy-substrate="${escapeHtml(item.id)}">Add to Cart</button>`}</div></div>
+    </article>`;
+  }).join("");
+}
+
+function renderDecorStoreCard(decor, { activeWaterType = (typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater"), tutorialPreviewOnly = false } = {}) {
+  const progressLocked = !isDecorProgressUnlocked(decor);
+  const locked = !isDecorShopUnlocked(decor);
+  const debugUnlocked = progressLocked && !locked;
+  const decorVariants = typeof getDecorStoreVariants === "function"
+    ? getDecorStoreVariants(decor, runtime.decorCatalog)
+    : [{ key: decor.key, image: decor.path || getDecorThumbnailPath(decor), label: "Main" }];
+  const owned = decorVariants.reduce((sum, variant) => sum + (state.decorInventory[variant.key] || 0), 0);
+  const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
+  const isCustomHideUpload = isCustomHideShopKey(decor.key);
+  const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
+  const statusLabel = locked
+    ? `Unlocks at ${lockedRequirementLabel}`
+    : debugUnlocked
+      ? `Debug unlocked (${lockedRequirementLabel})`
+      : `${owned} in storage`;
+  const serviceSummary = getDecorServiceSummary(decor.key);
+  const waterRequirement = typeof getStoreWaterRequirementLabel === "function" ? getStoreWaterRequirementLabel("decor", decor, activeWaterType) : "";
+  const variantsAttribute = decorVariants.length > 1
+    ? ` data-decor-variants="${escapeHtml(JSON.stringify(decorVariants))}" data-shop-variant-key="${escapeHtml(decorVariants[0].key)}"`
+    : "";
+  return `
+    <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("decor", decor)}>
+      <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
+      <div class="shop-meta">
+        <div>
+          <strong>${decor.name}</strong>
+          ${renderShopThemePill(decor.theme)}
+          ${decor.description ? `<div class="fish-meta">${escapeHtml(decor.description)}</div>` : ""}
+          <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
+          ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
+          ${waterRequirement ? `<div class="shop-water-requirement">${escapeHtml(waterRequirement)}</div>` : ""}
+        </div>
+        <div class="fish-meta"></div>
+      </div>
+      <div class="shop-meta">
+        <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
+        <button class="buy-button" data-buy-decor="${decor.key}"${variantsAttribute} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
+          ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
+        </button>
+      </div>
+    </article>
+  `;
+}
+
 function renderDecorShop() {
   const tutorialRestriction = getTutorialStoreRestriction("decor");
   if (!runtime.decorCatalog.length) {
@@ -3612,6 +3821,7 @@ function renderDecorShop() {
   }
 
   const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("decor");
+  const activeWaterType = typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater";
   const rawCatalog = sortCatalogEntries(
     runtime.decorCatalog
       .filter((decor) => canUseDecorWithCurrentContentSettings(decor))
@@ -3645,73 +3855,56 @@ function renderDecorShop() {
   const catalog = allCatalog
     .filter((decor) => isSeasonalDecorAvailable(decor))
     .filter((decor) => matchesShopSearchQuery(getDecorShopSearchHaystack(decor), searchQuery));
+  const allBackgrounds = runtime.backgroundCatalog.filter((background) => !background.defaultUnlocked);
+  const backgrounds = allBackgrounds.filter((background) => matchesShopSearchQuery(
+    `${background.name || ""} ${background.description || ""}`,
+    searchQuery
+  ));
+  const allSubstrates = SUBSTRATE_CATALOG.filter((item) => !item.defaultUnlocked);
+  const substrates = allSubstrates.filter((item) => matchesShopSearchQuery(`${item.name} ${item.description}`, searchQuery));
   const tutorialPreviewOnly = tutorialRestriction?.previewOnly === true;
-  if (!catalog.length) {
+  if (!catalog.length && !backgrounds.length && !substrates.length) {
     setMarkupIfChanged(
       "decor-shop",
       dom.decorShop,
-      `${renderShopToolbar("decor", 0, allCatalog.length)}<div class="empty-state">No decor matches "${escapeHtml(searchQuery.trim())}".</div>`
+      `${renderShopToolbar("decor", 0, allCatalog.length + allBackgrounds.length + allSubstrates.length)}<div class="empty-state">No decor matches "${escapeHtml(searchQuery.trim())}".</div>`
     );
     return;
   }
-  const renderCard = (decor) => {
-    const progressLocked = !isDecorProgressUnlocked(decor);
-    const locked = !isDecorShopUnlocked(decor);
-    const debugUnlocked = progressLocked && !locked;
-    const decorVariants = typeof getDecorStoreVariants === "function"
-      ? getDecorStoreVariants(decor, runtime.decorCatalog)
-      : [{ key: decor.key, image: decor.path || getDecorThumbnailPath(decor), label: "Main" }];
-    const owned = decorVariants.reduce((sum, variant) => sum + (state.decorInventory[variant.key] || 0), 0);
-    const isCustomUploadProduct = isCustomDecorUploadShopKey(decor.key);
-    const isCustomHideUpload = isCustomHideShopKey(decor.key);
-    const lockedRequirementLabel = getDecorUnlockRequirementLabel(decor);
-    const statusLabel = locked
-      ? `Unlocks at ${lockedRequirementLabel}`
-      : debugUnlocked
-        ? `Debug unlocked (${lockedRequirementLabel})`
-        : `${owned} in storage`;
-    const serviceSummary = getDecorServiceSummary(decor.key);
-    const variantsAttribute = decorVariants.length > 1
-      ? ` data-decor-variants="${escapeHtml(JSON.stringify(decorVariants))}" data-shop-variant-key="${escapeHtml(decorVariants[0].key)}"`
-      : "";
-    return `
-      <article class="shop-card ${locked ? "is-locked" : ""}" ${renderStoreFacetAttributes("decor", decor)}>
-        <img class="shop-thumb ${locked ? "is-locked" : ""}" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}" />
-        <div class="shop-meta">
-          <div>
-            <strong>${decor.name}</strong>
-            ${renderShopThemePill(decor.theme)}
-            ${decor.description ? `<div class="fish-meta">${escapeHtml(decor.description)}</div>` : ""}
-            <div class="fish-meta">${locked ? statusLabel : isCustomHideUpload ? "Upload front and background images for a hide." : isCustomUploadProduct ? "Upload a local image for this decor." : statusLabel}</div>
-            ${serviceSummary ? `<div class="mini-note borough-service-note">${escapeHtml(serviceSummary)}</div>` : ""}
-          </div>
-          <div class="fish-meta"></div>
-        </div>
-        <div class="shop-meta">
-          <span class="price-tag">${decor.cost} ${pluralize("coin", decor.cost)}</span>
-          <button class="buy-button" data-buy-decor="${decor.key}"${variantsAttribute} ${(locked || tutorialPreviewOnly) ? "disabled" : ""}>
-            ${locked ? "Locked" : tutorialPreviewOnly ? "Preview Only" : isCustomHideUpload ? "Choose Images" : isCustomUploadProduct ? "Choose Image" : "Buy Decor"}
-          </button>
-        </div>
-      </article>
-    `;
-  };
-  const regularMarkup = catalog.filter((decor) => !isSeasonalDecor(decor)).map(renderCard).join("");
-  const seasonalMarkup = catalog.filter(isSeasonalDecor).map(renderCard).join("");
-  const cardsMarkup = regularMarkup + (seasonalMarkup ? `
-    <section class="shop-section decor-seasonal-section" aria-labelledby="decorSeasonalHeading">
-      <div class="shop-section-heading">
-        <h3 id="decorSeasonalHeading">Seasonal</h3>
-        <p>Holiday items appear only during their season.</p>
-      </div>
-      <div class="shop-section-cards">${seasonalMarkup}</div>
-    </section>
-  ` : "");
+  const renderCard = (decor) => renderDecorStoreCard(decor, { activeWaterType, tutorialPreviewOnly });
+  const groups = [
+    ["rock", "Rocks", "Stone, gravel accents, and aquarium hardscape."],
+    ["plant", "Plants", "Living-looking greenery and swaying aquatic plants."],
+    ["ornament", "Ornaments", "Decorative props, structures, and tank landmarks."],
+    ["cave", "Caves", "Shelters and hides that fish can enter."],
+    ["coral", "Coral", "Reef-inspired coral and anemone decor."],
+    ["lure", "Lures", "Interactive fishing lures for curious fish."],
+    ["wood", "Wood", "Driftwood, roots, and natural timber hardscape."],
+    ["botanical", "Botanicals", "Leaves, cones, and other natural floor cover."],
+    ["bubbler", "Bubblers", "Bubble-producing decor and emitters."],
+    ["background", "Backgrounds", "Backdrops that change the look of the whole aquarium."],
+    ["substrate", "Substrates", "Permanent substrate styles you can reuse across every tank."],
+    ["custom", "Custom", "Create decor, hides, and bubble effects from your own assets."],
+    ["other", "Other", "Specialized decor that does not fit another section."]
+  ];
+  const backgroundMarkup = renderBackgroundShopCards(backgrounds);
+  const substrateMarkup = renderSubstrateShopCards(substrates);
+  const customStorageMeter = renderCustomContentStorageMeter({ heading: true });
+  const cardsMarkup = groups.map(([subcategory, title, description]) => {
+    const markup = subcategory === "background"
+      ? backgroundMarkup
+      : subcategory === "substrate"
+        ? substrateMarkup
+        : subcategory === "custom"
+          ? catalog.filter((decor) => getDecorStoreSubcategory(decor) === subcategory).map(renderCard).join("")
+          : catalog.filter((decor) => getDecorStoreSubcategory(decor) === subcategory).map(renderCard).join("");
+    return renderStoreSubcategorySection(`decor-${subcategory}`, title, description, markup, subcategory === "custom" ? customStorageMeter : "");
+  }).join("");
 
   setMarkupIfChanged(
     "decor-shop",
     dom.decorShop,
-    `${renderShopToolbar("decor", catalog.length, allCatalog.length)}${cardsMarkup}`
+    `${renderShopToolbar("decor", catalog.length + backgrounds.length + substrates.length, allCatalog.length + allBackgrounds.length + allSubstrates.length)}${cardsMarkup}`
   );
 }
 
@@ -3752,61 +3945,53 @@ function renderEquipmentShop() {
       </article>
   `;
 
-  const backgroundMarkup = runtime.backgroundCatalog
-    .filter((background) => !background.defaultUnlocked)
-    .map((background) => {
-      const owned = isBackgroundOwned(background.key);
-      const selected = state.selectedBackground === background.key;
-      const statusLabel = background.defaultUnlocked
-        ? "Unlocked by default"
-        : owned
-          ? "Owned"
-          : "Locked";
-      const priceLabel = background.defaultUnlocked || owned
-        ? "Unlocked"
-        : `${background.cost} ${pluralize("coin", background.cost)}`;
-
-      return `
-      <article class="shop-card" data-store-seller="${escapeHtml(background.seller || "BubbleBodega")}">
-        ${renderBackgroundPreview(background, "shop-thumb background-shop-thumb")}
+  const currentTank = getCurrentTank();
+  const currentWaterType = normalizeWaterType(currentTank?.waterType, "freshwater");
+  const waterKitMarkup = Object.values(WATER_TREATMENT_KITS).map((kit) => {
+    const owned = Math.max(0, Math.floor(Number(state.waterTreatmentInventory?.[kit.id]) || 0));
+    const alreadyActive = currentWaterType === kit.targetWaterType;
+    return `
+      <article class="shop-card" data-store-seller="Tidewell">
+        <img class="shop-thumb" ${assetImageAttributes(kit.image)} alt="${escapeHtml(kit.name)}" />
         <div class="shop-meta shop-card-main">
           <div>
-            <strong>${background.name}</strong>
-            ${background.description ? `<div class="fish-meta">${escapeHtml(background.description)}</div>` : ""}
-            <div class="fish-meta">${statusLabel}</div>
+            <strong>${escapeHtml(kit.name)}</strong>
+            <div class="fish-meta">${escapeHtml(kit.description)}</div>
           </div>
+          <div class="fish-meta">${owned} ${pluralize("kit", owned)} owned. Current tank: ${currentWaterType === "saltwater" ? "Saltwater" : "Freshwater"}.</div>
         </div>
         <div class="shop-meta shop-card-actions">
-          <span class="price-tag">${priceLabel}</span>
+          <span class="price-tag">${kit.cost} ${pluralize("coin", kit.cost)}</span>
           <div class="shop-button-row">
-            ${owned
-          ? `<button class="small-button alt" data-use-background-shop="${background.key}">${selected ? "Using This Background" : "Use Now"}</button>`
-          : `<button class="buy-button" data-buy-background="${background.key}">Unlock & Use</button>`}
+            <button class="buy-button" data-buy-water-kit="${kit.id}">Buy Kit</button>
           </div>
         </div>
-      </article>
-      `;
-    })
-    .join("");
-
+      </article>`;
+  }).join("");
 
   const markup = `
-    <section class="shop-section">
+    <section class="shop-section store-subcategory-section" data-store-subcategory="equipment-water-care">
       <div class="shop-section-heading">
-        <h3>Backgrounds</h3>
-        <p>Purchase more backdrops to further customize your fish tanks.</p>
+        <h3>Water Care</h3>
+        <p>Convert a tank between freshwater and saltwater. Fish that do not match the new water type can become sick.</p>
       </div>
-      <div class="shop-section-cards">
-        ${backgroundMarkup || `<div class="empty-state">No backgrounds are available yet.</div>`}
-      </div>
+      <div class="shop-section-cards">${waterKitMarkup}</div>
     </section>
-    <section class="shop-section">
+    <section class="shop-section store-subcategory-section" data-store-subcategory="equipment-feeders">
       <div class="shop-section-heading">
-        <h3>Machinery</h3>
-        <p>Remote-controlled machinery with built-in feeding controls and autopilot.</p>
+        <h3>Automatic Feeders</h3>
+        <p>Automatic feeding equipment for keeping fish on schedule.</p>
       </div>
       <div class="shop-section-cards">
         ${dispenserMarkup}
+      </div>
+    </section>
+    <section class="shop-section store-subcategory-section" data-store-subcategory="equipment-machines">
+      <div class="shop-section-heading">
+        <h3>Machines</h3>
+        <p>Remote-controlled vehicles with manual controls and autopilot.</p>
+      </div>
+      <div class="shop-section-cards">
         ${renderSubmarineShopCard()}
         ${renderBoatShopCard()}
       </div>
@@ -3871,7 +4056,7 @@ function renderDecorInventory() {
               <span class="size-badge">${formatDecorScale(defaultScale)}</span>
               <button class="small-button icon alt" data-size-decor="${key}" data-size-direction="1" aria-label="Make ${decor.name} larger">+</button>
             </div>
-            <button class="small-button alt" data-sell-decor-inventory="${key}">Sell</button>
+            <button class="small-button alt" data-sell-decor-inventory="${key}">${typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor) ? "Rehome" : "Sell"}</button>
             <button class="small-button ${placing ? "alt" : ""}" data-place-decor="${key}" ${disabledByContent ? "disabled" : ""}>
               ${placing ? "Cancel Preview" : "Preview & Place"}
             </button>

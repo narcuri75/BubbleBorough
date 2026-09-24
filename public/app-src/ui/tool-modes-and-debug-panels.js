@@ -312,7 +312,7 @@ function normalizeEditOverlayMode(value) {
   if (normalized === "tank") {
     return "background";
   }
-  return ["fish", "decor", "equipment", "background", "gravel"].includes(normalized) ? normalized : "fish";
+  return ["fish", "decor", "equipment", "background", "gravel", "water"].includes(normalized) ? normalized : "fish";
 }
 
 function getRememberedEditOverlayMode() {
@@ -363,7 +363,7 @@ function openEditOverlayMode(mode = null, options = {}) {
     toggleEditTankMode(true, openOptions);
   } else if (nextMode === "equipment") {
     toggleEquipmentEditMode(true, openOptions);
-  } else if (nextMode === "background" || nextMode === "gravel") {
+  } else if (nextMode === "background" || nextMode === "gravel" || nextMode === "water") {
     toggleTankEditMode(true, { ...openOptions, tankTab: nextMode });
   } else {
     toggleFishEditMode(true, openOptions);
@@ -376,7 +376,7 @@ function toggleEditTankMode(force = null, options = {}) {
   if (nextMode) {
     closeStoreBeforePrimaryViewChange();
   }
-  clearPrimaryToolModes();
+  clearPrimaryToolModes({ preserveStageRenderView: nextMode });
   if (!nextMode) {
     hideToast({ key: TUTORIAL_TOAST_DECOR_DONE });
   }
@@ -467,13 +467,12 @@ function handleMedicineTrayWheel(event) {
   syncMedicineTrayScrollControls();
 }
 
-function clearPrimaryToolModes() {
+function clearPrimaryToolModes(options = {}) {
   runtime.pendingDecorPlacementKey = null;
   clearGuidanceForModeChange("primary-tools");
   closeSubmarineManager();
   closeEditEquipmentTrayContextMenu();
   suspendSubmarineManualDrive();
-  runtime.toolbarActionMenu = "";
   runtime.editTankMode = false;
   runtime.fishEditMode = false;
   runtime.equipmentEditMode = false;
@@ -500,7 +499,9 @@ function clearPrimaryToolModes() {
   runtime.pointerDown = false;
   runtime.lastScrubPoint = null;
   resetScrubWipeSoundState();
-  resetStageRenderViewAfterToolClose();
+  if (options.preserveStageRenderView !== true) {
+    resetStageRenderViewAfterToolClose();
+  }
 }
 
 function getPlacedDecorById(placedId) {
@@ -773,7 +774,7 @@ function toggleFishEditMode(force = null, options = {}) {
   if (nextMode) {
     closeStoreBeforePrimaryViewChange();
   }
-  clearPrimaryToolModes();
+  clearPrimaryToolModes({ preserveStageRenderView: nextMode });
   const now = Date.now();
   let tutorialChanged = false;
 
@@ -800,7 +801,7 @@ function toggleEquipmentEditMode(force = null, options = {}) {
   if (nextMode) {
     closeStoreBeforePrimaryViewChange();
   }
-  clearPrimaryToolModes();
+  clearPrimaryToolModes({ preserveStageRenderView: nextMode });
   const now = Date.now();
 
   if (nextMode) {
@@ -819,14 +820,15 @@ function toggleTankEditMode(force = null, options = {}) {
   if (nextMode) {
     closeStoreBeforePrimaryViewChange();
   }
-  clearPrimaryToolModes();
+  clearPrimaryToolModes({ preserveStageRenderView: nextMode });
   const now = Date.now();
 
   if (nextMode) {
-    rememberEditOverlayMode(options.tankTab === "gravel" ? "gravel" : "background");
+    const requestedTankTab = ["background", "gravel", "water"].includes(options.tankTab) ? options.tankTab : "background";
+    rememberEditOverlayMode(requestedTankTab);
     runtime.tankEditMode = true;
     runtime.selectedFishId = null;
-    if (options.tankTab === "background" || options.tankTab === "gravel") {
+    if (["background", "gravel", "water"].includes(options.tankTab)) {
       runtime.editTankTrayTab = options.tankTab;
     }
     runtime.editTankBackgroundMode = isSolidBackgroundEnabled()
@@ -975,20 +977,36 @@ async function init() {
   ]);
 
   runtime.suckerFishCatalog = suckerFishResponse;
-  const baseFishResponse = fishResponse;
+  // Miniature fish assets belong exclusively to Borough Overview. Keep them out
+  // of the normal catalog lookup even if an older/stale manifest contains them.
+  const baseFishResponse = fishResponse.filter((item) => !/\/small_fish\//i.test(String(item?.path || "")));
   const normalizedDecorMeta = normalizeDecorMeta(decorCatalog);
   runtime.decorMeta = normalizedDecorMeta;
   runtime.foodAndMedCatalog = normalizeFoodAndMedCatalog(foodAndMedCatalog);
+  await loadProteusZombieFishSpriteDefinition();
+  const turboSnailVariants = await loadOptionalFishSpriteSheetDefinition("turbo_snail", "turbo_snail", 5);
+  const turboSnailCatalogEntry = Array.isArray(fishCatalog?.fish)
+    ? fishCatalog.fish.find((entry) => entry?.id === "turbo-snail")
+    : null;
+  if (turboSnailCatalogEntry && turboSnailVariants.length) {
+    turboSnailCatalogEntry.artPending = false;
+    turboSnailCatalogEntry.storeHiddenUntilArt = false;
+    turboSnailCatalogEntry.asset = turboSnailVariants[0];
+    turboSnailCatalogEntry.assetVariants = [...turboSnailVariants];
+    turboSnailCatalogEntry.storeAsset = turboSnailVariants[0];
+  }
   const normalizedBaseFishCatalog = normalizeFishCatalog(fishCatalog, {
     assetFolders: {
       fish: baseFishResponse,
       "sucker-fish": suckerFishResponse
     }
-  });
+  }).filter((fish) => !UNAVAILABLE_FISH_ASSET_IDS.has(fish?.id));
   const normalizedDavyMutationCatalog = normalizeFishCatalog({ fish: getDavyMutationCatalogDefinitions() }, { assetFolders: {} });
+  const normalizedProteusZombieCatalog = normalizeFishCatalog({ fish: [getProteusZombieFishCatalogDefinition()] }, { assetFolders: {} });
   const normalizedFishCatalog = [
     ...normalizedBaseFishCatalog,
-    ...normalizedDavyMutationCatalog
+    ...normalizedDavyMutationCatalog,
+    ...normalizedProteusZombieCatalog
   ];
   await discoverFishAppearanceVariants(normalizedFishCatalog, [...baseFishResponse, ...suckerFishResponse]);
   runtime.fishCatalog = [
@@ -1008,7 +1026,10 @@ async function init() {
   runtime.decorCatalog = [
     ...buildDecorCatalog(decorResponse, normalizedDecorMeta),
     ...buildVirtualDecorCatalogEntries()
-  ];
+  ].map((decor) => ({
+    ...decor,
+    seller: typeof decor?.seller === "string" && decor.seller.trim() ? decor.seller : "Arcadia Home Aquatics"
+  }));
   runtime.backgroundMap = new Map(runtime.backgroundCatalog.map((item) => [item.key, item]));
   runtime.tankMap = new Map(runtime.tankCatalog.map((item) => [item.key, item]));
   runtime.gravelMap = new Map(runtime.gravelCatalog.map((item) => [item.key, item]));
@@ -1040,6 +1061,7 @@ async function init() {
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
+    ...Object.values(TANK_SUBSTRATE_ASSET_PATHS).map((path) => resolveAppUrl(path)),
     ...runtime.bubbleCatalog.map((item) => item.path),
     AUTO_DISPENSER_IMAGE_PATH,
     ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,
@@ -1135,6 +1157,16 @@ function showLoadingOverlayReadyState() {
     dom.loadingOverlayText.textContent = isWallpaperEngineModeEnabled() ? "Starting Aquarium" : "Welcome to Bubble Borough";
   }
   renderStartupActions();
+
+  if (isLocalPlaytestMode()) {
+    // The query flag is constrained to localhost in isLocalPlaytestMode().
+    // Launch directly once the complete game state is ready for playtesting.
+    runtime.freshGameSaveLocked = false;
+    document.documentElement.dataset.playtestMode = "local";
+    primeSoundEffects();
+    window.requestAnimationFrame(hideLoadingOverlay);
+    return;
+  }
 
   if (isWallpaperEngineModeEnabled()) {
     primeSoundEffects();
@@ -1302,6 +1334,7 @@ function hideLoadingOverlay() {
     }
     syncAmbienceAudio();
     maybeShowHardwareAccelerationNotice();
+    window.requestAnimationFrame(() => maybeOpenPendingTankSetup());
   };
 
   if (isTutorialStage(TUTORIAL_STAGE_SPLASH) && state?.tutorial) {
@@ -1366,10 +1399,11 @@ function getDebugAccountUserId() {
 }
 
 function isDebugAccountAuthorized() {
-  return getDebugAccountUserId() === DEBUG_AUTHORIZED_USER_ID;
+  return isLocalPlaytestMode() || getDebugAccountUserId() === DEBUG_AUTHORIZED_USER_ID;
 }
 
 function getDebugToolsPreference() {
+  if (isLocalPlaytestMode()) return true;
   if (!isDebugAccountAuthorized()) {
     return false;
   }
@@ -1565,14 +1599,15 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   const comfortValue = clamp(Number(comfort?.value) || 0, 0, 1);
   const healthUnits = Math.max(0, Math.round(Number(fish.healthUnits) || 0));
   const maxHealthUnits = Math.max(1, Math.round(Number(getFishMaxHealthUnits(fish)) || 1));
+  const isProteusSpecimen = typeof isProteusZombieFish === "function" && isProteusZombieFish(fish);
   const displayName = getDebugFishDisplayName(fish, species);
   const detailParts = [];
   const signatureParts = [
     effectiveBehavior,
     activity,
     `layer:${activeLayer}>${desiredLayer}`,
-    `health:${healthUnits}`,
-    `comfort:${Math.round(comfortValue * 10)}`
+    isProteusSpecimen ? "vitals:disabled" : `health:${healthUnits}`,
+    isProteusSpecimen ? "affect:disabled" : `comfort:${Math.round(comfortValue * 10)}`
   ];
 
   const breedingSequence = runtime.fishBreedingSequence || runtime.debugBreedingSequence;
@@ -1742,8 +1777,12 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   const behaviorLine = `${effectiveBehavior} / ${activity}`;
   const detailText = detailParts.join(" | ");
   const layerText = `L${activeLayer}->${desiredLayer} T${targetText}`;
-  const conditionText = `H ${healthUnits}/${maxHealthUnits} C ${Math.round(comfortValue * 100)}%`;
-  const illnessLine = `Illness: ${diseaseState} E ${Math.round(Number(fish.diseaseExposureLevel) || 0)}/${DISEASE_EXPOSURE_MAX}`;
+  const conditionText = isProteusSpecimen
+    ? "VITAL / MEAL / AFFECT TELEMETRY DISABLED"
+    : `H ${healthUnits}/${maxHealthUnits} C ${Math.round(comfortValue * 100)}%`;
+  const illnessLine = isProteusSpecimen
+    ? "Illness: IMMUNE // health monitoring disabled"
+    : `Illness: ${diseaseState} E ${Math.round(Number(fish.diseaseExposureLevel) || 0)}/${DISEASE_EXPOSURE_MAX}`;
 
   return {
     signature: signatureParts.join("|"),
@@ -1757,7 +1796,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
       displayName,
       behaviorLine,
       illnessLine,
-      detailText,
+      isProteusSpecimen ? "Nourishment: not required | Affect: not measurable" : detailText,
       `${layerText} ${conditionText}`
     ],
     logText: `${displayName}: ${behaviorLine} - ${detailText} - ${layerText} - ${conditionText}`
@@ -1908,26 +1947,32 @@ function isFocusedTextEntry() {
   );
 }
 
-function syncPortablePerformanceMode() {
-  const active = ENABLE_PORTABLE_PERFORMANCE_MODE
-    && Boolean(window.matchMedia?.(PORTABLE_PERFORMANCE_MEDIA_QUERY)?.matches);
-  runtime.portablePerformanceActive = active;
-  return active;
-}
-
-function isPortablePerformanceModeActive() {
-  return typeof runtime.portablePerformanceActive === "boolean"
-    ? runtime.portablePerformanceActive
-    : syncPortablePerformanceMode();
-}
-
 function getStageRenderDevicePixelRatio() {
-  const dpr = Math.max(1, window.devicePixelRatio || 1);
-  return Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR);
+  return Math.max(1, window.devicePixelRatio || 1);
+}
+
+function isStageRenderViewTransitionActive() {
+  const editModeActive = Boolean(
+    runtime.editTankMode
+    || runtime.fishEditMode
+    || runtime.equipmentEditMode
+    || runtime.tankEditMode
+  );
+  const editAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
+  if (editModeActive ? editAmount < 0.999 : editAmount > 0.001) {
+    return true;
+  }
+
+  const target = runtime.stageRenderViewTarget;
+  if (!target) {
+    return false;
+  }
+  return Math.abs((Number(runtime.stageRenderScale) || 0) - (Number(target.scale) || 0)) >= 0.01
+    || Math.abs((Number(runtime.stageRenderOffsetX) || 0) - (Number(target.offsetX) || 0)) >= 0.1
+    || Math.abs((Number(runtime.stageRenderOffsetY) || 0) - (Number(target.offsetY) || 0)) >= 0.1;
 }
 
 function getEffectiveAnimationFpsLimit() {
-  const portableLimit = isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_MAX_FPS : 0;
   // BubbleBodega now uses a transparent, heavily blurred backdrop. Keeping the
   // live aquarium at 24 FPS under that blur gives it motion without asking the
   // browser to recomposite the expensive blur at full gameplay frame rate.
@@ -1945,35 +1990,28 @@ function getEffectiveAnimationFpsLimit() {
     || runtime.scoopMode
     || runtime.feedingModeFoodKey
     || runtime.medicineModeKey
+    || isStageRenderViewTransitionActive()
   );
   const idleLimit = interacting ? 0 : 30;
   const wallpaperLimit = Math.max(0, Number(runtime.wallpaperEngineFpsLimit) || 0);
-  const limits = [portableLimit, overlayLimit, idleLimit, wallpaperLimit].filter(limit => limit > 0);
+  const limits = [overlayLimit, idleLimit, wallpaperLimit].filter(limit => limit > 0);
   return limits.length ? Math.min(...limits) : 0;
 }
 
 function getWaterParticleTargetCount() {
-  return isPortablePerformanceModeActive()
-    ? Math.min(WATER_PARTICLE_COUNT, PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT)
-    : WATER_PARTICLE_COUNT;
+  return WATER_PARTICLE_COUNT;
 }
 
 function getWaterParticleCleanVisibleCount() {
-  return isPortablePerformanceModeActive()
-    ? Math.min(WATER_PARTICLE_CLEAN_VISIBLE_COUNT, PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT)
-    : WATER_PARTICLE_CLEAN_VISIBLE_COUNT;
+  return WATER_PARTICLE_CLEAN_VISIBLE_COUNT;
 }
 
 function getWaterParticleDirtyVisibleCount() {
-  return isPortablePerformanceModeActive()
-    ? Math.min(WATER_PARTICLE_DIRTY_VISIBLE_COUNT, PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT)
-    : WATER_PARTICLE_DIRTY_VISIBLE_COUNT;
+  return WATER_PARTICLE_DIRTY_VISIBLE_COUNT;
 }
 
 function getAmbientBubbleSeedCount() {
-  return isPortablePerformanceModeActive()
-    ? Math.min(AMBIENT_BUBBLE_COUNT, PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT)
-    : AMBIENT_BUBBLE_COUNT;
+  return AMBIENT_BUBBLE_COUNT;
 }
 
 function getVisibleAmbientSceneBubbles() {
@@ -1982,21 +2020,9 @@ function getVisibleAmbientSceneBubbles() {
   }
 
   const bubbles = Array.isArray(runtime.scene?.bubbles) ? runtime.scene.bubbles : [];
-  return isPortablePerformanceModeActive()
-    ? bubbles.slice(0, Math.min(PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT, bubbles.length))
-    : bubbles.slice(0, Math.min(AMBIENT_BUBBLE_COUNT, bubbles.length));
+  return bubbles.slice(0, Math.min(AMBIENT_BUBBLE_COUNT, bubbles.length));
 }
 
 function getMaxVisibleBubblerBubblesPerSpout() {
-  return isPortablePerformanceModeActive()
-    ? Math.min(MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT, PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT)
-    : MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT;
-}
-
-function getPortableTankBlurScale() {
-  return isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_TANK_BLUR_SCALE : 1;
-}
-
-function getPortableGrimeBlurScale() {
-  return isPortablePerformanceModeActive() ? PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE : 1;
+  return MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT;
 }

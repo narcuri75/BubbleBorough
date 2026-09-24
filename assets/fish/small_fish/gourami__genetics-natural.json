@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "ebc62bfd-73e9-4e48-afa1-1d2d70f5bd65",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "aaf0def8-13cf-4725-bc00-3f38ccc30db2",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_blue.png"
+        },
+        {
+          "id": "9f47ac3e-a663-4520-9143-0b9051adb2f7",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_chocolate.png"
+        },
+        {
+          "id": "fa60bf2b-2b27-42b7-959a-ea306a4165a3",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_dwarf.png"
+        },
+        {
+          "id": "cc06de4c-e712-4e75-be49-bc64da28a39b",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_giant.png"
+        },
+        {
+          "id": "cac23347-c1a7-4a8f-8997-cb40b60cc6a8",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_gold.png"
+        },
+        {
+          "id": "4f52e601-095d-4dbd-a95e-63e26b208afc",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_honey.png"
+        },
+        {
+          "id": "a249b26b-d02b-4591-a6a8-8e483a26f6dd",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_moonlight.png"
+        },
+        {
+          "id": "6d9a4d2e-aba6-4602-b27d-0e1bde074dca",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_opaline.png"
+        },
+        {
+          "id": "64115048-4949-46f0-a0ce-1a8f313ef994",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_pearl.png"
+        },
+        {
+          "id": "4f472d42-c87f-497e-89ff-fc95fd947829",
+          "width": 64,
+          "height": 43,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "gourami_sparkling.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/gourami__genetics-natural.webp"
+  }
+}

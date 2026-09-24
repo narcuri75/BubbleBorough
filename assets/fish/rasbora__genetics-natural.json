@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "1bd8bae2-a445-490c-8f0c-b8ad640cc1b4",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "b9df92ee-6fcb-47c0-84ac-f49c18bea671",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_chili.png"
+        },
+        {
+          "id": "1fa16cbf-3509-447b-a590-99c44bacb295",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_galaxy.png"
+        },
+        {
+          "id": "57776d4a-d19d-450e-8ce4-8d55abe0d37c",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_harlequin.png"
+        },
+        {
+          "id": "27023a8e-9fb4-432d-b9ab-14d6cf61ad9a",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_hengeli.png"
+        },
+        {
+          "id": "3f72b710-c01f-4c15-b156-e79ee73478f4",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_lambchop.png"
+        },
+        {
+          "id": "7682a274-ab79-471f-9ba5-c2ecc9273734",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rasbora_scissortail.png"
+        }
+      ]
+    }
+  ]
+}

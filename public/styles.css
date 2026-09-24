@@ -1,11 +1,3 @@
-@font-face {
-  font-family: "E1234Display";
-  src: url("../assets/font/E1234.ttf") format("truetype");
-  font-style: normal;
-  font-weight: 400;
-  font-display: swap;
-}
-
 :root {
   color-scheme: dark;
   --ui-font-stack: "Trebuchet MS", "Segoe UI", "Helvetica Neue", Arial, sans-serif;
@@ -2102,7 +2094,7 @@ html[data-layout-ratio-lock="true"] body {
 }
 
 .display-cell strong {
-  font-family: "E1234Display", "Consolas", "Courier New", monospace;
+  font-family: "Consolas", "Courier New", monospace;
   color: var(--lcd-ink-strong);
   display: block;
   font-size: 1.02rem;
@@ -3659,6 +3651,19 @@ html[data-layout-ratio-lock="true"] body {
   filter: drop-shadow(0 10px 14px rgba(0, 0, 0, 0.18));
 }
 
+.layered-shrimp-tray-thumb {
+  display: block;
+}
+
+.layered-shrimp-tray-thumb > img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+}
+
 .edit-decor-tile-count {
   position: absolute;
   right: 9px;
@@ -3795,28 +3800,40 @@ html[data-layout-ratio-lock="true"] body {
   position: absolute;
   left: 0;
   top: 0;
-  width: 1em;
-  height: 1em;
+  width: clamp(64px, 5.75vw, 88px);
+  height: clamp(64px, 5.75vw, 88px);
   min-width: 0;
   min-height: 0;
   pointer-events: none;
   z-index: 8;
   transform: translate(-50%, -50%);
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.28));
-  font-size: 2.5rem;
   line-height: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
 }
 
-.tool-cursor img {
+.tool-cursor img,
+.tool-cursor .tool-cursor-layer {
+  position: absolute;
+  inset: 0;
   display: block;
-  width: 1em;
-  height: 1em;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   pointer-events: none;
   user-select: none;
+}
+
+.tool-cursor-scoop {
+  z-index: 1;
+}
+
+.tool-cursor-pellets {
+  z-index: 2;
+}
+
+.tool-cursor.is-frisky-food .tool-cursor-pellets {
+  filter: hue-rotate(300deg) saturate(1.75) brightness(1.08);
 }
 
 .tool-cursor::before,
@@ -3967,7 +3984,7 @@ html[data-layout-ratio-lock="true"] body {
 .websurf-mail-detail { display: flex; flex-direction: column; align-items: stretch; gap: 12px; padding: 4px 18px 16px 76px; color: #3b5d75; background: #eef7fc; }
 .websurf-mail-body { min-width: 0; flex: 1 1 auto; }
 .websurf-email-scroll {
-  max-height: 300px;
+  max-height: 540px;
   overflow-y: auto;
   padding: 14px 12px 14px 16px;
   border: 1px solid #d5e7f2;
@@ -5294,6 +5311,14 @@ body.debug-fish-behavior-preview-open {
   opacity: 0.5;
   cursor: not-allowed;
   transform: none;
+}
+
+.buy-button.owned-background-button:disabled {
+  background: #b9c0c5;
+  border-color: #a4adb3;
+  color: #4e5960;
+  opacity: 1;
+  box-shadow: none;
 }
 
 .fish-inspector {
@@ -8899,7 +8924,8 @@ button.management-task-row {
 }
 
 .shop-search-control,
-.shop-sort-control {
+.shop-sort-control,
+.shop-water-filter-control {
   display: inline-flex;
   align-items: center;
   gap: 10px;
@@ -8922,6 +8948,28 @@ button.management-task-row {
 .shop-search-input {
   min-width: min(280px, 48vw);
   padding-right: 12px;
+}
+
+.shop-water-filter-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.shop-water-filter-toggle input {
+  margin: 0;
+}
+
+.shop-water-requirement {
+  margin-top: 6px;
+  padding: 6px 8px;
+  border: 1px solid rgba(214, 148, 38, 0.75);
+  border-radius: 6px;
+  background: rgba(255, 194, 86, 0.12);
+  color: #ffd58b;
+  font-size: 0.78rem;
+  font-weight: 800;
+  line-height: 1.25;
 }
 
 .shop-theme-pill {
@@ -10401,7 +10449,8 @@ button.management-task-row {
   }
 
   .shop-search-control,
-  .shop-sort-control {
+  .shop-sort-control,
+  .shop-water-filter-control {
     justify-content: space-between;
   }
 
@@ -10962,7 +11011,9 @@ button.management-task-row {
   min-height: 0;
   overflow-x: hidden;
   overflow-y: auto;
-  scroll-behavior: smooth;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scroll-behavior: auto;
 }
 .proteus-tab-panel[hidden] { display: none !important; }
 
@@ -11142,6 +11193,123 @@ button.management-task-row {
 .proteus-recovery-program h3 { margin: 0 0 10px; color: var(--proteus-ink); font-size: clamp(1.35rem, 2.4vw, 2rem); font-weight: 500; }
 .proteus-recovery-program small { display: block; margin-top: 12px; color: var(--proteus-muted); font-family: system-ui, sans-serif; font-size: .76rem; line-height: 1.48; }
 
+/* Founder-led Proteus company profile. */
+.proteus-founder-page {
+  padding-top: clamp(22px, 3.2vw, 46px);
+  background:
+    linear-gradient(135deg, rgba(218, 235, 242, .62), transparent 36%),
+    linear-gradient(315deg, rgba(226, 238, 242, .42), transparent 30%),
+    #f8fbfc;
+}
+.proteus-founder-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.28fr) minmax(280px, .72fr);
+  max-width: 1120px;
+  margin: 0 auto clamp(50px, 7vw, 88px);
+  border: 1px solid var(--proteus-rule);
+  background: rgba(255, 255, 255, .9);
+  box-shadow: 0 20px 55px rgba(31, 69, 93, .09);
+}
+.proteus-founder-hero-copy { align-self: center; padding: clamp(30px, 5vw, 64px); }
+.proteus-founder-hero-copy > p:first-child,
+.proteus-founder-story-copy > p:first-child,
+.proteus-origin > header > p:first-child,
+.proteus-founder-philosophy > div:first-child > p:first-child {
+  margin: 0 0 20px;
+  color: #527797;
+  font-family: system-ui, sans-serif;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.proteus-founder-hero h2 {
+  margin: 0;
+  color: #173c54;
+  font-size: clamp(2.2rem, 4.4vw, 4.55rem);
+  font-weight: 400;
+  letter-spacing: -.025em;
+  line-height: .98;
+}
+.proteus-founder-hero h2:focus { outline: none; }
+.proteus-founder-hero blockquote {
+  margin: 30px 0 20px;
+  padding: 16px 0 16px 22px;
+  border-left: 2px solid #7fa6ba;
+  color: #315870;
+  font-size: clamp(1.15rem, 1.8vw, 1.5rem);
+  font-style: italic;
+  line-height: 1.35;
+}
+.proteus-founder-hero blockquote + p { margin: 0; color: #526f82; font-size: .98rem; line-height: 1.72; }
+.proteus-founder-credentials { display: grid; gap: 0; margin: 30px 0 0; border-top: 1px solid var(--proteus-rule); font-family: system-ui, sans-serif; }
+.proteus-founder-credentials > div { display: grid; grid-template-columns: 100px minmax(0, 1fr); gap: 18px; padding: 10px 0; border-bottom: 1px solid var(--proteus-rule); }
+.proteus-founder-credentials dt { color: #6d8594; font-size: .62rem; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; }
+.proteus-founder-credentials dd { margin: 0; color: #294c63; font-size: .75rem; font-weight: 650; }
+.proteus-founder-portrait { position: relative; min-height: 580px; margin: -1px -1px -1px 0; overflow: hidden; background: #0b2940; }
+.proteus-founder-portrait::after { content: ""; position: absolute; inset: 0; background: linear-gradient(180deg, transparent 52%, rgba(4, 24, 39, .9)); pointer-events: none; }
+.proteus-founder-portrait img { display: block; width: 100%; height: 100%; object-fit: cover; object-position: 50% 38%; }
+.proteus-founder-portrait figcaption { position: absolute; z-index: 1; right: 28px; bottom: 26px; left: 28px; display: grid; gap: 5px; color: #fff; }
+.proteus-founder-portrait figcaption strong { font-size: 1.28rem; font-weight: 400; }
+.proteus-founder-portrait figcaption span { color: #c4d7e1; font-family: system-ui, sans-serif; font-size: .64rem; font-weight: 750; letter-spacing: .15em; text-transform: uppercase; }
+
+.proteus-founder-story {
+  display: grid;
+  grid-template-columns: minmax(0, .95fr) minmax(360px, 1.05fr);
+  align-items: center;
+  gap: clamp(34px, 6vw, 82px);
+  max-width: 1120px;
+  margin: 0 auto clamp(58px, 8vw, 96px);
+}
+.proteus-founder-story-copy h3,
+.proteus-origin h3,
+.proteus-founder-philosophy h3 { margin: 0 0 24px; color: #1f455d; font-size: clamp(1.8rem, 3vw, 3rem); font-weight: 400; line-height: 1.08; }
+.proteus-founder-story-copy > p:not(:first-child),
+.proteus-origin > header > p:last-child,
+.proteus-founder-philosophy > div:first-child > p:last-child { margin: 0 0 18px; color: #486779; font-size: 1rem; line-height: 1.76; }
+.proteus-founder-story-copy aside { margin-top: 28px; padding: 20px 22px; border: 1px solid #a8c0cc; background: #e9f2f5; }
+.proteus-founder-story-copy aside span { color: #527797; font-family: system-ui, sans-serif; font-size: .61rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.proteus-founder-story-copy aside p { margin: 12px 0 0; color: #294f66; font-size: 1.12rem; font-style: italic; line-height: 1.45; }
+.proteus-founder-lab-photo { margin: 0; }
+.proteus-founder-lab-photo img { display: block; width: 100%; aspect-ratio: 4 / 3; border: 1px solid #c3d2da; object-fit: cover; filter: saturate(.85) contrast(1.03); }
+.proteus-founder-lab-photo figcaption { margin-top: 10px; color: #718795; font-family: system-ui, sans-serif; font-size: .66rem; line-height: 1.5; }
+
+.proteus-origin { max-width: 1120px; margin: 0 auto clamp(60px, 8vw, 100px); padding-top: 42px; border-top: 1px solid var(--proteus-rule); }
+.proteus-origin > header { display: grid; grid-template-columns: minmax(0, .8fr) minmax(300px, 1.2fr); column-gap: clamp(32px, 7vw, 90px); align-items: start; margin-bottom: 34px; }
+.proteus-origin > header > p:first-child { grid-column: 1 / -1; }
+.proteus-origin > header h3 { grid-column: 1; margin-bottom: 0; }
+.proteus-origin > header > p:last-child { grid-column: 2; margin-top: 2px; }
+.proteus-origin-timeline { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); margin: 0; padding: 0; border-top: 1px solid #8faab8; list-style: none; }
+.proteus-origin-timeline li { position: relative; display: grid; align-content: start; padding: 30px 22px 26px 0; }
+.proteus-origin-timeline li:not(:last-child) { margin-right: 22px; border-right: 1px solid var(--proteus-rule); }
+.proteus-origin-timeline li::before { content: ""; position: absolute; top: -5px; left: 0; width: 9px; height: 9px; border-radius: 50%; background: #315d75; box-shadow: 0 0 0 5px #e4eff3; }
+.proteus-origin-timeline li > span { color: #9ab0bc; font-size: 2.6rem; line-height: 1; }
+.proteus-origin-timeline small { display: block; margin: 17px 0 8px; color: #527797; font-family: system-ui, sans-serif; font-size: .6rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.proteus-origin-timeline h4 { margin: 0 0 10px; color: #294c63; font-size: 1.04rem; font-weight: 600; line-height: 1.28; }
+.proteus-origin-timeline p { margin: 0; color: #637d8d; font-family: system-ui, sans-serif; font-size: .78rem; line-height: 1.56; }
+
+.proteus-founder-philosophy { display: grid; grid-template-columns: minmax(250px, .78fr) minmax(0, 1.22fr); gap: clamp(34px, 7vw, 88px); max-width: 1120px; margin: 0 auto 42px; padding: clamp(30px, 5vw, 58px); background: #173c54; color: #eef6f8; }
+.proteus-founder-philosophy h3 { color: #fff; }
+.proteus-founder-philosophy > div:first-child > p:first-child { color: #b8d1dc; }
+.proteus-founder-philosophy > div:first-child > p:last-child { color: #c3d5dd; }
+.proteus-founder-principles { display: grid; align-content: center; }
+.proteus-founder-principles article { display: grid; grid-template-columns: 42px 150px minmax(0, 1fr); gap: 16px; align-items: baseline; padding: 18px 0; border-top: 1px solid rgba(213, 231, 237, .22); }
+.proteus-founder-principles article:last-child { border-bottom: 1px solid rgba(213, 231, 237, .22); }
+.proteus-founder-principles span { color: #88adbf; font-family: system-ui, sans-serif; font-size: .68rem; font-weight: 800; letter-spacing: .12em; }
+.proteus-founder-principles h4 { margin: 0; color: #fff; font-size: 1rem; font-weight: 600; }
+.proteus-founder-principles p { margin: 0; color: #b9cdd6; font-family: system-ui, sans-serif; font-size: .78rem; line-height: 1.55; }
+.proteus-founder-coda { max-width: 1120px; margin: 0 auto; padding: 28px 0 8px; border-top: 1px solid #91aab7; color: #254b62; font-size: clamp(1.55rem, 3vw, 2.8rem); font-style: italic; line-height: 1.25; }
+.proteus-founder-coda span { display: block; margin-bottom: 18px; color: #668292; font-family: system-ui, sans-serif; font-size: .65rem; font-style: normal; font-weight: 800; letter-spacing: .17em; text-transform: uppercase; }
+
+@media (max-width: 900px) {
+  .proteus-founder-hero { grid-template-columns: 1fr; }
+  .proteus-founder-portrait { height: clamp(480px, 65vh, 620px); min-height: 0; margin: 0 -1px -1px; }
+  .proteus-founder-story { grid-template-columns: 1fr; }
+  .proteus-founder-lab-photo { grid-row: 1; }
+  .proteus-origin > header { display: block; }
+  .proteus-founder-philosophy { grid-template-columns: 1fr; }
+}
+
 .proteus-research-grid,
 .proteus-principle-grid,
 .proteus-investor-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; max-width: 1120px; margin: 0 auto; }
@@ -11234,11 +11402,27 @@ button.management-task-row {
   .proteus-career-layout { grid-template-columns: 1fr; }
   .proteus-manifesto { grid-template-columns: 1fr; gap: 18px; }
   .proteus-mission-detail { grid-template-columns: 1fr; gap: 20px; padding: 30px 0; }
+  .proteus-founder-portrait { height: 460px; min-height: 0; margin: 0 -1px -1px; }
+  .proteus-origin-timeline { grid-template-columns: 1fr 1fr; }
+  .proteus-origin-timeline li:nth-child(2) { margin-right: 0; border-right: 0; }
   .proteus-program-list article { grid-template-columns: 72px minmax(0, 1fr); gap: 12px; }
   .proteus-program-list article > strong { grid-column: 2; justify-self: start; }
   .proteus-specimen-grid article { grid-template-columns: 120px minmax(0, 1fr); }
   .proteus-job-list article { grid-template-columns: 80px minmax(0, 1fr); }
   .proteus-job-list small { grid-column: 2; }
+}
+
+@media (max-width: 520px) {
+  .proteus-founder-page { padding-inline: 14px; }
+  .proteus-founder-hero-copy { padding: 28px 22px; }
+  .proteus-founder-portrait { height: 410px; min-height: 0; }
+  .proteus-founder-credentials > div { grid-template-columns: 80px minmax(0, 1fr); gap: 10px; }
+  .proteus-origin-timeline { grid-template-columns: 1fr; }
+  .proteus-origin-timeline li,
+  .proteus-origin-timeline li:nth-child(2) { margin-right: 0; border-right: 0; }
+  .proteus-founder-philosophy { padding: 28px 22px; }
+  .proteus-founder-principles article { grid-template-columns: 32px minmax(0, 1fr); gap: 12px; }
+  .proteus-founder-principles p { grid-column: 2; }
 }
 
 @media (max-width: 767px), (max-width: 932px) and (max-height: 500px) and (orientation: landscape) {
@@ -12694,15 +12878,15 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* BubbleBodega store redesign                                                   */
 /* ========================================================================== */
 .tankazon-store {
-  padding: clamp(14px, 2vw, 28px);
+  padding: clamp(6px, 1.1vw, 14px);
   background: transparent;
   -webkit-backdrop-filter: blur(22px) saturate(1.08);
   backdrop-filter: blur(22px) saturate(1.08);
 }
 
 .tankazon-store .tankazon-panel {
-  width: min(1480px, calc(100vw - 36px));
-  height: min(94vh, 920px);
+  width: min(1600px, calc(100vw - 18px));
+  height: min(97dvh, 1040px);
   max-width: none;
   max-height: none;
   gap: 0;
@@ -12794,27 +12978,27 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 .tankazon-mainbar {
   display: grid;
-  grid-template-columns: 260px minmax(320px, 1fr) auto;
+  grid-template-columns: 170px minmax(280px, 1fr) auto auto;
   align-items: center;
-  gap: 18px;
-  min-height: 74px;
-  padding: 10px 18px;
+  gap: 10px;
+  min-height: 58px;
+  padding: 6px 12px;
   background: linear-gradient(180deg, #071a2c, #051525);
 }
 
 .tankazon-logo {
   display: block;
-  width: 245px;
-  height: 64px;
+  width: 154px;
+  height: 46px;
   object-fit: contain;
   object-position: left center;
 }
 
 .tankazon-search {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) 54px;
+  grid-template-columns: minmax(0, 1fr) 46px;
   align-items: stretch;
-  height: 46px;
+  height: 38px;
   overflow: hidden;
   border-radius: 7px;
   background: #fff;
@@ -12857,7 +13041,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   place-items: center;
   background: linear-gradient(180deg, #ffb627, #ff9900);
   color: #071a2c;
-  font-size: 1.7rem;
+  font-size: 1.35rem;
   font-weight: 900;
 }
 
@@ -12900,8 +13084,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   display: flex;
   align-items: center;
   gap: 16px;
-  min-height: 46px;
-  padding: 0 18px;
+  min-height: 36px;
+  padding: 0 12px;
   background: #102a43;
   border-top: 1px solid rgba(255,255,255,0.05);
 }
@@ -12931,10 +13115,32 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 .tankazon-store .store-panel-tabs::-webkit-scrollbar { display: none; }
 
+/* The store promise belongs in the category row.  It remains right-aligned
+   without stealing space from category selection and disappears before the
+   condensed/mobile navigation would make either control unreadable. */
+.tankazon-store .tankazon-nav-promo {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: baseline;
+  gap: 9px;
+  margin-left: auto;
+  min-width: 0;
+  color: #fff;
+  white-space: nowrap;
+}
+
+.tankazon-store .tankazon-nav-promo strong {
+  font-size: .88rem;
+  line-height: 1;
+}
+
+.tankazon-store .tankazon-nav-promo strong span { color: #ffb000; }
+.tankazon-store .tankazon-nav-promo small { color: #e8f4f8; font-size: .62rem; }
+
 .tankazon-store .store-tab-button {
   min-width: auto;
-  min-height: 38px;
-  padding: 8px 14px;
+  min-height: 30px;
+  padding: 5px 10px;
   border: 1px solid transparent;
   border-radius: 3px;
   background: transparent;
@@ -12961,8 +13167,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-promo-strip {
   display: flex;
   align-items: center;
-  min-height: 74px;
-  padding: 12px 30px;
+  min-height: 42px;
+  padding: 6px 14px;
   color: #fff;
   background:
     radial-gradient(circle at 72% 30%, rgba(48, 171, 193, .32), transparent 26%),
@@ -12976,12 +13182,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .tankazon-promo-strip strong {
-  font-size: clamp(1.35rem, 2.1vw, 2rem);
+  font-size: clamp(.96rem, 1.35vw, 1.25rem);
   line-height: 1;
 }
 
 .tankazon-promo-strip strong span { color: #ffb000; }
-.tankazon-promo-strip small { color: #e8f4f8; }
+.tankazon-promo-strip small { color: #e8f4f8; font-size: .72rem; }
 
 .tankazon-store .tankazon-body {
   position: relative;
@@ -13020,7 +13226,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-catalog-loading-box {
   width: 94px;
   height: 94px;
-  background: url("../assets/misc/Box.png") center / contain no-repeat;
+  background: url("../assets/web/bodega/Box.png") center / contain no-repeat;
   transform-origin: 50% 78%;
   animation: tankazon-loading-box 1s ease-in-out infinite alternate;
 }
@@ -13030,7 +13236,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 .tankazon-catalog-area > .store-drawer { height: auto; min-height: 100%; }
 .tankazon-catalog-area > .store-drawer.tankazon-all-section { min-height: 0; border-bottom: 12px solid #eaeded; }
-.tankazon-catalog-area > .store-drawer.tankazon-all-section::before { content: attr(data-tankazon-category); display: block; margin: 0 0 12px; text-transform: capitalize; font-size: 1.2rem; font-weight: 900; }
+.tankazon-catalog-area > .store-drawer.tankazon-section-heading::before { content: attr(data-tankazon-category); display: block; margin: 0 0 12px; text-transform: capitalize; font-size: 1.2rem; font-weight: 900; }
 .tankazon-cart { min-width: 0; min-height: 0; display: grid; grid-template-rows: auto minmax(0,1fr) auto; background: #fff; border-left: 1px solid #d5d9d9; color: #0f1111; }
 .tankazon-cart-heading { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:16px; border-bottom:1px solid #d5d9d9; font-size:1.05rem; }
 .tankazon-cart-heading button { width:30px; height:30px; border:0; background:transparent; color:#0f1111; font-size:1.45rem; cursor:pointer; }
@@ -13058,12 +13264,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   line-height: 1.25;
 }
 .tankazon-purchase-error[hidden] { display: none !important; }
-.tankazon-complete-purchase { min-height:42px; border:1px solid #f2c200; border-radius:8px; background:#ffd814; color:#0f1111; font-weight:900; cursor:pointer; }
-.tankazon-complete-purchase:hover:not(:disabled) { background:#f7ca00; }
+.tankazon-complete-purchase { min-height:42px; border:1px solid #1f8f5b; border-radius:8px; background:#28b36d; color:#ffffff; font-weight:900; cursor:pointer; }
+.tankazon-complete-purchase:hover:not(:disabled) { background:#20945a; }
 .tankazon-complete-purchase:disabled { opacity:.48; cursor:default; }
 .tankazon-delivery-complete { position:absolute; inset:0; z-index:20; display:grid; place-items:center; align-content:center; gap:16px; background:#fff; color:#0f1111; font-size:1.65rem; font-weight:900; }
 .tankazon-delivery-complete[hidden] { display:none !important; }
-.store-delivery-box { width:150px; height:150px; background: url("../assets/misc/Box.png") center / contain no-repeat; animation:tankazon-box-jiggle .12s ease-in-out 6 alternate; transform-origin:50% 65%; }
+.store-delivery-box { width:150px; height:150px; background: url("../assets/web/bodega/Box.png") center / contain no-repeat; animation:tankazon-box-jiggle .12s ease-in-out 6 alternate; transform-origin:50% 65%; }
 @keyframes tankazon-box-jiggle { from { transform:rotate(-7deg) translateX(-3px); } to { transform:rotate(7deg) translateX(3px); } }
 
 .tankazon-store .store-drawer {
@@ -13095,6 +13301,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-toolbar-summary,
 .tankazon-store .shop-search-control,
 .tankazon-store .shop-sort-control,
+.tankazon-store .shop-water-filter-control,
 .tankazon-store .shop-section-heading p,
 .tankazon-store .shop-meta,
 .tankazon-store .fish-meta {
@@ -13102,6 +13309,25 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .tankazon-store .shop-search-control { display: none; }
+
+.tankazon-store .shop-water-filter-control {
+  color: #565959;
+}
+
+.tankazon-store .shop-water-filter-toggle {
+  min-height: 32px;
+  padding: 5px 9px;
+  border: 1px solid #888c8c;
+  border-radius: 7px;
+  background: #fff;
+  color: #0f1111;
+}
+
+.tankazon-store .shop-water-requirement {
+  border-color: #e3a008;
+  background: #fff8e1;
+  color: #7a4b00;
+}
 
 .tankazon-store .shop-search-input,
 .tankazon-store .shop-sort-select {
@@ -13167,6 +13393,22 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   overflow: hidden;
   box-sizing: border-box;
 }
+.tankazon-store .layered-shrimp-thumb {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+.tankazon-store .layered-shrimp-thumb-legs,
+.tankazon-store .layered-shrimp-thumb-body,
+.tankazon-store .layered-shrimp-thumb-antennae {
+  position: absolute;
+  inset: 8px;
+  width: calc(100% - 16px);
+  height: calc(100% - 16px);
+  object-fit: contain;
+  pointer-events: none;
+}
 .tankazon-store .layered-dispenser-thumb-bg,
 .tankazon-store .layered-dispenser-thumb-fg,
 .tankazon-store .layered-dispenser-thumb-light {
@@ -13188,6 +13430,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .tankazon-store [data-tankazon-category="fish"] .shop-thumb,
+.tankazon-store .shop-card[data-store-kind="fish"] .shop-thumb,
 .tankazon-item-image.is-fish-preview,
 .tankazon-item-image.is-fish-preview .tankazon-item-art {
   background:
@@ -13233,18 +13476,18 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-button-row button,
 .tankazon-store .shop-card button:not(.store-scroll-button) {
   min-height: 34px;
-  border: 1px solid #f2c200;
+  border: 1px solid #1d6fd6;
   border-radius: 999px;
-  background: #ffd814;
-  color: #0f1111;
-  box-shadow: 0 2px 5px rgba(213,217,217,.5);
+  background: #2f8fff;
+  color: #ffffff;
+  box-shadow: 0 2px 5px rgba(60,110,170,.28);
   font-weight: 800;
 }
 
 .tankazon-store .shop-card .small-button:hover,
 .tankazon-store .shop-button-row button:hover,
 .tankazon-store .shop-card button:not(.store-scroll-button):hover {
-  background: #f7ca00;
+  background: #217be3;
 }
 
 .tankazon-store .shop-card .small-button.warn,
@@ -13298,7 +13541,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
     padding: 8px;
   }
   .tankazon-logo { width: 150px; height: 44px; }
-  .tankazon-search { grid-template-columns: 64px minmax(0,1fr) 44px; height: 40px; }
+  .tankazon-search { grid-template-columns: minmax(0,1fr) 44px; height: 40px; }
   .tankazon-store .store-coin-counter { display: none; }
   .tankazon-navrow { padding: 0 8px; gap: 6px; }
   .tankazon-all-categories { display: none; }
@@ -13326,8 +13569,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* BubbleBodega layout corrections 2026-09-03                                    */
 /* ========================================================================== */
 .tankazon-store .tankazon-panel {
-  width: min(1520px, calc(100vw - 28px));
-  height: min(95vh, 940px);
+  width: min(1600px, calc(100vw - 18px));
+  height: min(97dvh, 1040px);
 }
 
 .tankazon-store .tankazon-header,
@@ -13338,14 +13581,14 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .tankazon-store .tankazon-mainbar {
-  grid-template-columns: 230px minmax(420px, 1fr) auto;
-  min-height: 104px;
-  padding: 6px 22px;
+  grid-template-columns: 170px minmax(280px, 1fr) auto auto;
+  min-height: 58px;
+  padding: 6px 12px;
 }
 
 .tankazon-store .tankazon-logo {
-  width: 210px;
-  height: 92px;
+  width: 154px;
+  height: 46px;
   max-width: none;
   object-fit: contain;
   object-position: left center;
@@ -13381,7 +13624,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   grid-column: 1 / -1;
 }
 
-.tankazon-store .store-drawer.tankazon-all-section::before {
+.tankazon-store .store-drawer.tankazon-section-heading::before {
   grid-column: 1 / -1;
 }
 
@@ -13446,6 +13689,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-decor],
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
+.tankazon-store .shop-card [data-buy-water-kit],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
 .tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
@@ -13492,12 +13736,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 @media (max-width: 1180px) {
   .tankazon-store .tankazon-mainbar {
-    grid-template-columns: 190px minmax(300px, 1fr) auto;
-    min-height: 90px;
+    grid-template-columns: 150px minmax(240px, 1fr) auto auto;
+    min-height: 56px;
   }
   .tankazon-store .tankazon-logo {
-    width: 175px;
-    height: 78px;
+    width: 138px;
+    height: 44px;
   }
   .tankazon-store .store-drawer,
   .tankazon-store .shop-section-cards {
@@ -13603,6 +13847,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-decor],
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
+.tankazon-store .shop-card [data-buy-water-kit],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
 .tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
@@ -13610,6 +13855,27 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   margin: 0;
   padding: 5px 8px;
   font-size: 0.72rem;
+}
+
+
+.tankazon-store .shop-card.tankazon-card-out-of-stock {
+  background: linear-gradient(180deg, #eceff1 0%, #e1e4e6 100%) !important;
+  border-color: #c9ced3 !important;
+}
+
+.tankazon-store .shop-card.tankazon-card-out-of-stock:hover,
+.tankazon-store .shop-card.tankazon-card-out-of-stock:focus-within {
+  background: linear-gradient(180deg, #eceff1 0%, #e1e4e6 100%) !important;
+  border-color: #c9ced3 !important;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08) !important;
+  transform: none !important;
+}
+
+.tankazon-store .shop-card.tankazon-card-out-of-stock > img.shop-thumb,
+.tankazon-store .shop-card.tankazon-card-out-of-stock > .shop-thumb,
+.tankazon-store .shop-card.tankazon-card-out-of-stock > img.decor-thumb,
+.tankazon-store .shop-card.tankazon-card-out-of-stock > .decor-thumb {
+  filter: grayscale(0.35) saturate(0.8);
 }
 
 /* Locked merchandise is unavailable, not a progression instruction. */
@@ -13717,7 +13983,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* Keep the search area useful across the full header instead of capping the
    header to the width of its controls. */
 .tankazon-store .tankazon-mainbar {
-  grid-template-columns: 230px minmax(360px, 1fr) auto !important;
+  grid-template-columns: 170px minmax(280px, 1fr) auto auto !important;
 }
 
 /* All Categories is a real mutually-exclusive nav state. */
@@ -13827,6 +14093,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .shop-card [data-buy-decor],
 .tankazon-store .shop-card [data-buy-filter],
 .tankazon-store .shop-card [data-buy-background],
+.tankazon-store .shop-card [data-buy-water-kit],
 .tankazon-store .shop-card [data-buy-auto-dispenser],
 .tankazon-store .shop-card [data-buy-boat],
 .tankazon-store .shop-card [data-buy-tank] {
@@ -14287,6 +14554,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 .tankazon-store #equipmentShop .shop-card [data-buy-filter],
 .tankazon-store #equipmentShop .shop-card [data-buy-background],
+.tankazon-store #equipmentShop .shop-card [data-buy-water-kit],
 .tankazon-store #equipmentShop .shop-card [data-buy-auto-dispenser],
 .tankazon-store #equipmentShop .shop-card [data-buy-submarine],
 .tankazon-store #equipmentShop .shop-card [data-buy-boat],
@@ -14302,8 +14570,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* BubbleBodega keeps one primary purchase action per equipment tile. */
-.tankazon-store #equipmentShop .shop-card .shop-button-row > :not([data-buy-filter]):not([data-buy-background]):not([data-buy-auto-dispenser]):not([data-buy-submarine]):not([data-buy-boat]):not([data-buy-tank]) {
+.tankazon-store #equipmentShop .shop-card .shop-button-row > :not([data-buy-filter]):not([data-buy-background]):not([data-buy-water-kit]):not([data-buy-auto-dispenser]):not([data-buy-submarine]):not([data-buy-boat]):not([data-buy-tank]) {
   display: none !important;
+}
+
+#decorShop .shop-card [data-buy-background] {
+  display: grid !important;
 }
 
 
@@ -14332,55 +14604,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* ========================================================================== */
-/* BubbleBodega logo/header visibility refinement 2026-09-03                     */
-/* ========================================================================== */
-.tankazon-store .tankazon-mainbar {
-  grid-template-columns: 250px minmax(360px, 1fr) auto !important;
-  background: linear-gradient(180deg, #0d2a43, #0a2238) !important;
-}
-
-.tankazon-store .tankazon-logo {
-  width: 225px !important;
-  height: 84px !important;
-  max-width: none !important;
-  justify-self: center !important;
-  object-position: center center !important;
-}
-
-@media (max-width: 1180px) {
-  .tankazon-store .tankazon-mainbar {
-    grid-template-columns: 210px minmax(300px, 1fr) auto !important;
-  }
-  .tankazon-store .tankazon-logo {
-    width: 190px !important;
-    height: 72px !important;
-  }
-}
-
-
-/* BubbleBodega larger centered logo */
-.tankazon-store .tankazon-mainbar {
-  grid-template-columns: 300px minmax(360px, 1fr) auto !important;
-}
-
-.tankazon-store .tankazon-logo {
-  width: 275px !important;
-  height: 102px !important;
-  max-width: none !important;
-  justify-self: center !important;
-}
-
-@media (max-width: 1180px) {
-  .tankazon-store .tankazon-mainbar {
-    grid-template-columns: 245px minmax(300px, 1fr) auto !important;
-  }
-
-  .tankazon-store .tankazon-logo {
-    width: 225px !important;
-    height: 86px !important;
-  }
-}
-
+/* BubbleBodega header sizing is defined once in the main store shell above. */
 
 /* BubbleBodega committed search results: product matches only. */
 .tankazon-store .store-drawer.tankazon-search-results > .shop-toolbar,
@@ -14402,6 +14626,118 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   height: 18px;
   object-fit: contain;
   flex: 0 0 auto;
+}
+
+/* BubbleBodega category drawers use the same full-width divider treatment as
+   All Categories while keeping each subsection independently virtualizable. */
+.tankazon-store .store-subcategory-section {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  min-width: 0;
+}
+
+.tankazon-store .store-subcategory-section + .store-subcategory-section {
+  margin-top: 8px;
+}
+
+.tankazon-store .store-subcategory-section > .shop-section-heading {
+  margin-inline: -20px;
+  padding: 10px 20px;
+  background: #fff;
+  border-block: 1px solid #d5d9d9;
+  box-shadow: 0 2px 7px rgba(15, 17, 17, 0.07);
+}
+
+.tankazon-store .store-subcategory-section > .shop-section-heading h3,
+.tankazon-store .store-subcategory-section > .shop-section-heading p {
+  margin: 0;
+}
+
+.tankazon-store .store-subcategory-section > .shop-section-heading p {
+  margin-top: 2px;
+}
+
+/* The Custom storage counter belongs in its section's white divider, not in
+   the product grid where it consumes a tile. */
+.tankazon-store .store-subcategory-section > .shop-section-heading.has-heading-extra {
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-areas: "title extra" "description extra";
+  align-items: center;
+}
+
+.tankazon-store .store-subcategory-section > .shop-section-heading.has-heading-extra h3 {
+  grid-area: title;
+}
+
+.tankazon-store .store-subcategory-section > .shop-section-heading.has-heading-extra p {
+  grid-area: description;
+}
+
+.tankazon-store .custom-content-storage-meter-heading {
+  grid-area: extra;
+  min-width: 230px;
+  display: grid;
+  grid-template-columns: auto 76px;
+  align-items: center;
+  gap: 8px;
+  color: #44515a;
+  font-size: 0.72rem;
+  white-space: nowrap;
+}
+
+.tankazon-store .custom-content-storage-meter-heading strong {
+  color: #0f1111;
+}
+
+.tankazon-store .custom-content-storage-meter-heading progress {
+  width: 76px;
+  height: 7px;
+}
+
+/* Backgrounds and substrates share the normal BubbleBodega card controls.
+   Keep their purchase row explicitly visible after the generic tile cleanup. */
+.tankazon-store #decorShop .shop-card > .shop-card-actions {
+  display: grid !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+/* The generic tile cleanup hides arbitrary action-row divs. Background and
+   substrate cards use that normal action-row structure, so restore the row
+   itself as well as its button. */
+.tankazon-store #decorShop .shop-card > .shop-card-actions > .shop-button-row {
+  display: grid !important;
+  width: 100% !important;
+  height: 38px !important;
+  min-height: 38px !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.tankazon-store #decorShop .shop-card [data-buy-background],
+.tankazon-store #decorShop .shop-card [data-buy-substrate] {
+  display: grid !important;
+  place-items: center;
+  visibility: visible !important;
+  opacity: 1 !important;
+  color: #fff !important;
+  background: #2f89ef !important;
+}
+
+.tankazon-store .substrate-shop-thumb {
+  background:
+    radial-gradient(ellipse at 22% 48%, rgba(255, 255, 255, 0.25) 0 4px, transparent 5px),
+    radial-gradient(ellipse at 49% 38%, rgba(255, 255, 255, 0.2) 0 6px, transparent 7px),
+    radial-gradient(ellipse at 76% 64%, rgba(0, 0, 0, 0.16) 0 5px, transparent 6px),
+    linear-gradient(145deg, #83919a, #4d5d65 58%, #77878b);
+}
+
+.tankazon-store .substrate-shop-card[data-substrate="sand"] .substrate-shop-thumb {
+  background:
+    radial-gradient(circle at 22% 35%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px),
+    radial-gradient(circle at 58% 60%, rgba(126, 91, 42, 0.3) 0 2px, transparent 3px),
+    linear-gradient(150deg, #ead28e, #c5a55e 65%, #ecd592);
 }
 
 
@@ -15529,6 +15865,15 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   --bubble-edit-tray-height: 218px;
 }
 
+/* Keep the editor useful in short desktop windows: the full-height tray used
+   to cover almost the entire aquarium and leave a large empty area beneath
+   its compact controls. */
+@media (min-width: 801px) and (max-height: 520px) {
+  :root {
+    --bubble-edit-tray-height: 154px;
+  }
+}
+
 #editFishTray,
 #editDecorTray,
 #editEquipmentTray,
@@ -15909,14 +16254,26 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   height: 100%;
   min-width: 0;
   display: grid;
-  grid-template-columns: 250px minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 8px;
+}
+
+.edit-tank-custom-content {
+  min-width: 0;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 10px;
+}
+
+.edit-tank-custom-content > .custom-content-storage-meter {
+  flex: 0 0 250px;
+  min-width: 0;
 }
 
 .edit-tank-local-image-card,
 .edit-tank-built-in-backgrounds {
   min-width: 0;
-  height: 100%;
   box-sizing: border-box;
   border: 1px solid rgba(188, 225, 246, 0.11);
   border-radius: 10px;
@@ -15924,6 +16281,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .edit-tank-local-image-card {
+  flex: 0 1 360px;
+  min-height: 62px;
   display: grid;
   grid-template-columns: 62px minmax(0, 1fr);
   grid-template-rows: minmax(0, 1fr) auto;
@@ -15995,6 +16354,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .edit-tank-built-in-backgrounds {
+  height: 100%;
   display: grid;
   grid-template-rows: 14px minmax(0, 1fr);
   gap: 3px;
@@ -16547,8 +16907,16 @@ body.fixed-16-9-aspect-ratio .tank-stage {
     --bubble-edit-tray-height: 218px;
   }
 
-  .edit-tank-image-layout {
-    grid-template-columns: 210px minmax(0, 1fr);
+  .edit-tank-custom-content {
+    gap: 7px;
+  }
+
+  .edit-tank-custom-content > .custom-content-storage-meter {
+    flex-basis: 210px;
+  }
+
+  .edit-tank-local-image-card {
+    flex-basis: 320px;
   }
 
   .tank-color-picker-body {
@@ -18164,7 +18532,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 /* BubbleBodega account and purchase history. */
 .tankazon-store .tankazon-mainbar {
-  grid-template-columns: 300px minmax(280px, 1fr) auto auto !important;
+  grid-template-columns: 170px minmax(280px, 1fr) auto auto !important;
 }
 .tankazon-account-button {
   display: grid;
@@ -18172,8 +18540,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   align-items: center;
   gap: 8px;
   min-width: 0;
-  min-height: 46px;
-  padding: 5px 10px;
+  min-height: 38px;
+  padding: 4px 8px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
@@ -18339,13 +18707,13 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-order-pagination button:disabled { opacity: .4; cursor: default; }
 
 @media (max-width: 1180px) {
-  .tankazon-store .tankazon-mainbar { grid-template-columns: 220px minmax(240px, 1fr) auto auto !important; gap: 10px; }
+  .tankazon-store .tankazon-mainbar { grid-template-columns: 150px minmax(220px, 1fr) auto auto !important; gap: 8px; }
   .tankazon-account-button { grid-template-columns: 28px; padding: 5px 8px; }
   .tankazon-account-button > img { width: 28px; height: 28px; }
   .tankazon-account-button > span { display: none; }
 }
 @media (max-width: 820px) {
-  .tankazon-store .tankazon-mainbar { grid-template-columns: 120px minmax(0, 1fr) auto auto !important; gap: 7px; }
+  .tankazon-store .tankazon-mainbar { grid-template-columns: 105px minmax(0, 1fr) auto auto !important; gap: 6px; }
   .tankazon-account-button { min-height: 40px; }
   .tankazon-account-heading { grid-template-columns: 1fr; gap: 16px; }
   .tankazon-order-search { grid-template-columns: minmax(0, 1fr) 48px; }
@@ -18360,6 +18728,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* BubbleBodega product detail view. Keep the catalog mounted for back navigation. */
 .tankazon-store.tankazon-item-open .tankazon-body { grid-template-columns: minmax(0, 1fr) 340px; }
 .tankazon-store.tankazon-item-open .tankazon-catalog-area > .store-drawer { display: none !important; }
+.tankazon-store.tankazon-item-open .bubblebodega-home-page { display: none !important; }
 @media (max-width: 900px) {
   .tankazon-store.tankazon-item-open .tankazon-body { grid-template-columns: minmax(0, 1fr) minmax(220px, 32vw); }
   .tankazon-store.tankazon-item-open .tankazon-cart { display: grid !important; }
@@ -18372,13 +18741,85 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-item-layout { display: grid; grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr) 230px; gap: 28px; align-items: start; }
 .tankazon-item-image { display: grid; place-items: center; min-width: 0; min-height: 300px; padding: 20px; border-radius: 10px; background: #f7f9fa; }
 .tankazon-item-gallery { min-width: 0; }
+.tankazon-item-sizes { margin: 14px 0 0; display: flex; flex-wrap: wrap; align-items: center; gap: 7px; color: #0f1111; font-size: 14px; }
+.tankazon-item-sizes[hidden] { display: none; }
+.tankazon-item-sizes > strong { margin-right: 2px; }
+.tankazon-store .tankazon-item-size-option { appearance: none; border: 0; background: transparent; padding: 2px 1px; color: #0f1111; font: inherit; cursor: pointer; }
+.tankazon-store .tankazon-item-size-option:hover { color: #007185; text-decoration: underline; }
+.tankazon-store .tankazon-item-size-option[aria-checked="true"] { font-weight: 700; }
+.tankazon-item-size-separator { color: #8a8a8a; user-select: none; }
 .tankazon-item-variant-label { margin: 16px 0 10px; color: #565959; font-size: 14px; }
 .tankazon-item-variants { display: flex; flex-wrap: wrap; gap: 10px; }
 .tankazon-item-variants[hidden], .tankazon-item-variant-label[hidden] { display: none; }
-.tankazon-store .tankazon-item-variants button { display: grid; place-items: center; width: 64px; height: 64px; padding: 4px; border: 1px solid #888c8c; border-radius: 7px; background: #fff; cursor: pointer; }
+.tankazon-store .tankazon-item-variants button { display: grid; place-items: center; width: 64px; height: 64px; padding: 4px; overflow: hidden; border: 1px solid #888c8c; border-radius: 7px; background: #fff; cursor: pointer; }
 .tankazon-store .tankazon-item-variants button[aria-pressed="true"] { border: 2px solid #c45500; background: #fff8eb; box-shadow: 0 0 0 2px #fbd8b4; }
-.tankazon-item-variants img { width: 100%; height: 100%; object-fit: contain; }
+.tankazon-item-variants img { width: 48px !important; height: 48px !important; max-width: 48px !important; max-height: 48px !important; object-fit: contain !important; object-position: center !important; }
 .tankazon-store .tankazon-item-art { display: block; width: 100%; height: 340px; object-fit: contain; border: 0; border-radius: 8px; }
+.tankazon-store .shop-card[data-store-seller="Arcadia Home Aquatics" i]::after {
+  display: none !important;
+}
+
+.tankazon-item-image.is-arcadia-preview {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.tankazon-item-image.is-arcadia-preview::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 18px;
+  left: 18px;
+  width: 196px;
+  height: 76px;
+  background: url("../assets/web/proteus/sub/arcadia_logo.png") left top / contain no-repeat;
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.tankazon-item-image.is-arcadia-preview .tankazon-item-art {
+  position: relative;
+  z-index: 2;
+}
+
+.tankazon-store .shop-card[data-store-seller="Common Current" i]::after {
+  display: none !important;
+}
+
+.tankazon-item-image.is-common-current-preview {
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+}
+
+.tankazon-item-image.is-common-current-preview::after {
+  content: "";
+  position: absolute;
+  z-index: 3;
+  top: 18px;
+  left: 18px;
+  width: 180px;
+  height: 68px;
+  background: url("../assets/web/proteus/sub/common-current_logo.png") left top / contain no-repeat;
+  filter:
+    drop-shadow(1px 0 0 #fff)
+    drop-shadow(-1px 0 0 #fff)
+    drop-shadow(0 1px 0 #fff)
+    drop-shadow(0 -1px 0 #fff)
+    drop-shadow(1px 1px 0 #fff)
+    drop-shadow(-1px 1px 0 #fff)
+    drop-shadow(1px -1px 0 #fff)
+    drop-shadow(-1px -1px 0 #fff);
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.tankazon-item-image.is-common-current-preview .tankazon-item-art {
+  position: relative;
+  z-index: 2;
+}
+
 .tankazon-store .shop-card[data-store-seller="Proteus Biodyne" i]::before {
   content: "";
   position: absolute;
@@ -18438,10 +18879,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-item-availability { color: #007600; font-size: 18px; margin: 4px 0 0; }
 .tankazon-item-delivery { margin: 0 0 4px; color: #565959; font-size: 13px; }
 .tankazon-store .tankazon-item-buybox button { width: 100%; min-height: 38px; border-radius: 22px; border: 1px solid transparent; color: #0f1111; font: inherit; font-size: 14px; cursor: pointer; }
-.tankazon-store .tankazon-item-add { background: #ffd814; border-color: #fcd200; }
-.tankazon-store .tankazon-item-add:hover { background: #f7ca00; }
-.tankazon-store .tankazon-item-buy { background: #ffa41c; border-color: #ff8f00; }
-.tankazon-store .tankazon-item-buy:hover { background: #fa8900; }
+.tankazon-store .tankazon-item-add { background: #2f8fff; border-color: #1d6fd6; color: #ffffff; }
+.tankazon-store .tankazon-item-add:hover { background: #217be3; }
+.tankazon-store .tankazon-item-buy { background: #28b36d; border-color: #1f8f5b; color: #ffffff; }
+.tankazon-store .tankazon-item-buy:hover { background: #20945a; }
 .tankazon-store .tankazon-item-buybox button:disabled { opacity: .45; cursor: not-allowed; }
 .tankazon-item-status { margin: 0; color: #365d39; font-size: 13px; line-height: 1.5; overflow-wrap: anywhere; }
 .tankazon-item-status:empty { display: none; }
@@ -18514,34 +18955,76 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .decor-layout-list button { overflow-wrap: anywhere; max-width: 100%; white-space: normal; }
 .decor-layout-detail { border-top: 1px solid #49758c; margin-top: 16px; padding-top: 8px; }
 .decor-layout-detail h3 { overflow-wrap: anywhere; }
-.store-facets { min-width: 0; padding: 16px; color: #18303f; background: #fff; overflow-y: auto; border-right: 1px solid #d6dfe5; }
-.store-facets summary { font-size: 16px; font-weight: 750; cursor: pointer; }
-.store-facets fieldset { min-width: 0; padding: 0; margin: 20px 0 0; border: 0; }
-.store-facets legend { padding: 0; margin-bottom: 8px; font-size: 14px; font-weight: 750; }
-.store-facets label { display: flex; align-items: flex-start; gap: 7px; margin: 7px 0; cursor: pointer; font-size: 13px; line-height: 1.4; }
-.store-facets input { flex: 0 0 15px; width: 15px; height: 15px; margin: 2px 0 0; accent-color: #147593; }
-.store-facets small { color: #627681; margin-left: auto; }
-.store-facets input:focus-visible { outline: 2px solid #147593; outline-offset: 3px; }
-.store-facet-count { font-size: 13px; margin: 10px 0; }
+.store-facets {
+  grid-column: 1 / -1;
+  grid-row: 1;
+  position: relative;
+  z-index: 7;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  min-height: 42px;
+  padding: 5px 10px;
+  overflow: visible;
+  border-right: 0;
+  border-bottom: 1px solid #d6dfe5;
+  color: #18303f;
+  background: rgba(255,255,255,.98);
+  box-shadow: 0 2px 7px rgba(15,17,17,.06);
+}
+.store-facet-head { display: flex; flex: 0 0 auto; align-items: center; gap: 8px; min-width: 0; white-space: nowrap; }
+.store-facet-head > strong { font-size: .78rem; }
+.store-facet-count { margin: 0; color: #627681; font-size: .7rem; }
+.store-facet-clear { padding: 3px 6px; border: 0; border-radius: 5px; color: #096b85; background: #eef7fa; cursor: pointer; font-size: .68rem; font-weight: 750; }
+.store-facet-clear:hover:not(:disabled) { background: #dceff4; }
+.store-facet-clear:disabled { opacity: .42; cursor: default; }
+.store-facet-groups { display: flex; flex: 1 1 auto; flex-wrap: wrap; align-items: center; gap: 6px; min-width: 0; overflow: visible; }
+.store-facet-group { position: relative; flex: 0 0 auto; }
+.store-facet-group > summary { list-style: none; min-height: 30px; padding: 6px 22px 6px 9px; border: 1px solid #b8c8d2; border-radius: 7px; background: #fff; color: #233f51; font-size: .7rem; font-weight: 800; cursor: pointer; white-space: nowrap; }
+.store-facet-group > summary::-webkit-details-marker { display: none; }
+.store-facet-group > summary::after { content: "▾"; position: absolute; right: 8px; top: 7px; color: #667b88; font-size: .65rem; }
+.store-facet-group[open] > summary { border-color: #147593; box-shadow: 0 0 0 2px rgba(20,117,147,.14); }
+.store-facet-options { position: absolute; top: calc(100% + 5px); left: 0; z-index: 30; display: grid; min-width: 190px; max-width: min(300px, 72vw); max-height: 300px; overflow: auto; padding: 7px; border: 1px solid #b8c8d2; border-radius: 8px; background: #fff; box-shadow: 0 12px 30px rgba(15, 35, 48, .2); }
+.store-facet-options label { display: grid; grid-template-columns: 16px minmax(0,1fr) auto; align-items: center; gap: 7px; min-height: 30px; margin: 0; padding: 5px 6px; border-radius: 5px; cursor: pointer; font-size: .72rem; line-height: 1.25; }
+.store-facet-options label:hover { background: #f1f7fa; }
+.store-facet-options input { width: 14px; height: 14px; margin: 0; accent-color: #147593; }
+.store-facet-options input:focus-visible { outline: 2px solid #147593; outline-offset: 2px; }
+.store-facet-options small { color: #718795; font-size: .65rem; }
 .store-overlay .shop-toolbar-summary { display: none; }
-.store-facet-clear { padding: 0; border: 0; color: #096b85; background: transparent; text-decoration: underline; cursor: pointer; font-size: 13px; }
-.store-facet-clear:disabled { opacity: .5; cursor: default; }
-.store-overlay .shop-card.store-facet-hidden, .store-overlay .store-facet-empty-section { display: none !important; }
-.store-facet-empty { padding: 28px; color: #365369; }
-.tankazon-store .tankazon-body { grid-template-columns: 205px minmax(0, 1fr) 300px; }
-.tankazon-store.tankazon-item-open .store-facets, .tankazon-store.tankazon-item-open .store-facet-empty { display: none; }
-.store-overlay:not(.tankazon-store) .store-facets { border-radius: 12px; margin-bottom: 14px; max-height: 38vh; }
+.store-overlay .shop-card.store-facet-hidden,
+.store-overlay .store-facet-empty-section { display: none !important; }
+.store-facet-empty { grid-column: 1; grid-row: 2; align-self: start; margin: 14px; padding: 18px; color: #365369; background: #fff; border-radius: 8px; }
+.tankazon-store .tankazon-body {
+  grid-template-columns: minmax(0, 1fr) 280px;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+.tankazon-store .tankazon-catalog-area { grid-column: 1; grid-row: 2; scrollbar-width: auto; scrollbar-color: #899ba7 #e4e9ec; }
+.tankazon-store .tankazon-catalog-area::-webkit-scrollbar { width: 13px; height: 13px; }
+.tankazon-store .tankazon-catalog-area::-webkit-scrollbar-track { background: #e4e9ec; }
+.tankazon-store .tankazon-catalog-area::-webkit-scrollbar-thumb { min-height: 44px; border: 3px solid #e4e9ec; border-radius: 999px; background: #899ba7; }
+.tankazon-store .tankazon-catalog-area::-webkit-scrollbar-thumb:hover { background: #687d8a; }
+.tankazon-store .tankazon-cart { grid-column: 2; grid-row: 2; }
+.tankazon-store.tankazon-item-open .store-facets,
+.tankazon-store.tankazon-item-open .store-facet-empty { display: none; }
+.tankazon-store.tankazon-item-open .tankazon-catalog-area,
+.tankazon-store.tankazon-item-open .tankazon-cart { grid-row: 1 / -1; }
+.store-overlay:not(.tankazon-store) .store-facets { border-radius: 12px; margin-bottom: 14px; }
 @media (max-width: 1100px) {
-  .tankazon-store .tankazon-body { grid-template-columns: 160px minmax(0, 1fr) 240px; }
+  .tankazon-store .tankazon-body { grid-template-columns: minmax(0, 1fr) 230px; }
 }
 @media (max-width: 900px) {
-  .tankazon-store .tankazon-body { grid-template-columns: 160px minmax(0, 1fr); }
+  .tankazon-store .tankazon-body { grid-template-columns: minmax(0, 1fr); }
+  .tankazon-store .tankazon-cart { display: none; }
+  .store-facet-groups { flex-wrap: nowrap; overflow: visible; }
 }
 @media (max-width: 700px) {
-  .tankazon-store .tankazon-body { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(0, 1fr); }
-  .tankazon-store .store-facets { max-height: 28vh; border-right: 0; border-bottom: 1px solid #d6dfe5; padding: 10px 14px; }
-  .store-facets fieldset { display: inline-block; vertical-align: top; min-width: 140px; margin-right: 18px; }
+  .store-facets { gap: 6px; min-height: 38px; padding: 4px 7px; }
+  .store-facet-head > strong { display: none; }
+  .store-facet-count { font-size: .64rem; }
+  .store-facet-group > summary { min-height: 28px; padding-top: 5px; padding-bottom: 5px; }
 }
+
 .decor-layout-preview {
   position: relative; overflow: hidden; border-radius: 12px; border: 1px solid #49758c;
   background: linear-gradient(#205775, #102d42 82%, #393b39 83%, #262b2a);
@@ -18618,12 +19101,17 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   right: 14px;
   z-index: 2;
   display: flex;
+  flex-wrap: wrap-reverse;
   justify-content: center;
   align-items: center;
-  height: 28px;
+  min-height: 28px;
+  height: auto;
   box-sizing: border-box;
   border-radius: 0 0 4px 4px;
   background: linear-gradient(transparent, rgba(3, 28, 43, .45));
+  /* The JS anchors the selector's bottom row to the image bottom. Extra
+     rows grow upward, keeping every appearance dot visible and clickable. */
+  transform: translateY(calc(28px - 100%));
 }
 
 @media (max-width: 720px) {
@@ -18634,10 +19122,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 #storeOverlay .shop-variant-dots button {
   display: grid;
   place-items: center;
-  flex: 0 1 24px;
-  min-width: 12px;
-  width: 24px;
-  height: 28px;
+  flex: 0 0 16px;
+  min-width: 16px;
+  width: 16px;
+  height: 20px;
   min-height: 0;
   margin: 0;
   padding: 0;
@@ -19875,9 +20363,9 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   z-index: 3 !important;
 }
 
-/* In All Items, every top-level category gets the same white section bar.
-   Fish and Decor put their section title in the exact same bar as Sort by. */
-.tankazon-store .store-drawer.tankazon-all-section::before {
+/* All Categories shows every top-level title bar. Single-category pages hide
+   their redundant title, except Equipment, where its section context remains. */
+.tankazon-store .store-drawer.tankazon-section-heading::before {
   grid-column: 1 / -1;
   display: flex;
   align-items: center;
@@ -19899,7 +20387,7 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   display: none;
 }
 
-.tankazon-store .store-drawer.tankazon-all-section > .shop-toolbar {
+.tankazon-store .store-drawer.tankazon-section-heading > .shop-toolbar {
   position: static;
   z-index: auto;
   min-height: 44px;
@@ -19911,7 +20399,7 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
   box-shadow: 0 2px 8px rgba(15, 17, 17, .08);
 }
 
-.tankazon-store .store-drawer.tankazon-all-section > .shop-toolbar .shop-toolbar-title {
+.tankazon-store .store-drawer.tankazon-section-heading > .shop-toolbar .shop-toolbar-title {
   display: block;
   margin: 0;
   color: #0f1111;
@@ -19922,13 +20410,13 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
 
 /* Fish and Decor already have a toolbar. Their title belongs inside it, not in
    a second stacked white strip. */
-.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="fish"]::before,
-.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="decor"]::before {
+.tankazon-store .store-drawer.tankazon-section-heading[data-tankazon-category="fish"]::before,
+.tankazon-store .store-drawer.tankazon-section-heading[data-tankazon-category="decor"]::before {
   content: none;
   display: none;
 }
 
-.tankazon-store .store-drawer.tankazon-all-section[data-tankazon-category="pharmacy"]::before {
+.tankazon-store .store-drawer.tankazon-section-heading[data-tankazon-category="pharmacy"]::before {
   content: "Medicine";
 }
 
@@ -23012,6 +23500,66 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .tankazon-store[data-websurf-theme="dark"] .websurf-status-bar strong { color: #c8d8e2; }
 .tankazon-store[data-websurf-theme="dark"] .websurf-email-scroll a { color: #7cc8ff; }
 
+/* The Proteus authorization email has its own corporate palette. Its light
+   navy ink must be remapped explicitly in WebSurf dark mode; otherwise the
+   message body is technically present but visually disappears into the reader. */
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-authorization {
+  color: #c7dce9;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-brand {
+  border-bottom-color: #6e9fbd;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-brand img {
+  filter: brightness(0) saturate(100%) invert(80%) sepia(21%) saturate(855%) hue-rotate(159deg) brightness(103%) contrast(94%);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-brand span,
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-authorization > footer,
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-authorization > footer strong {
+  color: #9bbbd0;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-intro h3 {
+  color: #8dd0ff;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-intro p,
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-response p {
+  color: #c2d4e0;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-status-grid h4 {
+  color: #a8cce5;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-order-status {
+  border-right-color: #6698b7;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-order-status > strong {
+  border-color: #61b9e9;
+  color: #dff3ff;
+  background: linear-gradient(90deg, #183343, #1c2b35);
+  box-shadow: inset 0 1px rgba(214, 241, 255, .12);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-configuration span,
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-configuration strong {
+  color: #d4e5ef;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-configuration i {
+  border-bottom-color: #83bfe1;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-response button {
+  border-color: #4ca9de;
+  color: #f4fbff;
+  background: linear-gradient(180deg, #1376aa, #0a527d);
+  box-shadow: inset 0 1px rgba(255, 255, 255, .2), 0 2px 8px rgba(0, 0, 0, .28);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-response button:hover,
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-response button:focus-visible {
+  background: linear-gradient(180deg, #2189be, #0e6699);
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-auth-thanks {
+  color: #bce8ff;
+}
+.tankazon-store[data-websurf-theme="dark"] .websurf-proteus-authorization > footer {
+  border-top-color: #6e9fbd;
+}
+
 /* Settings page uses the same WebSurf theme state and maps its local design
    tokens onto the shared chrome/page palette. */
 .tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page {
@@ -23164,6 +23712,168 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-support-heart { color: #dceaf2; }
 
 /* ========================================================================== */
+/* Plan A Phase 2: canonical WebSurf + BubbleBodega shell                       */
+/* ========================================================================== */
+.tankazon-store .tankazon-panel {
+  width: min(1600px, calc(100vw - 18px));
+  height: min(97dvh, 1040px);
+  grid-template-rows: 40px auto auto minmax(0, 1fr);
+}
+.tankazon-store .webpage-tab-strip { height: 40px; min-height: 40px; max-height: 40px; padding-top: 3px; }
+.tankazon-store .webpage-tab { height: 34px; padding-inline: 12px; }
+.tankazon-store .webpage-tab.is-active { height: 36px; }
+.tankazon-store .webpage-browser-settings,
+.tankazon-store .webpage-browser-close { width: 31px; height: 31px; margin-top: 0; margin-bottom: 2px; }
+.tankazon-store .tankazon-mainbar { grid-template-columns: 170px minmax(280px, 1fr) auto auto !important; min-height: 58px; padding: 6px 12px; gap: 10px; }
+.tankazon-store .tankazon-logo { width: 154px !important; height: 46px !important; justify-self: start !important; object-position: left center !important; }
+
+.tankazon-logo-button {
+  display: flex;
+  align-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+}
+
+.tankazon-logo-button:focus-visible { outline: 2px solid #8eddf7; outline-offset: 4px; border-radius: 6px; }
+
+.bubblebodega-home-page {
+  min-height: min(720px, 100%);
+  overflow: auto;
+  padding: clamp(18px, 3vw, 44px);
+  color: #153140;
+  background: linear-gradient(135deg, #effcff 0%, #d9f2f0 48%, #fff5df 100%);
+}
+
+.bubblebodega-home-hero {
+  display: flex;
+  gap: clamp(16px, 3vw, 32px);
+  align-items: center;
+  max-width: 1120px;
+  margin: 0 auto 24px;
+  padding: clamp(18px, 3vw, 32px);
+  border: 1px solid rgba(22, 103, 121, .18);
+  border-radius: 22px;
+  background: rgba(255, 255, 255, .76);
+  box-shadow: 0 18px 42px rgba(29, 91, 108, .12);
+}
+
+.bubblebodega-home-hero img { width: min(205px, 32vw); height: auto; object-fit: contain; }
+.bubblebodega-home-hero span, .bubblebodega-home-grid section > header span { color: #39788a; font-size: .72rem; font-weight: 800; letter-spacing: .12em; }
+.bubblebodega-home-hero h1 { margin: 4px 0; font-size: clamp(1.45rem, 3vw, 2.25rem); }
+.bubblebodega-home-hero p { margin: 0; color: #4d6973; }
+.bubblebodega-home-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; max-width: 1120px; margin: auto; }
+.bubblebodega-home-grid section { min-width: 0; padding: 18px; border: 1px solid rgba(22, 103, 121, .15); border-radius: 18px; background: rgba(255, 255, 255, .84); }
+.bubblebodega-home-grid section > header { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 12px; }
+.bubblebodega-home-grid h2 { margin: 0; font-size: 1rem; }
+.bubblebodega-home-grid header button, .bubblebodega-home-card button { border: 0; border-radius: 999px; padding: 7px 10px; color: #fff; background: #16788a; font: inherit; font-size: .78rem; font-weight: 750; cursor: pointer; }
+.bubblebodega-home-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; border-top: 1px solid rgba(22, 103, 121, .12); }
+.bubblebodega-home-card:first-of-type { border-top: 0; }
+.bubblebodega-home-card div { min-width: 0; display: grid; gap: 3px; }
+.bubblebodega-home-card strong, .bubblebodega-home-card small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bubblebodega-home-card small, .bubblebodega-home-empty { color: #5b747d; font-size: .78rem; }
+.bubblebodega-home-empty { margin: 14px 0 2px; line-height: 1.45; }
+
+@media (max-width: 820px) { .bubblebodega-home-grid { grid-template-columns: 1fr; } }
+@media (max-width: 480px) { .bubblebodega-home-hero { align-items: flex-start; } .bubblebodega-home-hero img { width: 104px; } }
+
+/* BubbleBodega Home lives inside the regular catalogue surface: same chrome,
+   same product tiles, only a curated vertical arrangement. */
+.tankazon-store .tankazon-panel { grid-template-rows: auto minmax(0, 1fr); }
+.tankazon-store .tankazon-body { min-height: 0; height: 100%; }
+.tankazon-store:not(.tankazon-cart-open) .tankazon-body { grid-template-columns: minmax(0, 1fr); }
+.tankazon-store:not(.tankazon-cart-open) .tankazon-cart { display: none; }
+.tankazon-cart-toggle { flex: 0 0 auto; margin-left: 2px; padding: 7px 11px; border: 1px solid #6ab7e9; border-radius: 7px; color: #fff; background: #176fc4; font: 800 .8rem/1 system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.tankazon-cart-toggle:hover { background: #2586df; }
+
+.bubblebodega-home-page {
+  min-height: 100%;
+  padding: 14px;
+  overflow: auto;
+  color: #101820;
+  background: #edf3f5;
+}
+.bubblebodega-home-content { display: grid; gap: 12px; min-width: 0; }
+.bubblebodega-home-section { padding: 14px; border: 1px solid #d1e1e5; border-radius: 10px; background: linear-gradient(125deg, #dff8fb, #eefcff 55%, #d9f4e7); }
+.bubblebodega-home-section:nth-child(2) { background: linear-gradient(125deg, #e5f7ff, #f5fcff 52%, #d8f0fa); }
+.bubblebodega-home-section:nth-child(3) { background: linear-gradient(125deg, #d8f4fb, #effbff 56%, #d6eff7); }
+.bubblebodega-home-section > header { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin: 0 2px 10px; }
+.bubblebodega-home-section h2 { margin: 0; color: #063152; font-size: clamp(1.15rem, 2vw, 1.65rem); line-height: 1.1; }
+.bubblebodega-home-section p { margin: 3px 0 0; color: #31566b; font-size: .86rem; }
+.bubblebodega-home-link { border: 0; color: #083d64; background: transparent; font: 800 .86rem/1 system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
+.bubblebodega-home-link:hover { color: #0879bf; text-decoration: underline; }
+.bubblebodega-home-product-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.tankazon-store .bubblebodega-home-product-card { height: 248px !important; min-height: 248px !important; max-height: 248px !important; grid-template-rows: 128px 50px 42px !important; background: #fff; }
+.tankazon-store .bubblebodega-home-product-card .shop-thumb, .tankazon-store .bubblebodega-home-product-card .decor-thumb { height: 128px !important; min-height: 128px !important; }
+.tankazon-store .bubblebodega-home-product-card .shop-card-main { min-height: 0; }
+.tankazon-store .bubblebodega-home-product-card .bubblebodega-home-reason { display: block !important; margin-top: 4px; color: #365c72; font-size: .76rem; line-height: 1.2; white-space: normal; }
+.tankazon-store .bubblebodega-home-product-card .buy-button { min-height: 32px; }
+.bubblebodega-home-empty { margin: 6px 2px 2px !important; padding: 12px !important; border-radius: 7px; background: rgba(255,255,255,.75); }
+
+/* Home uses the exact same compact product tiles as the category catalogues.
+   The recommendation reason remains available as a tooltip instead of adding
+   a second card treatment. */
+.tankazon-store.is-bubblebodega-home-open .store-facets { display: none !important; }
+.tankazon-store.is-bubblebodega-home-open .tankazon-body { grid-template-rows: minmax(0, 1fr) !important; }
+.tankazon-store.is-bubblebodega-home-open .tankazon-catalog-area,
+.tankazon-store.is-bubblebodega-home-open .tankazon-cart { grid-row: 1 !important; }
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card {
+  height: 323px !important;
+  min-height: 323px !important;
+  max-height: 323px !important;
+  grid-template-rows: 196px 58px 38px !important;
+}
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .shop-thumb,
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .decor-thumb {
+  height: 196px !important;
+  min-height: 196px !important;
+  max-height: 196px !important;
+  background: radial-gradient(circle at 50% 13%, #68c9ed 0, #1685b9 48%, #06436c 100%) !important;
+}
+/* Appearance selectors are actual buttons rendered from the fish's available
+   variants. Do not layer decorative pseudo-dots over them: those looked like
+   extra choices but could never be selected. */
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card::after { content: none; }
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .bubblebodega-home-reason { display: none !important; }
+
+@media (max-width: 800px) { .tankazon-nav-promo { display: none; } .bubblebodega-home-product-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } }
+.tankazon-store .tankazon-search { height: 38px; grid-template-columns: minmax(0,1fr) 44px; }
+.tankazon-store .tankazon-search input { padding-inline: 11px; font-size: .88rem; }
+.tankazon-store .tankazon-search-scope { min-width: 70px; padding-left: 9px; padding-right: 22px; font-size: .72rem; }
+.tankazon-store .tankazon-account-button { min-height: 38px; }
+.tankazon-store .store-coin-counter { min-height: 36px; }
+.tankazon-store .tankazon-navrow { min-height: 36px; padding: 0 12px; gap: 8px; }
+.tankazon-store .store-tab-button { min-height: 30px; padding: 5px 10px; font-size: .75rem; }
+.tankazon-store .tankazon-all-categories { padding: 5px 8px; font-size: .73rem; }
+.tankazon-store .tankazon-promo-strip { min-height: 40px; padding: 5px 14px; }
+.tankazon-store .tankazon-promo-strip > div { grid-auto-flow: column; align-items: baseline; justify-content: start; column-gap: 10px; }
+.tankazon-store .tankazon-promo-strip strong { font-size: 1rem; }
+.tankazon-store .tankazon-promo-strip small { font-size: .68rem; }
+@media (max-height: 760px) and (min-width: 821px) {
+  .tankazon-store .tankazon-panel { height: calc(100dvh - 10px); }
+  .tankazon-store .tankazon-promo-strip { display: none; }
+}
+@media (max-width: 1180px) {
+  .tankazon-store .tankazon-mainbar { grid-template-columns: 145px minmax(220px, 1fr) auto auto !important; gap: 8px; }
+  .tankazon-store .tankazon-logo { width: 132px !important; height: 42px !important; }
+  .tankazon-store .tankazon-nav-promo small { display: none; }
+}
+@media (max-width: 820px) {
+  .tankazon-store { padding: 4px; }
+  .tankazon-store .tankazon-panel { width: calc(100vw - 8px); height: calc(100dvh - 8px); }
+  .tankazon-store .tankazon-mainbar { grid-template-columns: 104px minmax(0, 1fr) auto auto !important; min-height: 52px; padding: 5px 7px; gap: 6px; }
+  .tankazon-store .tankazon-logo { width: 96px !important; height: 38px !important; }
+  .tankazon-store .tankazon-search { grid-template-columns: minmax(0,1fr) 38px; height: 36px; }
+  .tankazon-store .tankazon-search-scope { min-width: 52px; padding-left: 6px; padding-right: 16px; }
+  .tankazon-store .tankazon-account-button { min-height: 36px; padding-inline: 6px; }
+  .tankazon-store .tankazon-navrow { padding-inline: 6px; }
+  .tankazon-store .tankazon-nav-promo { display: none; }
+  .tankazon-store .tankazon-promo-strip { min-height: 34px; padding: 4px 8px; }
+  .tankazon-store .tankazon-promo-strip small { display: none; }
+}
+
+/* ========================================================================== */
 /* WebSurf Phase 5: Ratio Lock integration + responsive regression guard       */
 /* ========================================================================== */
 /* Ratio Lock scales the saved app shell as one composition. WebSurf must use
@@ -23176,13 +23886,13 @@ html[data-layout-ratio-lock="true"] .store-overlay.tankazon-store {
   place-items: center;
   align-items: center;
   justify-content: stretch;
-  padding: clamp(14px, 2%, 28px);
+  padding: clamp(8px, 1.2%, 14px);
   background: transparent;
 }
 
 html[data-layout-ratio-lock="true"] .tankazon-store .tankazon-panel {
-  width: min(1520px, calc(100% - 28px));
-  height: min(95%, 940px);
+  width: min(1600px, calc(100% - 16px));
+  height: min(97%, 1040px);
   max-width: none;
   max-height: none;
   min-height: 0;
@@ -23971,4 +24681,2165 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   .proteus-site-footer { align-items: flex-start; flex-direction: column; }
   .proteus-designer-completion-card { padding: 30px 22px; }
   .proteus-designer-completion-card dl > div { grid-template-columns: 105px minmax(0,1fr); }
+}
+
+/* ========================================================================== */
+/* Plan B Phase 1: shared compact WebSurf site chrome                          */
+/* ========================================================================== */
+.websurf-site-header {
+  box-sizing: border-box;
+  transition: min-height 180ms ease, height 180ms ease, padding 180ms ease, gap 180ms ease, box-shadow 180ms ease;
+}
+
+/* BubbleBodega keeps search and category shortcuts visible while reducing
+   branding and account chrome once the catalogue is underway. */
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-mainbar {
+  min-height: 42px;
+  padding-block: 3px;
+  grid-template-columns: 124px minmax(260px, 1fr) auto auto !important;
+  gap: 8px;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-logo {
+  width: 112px !important;
+  height: 34px !important;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-search {
+  height: 34px;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-account-button {
+  min-height: 34px;
+  padding-block: 2px;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-account-button span small {
+  display: none;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-navrow {
+  min-height: 30px;
+}
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .store-tab-button,
+.tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-all-categories {
+  min-height: 26px;
+  padding-block: 3px;
+}
+
+/* Bubble Borough Bank: make the account history the primary surface. */
+.bubble-bank-window-header.websurf-site-header {
+  min-height: 72px;
+  padding: 6px 18px;
+  gap: 16px;
+}
+.bubble-bank-window-header.websurf-site-header .bubble-bank-logo {
+  height: 54px;
+  max-width: min(250px, 22vw);
+  transition: height 180ms ease, max-width 180ms ease;
+}
+.bubble-bank-window-header.websurf-site-header .bubble-bank-tabs { gap: 8px; }
+.bubble-bank-window-header.websurf-site-header .bubble-bank-tab {
+  min-width: 112px;
+  min-height: 40px;
+  padding: 8px 13px;
+  font-size: .82rem;
+  transition: min-height 180ms ease, padding 180ms ease, font-size 180ms ease;
+}
+.bubble-bank-window-header.websurf-site-header .bubble-bank-window-actions .bubble-bank-coin-amount {
+  min-height: 40px;
+  padding-block: 4px;
+}
+.bubble-bank-window-header.websurf-site-header.is-collapsed {
+  min-height: 50px;
+  padding-block: 3px;
+  box-shadow: 0 5px 16px rgba(28, 40, 50, .12);
+}
+.bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-logo {
+  height: 38px;
+  max-width: 185px;
+}
+.bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-tab {
+  min-height: 32px;
+  padding: 5px 10px;
+  font-size: .74rem;
+}
+.bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-window-actions .bubble-bank-coin-amount {
+  min-height: 32px;
+  padding: 3px 12px;
+}
+.bubble-bank-welcome {
+  min-height: 120px;
+  padding: 18px 52px 34px;
+}
+.bubble-bank-welcome h2 { font-size: clamp(1.7rem, 3vw, 2.55rem); }
+.bubble-bank-welcome p { margin-top: 4px; font-size: .9rem; }
+.bubble-bank-balance-card { margin-top: -26px; }
+
+/* Proteus keeps the sterile launch-page identity but stops spending nearly a
+   full card row on site chrome. */
+.proteus-biodyne-header.websurf-site-header {
+  grid-template-columns: minmax(190px, .72fr) minmax(520px, 2fr);
+  min-height: 64px;
+  padding: 7px 16px 7px 20px;
+  gap: 14px;
+}
+.proteus-biodyne-header.websurf-site-header .proteus-biodyne-brand-icon {
+  width: 36px;
+  height: 36px;
+  flex-basis: 36px;
+  transition: width 180ms ease, height 180ms ease, flex-basis 180ms ease;
+}
+.proteus-biodyne-header.websurf-site-header .proteus-biodyne-brand-title {
+  width: min(150px, 13vw);
+  height: 38px;
+  transition: width 180ms ease, height 180ms ease;
+}
+.proteus-biodyne-header.websurf-site-header .proteus-biodyne-nav {
+  gap: clamp(9px, 1.5vw, 22px);
+}
+.proteus-biodyne-hero {
+  min-height: clamp(285px, 38vh, 385px);
+}
+.proteus-biodyne-hero-copy { padding: 24px 18px 24px 38px; }
+.proteus-biodyne-hero-copy > p:first-child { margin-bottom: 14px; }
+.proteus-biodyne-intro { margin: 16px 0 16px; }
+.proteus-biodyne-hero-side { padding-top: 32px; padding-bottom: 30px; }
+
+/* Davy Jones' Locker retains the black-market identity while its catalogue
+   header behaves like the rest of WebSurf. */
+.davy-jones-locker-shell {
+  width: min(1180px, calc(100% - 32px));
+  padding: 18px 0 48px;
+}
+.davy-jones-locker-header.websurf-site-header {
+  position: sticky;
+  top: 0;
+  z-index: 6;
+  min-height: 68px;
+  padding: 8px 6px 10px;
+  background: rgba(5,5,5,.97);
+  backdrop-filter: blur(8px);
+}
+.davy-jones-locker-header.websurf-site-header .davy-jones-locker-brand > img {
+  width: 46px;
+  height: 46px;
+  transition: width 180ms ease, height 180ms ease;
+}
+.davy-jones-locker-header.websurf-site-header .davy-jones-locker-kicker {
+  transition: opacity 140ms ease, margin 180ms ease, height 180ms ease;
+}
+.davy-jones-locker-header.websurf-site-header.is-collapsed {
+  min-height: 46px;
+  padding-block: 4px;
+  border-bottom-color: #333;
+  box-shadow: 0 8px 18px rgba(0,0,0,.32);
+}
+.davy-jones-locker-header.websurf-site-header.is-collapsed .davy-jones-locker-brand > img {
+  width: 30px;
+  height: 30px;
+}
+.davy-jones-locker-header.websurf-site-header.is-collapsed .davy-jones-locker-kicker {
+  height: 0;
+  margin: 0;
+  opacity: 0;
+  overflow: hidden;
+}
+.davy-jones-locker-header.websurf-site-header.is-collapsed h1 {
+  font-size: 1.05rem;
+}
+.davy-jones-locker-header.websurf-site-header.is-collapsed code { font-size: .68rem; }
+.davy-jones-locker-inventory { padding-top: 16px; }
+
+/* Fast long-catalogue navigation. */
+
+@media (max-width: 1180px) {
+  .tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-mainbar {
+    grid-template-columns: 105px minmax(210px, 1fr) auto auto !important;
+  }
+  .tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-logo { width: 96px !important; }
+  .bubble-bank-window-header.websurf-site-header { grid-template-columns: minmax(210px, auto) minmax(0, 1fr) auto; gap: 10px; }
+  .bubble-bank-window-header.websurf-site-header .bubble-bank-tab { min-width: 92px; }
+  .proteus-biodyne-header.websurf-site-header { grid-template-columns: minmax(170px, .6fr) minmax(0, 2fr); }
+}
+
+@media (max-width: 820px) {
+  .tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-mainbar {
+    grid-template-columns: 78px minmax(0, 1fr) auto auto !important;
+    min-height: 42px;
+  }
+  .tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-logo { width: 72px !important; height: 30px !important; }
+  .tankazon-store .tankazon-header.websurf-site-header.is-collapsed .tankazon-account-button span { display: none; }
+  .bubble-bank-window-header.websurf-site-header,
+  .bubble-bank-window-header.websurf-site-header.is-collapsed {
+    grid-template-columns: minmax(0, 1fr) auto;
+    min-height: 58px;
+    padding: 6px 10px;
+  }
+  .bubble-bank-window-header.websurf-site-header .bubble-bank-logo,
+  .bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-logo { height: 40px; max-width: 180px; }
+  .bubble-bank-window-header.websurf-site-header .bubble-bank-tabs { grid-column: 1 / -1; }
+  .bubble-bank-welcome { min-height: 104px; padding: 14px 18px 30px; }
+  .proteus-biodyne-header.websurf-site-header,
+  .proteus-biodyne-header.websurf-site-header.is-collapsed {
+    grid-template-columns: minmax(0, 1fr);
+    min-height: 58px;
+    padding: 6px 10px;
+  }
+  .proteus-biodyne-hero { min-height: 320px; }
+  .proteus-biodyne-hero-copy { padding: 22px 18px; }
+  .davy-jones-locker-shell { width: min(100% - 20px, 1180px); padding-top: 10px; }
+  .davy-jones-locker-header.websurf-site-header code { display: none; }
+}
+
+/* ========================================================================== */
+/* Plan B Phase 2: BubbleBodega virtualized catalogue + true lazy thumbnails */
+/* ========================================================================== */
+.tankazon-store .tankazon-virtual-host {
+  position: relative;
+  grid-column: 1 / -1;
+  width: 100%;
+  min-width: 0;
+  contain: layout style;
+}
+
+.tankazon-store .tankazon-virtual-host[hidden] {
+  display: none !important;
+}
+
+.tankazon-store .tankazon-virtual-slice {
+  position: absolute;
+  inset-inline: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  align-items: start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.tankazon-store .tankazon-virtual-slice > .shop-card {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 1180px) {
+  .tankazon-store .tankazon-virtual-slice {
+    grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
+  }
+}
+
+/* Long-form Proteus company About page. */
+.proteus-about-longform { color: #35566c; }
+.proteus-about-lead,
+.proteus-about-section,
+.proteus-about-feature-image,
+.proteus-about-finale { max-width: 1120px; margin-left: auto; margin-right: auto; }
+.proteus-about-lead { max-width: 940px; padding: clamp(34px, 6vw, 78px) 0 clamp(38px, 6vw, 72px); }
+.proteus-about-lead > p:first-child,
+.proteus-about-section > header > p,
+.proteus-about-finale > p {
+  margin: 0 0 18px;
+  color: #527797;
+  font-family: system-ui, sans-serif;
+  font-size: .68rem;
+  font-weight: 800;
+  letter-spacing: .2em;
+  text-transform: uppercase;
+}
+.proteus-about-lead h2 { margin: 0 0 28px; color: #173c54; font-size: clamp(2.65rem, 6vw, 6.2rem); font-weight: 400; letter-spacing: -.035em; line-height: .94; }
+.proteus-about-lead h2:focus { outline: none; }
+.proteus-about-lead p { max-width: 790px; margin: 0 0 17px; font-size: 1.02rem; line-height: 1.75; }
+.proteus-about-lead .proteus-about-deck { color: #294f66; font-size: clamp(1.15rem, 2vw, 1.5rem); line-height: 1.55; }
+.proteus-about-lead .proteus-about-question { margin-top: 30px; color: #173c54; font-weight: 650; }
+.proteus-about-lead blockquote { margin: 12px 0 34px; color: #173c54; font-size: clamp(1.8rem, 4vw, 3.7rem); font-style: italic; line-height: 1.12; }
+
+.proteus-about-feature-image { position: relative; margin-bottom: clamp(54px, 8vw, 94px); overflow: hidden; border: 1px solid #aebfc8; background: #102f43; }
+.proteus-about-feature-image img { display: block; width: 100%; max-height: 680px; object-fit: cover; }
+.proteus-about-voss-image img { min-height: 440px; object-position: 50% 32%; }
+.proteus-about-lab-image img { aspect-ratio: 16 / 8.5; object-position: center; filter: saturate(.84) contrast(1.04); }
+.proteus-about-feature-image::after { content: ""; position: absolute; inset: auto 0 0; height: 35%; background: linear-gradient(180deg, transparent, rgba(5, 28, 43, .82)); pointer-events: none; }
+.proteus-about-feature-image figcaption { position: absolute; z-index: 1; right: 28px; bottom: 24px; left: 28px; display: flex; flex-wrap: wrap; gap: 8px 20px; align-items: baseline; color: #eaf3f6; font-family: system-ui, sans-serif; font-size: .67rem; letter-spacing: .08em; }
+.proteus-about-feature-image figcaption strong { font-family: Georgia, serif; font-size: 1.25rem; font-weight: 400; letter-spacing: 0; }
+
+.proteus-about-section { display: grid; grid-template-columns: minmax(210px, .68fr) minmax(0, 1.32fr); gap: clamp(34px, 7vw, 92px); padding: clamp(42px, 6vw, 72px) 0; border-top: 1px solid var(--proteus-rule); }
+.proteus-about-section > header h3 { margin: 0; color: #1f455d; font-size: clamp(1.8rem, 3.3vw, 3.2rem); font-weight: 400; line-height: 1.05; }
+.proteus-about-section-copy { min-width: 0; }
+.proteus-about-section-copy > p { margin: 0 0 18px; color: #486779; font-size: 1rem; line-height: 1.78; }
+.proteus-about-section-copy strong { color: #234c64; }
+.proteus-about-listline { color: #254f67 !important; font-family: system-ui, sans-serif; font-size: .82rem !important; font-weight: 750; letter-spacing: .075em; line-height: 1.8 !important; text-transform: uppercase; }
+.proteus-about-stat { margin: 28px 0 !important; padding: 24px 26px; border: 1px solid #aac0cb; background: #e9f2f5; color: #315870 !important; font-size: 1.18rem !important; }
+.proteus-about-stat strong { font-size: 1.55em; font-weight: 500; }
+.proteus-about-emphasis { color: #173c54 !important; font-size: 1.2rem !important; font-style: italic; }
+
+.proteus-about-section-dark { max-width: none; grid-template-columns: minmax(210px, .68fr) minmax(0, 1.32fr); margin-top: 30px; margin-bottom: 30px; padding: clamp(54px, 7vw, 84px) max(calc((100vw - 1120px) / 2), 18px); border-top: 0; background: #173c54; }
+.proteus-about-section-dark > header > p { color: #a9c5d2; }
+.proteus-about-section-dark > header h3 { color: #fff; }
+.proteus-about-section-dark .proteus-about-section-copy > p { color: #c6d7df; }
+.proteus-about-section-dark .proteus-about-section-copy strong { color: #fff; }
+.proteus-about-section-dark .proteus-about-listline { color: #b5d2de !important; }
+.proteus-about-section-dark .proteus-about-emphasis { color: #fff !important; }
+.proteus-about-return-lines { margin: 34px 0; padding: 28px 30px; border: 1px solid rgba(210, 229, 236, .28); background: rgba(255,255,255,.045); }
+.proteus-about-return-lines p { margin: 0 0 18px; color: #c6d7df; line-height: 1.7; }
+.proteus-about-return-lines strong { display: block; margin-top: 7px; color: #fff; font-family: Georgia, serif; font-size: clamp(1.2rem, 2.2vw, 1.75rem); font-weight: 400; }
+
+.proteus-about-dreams { display: grid; gap: 7px; margin: 26px 0 30px; color: #1f455d; font-size: clamp(1.25rem, 2.5vw, 2rem); font-style: italic; }
+.proteus-about-note { margin-top: 30px; padding: 24px 26px; border: 1px solid #a8c0cc; background: #e9f2f5; }
+.proteus-about-note span { color: #527797; font-family: system-ui, sans-serif; font-size: .63rem; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; }
+.proteus-about-note p { margin: 12px 0 8px; color: #294f66; font-size: 1.1rem; line-height: 1.5; }
+.proteus-about-note small { color: #728894; font-family: system-ui, sans-serif; font-size: .72rem; }
+
+.proteus-about-selachimorph { padding-top: 0; border-top: 0; }
+.proteus-about-selachimorph .proteus-about-section-copy { grid-column: 2; }
+.proteus-about-selachimorph blockquote { margin: 0 0 30px; padding: 0 0 0 24px; border-left: 2px solid #7fa6ba; color: #315870; font-size: clamp(1.28rem, 2.2vw, 1.8rem); font-style: italic; line-height: 1.45; }
+
+.proteus-about-reclamation { margin-top: 20px; padding: clamp(42px, 6vw, 70px); border: 1px solid #9bb7c5; background: #e8f2f5; }
+.proteus-about-reclamation-lines { display: grid; gap: 5px; margin: 30px 0; color: #1e485f; font-size: clamp(1.25rem, 2.2vw, 1.75rem); font-weight: 500; }
+
+.proteus-about-finale { margin-top: clamp(62px, 8vw, 96px); padding: clamp(46px, 7vw, 82px); background: #102f43; color: #eaf3f6; }
+.proteus-about-finale > p { color: #abc6d1; }
+.proteus-about-finale h3 { max-width: 820px; margin: 0 0 38px; color: #fff; font-size: clamp(2.1rem, 4vw, 4rem); font-weight: 400; line-height: 1; }
+.proteus-about-finale > div > p { margin: 0 0 16px; color: #c6d7df; font-size: 1rem; line-height: 1.72; }
+.proteus-about-future-lines { display: grid; gap: 7px; margin: 30px 0 38px; color: #fff; font-size: clamp(1.3rem, 2.8vw, 2.25rem); font-style: italic; }
+.proteus-about-finale blockquote { margin: 42px 0 0; padding-top: 32px; border-top: 1px solid rgba(216, 233, 239, .25); color: #fff; font-size: clamp(1.5rem, 3vw, 2.8rem); font-style: italic; line-height: 1.3; }
+.proteus-about-finale footer { display: grid; gap: 4px; margin-top: 52px; color: #d8e7ed; }
+.proteus-about-finale footer strong { font-family: system-ui, sans-serif; font-size: .72rem; letter-spacing: .16em; text-transform: uppercase; }
+.proteus-about-finale footer em { color: #9ebcc9; font-size: 1rem; }
+
+@media (max-width: 900px) {
+  .proteus-about-section,
+  .proteus-about-section-dark { grid-template-columns: 1fr; }
+  .proteus-about-selachimorph .proteus-about-section-copy { grid-column: 1; }
+  .proteus-about-section-dark { padding-left: 22px; padding-right: 22px; }
+}
+
+@media (max-width: 560px) {
+  .proteus-about-lead { padding-top: 22px; }
+  .proteus-about-voss-image img { min-height: 360px; }
+  .proteus-about-lab-image img { aspect-ratio: 4 / 3; }
+  .proteus-about-feature-image figcaption { right: 18px; bottom: 18px; left: 18px; }
+  .proteus-about-reclamation,
+  .proteus-about-finale { padding: 30px 22px; }
+}
+
+/* Proteus subsidiary microsites opened from BubbleBodega seller links. */
+.tankazon-store.websurf-subsidiary-open .tankazon-header,
+.tankazon-store.websurf-subsidiary-open .tankazon-promo-strip,
+.tankazon-store.websurf-subsidiary-open .tankazon-account-page,
+.tankazon-store.websurf-subsidiary-open .tankazon-body,
+.tankazon-store.websurf-subsidiary-open .store-scroll-controls,
+.tankazon-store.websurf-subsidiary-open .proteus-biodyne-page,
+.tankazon-store.websurf-subsidiary-open .proteus-designer-route {
+  display: none !important;
+}
+
+.websurf-subsidiary-page {
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: auto;
+  background: #f4f7f8;
+}
+.websurf-subsidiary-page[hidden],
+.websurf-subsidiary-site[hidden] { display: none !important; }
+.websurf-subsidiary-site {
+  min-height: 100%;
+  display: flex;
+  flex-direction: column;
+  color: #17232b;
+}
+.websurf-subsidiary-site > header {
+  min-height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 28px;
+  padding: 18px 34px;
+  background: #fff;
+  border-bottom: 1px solid #d5dde1;
+}
+.websurf-subsidiary-logo {
+  display: block;
+  max-width: min(380px, 52vw);
+  max-height: 58px;
+  object-fit: contain;
+  object-position: left center;
+}
+.websurf-subsidiary-site > header code {
+  font-size: 13px;
+  color: #6d7c85;
+  white-space: nowrap;
+}
+.websurf-subsidiary-copy {
+  max-width: 920px;
+  width: calc(100% - 68px);
+  margin: 0 auto;
+  padding: 54px 0 24px;
+}
+.websurf-subsidiary-copy > p:first-child {
+  margin: 0 0 10px;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: #64757e;
+}
+.websurf-subsidiary-copy h1 {
+  margin: 0 0 18px;
+  font-size: clamp(34px, 5vw, 64px);
+  line-height: .98;
+  letter-spacing: -.04em;
+}
+.websurf-subsidiary-copy h1 + p {
+  max-width: 720px;
+  margin: 0;
+  font-size: 17px;
+  line-height: 1.6;
+  color: #485963;
+}
+.websurf-subsidiary-gallery {
+  max-width: 920px;
+  width: calc(100% - 68px);
+  margin: 12px auto 60px;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+.websurf-subsidiary-gallery img {
+  width: 100%;
+  height: 210px;
+  box-sizing: border-box;
+  object-fit: contain;
+  padding: 18px;
+  background: #fff;
+  border: 1px solid #d6dfe3;
+  border-radius: 10px;
+}
+.websurf-subsidiary-gallery-products { grid-template-columns: repeat(auto-fit, minmax(180px, 250px)); }
+.websurf-subsidiary-site > footer {
+  margin-top: auto;
+  min-height: 88px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 18px;
+  padding: 20px 30px;
+  background: #eef3f5;
+  color: #52636d;
+  font-size: 12px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+.websurf-subsidiary-site > footer img {
+  display: block;
+  max-width: 190px;
+  max-height: 38px;
+  object-fit: contain;
+}
+
+.webpage-tab[data-websurf-subsidiary-tab] img { object-fit: contain; }
+
+@media (max-width: 760px) {
+  .websurf-subsidiary-site > header { padding: 14px 18px; gap: 14px; }
+  .websurf-subsidiary-site > header code { display: none; }
+  .websurf-subsidiary-copy,
+  .websurf-subsidiary-gallery { width: calc(100% - 36px); }
+  .websurf-subsidiary-copy { padding-top: 34px; }
+  .websurf-subsidiary-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .websurf-subsidiary-gallery img { height: 160px; }
+}
+
+.tankazon-item-pack-art {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: center;
+  width: min(100%, 440px);
+  min-height: 340px;
+  margin: 0 auto;
+  padding: 12px 8px;
+}
+.tankazon-item-pack-art-tile {
+  display: grid;
+  place-items: center;
+  width: 33.333%;
+  min-width: 112px;
+  min-height: 84px;
+  margin: -10px -6px;
+}
+.tankazon-item-pack-art-image {
+  display: block;
+  width: 100%;
+  max-width: 132px;
+  max-height: 92px;
+  object-fit: contain;
+}
+.tankazon-item-pack-art-tile:nth-child(1) { transform: translate(14px, 16px) rotate(-7deg); }
+.tankazon-item-pack-art-tile:nth-child(2) { transform: translate(10px, -6px) rotate(-2deg); }
+.tankazon-item-pack-art-tile:nth-child(3) { transform: translate(-2px, 18px) rotate(5deg); }
+.tankazon-item-pack-art-tile:nth-child(4) { transform: translate(-18px, -2px) rotate(-5deg); }
+.tankazon-item-pack-art-tile:nth-child(5) { transform: translate(4px, 8px) rotate(4deg); }
+.tankazon-item-pack-art-tile:nth-child(6) { transform: translate(0, 12px) rotate(-3deg); }
+@media (max-width: 900px) {
+  .tankazon-item-pack-art {
+    width: min(100%, 320px);
+    min-height: 220px;
+    padding: 8px 4px;
+  }
+  .tankazon-item-pack-art-tile {
+    width: 50%;
+    min-width: 92px;
+    min-height: 72px;
+    margin: -8px -4px;
+  }
+  .tankazon-item-pack-art-image {
+    max-width: 110px;
+    max-height: 76px;
+  }
+}
+
+/* BubbleBodega unavailable fish: gray the image backdrop, not the fish itself. */
+.tankazon-store [data-tankazon-category="fish"] .shop-card.tankazon-card-out-of-stock .shop-thumb {
+  background:
+    radial-gradient(ellipse at 50% 24%, rgba(245, 247, 248, .86), transparent 55%),
+    linear-gradient(180deg, #c9ced2 0%, #aeb5ba 58%, #8f989e 100%) !important;
+  filter: none !important;
+}
+
+.tankazon-store [data-tankazon-category="fish"] .shop-card.tankazon-card-out-of-stock[data-store-seller="Proteus Biodyne" i]::before {
+  filter: grayscale(1) brightness(.82) blur(1.5px) !important;
+}
+
+.store-facet-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  white-space: nowrap;
+  font-size: .78rem;
+  font-weight: 800;
+  color: #3a505d;
+}
+.store-facet-sort-select {
+  min-height: 36px;
+  padding: 6px 30px 6px 10px;
+  border: 1px solid #b8c8d2;
+  border-radius: 8px;
+  background: #fff;
+  color: #263843;
+  font: inherit;
+  font-weight: 700;
+}
+.tankazon-store .shop-toolbar .shop-sort-control {
+  display: none !important;
+}
+@media (max-width: 700px) {
+  .store-facet-sort {
+    gap: 6px;
+    font-size: .72rem;
+  }
+  .store-facet-sort-select {
+    min-height: 32px;
+    padding-right: 26px;
+  }
+}
+
+
+/* Store sort relocation cleanup */
+.tankazon-store .shop-toolbar {
+  display: none !important;
+}
+.tankazon-store .store-drawer {
+  padding-top: 10px;
+}
+.store-facets {
+  align-items: center;
+}
+.store-facet-head {
+  flex: 0 0 auto;
+  align-items: center;
+}
+.store-facet-groups {
+  display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.store-facet-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  padding-left: 10px;
+}
+
+
+/* New-tank water/substrate setup */
+.tank-setup-dialog {
+  width: min(830px, calc(100vw - 28px));
+  max-height: min(900px, calc(100vh - 28px));
+  padding: 24px 28px 22px;
+  border: 1px solid rgba(116, 213, 245, .42);
+  border-radius: 22px;
+  color: #eefaff;
+  background:
+    radial-gradient(circle at 92% 7%, rgba(72, 190, 222, .16), transparent 24%),
+    linear-gradient(155deg, rgba(7, 42, 61, .985), rgba(3, 24, 38, .99));
+  box-shadow: 0 24px 80px rgba(0, 9, 17, .54), inset 0 1px rgba(211, 247, 255, .12);
+  overflow: auto;
+}
+.tank-setup-dialog::backdrop {
+  background: rgba(0, 18, 30, .52);
+  backdrop-filter: blur(5px);
+}
+.tank-setup-heading {
+  align-items: flex-start;
+  margin-bottom: 0;
+}
+.tank-setup-heading h2 {
+  margin: 0;
+  color: #f7fcff;
+  font-size: clamp(1.55rem, 2.8vw, 2.05rem);
+  line-height: 1.05;
+  letter-spacing: -.025em;
+}
+.tank-setup-eyebrow {
+  display: block;
+  margin-bottom: 7px;
+  color: #75d9f7;
+  font-size: .68rem;
+  font-weight: 900;
+  letter-spacing: .16em;
+}
+.tank-setup-intro {
+  max-width: 670px;
+  margin: 11px 0 18px;
+  color: #bdd7e3;
+  font: 600 .8rem/1.5 system-ui, sans-serif;
+}
+.tank-setup-section {
+  display: grid;
+  gap: 10px;
+  margin-top: 0;
+  padding: 16px 0;
+  border-top: 1px solid rgba(98, 157, 182, .28);
+}
+.tank-setup-username-section {
+  padding-top: 8px;
+  border-top: 0;
+}
+.tank-setup-step-heading {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+}
+.tank-setup-step-number {
+  display: inline-grid;
+  flex: 0 0 31px;
+  width: 31px;
+  height: 31px;
+  place-items: center;
+  border: 2px solid #66d8f8;
+  border-radius: 999px;
+  color: #dff8ff;
+  background: rgba(24, 122, 157, .22);
+  box-shadow: inset 0 0 12px rgba(89, 215, 250, .14);
+  font: 900 .82rem/1 system-ui, sans-serif;
+}
+.tank-setup-section-heading {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+.tank-setup-section-heading > strong {
+  color: #f3fbff;
+  font-size: 1rem;
+}
+.tank-setup-section-heading > small,
+.tank-setup-note {
+  color: #9fc2d2;
+  font: 600 .73rem/1.4 system-ui, sans-serif;
+}
+.tank-setup-username-input-wrap {
+  display: grid;
+  grid-template-columns: 38px minmax(0, 1fr);
+  align-items: center;
+  margin-left: 42px;
+  border: 1px solid rgba(121, 197, 226, .46);
+  border-radius: 12px;
+  background: rgba(2, 19, 31, .62);
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+  overflow: hidden;
+  transition: border-color .15s ease, box-shadow .15s ease, background .15s ease;
+}
+.tank-setup-username-input-wrap:focus-within {
+  border-color: #76dcfa;
+  background: rgba(7, 35, 51, .78);
+  box-shadow: 0 0 0 3px rgba(104, 216, 248, .1);
+}
+.tank-setup-username-input-wrap.is-invalid {
+  border-color: #ff8a77;
+  box-shadow: 0 0 0 3px rgba(255, 92, 75, .12);
+}
+.tank-setup-username-icon {
+  color: #78cde9;
+  text-align: center;
+  font: 900 .9rem/1 system-ui, sans-serif;
+}
+.tank-setup-username-input-wrap input {
+  min-width: 0;
+  height: 46px;
+  padding: 0 13px 0 0;
+  border: 0;
+  outline: 0;
+  color: #f4fbff;
+  background: transparent;
+  font: 700 .84rem/1 system-ui, sans-serif;
+}
+.tank-setup-username-input-wrap input::placeholder { color: #789cac; }
+.tank-setup-choice-grid {
+  display: grid;
+  gap: 11px;
+  margin-left: 42px;
+}
+.tank-setup-water-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.tank-setup-substrate-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+.tank-setup-choice {
+  position: relative;
+  display: grid;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid rgba(117, 178, 202, .38);
+  border-radius: 14px;
+  color: #eaf8ff;
+  background: rgba(2, 18, 29, .62);
+  text-align: left;
+  cursor: pointer;
+  overflow: hidden;
+  box-shadow: inset 0 1px rgba(255,255,255,.025);
+  transition: border-color .16s ease, background .16s ease, box-shadow .16s ease, transform .16s ease;
+}
+.tank-setup-choice:hover {
+  border-color: rgba(139, 224, 255, .72);
+  background: rgba(10, 47, 65, .72);
+  transform: translateY(-1px);
+}
+.tank-setup-choice.is-selected {
+  border-color: #82e4ff;
+  background: rgba(19, 82, 105, .52);
+  box-shadow: inset 0 0 0 1px rgba(139, 224, 255, .5), 0 0 0 2px rgba(139, 224, 255, .09), 0 9px 24px rgba(0, 10, 18, .2);
+}
+.tank-setup-choice-preview {
+  position: relative;
+  display: block;
+  height: 74px;
+  overflow: hidden;
+  background: linear-gradient(#0a638c, #063957);
+  pointer-events: none;
+}
+.tank-setup-water-choice .tank-setup-choice-preview::after,
+.tank-setup-substrate-choice .tank-setup-choice-preview::after {
+  content: "";
+  position: absolute;
+  inset: auto 0 0;
+  height: 38%;
+  background: linear-gradient(transparent, rgba(2, 18, 29, .54));
+  pointer-events: none;
+}
+.tank-setup-freshwater-preview {
+  background: linear-gradient(180deg, #1477a2 0%, #075577 64%, #113d43 100%);
+}
+.tank-setup-saltwater-preview {
+  background: linear-gradient(180deg, #1269a6 0%, #11448c 62%, #193568 100%);
+}
+.tank-setup-preview-rock,
+.tank-setup-preview-plant,
+.tank-setup-preview-coral,
+.tank-setup-preview-live-rock {
+  position: absolute;
+  object-fit: contain;
+  pointer-events: none;
+  user-select: none;
+}
+.tank-setup-preview-rock { left: -5%; bottom: -48%; width: 58%; height: 120%; }
+.tank-setup-preview-plant { left: 2%; bottom: -39%; width: 46%; height: 126%; }
+.tank-setup-preview-live-rock { left: -4%; bottom: -53%; width: 60%; height: 120%; }
+.tank-setup-preview-coral { left: 1%; bottom: -38%; width: 48%; height: 118%; z-index: 1; }
+.tank-setup-substrate-preview {
+  height: 66px;
+  background: #536a72;
+}
+.tank-setup-substrate-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  transform: scale(1.05);
+  pointer-events: none;
+}
+.tank-setup-choice-copy {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px 12px;
+}
+.tank-setup-choice-copy > strong {
+  color: #f4fbff;
+  font-size: .9rem;
+}
+.tank-setup-choice-copy > span {
+  min-height: 2.55em;
+  color: #a9cadb;
+  font: 600 .7rem/1.35 system-ui, sans-serif;
+}
+.tank-setup-choice-check {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: grid;
+  width: 23px;
+  height: 23px;
+  place-items: center;
+  border: 1px solid rgba(206, 245, 255, .72);
+  border-radius: 999px;
+  color: transparent;
+  background: rgba(3, 25, 38, .58);
+  font: 1000 .72rem/1 system-ui, sans-serif;
+}
+.tank-setup-choice.is-selected .tank-setup-choice-check {
+  border-color: #e7fbff;
+  color: #08506c;
+  background: #c9f6ff;
+  box-shadow: 0 1px 7px rgba(74, 212, 249, .35);
+}
+.tank-setup-choice.is-selected::after {
+  content: "Selected";
+  position: absolute;
+  left: 11px;
+  bottom: 8px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  color: #e5fbff;
+  background: rgba(77, 188, 224, .28);
+  font: 800 .56rem/1 system-ui, sans-serif;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+}
+.tank-setup-choice.is-selected .tank-setup-choice-copy { padding-bottom: 29px; }
+.tank-setup-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 2px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(73, 117, 140, .68);
+}
+.tank-setup-note::before {
+  content: "●";
+  margin-right: 8px;
+  color: #ffd23d;
+  text-shadow: 0 0 7px rgba(255, 194, 26, .45);
+}
+.tank-setup-confirm {
+  display: inline-flex;
+  min-width: 150px;
+  align-items: center;
+  justify-content: center;
+  gap: 13px;
+  padding-inline: 20px;
+  border-color: #6fe4ff;
+  color: #032235;
+  background: #59d6f3;
+  font-weight: 900;
+}
+.tank-setup-confirm:hover { background: #79e3f9; }
+@media (max-width: 700px) {
+  .tank-setup-dialog { padding: 20px 18px 18px; }
+  .tank-setup-water-grid,
+  .tank-setup-substrate-grid {
+    grid-template-columns: 1fr;
+  }
+  .tank-setup-choice-grid,
+  .tank-setup-username-input-wrap { margin-left: 0; }
+  .tank-setup-choice-preview { height: 62px; }
+  .tank-setup-substrate-preview { height: 56px; }
+  .tank-setup-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .tank-setup-confirm { width: 100%; }
+}
+
+
+/* Phase 5: tank water conversion */
+.edit-tank-water-panel { padding: 10px 12px 18px; }
+.edit-tank-water-card { display: grid; gap: 10px; min-width: min(620px, 88vw); max-width: 760px; }
+.edit-tank-water-options { display: grid; grid-template-columns: repeat(2, minmax(180px, 1fr)); gap: 8px; }
+.edit-tank-water-choice { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; align-items: center; min-height: 72px; padding: 8px 10px; border: 1px solid rgba(134,220,244,.3); border-radius: 11px; color: inherit; background: rgba(5,33,49,.76); text-align: left; cursor: pointer; }
+.edit-tank-water-choice:hover:not(:disabled), .edit-tank-water-choice:focus-visible:not(:disabled) { border-color: rgba(139,239,255,.72); background: rgba(15,72,94,.86); }
+.edit-tank-water-choice.is-active { border-color: rgba(130,235,184,.6); background: rgba(25,83,67,.54); }
+.edit-tank-water-choice:disabled { opacity: .72; cursor: default; }
+.edit-tank-water-choice img { width: 54px; height: 54px; object-fit: contain; }
+.edit-tank-water-choice span { display: grid; gap: 3px; }
+.edit-tank-water-choice small { color: rgba(222,245,252,.68); font-size: .72rem; }
+.water-conversion-warning { display: grid; gap: 7px; padding: 11px 12px; border: 1px solid rgba(255,180,84,.48); border-radius: 10px; background: rgba(87,50,10,.34); }
+.water-conversion-warning p { margin: 0; color: rgba(244,247,249,.8); }
+.water-conversion-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 3px; }
+.water-conversion-dialog { width: min(620px, calc(100vw - 24px)); }
+.water-conversion-dialog-list { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 8px 10px; align-items: start; margin-top: 8px; line-height: 1.4; }
+.water-conversion-dialog-list span { min-width: 0; overflow-wrap: anywhere; color: #d8ebf5; }
+.water-conversion-dialog .water-conversion-actions { margin-top: 16px; justify-content: flex-end; }
+@media (max-width: 620px) { .water-conversion-dialog-list { grid-template-columns: 1fr; gap: 3px; } }
+@media (max-width: 720px) { .edit-tank-water-options { grid-template-columns: 1fr; } .edit-tank-water-card { min-width: 0; } }
+
+/* Water compatibility is controlled by the visible BubbleBodega facet strip. */
+.shop-water-filter-control { display: none !important; }
+
+/* Keep the store body, including short catalogues, stretched to the browser.
+   The active Bodega shell has exactly three visible rows: browser tabs,
+   Bodega header, then its catalogue/body. */
+.tankazon-store .tankazon-panel { grid-template-rows: 40px auto minmax(0, 1fr) !important; }
+.tankazon-store .tankazon-body { min-height: 0 !important; height: 100% !important; }
+.tankazon-store:not(.tankazon-cart-open) .tankazon-body { grid-template-columns: minmax(0, 1fr) !important; }
+.tankazon-store:not(.tankazon-cart-open) .tankazon-cart { display: none !important; }
+
+/* Compact editor inventory: background storage belongs beside its tab controls,
+   and should not consume a second row of the background browser. */
+#editTankTray .edit-tank-background-type-tabs { display: flex; align-items: center; gap: 6px; }
+#editTankTray .edit-tank-custom-storage-meter { flex: 0 0 168px; min-width: 0; margin-right: auto; }
+#editTankTray .edit-tank-custom-storage-meter .custom-content-storage-meter { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 5px; margin: 0; }
+#editTankTray .edit-tank-custom-storage-meter .custom-content-storage-meter > div { overflow: hidden; white-space: nowrap; font-size: .55rem; }
+#editTankTray .edit-tank-custom-storage-meter progress { width: 62px; height: 6px; }
+#editTankTray .edit-tank-image-layout { grid-template-columns: 174px minmax(0, 1fr); grid-template-rows: minmax(0, 1fr); gap: 8px; }
+#editTankTray .edit-tank-custom-content { align-items: stretch; }
+#editTankTray .edit-tank-local-image-card { flex: 1 1 auto; min-height: 0; grid-template-columns: 48px minmax(0, 1fr); grid-template-rows: 1fr auto; padding: 5px; }
+#editTankTray .edit-tank-local-image-preview { grid-row: 1; min-height: 40px; }
+#editTankTray .edit-tank-local-image-copy span, #editTankTray .edit-tank-local-image-actions { display: none; }
+#editTankTray .edit-tank-built-in-backgrounds { padding-top: 64px; }
+
+/* Machine state is readable on demand instead of competing with the thumbnail. */
+#editEquipmentTray .edit-equipment-resource-note { position: absolute; inset: auto 5px 5px; z-index: 3; display: grid; min-height: 0; padding: 7px; border-radius: 7px; color: #edfaff; background: rgba(2, 14, 22, .9); font-size: .58rem; line-height: 1.25; opacity: 0; pointer-events: none; transform: translateY(4px); transition: opacity .14s ease, transform .14s ease; }
+#editEquipmentTray .edit-decor-tile:hover .edit-equipment-resource-note, #editEquipmentTray .edit-decor-tile:focus-within .edit-equipment-resource-note { opacity: 1; transform: none; }
+
+/* Bank is intentionally a fixed-height application header, even while its
+   content scrolls. */
+.bubble-bank-window-header.websurf-site-header.is-collapsed { min-height: 94px; padding: 8px 24px; }
+.bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-logo { height: 76px; }
+.bubble-bank-window-header.websurf-site-header.is-collapsed .bubble-bank-tab { padding: 13px 20px; font-size: .92rem; }
+
+/* Center the actual mail document, and reserve the destructive affordance for
+   the far right edge of its action rail. */
+.websurf-mail-detail { padding-left: 18px; }
+.websurf-mail-body { display: flex; justify-content: center; }
+.websurf-email-scroll { width: min(100%, 980px); }
+.websurf-mail-actions { width: min(100%, 980px); align-self: center; }
+.websurf-mail-actions .websurf-trash-button { order: 99; color: #d83b45; border-color: #e49ca2; }
+.websurf-mail-actions .websurf-trash-button:hover { color: #fff; background: #cf3540; border-color: #cf3540; }
+
+/* Message actions span the inbox width. The destructive control belongs at
+   the actual right edge of that rail, not merely after the left-side buttons. */
+.websurf-mail-actions {
+  width: 100%;
+  align-self: stretch;
+}
+.websurf-mail-actions .websurf-trash-button {
+  margin-left: auto;
+}
+
+/* Keep the designer counter out of the header dead-space and anchored to the
+   specimen viewport. */
+.proteus-designer-preview-column { position: relative; }
+.proteus-designer-preview-column > .custom-content-storage-meter { position: absolute; z-index: 3; right: 14px; bottom: 46px; width: 176px; margin: 0; padding: 5px 7px; border-radius: 7px; background: rgba(245, 252, 255, .94); box-shadow: 0 3px 12px rgba(18, 63, 95, .14); }
+.proteus-designer-preview-column > .custom-content-storage-meter .custom-content-storage-meter-heading { gap: 4px; font-size: .58rem; }
+
+/* Home fish are genuine catalogue entry points, including their appearances. */
+.bubblebodega-home-fish-card { cursor: pointer; }
+
+/* The Neighborhood overview keeps urgent care visible without turning the
+   sidebar into a second dashboard. */
+.tank-home-care-suggestions { display: grid; gap: 7px; margin-top: 12px; padding-top: 10px; border-top: 1px solid color-mix(in srgb, var(--line) 72%, transparent); }
+.tank-home-care-suggestions > strong { font-size: .78rem; letter-spacing: .03em; text-transform: uppercase; }
+.tank-home-care-suggestions .management-task-list { display: grid; gap: 5px; }
+
+/* BubbleBodega uses the same dark WebSurf palette on every route: catalogue,
+   Home, item view, account and cart. Keep the product art bright, but remove
+   the remaining white panels and low-contrast light-mode copy. */
+.tankazon-store[data-websurf-theme="dark"] .tankazon-body,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-area,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-store-drawer,
+.tankazon-store[data-websurf-theme="dark"] .store-drawer,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-loading { background: var(--ws-page-bg); color: var(--ws-text); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-area > .store-drawer.tankazon-all-section { border-bottom-color: var(--ws-page-bg); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-loading > span,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-empty,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-item small,
+.tankazon-store[data-websurf-theme="dark"] .fish-meta { color: var(--ws-text-secondary); }
+.tankazon-store[data-websurf-theme="dark"] .shop-toolbar,
+.tankazon-store[data-websurf-theme="dark"] .store-facets { border-color: var(--ws-border); color: var(--ws-text); background: rgba(26, 32, 37, .97); }
+.tankazon-store[data-websurf-theme="dark"] .shop-card { border-color: var(--ws-border); color: var(--ws-text); background: var(--ws-panel-bg); box-shadow: 0 2px 9px rgba(0, 0, 0, .24); }
+.tankazon-store[data-websurf-theme="dark"] .shop-card:hover { border-color: #5b8ea9; }
+.tankazon-store[data-websurf-theme="dark"] .shop-card .price-tag { color: #ffd45b; }
+.tankazon-store[data-websurf-theme="dark"] .shop-card .buy-button { border-color: #247fc7; background: linear-gradient(180deg, #278de3, #176ab2); color: #f7fbff; }
+.tankazon-store[data-websurf-theme="dark"] .shop-card .buy-button:hover:not(:disabled) { background: linear-gradient(180deg, #42a4f1, #217bc5); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart { border-left-color: var(--ws-border); color: var(--ws-text); background: var(--ws-panel-bg); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-heading,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-footer,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-item { border-color: var(--ws-border-soft); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-heading button,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-item-actions button { border-color: var(--ws-border); color: var(--ws-text); background: var(--ws-panel-bg-strong); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-cart-item-actions .tankazon-cart-remove { color: #7cc8ff; background: transparent; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-account-page { color: var(--ws-text); background: var(--ws-page-bg); }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-content { background: var(--ws-page-bg); }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section { border-color: #385363; background: linear-gradient(135deg, #172b34, #1a2730 58%, #142b26); }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section:nth-child(2) { background: linear-gradient(135deg, #172b35, #1a252e 58%, #14252e); }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section:nth-child(3) { background: linear-gradient(135deg, #182d35, #1c2830 58%, #172b32); }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section h2,
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-link { color: #dff4ff; }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section p,
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-product-card .bubblebodega-home-reason { color: #a7c2d0; }
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-empty { color: var(--ws-text-secondary); background: var(--ws-panel-bg); }
+
+/* Cart is a compact icon control.  `store.png` occupies [200, 100, 100, 100]
+   in assets/icons/Icons.webp (see assets/icons/Icons.json). */
+.tankazon-cart-toggle {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  width: 34px;
+  min-width: 34px;
+  height: 32px;
+  margin-left: 2px;
+  padding: 0;
+  border-color: #75caef;
+  border-radius: 7px;
+  background: #123e5a;
+  font-size: 0;
+}
+.tankazon-cart-toggle:hover { background: #195373; }
+.tankazon-cart-toggle::before {
+  content: "";
+  display: block;
+  width: 20px;
+  height: 20px;
+  background: url("../assets/icons/Icons.webp") -40px -20px / 80px 100px no-repeat;
+}
+.tankazon-cart-toggle #tankazonCartHeaderCount {
+  position: absolute;
+  top: -6px;
+  right: -6px;
+  display: grid;
+  place-items: center;
+  min-width: 17px;
+  height: 17px;
+  padding: 0 4px;
+  box-sizing: border-box;
+  border: 1px solid #fff;
+  border-radius: 999px;
+  color: #071a2c;
+  background: #ffd02f;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .45);
+  font: 800 10px/1 system-ui, sans-serif;
+}
+
+/* The About portraits were intentionally reduced; the rest of Proteus keeps
+   its designed artwork scale (hero, research cards, specimens, and branding). */
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image {
+  width: min(112px, 38vw);
+  margin-right: auto;
+  margin-left: auto;
+  overflow: visible;
+  background: transparent;
+}
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image img {
+  display: block;
+  width: 100%;
+  height: auto;
+  min-height: 0;
+  max-height: none;
+  aspect-ratio: auto;
+  object-fit: contain;
+}
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image::after {
+  display: none;
+}
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image figcaption {
+  position: static;
+  display: block;
+  margin-top: 8px;
+  color: #526f82;
+  font-size: .58rem;
+  line-height: 1.35;
+}
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image figcaption strong,
+#proteusBiodynePage [data-proteus-panel="about"] .proteus-about-feature-image figcaption span {
+  display: block;
+  font-size: inherit;
+}
+
+/* BubbleBodega food package quantity badges + visual size chooser */
+.tankazon-store .shop-food-thumb-wrap {
+  position: relative;
+  width: 100%;
+  height: 154px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.tankazon-store .shop-food-thumb-wrap .shop-thumb {
+  width: 100% !important;
+  height: 100% !important;
+  max-height: none !important;
+}
+
+/* The 75-count package is the visual midpoint between the small pouch and
+   200-count bucket. Keep that relationship in every food thumbnail surface. */
+.tankazon-store .shop-food-thumb-wrap[data-food-package="medium"]:not([data-food-id="basic"]) .shop-thumb,
+.tankazon-store .tankazon-food-size-image[data-food-package="medium"]:not([data-food-id="basic"]) img {
+  transform: scale(1.25);
+}
+
+.tankazon-store .shop-food-qty-badge,
+.tankazon-store .tankazon-item-qty-badge,
+.tankazon-store .tankazon-food-size-qty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 52px;
+  min-height: 27px;
+  padding: 4px 9px;
+  box-sizing: border-box;
+  border-radius: 7px;
+  background: rgba(56, 63, 67, 0.88);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.22);
+  pointer-events: none;
+}
+
+.tankazon-store .shop-food-qty-badge {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+  z-index: 3;
+}
+
+.tankazon-store .tankazon-item-image {
+  position: relative;
+}
+
+.tankazon-store .tankazon-item-qty-badge {
+  position: absolute;
+  right: 14px;
+  bottom: 14px;
+  z-index: 5;
+}
+
+.tankazon-store .tankazon-food-size-section {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid #d5d9d9;
+}
+
+.tankazon-store .tankazon-food-size-section[hidden] {
+  display: none !important;
+}
+
+.tankazon-store .tankazon-food-size-section > h2 {
+  margin: 0 0 4px;
+  color: #0f1111;
+  font-size: 19px;
+  font-weight: 650;
+}
+
+.tankazon-store .tankazon-food-size-section > p {
+  margin: 0 0 14px;
+  color: #565959;
+  font-size: 13px;
+}
+
+.tankazon-store .tankazon-food-size-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 12px;
+  align-items: stretch;
+}
+
+.tankazon-store .tankazon-food-size-card {
+  display: grid;
+  grid-template-rows: 130px minmax(38px, auto) auto 36px;
+  gap: 7px;
+  min-width: 0;
+  padding: 10px;
+  border: 1px solid #d5d9d9;
+  border-radius: 9px;
+  background: #fff;
+  box-sizing: border-box;
+}
+
+.tankazon-store .tankazon-food-size-card.is-selected {
+  border: 2px solid #007eb9;
+  box-shadow: 0 0 0 2px rgba(0, 126, 185, 0.08);
+}
+
+.tankazon-store .tankazon-food-size-image {
+  position: relative;
+  display: grid;
+  place-items: center;
+  min-width: 0;
+  height: 130px;
+  overflow: hidden;
+  border-radius: 7px;
+  background: #f7f9fa;
+}
+
+.tankazon-store .tankazon-food-size-image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.tankazon-store .tankazon-food-size-qty {
+  position: absolute;
+  right: 7px;
+  bottom: 7px;
+}
+
+.tankazon-store .tankazon-food-size-card > strong {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  color: #0f1111;
+  font-size: 13px;
+  line-height: 1.25;
+  font-weight: 650;
+}
+
+.tankazon-store .tankazon-food-size-price {
+  color: #0f1111;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.tankazon-store .tankazon-food-size-action {
+  width: 100%;
+  min-height: 34px;
+  padding: 5px 10px;
+  border: 1px solid #1d6fd6;
+  border-radius: 18px;
+  background: #2f8fff;
+  color: #fff;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.tankazon-store .tankazon-food-size-action:hover:not(:disabled) {
+  background: #217be3;
+}
+
+.tankazon-store .tankazon-food-size-action:disabled {
+  border-color: #9cc9e8;
+  background: #dff0fb;
+  color: #1476b8;
+  cursor: default;
+  opacity: 1;
+}
+
+@media (max-width: 650px) {
+  .tankazon-store .tankazon-food-size-cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+/* Size options use the same contained product-art scale as catalogue tiles.
+   The cards may fill a wide detail page; the cans and tubs must not. */
+.tankazon-store .tankazon-food-size-card {
+  grid-template-rows: 196px minmax(38px, auto) auto 36px;
+}
+.tankazon-store .tankazon-food-size-image {
+  height: 196px;
+}
+.tankazon-store .tankazon-food-size-image img {
+  width: min(196px, 100%);
+  max-width: 196px;
+  height: 100%;
+  margin: auto;
+  object-fit: contain;
+}
+
+/* Home cards intentionally share the catalogue tile contract: art, title,
+   price, buttons and fish appearance controls all have the same dimensions
+   and contrast as their category counterparts. */
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .tankazon-tile-info {
+  display: grid !important;
+}
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .shop-card-actions {
+  display: grid !important;
+}
+/* Native Fish-tab thumbnails keep their water-stage treatment when rendered
+   inside the Home New Fish container. */
+.tankazon-store.is-bubblebodega-home-open .bubblebodega-home-native-fish-card .shop-thumb {
+  background:
+    radial-gradient(ellipse at 50% 24%, rgba(190, 239, 255, .7), transparent 55%),
+    linear-gradient(180deg, #258fc1 0%, #0e6294 58%, #08466d 100%);
+}
+/* The Home picker uses the same one-layer pips as the catalogue.  Do not add
+   a second button background or shadow under the shared ::before dot. */
+#storeOverlay .bubblebodega-home-fish-card .shop-variant-dots button {
+  background: transparent;
+  box-shadow: none;
+}
+#storeOverlay .bubblebodega-home-fish-card .shop-variant-dots button::before {
+  box-shadow: none;
+}
+
+/* The late compact-tile rules set light-mode ink explicitly. Reassert a real
+   dark palette after them so titles and prices never become gray-on-gray. */
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-page,
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-content {
+  background: #081923;
+}
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section {
+  border-color: #2b6179;
+  background: linear-gradient(135deg, #0e2a38, #102333 58%, #0c302c);
+}
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section:nth-child(2) {
+  background: linear-gradient(135deg, #102a3d, #102435 58%, #0c2c39);
+}
+.tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-section:nth-child(3) {
+  background: linear-gradient(135deg, #0e2e3c, #102534 58%, #103039);
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-tile-info,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-tile-title,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-tile-cost {
+  color: #effaff !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-tile-cost {
+  color: #ffd45b !important;
+}
+
+/* Transparent product art needs a neutral stage in dark mode. Mid-gray keeps
+   white packaging legible without the stark light-mode white rectangles. */
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.decor-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > .shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > .decor-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-food-thumb-wrap,
+.tankazon-store[data-websurf-theme="dark"] .shop-food-thumb-wrap .shop-thumb {
+  background: #74797d !important;
+}
+
+/* Account storage is status information, not a panel. Keep its compact form
+   on one low-profile line until a real saved-content library needs room. */
+.custom-content-storage-meter.is-compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 8px;
+  min-height: 18px;
+  margin: 6px 0 0;
+  color: #91b8cb;
+  font-size: .72rem;
+  line-height: 1.15;
+}
+.custom-content-storage-meter.is-compact > .mini-note {
+  margin: 0;
+  color: inherit;
+  font-size: inherit;
+  line-height: inherit;
+}
+.custom-content-storage-meter.is-compact > .mini-note strong {
+  color: #a7c9d9;
+  font-size: .74rem;
+}
+.custom-content-storage-meter.is-compact progress {
+  width: 64px;
+  height: 5px;
+  margin: 0;
+  accent-color: #73b8d2;
+}
+.custom-content-storage-meter.is-compact > .custom-content-library {
+  flex-basis: 100%;
+}
+
+/* Food sizes are a compact variant picker, not a second product catalogue.
+   Keep all three choices inside the main art column with deliberately small
+   contained artwork and terse metadata. */
+.tankazon-store .tankazon-food-size-section {
+  width: min(100%, 676px);
+  margin-top: 14px;
+  padding-top: 12px;
+}
+.tankazon-store .tankazon-food-size-section > h2 {
+  margin-bottom: 2px;
+  font-size: 15px;
+}
+.tankazon-store .tankazon-food-size-section > p {
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+.tankazon-store .tankazon-food-size-cards {
+  grid-template-columns: repeat(3, minmax(0, 180px));
+  justify-content: start;
+  gap: 8px;
+}
+.tankazon-store .tankazon-food-size-card {
+  grid-template-rows: 88px minmax(30px, auto) auto;
+  gap: 4px;
+  padding: 6px;
+  border-radius: 7px;
+  cursor: pointer;
+}
+.tankazon-store .tankazon-food-size-card:focus-visible {
+  outline: 3px solid #69d4ff;
+  outline-offset: 2px;
+}
+.tankazon-store .tankazon-food-size-image {
+  height: 88px;
+  border-radius: 5px;
+}
+.tankazon-store .tankazon-food-size-image img {
+  width: min(88px, 100%);
+  max-width: 88px;
+}
+.tankazon-store .tankazon-food-size-qty {
+  right: 4px;
+  bottom: 4px;
+  min-width: 36px;
+  min-height: 19px;
+  padding: 3px 5px;
+  font-size: 10px;
+}
+.tankazon-store .tankazon-food-size-card > strong,
+.tankazon-store .tankazon-food-size-price {
+  font-size: 11px;
+  line-height: 1.15;
+}
+.tankazon-store .tankazon-food-size-action {
+  min-height: 26px;
+  padding: 3px 6px;
+  font-size: 10px;
+}
+@media (max-width: 650px) {
+  .tankazon-store .tankazon-food-size-cards {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+/* Complete BubbleBodega dark-theme surface pass. These are controls and
+   headings, not light-mode paper pasted into a dark application. */
+.tankazon-store[data-websurf-theme="dark"] .tankazon-search {
+  background: #162a35;
+  box-shadow: inset 0 0 0 1px #426272;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-search input {
+  color: #f2fbff;
+  background: #162a35;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-search input::placeholder {
+  color: #a7c1cd;
+  opacity: 1;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-search-scope {
+  border-right-color: #426272;
+  color: #e5f5fb;
+  background: #203945;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facets {
+  border-bottom-color: #365565;
+  color: #e9f7fc;
+  background: #13242e;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3);
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-count,
+.tankazon-store[data-websurf-theme="dark"] .store-facet-options small {
+  color: #a9c3cf;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-clear {
+  color: #bfeaff;
+  background: #25495a;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-clear:hover:not(:disabled) {
+  background: #326276;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-group > summary {
+  border-color: #476b7d;
+  color: #ebf8fc;
+  background: #203844;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-group > summary::after {
+  color: #b7d2dd;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-options {
+  border-color: #476b7d;
+  color: #eaf7fb;
+  background: #18313d;
+  box-shadow: 0 12px 30px rgba(0,0,0,.46);
+}
+.tankazon-store[data-websurf-theme="dark"] .store-facet-options label:hover {
+  background: #274b5b;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-subcategory-section > .shop-section-heading {
+  border-bottom-color: #365a6d;
+  background: #19313d;
+  box-shadow: 0 2px 7px rgba(0,0,0,.3);
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-section-heading h3,
+.tankazon-store[data-websurf-theme="dark"] .store-subcategory-section > .shop-section-heading h3 {
+  color: #f0fbff;
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-section-heading p,
+.tankazon-store[data-websurf-theme="dark"] .store-subcategory-section > .shop-section-heading p {
+  color: #b8d2dd;
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.decor-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > .shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > .decor-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-food-thumb-wrap {
+  background: #74797d !important;
+}
+/* Most catalogue art was authored on white. Multiply removes the glaring
+   white slab while preserving colored packaging against the gray stage. */
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.decor-thumb {
+  mix-blend-mode: multiply;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-area {
+  scrollbar-color: #638897 #10232c;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-area::-webkit-scrollbar-track {
+  background: #10232c;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-catalog-area::-webkit-scrollbar-thumb {
+  border-color: #10232c;
+  background: #638897;
+}
+
+/* Keep product art authored and bright; only its surrounding stage changes
+   for dark mode. Do not blend or dim the image pixels themselves. */
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] .shop-card > img.decor-thumb {
+  mix-blend-mode: normal;
+}
+
+/* Availability is communicated by a subdued dark-gray card, never a bright
+   light-mode tile that breaks the dark catalogue. */
+.tankazon-store[data-websurf-theme="dark"] .shop-card.tankazon-card-out-of-stock,
+.tankazon-store[data-websurf-theme="dark"] .shop-card.tankazon-card-out-of-stock:hover,
+.tankazon-store[data-websurf-theme="dark"] .shop-card.tankazon-card-out-of-stock:focus-within {
+  background: linear-gradient(180deg, #344049 0%, #29343c 100%) !important;
+  border-color: #53636d !important;
+  box-shadow: none !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-out-of-stock {
+  border-color: #62717a !important;
+  color: #d4e0e5 !important;
+  background: #46535b !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-card[data-store-kind="fish"].tankazon-card-out-of-stock .shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] [data-tankazon-category="fish"] .shop-card.tankazon-card-out-of-stock .shop-thumb {
+  background: linear-gradient(180deg, #657178 0%, #4c5961 100%) !important;
+}
+/* Some supplier cards already provide their own illustrated stage. Keep that
+   artwork in dark mode and tone down only its backdrop; do not replace it with
+   the generic unavailable-fish gray square. */
+.tankazon-store[data-websurf-theme="dark"] .shop-card[data-store-kind="fish"].tankazon-card-out-of-stock:is([data-store-seller="Proteus Biodyne" i], .is-davy-mutation) .shop-thumb,
+.tankazon-store[data-websurf-theme="dark"] [data-tankazon-category="fish"] .shop-card.tankazon-card-out-of-stock:is([data-store-seller="Proteus Biodyne" i], .is-davy-mutation) .shop-thumb {
+  background: transparent !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-card:is([data-store-seller="Proteus Biodyne" i], .is-davy-mutation) :is(.shop-thumb, .decor-thumb) {
+  background: transparent !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .shop-card[data-store-seller="Proteus Biodyne" i]::before {
+  filter: brightness(.62) blur(1.5px);
+}
+
+/* Aggregate-category labels use a more specific toolbar rule than ordinary
+   section headers, so give that exact surface the dark treatment too. */
+.tankazon-store[data-websurf-theme="dark"] .store-drawer.tankazon-section-heading::before {
+  border-bottom-color: #365a6d !important;
+  color: #f0fbff !important;
+  background: #19313d !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-drawer.tankazon-section-heading > .shop-toolbar {
+  border-bottom-color: #365a6d !important;
+  color: #effaff !important;
+  background: #19313d !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,.3) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .store-drawer.tankazon-section-heading > .shop-toolbar .shop-toolbar-title {
+  color: #f0fbff;
+}
+
+/* BubbleBodega uses a dark canvas, so its readable foreground has to travel
+   with every view mounted inside it—not just the catalogue cards. */
+.tankazon-store[data-websurf-theme="dark"] {
+  --bodega-dark-text: #effaff;
+  --bodega-dark-muted: #b8d2dd;
+  --bodega-dark-link: #76d5ff;
+  --bodega-dark-coin: #ffd45b;
+}
+
+/* Product detail */
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page {
+  color: var(--bodega-dark-text);
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-item-back, .tankazon-item-category, .tankazon-item-variant-label, .tankazon-item-delivery, .tankazon-item-seller, .tankazon-item-details .fish-meta, .tankazon-item-details .shop-about-tagline, .tankazon-item-details .shop-stat-label, .tankazon-item-details .shop-comfort-profile) {
+  color: var(--bodega-dark-muted) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-item-description h1, .tankazon-item-description h2, .tankazon-item-price, .tankazon-item-details, .tankazon-item-details .shop-about-attribution, .tankazon-item-details .shop-stat-value, .tankazon-item-sizes, .tankazon-item-sizes > strong, .tankazon-item-seller strong) {
+  color: var(--bodega-dark-text) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-item-back:hover, .tankazon-item-brand, .tankazon-item-seller button.is-linked) {
+  color: var(--bodega-dark-link) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-price-original { color: var(--bodega-dark-muted) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-price-sale { color: #ffad96 !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-availability { color: #7ee7a2 !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-buybox {
+  border-color: #496373;
+  background: #10232c;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-seller,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-brand,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-details .shop-stat-row {
+  border-color: #3d5867;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-size-option { color: var(--bodega-dark-text) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-size-option:hover { color: var(--bodega-dark-link) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-variants button { border-color: #607784; background: #34434a; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-variants button[aria-pressed="true"] { border-color: #ffb244; background: #2e414b; box-shadow: 0 0 0 2px #5d492b; }
+
+/* Compact package picker */
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-section { border-top-color: #3d5867; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-section > h2,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-card > strong,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-price { color: var(--bodega-dark-text) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-section > p { color: var(--bodega-dark-muted) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-card {
+  border-color: #496373;
+  background: #1b303a;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-card.is-selected { border-color: #41c7ff; background: #213b48; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-image { background: #74797d; }
+
+/* Cart and order history */
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-cart, .tankazon-cart-item, .tankazon-cart-subtotal, .tankazon-cart-item-price, .tankazon-cart-item-price-each) { color: var(--bodega-dark-text); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-account-heading { border-color: #3d5867; }
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-account-eyebrow, .tankazon-account-heading p:last-child, .tankazon-order-summary, .tankazon-order-card > header small, .tankazon-order-product > div small, .tankazon-orders-empty span, .tankazon-order-pagination span) { color: var(--bodega-dark-muted) !important; }
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-account-heading h1, .tankazon-order-card > header strong, .tankazon-order-product > span, .tankazon-orders-empty strong) { color: var(--bodega-dark-text) !important; }
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-account-back, .tankazon-order-product > div strong) { color: var(--bodega-dark-link) !important; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-search { border-color: #496373; background: #162a35; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-search input { color: var(--bodega-dark-text); background: #162a35; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-search input::placeholder { color: #a7c1cd; opacity: 1; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-search button { border-left-color: #496373; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-card,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-orders-empty { border-color: #496373; background: #172b34; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-card > header { background: #203843; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-order-product { border-color: #3d5867; }
+
+/* coin_unicode.png is monochrome; tint it to the same high-contrast gold as
+   the amount instead of leaving a black coin beside light dark-mode text. */
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-tile-cost, .tankazon-cart-item-price, .tankazon-cart-subtotal) { color: var(--bodega-dark-coin) !important; }
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-tile-cost-value, .tankazon-subtotal-value) {
+  color: var(--bodega-dark-coin) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-tile-cost-icon, .tankazon-cart-item-price img, .tankazon-cart-subtotal img) {
+  filter: brightness(0) saturate(100%) invert(81%) sepia(71%) saturate(576%) hue-rotate(351deg) brightness(102%) contrast(103%);
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-order-card > header strong, .tankazon-order-product > span) {
+  color: var(--bodega-dark-coin) !important;
+}
+.tankazon-store[data-websurf-theme="dark"] :is(.tankazon-order-card > header img, .tankazon-order-product > span img) {
+  filter: brightness(0) saturate(100%) invert(81%) sepia(71%) saturate(576%) hue-rotate(351deg) brightness(102%) contrast(103%);
+}
+
+/* Detail art sits on a surface, not a light-mode sheet of paper.  Keep the
+   product pixels untouched; only replace the containers behind them. */
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-image:not(.is-fish-preview):not(.is-davy-mutation-preview):not(.is-proteus-preview) {
+  background: #74797d !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-card {
+  border-color: #496373 !important;
+  background: #1b303a !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-card.is-selected {
+  border-color: #41c7ff !important;
+  background: #213b48 !important;
+}
+.tankazon-store[data-websurf-theme="dark"] .tankazon-food-size-image {
+  background: #74797d !important;
+}
+
+/* Settings layout refresh 2026-09-24
+   Compact two-column dashboard based on the approved settings mockup. */
+#settingsOverlay .settings-dashboard-panel,
+#settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+  width: min(1360px, calc(100vw - 54px));
+  max-width: 1360px;
+  gap: 12px;
+}
+
+#settingsOverlay .settings-dashboard-grid,
+#settingsOverlay.websurf-settings-page .settings-dashboard-grid {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "account account"
+    "left right";
+  column-gap: 12px;
+  row-gap: 12px;
+}
+
+#settingsOverlay .settings-dashboard-column,
+#settingsOverlay.websurf-settings-page .settings-dashboard-column {
+  gap: 12px;
+}
+
+#settingsOverlay .settings-section,
+#settingsOverlay.websurf-settings-page .settings-section {
+  gap: 7px;
+  padding: 11px 12px;
+  border-radius: 13px;
+}
+
+#settingsOverlay .settings-section-heading,
+#settingsOverlay.websurf-settings-page .settings-section-heading {
+  gap: 9px;
+  min-height: 35px;
+}
+
+#settingsOverlay .settings-section-heading-icon,
+#settingsOverlay.websurf-settings-page .settings-section-heading-icon {
+  width: 32px;
+  height: 32px;
+}
+
+#settingsOverlay .settings-section-heading-icon img,
+#settingsOverlay.websurf-settings-page .settings-section-heading-icon img {
+  width: 29px;
+  height: 29px;
+}
+
+#settingsOverlay .settings-section h3,
+#settingsOverlay.websurf-settings-page .settings-section h3 {
+  font-size: 1.06rem;
+}
+
+#settingsOverlay .settings-toggle-row,
+#settingsOverlay .settings-toolbar-color-row,
+#settingsOverlay .settings-inline-action,
+#settingsOverlay.websurf-settings-page .settings-toggle-row,
+#settingsOverlay.websurf-settings-page .settings-toolbar-color-row,
+#settingsOverlay.websurf-settings-page .settings-inline-action {
+  min-height: 46px;
+  padding: 6px 10px;
+  gap: 10px;
+  border-radius: 9px;
+}
+
+#settingsOverlay .settings-toggle-label,
+#settingsOverlay.websurf-settings-page .settings-toggle-label,
+#settingsOverlay.websurf-settings-page .settings-peaceful-mode-row .settings-toggle-label {
+  font-size: .76rem;
+  line-height: 1.12;
+}
+
+#settingsOverlay .settings-toggle-note,
+#settingsOverlay.websurf-settings-page .settings-toggle-note {
+  font-size: .62rem;
+  line-height: 1.22;
+}
+
+/* Keep both dashboard columns visually balanced. Graphics gets one extra row;
+   General + Audio + Other stack to approximately the same total height. */
+#settingsOverlay .settings-graphics-card,
+#settingsOverlay.websurf-settings-page .settings-graphics-card {
+  gap: 6px;
+}
+
+#settingsOverlay .settings-general-card,
+#settingsOverlay.websurf-settings-page .settings-general-card {
+  gap: 6px;
+}
+
+#settingsOverlay .settings-audio-card,
+#settingsOverlay.websurf-settings-page .settings-audio-card {
+  gap: 6px;
+}
+
+#settingsOverlay .settings-other-card,
+#settingsOverlay.websurf-settings-page .settings-other-card {
+  gap: 6px;
+  padding: 9px 10px 10px;
+}
+
+/* Account & Cloud: four equal information cards on top, actions on one compact
+   row below. The existing icon assets are intentionally retained. */
+#settingsOverlay #accountCloudSaveSettingsSection,
+#settingsOverlay.websurf-settings-page #accountCloudSaveSettingsSection {
+  position: relative;
+  padding: 0;
+  overflow: visible;
+}
+
+#settingsOverlay .cloud-account-shell,
+#settingsOverlay.websurf-settings-page .cloud-account-shell {
+  position: relative;
+  display: grid;
+  gap: 8px;
+  padding: 11px 12px 61px;
+}
+
+#settingsOverlay .cloud-account-main-heading,
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading {
+  min-height: 34px;
+  padding-right: 0 !important;
+  gap: 9px;
+}
+
+#settingsOverlay .cloud-account-main-heading > div > strong,
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > strong {
+  font-size: 1.05rem;
+}
+
+#settingsOverlay .cloud-account-main-heading > div > span,
+#settingsOverlay.websurf-settings-page .cloud-account-main-heading > div > span {
+  font-size: .66rem;
+}
+
+#settingsOverlay .cloud-account-dashboard,
+#settingsOverlay.websurf-settings-page .cloud-account-dashboard,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-dashboard {
+  display: block !important;
+}
+
+#settingsOverlay .cloud-account-core-panel,
+#settingsOverlay.websurf-settings-page .cloud-account-core-panel,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+  display: grid !important;
+  grid-template-columns: minmax(165px, .82fr) minmax(235px, 1.18fr) minmax(215px, 1fr) minmax(210px, .98fr) !important;
+  gap: 8px !important;
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  overflow: visible !important;
+}
+
+#settingsOverlay .cloud-account-core-panel > * + *,
+#settingsOverlay.websurf-settings-page .cloud-account-core-panel > * + * {
+  border-left-width: 1px;
+}
+
+#settingsOverlay .cloud-account-identity-card,
+#settingsOverlay .cloud-sync-state-card,
+#settingsOverlay .cloud-account-storage-card,
+#settingsOverlay.websurf-settings-page .cloud-account-identity-card,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card,
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card {
+  min-height: 62px;
+  box-sizing: border-box;
+  border-radius: 9px;
+}
+
+#settingsOverlay .cloud-account-identity-card,
+#settingsOverlay.websurf-settings-page .cloud-account-identity-card {
+  padding: 8px 10px;
+  gap: 8px;
+}
+
+#settingsOverlay .cloud-sync-state-card,
+#settingsOverlay.websurf-settings-page .cloud-sync-state-card {
+  padding: 8px 10px;
+  gap: 9px;
+}
+
+#settingsOverlay .cloud-account-storage-card {
+  display: grid;
+  align-items: center;
+  padding: 8px 11px;
+  border: 1px solid rgba(66, 164, 197, .22);
+  background: rgba(1, 25, 42, .52);
+}
+
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card {
+  border: 1px solid #cfdfE9;
+  background: #f9fcfe;
+  box-shadow: inset 0 1px 0 #fff;
+}
+
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .cloud-account-storage-card {
+  border-color: #3d5867;
+  background: #172b34;
+  box-shadow: none;
+}
+
+#settingsOverlay .cloud-account-storage-card .custom-content-storage-meter.is-compact,
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card .custom-content-storage-meter.is-compact {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 72px;
+  align-items: center;
+  gap: 4px 9px;
+  min-height: 0;
+  margin: 0;
+  font-size: .65rem;
+}
+
+#settingsOverlay .cloud-account-storage-card .custom-content-storage-meter.is-compact > .mini-note,
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card .custom-content-storage-meter.is-compact > .mini-note {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+  white-space: normal;
+}
+
+#settingsOverlay .cloud-account-storage-card .custom-content-storage-meter.is-compact > .mini-note strong,
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card .custom-content-storage-meter.is-compact > .mini-note strong {
+  display: block;
+  font-size: .67rem;
+}
+
+#settingsOverlay .cloud-account-storage-card .custom-content-storage-meter.is-compact progress,
+#settingsOverlay.websurf-settings-page .cloud-account-storage-card .custom-content-storage-meter.is-compact progress {
+  width: 72px;
+  height: 5px;
+}
+
+#settingsOverlay .settings-account-topbar,
+#settingsOverlay.websurf-settings-page .settings-account-topbar,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar {
+  position: absolute !important;
+  left: 12px !important;
+  right: auto !important;
+  top: auto !important;
+  bottom: 10px !important;
+  z-index: 6;
+  display: block;
+  width: min(52%, 590px);
+  padding: 0 !important;
+}
+
+#settingsOverlay .settings-account-data-actions,
+#settingsOverlay.websurf-settings-page .settings-account-data-actions,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-data-actions {
+  grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+  gap: 8px !important;
+  width: 100%;
+}
+
+#settingsOverlay .settings-account-data-actions .small-button,
+#settingsOverlay.websurf-settings-page .settings-account-data-actions .small-button {
+  min-height: 39px;
+  padding: 0 9px;
+  border-radius: 9px;
+  font-size: .7rem;
+}
+
+#settingsOverlay .cloud-account-side-actions,
+#settingsOverlay.websurf-settings-page .cloud-account-side-actions,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+  position: absolute !important;
+  right: 12px !important;
+  left: auto !important;
+  bottom: 10px !important;
+  display: grid !important;
+  grid-template-columns: minmax(145px, 1.2fr) minmax(105px, .8fr) !important;
+  gap: 8px !important;
+  width: min(31%, 350px) !important;
+  z-index: 6;
+}
+
+#settingsOverlay .cloud-account-compact-action,
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action {
+  grid-template-columns: auto auto;
+  justify-content: center;
+  align-items: center;
+  min-height: 39px !important;
+  padding: 7px 10px !important;
+  gap: 7px;
+  border-radius: 9px;
+}
+
+#settingsOverlay .cloud-account-compact-action > img,
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action > img {
+  width: 18px;
+  height: 18px;
+}
+
+#settingsOverlay .cloud-account-compact-action strong,
+#settingsOverlay.websurf-settings-page .cloud-account-compact-action strong {
+  font-size: .69rem;
+  white-space: nowrap;
+}
+
+#settingsOverlay .cloud-account-custom-library,
+#settingsOverlay.websurf-settings-page .cloud-account-custom-library {
+  min-width: 0;
+  margin-top: 2px;
+}
+
+/* New category volume controls. 100% means the category's authored/default
+   loudness; the saved slider value acts as a category multiplier. */
+#settingsOverlay .settings-volume-row,
+#settingsOverlay.websurf-settings-page .settings-volume-row {
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 225px);
+  align-items: center;
+}
+
+#settingsOverlay .settings-volume-control,
+#settingsOverlay.websurf-settings-page .settings-volume-control {
+  display: grid;
+  grid-template-columns: minmax(125px, 1fr) 40px;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+#settingsOverlay .settings-volume-control input[type="range"],
+#settingsOverlay.websurf-settings-page .settings-volume-control input[type="range"] {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: #2fa9ff;
+  cursor: pointer;
+}
+
+#settingsOverlay .settings-volume-control output,
+#settingsOverlay.websurf-settings-page .settings-volume-control output {
+  justify-self: end;
+  min-width: 38px;
+  color: #dff7ff;
+  font-size: .7rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+#settingsOverlay.websurf-settings-page .settings-volume-control output {
+  color: #17466e;
+}
+
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-volume-control output {
+  color: #dcecf7;
+}
+
+#settingsOverlay .settings-audio-card .settings-volume-row,
+#settingsOverlay.websurf-settings-page .settings-audio-card .settings-volume-row {
+  min-height: 50px;
+}
+
+#settingsOverlay .settings-other-actions,
+#settingsOverlay.websurf-settings-page .settings-other-actions,
+html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-other-actions {
+  grid-template-columns: repeat(5, minmax(0, 1fr)) !important;
+  gap: 7px !important;
+}
+
+#settingsOverlay .settings-other-actions .small-button,
+#settingsOverlay.websurf-settings-page .settings-other-actions .small-button {
+  min-height: 47px;
+  padding: 5px 7px;
+  font-size: .66rem;
+  border-radius: 9px;
+}
+
+@media (max-width: 1100px) {
+  #settingsOverlay .cloud-account-core-panel,
+  #settingsOverlay.websurf-settings-page .cloud-account-core-panel,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #settingsOverlay .settings-account-topbar,
+  #settingsOverlay.websurf-settings-page .settings-account-topbar,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar {
+    width: calc(62% - 18px);
+  }
+
+  #settingsOverlay .cloud-account-side-actions,
+  #settingsOverlay.websurf-settings-page .cloud-account-side-actions,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+    width: calc(38% - 18px) !important;
+  }
+}
+
+@media (max-width: 860px) {
+  #settingsOverlay .settings-dashboard-panel,
+  #settingsOverlay.websurf-settings-page .settings-dashboard-panel {
+    width: min(100%, calc(100vw - 24px));
+  }
+
+  #settingsOverlay .settings-dashboard-grid,
+  #settingsOverlay.websurf-settings-page .settings-dashboard-grid {
+    grid-template-columns: 1fr;
+    grid-template-areas:
+      "account"
+      "left"
+      "right";
+  }
+
+  #settingsOverlay .cloud-account-shell,
+  #settingsOverlay.websurf-settings-page .cloud-account-shell {
+    padding-bottom: 11px;
+  }
+
+  #settingsOverlay .settings-account-topbar,
+  #settingsOverlay.websurf-settings-page .settings-account-topbar,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar,
+  #settingsOverlay .cloud-account-side-actions,
+  #settingsOverlay.websurf-settings-page .cloud-account-side-actions,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+    position: static !important;
+    width: auto !important;
+    margin: 8px 12px 0;
+  }
+
+  #settingsOverlay .settings-account-topbar,
+  #settingsOverlay.websurf-settings-page .settings-account-topbar,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .settings-account-topbar {
+    margin-top: 0;
+  }
+
+  #settingsOverlay .cloud-account-side-actions,
+  #settingsOverlay.websurf-settings-page .cloud-account-side-actions,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-side-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  #settingsOverlay .settings-volume-row,
+  #settingsOverlay.websurf-settings-page .settings-volume-row {
+    grid-template-columns: minmax(0, 1fr) minmax(155px, 200px);
+  }
+}
+
+@media (max-width: 620px) {
+  #settingsOverlay .cloud-account-core-panel,
+  #settingsOverlay.websurf-settings-page .cloud-account-core-panel,
+  html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .cloud-account-core-panel {
+    grid-template-columns: 1fr !important;
+  }
+
+  #settingsOverlay .settings-account-data-actions,
+  #settingsOverlay.websurf-settings-page .settings-account-data-actions,
+  #settingsOverlay .settings-other-actions,
+  #settingsOverlay.websurf-settings-page .settings-other-actions {
+    grid-template-columns: 1fr !important;
+  }
+
+  #settingsOverlay .settings-volume-row,
+  #settingsOverlay.websurf-settings-page .settings-volume-row {
+    grid-template-columns: 1fr;
+  }
+
+  #settingsOverlay .settings-volume-control,
+  #settingsOverlay.websurf-settings-page .settings-volume-control {
+    width: 100%;
+  }
 }

@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,65 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "5e27827e-64bc-467d-b2ef-4e8f6c1bf265",
+      "id": "8205b498-6e31-405a-bebf-efc66e08476c",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "614989a3-909e-4bdf-8bc9-e5b84333cae1",
+          "id": "5e3c0821-e4f8-4406-843d-e56918ac8907",
           "width": 512,
-          "height": 288,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "molly.png"
+          "name": "molly_black.png"
         },
         {
-          "id": "71969a00-f0d2-492d-93b3-ed6cd522aed4",
+          "id": "7ce2ce7c-2c82-46fd-b0cc-9c4e26e41e89",
           "width": 512,
-          "height": 288,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "molly_1.png"
+          "name": "molly_creamsicle_lyretail.png"
         },
         {
-          "id": "1a8f8662-fe1c-4029-aa30-ad366e778761",
+          "id": "4b0aa3c4-1c41-474a-8745-03a71358afbe",
           "width": 512,
-          "height": 288,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "molly_2.png"
+          "name": "molly_dalmatian.png"
         },
         {
-          "id": "4007366a-97bb-4a1f-afe5-8aca3c8b52bf",
+          "id": "9b2c8223-2f75-4291-8d0e-0d3c0a9ff904",
           "width": 512,
-          "height": 288,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "molly_3.png"
+          "name": "molly_gold_dust.png"
         },
         {
-          "id": "6b53e499-ef62-4b12-af72-3156f760039f",
+          "id": "e0e6f36a-7b0a-4d12-b109-ee4ee88a2aff",
           "width": 512,
-          "height": 288,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "molly_4.png"
+          "name": "molly_sailfin.png"
         }
       ]
     }

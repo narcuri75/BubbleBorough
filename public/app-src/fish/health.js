@@ -2,16 +2,233 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function hasActiveCandyBoost(fish, now = Date.now()) {
-  return Boolean(fish && fish.activity !== "dead" && !Number.isFinite(fish.deadAt)
-    && Number.isFinite(Number(fish.candyBoostUntil)) && Number(fish.candyBoostUntil) > now);
+  return Boolean(fish
+    && fish.lifeState !== "dead"
+    && fish.activity !== "dead"
+    && !Number.isFinite(fish.deadAt)
+    && Number.isFinite(Number(fish.candyBoostUntil))
+    && Number(fish.candyBoostUntil) > now);
+}
+
+function getFishLifeState(fish) {
+  if (!fish) {
+    return "dead";
+  }
+  if (fish.lifeState === "dead" || fish.activity === "dead" || Number.isFinite(fish.deadAt) || Number(fish.healthUnits) <= 0) {
+    return "dead";
+  }
+  return "alive";
 }
 
 function isFishDead(fish) {
+  if (!fish) {
+    return true;
+  }
+  if (fish.lifeState === "dead" || fish.activity === "dead" || Number.isFinite(fish.deadAt)) {
+    return true;
+  }
   if (hasActiveCandyBoost(fish)) {
     fish.healthUnits = getFishMaxHealthUnits(fish);
     return false;
   }
-  return !fish || fish.healthUnits <= 0;
+  return Number(fish.healthUnits) <= 0;
+}
+
+function clearFishLivingStateForDeath(fish, now = Date.now()) {
+  if (!fish) {
+    return false;
+  }
+
+  let changed = false;
+  const clearToNull = [
+    "feedingPelletId",
+    "socialTargetFishId",
+    "actionTargetFishId",
+    "preferredFishId",
+    "avoidedFishId",
+    "piranhaTargetId"
+  ];
+  const clearToEmptyString = [
+    "bettaRivalTargetId",
+    "bettaRivalNippedTargetId",
+    "pencilSparPartnerId",
+    "territoryTargetFishId"
+  ];
+  const clearToZero = [
+    "piranhaTargetAt",
+    "bettaRivalDisplayUntil",
+    "bettaRivalChaseUntil",
+    "bettaRivalYieldUntil",
+    "bettaRivalNipAt",
+    "pencilSparUntil",
+    "territoryTargetUntil",
+    "yellowTangGrazeUntil",
+    "seahorsePerchUntil",
+    "wallAvoidUntil",
+    "lionfishFoodBurstUntil",
+    "davyFoodBurstUntil",
+    "davyFoodCreepUntil",
+    "davyPatrolBurstUntil",
+    "davyCircuitUntil"
+  ];
+
+  for (const key of clearToNull) {
+    if (fish[key] != null) {
+      fish[key] = null;
+      changed = true;
+    }
+  }
+  for (const key of clearToEmptyString) {
+    if (fish[key]) {
+      fish[key] = "";
+      changed = true;
+    }
+  }
+  for (const key of clearToZero) {
+    if (Number(fish[key]) !== 0) {
+      fish[key] = 0;
+      changed = true;
+    }
+  }
+
+  if (fish.behaviorIntent) {
+    fish.behaviorIntent = null;
+    changed = true;
+  }
+
+  // Dead Fish Phase 21: death is a hard interrupt for every transient living
+  // behavior. These fields are not cooldown/history; they describe actions that
+  // are actively owning movement or presentation and must never resume later.
+  const clearTransientToNull = [
+    "panicUntil",
+    "panicSpeedBoost",
+    "yellowTangGrazeDecorId",
+    "yellowTangGrazePhase",
+    "seahorsePerchDecorId",
+    "seahorsePerchXNorm",
+    "seahorsePerchYNorm",
+    "breedingState",
+    "lionfishFoodReactionPelletId",
+    "lionfishFoodReactionStartedAt",
+    "davyFoodReactionPelletId",
+    "davyFoodReactionStartedAt"
+  ];
+  for (const key of clearTransientToNull) {
+    if (fish[key] != null) {
+      fish[key] = null;
+      changed = true;
+    }
+  }
+  if (fish.bettaRivalRole) {
+    fish.bettaRivalRole = "";
+    changed = true;
+  }
+  if (typeof clearPufferInflationState === "function") {
+    const hadPufferState = Boolean(
+      Number(fish.pufferInflatedAt)
+      || Number(fish.pufferInflatedUntil)
+      || Number(fish.pufferWobbleUntil)
+      || Number(fish.pufferRiseUntil)
+      || Number(fish.pufferInflatedSwimSpeed)
+      || (Array.isArray(fish.pufferInflationBubbles) && fish.pufferInflationBubbles.length)
+    );
+    clearPufferInflationState(fish, { clearCooldown: false, clearBurst: true });
+    changed = hadPufferState || changed;
+  }
+  if (typeof clearWhaleBreathState === "function" && fish.whaleBreathState) {
+    clearWhaleBreathState(fish, now, { reschedule: false });
+    changed = true;
+  }
+  if (fish.coarseActivity) {
+    fish.coarseActivity = null;
+    changed = true;
+  }
+  if (fish.hangoutDecorId != null || fish.hangoutZoneType != null) {
+    fish.hangoutDecorId = null;
+    fish.hangoutZoneType = null;
+    changed = true;
+  }
+  if (typeof clearFishSchoolFollowState === "function") {
+    const hadFollow = Boolean(fish.followFishId || fish.followUntil || fish.followDepthSlot != null);
+    clearFishSchoolFollowState(fish);
+    changed = hadFollow || changed;
+  } else if (fish.followFishId) {
+    fish.followFishId = null;
+    changed = true;
+  }
+
+  fish.targetXNorm = Number.isFinite(Number(fish.xNorm)) ? Number(fish.xNorm) : fish.targetXNorm;
+  fish.targetYNorm = Number.isFinite(Number(fish.yNorm)) ? Number(fish.yNorm) : fish.targetYNorm;
+  fish.targetAt = now;
+  fish.behaviorNextThinkAt = 0;
+  fish.relationshipNextCheckAt = 0;
+  fish.foodRefusalUntil = 0;
+
+  if (typeof runtime !== "undefined" && runtime) {
+    const deathInterruptedCollections = [
+      "pendingNeighborhoodTravel",
+      "foodTravelDestinations",
+      "fishActionQueuesByFishId",
+      "fishActionSteeringByFishId",
+      "fishCollisionAvoidanceById",
+      "fishNavigationMemoryById",
+      "fishLayerDepthScaleTransitions",
+      "fishLayerTravelStepTransitions",
+      "debugBehaviorSteeringByFishId",
+      "debugForcedOtocinclusStateByFishId",
+      "fishGravelPebbleActions",
+      "forcedGravelDigUntilByFishId",
+      "fishRoutineNextAtById",
+      "pufferRapidTapByFishId"
+    ];
+    for (const key of deathInterruptedCollections) {
+      const collection = runtime[key];
+      if (collection && typeof collection.delete === "function") {
+        changed = collection.delete(fish.id) || changed;
+      }
+    }
+    if (runtime.fishDragState?.fishId === fish.id) {
+      runtime.fishDragState = null;
+    }
+    if (runtime.fishActionMenuFishId === fish.id) {
+      runtime.fishActionMenuFishId = null;
+    }
+    const activeBreeding = runtime.fishBreedingSequence;
+    if (activeBreeding && (activeBreeding.leftFishId === fish.id || activeBreeding.rightFishId === fish.id)) {
+      if (typeof clearFishBreedingSequence === "function") clearFishBreedingSequence();
+      else runtime.fishBreedingSequence = null;
+    }
+    const debugBreeding = runtime.debugBreedingSequence;
+    if (debugBreeding && (debugBreeding.leftFishId === fish.id || debugBreeding.rightFishId === fish.id)) {
+      if (typeof clearDebugBreedingSequence === "function") clearDebugBreedingSequence();
+      else runtime.debugBreedingSequence = null;
+    }
+  }
+
+  if (typeof clearFishCollisionAvoidance === "function") clearFishCollisionAvoidance(fish);
+  if (typeof clearFishNavigationMemory === "function") clearFishNavigationMemory(fish);
+  if (typeof clearFishRightOfWayForFish === "function") clearFishRightOfWayForFish(fish);
+  if (typeof clearFishActionSteering === "function") clearFishActionSteering(fish);
+  if (typeof clearForcedGravelDigPrompt === "function") clearForcedGravelDigPrompt(fish);
+
+  return changed;
+}
+
+function enterFishDeadState(fish, now = Date.now()) {
+  if (!fish) {
+    return false;
+  }
+
+  const changed = fish.lifeState !== "dead" || fish.activity !== "dead" || Number(fish.healthUnits) !== 0;
+  fish.lifeState = "dead";
+  fish.activity = "dead";
+  fish.healthUnits = 0;
+  fish.deadAt = Number.isFinite(fish.deadAt) ? fish.deadAt : now;
+  if (typeof initializeDeadFishCorpseMotion === "function") {
+    initializeDeadFishCorpseMotion(fish, now);
+  }
+  clearFishLivingStateForDeath(fish, now);
+  return changed;
 }
 
 function isFishBeingConsumedByPiranhas(fish, now = Date.now()) {
@@ -58,10 +275,25 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
     }
   }
 
+  for (const fish of consumedFish) {
+    recordCreatureRemovalHistory(fish, fish.deathCause || "Piranha Attack", now, { source: "piranha-consumed" });
+  }
   const consumedIds = new Set(consumedFish.map((fish) => fish.id));
-  state.fish = state.fish.filter((fish) => !consumedIds.has(fish.id));
-  state.pendingPoops = state.pendingPoops.filter((poop) => !consumedIds.has(poop.fishId));
-  releasePelletsTargetingFishIds(consumedIds);
+  const removeConsumedFish = () => {
+    if (typeof clearRemovedDeadFishRuntimeState === "function") {
+      for (const fish of consumedFish) clearRemovedDeadFishRuntimeState(fish);
+    } else if (typeof clearDeadFishCorpseMotion === "function") {
+      for (const fishId of consumedIds) clearDeadFishCorpseMotion(fishId);
+    }
+    state.fish = state.fish.filter((fish) => !consumedIds.has(fish.id));
+    state.pendingPoops = state.pendingPoops.filter((poop) => !consumedIds.has(poop.fishId));
+    releasePelletsTargetingFishIds(consumedIds);
+  };
+  if (typeof preserveTankDirtinessThroughChange === "function") {
+    preserveTankDirtinessThroughChange(now, removeConsumedFish);
+  } else {
+    removeConsumedFish();
+  }
 
   if (runtime.selectedFishId && consumedIds.has(runtime.selectedFishId)) {
     runtime.selectedFishId = null;
@@ -102,16 +334,18 @@ function finalizePiranhaConsumedFish(fishList, now = Date.now(), options = {}) {
   return true;
 }
 
-function getLivingTankFish() {
-  return state.fish.filter((fish) => !isFishDead(fish));
+function getLivingTankFish(targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  const fishList = Array.isArray(targetTank?.fish) ? targetTank.fish : (Array.isArray(state?.fish) ? state.fish : []);
+  return fishList.filter((fish) => !isFishDead(fish));
 }
 
-function getExposedDeadTankFish(now = Date.now()) {
-  return state.fish.filter((fish) => isFishDead(fish) && !isFishBeingConsumedByPiranhas(fish, now));
+function getExposedDeadTankFish(now = Date.now(), targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  const fishList = Array.isArray(targetTank?.fish) ? targetTank.fish : (Array.isArray(state?.fish) ? state.fish : []);
+  return fishList.filter((fish) => isFishDead(fish) && !isFishBeingConsumedByPiranhas(fish, now));
 }
 
-function hasExposedDeadTankFish(now = Date.now()) {
-  return getExposedDeadTankFish(now).length > 0;
+function hasExposedDeadTankFish(now = Date.now(), targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  return getExposedDeadTankFish(now, targetTank).length > 0;
 }
 
 function getLivingPiranhaFish() {
@@ -358,6 +592,7 @@ function pickDeadFishVigilTarget(fish, species, now) {
   const nearest = getNearestDeadFish(fish);
   if (
     !nearest
+    || isProteusZombieFish(fish)
     || nearest.distanceNorm > CORPSE_VIGIL_TRIGGER_RANGE_NORM
     || isPiranhaSpecies(fish)
   ) {
@@ -388,6 +623,7 @@ function clearFishSchoolFollowState(fish) {
   fish.followUntil = null;
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
+  fish.followDepthSlot = null;
 }
 
 function pruneFishGravelPebbleRuntimeState(now = Date.now()) {
@@ -407,16 +643,24 @@ function pruneFishGravelPebbleRuntimeState(now = Date.now()) {
   }
 }
 
-function markFishAsDead(fish, now = Date.now(), reasonText = null) {
+function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {}) {
   if (!fish) {
     return false;
   }
 
-  if (hasActiveCandyBoost(fish, now)) {
+  if (isProteusZombieFish(fish) && options.force !== true) {
+    fish.lifeState = "alive";
+    fish.deadAt = null;
+    fish.healthUnits = Math.max(1, Math.min(getFishMaxHealthUnits(fish), Number(fish.healthUnits) || 1));
+    fish.zombieRegenerateAt = now + PROTEUS_ZOMBIE_REGEN_DELAY_MS;
+    return false;
+  }
+
+  if (hasActiveCandyBoost(fish, now) && options.force !== true) {
     fish.healthUnits = getFishMaxHealthUnits(fish);
     return false;
   }
-  const alreadyDead = fish.activity === "dead" || isFishDead(fish);
+  const alreadyDead = fish.lifeState === "dead" || fish.activity === "dead" || Number.isFinite(fish.deadAt);
   if (
     !alreadyDead
     && isFishProtectedFromPredators(fish, now)
@@ -427,9 +671,19 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
     return false;
   }
 
+  const deathTank = typeof getTankContainingFish === "function"
+    ? (getTankContainingFish(fish.id) || getCurrentTank())
+    : getCurrentTank();
   const shouldRebase = !alreadyDead && state.fish.some((entry) => entry.id === fish.id);
   const previousDirtiness = shouldRebase ? getBaseTankDirtiness(now) : null;
+  const pelletId = fish.feedingPelletId;
   fish.deadAt = alreadyDead && Number.isFinite(fish.deadAt) ? fish.deadAt : now;
+  if (!alreadyDead) {
+    fish.deathCause = typeof options.cause === "string" && options.cause.trim()
+      ? options.cause.trim().slice(0, 80)
+      : (typeof reasonText === "string" && reasonText.trim() ? reasonText.trim().slice(0, 80) : "Unknown");
+  }
+  enterFishDeadState(fish, now);
   fish.decayStage = "fresh";
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
@@ -437,21 +691,24 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   fish.piranhaConsumptionStartedAt = null;
   fish.piranhaConsumptionEndsAt = null;
   fish.piranhaLastBloodAt = null;
-  fish.healthUnits = 0;
   fish.fedStreak = 0;
   fish.comfortDamageProgressMs = 0;
   clearFishSchoolFollowState(fish);
 
-  const pelletId = fish.feedingPelletId;
   const species = getSpeciesForFish(fish);
   if (!alreadyDead) {
-    recordFishMemorial(fish, getCurrentTank(), reasonText || `${fish.name} died.`, now);
-    clearFishReferencesAfterDeath(fish.id);
+    recordFishMemorial(fish, deathTank, options.cause || reasonText || `${fish.name} died.`, now);
+    if (typeof handleFishPairBondLoss === "function") {
+      handleFishPairBondLoss(fish, now);
+    }
+    clearFishReferencesAfterDeath(fish.id, now);
+    fish.pairBondPartnerId = "";
+    fish.pairBondPartnerName = "";
+    fish.pairBondedAt = 0;
   }
   if (runtime.debugForcedCaveFishId === fish.id) {
     clearDebugCaveTestSelection();
   }
-  fish.activity = "dead";
   fish.feedingPelletId = null;
   clearFishCaveBehavior(fish);
   setFishTankLayers(fish, species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish), species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
@@ -480,7 +737,10 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
 
   if (!alreadyDead && reasonText) {
     state.lifetimeDeaths = Math.max(0, (Number(state.lifetimeDeaths) || 0) + 1);
-    pushEvent(reasonText, now, getCurrentTank(), { type: "death", fishId: fish.id, score: -1 });
+    pushEvent(reasonText, now, deathTank, { type: "death", fishId: fish.id, score: -1 });
+    if (!deathTank || !getCurrentTank() || deathTank.id === getCurrentTank().id) {
+      showToast(reasonText);
+    }
   }
 
   if (shouldRebase) {
@@ -491,22 +751,53 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null) {
   return !alreadyDead;
 }
 
-function applyFishDamage(fish, amount = 1, now = Date.now(), injuryText = null, deathText = null) {
+function applyFishDamage(fish, amount = 1, now = Date.now(), injuryText = null, deathText = null, options = {}) {
   if (!fish || isFishDead(fish)) {
     return { changed: false, dead: true };
   }
 
   const damageUnits = Math.max(1, Math.round(Number(amount) || 1));
+  if (isProteusZombieFish(fish) && options.force !== true) {
+    fish.healthUnits = Math.max(1, fish.healthUnits - damageUnits);
+    fish.fedStreak = 0;
+    fish.zombieRegenerateAt = now + PROTEUS_ZOMBIE_REGEN_DELAY_MS;
+    fish.zombieLastRegeneratedAt = 0;
+    if (injuryText) pushEvent(injuryText, now);
+    return { changed: true, dead: false, regenerating: true };
+  }
+
   fish.healthUnits = Math.max(0, fish.healthUnits - damageUnits);
   fish.fedStreak = 0;
 
   if (fish.healthUnits <= 0) {
-    markFishAsDead(fish, now, deathText || `${fish.name} died.`);
+    markFishAsDead(fish, now, deathText || `${fish.name} died.`, options);
     return { changed: true, dead: true };
   }
 
+  if (typeof syncFishPrimaryCondition === "function") syncFishPrimaryCondition(fish, now);
   if (injuryText) {
     pushEvent(injuryText, now);
   }
   return { changed: true, dead: false };
+}
+
+function updateProteusZombieFishRegeneration(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish) || !isProteusZombieFish(fish)) return false;
+  const maxHealth = getFishMaxHealthUnits(fish);
+  if (fish.healthUnits >= maxHealth) {
+    fish.healthUnits = maxHealth;
+    fish.zombieRegenerateAt = 0;
+    fish.zombieLastRegeneratedAt = 0;
+    return false;
+  }
+  if ((Number(fish.zombieRegenerateAt) || 0) > now) return false;
+  const lastAt = Number(fish.zombieLastRegeneratedAt) || 0;
+  if (lastAt && now - lastAt < PROTEUS_ZOMBIE_REGEN_STEP_MS) return false;
+  fish.healthUnits = Math.min(maxHealth, Math.max(1, Number(fish.healthUnits) || 1) + 1);
+  fish.zombieLastRegeneratedAt = now;
+  if (fish.healthUnits >= maxHealth) {
+    fish.zombieRegenerateAt = 0;
+    fish.zombieLastRegeneratedAt = 0;
+  }
+  return true;
 }

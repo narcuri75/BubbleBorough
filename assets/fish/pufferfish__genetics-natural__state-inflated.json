@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,120 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "138ccb31-4f4e-4a03-8534-45baeaaf5248",
+      "id": "85712a5b-00bd-49be-9d3c-5a17d2b3ae79",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "72ce220c-7c8d-445d-9a63-2c106f1ca057",
-          "width": 578,
-          "height": 427,
+          "id": "0474601a-6f35-47a0-8d38-32ba8adfdf2a",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_inflated.png"
+          "name": "puffer_amazon_inflated.png"
         },
         {
-          "id": "f7e1b0de-dc12-433e-b7d5-bb6510c7f68c",
-          "width": 578,
-          "height": 427,
+          "id": "038bbe86-a919-4349-9e84-cb4cb12c5c4b",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_inflated_1.png"
+          "name": "puffer_dogface_inflated.png"
         },
         {
-          "id": "b20a2d72-734f-4c17-9528-1112f250392d",
-          "width": 578,
-          "height": 427,
+          "id": "d6c51fe0-5e10-42ff-b3ef-921aec2a80c2",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_inflated_2.png"
+          "name": "puffer_dwarf_inflated.png"
         },
         {
-          "id": "f7361a40-29d2-4214-a5a8-162a1815a3a0",
-          "width": 578,
-          "height": 427,
+          "id": "da4faf0b-f775-49c0-83d5-ae35a6dfff91",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_inflated_3.png"
+          "name": "puffer_fahaka_inflated.png"
         },
         {
-          "id": "544820ee-460d-4fd0-a7e1-752098534c99",
-          "width": 578,
-          "height": 427,
+          "id": "481cab49-7a58-44d5-b0c1-896b83a0e5ab",
+          "width": 512,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "pufferfish_inflated_4.png"
+          "name": "puffer_figure8_inflated.png"
+        },
+        {
+          "id": "6b6a8ee0-a9f3-42e6-ac12-c58f07db2db5",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_green_spotted_inflated.png"
+        },
+        {
+          "id": "0b9ae5b4-bb9e-43ff-b03f-6aa8a5b026be",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_map_inflated.png"
+        },
+        {
+          "id": "86892c58-9219-4c5a-8777-0a8ae29515b0",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_mbu_inflated.png"
+        },
+        {
+          "id": "9ff110b7-908a-4dc1-be95-02deb43a1a92",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_oceanic_inflated.png"
+        },
+        {
+          "id": "3e4b9e06-4e39-46e2-b996-9dc79bbaa450",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "puffer_valentinis_sharpnose_inflated.png"
         }
       ]
     }

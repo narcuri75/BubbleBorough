@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "6d56f339-ddfb-4237-af73-c015dd0676c2",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "0b5c6857-fd3c-4b05-8c37-97fd62de3728",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_blue.png"
+        },
+        {
+          "id": "8abdd6e5-1a77-4f35-bbe4-e602859b81cb",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_bluegreen.png"
+        },
+        {
+          "id": "9bfb58f9-70a7-4fa1-b368-8c316b5bf100",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_green.png"
+        },
+        {
+          "id": "d84376a2-97e6-4963-8d88-d2d1bbed8996",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_half_and_half.png"
+        },
+        {
+          "id": "1b0a293d-5ee6-48cc-9d5a-f555abb1b16c",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_orange.png"
+        },
+        {
+          "id": "e6f4bcd8-7c2f-4c02-b4fe-3a244cd337db",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_purple.png"
+        },
+        {
+          "id": "16fd018d-becd-403a-aa54-21fd3c318630",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_sunshine.png"
+        },
+        {
+          "id": "bf75a077-1b14-4d66-954d-67076525c917",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_vanderbilts.png"
+        },
+        {
+          "id": "33a1f108-5cb5-4598-8b41-2b8f15e443bf",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chromis_yellowtail.png"
+        }
+      ]
+    }
+  ]
+}

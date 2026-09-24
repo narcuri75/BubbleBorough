@@ -18,13 +18,18 @@ function getTankDepthParentLayer(layer) {
   return clampTankLayer(parent);
 }
 
+function getDebugTankDepthTuningMax(key) {
+  if (key === "gravelLayerShadow") return 1;
+  if (key === "shadow" || key === "movement") return 2;
+  if (key === "shadowDarkness") return DECOR_GROUND_SHADOWS.shadowDarknessCap;
+  return 4;
+}
+
 function normalizeDebugTankDepthTuning(source = {}) {
   const normalized = {};
   for (const [key, fallback] of Object.entries(DEFAULT_DEBUG_DEPTH_TUNING)) {
     const raw = Number(source?.[key]);
-    const max = key === "shadow" || key === "movement"
-      ? 2
-      : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+    const max = getDebugTankDepthTuningMax(key);
     normalized[key] = Number.isFinite(raw) ? clamp(raw, 0, max) : fallback;
   }
   return normalized;
@@ -59,6 +64,9 @@ function getTankDepthLevelMultiplier(key, level = getTankDepthEffectLevel()) {
   if (normalizedLevel <= DEPTH_EFFECT_LEVEL_MIN) {
     return 0;
   }
+  if (key === "gravelLayerShadow") {
+    return 1;
+  }
   if (key === "shadow" || key === "movement") {
     // Shadow/motion tuning has a deliberately narrower safe range than the
     // color/depth treatment. Spread 100% -> 200% evenly across levels 1 -> 4.
@@ -77,9 +85,7 @@ function getActiveTankDepthTuning() {
   const effective = {};
   for (const [key, fallback] of Object.entries(DEFAULT_DEBUG_DEPTH_TUNING)) {
     const channelMultiplier = Number(channelTuning?.[key]);
-    const max = key === "shadow" || key === "movement"
-      ? 2
-      : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+    const max = getDebugTankDepthTuningMax(key);
     const multiplier = Number.isFinite(channelMultiplier) ? channelMultiplier : fallback;
     const levelMultiplier = getTankDepthLevelMultiplier(key, depthLevel);
     effective[key] = clamp(levelMultiplier * multiplier, 0, max);
@@ -109,9 +115,7 @@ function setDebugTankDepthTuningValue(key, value, options = {}) {
     return getDebugTankDepthTuning();
   }
   const tuning = getDebugTankDepthTuning();
-  const max = key === "shadow" || key === "movement"
-    ? 2
-    : (key === "shadowDarkness" ? DECOR_GROUND_SHADOWS.shadowDarknessCap : 4);
+  const max = getDebugTankDepthTuningMax(key);
   tuning[key] = clamp(Number(value) || 0, 0, max);
   if (options.persist !== false) {
     saveDebugTankDepthTuning();
@@ -252,6 +256,15 @@ function getDebugGroundShadowDarknessMultiplier() {
   return clamp(value || fallback, 0.25, DECOR_GROUND_SHADOWS.shadowDarknessCap);
 }
 
+function getGravelLayerShadowIntensity() {
+  if (isDebugModeEnabled()) {
+    const tuning = getDebugTankDepthTuning();
+    return clamp(Number(tuning?.gravelLayerShadow) || 0, 0, 1);
+  }
+  const uiSettings = getUiSettings();
+  return normalizeSettingsVolume(uiSettings?.gravelShadowIntensity, DEFAULT_UI_SETTINGS.gravelShadowIntensity);
+}
+
 function getTankDepthMovementMultiplier(layer) {
   return areTankDepthEffectsEnabled() ? getTankDepthVisualPreset(layer).movementMultiplier : 1;
 }
@@ -344,7 +357,11 @@ function getTankDepthTreatedImage(image, layer) {
     return byLayer.get(parentLayer) || image;
   }
 
-  const { width, height } = getTankDepthImageDimensions(image);
+  const sourceSize = getTankDepthImageDimensions(image);
+  const maxDimension = Math.max(64, Number(DEPTH_VISUAL_CACHE_MAX_DIMENSION) || 768);
+  const scale = Math.min(1, maxDimension / Math.max(sourceSize.width, sourceSize.height));
+  const width = Math.max(1, Math.round(sourceSize.width * scale));
+  const height = Math.max(1, Math.round(sourceSize.height * scale));
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;
@@ -386,7 +403,11 @@ function getTankBackgroundDepthTreatedImage(image) {
     return byLayer.get(cacheKey) || image;
   }
 
-  const { width, height } = getTankDepthImageDimensions(image);
+  const sourceSize = getTankDepthImageDimensions(image);
+  const maxDimension = Math.max(512, Number(DEPTH_BACKGROUND_CACHE_MAX_DIMENSION) || 2048);
+  const scale = Math.min(1, maxDimension / Math.max(sourceSize.width, sourceSize.height));
+  const width = Math.max(1, Math.round(sourceSize.width * scale));
+  const height = Math.max(1, Math.round(sourceSize.height * scale));
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = height;

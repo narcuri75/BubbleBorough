@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,120 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "ec0bb24b-66a1-49c5-935c-ce22a2e2101f",
+      "id": "b43266d6-4b38-4ba1-ae0e-421639bda2f2",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "ea0cfedd-8573-41bc-92da-0c764cee9f73",
+          "id": "1472f0e0-d874-4d35-be36-6a6a31cee1d6",
           "width": 512,
-          "height": 281,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "piranha.png"
+          "name": "piranha_lobetoothed.png"
         },
         {
-          "id": "d15fbe6f-6f48-4cce-9caf-0fd0cb807bbf",
+          "id": "0a6e96f5-fbf2-45ec-a2bb-4928ad8ac12c",
           "width": 512,
-          "height": 281,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "piranha_1.png"
+          "name": "piranha_manueli.png"
         },
         {
-          "id": "f1af0147-c436-407c-8a29-d96b62b9e6b5",
+          "id": "102cb987-22a7-4cf9-b5a1-e10762594210",
           "width": 512,
-          "height": 281,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "piranha_2.png"
+          "name": "piranha_piraya.png"
         },
         {
-          "id": "ac327e48-fbcf-4c7d-816f-69d92887881a",
+          "id": "fed71941-d19c-48c9-85a9-ddac21284299",
           "width": 512,
-          "height": 281,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "piranha_3.png"
+          "name": "piranha_red_bellied.png"
         },
         {
-          "id": "ab856bb4-b9be-4690-ac0a-f0a61cf31399",
+          "id": "e92b1456-c06d-43be-a41d-ed5d3bb49509",
           "width": 512,
-          "height": 281,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "piranha_4.png"
+          "name": "piranha_spotted.png"
+        },
+        {
+          "id": "cf14e606-1ef3-49b8-a773-a7354cea95fc",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_white.png"
+        },
+        {
+          "id": "c6292024-d744-46cb-b534-b0c87428010b",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_wimple.png"
+        },
+        {
+          "id": "0820a2ec-30bf-4df5-9b1e-e7511261ace6",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_black.png"
+        },
+        {
+          "id": "9c556093-dd89-45b1-9685-767d049ab05b",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_cariba.png"
+        },
+        {
+          "id": "c6322bfa-2563-429d-97e4-44a578eea6e6",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "piranha_elongated.png"
         }
       ]
     }

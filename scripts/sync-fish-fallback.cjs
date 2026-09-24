@@ -19,6 +19,9 @@ function buildFallbackFish(entry) {
   const copy = JSON.parse(JSON.stringify(entry));
   copy.asset = normalizeFallbackAssetPath(copy.asset);
   if (copy.fallbackAsset) copy.fallbackAsset = normalizeFallbackAssetPath(copy.fallbackAsset);
+  for (const key of ["overlayAsset", "antennaAsset", "legAsset", "storeAsset"]) {
+    if (copy[key]) copy[key] = normalizeFallbackAssetPath(copy[key]);
+  }
   if (Array.isArray(copy.assetVariants)) {
     copy.assetVariants = copy.assetVariants.map(normalizeFallbackAssetPath);
   }

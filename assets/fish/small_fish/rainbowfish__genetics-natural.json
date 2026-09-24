@@ -1,0 +1,117 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "e91b9e5e-a619-4dd0-9bbb-74fe7892453b",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "690c3bbb-8934-45ad-a9ed-8ef2290b3e0e",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_bleheri.png"
+        },
+        {
+          "id": "e10ffe43-8a5a-40fc-a012-7e4f51a524b6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_boesemani.png"
+        },
+        {
+          "id": "46f44f7a-1bd9-4da8-9748-6a44fa935dc2",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_fluviatilis.png"
+        },
+        {
+          "id": "94db48be-7635-416b-96ca-4312e5b62ae6",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_incisus.png"
+        },
+        {
+          "id": "bb75e41a-2d5d-4b10-8a91-a03fbc5d72d1",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_parkinsoni.png"
+        },
+        {
+          "id": "a0000305-1a8d-403f-bb03-50e94dc9383e",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_praecox.png"
+        },
+        {
+          "id": "8c81e66b-9515-408d-9788-791ca9b76002",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_trifasciata.png"
+        },
+        {
+          "id": "3c9dac2a-7db1-4391-a5b5-57c802587044",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_turquoise.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/rainbowfish__genetics-natural.webp"
+  }
+}

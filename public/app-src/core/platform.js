@@ -203,10 +203,7 @@ function isMobileDisplayForHardwareAccelerationNotice() {
     return false;
   }
 
-  return Boolean(
-    window.matchMedia?.(PORTABLE_PERFORMANCE_MEDIA_QUERY)?.matches
-    || window.matchMedia?.("(max-width: 720px)")?.matches
-  );
+  return Boolean(window.matchMedia?.("(max-width: 720px)")?.matches);
 }
 
 function shouldShowHardwareAccelerationNotice() {

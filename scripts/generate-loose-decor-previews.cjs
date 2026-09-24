@@ -27,6 +27,7 @@ function getCompanionType(relativePath) {
   const lower = path.posix.basename(String(relativePath || "")).toLowerCase();
   const stem = lower.replace(/\.[^.]+$/, "");
   const tokens = stem.split("__").slice(2);
+  if (/(?:_shadow(?:[-_]?footprint)?|_footprint|_surface)$/.test(stem)) return "utility";
   if (tokens.includes("color1")) return "color1";
   if (tokens.includes("color2")) return "color2";
   if (tokens.includes("color3")) return "color3";
@@ -34,9 +35,16 @@ function getCompanionType(relativePath) {
   if (tokens.includes("mask")) return "mask";
   if (tokens.includes("light")) return "light";
   if (tokens.includes("mid")) return "mid";
+  if (tokens.includes("shadow") || tokens.includes("shadow-footprint") || tokens.includes("shadowfootprint") || tokens.includes("footprint") || tokens.includes("surface")) return "utility";
   if (tokens.includes("trigger") || tokens.includes("triggers") || tokens.includes("seat") || tokens.includes("seats")) return "utility";
   if (tokens.includes("trypophobia")) return "special";
   return "base";
+}
+
+function isSurfaceCompanion(relativePath) {
+  const stem = path.posix.basename(String(relativePath || "")).toLowerCase().replace(/\.[^.]+$/, "");
+  const tokens = stem.split("__").slice(2);
+  return /_surface$/.test(stem) || tokens.includes("surface");
 }
 
 function getBaseKey(relativePath) {
@@ -44,10 +52,42 @@ function getBaseKey(relativePath) {
   const name = path.posix.basename(relativePath);
   const extension = path.posix.extname(name);
   const stem = name.slice(0, -extension.length);
-  if (!stem.includes("__")) return path.posix.join(directory, name.toLowerCase());
-  const removable = new Set(["front", "bg", "mask", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
+  if (!stem.includes("__")) {
+    return path.posix.join(directory, `${stem.replace(/_(?:shadow(?:[-_]?footprint)?|footprint|surface)$/i, "")}${extension}`.toLowerCase());
+  }
+  const removable = new Set(["front", "bg", "mask", "shadow", "shadow-footprint", "shadowfootprint", "footprint", "surface", "light", "mid", "trypophobia", "color1", "color2", "color3", "trigger", "triggers", "seat", "seats"]);
   const parts = stem.split("__").filter((part, index) => index < 2 || !removable.has(part.toLowerCase()));
   return path.posix.join(directory, `${parts.join("__")}${extension}`.toLowerCase());
+}
+
+function getTrypophobiaPreviewRole(relativePath) {
+  const stem = path.posix.basename(String(relativePath || "")).toLowerCase().replace(/\.[^.]+$/, "");
+  const tokens = stem.split("__").slice(2);
+  if (!tokens.includes("trypophobia")) return "";
+  if (tokens.includes("color2")) return "color2";
+  if (tokens.includes("color3")) return "color3";
+  return "base";
+}
+
+function buildTrypophobiaPreviewGroups(sources) {
+  const groups = new Map();
+  for (const relativePath of sources) {
+    const baseKey = getBaseKey(relativePath);
+    if (!groups.has(baseKey)) {
+      groups.set(baseKey, { base: "", bg: "", color2: "", color3: "", trypophobia: {} });
+    }
+    const group = groups.get(baseKey);
+    const trypophobiaRole = getTrypophobiaPreviewRole(relativePath);
+    if (trypophobiaRole) {
+      group.trypophobia[trypophobiaRole] = relativePath;
+      continue;
+    }
+    const type = getCompanionType(relativePath);
+    if (["base", "bg", "color2", "color3"].includes(type) && !group[type]) {
+      group[type] = relativePath;
+    }
+  }
+  return groups;
 }
 
 async function renderPreview(layerNames) {
@@ -83,6 +123,9 @@ function pruneEmptyDirectories(directory) {
 
 async function run() {
   const sources = walkPngs(sourceDir);
+  // _surface artwork is an invisible alpha receiver used by the renderer, not
+  // a sellable/previewable layer.
+  const previewSources = sources.filter(relativePath => !isSurfaceCompanion(relativePath));
   const previous = fs.existsSync(manifestPath) ? JSON.parse(fs.readFileSync(manifestPath, "utf8")) : {};
   const next = {};
   const groups = new Map();
@@ -92,12 +135,21 @@ async function run() {
     const type = getCompanionType(relativePath);
     if (!groups.get(baseKey)[type] || type !== "special") groups.get(baseKey)[type] = relativePath;
   }
+  const trypophobiaGroups = buildTrypophobiaPreviewGroups(sources);
+  const trypophobiaPreviewGroups = [...trypophobiaGroups.values()].filter(group => (
+    group.base
+    && group.base.startsWith("cave_layered/")
+    && Object.keys(group.trypophobia).length
+  ));
   if (!checkOnly) fs.mkdirSync(outputDir, { recursive: true });
-  const expectedOutputs = new Set(sources.map(name => `${name}.webp`));
+  const expectedOutputs = new Set([
+    ...previewSources.map(name => `${name}.webp`),
+    ...trypophobiaPreviewGroups.map(group => `${group.base}.trypophobia.webp`)
+  ]);
   const obsoleteOutputs = walkWebps(outputDir).filter(name => !expectedOutputs.has(name));
   if (checkOnly && obsoleteOutputs.length) throw new Error(`Obsolete decor previews: ${obsoleteOutputs.join(", ")}. Run npm run build:app.`);
 
-  for (const relativePath of sources) {
+  for (const relativePath of previewSources) {
     const group = groups.get(getBaseKey(relativePath)) || {};
     const layerNames = getCompanionType(relativePath) === "base"
       ? [group.bg, group.base, group.color2, group.color3].filter(Boolean)
@@ -118,6 +170,32 @@ async function run() {
     fs.writeFileSync(outputPath, preview);
     next[relativePath] = { sourceHash, outputHash: hash(preview) };
   }
+  for (const group of trypophobiaPreviewGroups) {
+    const layerNames = [
+      group.bg,
+      group.base,
+      group.trypophobia.base,
+      group.trypophobia.color2 || group.color2,
+      group.trypophobia.color3 || group.color3
+    ].filter(Boolean);
+    const layerSources = layerNames.map(name => fs.readFileSync(path.join(sourceDir, ...name.split("/"))));
+    const manifestKey = `${group.base}::trypophobia`;
+    const sourceHash = hash(Buffer.concat([Buffer.from(`${PREVIEW_RENDER_VERSION}:trypophobia`), ...layerSources]));
+    const outputName = `${group.base}.trypophobia.webp`;
+    const outputPath = path.join(outputDir, ...outputName.split("/"));
+    const outputExists = fs.existsSync(outputPath);
+    const outputHash = outputExists ? hash(fs.readFileSync(outputPath)) : "";
+    if (previous[manifestKey]?.sourceHash === sourceHash && previous[manifestKey]?.outputHash === outputHash) {
+      next[manifestKey] = previous[manifestKey];
+      continue;
+    }
+    if (checkOnly) throw new Error(`Missing or stale trypophobia decor preview for ${group.base}. Run npm run build:app.`);
+    fs.mkdirSync(path.dirname(outputPath), { recursive: true });
+    const preview = await renderPreview(layerNames);
+    fs.writeFileSync(outputPath, preview);
+    next[manifestKey] = { sourceHash, outputHash: hash(preview) };
+  }
+
   if (!checkOnly) {
     for (const relativePath of obsoleteOutputs) fs.unlinkSync(path.join(outputDir, ...relativePath.split("/")));
     pruneEmptyDirectories(outputDir);

@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "5143760e-13df-4682-9495-f5b3dba996d6",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "abebd8d9-125b-414c-a323-7b9519e4705f",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_red.png"
+        },
+        {
+          "id": "e5c64c72-538b-4224-9628-9fe1ec47e0e8",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_ring_tailed.png"
+        },
+        {
+          "id": "a7c3ff91-d9af-4a2c-8c57-85fdfa717aab",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_seales.png"
+        },
+        {
+          "id": "bb584233-4c4c-401b-b60b-741a6cfddcda",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_yellow.png"
+        },
+        {
+          "id": "04a668fc-7c35-4898-8ace-f89870ba0e74",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_banggai.png"
+        },
+        {
+          "id": "82d43856-9261-4205-ab00-c4427618264f",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_blackstripe.png"
+        },
+        {
+          "id": "e3a97146-1f3e-4d6c-bdfe-99ab595ce66f",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_five_lined.png"
+        },
+        {
+          "id": "de082031-a065-4dd9-98e6-2ef52fc834f4",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_goldbelly.png"
+        },
+        {
+          "id": "0b1b67fb-95a7-41cf-bda3-f28c9ded4926",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_orbic.png"
+        },
+        {
+          "id": "b495f4d3-6e1b-495a-849e-55fc92bee390",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cardinalfish_pajama.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/cardinal__genetics-natural.webp"
+  }
+}

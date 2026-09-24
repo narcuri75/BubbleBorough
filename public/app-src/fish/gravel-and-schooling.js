@@ -32,7 +32,7 @@ function isFishSpeciesEligibleForGravelPebble(species) {
 }
 
 function isFishEligibleForGravelPebbleAction(fish, species, now = Date.now(), options = {}) {
-  if (!canUseFishGravelPebblePlay() || !fish || !isFishSpeciesEligibleForGravelPebble(species) || isFishDead(fish)) {
+  if (!canUseFishGravelPebblePlay() || !fish || isProteusZombieFish(fish) || !isFishSpeciesEligibleForGravelPebble(species) || isFishDead(fish)) {
     return false;
   }
 
@@ -106,7 +106,7 @@ function pickFishGravelPebbleDebugCandidate(now = Date.now()) {
 }
 
 function isFishEligibleForGravelDigPrompt(fish, species, now = Date.now()) {
-  if (!fish || !isFishSpeciesEligibleForGravelPebble(species) || isFishDead(fish)) {
+  if (!fish || isProteusZombieFish(fish) || !isFishSpeciesEligibleForGravelPebble(species) || isFishDead(fish)) {
     return false;
   }
 
@@ -685,7 +685,9 @@ function spawnGravelLandingEffects(x, y, options = {}) {
     intensity: clamp(intensity * 0.64, 0.38, 0.96),
     direction: Number.isFinite(Number(options.direction))
       ? Number(options.direction)
-      : (Math.random() < 0.5 ? -1 : 1)
+      : (Math.random() < 0.5 ? -1 : 1),
+    forwardOnly: options.forwardOnly === true,
+    frontOfFish: options.frontOfFish === true
   });
 }
 
@@ -715,10 +717,13 @@ function spawnGravelDigBurst(originX, originY, options = {}) {
   const settleSurfaceY = Number.isFinite(Number(options.surfaceY))
     ? clamp(Number(options.surfaceY), WATER_SURFACE_Y + 24, TANK_HEIGHT - GLASS_MARGIN_BOTTOM)
     : null;
+  const forwardOnly = options.forwardOnly === true;
   const particles = [];
 
   for (let index = 0; index < count; index += 1) {
-    const scatterX = randomBetween(-scatterPx, scatterPx) + direction * randomBetween(-4, scatterPx * 0.7);
+    const scatterX = forwardOnly
+      ? direction * randomBetween(4, scatterPx)
+      : randomBetween(-scatterPx, scatterPx) + direction * randomBetween(-4, scatterPx * 0.7);
     const endX = clamp(baseX + scatterX, GLASS_MARGIN_X + 8, TANK_WIDTH - GLASS_MARGIN_X - 8);
     const endY = (settleSurfaceY ?? getTankFloorSurfaceYAtX(endX)) - randomBetween(0, 4);
     const colorIndex = Math.floor(Math.random() * Math.max(1, palette.length));
@@ -754,6 +759,7 @@ function spawnGravelDigBurst(originX, originY, options = {}) {
     id: createId("gravel-dig"),
     startedAt: now,
     durationMs: randomBetween(GRAVEL_DIG_BURST_DURATION_MIN_MS, GRAVEL_DIG_BURST_DURATION_MAX_MS),
+    frontOfFish: options.frontOfFish === true,
     particles
   });
 }
@@ -803,6 +809,94 @@ function attemptGravelCoinFind(fish, action, now = Date.now(), options = {}) {
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
+  saveState();
+  renderUi(now, { full: false });
+  return true;
+}
+
+function getTankOtocinclusCoinFindStatus(tank = getCurrentTank(), now = Date.now()) {
+  if (!tank) {
+    return {
+      dayKey: getLocalDayKey(now),
+      coinsFound: 0,
+      cap: OTOCINCLUS_DAILY_COIN_FIND_CAP,
+      lastAttemptAt: 0
+    };
+  }
+
+  const dayKey = getLocalDayKey(now);
+  if (tank.otocinclusCoinFindDayKey !== dayKey) {
+    tank.otocinclusCoinFindDayKey = dayKey;
+    tank.otocinclusCoinsFoundToday = 0;
+    tank.otocinclusCoinFindLastAttemptAt = 0;
+    runtime.tankStateDirty = true;
+  }
+
+  tank.otocinclusCoinsFoundToday = clamp(
+    Math.floor(Number(tank.otocinclusCoinsFoundToday) || 0),
+    0,
+    OTOCINCLUS_DAILY_COIN_FIND_CAP
+  );
+  tank.otocinclusCoinFindLastAttemptAt = Math.max(0, Number(tank.otocinclusCoinFindLastAttemptAt) || 0);
+
+  return {
+    dayKey,
+    coinsFound: tank.otocinclusCoinsFoundToday,
+    cap: OTOCINCLUS_DAILY_COIN_FIND_CAP,
+    lastAttemptAt: tank.otocinclusCoinFindLastAttemptAt
+  };
+}
+
+function attemptOtocinclusCoinFind(fish, point = {}, now = Date.now(), options = {}) {
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return false;
+  }
+
+  const species = getSpeciesForFish(fish);
+  if (!fish || isFishDead(fish) || species?.id !== "otocinclus" || getEffectiveFishBehavior(fish, species) !== "sucker") {
+    return false;
+  }
+
+  const tank = getCurrentTank();
+  const status = getTankOtocinclusCoinFindStatus(tank, now);
+  if (!tank || status.coinsFound >= status.cap) {
+    return false;
+  }
+
+  if (now - status.lastAttemptAt < OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS) {
+    return false;
+  }
+
+  tank.otocinclusCoinFindLastAttemptAt = now;
+  runtime.tankStateDirty = true;
+
+  if (Math.random() >= OTOCINCLUS_COIN_FIND_CHANCE) {
+    if (typeof requestDeferredStateSave === "function") {
+      requestDeferredStateSave();
+    }
+    return false;
+  }
+
+  tank.otocinclusCoinsFoundToday = Math.min(
+    OTOCINCLUS_DAILY_COIN_FIND_CAP,
+    status.coinsFound + 1
+  );
+  state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
+
+  const context = options.context === "glass" ? "cleaning the glass" : "grazing through the gravel";
+  recordWalletTransaction({
+    amount: 1,
+    direction: "credit",
+    now,
+    place: getTankLabel(),
+    label: `${fish.name || "Dwarf Sucker Catfish"} found a coin`
+  });
+  pushEvent(`${fish.name || "Dwarf Sucker Catfish"} found a coin while ${context}.`, now);
+
+  const xNorm = clamp(Number(point.xNorm ?? fish.xNorm) || 0.5, 0, 1);
+  const yNorm = clamp(Number(point.yNorm ?? fish.yNorm) || 0.5, 0, 1);
+  spawnCoinGlint(xNorm * TANK_WIDTH, yNorm * TANK_HEIGHT - 8, now);
+  playCoinSoundEffect();
   saveState();
   renderUi(now, { full: false });
   return true;
@@ -904,11 +998,10 @@ function performOtocinclusGravelScan(fish, species, now = Date.now()) {
     direction: getFishFacingDirection(fish)
   });
   spawnOtocinclusImmediatePebbleSpit(fish, species, now);
-  attemptGravelCoinFind(fish, {
-    coinFindRolled: false,
-    pickupXNorm: clamp(scanX / TANK_WIDTH, 0, 1),
-    pickupYNorm: clamp(scanY / TANK_HEIGHT, 0, 1)
-  }, now, { chanceMultiplier: OTOCINCLUS_GRAVEL_SCAN_COIN_CHANCE_MULTIPLIER });
+  attemptOtocinclusCoinFind(fish, {
+    xNorm: clamp(scanX / TANK_WIDTH, 0, 1),
+    yNorm: clamp(scanY / TANK_HEIGHT, 0, 1)
+  }, now, { context: "gravel" });
   return true;
 }
 
@@ -1163,7 +1256,64 @@ function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now())
   return true;
 }
 
-function getFishSchoolFollowAnchor(fish, leader) {
+function getFishSchoolFormationSubLayerPattern(leaderSubLayer) {
+  const leaderLane = clampTankSubLayer(leaderSubLayer);
+  if (leaderLane === TANK_SUBLAYER_FRONT) {
+    return [TANK_SUBLAYER_MIDDLE, TANK_SUBLAYER_BACK, TANK_SUBLAYER_FRONT];
+  }
+  if (leaderLane === TANK_SUBLAYER_BACK) {
+    return [TANK_SUBLAYER_MIDDLE, TANK_SUBLAYER_FRONT, TANK_SUBLAYER_BACK];
+  }
+  return [TANK_SUBLAYER_FRONT, TANK_SUBLAYER_BACK, TANK_SUBLAYER_MIDDLE];
+}
+
+function assignFishSchoolFormationDepthSlot(fish, leader, now = Date.now()) {
+  if (!fish || !leader) {
+    return 0;
+  }
+  const existingSlot = Number(fish.followDepthSlot);
+  if (Number.isInteger(existingSlot) && existingSlot >= 0 && existingSlot < TANK_DEPTH_SUBLAYERS) {
+    return existingSlot;
+  }
+
+  const slotCounts = new Array(TANK_DEPTH_SUBLAYERS).fill(0);
+  for (const otherFish of state.fish) {
+    if (
+      !otherFish
+      || otherFish.id === fish.id
+      || otherFish.followFishId !== leader.id
+      || !Number.isFinite(Number(otherFish.followUntil))
+      || Number(otherFish.followUntil) <= now
+      || isFishDead(otherFish)
+    ) {
+      continue;
+    }
+    const slot = Number(otherFish.followDepthSlot);
+    if (Number.isInteger(slot) && slot >= 0 && slot < TANK_DEPTH_SUBLAYERS) {
+      slotCounts[slot] += 1;
+    }
+  }
+
+  let chosenSlot = 0;
+  for (let slot = 1; slot < slotCounts.length; slot += 1) {
+    if (slotCounts[slot] < slotCounts[chosenSlot]) {
+      chosenSlot = slot;
+    }
+  }
+  fish.followDepthSlot = chosenSlot;
+  return chosenSlot;
+}
+
+function getFishSchoolFormationSubLayer(fish, leader, now = Date.now()) {
+  if (!fish || !leader) {
+    return DEFAULT_TANK_SUBLAYER;
+  }
+  const slot = assignFishSchoolFormationDepthSlot(fish, leader, now);
+  const pattern = getFishSchoolFormationSubLayerPattern(getFishTankSubLayer(leader));
+  return clampTankSubLayer(pattern[slot % pattern.length]);
+}
+
+function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
   if (!fish || !leader) {
     return null;
   }
@@ -1206,6 +1356,7 @@ function getFishSchoolFollowAnchor(fish, leader) {
     xNorm: clamp(anchorXNorm + offsetXNorm, 0.08, 0.92),
     yNorm: clamp(anchorYNorm + offsetYNorm, 0.14, 0.8),
     targetLayer: clampTankLayer(getFishTankLayer(leader)),
+    targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
     offsetXNorm,
     offsetYNorm
   };
@@ -1252,6 +1403,8 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
   if (
     !fish ||
     !species ||
+    isProteusZombieFish(fish) ||
+    isFishDead(fish) ||
     species.behavior === "sucker" ||
     fish.activity !== "roam" ||
     fish.caveState ||
@@ -1268,7 +1421,7 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     return false;
   }
 
-  const anchor = getFishSchoolFollowAnchor(fish, leader);
+  const anchor = getFishSchoolFollowAnchor(fish, leader, now);
   if (!anchor) {
     clearFishSchoolFollowState(fish);
     return false;
@@ -1278,6 +1431,7 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
   fish.targetYNorm = anchor.yNorm;
   fish.targetAt = Math.max(now + 500, fish.followUntil);
   setFishDesiredTankLayer(fish, anchor.targetLayer);
+  setFishDesiredTankSubLayer(fish, anchor.targetSubLayer);
   return true;
 }
 
@@ -1285,6 +1439,8 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   if (
     !fish ||
     !species ||
+    isProteusZombieFish(fish) ||
+    isFishDead(fish) ||
     species.behavior === "sucker" ||
     fish.activity !== "roam" ||
     fish.caveState ||
@@ -1337,6 +1493,10 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
+  if (typeof reinforceFishFriendshipPair === "function") {
+    reinforceFishFriendshipPair(fish, leader, 0.8, now, { source: "schooling" });
+  }
+
   const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.55, 2.4);
   const followUntil = now + randomBetween(
     SAME_SPECIES_FOLLOW_MIN_MS * followDurationScale,
@@ -1347,7 +1507,9 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   fish.followCooldownUntil = followUntil + randomBetween(2200, 5200);
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
-  const anchor = getFishSchoolFollowAnchor(fish, leader);
+  fish.followDepthSlot = null;
+  assignFishSchoolFormationDepthSlot(fish, leader, now);
+  const anchor = getFishSchoolFollowAnchor(fish, leader, now);
   if (!anchor) {
     clearFishSchoolFollowState(fish);
     return null;
@@ -1361,6 +1523,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     xNorm: anchor.xNorm,
     yNorm: anchor.yNorm,
     targetLayer: anchor.targetLayer,
+    targetSubLayer: anchor.targetSubLayer,
     lingerMs: followUntil - now
   };
 }

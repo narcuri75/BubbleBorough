@@ -1,31 +1,47 @@
 {
   "anchored_sway/amazon-sword__plant__theme-natural.png": {
-    "sourceHash": "9eccd592a5188f9eaa0340e1434ad119b1375a48b6eb1806450ce86ca8491aaa",
-    "outputHash": "098d0bf92f2b6dc58189182bebb22c6ff6cf636fdb75e95cd6509478d15548d9"
+    "sourceHash": "20e449a2c3e579369543aadbb5ec79bddec34aa4ccd3f3ef9f3014d6b0e3ce58",
+    "outputHash": "37df8f923f2a46038c1cc6246ebff2731d572aac20d465b7da3a6e098d8d83f2"
+  },
+  "anchored_sway/amazon-sword__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "c44d6e27be3f8b5b9a66afa045230107789b9052cbe5a3beb979fa7c0ce68048",
+    "outputHash": "df9e1934c84202845b1d8456b13623d8126099e58bcdb7809cd78dc8f9fdee2b"
   },
   "anchored_sway/anubias-rock__plant-rock__theme-natural.png": {
     "sourceHash": "cc43a43a7520146516ff652fcc1da927d4559586ff0a5952dc7ba202866bdadb",
-    "outputHash": "5ad67d9c93e24aa920e636df8673f21d5758fd75f90a746bcb56b1e4109579b2"
+    "outputHash": "e7770967aa555295c24ee9b4013bb9bd1797dc54de196a51a2a0153d244e12b7"
   },
   "anchored_sway/anubias-rock__plant-rock__theme-natural__color2.png": {
     "sourceHash": "b1d7f590bebdb9aadd121ba2ec964b4468d4a86d7d3efff1a1939eaefe684068",
-    "outputHash": "716260608678320dd2e9c5a0a926dc9ea4af522293ded79ecea9a34410bc49a2"
+    "outputHash": "dd6ba4d660108c21d0818d0622f8ad252a72e3625889c90e2457dae872a1647c"
   },
   "anchored_sway/bacopa__plant__theme-natural.png": {
     "sourceHash": "e2b191a68c453a776238d5263bc7457ac5e92e613a1bea882256412f199d3156",
     "outputHash": "72b65f2c36a7ff9a6b58e213b59857e37c3f483bc3c94752e209162f594bf96b"
   },
+  "anchored_sway/bacopa__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "2d1e70d91db53ec91c7ff46b73a7c509a9d0accd3b6e985856a7f79ff911811f",
+    "outputHash": "988d192e81e3b2f0127d803b145170a966e16a2ae9029ca632a73859c9a6173d"
+  },
   "anchored_sway/bronze-red-crypt__plant__theme-natural.png": {
     "sourceHash": "871ac70d9c54ef74e25ee7bec9dca4c1ee6e12573fedf88c417a98c7c7490c12",
     "outputHash": "826d421f80efb6d985c211b7f1512aa510a24cf6cb886fc713ecc473b78ba7b9"
   },
+  "anchored_sway/bronze-red-crypt__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "bf3c23c26f96c62aa45e4ffdfb49971918dd07b9ed3fe8fd51b2ba0c28297719",
+    "outputHash": "bcec859e101040dffc6bbd4bbe7ce00020596db6ba9dd7fab0de45544c03afba"
+  },
   "anchored_sway/cabomba__plant__theme-natural.png": {
     "sourceHash": "6edcfd1d687ee849cb2b3f04c0ef1a52eb054b709a3105f5287b6a4c42be1972",
-    "outputHash": "dbd454898f06f1b289006d739416747300b894b7a8943c251c341045a5012efb"
+    "outputHash": "ba0fff078aaa85e608676cc20fa1a2738edc94a4f268c480d7e9e4c84889a4a6"
   },
   "anchored_sway/cryptocoryne__plant__theme-natural.png": {
     "sourceHash": "48e509b3b6e3ba69fdf8caf4450b4c25f321de40fd19dd19ec3d975300263e6d",
-    "outputHash": "9b3b825c674f8cb12d316c4a87a7fd81760b593f55e8254e8f1050f9b57ee6c2"
+    "outputHash": "3791112760f5b9d82a355d8b46c49e28dfad8435d504fa43840de907cc720781"
+  },
+  "anchored_sway/cryptocoryne__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "04a4cf0c0cac6424768bace318fa4b17135044fc65694fceacffe4f0ab5040cd",
+    "outputHash": "351dc93ac06029d97af1ddd1c4d6605c5512bc273300eea5ed6ef36d29b21a79"
   },
   "anchored_sway/halloween-seaweed__plant__theme-halloween.png": {
     "sourceHash": "09c8fe93b3c78a6896c111358a8010a481ecb9e5cc74c0afec4a81e79d28925b",
@@ -33,23 +49,39 @@
   },
   "anchored_sway/hammer-coral__coral__theme-reef.png": {
     "sourceHash": "3993074d6b9f21cfa11c368cd51496f740f8474ace831e58cff236f5eae50fb3",
-    "outputHash": "c50655cb189716e5211c9420750848ad752d670cd6b4a3b2adb53ba0f747d536"
+    "outputHash": "684affb978147d6a8029322315b58da3eb8757b196c6bbec9147ce3403a17adb"
+  },
+  "anchored_sway/hammer-coral__coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "00b9854e0b3db22cb9123c497b900c619f1662dc4fd96e4fdf0894edfbc6c70d",
+    "outputHash": "b27a3cc20e62745893994f9fbd1dc599439bfff79924da3152dcc78c7ec01cf5"
   },
   "anchored_sway/hornwort__plant__theme-natural.png": {
     "sourceHash": "c1b4e3eb2d701d6cd749d61998c3aca614fa06ac0d422ae9079cc57778f5cec0",
-    "outputHash": "101dd44b203ad6f07b19f31e96c0a66f3716892fb13761d5d5f71ebb2abde913"
+    "outputHash": "f74d209caef582cc588f2db72f82b849fc6e0d39815e8631b063380c7071561e"
   },
   "anchored_sway/java-fern-cluster__plant__theme-natural.png": {
     "sourceHash": "c98edae28759f8a9145cf010164a7631a56c0bdc11d3e66994d23077f35ce769",
-    "outputHash": "09001fe725c99400fff8dd6df1491cc6fc7389f28bc602c1b1f6a5b7dac8ff20"
+    "outputHash": "28837a831ed5313bb1afe1c5ba8261694caa6050fef37d8afad8b06de119765a"
+  },
+  "anchored_sway/java-fern-cluster__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "e424e9006a5e08f6c58dfc966a22c56e718b9301cc39fff5dc400b0fd4b182c1",
+    "outputHash": "023329f3a705669d3ff5adb39e42c01ceba37678fd337a5b0c1377e52a533932"
   },
   "anchored_sway/java-moss__plant__theme-natural.png": {
     "sourceHash": "79569ce68febd668346a4242532949261cbde5555b7b5cc5177b25e4a78bf9f0",
     "outputHash": "86a197398254d62a2d63693fff0b1fd11429b4431cb5b2e5c95586a435b72596"
   },
+  "anchored_sway/java-moss__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "9616b1ced1e6d191e96e547c918acb7ef1cb9296d91b40dd8e255908510a83fb",
+    "outputHash": "5b2b252766a27ca5a43be93765157473d11f6b26a8a8806f1d090fbfa597896b"
+  },
   "anchored_sway/large-mushroom-coral__coral__theme-reef.png": {
-    "sourceHash": "4cdc091244b75a02c16435b67c1b6431a05376a65a74f8401c9c805928d7e321",
-    "outputHash": "101de2cbe31dfbf10aa574f12198a808ad5caa166161b0c58e0aafdb4b35deb0"
+    "sourceHash": "f2302404e4d3dd620044c73e75303c36329b444605228ef98273c8a9b51f6023",
+    "outputHash": "cbc79374cfaf64a5c5d6ff76d5138e8adccec8843fd1ac78dc55df7afb25c543"
+  },
+  "anchored_sway/large-mushroom-coral__coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "c2d4990b6b999b70236c791a5b6e485de23f6dc6bb92c4947fd58d4b5ab61c42",
+    "outputHash": "5957f532cd26890b7856f4b329e915038e3033c7d2cc31c8683461737e724f6e"
   },
   "anchored_sway/leather-coral__coral__theme-reef.png": {
     "sourceHash": "1421d63b8948a1ae9a1682d13a0001a7aa2655526712b5046897c804a80411ab",
@@ -60,12 +92,16 @@
     "outputHash": "41e9fcc02fd6aea9625387a8b32f2a9750ae99684c74f69b2826ca995b03fced"
   },
   "anchored_sway/macroalgae__plant__theme-reef.png": {
-    "sourceHash": "2078495c7eb25ff371dbc15fe42c072a85e67dbfd84faf292a4a376b5518a765",
-    "outputHash": "b6c0f3a4ff108ed443ae98ec5bb1ee2f38b6f5b194184533c73577eacc60706d"
+    "sourceHash": "8b6110b7d46ec5b9d6367a70298eea4ba5a20471516724d954d4dbb9e583b3bc",
+    "outputHash": "18bca054b81cce1e6981a40570bd797d1226dcdc47268405b11b0f41fdbcac9e"
   },
   "anchored_sway/marimo-moss-ball__plant__theme-natural.png": {
     "sourceHash": "ded47ccc558066dac9bc7491a312a62c3df582c604aaa0bd9b098aebd2b79ccc",
-    "outputHash": "66bcc9dfd7711e3e3167aa87880f808561b4a1e24fb1ffb7818d29e00405ecc5"
+    "outputHash": "93de347a2555f795cbb5f882c1deba54dddceab4361d162acb3c0e9a4d183981"
+  },
+  "anchored_sway/marimo-moss-ball__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "ad4d1fc0f86adc5493810d7b43b5e661061eb3a642a1bc894079d46ca5e25c20",
+    "outputHash": "dd4e23a421d7b10f60cb42c9fc36e4468d6850cd1f4a5820ab57f4d5d069f66d"
   },
   "anchored_sway/monte-carlo-carpet__plant__theme-natural.png": {
     "sourceHash": "cda4b6031a9cd8eda00537aa99899ae2cdb64aa430ef6185e2651257b1852aab",
@@ -73,31 +109,43 @@
   },
   "anchored_sway/mushroom-coral-colony__coral__theme-reef.png": {
     "sourceHash": "fb76fa8abe00a1d517f1d392b72c1665787ac5f462285624dd6856757cea0bac",
-    "outputHash": "35c8b69435d203ef1f431ca29eecf11c629bd041f21dd46ad3b67f31b2fa2cbd"
+    "outputHash": "1574ff975883c460ab7d5139b3537b3089c37ee25296727a71b3887fd43507c2"
   },
   "anchored_sway/red-stem__plant__theme-natural.png": {
     "sourceHash": "707a8850f6851c6499265324704893174daf1855caf52876ae1c9bea9b29efdd",
-    "outputHash": "8b6a621116d44ebe8f699b4997416c9ace49ce0409874858ee6518d7f0bedd2f"
+    "outputHash": "83f9d6a9be9579822cc41e45c40cb8648d646f2d0b1f08840b7472a9a77ce884"
+  },
+  "anchored_sway/red-stem__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "dcdb477f0e1a695becd2c1ef64f7ba44bf56c92e7a411be7a006747b03bf7d87",
+    "outputHash": "50b99a3f35f7ebb47ef0c69840915be129ba89967bf845a5efe73a33ce177264"
   },
   "anchored_sway/rotala__plant__theme-natural.png": {
     "sourceHash": "f0025389fcb08714d1d24e813b2ae746a1530f9a4bee14d42c82f30ca6200e3a",
-    "outputHash": "00c16eba5f48d58a8c403453236660af9b3c2447fc4212a399109e91111d262e"
+    "outputHash": "ca992a4fdea04b03388c6ca3619c110752059541cc31da2113c83412fb8bfcc5"
   },
   "anchored_sway/sea-anemone__coral__theme-reef.png": {
     "sourceHash": "18565ea0738ec6a15f94113dc95ed038bee02d332568fc6bc6a7d4534c49b769",
-    "outputHash": "a0319c5162e7cdd6a8fb40a16e2fe0120befccf3ddb0f3979b76f7073fc2e5bb"
+    "outputHash": "43801b8707586fa18bf111543780bc148562e6e50116fa62a0c602fa7ad785ad"
+  },
+  "anchored_sway/sea-anemone__coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "18c5ec21b852958880a2304d91c9da61732a0e02bb32fa0ef2adcee47897ccde",
+    "outputHash": "d650f0173a61887943fa8f26b71959392d20508d35437be0bb270bbfd0a5e9bb"
   },
   "anchored_sway/sea-anemone__coral__theme-reef__v2.png": {
     "sourceHash": "e65e7e061d77c93482cbabbba22332ebceb184f0a7a9339d8c8c0e66ae4681f6",
     "outputHash": "13247197254154e124226c9643e9974f5ab175a361c6239d5d7a997e8de538ee"
   },
+  "anchored_sway/sea-anemone__coral__theme-reef__v2__shadow-footprint.png": {
+    "sourceHash": "e75bc1888e5e7d4451dc61e067d792015988e5cec253b1490f3306ddea068d49",
+    "outputHash": "bf26b90a981b897ecef175bf8b814fe8cf6e0acdbf9e545da10e7eb895eef747"
+  },
   "anchored_sway/sea-fan-gorgonian__coral__theme-reef.png": {
     "sourceHash": "5487d26de2da1ed7da5fffc0abd251705276e841268c2f337ffe698acdb47c83",
-    "outputHash": "732a45d4e49dc0eafa8f7297284de8bac5c3a5d5f800c5456c9c588e779d1f03"
+    "outputHash": "0bc42a39943de401538d17b1655c19796f2e793c192d44837c7ad2470ae4d022"
   },
   "anchored_sway/seaweed-bunch__plant__theme-reef.png": {
-    "sourceHash": "254f58126fa696e229090f133c53cb06362338b52978eedd4154d23b5a22a0b6",
-    "outputHash": "2d9dbec3692102bf130029e644be0b4b9ffd489d78db9c4049489f958a8beeea"
+    "sourceHash": "1031846bb023712ff950c4f90751bf9f2752c62df4a58c1998ec0acedc82ab31",
+    "outputHash": "990f767bcd3df5191da6fe0fe08357136103c4aba1e25b6ba774d3647be20378"
   },
   "anchored_sway/seaweed__plant__theme-reef.png": {
     "sourceHash": "86359f42bf22111a9f9c518f75455fa03a3907c2a10671b5fa8b410b895a13d0",
@@ -105,19 +153,31 @@
   },
   "anchored_sway/small-moss-patch__plant__theme-natural.png": {
     "sourceHash": "4c49f77520528b6d6b25ae275c54bf4c4160f66eefb5c5c912efac2f7551eaf3",
-    "outputHash": "2eda205e14ec14a54bda6e39f733c7461d6ccd0b74445405d05c0ea0e79a328c"
+    "outputHash": "0a6aefbac39fd61c573159113064a169db4fd542641e91ef0043c9e9abb5e486"
+  },
+  "anchored_sway/small-moss-patch__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "de1d5cc565fd4edcdb69a7c9399f34fd3fea5077597c0a65231e80606504ffed",
+    "outputHash": "57271b0c4edf767786c8c5d65f64a38b90a859aa8e927f9308cd0962bbb6d434"
   },
   "anchored_sway/tiger-lotus__plant__theme-natural.png": {
     "sourceHash": "6828fa6280a2551148858272cbbc216fd0476ad2585df329502672a17c198182",
     "outputHash": "eed718a27d808a2fb08e5c0dfbbc28b6076d77c10111993979ce5c62c04886e9"
   },
+  "anchored_sway/tiger-lotus__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "538adffe6432d7d851a879573d151a02cec7d553ed393d3ab95344f8e79529a0",
+    "outputHash": "9e61edb8830c2f1abe7586c28d569eb16edd78d28694f79c54e7501f3b5629c4"
+  },
   "anchored_sway/torch-coral__coral__theme-reef.png": {
     "sourceHash": "bd297911ceb857ee4de75a42cbccaf2ae806bc8ce15dc398b4661f37e4f8e19c",
-    "outputHash": "dda6d91becc04ed0b02b086fb7f3dcd72b2e3e190f84d554350753994918b519"
+    "outputHash": "f48246a7f2c605720756195919780d740b46aa026a46f9419e7f327b7685d681"
+  },
+  "anchored_sway/torch-coral__coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "c54c9cef781aa187f275b948fe8f5cd4fa4b4bc8d0f0c9215267e2ef47b2fc5e",
+    "outputHash": "d0a9ab8bd6252ea9953b6d562f085f070942a4fbce8c0aa1810e77207772ef09"
   },
   "anchored_sway/vallisneria-clump__plant__theme-natural.png": {
     "sourceHash": "e7c8a5de533dea600867a914a7dcfd8eb9fae924b8ddc881ae1d868d3e5b10db",
-    "outputHash": "dbb834aeea25b6521f4b1011260ed30589c340a31c03106b37f84fac62aa447c"
+    "outputHash": "55cd3c11f54c3626c92fa64d6f34274ee49858ae8a821096b4dabc9e25d7dc45"
   },
   "anchored_sway/vallisneria-cutout__plant__theme-natural.png": {
     "sourceHash": "5cad4ecae00e35cf9cf6c2a13cf3355d78e17ad18e0a8fb201d4c21c6a15e65b",
@@ -125,11 +185,15 @@
   },
   "anchored_sway/water-wisteria__plant__theme-natural.png": {
     "sourceHash": "0b6434a09f486d688cd50102e8ed1155ec6a12c1a1717ebf7b08e0a9c16b63f9",
-    "outputHash": "b64db7cc17c2e09f37c424b8edd72abdc0dda5ce7fe80cffdc0bc1ce34dbcf09"
+    "outputHash": "fb9162973d291a7edd4c4b4e1068e1c2ba2e88af3db2c0078d36e21b26c82625"
+  },
+  "anchored_sway/water-wisteria__plant__theme-natural__shadow-footprint.png": {
+    "sourceHash": "1bd22b32c017e07a68a49cf54ffcc1e206bc95fa5a9ba70e24e9a02e59137387",
+    "outputHash": "bc576e1393e3ab8523730a157c0e2445edcd39f9db211609f10ad3164cca24c3"
   },
   "bubbler/frozen-bubbler__bubbler__theme-frozen.png": {
     "sourceHash": "56c44722197d8460b5bdf40415b0b3ba3792c87e4c95bf9a72b971ade8621aa9",
-    "outputHash": "9fca76fb736c8ef281e0e1d3c54384d75d81ed0ea867c8ba55d212aeb591cbb5"
+    "outputHash": "52f9cb472354596e7ac17f3e6eb0621807f2dc53f15ae1d8c33f5982e01450a6"
   },
   "bubbler/halloween-cauldron__bubbler__theme-halloween__bg.png": {
     "sourceHash": "8510d6d0e39d3b400d2a0fcd4b51b6d3fab70292dcd46b818a049f34b025dba1",
@@ -145,11 +209,11 @@
   },
   "bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front.png": {
     "sourceHash": "3f6885489e843f4b03f5c4563cdfad2cbef8750bca2242d6efaaa4546b4e9de9",
-    "outputHash": "a8a6d739a32df7ed8b91fa124cfffbea1839d156f93d195b3b00648447c2ad5a"
+    "outputHash": "9f112a381a0fc8c8b673dede37ba734878ef963ea91ea90c61d7ac35b1c134ac"
   },
   "bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front__color2.png": {
     "sourceHash": "0e026569e1f5d15779e148c7be7bba3599f6cf7a312f3838fbb3082c70b2051a",
-    "outputHash": "d347d2d90afd8f42ce199818f1ae014a09ac8f9fcb3089434df5b398325825a6"
+    "outputHash": "95a0a3bc9493ce10484a697c632966569a0beafcc5526e596611cd1eeb35fd9f"
   },
   "bubbler/treasure-chest__bubbler__theme-treasure__bg.png": {
     "sourceHash": "146b940cbc7bdb61ddc73a70c7b1398a11fdf5d42fffa8b0174bf1076ee9a5d3",
@@ -173,351 +237,371 @@
   },
   "bubbler/volcano__bubbler__theme-natural__v2__front.png": {
     "sourceHash": "92e6d3b087b458326f47531f1ae40e533c4762b90caf14ee50f492b458af1cf0",
-    "outputHash": "07ec6febbf02618c587ac27a7136aa8be42407967a6899d8fde74043cbb57088"
+    "outputHash": "f16a33df4a0bcd0ef18e65fe5e6f41b9ad544ea50ae70a3f17275c44fa9c9d78"
   },
   "cave_layered/blue-castle__cave__theme-fantasy__bg.png": {
-    "sourceHash": "79cf5bfae0f23a466881dfb2e2b2fd4df6fc89b4751ef29c4babb40f45bf1495",
-    "outputHash": "ada30f280261867e2fbe766ecf71e78330d78e76b9c56a9b1fa3a255f471b63f"
+    "sourceHash": "915486c557607c52dab44b36629372788fea9dd6ccaf05bf7ef973defcddf117",
+    "outputHash": "6d74ac2aa684541a449d6cbe4d441567a7cd124b1b1b173558118cf676d57ae0"
   },
   "cave_layered/blue-castle__cave__theme-fantasy__front.png": {
-    "sourceHash": "57c42d3dedf2a279c4efe8466464a4e101badfe690aeee5a2c37b29142354544",
-    "outputHash": "5b5cddd6e630c9ca86cd243342988f221215ace9ec0ac5c13297c837c18f7212"
+    "sourceHash": "249c039932cb66c480da76ff41f9a46061108692a3ff61b70e7a5f46909f0217",
+    "outputHash": "73f764145bbbc0e2c2fb283a228aae2ec40c147a107ff5e947b002914032b17d"
   },
   "cave_layered/blue-castle__cave__theme-fantasy__front__color2.png": {
-    "sourceHash": "7da29a571b6f5f47ad8dfe234736c547069e96d2d0e638457adfcd042e9b1744",
-    "outputHash": "788d3e92b354c40c3110cb8676aef02db7f76ea60b1e6c8b6a9292e21fb9799c"
+    "sourceHash": "c182d2577a7c1df083e86ae83b0e29037eaf3973804bd377c9db26923d71b06e",
+    "outputHash": "3bbed94dbfcb9dd2af1f7a3f05506f8f0dd2f17df63781d15a80cbf7761f7be3"
   },
   "cave_layered/blue-castle__cave__theme-fantasy__front__color3.png": {
-    "sourceHash": "5230e3060ee84e752a5b2348b6f439af92facc445c04f4f4072da4bfc315b012",
-    "outputHash": "03f2b9b0d1468cc2434dd69099047a2b37d0768b5735443dd9af9b951f48b757"
+    "sourceHash": "24381048ee955f252705d1a4c49b26542ffc090720b326240f88b70286a1376f",
+    "outputHash": "19ca90d919fc8961b49bd47fc44a60a8f2e2c61d88103471c5b161a1a54f7fed"
   },
   "cave_layered/broken-pot-fragment__cave__theme-artificial__bg.png": {
-    "sourceHash": "efac177f0401b0f6f08cd12cd6c044b7e1ed22f9a7eeec2c83ed0c7cb64bbd30",
-    "outputHash": "80f9cc3c31ae0b51c1871b995ad529695c656dd97b57c90d8583730d5962c153"
+    "sourceHash": "2a38b28ada44c2162c87efb13171a07bec50f341bc18e1bf8ff7b55279a06b92",
+    "outputHash": "31afc409c88688edd8da59df241f6cc93713d20c2a4dc35a23a7b28b95acca97"
   },
   "cave_layered/broken-pot-fragment__cave__theme-artificial__front.png": {
-    "sourceHash": "be25d94d9ee5b0e1b174510053f203321818bfb0945aedb1972a6206725d37f6",
-    "outputHash": "cfb1760acab6b842bb917565ac49b03333abeba08079e56f743e353a4dfa3130"
+    "sourceHash": "d040dc4cddd02389fddd9ef8b4459698340a712d5f51f15086b1ff458ac14e4c",
+    "outputHash": "e027ca995ce687b8a59d2d6b774fce859bd0ab2de6a3573c0fe90952ad80637e"
   },
   "cave_layered/broken-terracotta-pot__cave__theme-artificial__bg.png": {
-    "sourceHash": "d275dae1afc5783b0bb64b58a6b0c4dbde13a79fb6918e05036b692f00c266a7",
-    "outputHash": "34a2237a5c4e57b0dd9a07c77bda3ef283760c16ea7f05cdee4391b5c6bc94f5"
+    "sourceHash": "f1eb856435d0e9f9e3e70259ac5f717726d28e3e4119744045deb725ad2aba37",
+    "outputHash": "156e777115a9f3fd8419aded28d976d3ea554f5c7f7dbec284282457359cd07c"
   },
   "cave_layered/broken-terracotta-pot__cave__theme-artificial__front.png": {
-    "sourceHash": "b479e0e7b0ea648328fcde59420c7f4f4ca2037a568256c3e5dab870bd4cceae",
-    "outputHash": "f24f23cff0d1de5e656ed8fc627f4df2cb006c3a2554c754781376ecae2e125a"
+    "sourceHash": "992fe15996d155fbbb1fe22727d2f8c2aa46919cd360403cd011120225fc8e61",
+    "outputHash": "14e326e75c0154164988f7862fd24ce86b98bcb1650757a8fab5d4e784008473"
   },
   "cave_layered/ceramic-tube-cluster__cave__theme-artificial__bg.png": {
-    "sourceHash": "1f16edbc24e50f0c09207f8e7b65bfae35144e80a1223e0704ad53a52860767e",
-    "outputHash": "b9581a1bd78f99e755b9e3404bfdbb201c2ce80354ad12ad9ec729f2cd95713c"
+    "sourceHash": "2f7007d72489f6934043fd19411dbd6fbcb706c2803120efd3b92dd3ed803201",
+    "outputHash": "e27a0cdcd2e6e4285eea8d4fafa5c43cb00bce1a033ccdfe4fb86a6e9dc00654"
   },
   "cave_layered/ceramic-tube-cluster__cave__theme-artificial__front.png": {
-    "sourceHash": "57c31342239c218811737ab519a48a45cbc7bd008518d9185d896c0f3dddcef8",
-    "outputHash": "9936b591559a5433af22b7d4e14d9193b215fee36d74f7ff533b4064f27b5309"
+    "sourceHash": "b87e5c8b2e7a1dcef5c4afd765e8215c57600a288eef085ef51950e3e8adc41c",
+    "outputHash": "7b56e9563d91e74c8327a2050db694ec3f5b663436c91ac09b41440874c934fb"
   },
   "cave_layered/clay-multi__cave__theme-artificial__bg.png": {
-    "sourceHash": "6f9537236052bf61f30fa5bce11624e480f310d041b0f7b5c60f93df127a0715",
-    "outputHash": "be3de4f14a29af6ec2bb9c2dc8901275285b1fa515b6862ce4689a1c38b1b219"
+    "sourceHash": "d89b6ddb6bdc593b7eaa9281c9be6f1c1314da956d2297a00ed8a261505d6e13",
+    "outputHash": "9b22dd09f8594853ecef28c39be87b64a316c8d00f6aa519450b33a6c9dee76a"
   },
   "cave_layered/clay-multi__cave__theme-artificial__front.png": {
-    "sourceHash": "c7544490a10e9eb14f10d493306fdfa8901f6c981f7feffa13b905522d884967",
-    "outputHash": "1ee9b7ffd51a6400610499a30a28b3706b82fcf7e9af2da94d9cf19faedcbc4c"
+    "sourceHash": "a17d11486a35a7c4cc336ff15abd1f227d0a7ac100d1d758d2f5e9bbeade6cb5",
+    "outputHash": "db2e7e1ea4d097417b63f572bba6c509100cf2befe6e642fda6490f3e93ee4fe"
   },
   "cave_layered/coconut-shell-hideaway__cave__theme-natural__bg.png": {
-    "sourceHash": "eb86a19174da28e0e620806d0e7f296ab96f40d15d97ea14cb7999195d641f66",
-    "outputHash": "4644c52a0c24340435478e0b8c2999b80119504ea00c451d291e98ee5218d052"
+    "sourceHash": "1094613744573cadfb7dff737a5ac4da3e71034e7596f08ea1a8a17048147367",
+    "outputHash": "993d44282a44211acaf3c4e1ac54fe9d40957e9b9861f191e9356f5716f34d34"
   },
   "cave_layered/coconut-shell-hideaway__cave__theme-natural__front.png": {
-    "sourceHash": "96095d428a4e5262473013192b644426c37a5428e9ac7233cf09a40815c0567c",
-    "outputHash": "9326b27d176ac5b95b03ce385a39246c85ca45e55bb17c528dd549d18a655df2"
+    "sourceHash": "d19e730fd38f8623ebc5c5730af7f8a7c69f5636b42df490d2b84fe525125b8b",
+    "outputHash": "f34fa1f3f732e1b3043d44824b08e4eb54efff45b635185883ecfcce642a375a"
   },
   "cave_layered/coral-shelf-10__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "6194b5eb704ee6b2d87e61d5c82d388fd49455be65faab6acb636383520e73d5",
-    "outputHash": "ad645589c2be893ad729483fc5d1c0e700b29951a864554e1ae655ec61427185"
+    "sourceHash": "93cb46ce292e2a835d7e88387468513fca2e07343f73214ffd881fe34dbb0249",
+    "outputHash": "086907a7509eb6076be114252b25ad6e2e67923476ef5238eebfac469c873ec1"
   },
   "cave_layered/coral-shelf-10__cave-coral__theme-reef__front.png": {
-    "sourceHash": "e9de1198c0a1e8e6ca8d3ac30c37ed55728c24a5cf0bd4d3118528d85445c4af",
-    "outputHash": "ee67aed5e90dc0792cbe1e10034a788ff871bfbebd759f8db0f7ce61651efd0c"
+    "sourceHash": "42a412199c84215e7b43022f625a01927b5aeb9fde230f3ace5d9485c81bb2b8",
+    "outputHash": "a16ea2692b1efb7e9200ca3c6baad02e749dab7eb1028e166371c07cfd88d1f2"
   },
   "cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.png": {
-    "sourceHash": "c9f45ae717f0b96f637fee83d9c09f83d11bc2959234dbcd576c781ce8b32770",
-    "outputHash": "7c52f7e37d5ab158f71b426d686942af9a14fd7adc225b62a26f871a602ec3c0"
+    "sourceHash": "9bfbd61ac07c62054a40d62dcf0ea0cb1104bdd2415176a06c7bea2014006972",
+    "outputHash": "d19df93b1527bf6cf0e9d4a61cb59e974fde8ee3697f6b35b7f84f1ef9530409"
   },
   "cave_layered/coral-shelf-1__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "987b7a3675f8152c92046fdefaf124401b9a038458fb5f894fa478a91162d337",
-    "outputHash": "dedbdfa7cec20c24e6a295f8ea096ff265d19ca5d8f02e10200c3290b00d04a0"
+    "sourceHash": "3e3d4a9ac6dcc168d1eb6ad9c03ff00de011111d07759989d56f863072985e3f",
+    "outputHash": "1a91d05f986cc7d5a1375420414d2ea4743491f6617fddc5cf686869e34cb67c"
   },
   "cave_layered/coral-shelf-1__cave-coral__theme-reef__front.png": {
-    "sourceHash": "01a8a639f5fa4f0a10ce013d7c07b7df61f85e96d1259ec3d460496fb2a644f0",
-    "outputHash": "a4b38364346affab59d91468d2e2ec43907c61fb3d5a85d26cad1426b3b3c9d6"
+    "sourceHash": "7f524ed7a04c33a8ce93e8ea00f06890abfb6cea8df4c07f8c5c2bb6d2a68c95",
+    "outputHash": "e4149cb80a45f470ab56e171cb4a210e8d343bdd32800c1631adf693653376f4"
   },
   "cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png": {
-    "sourceHash": "e78622a74bb981b48cc110913258a135cdf7ccf10c5c01e96489ea00663abce1",
-    "outputHash": "1526399f09612ad56c8db4d0342147a7a34e3ae663db61d835c39d9d694d7d67"
+    "sourceHash": "4ce70fc0e5b7088172d6a269f58dc4f42db6e86358b4697dc575aa06b33d076f",
+    "outputHash": "8d46847f988c702bd42cd41651845b1baf417488c4ffbb35fa085e82b5b7258e"
   },
   "cave_layered/coral-shelf-2__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "46dc66cdf0e2a425b5feb493a7f31254de64db5404475082ad205dc899b25c4e",
-    "outputHash": "d5863954d913778d3e4efb03d1fab90a0419527e808fb83911c4c5c0f4d8194a"
+    "sourceHash": "827f9172f8ef2d4192e6da883b8799088529251888e985dd5462a2a46db467c1",
+    "outputHash": "684d7c5b5d559565c896d19995d55424c8d69dc4458f69077f715e2709b9864b"
   },
   "cave_layered/coral-shelf-2__cave-coral__theme-reef__front.png": {
-    "sourceHash": "b40c7e3b91bfaa4cfb91ee09dffba92a9af09d421eed94a5b930d1a4fe613d0b",
-    "outputHash": "43332a64ff3ba243d8d3354b1d82b446ae35ce488d7d18babee6bc7677399d9c"
+    "sourceHash": "cb767b15ebd3e5bdab57ec8e4b1882e773e0de2c14effdd5b6017980d582385e",
+    "outputHash": "cc2139d06d6b30a8ac9d688ff48298c7aa248fea08b2f9fc8d6e276b39a4a432"
   },
   "cave_layered/coral-shelf-3__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "1e08dd5b4c9b4fdc5534163b0c915fe52e81a9e8a6f67edb56efc264d9c779cc",
-    "outputHash": "381904a3075c34417842a3c1f0448cdb302e8067850bff1a575193313c45cd1f"
+    "sourceHash": "8d19c7cadbf7767df1b4c36e58387db1fc3c12a8ce2467ae792addafa30b467f",
+    "outputHash": "8b71607e68aa9fa0af722b1b0318756166305859aae093008628627b355438df"
   },
   "cave_layered/coral-shelf-3__cave-coral__theme-reef__front.png": {
-    "sourceHash": "68e8098083111c239eef38bbec8a71d136abe4b5c19d7edc8183c75735d92938",
-    "outputHash": "06910fdb179ec8c6ffb96b1b203c426b5f0926e6846087f84b1a7a7dc3024216"
+    "sourceHash": "fd1378b8040b1438b5bdeb44e0b54cc80d1caf219863bc354d2befa8feddb9a2",
+    "outputHash": "c2ce40da8a269ce6816916658ab06d5c302513ca68a0e0becf7ac908c40936b3"
   },
   "cave_layered/coral-shelf-4__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "d3419b88a0ac4ac3584c14b5f4ba4cd1288514bbce9ce58594c1e4b2da73c75b",
-    "outputHash": "147bb99768fa08f7a30f31f9836e7b9eb7fac0e894a8512ef905400fbe7cb3a3"
+    "sourceHash": "c843c59038b5a7b7e60cf485968e6e796b7f10c08b955a1da62dcc39de34a349",
+    "outputHash": "9efef5c96cf04c3550d0aec4f24ef1f135b3a6e55dddaa777bba5aa49c6e434e"
   },
   "cave_layered/coral-shelf-4__cave-coral__theme-reef__front.png": {
-    "sourceHash": "42e823c9f90bd9c14600b7db63406f42acf2eae8b640a42cc288b87ad208978f",
-    "outputHash": "cc274f23639ce3d780c2aa23b8e66cddcbccd7599a5a30f35512008c15e29796"
+    "sourceHash": "67ee9ba937392da1ec4f72cd966045f7561e4c79e98ad3c85d388375e03e9660",
+    "outputHash": "5bdfcdbe3cc3c834280d38bda10875480d77681be0dd80e7bdcd2de8c081bea2"
   },
   "cave_layered/coral-shelf-5__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "10d7832ccbbbe309f15d158319fac9e765d07f5c1234c79beecda15ca9b11880",
-    "outputHash": "42810f2d2d926198ee5ca6344fa3353107b802ed92168a9f11926834d7024526"
+    "sourceHash": "9c8dcb197ce17425e831f92a6ccf13fa64fbde94bf18b9a63335514f1e7310c9",
+    "outputHash": "bd81b13a4e15c8fc21e14f492d487b769be9e5651d155bd8675ce36fc883d69d"
   },
   "cave_layered/coral-shelf-5__cave-coral__theme-reef__front.png": {
-    "sourceHash": "262819a268df8411c8f33a3a19b42ffa516a4d70f8d0c8908e026dc13850d3f6",
-    "outputHash": "04111ab9cb4f146ee69fe628d68c88de29906ef42095f773bea2c132c2a7dac8"
+    "sourceHash": "f84e0f1ecf00bf4b41f1b9929efd2344e6f88d16d2625dc692d91854872049b2",
+    "outputHash": "03e01156b45e5702674eb25b43090a008f66f28d860332dc438c11fa094fc23d"
   },
   "cave_layered/coral-shelf-6__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "e7727fd6b30da4377b9f8397ad902915e937d4305037320337fe5a0ade6e8b50",
-    "outputHash": "d814b341701ced0ca2590b728bcf83e3940765334775ab8232ddbe158522f022"
+    "sourceHash": "cf19a3e503c9dd507da3e575e3dab8e35b2b9f33f0eec0ca99e5ef912ad59ee6",
+    "outputHash": "3cb70e373c5f12887fadda944855c87f13c4bdd2727b3ba4cf6f9ce09e979a46"
   },
   "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.png": {
-    "sourceHash": "93f973abf886dcf3c0a7e8f95db4f8c4c8c8a827472031550d49d07603ff877a",
-    "outputHash": "82be16d8c87f23039971cbf86e64a04a94d4500e20539deaa8efdebf3c69f11a"
+    "sourceHash": "b68a79f736ce7c68f10cb74a1b016d2d499581b7a190fc130efb9978d67fa462",
+    "outputHash": "12e0508f3e02ea403e7cd2535b119c6c9b94d2cb7690ff9b20c6fa3f324951ff"
   },
   "cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.png": {
-    "sourceHash": "4269fdc94712985c998237bfda2ed24c3ceb1a9fa1fddefc7fc6be272e731128",
-    "outputHash": "20fd13bccff56bfdc916698b7acff00a0339c85029e5348974e38d234f77192e"
+    "sourceHash": "152d88a2a13c7e5e2589bc79239e912d867e08534d050b89d5dcbec6daf45588",
+    "outputHash": "2cf13d0914a309c781d0fe3ce496b9861d287edc7af88e6b888dceaf62a34dea"
   },
   "cave_layered/coral-shelf-7__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "ae5990899924065ce47e44ab857a3a599ee14e3ae634e2d6bd540adeec736f48",
-    "outputHash": "e9e9362612b3c737f83a8295bdfec5a6d5cbaaa57e93df7ec6a5691ca9fc07e1"
+    "sourceHash": "b915dcdf6ace1ddecd19b7e7422290a9ac71e68caccd5a568fb84d1872c73bc5",
+    "outputHash": "fd6771dd302b6984aa639905591c67c026897661169b55cf4c9aeecc68f179ab"
   },
   "cave_layered/coral-shelf-7__cave-coral__theme-reef__front.png": {
-    "sourceHash": "ca32028b76ce0e4167bcb6990368a45122f8258777f2f0dddd846996853f9fb3",
-    "outputHash": "581dee7938a17eda0c86d006318f0c2efbb7d7a9f6c7e437f69824a5bf92e9f6"
+    "sourceHash": "57419e6a7f9ca39c485b231bd015d48eb6c840f54425e6e55691428300686dda",
+    "outputHash": "1a4205d99b2e65d8b3e00fe9706bbba4e8417e0b3ac720a54511671032ef5634"
   },
   "cave_layered/coral-shelf-9__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "6fd7fc02007f20a44ca3e3bd39301e01091b8197dac46aba77d6ceca99572dd5",
-    "outputHash": "48e1cf07189046c936e9903ee3983d912544032f2c9f9fba7476b231286ee6fc"
+    "sourceHash": "3c85e212ef2d422fb61e36cc49d504f080bb04c4090ee0aaa4c99a7ffef4752d",
+    "outputHash": "d017a821ac76360f14d4935c0138238f891c0068f01149ae3d7d13d50e121def"
   },
   "cave_layered/coral-shelf-9__cave-coral__theme-reef__front.png": {
-    "sourceHash": "b9cc490310708abfa0a8a378f3c222f99e37e4e2e1c22684502846fce7bdddc8",
-    "outputHash": "2df481ab42ba7e8c86bc1ba2d3d6ef5cd3528f8ee84a490b94e13da67fead692"
+    "sourceHash": "6d90b8a8ab1db828e57c6c67c8086f9c7b2e2429da732e54cae8838f7e7955c0",
+    "outputHash": "a3538c3b43df0e05a7b0c86d0649a5351098aee780244d8f9c0a5a08f9d5a1c2"
   },
   "cave_layered/coral-shelf-9__cave-coral__theme-reef__front__color2.png": {
-    "sourceHash": "ed1037b67f41d43db7a07b2aeb0aa30240183a6a4ef3524861e4af36a3cee323",
-    "outputHash": "924d37eda7c5c4edbcec4091acbcb60742faf883cdcda5fc92f479a1d115aa5f"
+    "sourceHash": "cc120b18c67696675866827c4f385836cadf22ad36509e94bbfe2e2c7dedfaf3",
+    "outputHash": "9af68dc1bc95f8e30ad547204da796c5ae06e6400c5f9593d7182d4dd7225fee"
   },
   "cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.png": {
-    "sourceHash": "59cf7cb547b890ba2ebe96a7b42b664e15cc2966496c501bb11d02e97db13e79",
-    "outputHash": "669646ef1850fa24ba6e61297d7ff5ced2f6b39fa62dbb02bf7d0bd5d4bf684c"
+    "sourceHash": "6bb0309205e25dcc9b76d3346607a473b426f3a67caee529049630623a217a92",
+    "outputHash": "5016ca8e5bb429c41bd17addef622020f67db07ea781630ac40226cb7e590a88"
   },
   "cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__bg.png": {
-    "sourceHash": "455333d261af3cb4ddd474326d44cc9377d62819de5f24eddf33706054821c43",
-    "outputHash": "838f3217379867c9fd3a66a1221dfa6502ba9ac34b9758e84cf9521b74a48e62"
+    "sourceHash": "88dac6d148397ede0f7f0aa310c052fce496fb86b850afafe326d86b1748e80d",
+    "outputHash": "cb071fdd24c2031a7496d5d5608dd9032c852e6f6e60bae7a490a9626b21f454"
   },
   "cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
-    "sourceHash": "9c541605c22dec95d72eb0dee7a485f4f72e1f54e606de12ba9f2cf45ef89f79",
-    "outputHash": "46071ba79df2ae465ba2e2f7713a0c0c42f7bded987c6503f9d0c3bd89de8e90"
+    "sourceHash": "29396051c8a12ea863db5dc07846ba3585d89a0acbb6a1c67a118fe690acdff1",
+    "outputHash": "07beccc4a601e6dadec939e0ce4246f276521a1adb9bc1e970f38d919a7e142c"
   },
   "cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__bg.png": {
-    "sourceHash": "9f2ebb24f6138b9cdfcd67742382b19c439142fd1f36cb45b8404131318004f1",
-    "outputHash": "489c5d39f9df2fa858a45c75773cb21f6760f06d891e3f517c5582c9871964cc"
+    "sourceHash": "a3076d2c2770eacc69448593c64e329156f7226e0667d0763c72c1cb1a62ad13",
+    "outputHash": "439a056adfdaf8d430496b51127f6c60fd23075302e0e59dfedb077b8cf57ca1"
   },
   "cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
-    "sourceHash": "9a285c5d6ff3aa84ddc25bf4372074afb525858821b465d17132ce9af31bbb7f",
-    "outputHash": "d8c9e9d0e139abf147f4dc1607e5104ded88ea48c55b0af61abd14ff9d6c0229"
+    "sourceHash": "ba74f072c15e5be4d9e9dd4eb7259a796b0e9682b2d49991ba998bdaf0701b1c",
+    "outputHash": "b62169e0a7a09d76b729a2091f1378978ea30a9da1e6694c5fa327bf7d9410b3"
   },
   "cave_layered/frozen-cave__cave__theme-frozen__front.png": {
-    "sourceHash": "2ca0f6124b408c9e380d99190e67eb2295b7360ac21f29ff09abb917850bbc98",
-    "outputHash": "03de4a593576f9632b36534842be3a46bc87cbcc888614447016d3127db37a6f"
+    "sourceHash": "b46292b932374e448b0206c4c0fa5197744b732b24e51a71172d50879aac7aa4",
+    "outputHash": "53f50f4400f1053441431e6ba14d033962b1182c7e1bf430b8317f8e829aa78f"
   },
   "cave_layered/frozen-cave__cave__theme-frozen__v2__front.png": {
-    "sourceHash": "d9d21bdbd0da9c4bc00b8e16c7b64cd93116296c96778d1ffd7656b0df99f6d4",
-    "outputHash": "5a9b2ab4606870ce9c90457e13598f5b3d400c22c2d362966b8b434c0b3250e0"
+    "sourceHash": "d9422ad2f121f56ad6ed78384316e9132d243b2169116e9b0d9d4192ecb43550",
+    "outputHash": "934f12cd421fe8dd1e787ce5fa515635822238dd3cbb8d839fba87fe0d535b72"
   },
   "cave_layered/halloween-crypt__cave__theme-halloween__bg.png": {
-    "sourceHash": "2bbf53ddf5ff0d208de134183d4f7e403983ff72b93fc978a9971d025e30a72c",
-    "outputHash": "4faf1b5bb315709a049cb23d75e8ce992a63e97ac9125c7199f0e7eb3ef48d21"
+    "sourceHash": "6fcb4d9677447f2d50985e2cedf10fed77817099c5f5b2bec2b5135265780cf3",
+    "outputHash": "291da695c05434ce812bf7b6efd5c07dd9df61d22f68a56bcabcd14a37317400"
   },
   "cave_layered/halloween-crypt__cave__theme-halloween__front.png": {
-    "sourceHash": "1aa509b50f5f184aa0510d0f34c9a81f9cfcc2177e671ba7f2302f3889c119b0",
-    "outputHash": "2ab8aa54d7171b75bc19e4522e6337adad2e8e92f3a8dd20c715d6dc3a193859"
+    "sourceHash": "7731494eff5ab24bada96aaa8b87e696c95ec182faf5dc0bf2c667fb54d12a17",
+    "outputHash": "f9ff74140963c3ab225184cc443f6dc227553fa07fdc62efab9591f7be2a68fd"
   },
   "cave_layered/halloween-crypt__cave__theme-halloween__front__color2.png": {
-    "sourceHash": "ebfc6d9014120fa36a10cdeef51ef2a641fa198547a7a28dc29e3151f3b041ea",
-    "outputHash": "227d0a584e960403c1e9001e45444c3d897e6d5edecb898609a95519277149b8"
+    "sourceHash": "b5bdf69b38284e3ea88749641b1e2f48261d3a53a7a5cbe13568dd1de22d67e7",
+    "outputHash": "9071271bd5631a0ea8dc6fb12b76d1acf53c6d4d75f1aaadfde03784ac8387e9"
   },
   "cave_layered/halloween-haunted-house__cave__theme-halloween__bg.png": {
-    "sourceHash": "e801baaf475a9b4d9464959f32a0dcce4df5aa270fc1cbfb7533f02ad73a0156",
-    "outputHash": "87232383b807b7c964fcc62d9d7b5f5cd94f45f217aada29e3629eb3c5227174"
+    "sourceHash": "0d24189e130e267617faf6773306781cb020f6b2d6dc799898f4bc10ed48f854",
+    "outputHash": "e6b06338d0fa3be565a6f609ec7340a5cd1f36091d76e82ed589bcbc5a76000b"
   },
   "cave_layered/halloween-haunted-house__cave__theme-halloween__front.png": {
-    "sourceHash": "2715fbca8be1b1b010896c7fb2055973eb4ccd4cabba57a73036998c5bff6afe",
-    "outputHash": "11ff3d988ffda9bd2b892db61999c931960faa6bb57842d9562f05c9e2536417"
+    "sourceHash": "deeed9f97d7825c8cb894ea70dbd143153c276685382e3b30d5671d5c75f7b49",
+    "outputHash": "6087914d8f9a0b0728b325d4a87dedd31a8c225887ffcf33b2321093bc1da643"
   },
   "cave_layered/halloween-haunted-house__cave__theme-halloween__front__color2.png": {
-    "sourceHash": "98e93b587f24c305649676341e58fd0048f0bd45a40bb3ee5fbe981f76cd7460",
-    "outputHash": "733a88d908b3bf1397aa3a7abc11080c1b417a7b0fdb18858af8a245a62cf7e7"
+    "sourceHash": "87586da3cc159bd47fed7e398a069718015dacdf8d2d046a38ffb720563df9cc",
+    "outputHash": "34b7fa285b1f74025c82110e4b55bf1ab8c1e5f39a4780628e7bd37266d1cadb"
   },
   "cave_layered/halloween-haunted-house__cave__theme-halloween__front__color3.png": {
-    "sourceHash": "999e58e9fa37759d5a9bf1731bf239c25984f133b7608c0c54bbd47e658d2372",
-    "outputHash": "f5a5ff440b481046d67185aa4900b4ec2a33a5f2b4cbe587aca511626bc95d37"
+    "sourceHash": "0b7876a4e93ae8bf3030a196b83eb68bcbd945acefc6949556948369e9690f01",
+    "outputHash": "290a054364b895580c4a5f45bd4b7450cb35481527ec86cee47f752d88110728"
   },
   "cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__bg.png": {
-    "sourceHash": "1d2106dda2898673ec087b7d23555b45f8c31e1715dbd1eef59676834359908f",
-    "outputHash": "5334636bbd55ca40349c139486f2febfe903651375f4ba06043950e9673ede75"
+    "sourceHash": "ec606153fde92744e8dfa121a71608954e77129c8dc3873b85f6f1217aca0a01",
+    "outputHash": "3fd5790fac81de3f40e922712072a649c69f27df48d976541ef1dac2c94c7401"
   },
   "cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
-    "sourceHash": "14ae971d4469fd9747260f46a17038a79d7e99ef1a165a50da4c9db5f9fbfbf1",
-    "outputHash": "91bf17f3d50f8a2e5a591315b732f92f23c0a1d10ab91b779abddced3ef080b2"
+    "sourceHash": "8e43eb44283cf3465f5d4843d5b0a88e9212ddf82c07e2aef9ab17834188c023",
+    "outputHash": "de7f82f3bdb59cebbabac7c1e7d66c5f3b6cc12975645c92f488e36e2264851c"
   },
   "cave_layered/live-rock-cluster__cave-rock__theme-reef__bg.png": {
-    "sourceHash": "5aba88f3d80a1eb8bdbcb9b23ef3d22f5d9248e9dbbe04a2b2e8ea9451b532fb",
-    "outputHash": "f1e74ff4729a8c6e0ff93f2e8297e81bf455f7821b1094276e20f51c775cd97b"
+    "sourceHash": "819229878cb5d5448068a532990a3267b68e2c188833e4e6f5aaa85b65e7ab1d",
+    "outputHash": "ec072c48fd3cb6bb07896007af657bd2c9a7e091c1bad6364aefde75a1cae107"
   },
   "cave_layered/live-rock-cluster__cave-rock__theme-reef__front.png": {
-    "sourceHash": "c2126fbf557a933b775bed87f7e719ef9e683480ed25f5c5609f4825f9c7eb14",
-    "outputHash": "fd1a6a6225d6fcffa67864335d05289af98eedc9a62dd501e2c8272cc79f50b2"
+    "sourceHash": "bc34dc611bee996202549d091d15e63500592b9553b8ba4d54449557f9e6f358",
+    "outputHash": "6233fa42ff1e3ee8f226b526af15ec80e8db7dad4ccda3f23afff92c44609d62"
   },
   "cave_layered/live-root-overhang__cave-wood__theme-natural__bg.png": {
-    "sourceHash": "f75cee9e053e2da81b06f41b5ed8793b84108e7cce3168402f94d912ad6b3589",
-    "outputHash": "4face6c7fb41b4de60acc257f9e8c45b51f76fbfbf249950a3cc0faf49f63cc9"
+    "sourceHash": "3ff6e870b13c0c17433c7050128c9ba83bf03cd718eb8670dca0d36ff72663be",
+    "outputHash": "1d0be64c3f2429d8bf631875f83efbf934d1c007a77132961ce78aec3fcea784"
   },
   "cave_layered/live-root-overhang__cave-wood__theme-natural__front.png": {
-    "sourceHash": "2f8f2dc83ddb0e261339e86c466a8e2b1b7ad4f2020c64705ecccef6fbfeb144",
-    "outputHash": "c381bcf4efdcc37dcc6463768e3242d8b8b5f4bfc0b0c3d0e760bc340b05695f"
+    "sourceHash": "109898f066c0e2c5393161e33b1fbf000883d9013f257dd53d373744c2593d74",
+    "outputHash": "495db60123cd797165a0a47ba3697e0e68a189f0e3bee5096e219ba15882395e"
+  },
+  "cave_layered/live-root-overhang__cave-wood__theme-natural__shadow-footprint.png": {
+    "sourceHash": "677a079603877c36244fb0317594e4e786b4d6c484ee99a7f39b7a4f3bd25ca1",
+    "outputHash": "e3b416349808d38d04de1d7517a1486600f46be0c54476b1e08100605fa263f6"
   },
   "cave_layered/mangrove-roots__cave-wood__theme-natural__bg.png": {
-    "sourceHash": "25321b67f0fd92b9ae54777e9e0ed23c01c1ee9a3a524ccb32f75bcbdefe4949",
-    "outputHash": "1e8edafda5b81fe60399c299d675efa25ecf38284aae61e060504e0bf3f1dc47"
+    "sourceHash": "cb757a1f456104f7c58b71a7bc9d1257b8b2dd2e36eb3b361c3946e6cdb1f379",
+    "outputHash": "3df262edeadec29cf8306ef9082cdc324fd43491d03bbc10495d8152b5da6650"
   },
   "cave_layered/mangrove-roots__cave-wood__theme-natural__front.png": {
-    "sourceHash": "9b9d2248e023b1ca40742470402775729640f7b9efa18b060c47b5c7f5bbe1b8",
-    "outputHash": "e7d23c6b07201aa192214d21e9424fc2d6c4d92f52268ee52669e18cab8a53bb"
+    "sourceHash": "aee42adf39766dfcd8464ccdc6224be3a82428be314851c8ff74d8909f810411",
+    "outputHash": "b0ce0ea5c78a58230f1012aeea972c14fa3d104ba13d45b766288b2275be3fb4"
   },
   "cave_layered/meteor__cave-rock__theme-space__bg.png": {
-    "sourceHash": "25ca9954142a67929e174dd38cdc75457491462ad43ecda9873fdfeeeb60cbdb",
-    "outputHash": "36ee9b3590962738180ae169526bac2b71abc0f3815bdc3e1d343a553989fc67"
+    "sourceHash": "137c7869bcf2dd131c6011a5e9fa41340f39ec96db439615039c03f3e532773f",
+    "outputHash": "ec2aeb834076f06f87493fff6a131c8ff08c35b8676a406ee7688d30f198f754"
   },
   "cave_layered/meteor__cave-rock__theme-space__front.png": {
-    "sourceHash": "53a1e5418a029e6b033550347ad6ebc158e2f5dda4bb0d1c72e7c86b160a7cd8",
-    "outputHash": "b719c0b13b40b13a7f0ba6f5fb25d575197f729075a321642758e6948a0ae00a"
+    "sourceHash": "4503e4d82a08ea09c81705d210d7b38a89a3588465953442e0178920091fe343",
+    "outputHash": "54bdf115e93fae2e98e1ad9e3a99e1e924351da1926f262403a36be4dc71f365"
   },
   "cave_layered/meteor__cave-rock__theme-space__front__color2.png": {
-    "sourceHash": "8570105432abd77c1ad1a594480774b96a1fd56538fbf1736af13f6971405c46",
-    "outputHash": "af01e493f81abfc8e4c4f951c105c2be08a4b536d7f7d44dad01fedb4bd84513"
+    "sourceHash": "20b97f2f1f576c1ee926948b273d3615e3273fec33e853cbefd4d3d0d32bd575",
+    "outputHash": "e6a6f30e9a446ab8b3b57ba3d07a1e706dc79527120d53ba165e774c18c31ac1"
   },
   "cave_layered/pvc-pipe__cave__theme-artificial__bg.png": {
-    "sourceHash": "ecf124b191e5d0594f5823a398c31e079c0fed6b25bfc253f3e76cc18c9e713b",
-    "outputHash": "3e2b2831938af30e8a8056ada5ef5e3764bdd492bbccfe13e39b16bf8dc8c1aa"
+    "sourceHash": "aec6c6cfd19101d9c416e446796046329b4be32699a99a846ec362441ed4819c",
+    "outputHash": "62123b6980917689990936a0ed7b2aafda1a5f1dacf0e79a5b4c7920635ea03e"
   },
   "cave_layered/pvc-pipe__cave__theme-artificial__front.png": {
-    "sourceHash": "add630bfdde3d0fe7d7af7db85993485cb3bdd0e7dec535b3bf03f9fcfd053a7",
-    "outputHash": "2ec2714e5e03b945083d40bca15e2f7bbf4a77127bdb3d00ce15bbfb438e7bad"
+    "sourceHash": "2785e11b6209db08777d6fec9413900cde0c6cb80646ffc344e14632ee7f6e67",
+    "outputHash": "0dc3c5b39a3f604858d6241e536a52a7f08aa9b6a9c9407d79e6366d1ee85552"
   },
   "cave_layered/sea-anemone-1__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "55cf0e8a9d9fec48f4ab717a5a75b1df2906939f85ccfc16ebccb5a9da1b4e6a",
-    "outputHash": "f6c03d6aa322a426140a89d21d27c96cc46db4be25e71b8bd87bdd3b2797bc96"
+    "sourceHash": "9a834d7d04fa24825f46f75816b67f86b3e802a6f1e7d5016036c04ab65ce121",
+    "outputHash": "eaa93fb72cc01fadaae8ec4fa020bfc215eb2b69d936673b54c276f00b4d1287"
   },
   "cave_layered/sea-anemone-1__cave-coral__theme-reef__front.png": {
-    "sourceHash": "3f8988728ee610192b75c3ea1bb7ff587fe61934c1ab5298cc9d1bbeab47f617",
-    "outputHash": "0c6b4bbb84c743b14495a907cc38aa4c13239c2339897d3cbecf710af786ac63"
+    "sourceHash": "3f4f65f194943d6619f349edd6faadab6a458f11ae3c1e49b5d3ae52099f2c21",
+    "outputHash": "1e03e39ca103416271390c770f4d9b4052081fc4eed01d9fa00218a68ce2e3d2"
+  },
+  "cave_layered/sea-anemone-1__cave-coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "bbf466e5772bdaa3f9d8b03cb20b28ea5ce19872ef48e64c6893fc51db9fc0cf",
+    "outputHash": "3ea36bf0eb066b20f249b46c659619eb829764a430895deb9c90a541bf885d7c"
   },
   "cave_layered/sea-anemone-3__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "ea1991d167a6638c3f072343a2a92a748c7bca6643e0941fc744f560c18792b1",
-    "outputHash": "b45b3132afc19ced1857937e69ad23f206da2fab820b0547e35616dc0c982b9c"
+    "sourceHash": "7078f6b5a519f9127d7a9ce2c5f21070072303934075ce1aab1e0bd7e981f45c",
+    "outputHash": "e17b24723046fa919473f7bbaaffafd263764bc427e962af1bb17d7bd3b7054d"
   },
   "cave_layered/sea-anemone-3__cave-coral__theme-reef__front.png": {
-    "sourceHash": "2be1f8d275bde3750e2e05ad5dc57887e1cb521d9082bfe2761ace50f35e397c",
-    "outputHash": "1610b9df6401f4ab64355fc479e5096e39701f157a507cbea307779242b10910"
+    "sourceHash": "f13617352c21fb51152778e6e2937364f285740dd08a3a6f23a5c48d489cbb2f",
+    "outputHash": "d9dd19a2ab877a1dee7e1e51f093b75ed952585bef6c0af519a378e6b97204d2"
+  },
+  "cave_layered/sea-anemone-3__cave-coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "c7ff9ce1a92fdcd2faecbd8e4b692fe518080d11e4cbe46c08a1100ea4e1f5db",
+    "outputHash": "e9a4b03e4554467473acf04117ef2355771e0e9456825a7449efd8f2cd8cf21b"
   },
   "cave_layered/sea-anemone-4__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "1809d1cb066814d3c88d23feabe65de24566a962544c7282e45ea54b3d02c98c",
-    "outputHash": "2e5b669c5a56a4b301b8963192938abc70a71f057e1cb8eacc7b60ab1e3a9918"
+    "sourceHash": "bcf2b01daa62980cf2ab62ee7588eb3404137349b24204819d9fa86e804680bf",
+    "outputHash": "6f6b37e196fd9cf9682ab2afae6abc54a8d60be44735edd9b56d37ff41d4495c"
   },
   "cave_layered/sea-anemone-4__cave-coral__theme-reef__front.png": {
-    "sourceHash": "5cf867755aea74b95ef1e84559352d939df7740d29447b656df89c372a49af99",
-    "outputHash": "cb550cb0140190567ba22112d536d9a338c35427d842f3e23b62c733a688c7d9"
+    "sourceHash": "33af179bcbbafd03579432601dee2ab33c9e7fa5fdebabe2a76409e47cb5c65c",
+    "outputHash": "927247468a6e62bc8942ed71d277c18a8a83afc05c9d72c4efcb7bbdc23d4908"
+  },
+  "cave_layered/sea-anemone-4__cave-coral__theme-reef__shadow-footprint.png": {
+    "sourceHash": "0dcc735a418ea893a902edd49c5cc8e139ac32b992a356049e0948a5ace2a1ca",
+    "outputHash": "aa9715d6ee128ca159fac06e7008d5dec854a51d6c1b6a06049348b301326974"
   },
   "cave_layered/seashell-cluster__cave-coral__theme-reef__bg.png": {
-    "sourceHash": "acaa8bdb3fe5b83986b16d3935c2d328e2a091dc5ba692abd3d973505360c090",
-    "outputHash": "f779be53e6bd6dae90b7f9372ebb53cbc749e099268a471176c3e757f76268ad"
+    "sourceHash": "a4181175c595c532fe0ec6c13c1bf6de6e2d380a1af8d8d7386828f5a0bb19a4",
+    "outputHash": "79f4824b2f754e205dcb5d672cd7bf43270170d200bea610d98c0940d4758220"
   },
   "cave_layered/seashell-cluster__cave-coral__theme-reef__front.png": {
-    "sourceHash": "954860bbdd79819901cbba9a3790b143963bcb723d4c7e862b2ceaa94d5dea77",
-    "outputHash": "33dbe5334f4d58667835146ab34920670e1b8d5c13846be8def3ab052593fded"
+    "sourceHash": "b96a8931b4e0ad4e3f7c8a378c640bac02cc490c8dce18f09c13c516ed52cadd",
+    "outputHash": "65f628d518577eb7f299ab0824240a19462d9d3c97ac8be02299bcf9d2d2c36d"
   },
   "cave_layered/slate-stack__cave-rock__theme-natural__bg.png": {
-    "sourceHash": "20ac357eef6a3d39c6a654f490f8438f20d363873b540f58d95d934708b76b0f",
-    "outputHash": "88def579e221f0d4171e0f7875360217804b23c0cde8dcf5614487d26a0900a8"
+    "sourceHash": "59c1bf395ccc55db40d4ecfb9bb41d4a207aff40ea3f67c9296a5c5e2a24d785",
+    "outputHash": "c01ddfc3f7ba5a0a67ef59d12be07a243da02b47e98927bd010de32003ad87f3"
   },
   "cave_layered/slate-stack__cave-rock__theme-natural__front.png": {
-    "sourceHash": "d3881bf3bfedb27c20bae4d0408a346b89195d997d07420d7164402f1021fe9d",
-    "outputHash": "3605795fc9d733716943afcb0cbbbd99b179791614450b5123a41048a83cf21c"
+    "sourceHash": "538e01a8038434eeef5ffd31147760325d03c6c1c02f4235989a038389da7552",
+    "outputHash": "cb32c4d1a9d8438eda32004e525e7ec5fe106622a821c0d6c12613a70f555c6c"
   },
   "cave_layered/slate__cave-rock__theme-natural__bg.png": {
-    "sourceHash": "d3a7bb322f77488bd0749174c7a3e4d67d2f34e1681f51d4d9b08a460e4054de",
-    "outputHash": "79b030e642748e8e4cb6331e0e122afd471f21aed03d035f35195ed31a093312"
+    "sourceHash": "8213d8de1e0b2764a2517d8b66c36f1f628f46034e04d9f2c0c42ffd4ea2d264",
+    "outputHash": "3062f3841b839c78fd9bd01f2a24e112f22051f222bef5133a864de52f0c2aec"
   },
   "cave_layered/slate__cave-rock__theme-natural__front.png": {
-    "sourceHash": "3ed7b7772b1531190a2c7a8a9d2b5b36155bb4a7d758c6a8a007c47195853a04",
-    "outputHash": "94db9b0e530476f6425422d3b70be92408dc56d4480d2202c9b4041687a404bb"
+    "sourceHash": "784598b752e50a79b8809bbac70268c38bf480e8946967ac2abe13a2ae040277",
+    "outputHash": "77a20a12d6d40e4c9f407e0888626c0c6e2fe89600c704c529e279501759548e"
   },
   "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__bg.png": {
-    "sourceHash": "cbcd6e8c4a5e51ce02ff4b3d17065e07aeb3a2349748e942cf38370dcfa0cfd6",
-    "outputHash": "b7ddb888709afff0268f07ccc4f31176395335ec58d9490d6897c6760d5d9b36"
+    "sourceHash": "53ee9b2c31b86cadfddccf92466ab72018a39ffa3bbc3f03604d71d5c9b9add2",
+    "outputHash": "e39c3b6815f9ab07641d54dd4893ac1d4bb5709fe500068958adde38fcde288f"
   },
   "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
-    "sourceHash": "8ac106dc7d77608ba92692a0745fb26d5ff7b979abd462255e34b6c7f4d8aef2",
-    "outputHash": "e987023ef69100a61305988592c036fb5601cf4f9d71551da8407ec7b25caf63"
+    "sourceHash": "16db6e764752cfe8ca39061866c26168fdb92b0a98495deee84bc8a288b401bf",
+    "outputHash": "414a10a11ee4bddc2ebb49b1f98882744e599c408b19cb97de6fd34953c55695"
   },
   "cave_layered/terracotta-pot__cave__theme-artificial__bg.png": {
-    "sourceHash": "38dbd9bde153776fe574e85995f2dea4ce579e94b241d905614a442a2769cff3",
-    "outputHash": "33b835b64f2c8a3f19dbc7c1a4dc38158d853a7078683d62c731508d419f6ed4"
+    "sourceHash": "8ee4618684e1be01574d3c0385827dce7a14d5b413b137a8c3c1a8535d51f90c",
+    "outputHash": "238830bf3e968f1de32071b452d8f693cf0337c16f2f2377c73c391ac7cc3e1e"
   },
   "cave_layered/terracotta-pot__cave__theme-artificial__front.png": {
-    "sourceHash": "a8031d9afae8aac8c6a7ae13565e8e655e2f41bf36dae0a4b66cdfd69e13dc95",
-    "outputHash": "5e0816079c7aa4262b9f4dd6109fc4dde24806798bb8c8e5591b48a87b71bd1f"
+    "sourceHash": "8e8f7efc67a94169659ddb88a056f8e559731ce5564df1ce8c50983df38a3eb3",
+    "outputHash": "81478412d74408e368d69aedcaaa9c0cc685b9b03e1ac0246b659438fc1774b1"
+  },
+  "cave_layered/terracotta-pot__cave__theme-artificial__shadow-footprint.png": {
+    "sourceHash": "ed9e7c3a0344d6cbae6a5aaae1f2363c05912a1cad599222565fc3e9866f45bb",
+    "outputHash": "f4cae792f9c1cfd59784310d3f88a5cd93fb88cdd9173fe38ba11d168daa1bd1"
   },
   "cave_layered/terracotta-tunnel__cave__theme-artificial__bg.png": {
-    "sourceHash": "19097228419f795861374bc6d545bd3cdcb62779e914f2e4ff774489a2a0c5e4",
-    "outputHash": "2148ffef82729adab9847da3d9f0f30210eddf4087b27fd1f2dbbac4950aef76"
+    "sourceHash": "a403c618404858e2644be7fe9f03b54fb2422fa12c3dd224af01720694d780cb",
+    "outputHash": "c29abcc4ec9ff4eb72229ef2a11f134998294ad7491f1449beb2db1872739df8"
   },
   "cave_layered/terracotta-tunnel__cave__theme-artificial__front.png": {
-    "sourceHash": "041d86876bfd858391fcbbbcaf1837f15bc38c5909648f53910422dfffaf7a43",
-    "outputHash": "828d7a98451a4645c13ba2d41b7917ef27623ad1752201ccf6ce163abb4acf65"
+    "sourceHash": "a132729191a869d4db27ab7dafd2ea39f727d904f6f1658709eae3d82535f282",
+    "outputHash": "95d942ce9d9b7116acf6c48259aff94c0c8526462dc15ad365a66b3a0f236ced"
   },
   "cave_layered/wizard-castle__cave__theme-fantasy__bg.png": {
-    "sourceHash": "a81e61c567c84b8f010bf9ccf0e278d145c88994efaf8d660056b8606a012164",
-    "outputHash": "75761d551a65e80d3c665ab5d27b48b443c4969b2ecbfd090501d8ac2a411811"
+    "sourceHash": "2709c3725dee0d22bfb66ea54bc601d1e559c635c953ceb53cf8623805303b58",
+    "outputHash": "9132717b2a45660728a0c7b6f146d8a50394aa2e42ad3ca91a9e4c7a28325af1"
   },
   "cave_layered/wizard-castle__cave__theme-fantasy__front.png": {
-    "sourceHash": "4eb6bc4ae143e065cbaab35dc3d2ebc05316fb0ba982307c7044ec75042227cf",
-    "outputHash": "9417f875fe336b15cfa2e1474e8f577dbc5518c890668e12a16f943bc3491196"
+    "sourceHash": "b2fb6a39a549a3f1e30b879bd1cdb69cc78acdd61016cbe0911c7d4dba11bdba",
+    "outputHash": "1af8740f544defea0493cae479827f0432cf0cbd4748061a446988e354e661b8"
   },
   "cave_layered/wizard-castle__cave__theme-fantasy__front__color2.png": {
-    "sourceHash": "feb8b3540bae3254225b135d1f0aecd30fedee2cc6c3eb803467cdbc6966b118",
-    "outputHash": "3b52dda6f91ea2ca055d89de60040791797628075dcdd346a3d34401cb5a47e6"
+    "sourceHash": "e6aa418c06aaf2db8c3374f8dfcf0d5b2c9352eb3c56b53303b6650455276d53",
+    "outputHash": "87d7e04af5e6809eb1cfc66f634b5dc9e8412b6a720ac5f9bfe55f726d605960"
   },
   "cave_layered/wizard-castle__cave__theme-fantasy__front__color3.png": {
-    "sourceHash": "2c95a8806724d264693c6dce21913b8cef0976bff0ee1073b3653a62b0b1ed6b",
-    "outputHash": "d939231080d97ed329efff662ed4011a9b142fc95ff6115674b97c4632275275"
+    "sourceHash": "47f3d189865d9c34f5e6ecef4b8f1e179a36286f954fea56e91825b53796a53b",
+    "outputHash": "c0e4c9c9c13c15ebc5688650e4e6d46cc14dec66019d7c27cc00a51fd79664fd"
   },
   "ceiling_sway/fishing-lure__lure__theme-artificial.png": {
     "sourceHash": "c785137d2b1c4b243a587ba6e4977fc4483f3382de9a228ac72f7a2ab3a8bf11",
-    "outputHash": "591b417fdefd9859149afd4b0cd65ae157433375d7a75c56260d11a00c0f6c7e"
+    "outputHash": "dbff1457c3ca667af7e210fc21cdf9ddf3931827dd84b45c34ab144f53c1aab2"
   },
   "ceiling_sway/fishing-lure__lure__theme-artificial__v2.png": {
     "sourceHash": "cae2a62ba06b665a66f31ae3aca48503b52c4ca024b8f309454f2bb47620177e",
@@ -544,8 +628,8 @@
     "outputHash": "40e35fd35cb97b844a79df832016bf619b61d9dc758573790996ded2c3186fc5"
   },
   "ceiling_sway/halloween-gorebag__lure__theme-halloween.png": {
-    "sourceHash": "97dff757bf1dbc22d01128b1246dbe386f39e33e973af705a20a8253ff6345a3",
-    "outputHash": "f04dee3206ce05f18dd47e125c50faaa68d4b8ccedc2c861df1d64d250d65e53"
+    "sourceHash": "b64063d41dc683ed92240d2e87a1fa6368b5d4471bbe38c92e31343e1129826d",
+    "outputHash": "656ae1fe098247e1b38a1c094562e161a5d984da452a9923389b6d7c40457fd2"
   },
   "floating_bob/frozen-glacier__rock__theme-frozen.png": {
     "sourceHash": "39a8ef29a6e32b4b000e69557735ee0a6ce053c54a01bf222d339998c04573c6",
@@ -553,11 +637,11 @@
   },
   "floating_bob/frozen-iceberg__rock__theme-frozen.png": {
     "sourceHash": "78bf0e64bb28e4bae9f16c67a15009912b1bbb85bc59aea3325a9604a7f68bbd",
-    "outputHash": "395c7a6e3eead909844dc057e78c3fab23f6a36f7a88ed01febb352c92ca1642"
+    "outputHash": "cd15b88a9e39284643fa4039da8d588df4a389920ce34d2de807fa49f5eb9bcf"
   },
   "floating_bob/halloween-ghost__ornament__theme-halloween.png": {
     "sourceHash": "53a0d3e2d35553b42d1f3ea4b8d77ace010b17e291b8829ba78ba9659add3336",
-    "outputHash": "fcc66ffcc8eb48c1b81533e8a5d223715157270c3843685261765ae01c9a5542"
+    "outputHash": "d1233684fa557487d9c37a7c8e22d812bdd9b1cbba7b66cc1b894657ec067819"
   },
   "floating_bob/halloween-skeleton__ornament__theme-halloween.png": {
     "sourceHash": "a73f31813dab7e381ca0e511354605bde9c7d5d68093e56da16dfc538de0d469",
@@ -565,27 +649,27 @@
   },
   "floating_bob/halloween-webs__ornament__theme-halloween.png": {
     "sourceHash": "6f82a2e97302fc4fde007d037631f11860ee279af02d616fadf230df896ee3db",
-    "outputHash": "6c4d702f64cce4e3ff2990f81a16d73444f7090eb58da3de066068602d64202d"
+    "outputHash": "c14d326ad03a9688434aec79c3e85dfa0e8cd658b7d75dec8c2a009ce20ac0cb"
   },
   "floating_sway/floating-lettuce-root__plant__theme-natural.png": {
     "sourceHash": "dcedd80c40cb98167ee03dcaf61d8bb8b9b5ca7a2a2d1796b9d1811e7e7741a1",
-    "outputHash": "b77455ed59d88cabed19e525573c19fd50a500d21239f38bb894ab99671a4f6d"
+    "outputHash": "03b7ab774fe7bbd9a07df63f4e58d114573b47f7c8760ba7f8a9abe88e25f91e"
   },
   "floating_sway/floating-seaweed__plant__theme-reef.png": {
-    "sourceHash": "62839088180dc6e49dc808cd4913ace0aa4cef74853e64aba9da040d991a6797",
-    "outputHash": "4310be5bdf7e54f8e8d0cc8a3f0a3f7fcc3a68c955046646812036d4c5b9a22e"
+    "sourceHash": "77967f23e0a1e5d3a2c66328b83374fa7e43e504beaf52220ecbabdee6bd191b",
+    "outputHash": "28dbc220661878c82222ad0fbbfbccec54ef02795605df059e15ade3e0f4864a"
   },
   "floating_sway/floating-swamp-moss__plant__theme-natural.png": {
-    "sourceHash": "95763d4dd3fb3b0a8fabfc509c87f60290952bb20eae2dab86daa88fe7c2ec75",
-    "outputHash": "a116685fa05e53ad327595df444ed803b55982119643e5efd50bcfb19ecaf0dc"
+    "sourceHash": "81e98f5bf99e12c19ee3fd4d3abdccbb0289b03f639745368e6d45bf41ff3be1",
+    "outputHash": "93b543a23ea8a653c7e60f9c7107d9d531dc0f6b7ce98f6b5e054f3b50ba8096"
   },
   "floating_sway/halloween-floating-seaweed__plant__theme-halloween.png": {
     "sourceHash": "c2aaa81f35f4906cd38a7300bf237fc64e54d57b0284facf0d1f032219633bcf",
-    "outputHash": "96232e825582ddecc0079e925364dd5dff5e4cd2bf932ceaf5a6ac8ad8b3af36"
+    "outputHash": "609e3d8cb3f1a9b36a8e8b7bd1c588aba966ec94c6e56b58d41f9c56d3413c37"
   },
   "static/alder-cone-cluster__botanical__theme-natural.png": {
     "sourceHash": "fd17685d786e08d9ac562f183841f737fa827cae5231492affaafc8f8f15f0ae",
-    "outputHash": "7e6de79fc8ccc48cca62eee8f6215a287fbe0ab22f888561238d4f478f296d5a"
+    "outputHash": "cc09be70b9863534a7aa7b0dfcf63def16f7246e9ac3e756cdd19a0db8f57079"
   },
   "static/autumn-leaf-litter-mound__botanical__theme-natural.png": {
     "sourceHash": "68b23babae4e39b51eac915d8e84191fa1137ef369ce96ddb7072697b3b1e169",
@@ -604,20 +688,20 @@
     "outputHash": "f08fbfc3b89efff14fc6db40cbb65a726268a75916c48a9914d812bb685a2550"
   },
   "static/brain-coral__coral__theme-reef.png": {
-    "sourceHash": "368bfa9a081aa47e7cb420693f1dfe18718a1e48e70fd8a3fed589cc7bf17d7e",
-    "outputHash": "574bf8adca59a2bab7d7b887235afbf827137e2456db7dfb9bde1447dd420e76"
+    "sourceHash": "2b8cf07376ef899beaf13bfc7322b614b2725dc797ea051578ba3d6db2b8cda6",
+    "outputHash": "8405b37f219edc6049a387b8455b0e3268b034dc70939c5b3f969547f95e3d1d"
   },
   "static/branch-canopy__wood__theme-natural.png": {
-    "sourceHash": "8ff7bae28291aaf33c8c22ddf0ac68d27508ba0f7d19c72c40532a00c296f313",
-    "outputHash": "2314bb7ffac2c601f4d058185956c69c8502db9a1fb74467ec808e2ea9e1d1b4"
+    "sourceHash": "55cc2f51b237d6897e94715a7dd42b31814c5b0d588c55e38c11455e983e91f8",
+    "outputHash": "f2c38dedd748521135dbf9ae32542c3f51c0c2298849f144be0994b1c6c72fab"
   },
   "static/coral__coral__theme-reef.png": {
     "sourceHash": "7787d87bd9a416b8255a720f7168909a6dc82511ebdaa230e368e9434a0e9f52",
-    "outputHash": "1f92df3e10c63c070b0bddf59b08a0671a42c5c5a856e451fa0e12ba66c3a30b"
+    "outputHash": "f642c637520dc2410e775a84ac483bb0f798ebff7cf8a5b6ac9c5c26c8938f08"
   },
   "static/coral__coral__theme-reef__v10.png": {
     "sourceHash": "b12d3ada62d2ed939cb4e051822590c836fb4ae9e6a028219f4d999b54c00dcc",
-    "outputHash": "14bfea8aad573580651a3a98607f78785e498f1d7bebebd50b9f8f512a529586"
+    "outputHash": "714132f39c7ebe3ca3df5a507ca5b4de2d9c72e3d7f8709e6cf59fc1f9897717"
   },
   "static/coral__coral__theme-reef__v2.png": {
     "sourceHash": "124325e2f8a06049474814e60c847f2eeffd994e1d86fade660bb26172d88959",
@@ -625,7 +709,7 @@
   },
   "static/coral__coral__theme-reef__v3.png": {
     "sourceHash": "82d9b04cc106c7b6cee0328065178cf7d812d16e66643d5fec4d38589f9b5b19",
-    "outputHash": "3d0ad812e229c2b888e31e17c2697caacd217994c37daa78000526ef7f60b2e3"
+    "outputHash": "d18c6b2058a6037f47267b2b73ca4ebfe8d589fbd97e0c0aea8efa2b4d86fa1f"
   },
   "static/coral__coral__theme-reef__v4.png": {
     "sourceHash": "af3c943fe03a2821048ecb3fb8790c9c78da998bc04ef89afc3d26422913c38c",
@@ -633,7 +717,7 @@
   },
   "static/coral__coral__theme-reef__v5.png": {
     "sourceHash": "395114ce39ed039c73970f3e94d3122194fd348a96f16e471b956349c05e1e17",
-    "outputHash": "8e9db936513692b3c9f8cbfeed0a34f0abf7c3305f9623d6f4b9d0be7267885a"
+    "outputHash": "824f3dbdee4d1ad6caa67561606338624d5aa9a825df3c9b352a404c6a9db861"
   },
   "static/coral__coral__theme-reef__v6.png": {
     "sourceHash": "79cf55712a6e2f8d3d9880f114ffd7e8bc5d444b3e54214af48f211c8303a17e",
@@ -641,11 +725,11 @@
   },
   "static/coral__coral__theme-reef__v7.png": {
     "sourceHash": "8a0a789be11e2e203ec31f0acb200bb1ce90468d690a4847b02771e0c5d89727",
-    "outputHash": "db9a90653a6bfd739d338e9f82ee525f68057e23b4938b43d1dba8e90f3ded5e"
+    "outputHash": "3e79c88445d4738bf6b3b401c2a808dab9b5d9129537764ee6b4babbc660576f"
   },
   "static/coral__coral__theme-reef__v8.png": {
     "sourceHash": "2a566b487154e693106f95e0f341c8081031c7aa0b722015981d3b6048440186",
-    "outputHash": "36fda9b233ebeba34046b20dd24b48801a85b3254b3cb7038880a80e1a462559"
+    "outputHash": "9c1c476112066becee4cbe90436c2db66cf5796f69608fca22df23ac2c851a9f"
   },
   "static/coral__coral__theme-reef__v9.png": {
     "sourceHash": "c85a0b0dff239d72b1ae930f7d0aa683afc8b7d12528911a4c299cdeadacf07e",
@@ -657,7 +741,7 @@
   },
   "static/dried-catappa-leaf-pile__botanical__theme-natural.png": {
     "sourceHash": "1c5c1e5a2e1baf1e6af951a116a17c5c73d35ec2f5cb2e55f61196ab44a51842",
-    "outputHash": "5662f8cffaf709c3e2acd23b1e8fcdf46437cd242a452d9de0b69d5f18ecc26d"
+    "outputHash": "9b13d508cfcf3d0fe19103b93d663f365dba58a53f84ff8f869074d545457134"
   },
   "static/driftwood-root__wood__theme-natural.png": {
     "sourceHash": "54d7e7175bf160e3493251524fd8c24995774e64825c9a252ce1c08dbf062cf5",
@@ -668,12 +752,12 @@
     "outputHash": "bfeaf5baf248c8ef8fea404e3de0ba875e038da8cef554f62cb7c49360db71aa"
   },
   "static/driftwood__wood__theme-natural.png": {
-    "sourceHash": "c57b90032aff474ead82d20dc9af701f66136d685dafc6b146724a8f2d524df0",
-    "outputHash": "1759ee80b0a275dd4829f7fd5c252323881a7074a9c0b8bbc4ebf012b68a8c11"
+    "sourceHash": "7b3b7a4e2efdd2436f64299859c7d802c1d28b1c49eaaf41592242b7fd728775",
+    "outputHash": "eccf3a962b3cd359a1b1bcadf9aecca0b0674b56d0e3d1541b62a9284026f670"
   },
   "static/flat-spawning-stone__rock__theme-natural.png": {
     "sourceHash": "e5b57f49c62f0c33a912710e728c0004d739dbde7faf8257d54051ee52dd0c7c",
-    "outputHash": "b516788edcb0b3391d6f69c198d42ddc6d7242718b90bb273f8b02c66fd27cb2"
+    "outputHash": "b706fe88585cb299b051e547c2e431c7eee9abc7cb4b78c8ab1141d83438e305"
   },
   "static/frozen-anchor__ornament__theme-frozen.png": {
     "sourceHash": "f9d8947812e3db088daf6183c0c18a7e1225db88149ed63d6f0444ff8ff863e4",
@@ -681,11 +765,11 @@
   },
   "static/frozen-arch__ornament__theme-frozen.png": {
     "sourceHash": "b14170293caa7d5fde41b6645ac984c042b419fe10aa7fa2073b73419642b2e9",
-    "outputHash": "d0a98e50ef9be9b064f1cc2e43e0b863ca9e519746cb9cbfb083fb79f777423f"
+    "outputHash": "7e1f4e6ed6852be47773ce2390b942a3c76bfc2312b49783c0909858b13925da"
   },
   "static/frozen-arch__ornament__theme-frozen__v2.png": {
     "sourceHash": "b31e773ab7deefe6865d4fe6bd72547da06c4c2b277af572638b97e3e93cdaa3",
-    "outputHash": "54747b4032c7f7072644db47850451ed9192cb351fa76b67715c421fff0aa188"
+    "outputHash": "a9fb1244ec14f7bb49ceca1063e3179631eee652c46631f63dcb82736a00f8f0"
   },
   "static/frozen-column__ornament__theme-frozen.png": {
     "sourceHash": "0e1c3703941e17d05cfda359fc10b8274e9be6ea217798420fbc174f185036cd",
@@ -693,15 +777,15 @@
   },
   "static/frozen-column__ornament__theme-frozen__v2.png": {
     "sourceHash": "1cea349a6d7204dbdce1914997964d33b5d59e2da59716b6b3ce13350e198ef1",
-    "outputHash": "ac09a3f4dfc7655f3bddc70e7cc36ef1dd05f241a5943278c42c2d6a4a6aac4d"
+    "outputHash": "e57b244c97d72a7618dbd2676df8dcbebcba479fe7a9081c8d26c4eec1fc7863"
   },
   "static/frozen-column__ornament__theme-frozen__v3.png": {
     "sourceHash": "21f12a01e46ba115b9d6552f16241ef174384c26253580a8ad460c0775a5453f",
-    "outputHash": "dc647a24596087e28cb41255d04c087f284f466609c9e4cce3acfa2b24b3da71"
+    "outputHash": "2d10e6b0ecdba2fd6be3356c3ab45e75cb75e5f48e26d9bcc5f698b43792c46b"
   },
   "static/frozen-crystals__rock__theme-frozen.png": {
     "sourceHash": "b652dd3a4c726f2eaadbe1c104615c0bcbf7642665c24ecbf4f1dacebf5e8a89",
-    "outputHash": "7029012723f1c7b977a626564fd88318022c71e3d456c76d33620b37944b2563"
+    "outputHash": "8d3eef79aefd2ec944d154195cff135c25a3aa65100f02d03cb7f77f664c9a41"
   },
   "static/frozen-fossil__rock__theme-frozen.png": {
     "sourceHash": "28131f0fe1cf69c0ba1baae4eb5a4457da80f94e8f9fb4fa2bd1208fff48879c",
@@ -725,7 +809,7 @@
   },
   "static/frozen-plant__plant__theme-frozen__v5.png": {
     "sourceHash": "b2c6c94172fded353b071605fb73df443f4b159769bf1a1e0b2658db715c08fb",
-    "outputHash": "d863053543f6ec3d54130200c374b2e5b54bfbf9a242e2318dfab6d101987033"
+    "outputHash": "7fa11d9d6a66413795f68dee2383dbc05b69be23ae73188fd089ced3292ec86a"
   },
   "static/frozen-rock__rock__theme-frozen.png": {
     "sourceHash": "c0a806a0ac6723cf56a1ce63df5c9749d596c7dbdbabd5100c1eb14db3968004",
@@ -737,7 +821,7 @@
   },
   "static/frozen-root__wood__theme-frozen.png": {
     "sourceHash": "27cecdf9ffa698c793272762b83b7958c0d0749b72b18dca103d790ba47c7453",
-    "outputHash": "6d57e5d37551cc2b7c1273340c70e02f84a51742e89ea773661388d6f23b60c7"
+    "outputHash": "b242f09883d39961e7377792141b14bfc422bb607545ed3fc4aac90f19f5eebd"
   },
   "static/frozen-ship__ornament__theme-frozen.png": {
     "sourceHash": "66b2e093289be72aab9c331e9e360fb7a3c8b15cb1ac30c0a6085417f2f6d485",
@@ -745,11 +829,11 @@
   },
   "static/frozen-sunken-submarine__ornament__theme-frozen.png": {
     "sourceHash": "cfee50f78126d41bc17d58d024800338922920bfee038e21cff79ea60aa7804a",
-    "outputHash": "cfc1a4f9ecef4f82ba3360ace390009fffdcfbdc2e72d9e71d7eddbdcda0e4a2"
+    "outputHash": "468151c1158cf456ace74f52b5b3f16e5a34557d6780e9d2ac70c9c3652e8e87"
   },
   "static/frozen-treasure__ornament__theme-frozen.png": {
     "sourceHash": "aaf4f5f8b07209c27aeda32f7c5bea1f7f0631ef595dedba59cb4208949fd3a4",
-    "outputHash": "387f6cec19958eb7b33fb6c854be6f10266ccc746d79027969437bb1e70fb4c8"
+    "outputHash": "7e265e8a3cd598a2ba8f66a0ed12b4fb734a7a89979349168b6214a8930da73e"
   },
   "static/frozen-ufo__ornament__theme-frozen.png": {
     "sourceHash": "10500ebf9705f8f5a82ec76cb33dcb622714624ac30be5496058e4b37aeea7df",
@@ -768,12 +852,12 @@
     "outputHash": "cf303e1659adb018dd5edeff74d2487143e50c1d12c890e1b62cb5b29cf9e4e1"
   },
   "static/halloween-ghost-ship__ornament__theme-halloween.png": {
-    "sourceHash": "7986d13ff6ad19f7ea86f33c22e2ac7ee1a2bb25dd81f35570c552552da56bd0",
-    "outputHash": "f8dc86d634d6ff6815c154f7427be6d170a455fccb67af681a0b3d85c24f29e5"
+    "sourceHash": "9f4a445801905cb645b98c87d9546271d1b693ffe56f806ca96851120e43f8cb",
+    "outputHash": "52d3c8838af19dd61dcf27bc1723bf88cc7b1aa469ced3e5527a738d4e346124"
   },
   "static/halloween-gravestone__ornament__theme-halloween.png": {
     "sourceHash": "226b6ff923e6813ae62ad574b5ed2bd808a1399b2914621cccf3b13f096d4d35",
-    "outputHash": "0597ae164a7171b0e60108bd2cc96e5eb4f3c4080f3d923fe444c0879ce6aa93"
+    "outputHash": "f6cf7bfe7e89cafa75d7e55aecfdfc579e26821eb2803c3398159cfe9ad81dd6"
   },
   "static/halloween-gravestone__ornament__theme-halloween__color2.png": {
     "sourceHash": "7db70caf211215d982be7ebda084cc00a04484a7e79277e858fae8ef58ac2a5a",
@@ -781,15 +865,15 @@
   },
   "static/halloween-gravestone__ornament__theme-halloween__v2.png": {
     "sourceHash": "430dcfe2703e2034e3f98f763d237cfad814210b6da54bb75cd78a75ac82f48d",
-    "outputHash": "1e7e4a3b746682e4a7d45f8a9525d20343d1efd9c178486ca71ee7724f717c11"
+    "outputHash": "775a7caa78f8fb1ac9854c7e55463d0b3354b9a269f2548ffb7b7719e4aeb445"
   },
   "static/halloween-gravestone__ornament__theme-halloween__v2__color2.png": {
     "sourceHash": "17dddebea9caaef87aba6bd03b2013d30464e7d4c2f4948c96d4c8a071641c96",
-    "outputHash": "0a6697df19e1c287a8635a17b1c881c32278640384fbab82a37f972edda36c3a"
+    "outputHash": "fea41ba1009a5fccd5bd14fc7efe49eac9c565ca117a1adf08d3a457eb0fd01b"
   },
   "static/halloween-gravestone__ornament__theme-halloween__v3.png": {
     "sourceHash": "3fd0f9b722c33a0cfb920bfedb6c45f576463ba06c2cf4e80afc960427983240",
-    "outputHash": "e9887fa6c248b9e5a160c24c3646fb6b7de83c3b853d3980a0952211baf09cfb"
+    "outputHash": "ff46c95341134da46ba25897c06a1cfc9da72a6418d2daaa0dc3731909bcf669"
   },
   "static/halloween-gravestone__ornament__theme-halloween__v3__color2.png": {
     "sourceHash": "8aa659324fd8c98e8935d440914a3a22154dea3d20b0c19e760832466ebce6d3",
@@ -797,7 +881,7 @@
   },
   "static/halloween-gravestone__ornament__theme-halloween__v4.png": {
     "sourceHash": "eadfa262d229f783c4bb120ad553597e31615dc7664b6a2fe4898119414b98be",
-    "outputHash": "41b4f942dc48c811b66cce8cd7fb3d0865bc2992ddd19ad95f0f0f956841c472"
+    "outputHash": "2a0623e8150c7095151644abeea064eb9951053e80feb3d94725ca99ca87ab5b"
   },
   "static/halloween-gravestone__ornament__theme-halloween__v4__color2.png": {
     "sourceHash": "3271c649106d2d1d05e5e1f9be685651746fafbb836051edf9e30d3291039538",
@@ -805,7 +889,7 @@
   },
   "static/halloween-gravestone__ornament__theme-halloween__v5.png": {
     "sourceHash": "78619ca66c5881e942845c9c576d608cf423e4312f5ffe3b9e3d988fcc2cdb32",
-    "outputHash": "d06fe6baa5e32ad6915ee78a1b8524bf08c4fc9dc641be435fad98771e79ce80"
+    "outputHash": "552a2f1acad6ba4a095af796af28515ccd89f2fcae37e20bb3c93d0e6f01faae"
   },
   "static/halloween-gravestone__ornament__theme-halloween__v5__color2.png": {
     "sourceHash": "277d6004b69f69f7c2dc1868cb92466c989659b32cfeeb45e060e376c1c3b987",
@@ -813,11 +897,11 @@
   },
   "static/halloween-haunted-tree__ornament__theme-halloween.png": {
     "sourceHash": "fa134a8e00db56ed4a2a591f5b6a79f98ccc164c84e45298d75572cf2fe9212d",
-    "outputHash": "d80008de4411386a59c2c6af6c99b632488706b5f8dc1e048770d59932e20346"
+    "outputHash": "138ebb2bfabe08563ecba171f004a657a7b6febc53883bcb615c9b10320cb9ad"
   },
   "static/halloween-spider__ornament__theme-halloween.png": {
     "sourceHash": "25d12baac3dcd0325a917efc1316719ac8ad958e791e4d39f05166dc939f1efd",
-    "outputHash": "fd5d48a8db0c83d82ceaa1c2727fb7a07fee07e0385efd452a8d1375774225cc"
+    "outputHash": "e86c0b6704e9f5570ea0c77597c1b3d36e205434b9156c63d017b6f9065a195d"
   },
   "static/mixed-leaf-litter-scatter__botanical__theme-natural.png": {
     "sourceHash": "95a43bcd678e138ce8f34bca398414a992cde50429a2f35ebe5f5453c5f80ecb",
@@ -829,19 +913,19 @@
   },
   "static/moss-bridge__wood-plant__theme-natural.png": {
     "sourceHash": "bd28a284b5ed0870858ead389cef43654de5ee67ea66b3f5914500706cd4a35e",
-    "outputHash": "f19b5d14a1dc23db976f711185e1af0efbce271084d14f2d1c86c91c24550c20"
+    "outputHash": "3fda8369ec42adfaef02c1d67fd04fd700e15cbde5d2055d1b18a81cbbb4185f"
   },
   "static/moss-covered-driftwood__wood-plant__theme-natural.png": {
     "sourceHash": "b21e66ae935fd8cfe9a97a3c3e0a26a97ab1189d709b84781f333bcffa8d1f44",
-    "outputHash": "3e3f2d7ec1e2f20b7c2f207f327282f55434971b799b70ca4b0891070644008f"
+    "outputHash": "7f13981695c2e32204e3f991e6e077ad278cfc08c96c513fa11dbafb07dfdbec"
   },
   "static/moss-covered-rock-formation__rock-plant__theme-natural.png": {
     "sourceHash": "9426b686f5b40156942c963619e152a397cbb9882632b6225a4f63ef1e9245eb",
-    "outputHash": "4f3d8ddda99937947773e404bae5c856c272e2c062606a0d8aba447fcb9be7b3"
+    "outputHash": "99d29f28d6f2a79bc6b52ae5589242ad1d4b084dbffb1b7087de59843b8b3281"
   },
   "static/river-stone-mound__rock__theme-natural.png": {
     "sourceHash": "ee15ae4129f7c763eae228a747500b4ca0dcca3cdc85e96ef49e4ccc8fd058ce",
-    "outputHash": "f4612cf25d4d3dffe8323ea0e06903351584e7b57aa383316aff559edc7821ba"
+    "outputHash": "4a28cb807d0262c3aef4178b305037b78d8e03fd6c776bebdae97cfc5ed64433"
   },
   "static/rock-bricks__rock__theme-natural.png": {
     "sourceHash": "918bb867901f88fb80ea05aecdb09f9b0859754b9a36b0d7db188f23140b176d",
@@ -849,27 +933,27 @@
   },
   "static/rock-bricks__rock__theme-natural__v2.png": {
     "sourceHash": "b5ef2a76e285d9c4d6306f4fb056199059fc1d4542ab10216306cfe979e0cb3f",
-    "outputHash": "ba079f784b60be6169c8b7b93c2094ca24807fca1fa4b3710ec5f61f60034fe2"
+    "outputHash": "ebb2ab72919241776a1bec1079095f821cccfd3d5856f9317071b4d489564128"
   },
   "static/rock-bricks__rock__theme-natural__v3.png": {
     "sourceHash": "32919178c10af46dd5a991f85674456038fde1a041a716654fb6d5977ee6d72e",
-    "outputHash": "9e3d9d714fb07483ad72e9d63ef5e9d8bebde2edc1ad6952c4a2fe1e6ff932b8"
+    "outputHash": "17d7a5c92b08795691644d27224f4c9a6ca3bd132e6a4f29454a40558c8f9882"
   },
   "static/rock-bricks__rock__theme-natural__v4.png": {
     "sourceHash": "03d20eb81adb2fe9ed716bc2fb923b0ed448cb66d6f57863d3d031a7cc3dad85",
-    "outputHash": "df0b733ff706807ee6fe417c4e0d433ccca3f510ab8ad2a21be0d30ad104ee25"
+    "outputHash": "78a4aa8b8f177a6fe0020127bb76dcfb8981a2b88ff7ac9132b33df18170a154"
   },
   "static/rock-bricks__rock__theme-natural__v5.png": {
     "sourceHash": "cc4988cc0b66b82aab588a662c1215711aa08e2db594bbe8c889bf1bdf332488",
-    "outputHash": "079c04b2b07c75f1f810e3f52b469e057a8f6dbfa8685dbca37f42e800e93f5b"
+    "outputHash": "60bcc2403470e42603c9b0b1a0575453ed84790171217d660abedc8016266f99"
   },
   "static/root-debris-scatter__wood__theme-natural.png": {
-    "sourceHash": "f217b067c35538e6513fa389b3b9600ec5c6e3c8360f194b17412ad9acdf0f80",
-    "outputHash": "401545ac79c540a46e6244b0494b7b663a05e9a545a97083c3aa7627bfff0c4f"
+    "sourceHash": "6738253a2893e1fed5dbe2105d2a79e612267e276f40fa5b48182ec53ad9be70",
+    "outputHash": "83fc838dc13d62beefc8e5c0e68e7c97370501d7a591f264d7e6b0ef0f74ccec"
   },
   "static/seed-pod-cluster__botanical__theme-natural.png": {
     "sourceHash": "128396f34094f30e1a46e91e5d4a2be72104728af2d7822cfe436c6f2788333c",
-    "outputHash": "500d102744e98b8e1256fd26df1627cc9244beed6b3f1ce655d5b1ded19abdb9"
+    "outputHash": "f47038d8a7768da3584b06637c6340c3eaf463cf7be75d33b689b96947ddf302"
   },
   "static/seed-pod-cluster__botanical__theme-natural__trypophobia.png": {
     "sourceHash": "affa54f459306f0e701bd47eb010e735f01c705ab7823cf8d682ecb7fb86d676",
@@ -884,8 +968,8 @@
     "outputHash": "1f8abfb34c8403f019642c3e10a1501e424e659bda89c3ad84fbbecb25a9e8d7"
   },
   "static/single-twig__botanical__theme-natural.png": {
-    "sourceHash": "84ba8676d1d15bde97caec37ed52383c15e563f16dafe40e3d589135af283d65",
-    "outputHash": "5759d17506470ceea4544cef1020d7eb870915da08db2badbac0aee6048a7b87"
+    "sourceHash": "45d7b54968e0a1166bac21e934b850209c51b0ec4cc7551f059c3cacb3438c89",
+    "outputHash": "61488e4b91d85a56aac69471257925ec0c5e7db89197ef877bc40c158be4658c"
   },
   "static/small-botanical-scatter-pieces__botanical__theme-natural.png": {
     "sourceHash": "506e433d793bfccd70b143e9e5c6a46c8836d90cd1808703f534434116f51ccb",
@@ -896,20 +980,20 @@
     "outputHash": "d00ef98c6e4d5b616b96a1c4712e350fef01550a499d46fcb45140da16f17cc3"
   },
   "static/small-branch-pile__wood__theme-natural.png": {
-    "sourceHash": "1113fa03c0d3713724f658220e59044bf60e56dd018f9947bd45df9ce29d48fe",
-    "outputHash": "ebc25e53458da7f51d35ef2779b2d0efcc99573fc43352eee39e85d867b51450"
+    "sourceHash": "1bea21268a6fe54f258363215f26955a4331f2dff50bb61cf13d20f0a36b1809",
+    "outputHash": "8fd5a6dab611b1d18232e7b0200bfb9f0e13941876625d99406be25cb699c7ce"
   },
   "static/small-stone-shard-cluster__rock__theme-natural.png": {
     "sourceHash": "f9a440a365b0e49063c9f61b1bff160d52b3201a7f96f648d7d8186c891adcd4",
     "outputHash": "391e706b58170184c8c889d8c86b161393791c25a0b25f4b1d6333d6a5c73743"
   },
   "static/small-wood-branch-cluster__wood__theme-natural.png": {
-    "sourceHash": "e209d03e15089467dfad54fd532fdf7e83b0a0633eccabff7742104d653f7f5e",
-    "outputHash": "106ea6be515c12131002cede3b1d00f9b250cc5870d0cd100af7981ec9bd0428"
+    "sourceHash": "357d9a2982ddf2550377e2e536ec6419422ceb18a3ac76260bee52adbb00def1",
+    "outputHash": "0448f40f5aeb6233d98f11f7d995bff69609befdbf8b8e79af67d618b6224c08"
   },
   "static/sprawling-spider-wood-rootscape__wood__theme-natural.png": {
-    "sourceHash": "281378b645fa018415540683b7fa17bb0b2bd41f70978b69e0f0a9022ae25dc5",
-    "outputHash": "7d16e9f3145263a7ca71cbeaa6a3604cac5eaf3c61862c660c7a259e74080979"
+    "sourceHash": "9b8ceeb7e8a369ed7c56ee6e2121e0df14f2dd71cacf59c788c11c85aba4686e",
+    "outputHash": "5f39ccb5bb26a642cf9ecbe791a48f116f9c5bbacdff25be5c32552a2890effd"
   },
   "static/stone-pebble-cluster__rock__theme-natural.png": {
     "sourceHash": "5d60fe42359fefd82c16c05072ac0a6724a260209efbc9b304450cde8d569c3f",
@@ -917,19 +1001,19 @@
   },
   "static/twig-and-pod-mix__botanical__theme-natural.png": {
     "sourceHash": "e2945a8073997b81661738d36317271e354ad1f91abe50fe9e0268b4b3b7e14f",
-    "outputHash": "f8a4475a01e754cfcfca855ba6d96dd32643ab7b17ae16af987f13bd6ab72680"
+    "outputHash": "d5868e1993aa629a441477dfb6389b8ce0a5fbc2976b04d3f81b9e04f4a17432"
   },
   "static/twig-and-pod-mix__botanical__theme-natural__trypophobia.png": {
     "sourceHash": "65bf630fa3950408932fce510c08978e7e8695bb4d494b192adbf4cc0e14734e",
-    "outputHash": "8afb7f40ae5a63b3ff80fc4c9c873552e4b7fdaf4eb833063e1e387003258d15"
+    "outputHash": "73c6aa8410865aa0d1598daea54f059f680c7f576a3c431aaea4dd032284a6d1"
   },
   "static/volcanic-rock-bricks__rock__theme-natural.png": {
     "sourceHash": "af6f8b32b38d82a3d209d02c64202aeb761befda5395de6093c179887d7af3f6",
-    "outputHash": "75d77ce17861cef9dcb45b7028ef2b77f13c6572aebe607a06a32d26180732a2"
+    "outputHash": "b97781a0c36b1986636c1121a45e69e7286f7cd4c81c2f2b5854e9c7035a88a7"
   },
   "static/volcanic-rock-bricks__rock__theme-natural__v2.png": {
     "sourceHash": "5750a53dfd064ded1f2f0e3bbc76fb2baeff61f2e4811eac1e642fdc2cc61019",
-    "outputHash": "032b0cd3af5507e7318bbfc404e98b537931bedb297baf9fa96efc4ae788bf13"
+    "outputHash": "42aaaa50799a61ef88490c08b3e3256a3a2447bae719fa6b0e9e9e416a56a363"
   },
   "static/volcanic-rock-bricks__rock__theme-natural__v3.png": {
     "sourceHash": "522ee2045dd9da8f53b85ebadd903112e15de3f84849c5eb2617a18adec9543e",
@@ -940,15 +1024,31 @@
     "outputHash": "3c6d3f33a2fe9e02acf153627f0bd88f61c7defd50b1bf5799cba962a9e1db12"
   },
   "static/zoanthid-mat__coral__theme-reef.png": {
-    "sourceHash": "2f8854f3246d8a583d115532aeb1a3b3994b8925acd0a04380c1374a088985ca",
-    "outputHash": "d407553894c022778c288af4dfb67331fcec674645cd31b92ad28f8cd5186571"
+    "sourceHash": "df4a3fb8e3b6ac987293ae2a0d3f8ecb17a0c84cd049589c7eb739043d5a39e6",
+    "outputHash": "ce9b8b926e053659344b1f396f7cc96a7a42276ff6fb092e4faaddfc0f3ff0d7"
   },
   "transit/transit-tube__transit__theme-artificial__bg.png": {
-    "sourceHash": "87f3d8dbd7583824d40d3c971df48bedb9e2b65157ad42e5406aa8c7d868108b",
-    "outputHash": "787d04946014ca6666f4fa2e3dc42edab9977d53e67614a7cb7e4becf5c97614"
+    "sourceHash": "e5eb1103ad56f78a6c7fca4c37b3ee6c43b90ed35b9d328b2566805531ff5fd5",
+    "outputHash": "c220c0c0debe79fe62726a1fa1b81d01de9abe02639cb7898ca14af604a841d3"
   },
   "transit/transit-tube__transit__theme-artificial__front.png": {
-    "sourceHash": "995fe67cdcaebaa7cef9423f1495bacc0a3d23e27fb9582f75c71451823aed2a",
-    "outputHash": "33c098cc68a96df8f27f8cbc29025fde699c5eb325b9c5761c1de20c95cb7093"
+    "sourceHash": "769be6046b660eb5c13107ad9418f38f3cad22551db71f36e2a93c0e291e415f",
+    "outputHash": "8ae3884ebfa9c5a4e372cb6944ab392c8e3b523ac4d745446a609b0be220fd89"
+  },
+  "cave_layered/coral-shelf-10__cave-coral__theme-reef__front.png::trypophobia": {
+    "sourceHash": "083defbada067ea61e46fdbac21a2b34d026e58a9dafab3b65f86cf4b9481239",
+    "outputHash": "d7f24b0bfab48011c97f8acb35fb92ae29e4f3ad24353bafacd3349e850dd072"
+  },
+  "cave_layered/coral-shelf-1__cave-coral__theme-reef__front.png::trypophobia": {
+    "sourceHash": "6a38fcf9d2d6303428b9cb949cfaaa40232f42e7c732c417b7536293f1f770b7",
+    "outputHash": "607d353023aea84fd962a03dd4ea620e5bacfafc6f35444bd24f592507bca588"
+  },
+  "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.png::trypophobia": {
+    "sourceHash": "8088ea2425f68d7db2be1727177bb19a1b1368a260e957e53e5c663d7058859f",
+    "outputHash": "5b0382ea085093e6c34a0caee69476ae8d30efe4663c1a59f4e675d61f4d2a4c"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__front.png::trypophobia": {
+    "sourceHash": "4880e6c12b50c843bfc7ba1d3600414220b7181c27fccbb7dc68154e15468840",
+    "outputHash": "a3538c3b43df0e05a7b0c86d0649a5351098aee780244d8f9c0a5a08f9d5a1c2"
   }
 }

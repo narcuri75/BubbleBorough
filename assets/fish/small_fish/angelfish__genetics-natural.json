@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "88eaffe6-5a3c-4c71-b597-fec12962cb4a",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "3bda2e79-6097-4f6e-bbda-7775d2500254",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_altum.png"
+        },
+        {
+          "id": "48a5eda2-1cfb-4d90-bafa-001a00608b06",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_black_lace.png"
+        },
+        {
+          "id": "bc099dad-af64-4040-aebd-1609d6712ccb",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_blue_blushing.png"
+        },
+        {
+          "id": "a39d7077-9f04-451b-874a-82628a65a18a",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_emperor.png"
+        },
+        {
+          "id": "ad173361-66eb-4a36-9115-6c2969ef8c99",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_flame.png"
+        },
+        {
+          "id": "73daadd6-577d-428f-8eb6-014e91709063",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_gold_pearlscale.png"
+        },
+        {
+          "id": "9e74f1a0-3a26-4e02-a33c-70a014263048",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_koi.png"
+        },
+        {
+          "id": "e2b218fc-8b8d-4bad-bb9a-08bb7235d3aa",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_marble.png"
+        },
+        {
+          "id": "0ad8b539-b29a-424b-8441-b101967008be",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_silver.png"
+        },
+        {
+          "id": "1e3308d2-55d4-4073-a111-634a979d55cd",
+          "width": 64,
+          "height": 64,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_zebra.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/angelfish__genetics-natural.webp"
+  }
+}

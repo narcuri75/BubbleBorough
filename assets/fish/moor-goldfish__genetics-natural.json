@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,98 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "50e1a4d3-29db-4f2f-96a0-05e68b44d49f",
+      "id": "3cf7cf3c-0dfb-4769-a0ce-41ca3edea4b7",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "f245817f-f420-4a23-a86f-acd1d62996fd",
+          "id": "09a90f89-b2af-47d1-af39-96b0fa4f0a1e",
           "width": 512,
-          "height": 384,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "moorgoldfish.png"
+          "name": "moor_black.png"
         },
         {
-          "id": "837ce141-05ae-4542-82df-71812f7b0a24",
+          "id": "c90208ae-6d67-4ecc-82c6-85f1f1a56f82",
           "width": 512,
-          "height": 384,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "moorgoldfish_1.png"
+          "name": "moor_bronze.png"
         },
         {
-          "id": "d214f70c-3576-406a-b1aa-87a7ffcfc8ef",
+          "id": "cfd50e66-4043-40b1-8d7b-6567a41c4247",
           "width": 512,
-          "height": 384,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "moorgoldfish_2.png"
+          "name": "moor_calico.png"
         },
         {
-          "id": "dfd7d065-80cf-455c-a3e2-a71369a51cb8",
+          "id": "9f32b819-c842-4dd4-a345-624b1599f643",
           "width": 512,
-          "height": 384,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "moorgoldfish_3.png"
+          "name": "moor_gold.png"
         },
         {
-          "id": "12ea6696-87ae-4c05-b00a-a02fb39af433",
+          "id": "7e6acc19-be5a-44d4-a2d2-defd2e3cf8b6",
           "width": 512,
-          "height": 384,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "moorgoldfish_4.png"
+          "name": "moor_orangewhite.png"
+        },
+        {
+          "id": "e8a2075c-4fb4-49a8-a1a5-371ec4fdb12a",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moor_panda.png"
+        },
+        {
+          "id": "bc9f8079-954a-47be-8017-f7f335f16ff7",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moor_redblack.png"
+        },
+        {
+          "id": "afd45eda-57f6-4cd5-961d-0cb50b47eef5",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "moor_white.png"
         }
       ]
     }

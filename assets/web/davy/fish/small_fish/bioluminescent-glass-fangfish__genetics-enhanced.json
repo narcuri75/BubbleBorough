@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "columns": 2,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "2090b6c2-8811-46b7-a70c-5fb748f4268b",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "a38fc671-55b9-441e-a674-c775ec47d605",
+          "width": 64,
+          "height": 26,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent_Glass_Fangfish_1.png"
+        },
+        {
+          "id": "22acecec-62d2-4307-a601-5169c43f199e",
+          "width": 64,
+          "height": 26,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent_Glass_Fangfish_5.png"
+        },
+        {
+          "id": "700cd83d-0cf8-4857-9bee-f0c0bede0593",
+          "width": 64,
+          "height": 26,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent_Glass_Fangfish_4.png"
+        },
+        {
+          "id": "18c05cc1-879c-49f6-8db4-1a2679826359",
+          "width": 64,
+          "height": 26,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent_Glass_Fangfish_3.png"
+        },
+        {
+          "id": "1cf6d77b-95bd-482b-8e0e-aa734e9225d6",
+          "width": 64,
+          "height": 26,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "DNA_Bioluminescent_Glass_Fangfish_2.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/web/davy/fish/bioluminescent-glass-fangfish__genetics-enhanced.webp"
+  }
+}

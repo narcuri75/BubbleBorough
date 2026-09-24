@@ -2,11 +2,11 @@
 
 Generated from the current store catalogs. The “About this item” page reuses the catalog copy and card facts. Inventory, unlock, ownership, and seasonal availability labels can change with game state; those are marked as dynamic below.
 
-Catalog totals: 38 fish, 170 decor records, 4 food, 2 pharmacy items, 14 purchasable backgrounds, and 3 machinery items.
+Catalog totals: 39 fish, 170 decor records, 7 food, 5 pharmacy items, 14 purchasable backgrounds, and 3 machinery items.
 
 ## Food
 
-### Basic Fish Food
+### Tidewell - Basic Food
 
 **About this item**
 
@@ -14,25 +14,24 @@ Classic fish pellets that satisfy hunger. No one knows exactly what they’re ma
 
 **Catalog facts**
 
-- Price: 5 coins
-- Quantity per purchase: 99 pellets
+- Packages: Small | 20 Count: 20 servings for 5 coins; Medium | 75 Count: 75 servings for 15 coins; Large | 200 Count: 200 servings for 30 coins
 - Effect: compatible fish gain 50 hunger points (to at least 85), 3 energy, 2 stimulation, and 1 comfort—or 5 comfort when they were hungry.
 - Also awards the species meal coins, schedules waste, and can cause overfeeding damage when used too often.
 
-### Frisky Fish Food
+### Tidewell - Spawning Food - 20 Count
 
 **About this item**
 
-Special pellets that put fish in the mood for love. Formulated with ingredients intended to increase fish libido and improve the chance of mating.
+Special pellets that temporarily make an eligible adult fish breeding-ready. Both parents must eat Spawning Food, and a spawning attempt is not guaranteed to succeed.
 
 **Catalog facts**
 
-- Price: 5 coins
-- Quantity per purchase: 99 pellets
+- Price: 8 coins
+- Quantity per purchase: 20 servings
 - Effect: provides the same nutrition and care-stat gains as Basic Fish Food.
-- Special effect: guarantees eligible breeding for 1 minute after a fish eats it.
+- Special effect: makes an eligible adult fish breeding-ready for 1 minute after it eats the food. Both parents must be ready, and spawning is not guaranteed.
 
-### Chum
+### Tidewell - Chum
 
 **About this item**
 
@@ -40,10 +39,39 @@ A messy blend of bait food made for aggressive feeders. Its strong scent is espe
 
 **Catalog facts**
 
-- Price: 10 coins
-- Quantity per purchase: 99 pellets
+- Packages: Small | 20 Count: 20 servings for 10 coins; Medium | 75 Count: 75 servings for 28 coins; Large | 200 Count: 200 servings for 60 coins
 - Effect: piranhas, sharks, whales, and other chum-only predators gain 55 hunger points (to at least 90), plus 3 energy, 2 stimulation, and 1–5 comfort.
 - Normal fish cannot use chum as a meal. Chum can be loaded into the Chum Skiff but is intentionally excluded from the Automated Care Submarine.
+
+### Tidewell - Brine Shrimp
+
+**About this item**
+
+Whole brine shrimp for small carnivores and omnivores. A protein-rich treat that sinks naturally and gives curious fish something more interesting than pellets.
+
+**Catalog facts**
+
+- Packages: Small | 20 Count: 20 servings for 8 coins; Medium | 75 Count: 75 servings for 22 coins; Large | 200 Count: 200 servings for 48 coins
+
+### Tidewell - Carnivore Food
+
+**About this item**
+
+Dense meaty cubes for medium carnivorous fish. Designed for hunters that need something heavier than everyday pellets but do not require chum.
+
+**Catalog facts**
+
+- Packages: Small | 20 Count: 20 servings for 9 coins; Medium | 75 Count: 75 servings for 25 coins; Large | 200 Count: 200 servings for 54 coins
+
+### Tidewell - Algae Wafers
+
+**About this item**
+
+Sinking algae wafers for bottom-feeding scavengers. Otocinclus and freshwater shrimp can snack on them without becoming dependent on scheduled feeding.
+
+**Catalog facts**
+
+- Packages: Small | 20 Count: 20 servings for 7 coins; Medium | 75 Count: 75 servings for 20 coins; Large | 200 Count: 200 servings for 42 coins
 
 ### Halloween Candy
 
@@ -84,6 +112,39 @@ Gentle yellow drops for fish that could use a little peace and quiet. Helps calm
 - Price: 10 coins
 - Quantity per purchase: 3 drops
 - Effect: sets every living fish in the tank to 100% comfort until the next local midnight.
+
+### Anti-Parasite Treatment
+
+**About this item**
+
+Targeted Clearwell treatment for external parasites. Clears the active parasite condition, then the fish recovers over the next 24 hours.
+
+**Catalog facts**
+
+- Price: 12 coins
+- Quantity per purchase: 3 drops
+
+### Infection Treatment
+
+**About this item**
+
+Targeted Clearwell treatment for active infections. Clears the infection, then the fish recovers over the next 24 hours.
+
+**Catalog facts**
+
+- Price: 14 coins
+- Quantity per purchase: 3 drops
+
+### Osmotic Stress Treatment
+
+**About this item**
+
+Helps a fish recover after a water mismatch has been corrected. It cannot make incompatible water safe.
+
+**Catalog facts**
+
+- Price: 11 coins
+- Quantity per purchase: 3 drops
 
 ## Fish
 
@@ -598,6 +659,19 @@ An active, curious fish known for following larger animals through open water. I
 
 - Price: 24 coins
 - Behavior: steady
+- Cave fish: No
+- About-page note: health, feeding care, grime multiplier, unlock status, needs, conflicts, and behavior are rendered from live game state/catalog rules.
+
+### Freshwater Shrimp
+
+**About this item**
+
+A small freshwater scavenger that spends most of its time exploring the bottom, picking at algae, leftovers, and debris with constantly moving legs and feelers.
+
+**Catalog facts**
+
+- Price: 5 coins
+- Behavior: shrimp
 - Cave fish: No
 - About-page note: health, feeding care, grime multiplier, unlock status, needs, conflicts, and behavior are rendered from live game state/catalog rules.
 
@@ -2369,7 +2443,7 @@ A rock. A perfectly respectable rock, in fact. Useful for filling gaps, building
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-rocks.
 
 ### Rock 2
 
@@ -2382,7 +2456,7 @@ A simple aquarium rock for adding natural texture wherever the tank needs a litt
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-rocks.
 
 ### Rock 3
 
@@ -2395,7 +2469,7 @@ A sturdy decorative rock that fits comfortably into just about any aquarium layo
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-rocks.
 
 ### Rock 4
 
@@ -2408,7 +2482,7 @@ A natural-looking stone for breaking up open spaces and giving the aquarium floo
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-rocks.
 
 ### Rock 5
 
@@ -2421,7 +2495,7 @@ A straightforward piece of rock decor. No gimmicks, no bubbles, just dependable 
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-rocks.
 
 ### Root Debris Scatter
 
@@ -2590,7 +2664,7 @@ A dark, rugged piece of volcanic rock with plenty of rough texture and character
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-volcanic-rocks.
 
 ### Volcanic Rock 2
 
@@ -2603,7 +2677,7 @@ A porous-looking volcanic stone that adds a harsher, more dramatic edge to the a
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-volcanic-rocks.
 
 ### Volcanic Rock 3
 
@@ -2616,7 +2690,7 @@ A chunk of dark volcanic rock for building rocky formations, caves, or anything 
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-volcanic-rocks.
 
 ### Volcanic Rock 4
 
@@ -2629,7 +2703,7 @@ A rough volcanic stone with a naturally dramatic look. Thankfully, the volcano p
 - Price: 1 coins
 - Theme: natural
 - Categories: rock
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
+- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic. Variant group: arcadia-volcanic-rocks.
 
 ### Barnacle Covered Reef Rock
 

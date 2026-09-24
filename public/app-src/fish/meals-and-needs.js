@@ -1,10 +1,20 @@
 // Source fragment: fish/meals-and-needs.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
-function getTankDirtiness(now) {
+function getFishSimulationTank(fish) {
+  if (fish?.id && typeof getTankContainingFish === "function") {
+    const containingTank = getTankContainingFish(fish.id);
+    if (containingTank) return containingTank;
+  }
+  return typeof getCurrentTank === "function" ? getCurrentTank() : null;
+}
+
+function getTankDirtiness(now, targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
-  const cleanDirtiness = getBaseTankDirtiness(now);
-  if (!runtime.cleaningTransition) {
+  const cleanDirtiness = getBaseTankDirtiness(now, targetTank);
+  const currentTank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
+  const isCurrentTank = Boolean(targetTank && currentTank && targetTank.id === currentTank.id);
+  if (!isCurrentTank || !runtime.cleaningTransition) {
     return cleanDirtiness;
   }
 
@@ -17,12 +27,23 @@ function getTankDirtiness(now) {
   );
 }
 
-function getBaseTankDirtiness(now) {
+function getBaseTankDirtiness(now, targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return 0;
-  if (isTutorialTankDirtinessLocked()) {
+  const currentTank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
+  if ((!targetTank || !currentTank || targetTank.id === currentTank.id) && isTutorialTankDirtinessLocked()) {
     return 0;
   }
-  return clamp((now - state.lastCleanedAt) / getTankMaxDirtyDurationMs(), 0, 1);
+  const tank = targetTank || currentTank;
+  if (!tank) return 0;
+  const fishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => fish && !isFishDead(fish));
+  const deadFishList = (Array.isArray(tank.fish) ? tank.fish : []).filter((fish) => (
+    fish
+    && isFishDead(fish)
+    && (typeof isFishBeingConsumedByPiranhas !== "function" || !isFishBeingConsumedByPiranhas(fish, now))
+  ));
+  const lastCleanedAt = Number(tank.lastCleanedAt) || now;
+  const dirtyDurationMs = getTankMaxDirtyDurationMs(fishList, tank, deadFishList);
+  return clamp((now - lastCleanedAt) / Math.max(1, dirtyDurationMs), 0, 1);
 }
 
 
@@ -250,20 +271,42 @@ function getPelletPose(pellet, now) {
       yNorm: getPelletFloorYNormAtX(pellet.xNorm)
     };
   }
-  const floatingXNorm = clamp(
-    pellet.xNorm + (Math.sin(now / 780 + pellet.sway * Math.PI * 2) * 5.5 * stableScale) / TANK_WIDTH,
-    0.08,
-    0.92
-  );
+  const algaeWaferDrop = pellet.foodKey === "algaeWafers";
   const startYNorm = clamp(
     Number.isFinite(Number(pellet.startYNorm)) ? Number(pellet.startYNorm) : Number(pellet.yNorm) || WATER_SURFACE_Y / TANK_HEIGHT + 0.08,
     0.09,
     floorYNorm
   );
-  const sinkDuration = Math.max(1000, Number(pellet.sinkDurationMs) || FOOD_PELLET_SINK_DURATION_MS);
+  const sinkDuration = Math.max(1000, Number(pellet.sinkDurationMs) || (algaeWaferDrop ? ALGAE_WAFER_SINK_DURATION_MS : FOOD_PELLET_SINK_DURATION_MS));
   const sinkProgress = clamp((now - pellet.createdAt) / sinkDuration, 0, 1);
-  const easedSink = sinkProgress;
-  const bobY = Math.sin(now / 980 + pellet.sway * 12) * 1.2 * stableScale / TANK_HEIGHT;
+  let easedSink = sinkProgress;
+  if (algaeWaferDrop) {
+    // A wafer enters the water with a quick initial dip, then catches water
+    // and finishes with a lighter, drag-heavy descent.
+    const releasePortion = 0.16;
+    const releaseDistance = 0.32;
+    if (sinkProgress <= releasePortion) {
+      const releaseProgress = clamp(sinkProgress / releasePortion, 0, 1);
+      easedSink = releaseDistance * (1 - Math.pow(1 - releaseProgress, 3));
+    } else {
+      const airyProgress = clamp((sinkProgress - releasePortion) / (1 - releasePortion), 0, 1);
+      const airyEase = airyProgress * 0.92 + (0.5 - 0.5 * Math.cos(Math.PI * airyProgress)) * 0.08;
+      easedSink = releaseDistance + (1 - releaseDistance) * airyEase;
+    }
+  }
+  const settleFade = algaeWaferDrop ? clamp((1 - sinkProgress) / 0.22, 0, 1) : 1;
+  const swayPhase = pellet.sway * Math.PI * 2;
+  const horizontalDriftPx = algaeWaferDrop
+    ? (Math.sin(now / 520 + swayPhase) * 9.5 + Math.sin(now / 910 + swayPhase * 1.7) * 3.2) * settleFade
+    : Math.sin(now / 780 + swayPhase) * 5.5;
+  const floatingXNorm = clamp(
+    pellet.xNorm + (horizontalDriftPx * stableScale) / TANK_WIDTH,
+    0.08,
+    0.92
+  );
+  const bobY = algaeWaferDrop
+    ? Math.sin(now / 610 + pellet.sway * 12) * 1.45 * settleFade * stableScale / TANK_HEIGHT
+    : Math.sin(now / 980 + pellet.sway * 12) * 1.2 * stableScale / TANK_HEIGHT;
   const floatingY = clamp(startYNorm + (floorYNorm - startYNorm) * easedSink + bobY, 0.09, floorYNorm);
   if (hasCustomDropStart) {
     const startXNorm = clamp(Number(pellet.dropStartXNorm), 0.08, 0.92);
@@ -428,7 +471,13 @@ function getTintedBubbleOrbSprite(palette) {
   context.drawImage(sprite, 0, 0, canvas.width, canvas.height);
   context.restore();
 
-  runtime.bubbleOrbTintCache.set(cacheKey, canvas);
+  // Variant/custom bubble palettes can generate arbitrary color keys over a
+  // long session. Keep the decoded canvas budget finite instead of retaining
+  // every color ever previewed.
+  setBoundedCanvasCache(runtime.bubbleOrbTintCache, cacheKey, canvas, {
+    maxEntries: 24,
+    maxBytes: 8 * 1024 * 1024
+  });
   return canvas;
 }
 
@@ -705,6 +754,9 @@ function getBubblerDirectionVector(direction) {
 }
 
 function drawDecorBubblerEffectToContext(context, item, decor, image, now = Date.now(), options = {}) {
+  if (typeof isPlacedDecorFunctionallyActive === "function" && !isPlacedDecorFunctionallyActive(item, getCurrentTank())) {
+    return;
+  }
   const bubbler = getPlacedDecorBubblerMeta(item, decor);
   if (!item || !decor || !image || !bubbler?.spouts?.length) {
     return;
@@ -1420,7 +1472,7 @@ function scoopTankItemAtPoint(x, y, now = Date.now()) {
 
   const fish = findFishAtPoint(x, y, now);
   if (fish) {
-    if (storeFish(fish.id, { allowDead: true })) {
+    if (storeFish(fish.id, { allowDead: true, source: "scoop", now })) {
       playFishSplashSoundEffect();
     }
     return {
@@ -1527,19 +1579,23 @@ function updateComfortHistoryEvents(now = Date.now()) {
   return changed;
 }
 
-function getFishComfort(fish, now) {
+function getFishComfort(fish, now, targetTank = null) {
+  targetTank = targetTank || (typeof getFishSimulationTank === "function" ? getFishSimulationTank(fish) : (typeof getCurrentTank === "function" ? getCurrentTank() : null));
   if (!isFishDead(fish) && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return { value: 1, label: "Peaceful" };
   if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
   if (isFishDead(fish)) {
     return { value: 0, label: "Deceased" };
   }
+  if (isProteusZombieFish(fish)) {
+    return { value: 1, label: "No affect detected" };
+  }
 
-  if (hasActiveTankMedicineEffect("betaBlocker", now)) {
+  if (hasActiveTankMedicineEffect("betaBlocker", now, targetTank)) {
     return { value: 1, label: "Calm" };
   }
 
-  const dirtiness = getTankDirtiness(now);
-  if (hasExposedDeadTankFish(now) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
+  const dirtiness = getTankDirtiness(now, targetTank);
+  if (hasExposedDeadTankFish(now, targetTank) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
     return { value: 0, label: "Critical" };
   }
 
@@ -1555,11 +1611,11 @@ function getFishComfort(fish, now) {
   const mealBoost = lastAteAt > 0 && now - lastAteAt <= COMFORT_MEALTIME_BOOST_MS
     ? COMFORT_COMPONENTS.mealBoost
     : 0;
-  const needsStatus = getFishNeedsStatus(fish, getCurrentTank(), now);
+  const needsStatus = getFishNeedsStatus(fish, targetTank, now);
   const needsPoints = needsStatus.reduce((total, need) => total + (need.met ? COMFORT_COMPONENTS.needs / Math.max(1, needsStatus.length) : 0), 0);
   const healthPoints = getFishHealthRatio(fish) * COMFORT_COMPONENTS.health;
-  const spacePoints = getTankSpaceComfortPoints(getCurrentTank());
-  const activeConflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active);
+  const spacePoints = getTankSpaceComfortPoints(targetTank);
+  const activeConflicts = getFishConflictStatus(fish, targetTank, now).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
@@ -1616,33 +1672,52 @@ function getFishNeedsSnapshot(fish, now = Date.now()) {
   const needs = sanitizeFishNeeds(fish?.needs, fish, now);
   const care = getFishCareStatus(fish, now, needs);
   const disposition = getFishDisposition(fish, now);
-  const mood = { ...getFishNeedsMood(needs), label: disposition.mood, tone: care?.tone || "good" };
+  const moodPresentation = getFishMoodPresentation(disposition.mood);
+  const mood = { ...getFishNeedsMood(needs), label: disposition.mood, tone: moodPresentation.tone, color: moodPresentation.color };
   return { needs, mood, care, activity: disposition.activity };
 }
 
 function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fish?.needs, fish, now)) {
   if (!fish || isFishDead(fish)) return null;
+  if (isProteusZombieFish(fish)) {
+    return {
+      tone: "okay",
+      text: "No affect detected. Z-01 does not exhibit measurable comfort or distress."
+    };
+  }
+  const currentTank = typeof getFishSimulationTank === "function"
+    ? getFishSimulationTank(fish)
+    : (typeof getCurrentTank === "function" ? getCurrentTank() : null);
   if (hasActiveCandyBoost(fish, now)) return { tone: "good", text: "Candy boost: all stats full for " + formatDuration(fish.candyBoostUntil - now) + "." };
+  if (isFishDiseaseVisible(fish)) return { tone: "danger", text: "Feeling unwell. Check their health in Details." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {
     return { tone: "danger", text: "Very hungry. Drop some food into the tank." };
   }
-  if (isFishDiseaseVisible(fish)) return { tone: "danger", text: "Feeling unwell. Check their health in Details." };
-  if (getTankDirtiness(now) >= 0.45) return { tone: "warn", text: "The tank could use a clean." };
+  if (getTankDirtiness(now, currentTank) >= 0.45) return { tone: "warn", text: "The tank could use a clean." };
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_LOW_THRESHOLD) {
     return { tone: "warn", text: "Ready for a meal. Drop some food into the tank." };
   }
-  const conflict = getFishConflictStatus(fish, getCurrentTank(), now).find(item => item.active);
+  const conflict = getFishConflictStatus(fish, currentTank, now).find(item => item.active);
   if (conflict) return { tone: "warn", text: conflict.tag === "overcrowded"
     ? "Looking for more swimming room. Try a roomier tank."
     : conflict.tag === "sharp_decor" ? "Sharp decor is making this fish uncomfortable."
     : "Tankmates are making this fish uneasy. Check compatibility in Details." };
-  const missing = getFishNeedsStatus(fish, getCurrentTank(), now).find(item => !item.met);
+  const socialStatus = typeof getFishBiologicalSocialStatus === "function"
+    ? getFishBiologicalSocialStatus(fish, currentTank, now)
+    : null;
+  if (socialStatus?.lonelinessEligible && !socialStatus.satisfied) {
+    return { tone: "okay", text: socialStatus.requirement === "compatible_friend"
+      ? "Would enjoy a peaceful friend in the tank."
+      : "Would enjoy a companion of the same species." };
+  }
+  const missing = getFishNeedsStatus(fish, currentTank, now).find(item => !item.met);
   if (!missing) return null;
   const hints = {
     plants: "Looking for a leafy corner. Add a plant.",
     cave: "Looking for somewhere to hide. Add a cave.",
     open_water: "Looking for more open swimming space.",
     school_2_plus: "Would enjoy a companion of the same species.",
+    social_own_kind: "Would enjoy a companion of the same species.",
     surface_cover: "Would enjoy some cover near the surface.",
     hardscape: "Would enjoy a rock or another sheltered spot.",
     driftwood: "Would enjoy a piece of driftwood.",
@@ -1652,25 +1727,286 @@ function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fis
   return { tone: "okay", text: hints[missing.tag] || "Would enjoy " + missing.label.toLowerCase() + " in the tank." };
 }
 
+function getFishMoodPresentation(mood) {
+  const presentation = {
+    Happy: { tone: "good", color: "#59e5cb" },
+    Cozy: { tone: "good", color: "#8fdda0" },
+    Playful: { tone: "good", color: "#5edfff" },
+    Hyper: { tone: "okay", color: "#ffd35f" },
+    Curious: { tone: "good", color: "#67d7e8" },
+    Social: { tone: "good", color: "#77c7ff" },
+    Hungry: { tone: "warn", color: "#f6d365" },
+    Sleepy: { tone: "okay", color: "#79a7e8" },
+    Lonely: { tone: "warn", color: "#b593ff" },
+    Sad: { tone: "warn", color: "#8f83c9" },
+    Uneasy: { tone: "warn", color: "#f4c65d" },
+    Stressed: { tone: "danger", color: "#f29b4b" },
+    Scared: { tone: "danger", color: "#ff7b59" },
+    Hostile: { tone: "danger", color: "#ff4d5f" },
+    Sick: { tone: "danger", color: "#ee5fa7" },
+    Panicked: { tone: "danger", color: "#ff3b30" },
+    Unresponsive: { tone: "okay", color: "#a7b1ad" }
+  };
+  return presentation[mood] || presentation.Happy;
+}
+
 function getFishDisposition(fish, now = Date.now()) {
-  const active = getActiveFishActionQueueItem(fish, now);
-  const intent = sanitizeBehaviorIntent(fish?.behaviorIntent, now);
-  const action = active?.action || intent?.type || "";
-  const partnerId = active?.targetId || intent?.targetId || runtime.fishActionSteeringByFishId.get(fish?.id)?.targetFishId;
-  const partner = partnerId ? getManagedFishById(partnerId)?.fish : null;
-  if (fish?.activity === "feeding" || action === "eat") return { mood: "Content", activity: "Enjoying a meal" };
-  if (action === "waitfood") return { mood: "Hopeful", activity: "Watching the food dispenser" };
-  if (/sleep|rest/.test(action)) return { mood: "Sleepy", activity: "Settling into a quiet spot" };
-  if (/zoomies|play|pebble/.test(action) || fish?.activity === FISH_GRAVEL_PEBBLE_ACTIVITY) return { mood: "Playful", activity: /pebble/.test(action) ? "Tossing a little pebble" : "Having a little fun" };
-  if (/hangout|greet|follow|school/.test(action)) return { mood: "Sociable", activity: partner ? "Hanging out with " + (partner.name || "a friend") : "Swimming with the neighbors" };
-  if (/avoid|flee/.test(action)) return { mood: "Shy", activity: "Taking a little space" };
-  if (/hide|home|guard/.test(action) || fish?.caveState) return { mood: "Cozy", activity: "Tucked into a favorite corner" };
-  if (/inspect|explor|dig|forage|graze/.test(action)) return { mood: "Curious", activity: "Investigating the neighborhood" };
-  if (/breed|mate/.test(action)) return { mood: "Affectionate", activity: "Spending time with a partner" };
-  const personality = getFishPersonality(fish);
-  if (["curious", "explorer"].includes(personality)) return { mood: "Curious", activity: "Looking around the tank" };
-  if (["shy", "nervous", "standoffish"].includes(personality)) return { mood: "Shy", activity: "Enjoying some time to themselves" };
-  return { mood: "Content", activity: "Watching the world drift by" };
+  if (isProteusZombieFish(fish) && !isFishDead(fish)) {
+    const targetId = String(fish?.zombieAggressionTargetId || "");
+    const target = targetId && typeof getManagedFishById === "function" ? getManagedFishById(targetId)?.fish : null;
+    if (Number(fish?.zombieAggressionUntil) > now && target && !isFishDead(target)) {
+      return { mood: "Hostile", activity: `Pursuing ${target.name || "tankmate"}` };
+    }
+    return { mood: "Unresponsive", activity: "No affect detected" };
+  }
+  const active = typeof getActiveFishActionQueueItem === "function" ? getActiveFishActionQueueItem(fish, now) : null;
+  const intent = typeof sanitizeBehaviorIntent === "function" ? sanitizeBehaviorIntent(fish?.behaviorIntent, now) : fish?.behaviorIntent || null;
+  const action = String(active?.action || intent?.type || "").toLowerCase();
+  const steeringTargetId = typeof runtime !== "undefined" && runtime?.fishActionSteeringByFishId
+    ? runtime.fishActionSteeringByFishId.get(fish?.id)?.targetFishId
+    : null;
+  const partnerId = active?.targetId || intent?.targetId || steeringTargetId;
+  const partner = partnerId && typeof getManagedFishById === "function" ? getManagedFishById(partnerId)?.fish : null;
+  const currentTank = typeof getFishSimulationTank === "function"
+    ? getFishSimulationTank(fish)
+    : (typeof getCurrentTank === "function" ? getCurrentTank() : null);
+  const comfort = typeof getFishComfort === "function" ? getFishComfort(fish, now, currentTank).value : 1;
+  const healthRatio = typeof getFishHealthRatio === "function" ? clamp(Number(getFishHealthRatio(fish)) || 0, 0, 1) : 1;
+  const personality = typeof getFishPersonality === "function" ? getFishPersonality(fish) : "";
+  const mealFree = typeof isMealFreeFish === "function" ? isMealFreeFish(fish) : false;
+  const hunger = mealFree || typeof getFishNeedValue !== "function" ? 100 : getFishNeedValue(fish, "hunger", now);
+  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, currentTank, now) : [];
+  const conflicts = typeof getFishConflictStatus === "function" ? getFishConflictStatus(fish, currentTank, now) : [];
+  const activeConflicts = conflicts.filter((conflict) => conflict?.active);
+  const missingNeeds = needsStatus.filter((need) => need && !need.met);
+  const biologicalSocialStatus = typeof getFishBiologicalSocialStatus === "function"
+    ? getFishBiologicalSocialStatus(fish, currentTank, now)
+    : null;
+  const missingSocialNeed = biologicalSocialStatus
+    ? Boolean(biologicalSocialStatus.lonelinessEligible && !biologicalSocialStatus.satisfied)
+    : missingNeeds.some((need) => need.tag === "school_2_plus" || need.tag === "social_own_kind");
+  const missingHabitatNeeds = missingNeeds.filter((need) => need.tag !== "school_2_plus" && need.tag !== "social_own_kind");
+  const immediateThreat = typeof getFishImmediateFoodThreat === "function" ? getFishImmediateFoodThreat(fish, now) : null;
+  const hungerLowThreshold = typeof FISH_HUNGER_LOW_THRESHOLD !== "undefined" ? FISH_HUNGER_LOW_THRESHOLD : 55;
+  const hungerCriticalThreshold = typeof FISH_HUNGER_CRITICAL_THRESHOLD !== "undefined" ? FISH_HUNGER_CRITICAL_THRESHOLD : 14;
+  const gravelPebbleActivity = typeof FISH_GRAVEL_PEBBLE_ACTIVITY !== "undefined" ? FISH_GRAVEL_PEBBLE_ACTIVITY : "gravel_pebble";
+  const dirtiness = typeof getTankDirtiness === "function" ? clamp(Number(getTankDirtiness(now, currentTank)) || 0, 0, 1) : 0;
+  const behaviorSignals = fish?.behaviorSignals && typeof fish.behaviorSignals === "object" ? fish.behaviorSignals : {};
+  const avoidSignal = behaviorSignals.avoid_specific_fish;
+  const recentAvoidance = Boolean(avoidSignal && (!Number(avoidSignal.expiresAt) || Number(avoidSignal.expiresAt) > now));
+  const nightSleepSignal = behaviorSignals.night_sleep;
+  const naturalSleepWindow = Boolean(nightSleepSignal && (!Number(nightSleepSignal.expiresAt) || Number(nightSleepSignal.expiresAt) > now));
+  const friendSignal = behaviorSignals.follow_friend;
+  const recentFriendInteraction = Boolean(friendSignal && (!Number(friendSignal.expiresAt) || Number(friendSignal.expiresAt) > now));
+  const sensitiveTemperament = ["sensitive", "shy", "nervous"].includes(personality);
+  const threatConflictTags = new Set(["betta_present", "aggressive_predator", "fin_nipper", "large_fish"]);
+  const stressConflictTags = new Set(["overcrowded", "surface_crowding", "sharp_decor", "same_species", "tang_present", "puffer_present", "community_fish"]);
+  const mildConflictTags = new Set(["fast_eater", "tiny_fish"]);
+  const threateningConflict = activeConflicts.find((conflict) => threatConflictTags.has(conflict.tag));
+  const stressfulConflict = activeConflicts.find((conflict) => stressConflictTags.has(conflict.tag));
+  const mildConflict = activeConflicts.find((conflict) => mildConflictTags.has(conflict.tag));
+  const tankAddedAt = Number(fish?.tankAddedAt || fish?.acquiredAt) || 0;
+  const acclimationWindowMs = typeof FISH_NEW_TANK_ACCLIMATION_MS !== "undefined"
+    ? FISH_NEW_TANK_ACCLIMATION_MS
+    : 90 * 1000;
+  const isAcclimating = tankAddedAt > 0 && now >= tankAddedAt && now - tankAddedAt < acclimationWindowMs;
+
+  let nearbyFriend = null;
+  const nearbyTankFish = Array.isArray(currentTank?.fish)
+    ? currentTank.fish
+    : (typeof state !== "undefined" && Array.isArray(state?.fish) ? state.fish : []);
+  if (nearbyTankFish.length && fish?.id) {
+    const relationships = typeof sanitizeFishRelationships === "function"
+      ? sanitizeFishRelationships(fish.relationships)
+      : (fish.relationships && typeof fish.relationships === "object" ? fish.relationships : {});
+    nearbyFriend = nearbyTankFish
+      .filter((otherFish) => otherFish && otherFish.id !== fish.id)
+      .map((otherFish) => ({
+        fish: otherFish,
+        relation: relationships[otherFish.id],
+        distance: Math.hypot(
+          (Number(fish.xNorm) || 0.5) - (Number(otherFish.xNorm) || 0.5),
+          (Number(fish.yNorm) || 0.5) - (Number(otherFish.yNorm) || 0.5)
+        )
+      }))
+      .filter((entry) => (
+        (typeof areFishEstablishedFriends === "function"
+          ? areFishEstablishedFriends(fish, entry.fish)
+          : entry.relation?.kind === "friend")
+        && entry.distance <= 0.24
+        && (typeof canFishBuildFriendship !== "function" || canFishBuildFriendship(fish, entry.fish, now, { passive: false }))
+      ))
+      .sort((left, right) => left.distance - right.distance)[0] || null;
+  }
+
+  const calmed = typeof isFishCalmed === "function" && isFishCalmed(fish, now);
+  const hostileAction = !calmed && (/attack|chase|nip|aggress|confront|territorial warning|breeding aggression|betta confrontation/.test(action)
+    || (fish?.bettaRivalRole === "aggressor" && ((Number(fish?.bettaRivalChaseUntil) || 0) > now || (Number(fish?.bettaRivalDisplayUntil) || 0) > now)));
+  const scaredAction = !calmed && /avoid|flee|yield|scurry|retreat/.test(action);
+
+  // Phase 5 makes the mood an explanation of the most important CURRENT
+  // condition. Actionable welfare states outrank harmless flavor states.
+  if (!calmed && ((Number(fish?.panicUntil) || 0) > now || comfort <= 0.15)) {
+    return { mood: "Panicked", activity: "Trying to get somewhere safe" };
+  }
+
+  const primaryCondition = typeof getFishPrimaryCondition === "function"
+    ? getFishPrimaryCondition(fish, now)
+    : (typeof isFishDiseaseVisible === "function" && isFishDiseaseVisible(fish) ? "infection" : "healthy");
+  if (["parasites", "infection", "osmotic-stress"].includes(primaryCondition) || healthRatio <= 0.45) {
+    return { mood: "Sick", activity: healthRatio <= 0.45 ? "Hurt and not feeling well" : "Not feeling well" };
+  }
+  if (primaryCondition === "recovering") {
+    return { mood: "Cozy", activity: "Recovering and taking it easy" };
+  }
+
+  // Hostile describes the aggressor. Merely sharing a tank with a conflict
+  // does not make a fish hostile.
+  if (hostileAction) {
+    return {
+      mood: "Hostile",
+      activity: partner
+        ? "Confronting " + (partner.name || "another fish")
+        : "Driving another fish away"
+    };
+  }
+
+  // Scared requires an identifiable threat, active escape behavior, or recent
+  // learned avoidance. Compatibility threats are also surfaced here so a fish
+  // cannot look Cozy while living beside something its care profile fears.
+  if (!calmed && (scaredAction || immediateThreat || recentAvoidance || threateningConflict)) {
+    const threatName = immediateThreat?.fish?.name || intent?.targetName || partner?.name || "";
+    return {
+      mood: "Scared",
+      activity: threatName
+        ? "Keeping away from " + threatName
+        : threateningConflict
+          ? "Keeping away from a threatening tankmate"
+          : "Looking for somewhere safe"
+    };
+  }
+
+  if (missingSocialNeed && !isAcclimating) {
+    if (biologicalSocialStatus?.requirement === "compatible_friend") {
+      return {
+        mood: "Lonely",
+        activity: "Looking for a peaceful friend"
+      };
+    }
+    const ownKindMinimum = biologicalSocialStatus?.ownKindMinimum || 2;
+    const sameSpeciesCount = biologicalSocialStatus?.sameSpeciesCount || 1;
+    const missingCount = Math.max(1, ownKindMinimum - sameSpeciesCount);
+    return {
+      mood: "Lonely",
+      activity: missingCount > 1
+        ? `Looking for ${missingCount} more of its own kind`
+        : "Looking for company of its own kind"
+    };
+  }
+
+  // Critical hunger is specific and actionable enough to beat generic
+  // environmental stress. Less urgent hunger is considered after habitat care.
+  if (!mealFree && hunger <= hungerCriticalThreshold) {
+    return { mood: "Hungry", activity: "Really needs a meal" };
+  }
+
+  if ((Number(fish?.pairBondMourningUntil) || 0) > now) {
+    const partnerName = String(fish?.pairBondPartnerName || "").trim();
+    return {
+      mood: "Sad",
+      activity: partnerName ? `Missing ${partnerName}` : "Missing its bonded partner"
+    };
+  }
+
+  // Give newly introduced fish a brief neutral settling period. Immediate
+  // threats, illness, aggression, panic, and critical hunger still outrank it,
+  // but missing habitat or social needs no longer make a fish Uneasy the moment
+  // it touches the water.
+  if (isAcclimating) {
+    return { mood: "Curious", activity: "Exploring its new home" };
+  }
+
+  const severeEnvironmentProblem = Boolean(stressfulConflict)
+    || dirtiness >= (sensitiveTemperament ? 0.65 : 0.7)
+    || missingHabitatNeeds.length >= 2
+    || healthRatio <= 0.7
+    || comfort <= 0.4;
+  if (severeEnvironmentProblem && !calmed) {
+    let activity = "Having a hard time settling down";
+    if (stressfulConflict?.tag === "overcrowded" || stressfulConflict?.tag === "surface_crowding") {
+      activity = "Looking for more swimming room";
+    } else if (stressfulConflict?.tag === "sharp_decor") {
+      activity = "Keeping clear of sharp decor";
+    } else if (healthRatio <= 0.7) {
+      activity = "Recovering from poor health";
+    } else if (dirtiness >= (sensitiveTemperament ? 0.65 : 0.7)) {
+      activity = "Bothered by the dirty tank";
+    } else if (missingHabitatNeeds.length >= 2) {
+      activity = "Missing several things it needs in the tank";
+    }
+    return { mood: "Stressed", activity };
+  }
+
+  // Sad is reserved for broadly low wellbeing when there is not a clearer
+  // immediate care problem to show instead.
+  if (comfort <= 0.55 && !mildConflict && dirtiness < 0.45 && missingHabitatNeeds.length === 0) {
+    return { mood: "Sad", activity: "Keeping to itself" };
+  }
+
+  const mildEnvironmentProblem = Boolean(mildConflict)
+    || dirtiness >= (sensitiveTemperament ? 0.4 : 0.45)
+    || missingHabitatNeeds.length > 0
+    || comfort <= 0.64;
+  if (mildEnvironmentProblem) {
+    let activity = "Keeping an eye on its surroundings";
+    if (dirtiness >= (sensitiveTemperament ? 0.4 : 0.45)) {
+      activity = "Noticing the tank could use a clean";
+    } else if (missingHabitatNeeds.length > 0) {
+      const needLabel = String(missingHabitatNeeds[0]?.label || "something in its habitat").toLowerCase();
+      activity = "Looking for " + needLabel;
+    } else if (mildConflict) {
+      activity = "Keeping a little extra distance from tankmates";
+    }
+    return { mood: "Uneasy", activity };
+  }
+
+  if (!mealFree && hunger <= hungerLowThreshold) {
+    return { mood: "Hungry", activity: action === "waitfood" ? "Watching the food dispenser" : "Looking for food" };
+  }
+
+  if (fish?.activity === "feeding" || action === "eat") {
+    return { mood: "Happy", activity: "Enjoying a meal" };
+  }
+  if (/sleep|rest/.test(action) || naturalSleepWindow) {
+    return { mood: "Sleepy", activity: "Settling into a quiet spot" };
+  }
+  if (/zoomies/.test(action)) {
+    return { mood: "Hyper", activity: "Burning off some energy" };
+  }
+  if (/play|pebble/.test(action) || fish?.activity === gravelPebbleActivity) {
+    return { mood: "Playful", activity: /pebble/.test(action) ? "Tossing a little pebble" : "Having a little fun" };
+  }
+  const socialNeedSatisfied = !biologicalSocialStatus?.lonelinessEligible || biologicalSocialStatus.satisfied;
+  if (socialNeedSatisfied && (/hangout|greet|follow|school|breed|mate/.test(action) || nearbyFriend || recentFriendInteraction)) {
+    return {
+      mood: "Social",
+      activity: partner
+        ? "Hanging out with " + (partner.name || "a friend")
+        : nearbyFriend?.fish
+          ? "Hanging out with " + (nearbyFriend.fish.name || "a friend")
+          : "Swimming with the neighbors"
+    };
+  }
+  if (/hide|home/.test(action) || fish?.caveState) {
+    return { mood: "Cozy", activity: "Tucked into a favorite corner" };
+  }
+  if (/inspect|explor|dig|forage|graze/.test(action)) {
+    return { mood: "Curious", activity: "Investigating the neighborhood" };
+  }
+
+  // Personality and species traits remain inputs to behavior selection. They do
+  // not impersonate a current emotion when no matching behavior/cause exists.
+  return { mood: "Happy", activity: "Watching the world drift by" };
 }
 
 function getFishHungerLabel(fish, now = Date.now()) {
@@ -1704,7 +2040,7 @@ function getPersonalityNeedModifier(fish, needKey) {
 }
 
 function getFishEnvironmentNeedTarget(fish, now = Date.now()) {
-  const needsStatus = getFishNeedsStatus(fish, getCurrentTank(), now);
+  const needsStatus = getFishNeedsStatus(fish, targetTank, now);
   const metRatio = needsStatus.length ? needsStatus.filter((need) => need.met).length / needsStatus.length : 0.75;
   const conflicts = getFishConflictStatus(fish, getCurrentTank(), now).filter((conflict) => conflict.active).length;
   const decorCount = Array.isArray(state.placedDecor) ? state.placedDecor.length : 0;
@@ -1722,6 +2058,9 @@ function getFishSocialNeedTarget(fish) {
   let score = 48;
   for (const otherFish of living) {
     const relation = relationships[otherFish.id]?.kind || getRelationshipKindForFish(fish, otherFish);
+    const sociallyCompatible = typeof canFishBuildFriendship !== "function"
+      || canFishBuildFriendship(fish, otherFish, Date.now(), { passive: false });
+    if (!sociallyCompatible && ["friend", "neutral"].includes(relation)) continue;
     score += relation === "friend" ? 10 : relation === "neutral" ? 4 : relation === "dislike" ? -6 : -10;
   }
   return clamp(score, 10, 100);
@@ -1792,8 +2131,8 @@ function maybeRecordFishNeedEvent(fish, key, message, now = Date.now(), cooldown
   return true;
 }
 
-function formatFishAge(acquiredAt, now = Date.now()) {
-  const diff = Math.max(0, now - acquiredAt);
+function formatFishAgeDuration(diffMs) {
+  const diff = Math.max(0, Number(diffMs) || 0);
   const days = Math.floor(diff / DAY_MS);
   if (days >= 1) {
     const hours = Math.floor((diff % DAY_MS) / HOUR_MS);
@@ -1812,4 +2151,13 @@ function formatFishAge(acquiredAt, now = Date.now()) {
   }
 
   return `${Math.floor(diff / 1000)}s`;
+}
+
+function formatFishAge(acquiredAt, now = Date.now()) {
+  return formatFishAgeDuration(Math.max(0, now - acquiredAt));
+}
+
+function formatFishBiologicalAge(fish, now = Date.now()) {
+  if (!fish) return "0s";
+  return formatFishAgeDuration(typeof getFishAgeMs === "function" ? getFishAgeMs(fish, now) : Math.max(0, now - (Number(fish.birthAt) || Number(fish.acquiredAt) || now)));
 }

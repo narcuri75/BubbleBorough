@@ -264,28 +264,26 @@ function updateFishBreedingSequence(now = Date.now()) {
   }
 
   const species = runtime.fishMap.get(sequence.speciesId);
-  const colorInheritance = getBreedingEggColorInheritance([leftFish, rightFish], now);
-  const eggLayer = Number.isFinite(Number(sequence.eggLayer))
-    ? clampTankLayer(sequence.eggLayer)
-    : getBreedingEggTankLayer(species, sequence.targetLayer);
-  const offspring = spawnBreedingOffspring(sequence.speciesId, now, {
-    xNorm: sequence.anchorXNorm,
-    yNorm: sequence.anchorYNorm,
-    parentNames: [leftFish.name, rightFish.name],
-    tankLayer: eggLayer,
-    fishColor: colorInheritance.fishColor,
-    fishColorize: colorInheritance.fishColorize
-  });
-  if (offspring) {
-    const cooldownUntil = now + BREEDING_COOLDOWN_MS;
-    leftFish.breedCooldownUntil = cooldownUntil;
-    rightFish.breedCooldownUntil = cooldownUntil;
-    leftFish.targetAt = now;
-    rightFish.targetAt = now;
-    pushEvent(getBreedingOffspringMessage(offspring), now, getCurrentTank(), { type: "birth", fishId: offspring.baby?.id || "", score: 1 });
+  if (typeof canTankReserveBreedingOffspring === "function" && !canTankReserveBreedingOffspring(sequence.speciesId, getCurrentTank())) {
     clearFishBreedingSequence();
     markFishActionStateDirty(now);
-    showToast(offspring.kind === "live" ? `${offspring.baby?.name || "A baby fish"} was born.` : `${species?.name || "Fish"} egg settled into the gravel.`);
+    showToast("The spawning attempt ended because the tank no longer has enough capacity.");
+    return null;
+  }
+  const result = typeof completeFishLifetimeSpawn === "function"
+    ? completeFishLifetimeSpawn([leftFish, rightFish], now, {
+        xNorm: sequence.anchorXNorm,
+        yNorm: sequence.anchorYNorm,
+        tankLayer: sequence.eggLayer,
+        tank: getCurrentTank()
+      })
+    : null;
+  if (result) {
+    leftFish.targetAt = now;
+    rightFish.targetAt = now;
+    clearFishBreedingSequence();
+    markFishActionStateDirty(now);
+    showToast(`${leftFish.name} and ${rightFish.name} successfully spawned.`);
     return null;
   }
 
@@ -397,7 +395,9 @@ function createFishActionMealPellet(fish, now = Date.now()) {
     xNorm: clamp((fish.xNorm || 0.5) + (fish.direction || 1) * 0.075, 0.12, 0.88),
     yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.13 + Math.random() * 0.06, 0.24, 0.4),
     sway: Math.random(),
-    sinkDurationMs: FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
+    sinkDurationMs: foodKey === "algaeWafers"
+      ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
+      : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
     createdAt: now,
     expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
   });
@@ -420,6 +420,7 @@ function getFishActionPartners(fish, options = {}) {
   }
   const sameSpeciesOnly = options.sameSpeciesOnly === true;
   const requireBreedReady = options.requireBreedReady === true;
+  const requireSocialCompatibility = options.requireSocialCompatibility === true;
   const preferNegative = options.preferNegative === true;
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const relationships = sanitizeFishRelationships(fish.relationships);
@@ -431,17 +432,19 @@ function getFishActionPartners(fish, options = {}) {
       && !getManagedFishById(otherFish.id)?.inStorage
       && runtime.fishDragState?.fishId !== otherFish.id
       && (!sameSpeciesOnly || otherFish.speciesId === fish.speciesId)
-      && (!requireBreedReady || (
-        isFishAdult(otherFish, now)
-        && hasFishBeenInTankLongEnoughToBreed(otherFish, now)
-        && (Number(otherFish.breedCooldownUntil) || 0) <= now
-      ))
+      && (!requireSocialCompatibility || typeof canFishBuildFriendship !== "function" || canFishBuildFriendship(fish, otherFish, now, { passive: false }))
+      && (!requireBreedReady || (typeof isFishBreedingEligible === "function"
+        ? isFishBreedingEligible(otherFish, now, getCurrentTank(), { requireReady: true, requireCapacity: false })
+        : (isFishAdult(otherFish, now) && (Number(otherFish.breedCooldownUntil) || 0) <= now)))
     ))
     .map((otherFish) => {
       const relation = relationships[otherFish.id]?.kind || getRelationshipKindForFish(fish, otherFish);
+      const bondedPartner = fish.pairBondPartnerId === otherFish.id;
       const relationScore = preferNegative
         ? (relation === "enemy" ? 0 : relation === "dislike" ? 1 : relation === "neutral" ? 3 : 5)
-        : (relation === "friend" ? 0 : relation === "neutral" ? 1 : relation === "dislike" ? 3 : 5);
+        : bondedPartner
+          ? -2
+          : (relation === "friend" ? 0 : relation === "neutral" ? 1 : relation === "dislike" ? 3 : 5);
       return {
         fish: otherFish,
         relationScore,
@@ -512,12 +515,16 @@ function getFishActionTargetOptions(action, fish, now = Date.now()) {
   if (!isFishActionTargeted(action)) {
     return [];
   }
-  return getFishActionPartners(fish, {
+  const partners = getFishActionPartners(fish, {
     now,
     preferNegative: action === "avoid",
     sameSpeciesOnly: action === "breed",
     requireBreedReady: action === "breed"
   });
+  if (["greet", "hangout"].includes(action) && typeof canFishBuildFriendship === "function") {
+    return partners.filter((otherFish) => canFishBuildFriendship(fish, otherFish, now, { passive: false }));
+  }
+  return partners;
 }
 
 function showFishActionUnavailableToast(availability) {
@@ -537,6 +544,9 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
   if (!config || !fish || !species || !managed || managed.inStorage || isFishDead(fish)) {
     return { enabled: false, title: `${baseTitle}: select a living fish in the tank` };
   }
+  if (isProteusZombieFish(fish) && ["eat", "waitfood", "rest", "sleep", "zoomies", "play", "pebble", "dig", "hide", "inspect", "avoid"].includes(action)) {
+    return { enabled: false, title: `${baseTitle}: Z-01 does not express this behavior` };
+  }
   if (runtime.fishDragState?.fishId === fish.id || (fish.caveState && action !== "dig")) {
     return { enabled: false, title: `${baseTitle}: release this fish first` };
   }
@@ -545,6 +555,14 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
   }
   if (action !== "clear" && getFishNeedValue(fish, "hunger", now) <= FISH_HUNGER_CRITICAL_THRESHOLD && action !== "eat" && action !== "waitfood") {
     return { enabled: false, title: `${baseTitle}: needs food first` };
+  }
+  const currentMood = typeof getFishDisposition === "function" ? getFishDisposition(fish, now).mood : "Happy";
+  if (
+    action !== "clear"
+    && typeof isFishMoodActionHardBlocked === "function"
+    && isFishMoodActionHardBlocked(currentMood, action)
+  ) {
+    return { enabled: false, title: `${baseTitle}: ${currentMood.toLowerCase()} fish will not do that right now` };
   }
 
   switch (action) {
@@ -565,9 +583,9 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
         : { enabled: action === "sleep", title: action === "sleep" ? `${baseTitle}: no cover, using a quiet spot` : `${baseTitle}: add plants, caves, or hardscape` };
     case "hangout":
     case "greet":
-      return getFishActionPartner(fish)
+      return getFishActionPartner(fish, { requireSocialCompatibility: true, now })
         ? { enabled: true, title: baseTitle }
-        : { enabled: false, title: `${baseTitle}: add another living fish` };
+        : { enabled: false, title: `${baseTitle}: add another compatible living fish` };
     case "play":
       return hasDebugDecorHangoutZone(["lure", "bubbler", "spooky", "hardscape", "plant"])
         ? { enabled: true, title: baseTitle }
@@ -581,11 +599,11 @@ function getFishActionAvailability(action, fish, now = Date.now()) {
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: this fish cannot dig right now` };
     case "avoid":
-      return getFishActionPartner(fish)
+      return getFishActionPartner(fish, { preferNegative: true, now })
         ? { enabled: true, title: baseTitle }
-        : { enabled: false, title: `${baseTitle}: add another living fish` };
+        : { enabled: false, title: `${baseTitle}: no threatening tankmate to avoid` };
     case "breed":
-      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && isFishAdult(fish, now) && hasFishBeenInTankLongEnoughToBreed(fish, now) && (Number(fish.breedCooldownUntil) || 0) <= now
+      return getFishActionPartner(fish, { sameSpeciesOnly: true, requireBreedReady: true, now }) && (typeof isFishBreedingEligible !== "function" || isFishBreedingEligible(fish, now, getCurrentTank(), { requireReady: true, requireCapacity: true }))
         ? { enabled: true, title: baseTitle }
         : { enabled: false, title: `${baseTitle}: needs two ready adult fish of the same species` };
     case "inspect":
@@ -1061,14 +1079,18 @@ function triggerFishActionZoomies(fish, species, now = Date.now()) {
 }
 
 function triggerFishActionHangout(fish, species, now = Date.now(), item = null) {
-  const partner = getFishActionTargetPartner(fish, item?.targetId || "", { now });
+  const partner = getFishActionTargetPartner(fish, item?.targetId || "", { now, requireSocialCompatibility: true });
   if (!partner) {
-    showFishRoutineToast(fish, "Add another living fish first.");
+    showFishRoutineToast(fish, "Add another compatible living fish first.");
+    return false;
+  }
+  if (typeof canFishBuildFriendship === "function" && !canFishBuildFriendship(fish, partner, now, { passive: false })) {
+    showFishRoutineToast(fish, `${fish.name} does not feel safe hanging out with ${partner.name}.`);
     return false;
   }
   prepareFishForUserAction(fish, species, now);
-  if (["friend", "neutral"].includes(fish.relationships?.[partner.id]?.kind || getRelationshipKindForFish(fish, partner))) {
-    setDebugFishRelationship(fish, partner, "friend", now);
+  if (typeof reinforceFishFriendshipPair === "function") {
+    reinforceFishFriendshipPair(fish, partner, 4, now, { source: "hangout" });
   }
   setFishActionSteering(fish, {
     type: "follow",
@@ -1091,6 +1113,9 @@ function triggerFishActionGreet(fish, species, now = Date.now(), item = null) {
   }
   const started = triggerFishActionHangout(fish, species, now, item);
   if (started) {
+    if (typeof reinforceFishFriendshipPair === "function") {
+      reinforceFishFriendshipPair(fish, partner, 2, now, { source: "greet" });
+    }
     setFishBehaviorIntent(fish, "greet", partner.name || "friend", now, { targetId: partner.id, targetName: partner.name || "", durationMs: getFishActionConfig("greet")?.durationMs || FISH_ACTION_GREET_DURATION_MS });
   }
   return started;
@@ -1134,6 +1159,7 @@ function triggerFishActionPebble(fish, species, now = Date.now(), item = null) {
 }
 
 function triggerFishActionDig(fish, species, now = Date.now(), item = null) {
+  const durationMs = getFishActionConfig("dig")?.durationMs || FISH_ACTION_DIG_DURATION_MS;
   prepareFishForUserAction(fish, species, now);
   if (!beginQueuedFishDigCycle(fish, species, item, now)) {
     showFishRoutineToast(fish, "This fish cannot dig right now.");
@@ -1165,29 +1191,31 @@ function triggerFishActionAvoid(fish, species, now = Date.now(), item = null) {
 }
 
 function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
-  if (!isFishAdult(fish, now) || !hasFishBeenInTankLongEnoughToBreed(fish, now) || (Number(fish.breedCooldownUntil) || 0) > now) {
-    showFishRoutineToast(fish, `${fish.name} is not ready to mate.`);
+  if (typeof isFishBreedingEligible === "function"
+    ? !isFishBreedingEligible(fish, now, getCurrentTank(), { requireReady: true, requireCapacity: true })
+    : !isFishAdult(fish, now)) {
+    showFishRoutineToast(fish, `${fish.name} is not breeding-ready.`);
     return false;
   }
   const partner = getFishActionTargetPartner(fish, item?.targetId || "", { sameSpeciesOnly: true, requireBreedReady: true, now });
   if (!partner) {
-    showFishRoutineToast(fish, "This fish needs a ready adult partner of the same species.");
+    showFishRoutineToast(fish, "This fish needs a breeding-ready adult partner of the same species.");
     return false;
   }
-  const mateChance = getFishMateChanceForTarget(fish, partner);
-  if (mateChance.rating < 5) {
-    setFishBehaviorIntent(fish, "refuse mate", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
-    pushEvent(`${fish.name} tried to mate with ${partner.name}, but the relationship is only ${mateChance.rating}/10.`, now);
-    markFishActionStateDirty(now);
-    showFishRoutineToast(fish, `${partner.name} is not feeling it. Relationship ${mateChance.rating}/10.`);
+  if (typeof canTankReserveBreedingOffspring === "function" && !canTankReserveBreedingOffspring(fish.speciesId, getCurrentTank())) {
+    showFishRoutineToast(fish, "This tank does not have enough capacity for offspring.");
     return false;
   }
-  if (Math.random() * 100 >= mateChance.chancePercent) {
+  const chancePercent = Math.round(BREEDING_ATTEMPT_SUCCESS_CHANCE * 100);
+  if (Math.random() >= BREEDING_ATTEMPT_SUCCESS_CHANCE) {
     setFishBehaviorIntent(fish, "mate fizzled", partner.name || "partner", now, { targetId: partner.id, targetName: partner.name || "", durationMs: 6000 });
-    pushEvent(`${fish.name} and ${partner.name} tried to mate, but it fizzled at ${mateChance.chancePercent}% odds.`, now);
+    pushEvent(`${fish.name} and ${partner.name} attempted to spawn, but it did not take.`, now);
     markFishActionStateDirty(now);
-    showFishRoutineToast(fish, `${fish.name} and ${partner.name} did not vibe this time.`);
+    showFishRoutineToast(fish, `${fish.name} and ${partner.name} did not spawn this time. Readiness remains active.`);
     return false;
+  }
+  if (typeof reinforceFishFriendshipPair === "function") {
+    reinforceFishFriendshipPair(fish, partner, 5, now, { source: "successful courtship" });
   }
   const parents = [fish, partner].sort((left, right) => String(left.id).localeCompare(String(right.id)));
   const [leftFish, rightFish] = parents;
@@ -1226,7 +1254,7 @@ function triggerFishActionBreed(fish, species, now = Date.now(), item = null) {
     parent.targetAt = now;
     setFishBehaviorIntent(parent, "mate", parent.id === fish.id ? (partner.name || "partner") : (fish.name || "partner"), now, { durationMs: FISH_ACTION_BREED_HOLD_MS + 30000 });
   }
-  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} and ${partner.name} are mating after a ${mateChance.rating}/10 relationship check.`, now);
+  if (!getFishActionQueueState(fish.id)?.active?.autonomous) pushEvent(`${fish.name} and ${partner.name} began a spawning attempt (${chancePercent}% success chance).`, now);
   markFishActionStateDirty(now);
   showFishRoutineToast(fish, `${fish.name} and ${partner.name} are mating.`);
   return true;
@@ -1621,6 +1649,162 @@ function cancelFishQueuedAction(fishId, itemId, now = Date.now()) {
   return false;
 }
 
+function isFishMoodActionHardBlocked(mood, action) {
+  const key = action || "idle";
+  const blocks = {
+    Happy: new Set(["avoid"]),
+    Cozy: new Set(["zoomies", "avoid"]),
+    Playful: new Set(["sleep", "avoid"]),
+    Hyper: new Set(["rest", "sleep", "hide"]),
+    Curious: new Set(["avoid"]),
+    Social: new Set(["avoid"]),
+    Hungry: new Set(["sleep", "play", "zoomies", "pebble"]),
+    Sleepy: new Set(["play", "zoomies", "pebble", "dig", "breed"]),
+    Lonely: new Set(["breed"]),
+    Sad: new Set(["play", "zoomies", "breed"]),
+    Uneasy: new Set(),
+    Stressed: new Set(["play", "zoomies", "breed"]),
+    Scared: new Set(["rest", "sleep", "play", "zoomies", "breed"]),
+    Hostile: new Set(),
+    Sick: new Set(["play", "zoomies", "pebble", "dig", "breed"]),
+    Panicked: new Set(["idle", "inspect", "rest", "sleep", "play", "zoomies", "greet", "hangout", "pebble", "dig", "breed"])
+  };
+  return blocks[mood]?.has(key) === true;
+}
+
+function getFishMoodActionMultiplier(mood, action) {
+  const key = action || "idle";
+  if (typeof isFishMoodActionHardBlocked === "function" && isFishMoodActionHardBlocked(mood, key)) {
+    return 0;
+  }
+  const tables = {
+    Happy: { idle: 1, inspect: 1.35, rest: 0.85, sleep: 0.7, play: 1.3, zoomies: 1.2, greet: 1.3, hangout: 1.35, pebble: 1.15, dig: 1.1, hide: 0.7, avoid: 0.55 },
+    Cozy: { idle: 1.35, inspect: 0.75, rest: 2.5, sleep: 2.3, play: 0.4, zoomies: 0.18, greet: 0.85, hangout: 1.15, pebble: 0.35, dig: 0.55, hide: 2.5, avoid: 0.65 },
+    Playful: { idle: 0.55, inspect: 1.45, rest: 0.45, sleep: 0.25, play: 3.4, zoomies: 3, greet: 1.45, hangout: 1.5, pebble: 2.5, dig: 1.35, hide: 0.55, avoid: 0.45 },
+    Hyper: { idle: 0.35, inspect: 1.35, rest: 0.2, sleep: 0.1, play: 2.4, zoomies: 4.2, greet: 1.2, hangout: 1.15, pebble: 1.55, dig: 1.25, hide: 0.25, avoid: 0.5 },
+    Curious: { idle: 0.7, inspect: 3.3, rest: 0.65, sleep: 0.5, play: 1.5, zoomies: 0.9, greet: 1.15, hangout: 1, pebble: 1.65, dig: 1.9, hide: 0.75, avoid: 0.7 },
+    Social: { idle: 0.65, inspect: 0.95, rest: 0.8, sleep: 0.65, play: 1.55, zoomies: 1.05, greet: 3.5, hangout: 3.7, pebble: 0.95, dig: 0.8, hide: 0.55, avoid: 0.35 },
+    Hungry: { idle: 0.55, inspect: 1.65, rest: 0.4, sleep: 0.25, play: 0.35, zoomies: 0.3, greet: 0.7, hangout: 0.7, pebble: 0.5, dig: 0.8, hide: 0.55, avoid: 0.7 },
+    Sleepy: { idle: 1.25, inspect: 0.35, rest: 3.4, sleep: 3.8, play: 0.18, zoomies: 0.1, greet: 0.65, hangout: 1.05, pebble: 0.2, dig: 0.25, hide: 1.9, avoid: 0.7 },
+    Lonely: { idle: 1.05, inspect: 1.35, rest: 1, sleep: 0.8, play: 0.6, zoomies: 0.45, greet: 2.8, hangout: 3, pebble: 0.65, dig: 0.8, hide: 1.2, avoid: 0.7 },
+    Sad: { idle: 1.8, inspect: 0.7, rest: 2.2, sleep: 1.5, play: 0.25, zoomies: 0.15, greet: 0.75, hangout: 0.95, pebble: 0.25, dig: 0.45, hide: 1.7, avoid: 0.9 },
+    Uneasy: { idle: 1.15, inspect: 1.2, rest: 1.25, sleep: 0.9, play: 0.7, zoomies: 0.55, greet: 0.8, hangout: 0.85, pebble: 0.65, dig: 0.75, hide: 1.6, avoid: 1.7 },
+    Stressed: { idle: 1.15, inspect: 0.7, rest: 1.55, sleep: 1.1, play: 0.22, zoomies: 0.2, greet: 0.55, hangout: 0.65, pebble: 0.35, dig: 0.6, hide: 3, avoid: 3.1 },
+    Scared: { idle: 0.7, inspect: 0.4, rest: 0.9, sleep: 0.35, play: 0.08, zoomies: 0.08, greet: 0.3, hangout: 0.55, pebble: 0.12, dig: 0.25, hide: 4.2, avoid: 4.5 },
+    Hostile: { idle: 0.65, inspect: 1.25, rest: 0.5, sleep: 0.3, play: 0.45, zoomies: 1.1, greet: 0.18, hangout: 0.15, pebble: 0.45, dig: 0.65, hide: 0.3, avoid: 0.45 },
+    Sick: { idle: 1.35, inspect: 0.3, rest: 3.7, sleep: 2.8, play: 0.1, zoomies: 0.05, greet: 0.45, hangout: 0.55, pebble: 0.12, dig: 0.2, hide: 2.6, avoid: 1.15 },
+    Panicked: { idle: 0.25, inspect: 0.08, rest: 0.25, sleep: 0.08, play: 0.03, zoomies: 0.04, greet: 0.05, hangout: 0.08, pebble: 0.03, dig: 0.06, hide: 4.8, avoid: 5 }
+  };
+  return Math.max(0, Number(tables[mood]?.[key]) || 1);
+}
+
+function getFishAutonomousActionWeights(fish, now = Date.now()) {
+  const personality = getFishPersonality(fish);
+  const mood = typeof getFishDisposition === "function" ? getFishDisposition(fish, now).mood : "Happy";
+  const weights = {
+    "": 2,
+    inspect: 1,
+    rest: 1,
+    sleep: 0.2,
+    play: 0.18,
+    zoomies: 0.08,
+    greet: 0,
+    hangout: 0,
+    pebble: 0.06,
+    dig: 0.06,
+    hide: 0.12,
+    avoid: 0.04
+  };
+
+  if (["curious", "explorer", "hunter"].includes(personality)) {
+    weights.inspect += 2;
+    weights.play += 1;
+  }
+  if (["playful", "energetic", "bold"].includes(personality)) {
+    weights.play += 1;
+    weights.zoomies += 1;
+    weights.pebble += 1;
+  }
+  if (["lazy", "chill", "slow-graceful"].includes(personality)) {
+    weights.rest += 2;
+    weights[""] += 1;
+  }
+  if (typeof isFishElderly === "function" && isFishElderly(fish, now)) {
+    weights.rest += FISH_ELDERLY_REST_WEIGHT_BONUS;
+    weights.sleep += 1.35;
+    weights[""] += 0.9;
+    weights.play *= 0.45;
+    weights.zoomies *= 0.2;
+  }
+  if (["homebody", "routine-loving", "shy", "nervous"].includes(personality)) {
+    weights.hide += 2;
+  }
+  if (["digger", "cleaner"].includes(personality)) {
+    weights.dig += 1;
+    weights.pebble += 1;
+  }
+
+  const friendlyPartner = getFishActionPartner(fish, { requireSocialCompatibility: true, now });
+  const friendlyRelation = friendlyPartner
+    ? (fish.relationships?.[friendlyPartner.id]?.kind || getRelationshipKindForFish(fish, friendlyPartner))
+    : "";
+  if (["friend", "neutral"].includes(friendlyRelation)) {
+    weights.greet = 0.18;
+    weights.hangout = 0.14;
+    const relationshipScore = friendlyPartner && typeof getFishRelationshipScoreForTarget === "function"
+      ? getFishRelationshipScoreForTarget(fish, friendlyPartner)
+      : 0;
+    if (friendlyRelation === "friend") {
+      weights.greet += clamp(relationshipScore / 100, 0, 1) * 0.55;
+      weights.hangout += clamp(relationshipScore / 100, 0, 1) * 0.8;
+    }
+    if (fish.pairBondPartnerId === friendlyPartner?.id) {
+      weights.greet += 1.4;
+      weights.hangout += 2.4;
+    }
+    if (["social", "follower", "gentle"].includes(personality)) {
+      weights.hangout += 2;
+      weights.greet += 1;
+    }
+    if (mood === "Lonely") {
+      // Lonely fish can seek safe company even when that company does not
+      // biologically satisfy an own-kind requirement.
+      weights.hangout += 1.2;
+      weights.greet += 0.8;
+    }
+  }
+
+  const negativePartner = getFishActionPartner(fish, { preferNegative: true, now });
+  const negativeRelation = negativePartner
+    ? (fish.relationships?.[negativePartner.id]?.kind || getRelationshipKindForFish(fish, negativePartner))
+    : "";
+  if (["dislike", "fear", "rival", "enemy"].includes(negativeRelation)) {
+    // Phase 7: avoidance must have a real target/cause. Environmental stress
+    // alone cannot make a fish randomly flee a harmless tankmate.
+    weights.avoid += 0.9;
+  } else {
+    weights.avoid = 0;
+  }
+
+  for (const action of Object.keys(weights)) {
+    weights[action] = Math.max(0, weights[action] * getFishMoodActionMultiplier(mood, action));
+  }
+  return { mood, weights };
+}
+
+function pickWeightedFishAutonomousAction(weightEntries) {
+  const entries = (Array.isArray(weightEntries) ? weightEntries : [])
+    .filter((entry) => entry && Number(entry.weight) > 0);
+  const total = entries.reduce((sum, entry) => sum + Number(entry.weight), 0);
+  if (!(total > 0)) return "";
+  let roll = Math.random() * total;
+  for (const entry of entries) {
+    roll -= Number(entry.weight);
+    if (roll <= 0) return entry.action || "";
+  }
+  return entries[entries.length - 1]?.action || "";
+}
+
 function pickAutonomousFishAction(fish, now = Date.now(), options = {}) {
   const needs = sanitizeFishNeeds(fish.needs, fish, now);
   if (!isMealFreeFish(fish) && needs.hunger <= FISH_HUNGER_LOW_THRESHOLD) {
@@ -1628,20 +1812,32 @@ function pickAutonomousFishAction(fish, now = Date.now(), options = {}) {
     if (getFishActionAvailability("waitfood", fish, now).enabled) return "waitfood";
   }
   if (options.emergency) return "";
-  const personality = getFishPersonality(fish);
-  const choices = ["", "", "inspect", "rest"];
-  if (["curious", "explorer", "hunter"].includes(personality)) choices.push("inspect", "inspect", "play");
-  if (["playful", "energetic", "bold"].includes(personality)) choices.push("play", "zoomies", "pebble");
-  if (["lazy", "chill", "slow-graceful"].includes(personality)) choices.push("rest", "rest", "");
-  if (["homebody", "routine-loving", "shy", "nervous"].includes(personality)) choices.push("hide", "hide");
-  if (["digger", "cleaner"].includes(personality)) choices.push("dig", "pebble");
-  if (["social", "follower", "gentle"].includes(personality)) {
-    const partner = getFishActionPartner(fish);
-    const relation = partner && (fish.relationships?.[partner.id]?.kind || getRelationshipKindForFish(fish, partner));
-    if (["friend", "neutral"].includes(relation)) choices.push("hangout", "hangout", "greet");
+
+  // Keep this long-standing entry point safe in isolated debug/test contexts
+  // that intentionally load only pickAutonomousFishAction. The real bundle
+  // always has the Phase 6 weighting helpers available.
+  if (typeof getFishAutonomousActionWeights !== "function" || typeof pickWeightedFishAutonomousAction !== "function") {
+    const personality = getFishPersonality(fish);
+    const choices = ["", "", "inspect", "rest"];
+    if (["curious", "explorer", "hunter"].includes(personality)) choices.push("inspect", "inspect", "play");
+    if (["playful", "energetic", "bold"].includes(personality)) choices.push("play", "zoomies", "pebble");
+    if (["lazy", "chill", "slow-graceful"].includes(personality)) choices.push("rest", "rest", "");
+    if (["homebody", "routine-loving", "shy", "nervous"].includes(personality)) choices.push("hide", "hide");
+    if (["digger", "cleaner"].includes(personality)) choices.push("dig", "pebble");
+    if (["social", "follower", "gentle"].includes(personality)) {
+      const partner = getFishActionPartner(fish);
+      const relation = partner && (fish.relationships?.[partner.id]?.kind || getRelationshipKindForFish(fish, partner));
+      if (["friend", "neutral"].includes(relation)) choices.push("hangout", "hangout", "greet");
+    }
+    const availableLegacy = choices.filter(action => !action || getFishActionAvailability(action, fish, now).enabled);
+    return availableLegacy[Math.floor(Math.random() * availableLegacy.length)] || "";
   }
-  const available = choices.filter(action => !action || getFishActionAvailability(action, fish, now).enabled);
-  return available[Math.floor(Math.random() * available.length)] || "";
+
+  const weighted = getFishAutonomousActionWeights(fish, now);
+  const available = Object.entries(weighted.weights)
+    .map(([action, weight]) => ({ action, weight }))
+    .filter((entry) => !entry.action || getFishActionAvailability(entry.action, fish, now).enabled);
+  return pickWeightedFishAutonomousAction(available);
 }
 
 function processFishNeedsAutonomy(now = Date.now()) {

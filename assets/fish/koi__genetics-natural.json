@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,120 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "e5b98a01-9c78-4695-b300-82e9189e0e3c",
+      "id": "9810db93-2847-45f8-b972-62016d9c6d33",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "12d3518e-f831-4ba5-b0a3-9087db828cd5",
+          "id": "d6d9650b-07cb-4744-a879-4d40de47f575",
           "width": 512,
-          "height": 345,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Koi_1.png"
+          "name": "koi_asagi.png"
         },
         {
-          "id": "ef374aba-e5e3-460f-9430-7553da759671",
+          "id": "00ea3b1a-bac5-435e-b494-04b5e07d3c45",
           "width": 512,
-          "height": 345,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Koi_5.png"
+          "name": "koi_chagoi.png"
         },
         {
-          "id": "1453cea4-ba05-40bb-bad2-50886522e79e",
+          "id": "2ec9334c-d63e-462a-9593-35e8295f6b66",
           "width": 512,
-          "height": 345,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Koi_4.png"
+          "name": "koi_goshiki.png"
         },
         {
-          "id": "dd750758-5a61-429f-a1ae-50443a7604a3",
+          "id": "b78e7f3b-8c97-45ee-8501-aa4cdf6724ec",
           "width": 512,
-          "height": 345,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Koi_3.png"
+          "name": "koi_kohaku.png"
         },
         {
-          "id": "ca58b8cc-6129-47c3-81ca-1147830e25a1",
+          "id": "7dc6b460-1cfa-4a63-b1e9-c011c7be9218",
           "width": 512,
-          "height": 345,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Koi_2.png"
+          "name": "koi_shiro_bekko.png"
+        },
+        {
+          "id": "b7c2fb50-a547-498a-b641-c2000c040833",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_shiro_utsuri.png"
+        },
+        {
+          "id": "ad9962c7-9b57-4220-a029-1b46a6f22e45",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_showa_sanshoku.png"
+        },
+        {
+          "id": "44bd2bed-e94e-4147-8204-473aa1992963",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_taisho_sanke.png"
+        },
+        {
+          "id": "5acf5429-5247-4da7-a91e-d0ac8a8c057f",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_tancho.png"
+        },
+        {
+          "id": "0129b4a2-8386-4c7e-969a-bb7982bf614b",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "koi_yamabuki_ogon.png"
         }
       ]
     }

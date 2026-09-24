@@ -1,13 +1,39 @@
 {
   "fish": [
     {
-      "id": "blue-tang",
-      "name": "Blue Tang",
+      "id": "tang",
+      "name": "Tang",
       "genetics": "natural",
       "cost": 28,
       "mealCoins": 2,
-      "asset": "bluetang.png",
-      "description": "A bright, energetic reef fish known for its bold blue coloring and constant movement. Blue Tangs love having plenty of room to cruise and rarely spend much time sitting still.",
+      "asset": "/assets/fish/tang_yellow.png",
+      "assetVariants": [
+        "/assets/fish/tang_yellow.png",
+        "/assets/fish/tang_bluespine-unicornfish.png",
+        "/assets/fish/tang_vlamings-unicornfish.png",
+        "/assets/fish/tang_lined-surgeonfish.png",
+        "/assets/fish/tang_kole.png",
+        "/assets/fish/tang_achilles.png",
+        "/assets/fish/tang_naso.png",
+        "/assets/fish/tang_pacific-sailfin.png",
+        "/assets/fish/tang_purple.png",
+        "/assets/fish/tang_powder-blue.png",
+        "/assets/fish/tang_blue.png"
+      ],
+      "variantLabels": [
+        "Tang Yellow",
+        "Tang Bluespine Unicornfish",
+        "Tang Vlamings Unicornfish",
+        "Tang Lined Surgeonfish",
+        "Tang Kole",
+        "Tang Achilles",
+        "Tang Naso",
+        "Tang Pacific Sailfin",
+        "Tang Purple",
+        "Tang Powder Blue",
+        "Tang Blue"
+      ],
+      "description": "A hardy family of active reef grazers with a wide range of colors and body shapes. Tangs cruise open water, browse algae, and need plenty of room to move.",
       "width": 398,
       "displayWidth": 260,
       "bobSpeed": 1.32,
@@ -48,7 +74,36 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 100,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "goldfish",
@@ -56,7 +111,7 @@
       "genetics": "natural",
       "cost": 5,
       "mealCoins": 1,
-      "asset": "goldfish.png",
+      "asset": "/assets/fish/goldfish_common.png",
       "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
       "width": 405,
       "displayWidth": 250,
@@ -98,7 +153,60 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 120,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/goldfish_common.png",
+        "/assets/fish/goldfish_celestial.png",
+        "/assets/fish/goldfish_comet.png",
+        "/assets/fish/goldfish_bubble_eye.png",
+        "/assets/fish/goldfish_fantail.png",
+        "/assets/fish/goldfish_lionhead.png",
+        "/assets/fish/goldfish_oranda.png",
+        "/assets/fish/goldfish_ranchu.png",
+        "/assets/fish/goldfish_ryukin.png",
+        "/assets/fish/goldfish_shubunkin.png"
+      ],
+      "variantLabels": [
+        "Goldfish Common",
+        "Goldfish Celestial",
+        "Goldfish Comet",
+        "Goldfish Bubble Eye",
+        "Goldfish Fantail",
+        "Goldfish Lionhead",
+        "Goldfish Oranda",
+        "Goldfish Ranchu",
+        "Goldfish Ryukin",
+        "Goldfish Shubunkin"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "guppy",
@@ -106,7 +214,7 @@
       "genetics": "natural",
       "cost": 4,
       "mealCoins": 1,
-      "asset": "guppy.png",
+      "asset": "/assets/fish/guppy_cobra.png",
       "description": "A small, colorful fish with a big personality and a flowing tail. Guppies are lively swimmers that alternate between quick bursts of energy and relaxed cruising around the tank.",
       "width": 179,
       "bobSpeed": 1.45,
@@ -147,7 +255,47 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": true
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/guppy_cobra.png",
+        "/assets/fish/guppy_full_red.png",
+        "/assets/fish/guppy_mosaic.png",
+        "/assets/fish/guppy_moscow_blue.png",
+        "/assets/fish/guppy_tuxedo.png"
+      ],
+      "variantLabels": [
+        "Guppy Cobra",
+        "Guppy Full Red",
+        "Guppy Mosaic",
+        "Guppy Moscow Blue",
+        "Guppy Tuxedo"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "betta",
@@ -155,12 +303,18 @@
       "genetics": "natural",
       "cost": 10,
       "mealCoins": 1,
-      "asset": "betta.png",
+      "asset": "/assets/fish/betta_crowntail.png",
       "assetVariants": [
-        "betta_1.png",
-        "betta_2.png",
-        "betta_3.png",
-        "betta_4.png"
+        "/assets/fish/betta_crowntail.png",
+        "/assets/fish/betta_delta.png",
+        "/assets/fish/betta_double_tail.png",
+        "/assets/fish/betta_dumbo_ear.png",
+        "/assets/fish/betta_giant.png",
+        "/assets/fish/betta_half_moon.png",
+        "/assets/fish/betta_koi.png",
+        "/assets/fish/betta_plakat.png",
+        "/assets/fish/betta_rosetail.png",
+        "/assets/fish/betta_veiltail.png"
       ],
       "description": "A striking fish known for its flowing fins, bold colors, and unmistakable presence. Bettas are graceful swimmers, but they can be highly territorial and aggressive, especially around other bettas.",
       "width": 219,
@@ -202,7 +356,46 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 45,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "variantLabels": [
+        "Betta Crowntail",
+        "Betta Delta",
+        "Betta Double Tail",
+        "Betta Dumbo Ear",
+        "Betta Giant",
+        "Betta Half Moon",
+        "Betta Koi",
+        "Betta Plakat",
+        "Betta Rosetail",
+        "Betta Veiltail"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "clownfish",
@@ -210,7 +403,14 @@
       "genetics": "natural",
       "cost": 20,
       "mealCoins": 2,
-      "asset": "clownfish.png",
+      "asset": "/assets/fish/clownfish_1.png",
+      "assetVariants": [
+        "/assets/fish/clownfish_1.png",
+        "/assets/fish/clownfish_5.png",
+        "/assets/fish/clownfish_4.png",
+        "/assets/fish/clownfish_3.png",
+        "/assets/fish/clownfish_2.png"
+      ],
       "description": "A colorful, energetic fish known for its bold stripes and curious personality. Clownfish often form close bonds with anemones and tend to stick near a favorite part of the tank.",
       "width": 162,
       "bobSpeed": 1.35,
@@ -251,7 +451,40 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 100,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "variantLabels": [
+        "Clownfish 1",
+        "Clownfish 5",
+        "Clownfish 4",
+        "Clownfish 3",
+        "Clownfish 2"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "angelfish",
@@ -259,12 +492,18 @@
       "genetics": "natural",
       "cost": 36,
       "mealCoins": 2,
-      "asset": "angelfish.png",
+      "asset": "/assets/fish/angelfish_altum.png",
       "assetVariants": [
-        "angelfish_1.png",
-        "angelfish_2.png",
-        "angelfish_3.png",
-        "angelfish_4.png"
+        "/assets/fish/angelfish_altum.png",
+        "/assets/fish/angelfish_black_lace.png",
+        "/assets/fish/angelfish_blue_blushing.png",
+        "/assets/fish/angelfish_emperor.png",
+        "/assets/fish/angelfish_flame.png",
+        "/assets/fish/angelfish_gold_pearlscale.png",
+        "/assets/fish/angelfish_koi.png",
+        "/assets/fish/angelfish_marble.png",
+        "/assets/fish/angelfish_silver.png",
+        "/assets/fish/angelfish_zebra.png"
       ],
       "description": "A graceful fish known for its tall body, long fins, and slow, sweeping movements. Angelfish usually carry themselves calmly, but they can become territorial as they mature, especially when pairing or breeding.",
       "width": 456,
@@ -307,7 +546,68 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 80,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "variantLabels": [
+        "Angelfish Altum",
+        "Angelfish Black Lace",
+        "Angelfish Blue Blushing",
+        "Angelfish Emperor",
+        "Angelfish Flame",
+        "Angelfish Gold Pearlscale",
+        "Angelfish Koi",
+        "Angelfish Marble",
+        "Angelfish Silver",
+        "Angelfish Zebra"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "variantRequirements": {
+        "angelfish_emperor.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "herbivore",
+          "taxonNote": "Emperor Angelfish (Pomacanthus imperator).",
+          "acceptedFoods": [
+            "basic",
+            "algaeWafers",
+            "brineShrimp"
+          ]
+        },
+        "angelfish_flame.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "herbivore",
+          "taxonNote": "Flame Angelfish (Centropyge loricula).",
+          "acceptedFoods": [
+            "basic",
+            "algaeWafers",
+            "brineShrimp"
+          ]
+        }
+      },
+      "Fish_enabled": true
     },
     {
       "id": "pufferfish",
@@ -315,7 +615,7 @@
       "genetics": "natural",
       "cost": 40,
       "mealCoins": 2,
-      "asset": "pufferfish.png",
+      "asset": "/assets/fish/puffer_amazon.png",
       "description": "A curious little oddball with a round body, expressive face, and plenty of personality. Pufferfish are known for investigating their surroundings and, when seriously threatened, inflating themselves into a much larger shape.",
       "width": 150,
       "bobSpeed": 1.55,
@@ -356,105 +656,141 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "zebra-danio",
-      "name": "Zebra Danio",
-      "genetics": "natural",
-      "cost": 4,
-      "mealCoins": 1,
-      "asset": "zebradanio.png",
-      "description": "A small, energetic fish known for its bold horizontal stripes and nonstop activity. Zebra Danios are quick, social swimmers that love racing back and forth and rarely stay still for long.",
-      "width": 143,
-      "bobSpeed": 1.5,
-      "swimStyle": "sporadic",
-      "speedMin": 0.032,
-      "speedMax": 0.052,
-      "targetMinMs": 1200,
-      "targetMaxMs": 3200,
-      "defaultNames": [
-        "Zig",
-        "Dash",
-        "Stripe",
-        "Volt",
-        "Zoom",
-        "Racer",
-        "Streak",
-        "Flash",
-        "Skid",
-        "Bolt",
-        "Turbo",
-        "Rocket",
-        "Pepper",
-        "Jolt",
-        "Whip",
-        "Jitter",
-        "Sonic",
-        "Flicker",
-        "Quickdraw",
-        "Skippy"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 80,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "assetVariants": [
+        "/assets/fish/puffer_amazon.png",
+        "/assets/fish/puffer_dogface.png",
+        "/assets/fish/puffer_dwarf.png",
+        "/assets/fish/puffer_fahaka.png",
+        "/assets/fish/puffer_figure8.png",
+        "/assets/fish/puffer_green_spotted.png",
+        "/assets/fish/puffer_map.png",
+        "/assets/fish/puffer_mbu.png",
+        "/assets/fish/puffer_oceanic.png",
+        "/assets/fish/puffer_valentinis_sharpnose.png"
+      ],
+      "variantLabels": [
+        "Puffer Amazon",
+        "Puffer Dogface",
+        "Puffer Dwarf",
+        "Puffer Fahaka",
+        "Puffer Figure8",
+        "Puffer Green Spotted",
+        "Puffer Map",
+        "Puffer Mbu",
+        "Puffer Oceanic",
+        "Puffer Valentinis Sharpnose"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirements": {
+        "puffer_amazon.png": {
+          "waterType": "freshwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_dogface.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_dwarf.png": {
+          "waterType": "freshwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_fahaka.png": {
+          "waterType": "freshwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_figure8.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "salinityNote": "Brackish; represented as saltwater.",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_green_spotted.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "salinityNote": "Brackish to marine; represented as saltwater.",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_map.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_mbu.png": {
+          "waterType": "freshwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_oceanic.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
+        },
+        "puffer_valentinis_sharpnose.png": {
+          "waterType": "saltwater",
+          "dietaryMode": "carnivore",
+          "acceptedFoods": [
+            "brineShrimp",
+            "carnivore"
+          ]
         }
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "cherry-barb",
-      "name": "Cherry Barb",
-      "genetics": "natural",
-      "cost": 5,
-      "mealCoins": 1,
-      "asset": "cherrybarb.png",
-      "description": "A small, peaceful fish known for its warm red coloring and relaxed personality. Cherry Barbs are social swimmers that do especially well in groups and tend to explore the tank at an easy, steady pace.",
-      "width": 165,
-      "bobSpeed": 1.28,
-      "swimStyle": "steady",
-      "speedMin": 0.02,
-      "speedMax": 0.03,
-      "targetMinMs": 2200,
-      "targetMaxMs": 4600,
-      "defaultNames": [
-        "Cherry",
-        "Blush",
-        "Ruby",
-        "Ember",
-        "Scarlet",
-        "Poppy",
-        "Rose",
-        "Berry",
-        "Cranberry",
-        "Maraschino",
-        "Rosie",
-        "Crimson",
-        "Garnet",
-        "Valentine",
-        "Sangria",
-        "Twizzler",
-        "Blazer",
-        "Cupid",
-        "Reddy",
-        "Jam"
-      ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
-      },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "rainbowfish",
@@ -462,7 +798,7 @@
       "genetics": "natural",
       "cost": 16,
       "mealCoins": 1,
-      "asset": "rainbowfish.png",
+      "asset": "/assets/fish/rainbow_bleheri.png",
       "description": "A lively, shimmering fish known for its metallic colors and graceful movement. Rainbowfish are active, social swimmers that look especially striking as they glide through the tank and catch the light.",
       "width": 241,
       "bobSpeed": 1.2,
@@ -503,109 +839,53 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "royal-gramma",
-      "name": "Royal Gramma",
-      "genetics": "natural",
-      "cost": 20,
-      "mealCoins": 2,
-      "asset": "royalgramma.png",
-      "description": "A striking little fish known for its vivid purple and yellow coloring. Royal Grammas tend to stay close to rocks, caves, and other hiding places, often hovering nearby before darting back to safety.",
-      "width": 260,
-      "bobSpeed": 1.18,
-      "swimStyle": "peaceful",
-      "speedMin": 0.016,
-      "speedMax": 0.024,
-      "targetMinMs": 3200,
-      "targetMaxMs": 6200,
-      "defaultNames": [
-        "Royal",
-        "Velour",
-        "Crown",
-        "Majesty",
-        "Regal",
-        "Prince",
-        "Queenie",
-        "Scepter",
-        "Velvet",
-        "Amethyst",
-        "Goldie",
-        "Monarch",
-        "Duke",
-        "Baron",
-        "Luxe",
-        "Gilded",
-        "Violet",
-        "Imperial",
-        "Treasure",
-        "Sultan"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 70,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
-      },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "yellow-tang",
-      "name": "Yellow Tang",
-      "genetics": "natural",
-      "cost": 24,
-      "mealCoins": 2,
-      "asset": "yellowtang.png",
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
       "assetVariants": [
-        "yellowtang_1.png"
+        "/assets/fish/rainbow_bleheri.png",
+        "/assets/fish/rainbow_boesemani.png",
+        "/assets/fish/rainbow_fluviatilis.png",
+        "/assets/fish/rainbow_incisus.png",
+        "/assets/fish/rainbow_parkinsoni.png",
+        "/assets/fish/rainbow_praecox.png",
+        "/assets/fish/rainbow_trifasciata.png",
+        "/assets/fish/rainbow_turquoise.png"
       ],
-      "description": "A bright, active fish known for its vivid yellow coloring and constant grazing. Yellow Tangs spend much of their time cruising around the tank and picking at algae as they explore.",
-      "width": 360,
-      "displayWidth": 245,
-      "bobSpeed": 1.25,
-      "swimStyle": "steady",
-      "speedMin": 0.024,
-      "speedMax": 0.034,
-      "targetMinMs": 2400,
-      "targetMaxMs": 5200,
-      "defaultNames": [
-        "Sunny",
-        "Lemon",
-        "Zest",
-        "Goldie",
-        "Banana",
-        "Butter",
-        "Dandelion",
-        "Sunkist",
-        "Yuzu",
-        "Nacho",
-        "Mustard",
-        "Topaz",
-        "Blondie",
-        "Canary",
-        "Sunbeam",
-        "Dijon",
-        "Cheese",
-        "Marigold",
-        "Mellow",
-        "Pikachu"
+      "variantLabels": [
+        "Rainbow Bleheri",
+        "Rainbow Boesemani",
+        "Rainbow Fluviatilis",
+        "Rainbow Incisus",
+        "Rainbow Parkinsoni",
+        "Rainbow Praecox",
+        "Rainbow Trifasciata",
+        "Rainbow Turquoise"
       ],
-      "caveEnabled": false,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "discus",
@@ -613,7 +893,7 @@
       "genetics": "natural",
       "cost": 32,
       "mealCoins": 2,
-      "asset": "discus.png",
+      "asset": "/assets/fish/discus_blue_diamond.png",
       "description": "An elegant, round-bodied fish known for its striking colors and calm, deliberate movement. Discus tend to glide gracefully through the tank and have a reputation for being a little more delicate than the average aquarium fish.",
       "width": 488,
       "displayWidth": 260,
@@ -655,7 +935,56 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 110,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "assetVariants": [
+        "/assets/fish/discus_blue_diamond.png",
+        "/assets/fish/discus_checkerboard_pigeon.png",
+        "/assets/fish/discus_cobalt.png",
+        "/assets/fish/discus_heckel.png",
+        "/assets/fish/discus_leopard.png",
+        "/assets/fish/discus_leopard_snakeskin.png",
+        "/assets/fish/discus_red_eagle.png",
+        "/assets/fish/discus_snakeskin.png",
+        "/assets/fish/discus_turquoise.png"
+      ],
+      "variantLabels": [
+        "Discus Blue Diamond",
+        "Discus Checkerboard Pigeon",
+        "Discus Cobalt",
+        "Discus Heckel",
+        "Discus Leopard",
+        "Discus Leopard Snakeskin",
+        "Discus Red Eagle",
+        "Discus Snakeskin",
+        "Discus Turquoise"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "moor-goldfish",
@@ -663,7 +992,7 @@
       "genetics": "natural",
       "cost": 4,
       "mealCoins": 1,
-      "asset": "moorgoldfish.png",
+      "asset": "/assets/fish/moor_black.png",
       "description": "A distinctive goldfish known for its deep black coloring, rounded body, and large telescope eyes. Black Moors are gentle, unhurried swimmers that tend to drift calmly around the tank.",
       "width": 378,
       "displayWidth": 250,
@@ -705,185 +1034,70 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "chili-rasbora",
-      "name": "Chili Rasbora",
-      "genetics": "natural",
-      "cost": 3,
-      "mealCoins": 1,
-      "asset": "ChiliRasbora.png",
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 120,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
       "assetVariants": [
-        "ChiliRasbora_1.png",
-        "ChiliRasbora_2.png",
-        "ChiliRasbora_3.png",
-        "ChiliRasbora_4.png"
+        "/assets/fish/moor_black.png",
+        "/assets/fish/moor_bronze.png",
+        "/assets/fish/moor_calico.png",
+        "/assets/fish/moor_gold.png",
+        "/assets/fish/moor_orangewhite.png",
+        "/assets/fish/moor_panda.png",
+        "/assets/fish/moor_redblack.png",
+        "/assets/fish/moor_white.png"
       ],
-      "description": "A tiny, peaceful fish known for its brilliant red coloring and lively personality. Chili Rasboras feel most at home in groups, weaving through plants and open spaces in quick little bursts.",
-      "width": 105,
-      "bobSpeed": 1.48,
-      "swimStyle": "sporadic",
-      "speedMin": 0.022,
-      "speedMax": 0.036,
-      "targetMinMs": 1500,
-      "targetMaxMs": 3600,
-      "defaultNames": [
-        "Pepper",
-        "Chili",
-        "Paprika",
-        "Pico",
-        "Ruby",
-        "Ember",
-        "Dot",
-        "Pip",
-        "Saffron",
-        "Crimson",
-        "Speck",
-        "Miso",
-        "Pep",
-        "Berry",
-        "Flick",
-        "Tango",
-        "Niblet",
-        "Rosie",
-        "Spark",
-        "Tiny"
+      "variantLabels": [
+        "Moor Black",
+        "Moor Bronze",
+        "Moor Calico",
+        "Moor Gold",
+        "Moor Orangewhite",
+        "Moor Panda",
+        "Moor Redblack",
+        "Moor White"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 5,
-          "alike": true
-        }
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "ember-tetra",
-      "name": "Ember Tetra",
-      "genetics": "natural",
-      "cost": 4,
-      "mealCoins": 1,
-      "asset": "embertetra.png",
-      "assetVariants": [
-        "embertetra_1.png",
-        "embertetra_2.png",
-        "embertetra_3.png",
-        "embertetra_4.png"
-      ],
-      "description": "A tiny, peaceful fish known for its warm orange coloring and gentle nature. Ember Tetras are happiest in groups, where they spend much of their time calmly schooling through the middle of the tank.",
-      "width": 110,
-      "bobSpeed": 1.42,
-      "swimStyle": "steady",
-      "speedMin": 0.022,
-      "speedMax": 0.034,
-      "targetMinMs": 1900,
-      "targetMaxMs": 4300,
-      "defaultNames": [
-        "Ember",
-        "Cinder",
-        "Sunny",
-        "Tangerine",
-        "Glow",
-        "Spark",
-        "Copper",
-        "Maple",
-        "Mango",
-        "Peach",
-        "Flame",
-        "Poppy",
-        "Ginger",
-        "Amber",
-        "Flicker",
-        "Clementine",
-        "Torch",
-        "Honey",
-        "Blaze",
-        "Apricot"
-      ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 5,
-          "alike": true
-        }
-      },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "harlequin-rasbora",
-      "name": "Harlequin Rasbora",
-      "genetics": "natural",
-      "cost": 6,
-      "mealCoins": 1,
-      "asset": "HarlequinRasbora.png",
-      "assetVariants": [
-        "HarlequinRasbora_1.png",
-        "HarlequinRasbora_2.png",
-        "HarlequinRasbora_3.png",
-        "HarlequinRasbora_4.png"
-      ],
-      "description": "A peaceful, active fish known for its coppery coloring and distinctive black markings. Harlequin Rasboras are social swimmers that do best in groups and fit comfortably into calm community tanks.",
-      "width": 155,
-      "bobSpeed": 1.32,
-      "swimStyle": "steady",
-      "speedMin": 0.024,
-      "speedMax": 0.036,
-      "targetMinMs": 2000,
-      "targetMaxMs": 4500,
-      "defaultNames": [
-        "Harley",
-        "Jester",
-        "Patch",
-        "Copper",
-        "Ace",
-        "Domino",
-        "Trickster",
-        "Tango",
-        "Penny",
-        "Rook",
-        "Mosaic",
-        "Maple",
-        "Quinn",
-        "Pip",
-        "Clover",
-        "Pixel",
-        "Rascal",
-        "Scout",
-        "Marble",
-        "Harlow"
-      ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 5,
-          "alike": true
-        }
-      },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "pencilfish",
-      "name": "Golden Pencilfish",
+      "name": "Pencilfish",
       "genetics": "natural",
       "cost": 7,
       "mealCoins": 1,
-      "asset": "Pencilfish.png",
+      "asset": "/assets/fish/pencil_marginatus.png",
       "assetVariants": [
-        "Pencilfish_1.png",
-        "Pencilfish_2.png",
-        "Pencilfish_3.png",
-        "Pencilfish_4.png"
+        "/assets/fish/pencil_marginatus.png",
+        "/assets/fish/pencil_mortenthaleri.png",
+        "/assets/fish/pencil_rubrocaudatus.png",
+        "/assets/fish/pencil_trifasciatus.png",
+        "/assets/fish/pencil_unifasciatus.png"
       ],
       "description": "A slender, peaceful fish known for its golden coloring and delicate shape. Golden Pencilfish prefer staying near plants and cover, moving in relaxed groups with the occasional quick burst or harmless sparring display.",
       "width": 185,
@@ -925,62 +1139,40 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "rummy-nose-tetra",
-      "name": "Rummy-Nose Tetra",
-      "genetics": "natural",
-      "cost": 7,
-      "mealCoins": 1,
-      "asset": "RummyNoseTetra.png",
-      "assetVariants": [
-        "RummyNoseTetra_1.png",
-        "RummyNoseTetra_2.png",
-        "RummyNoseTetra_3.png",
-        "RummyNoseTetra_4.png"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 45,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "description": "A peaceful, social fish known for its bright red nose and tightly coordinated schooling. Rummy-Nose Tetras move through the tank in impressive unison, and their coloring becomes especially vivid when they\u2019re comfortable.",
-      "width": 158,
-      "bobSpeed": 1.36,
-      "swimStyle": "steady",
-      "speedMin": 0.026,
-      "speedMax": 0.038,
-      "targetMinMs": 1800,
-      "targetMaxMs": 4100,
-      "defaultNames": [
-        "Rummy",
-        "Ruby",
-        "Rouge",
-        "Beacon",
-        "Signal",
-        "Cherry",
-        "Blush",
-        "Scarlet",
-        "Radar",
-        "Pinot",
-        "Rosy",
-        "Flash",
-        "Nosey",
-        "Pepper",
-        "Crimson",
-        "Dash",
-        "Merlot",
-        "Berry",
-        "Spark",
-        "Socks"
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 5,
-          "alike": true
-        }
+      "variantLabels": [
+        "Pencil Marginatus",
+        "Pencil Mortenthaleri",
+        "Pencil Rubrocaudatus",
+        "Pencil Trifasciatus",
+        "Pencil Unifasciatus"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "otocinclus",
@@ -988,13 +1180,13 @@
       "genetics": "natural",
       "cost": 6,
       "mealCoins": 0,
-      "asset": "otocinclus.png",
+      "asset": "/assets/fish/otocinclus_0.png",
       "fallbackAsset": "/assets/fish/pufferfish.png",
       "description": "A small, hardworking grazer that spends much of its time attached to glass, plants, and other surfaces. Dwarf Sucker Catfish steadily browse for algae and biofilm, helping keep the tank a little cleaner as they go.",
       "width": 170,
       "bobSpeed": 0.2,
       "swimStyle": "peaceful",
-      "speedMin": 9e-05,
+      "speedMin": 0.00009,
       "speedMax": 0.00016,
       "targetMinMs": 26000,
       "targetMaxMs": 52000,
@@ -1003,6 +1195,8 @@
       "cleanupMinMs": 660000,
       "cleanupMaxMs": 1320000,
       "cleanupStrength": 0.16,
+      "cleanupFloor": 0.15,
+      "poopCleanupChance": 0,
       "defaultNames": [
         "Mochi",
         "Peb",
@@ -1035,56 +1229,58 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "blue-ram",
-      "name": "Blue Ram",
-      "genetics": "natural",
-      "cost": 11,
-      "mealCoins": 1,
-      "asset": "BlueRam.png",
-      "description": "A small, colorful cichlid known for its brilliant blue markings and confident personality. Blue Rams usually move with calm, deliberate turns, but they can become territorial when pairing or guarding a chosen spot.",
-      "width": 240,
-      "bobSpeed": 1.18,
-      "swimStyle": "peaceful",
-      "speedMin": 0.016,
-      "speedMax": 0.024,
-      "targetMinMs": 4200,
-      "targetMaxMs": 7600,
-      "defaultNames": [
-        "Lapis",
-        "Indigo",
-        "Cobalt",
-        "Marina",
-        "Sapphire",
-        "Rambo",
-        "Azure",
-        "Mako",
-        "Triton",
-        "Borealis",
-        "Koda",
-        "Denim",
-        "Navy",
-        "Bluey",
-        "Aegean",
-        "Zephyr",
-        "Storm",
-        "Glacier",
-        "Echo",
-        "Rio"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 55,
+      "capacityCost": 0.5,
+      "cleanupAnimal": true,
+      "canBreed": true,
+      "dietProfile": "detritus",
+      "acceptedFoods": [
+        "algaeWafers"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
+      "juvenileFoods": [
+        "algaeWafers"
+      ],
+      "assetVariants": [
+        "/assets/fish/otocinclus_0.png",
+        "/assets/fish/otocinclus_0_bottom.png",
+        "/assets/fish/otocinclus_0_side.png",
+        "/assets/fish/otocinclus_1.png",
+        "/assets/fish/otocinclus_1_bottom.png",
+        "/assets/fish/otocinclus_1_side.png",
+        "/assets/fish/otocinclus_2.png",
+        "/assets/fish/otocinclus_2_bottom.png",
+        "/assets/fish/otocinclus_2_side.png",
+        "/assets/fish/otocinclus_3.png",
+        "/assets/fish/otocinclus_3_bottom.png",
+        "/assets/fish/otocinclus_3_side.png"
+      ],
+      "variantLabels": [
+        "Otocinclus 0",
+        "Otocinclus 0 Bottom",
+        "Otocinclus 0 Side",
+        "Otocinclus 1",
+        "Otocinclus 1 Bottom",
+        "Otocinclus 1 Side",
+        "Otocinclus 2",
+        "Otocinclus 2 Bottom",
+        "Otocinclus 2 Side",
+        "Otocinclus 3",
+        "Otocinclus 3 Bottom",
+        "Otocinclus 3 Side"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "algaeWafers"
+        ],
+        "dietaryMode": "grazer",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": false
     },
     {
       "id": "gourami",
@@ -1092,7 +1288,7 @@
       "genetics": "natural",
       "cost": 18,
       "mealCoins": 1,
-      "asset": "Gourami.png",
+      "asset": "/assets/fish/gourami_blue.png",
       "description": "A graceful fish known for its flowing fins, long feelers, and calm presence. Gouramis tend to move at an easy pace and often explore the tank with slow, deliberate turns near the surface.",
       "width": 158,
       "bobSpeed": 1.08,
@@ -1133,65 +1329,106 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "wonder-killifish",
-      "name": "Wonder Killifish",
-      "genetics": "natural",
-      "cost": 15,
-      "mealCoins": 1,
-      "asset": "wonderkillifish.png",
-      "description": "A flashy little hunter known for its bold markings, curious nature, and sudden bursts of speed. Wonder Killifish often patrol near the surface, watching everything around them before darting off after something interesting.",
-      "width": 243,
-      "bobSpeed": 1.34,
-      "swimStyle": "sporadic",
-      "speedMin": 0.02,
-      "speedMax": 0.038,
-      "targetMinMs": 1400,
-      "targetMaxMs": 3400,
-      "defaultNames": [
-        "Comet",
-        "Glint",
-        "Flicker",
-        "Nova",
-        "Rocket",
-        "Vandal",
-        "Rascal",
-        "Jinx",
-        "Maverick",
-        "Blitz",
-        "Pistol",
-        "Riot",
-        "Zippy",
-        "Bandit",
-        "Rumble",
-        "Hex",
-        "Chaos",
-        "Skipper",
-        "Ace",
-        "Havoc"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 60,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "caveEnabled": false,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/gourami_blue.png",
+        "/assets/fish/gourami_chocolate.png",
+        "/assets/fish/gourami_dwarf.png",
+        "/assets/fish/gourami_giant.png",
+        "/assets/fish/gourami_gold.png",
+        "/assets/fish/gourami_honey.png",
+        "/assets/fish/gourami_moonlight.png",
+        "/assets/fish/gourami_opaline.png",
+        "/assets/fish/gourami_pearl.png",
+        "/assets/fish/gourami_sparkling.png"
+      ],
+      "variantLabels": [
+        "Gourami Blue",
+        "Gourami Chocolate",
+        "Gourami Dwarf",
+        "Gourami Giant",
+        "Gourami Gold",
+        "Gourami Honey",
+        "Gourami Moonlight",
+        "Gourami Opaline",
+        "Gourami Pearl",
+        "Gourami Sparkling"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
-      "id": "neon-tetra",
-      "name": "Neon Tetra",
+      "id": "tetra",
+      "name": "Tetra",
       "genetics": "natural",
       "cost": 5,
       "mealCoins": 1,
-      "asset": "NeonTetra.png",
-      "description": "A tiny, peaceful fish known for its glowing blue stripe and vivid red coloring. Neon Tetras are social swimmers that look their best in groups, moving together in lively little schools.",
+      "asset": "/assets/fish/tetra_neon.png",
+      "assetVariants": [
+        "/assets/fish/tetra_neon.png",
+        "/assets/fish/tetra_lemon.png",
+        "/assets/fish/tetra_cosmic-blue.png",
+        "/assets/fish/tetra_cave.png",
+        "/assets/fish/tetra_black-phantom.png",
+        "/assets/fish/tetra_emperor.png",
+        "/assets/fish/tetra_glofish.png",
+        "/assets/fish/tetra_white-skirt.png",
+        "/assets/fish/tetra_cochus-blue.png",
+        "/assets/fish/tetra_penguin.png",
+        "/assets/fish/tetra_glass.png",
+        "/assets/fish/tetra_ember.png",
+        "/assets/fish/tetra_black-skirt.png",
+        "/assets/fish/tetra_rummy-nose.png",
+        "/assets/fish/tetra_congo.png",
+        "/assets/fish/tetra_gold-neon.png",
+        "/assets/fish/tetra_black-neon.png",
+        "/assets/fish/tetra_green-neon.png"
+      ],
+      "variantLabels": [
+        "Tetra Neon",
+        "Tetra Lemon",
+        "Tetra Cosmic Blue",
+        "Tetra Cave",
+        "Tetra Black Phantom",
+        "Tetra Emperor",
+        "Tetra Glofish",
+        "Tetra White Skirt",
+        "Tetra Cochus Blue",
+        "Tetra Penguin",
+        "Tetra Glass",
+        "Tetra Ember",
+        "Tetra Black Skirt",
+        "Tetra Rummy Nose",
+        "Tetra Congo",
+        "Tetra Gold Neon",
+        "Tetra Black Neon",
+        "Tetra Green Neon"
+      ],
+      "description": "A peaceful family of schooling tetras with luminous colors and varied patterns. Tetras thrive in groups and bring lively motion to freshwater tanks.",
       "width": 136,
       "bobSpeed": 1.42,
       "swimStyle": "steady",
@@ -1231,62 +1468,33 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
-    },
-    {
-      "id": "celestial-pearl-danio",
-      "name": "Celestial Pearl Danio",
-      "genetics": "natural",
-      "cost": 3,
-      "mealCoins": 1,
-      "asset": "CelestialPearlDanio.png",
-      "assetVariants": [
-        "CelestialPearlDanio_1.png",
-        "CelestialPearlDanio_2.png",
-        "CelestialPearlDanio_3.png",
-        "CelestialPearlDanio_4.png"
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 50,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "description": "A tiny, striking fish covered in pearl-like spots with flashes of red and orange on its fins. Celestial Pearl Danios are curious little swimmers that alternate between quick darts and brief, watchful pauses.",
-      "width": 105,
-      "bobSpeed": 1.38,
-      "swimStyle": "sporadic",
-      "speedMin": 0.02,
-      "speedMax": 0.034,
-      "targetMinMs": 1500,
-      "targetMaxMs": 3600,
-      "defaultNames": [
-        "Starlit",
-        "Pearlie",
-        "Orbit",
-        "Dot",
-        "Cosmo",
-        "Nova",
-        "Galaxy",
-        "Pip",
-        "Speck",
-        "Twinkle",
-        "Comet",
-        "Astro",
-        "Starbean",
-        "Niblet",
-        "Luna",
-        "Glimmer",
-        "Sparkle",
-        "Pluto",
-        "Skittle",
-        "Blinky"
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": false
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "molly",
@@ -1294,7 +1502,14 @@
       "genetics": "natural",
       "cost": 7,
       "mealCoins": 1,
-      "asset": "molly.png",
+      "asset": "/assets/fish/molly_black.png",
+      "assetVariants": [
+        "/assets/fish/molly_black.png",
+        "/assets/fish/molly_creamsicle_lyretail.png",
+        "/assets/fish/molly_dalmatian.png",
+        "/assets/fish/molly_gold_dust.png",
+        "/assets/fish/molly_sailfin.png"
+      ],
       "description": "A hardy, easygoing fish known for its rounded shape, active nature, and friendly demeanor. Mollies spend much of their time steadily exploring the tank and tend to get along well with other peaceful fish.",
       "width": 287,
       "bobSpeed": 1.22,
@@ -1335,7 +1550,43 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": true
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 45,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "variantLabels": [
+        "Molly Black",
+        "Molly Creamsicle Lyretail",
+        "Molly Dalmatian",
+        "Molly Gold Dust",
+        "Molly Sailfin"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "swordtail",
@@ -1343,8 +1594,34 @@
       "genetics": "natural",
       "cost": 9,
       "mealCoins": 1,
-      "asset": "Swordtail.png",
-      "description": "A sleek, active fish best known for the long, sword-like extension on the male\u2019s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
+      "asset": "/assets/fish/swordtail_black.png",
+      "assetVariants": [
+        "/assets/fish/swordtail_black.png",
+        "/assets/fish/swordtail_yellow-tuxedo.png",
+        "/assets/fish/swordtail_fancy-hi-fin.png",
+        "/assets/fish/swordtail_red-tuxedo.png",
+        "/assets/fish/swordtail_neon.png",
+        "/assets/fish/swordtail_showa.png",
+        "/assets/fish/swordtail_pineapple-wagtail.png",
+        "/assets/fish/swordtail_koi.png",
+        "/assets/fish/swordtail_yellow-comet.png",
+        "/assets/fish/swordtail_golden.png",
+        "/assets/fish/swordtail_red.png"
+      ],
+      "variantLabels": [
+        "Swordtail Black",
+        "Swordtail Yellow Tuxedo",
+        "Swordtail Fancy Hi Fin",
+        "Swordtail Red Tuxedo",
+        "Swordtail Neon",
+        "Swordtail Showa",
+        "Swordtail Pineapple Wagtail",
+        "Swordtail Koi",
+        "Swordtail Yellow Comet",
+        "Swordtail Golden",
+        "Swordtail Red"
+      ],
+      "description": "A sleek, active fish best known for the long, sword-like extension on the male’s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
       "width": 220,
       "bobSpeed": 1.3,
       "swimStyle": "steady",
@@ -1384,56 +1661,36 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": true
-    },
-    {
-      "id": "livebearer",
-      "name": "Livebearer",
-      "genetics": "natural",
-      "cost": 8,
-      "mealCoins": 1,
-      "asset": "Livebearer.png",
-      "description": "A lively, social fish best known for giving birth to free-swimming young instead of laying eggs. Livebearers are active, curious swimmers that settle easily into peaceful community tanks.",
-      "width": 141,
-      "bobSpeed": 1.26,
-      "swimStyle": "steady",
-      "speedMin": 0.02,
-      "speedMax": 0.032,
-      "targetMinMs": 2400,
-      "targetMaxMs": 5200,
-      "defaultNames": [
-        "Coral",
-        "Willow",
-        "Miso",
-        "Poppy",
-        "Skipper",
-        "Pebble",
-        "Rosie",
-        "Sunny",
-        "Blinky",
-        "Noodle",
-        "Daisy",
-        "Pickles",
-        "Clover",
-        "Biscuit",
-        "Tango",
-        "Bubbles",
-        "Pip",
-        "Sprout",
-        "Mango",
-        "Wiggles"
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 45,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
       ],
-      "caveEnabled": true,
-      "needs": {
-        "decor": [],
-        "friends": {
-          "min": 0,
-          "alike": false
-        }
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Freshwater required."
       },
-      "dislikedTypes": [],
-      "turnAnimation": "simple",
-      "liveBirth": true
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "piranha",
@@ -1441,8 +1698,8 @@
       "genetics": "natural",
       "cost": 12,
       "mealCoins": 1,
-      "asset": "piranha.png",
-      "fallbackAsset": "cherrybarb.png",
+      "asset": "/assets/fish/piranha_lobetoothed.png",
+      "fallbackAsset": "/assets/fish/cherrybarb.png",
       "description": "A sharp-toothed predator with a reputation that speaks for itself. Piranhas hunt in groups, ignore ordinary pellets, and will quickly turn most living tankmates into lunch. Why buy one? Seriously. Why?",
       "width": 284,
       "bobSpeed": 1.44,
@@ -1475,7 +1732,55 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 110,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "assetVariants": [
+        "/assets/fish/piranha_lobetoothed.png",
+        "/assets/fish/piranha_manueli.png",
+        "/assets/fish/piranha_piraya.png",
+        "/assets/fish/piranha_red_bellied.png",
+        "/assets/fish/piranha_spotted.png",
+        "/assets/fish/piranha_white.png",
+        "/assets/fish/piranha_wimple.png",
+        "/assets/fish/piranha_black.png",
+        "/assets/fish/piranha_cariba.png",
+        "/assets/fish/piranha_elongated.png"
+      ],
+      "variantLabels": [
+        "Piranha Lobetoothed",
+        "Piranha Manueli",
+        "Piranha Piraya",
+        "Piranha Red Bellied",
+        "Piranha Spotted",
+        "Piranha White",
+        "Piranha Wimple",
+        "Piranha Black",
+        "Piranha Cariba",
+        "Piranha Elongated"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "koi",
@@ -1483,17 +1788,23 @@
       "genetics": "natural",
       "cost": 30,
       "mealCoins": 2,
-      "asset": "Koi_1.png",
+      "asset": "/assets/fish/koi_asagi.png",
       "assetVariants": [
-        "Koi_2.png",
-        "Koi_3.png",
-        "Koi_4.png",
-        "Koi_5.png"
+        "/assets/fish/koi_asagi.png",
+        "/assets/fish/koi_chagoi.png",
+        "/assets/fish/koi_goshiki.png",
+        "/assets/fish/koi_kohaku.png",
+        "/assets/fish/koi_shiro_bekko.png",
+        "/assets/fish/koi_shiro_utsuri.png",
+        "/assets/fish/koi_showa_sanshoku.png",
+        "/assets/fish/koi_taisho_sanke.png",
+        "/assets/fish/koi_tancho.png",
+        "/assets/fish/koi_yamabuki_ogon.png"
       ],
       "description": "A large, peaceful ornamental carp bred for bold colors and striking patterns. Koi are steady, social swimmers that cruise open water and nose around the bottom for food, so they appreciate plenty of room to move.",
       "width": 420,
       "displayWidth": 280,
-      "bobSpeed": 1.0,
+      "bobSpeed": 1,
       "swimStyle": "peaceful",
       "speedMin": 0.012,
       "speedMax": 0.019,
@@ -1534,7 +1845,48 @@
       "liveBirth": false,
       "diet": "pellet",
       "breedingMethod": "egg-scatterer",
-      "spawnPreference": "plants-or-substrate"
+      "spawnPreference": "plants-or-substrate",
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 240,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "herbivore",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "variantLabels": [
+        "Koi Asagi",
+        "Koi Chagoi",
+        "Koi Goshiki",
+        "Koi Kohaku",
+        "Koi Shiro Bekko",
+        "Koi Shiro Utsuri",
+        "Koi Showa Sanshoku",
+        "Koi Taisho Sanke",
+        "Koi Tancho",
+        "Koi Yamabuki Ogon"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ],
+        "dietaryMode": "herbivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "lionfish",
@@ -1542,12 +1894,13 @@
       "genetics": "natural",
       "cost": 35,
       "mealCoins": 2,
-      "asset": "Lionfish_1.png",
+      "asset": "/assets/fish/Lionfish_3.png",
       "assetVariants": [
-        "Lionfish_2.png",
-        "Lionfish_3.png",
-        "Lionfish_4.png",
-        "Lionfish_5.png"
+        "/assets/fish/Lionfish_3.png",
+        "/assets/fish/Lionfish_2.png",
+        "/assets/fish/Lionfish_1.png",
+        "/assets/fish/Lionfish_4.png",
+        "/assets/fish/Lionfish_5.png"
       ],
       "description": "A slow, deliberate reef predator with broad fan-like fins and venomous spines. Lionfish hover near rockwork and shelter, then stalk chum with outstretched fins before a sudden short strike.",
       "width": 340,
@@ -1594,7 +1947,38 @@
       "diet": "chum",
       "chumOnly": true,
       "breedingMethod": "floating-egg-mass",
-      "spawnPreference": "open-water"
+      "spawnPreference": "open-water",
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 120,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "variantLabels": [
+        "Lionfish 3",
+        "Lionfish 2",
+        "Lionfish 1",
+        "Lionfish 4",
+        "Lionfish 5"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "bull-shark",
@@ -1604,12 +1988,13 @@
       "type": "Shark",
       "cost": 42,
       "mealCoins": 3,
-      "asset": "Bull_Shark.png",
+      "asset": "/assets/fish/Bull_Shark_3.png",
       "assetVariants": [
-        "Bull_Shark_1.png",
-        "Bull_Shark_2.png",
-        "Bull_Shark_3.png",
-        "Bull_Shark_4.png"
+        "/assets/fish/Bull_Shark_3.png",
+        "/assets/fish/Bull_Shark_2.png",
+        "/assets/fish/Bull_Shark_1.png",
+        "/assets/fish/Bull_Shark_4.png",
+        "/assets/fish/Bull_Shark.png"
       ],
       "description": "A proven success in the PROTEUS BIODYNE marine scaling program. Our goldfish-sized Bull Shark demonstrates excellent specimen stability while retaining the adaptability, confidence, and predatory response profile of a mature animal. Chum recognition remains exceptionally strong, territorial movement is consistent, and predatory retention meets all behavioral integrity targets. Cohabitation performance is considered acceptable under normal feeding conditions. Periods of nutritional deficiency may result in opportunistic reassessment of nearby tankmates.",
       "aboutAttribution": "PROTEUS BIODYNE",
@@ -1649,7 +2034,36 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "complex",
-      "liveBirth": false
+      "liveBirth": false,
+      "waterType": "saltwater",
+      "lifespanDays": 180,
+      "capacityCost": 3,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "chum"
+      ],
+      "variantLabels": [
+        "Bull Shark 3",
+        "Bull Shark 2",
+        "Bull Shark 1",
+        "Bull Shark 4",
+        "Bull Shark"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "great-white-shark",
@@ -1659,7 +2073,7 @@
       "type": "Shark",
       "cost": 55,
       "mealCoins": 4,
-      "asset": "Great_White_Shark.png",
+      "asset": "/assets/fish/Great_White_Shark_4.png",
       "description": "A flagship achievement in PROTEUS BIODYNE biological miniaturization. This goldfish-sized Great White Shark maintains exceptional behavioral integrity, preserving the patrol patterns, feeding responses, and predatory instincts expected from a full-grown apex predator. Specimen stability remains high despite the extreme reduction in body mass, with reliable chum acquisition and excellent predatory retention. Interaction with neighboring specimens is minimal while nutritional requirements are satisfied. Hunger-related pursuit behavior is considered an expected expression of retained phenotype.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -1698,7 +2112,43 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "complex",
-      "liveBirth": false
+      "liveBirth": false,
+      "waterType": "saltwater",
+      "lifespanDays": 260,
+      "capacityCost": 3,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "chum"
+      ],
+      "assetVariants": [
+        "/assets/fish/Great_White_Shark_4.png",
+        "/assets/fish/Great_White_Shark.png",
+        "/assets/fish/Great_White_Shark_1.png",
+        "/assets/fish/Great_White_Shark_2.png",
+        "/assets/fish/Great_White_Shark_3.png"
+      ],
+      "variantLabels": [
+        "Great White Shark 4",
+        "Great White Shark",
+        "Great White Shark 1",
+        "Great White Shark 2",
+        "Great White Shark 3"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "hammerhead-shark",
@@ -1708,12 +2158,14 @@
       "type": "Shark",
       "cost": 48,
       "mealCoins": 3,
-      "asset": "Hammerhead_Shark.png",
+      "asset": "/assets/fish/Hammerhead_Shark.png",
       "assetVariants": [
-        "Hammerhead_Shark_1.png",
-        "Hammerhead_Shark_2.png",
-        "Hammerhead_Shark_3.png",
-        "Hammerhead_Shark_4.png"
+        "/assets/fish/Hammerhead_Shark.png",
+        "/assets/fish/Hammerhead_Shark_1.png",
+        "/assets/fish/Hammerhead_Shark_2.png",
+        "/assets/fish/Hammerhead_Shark_3.png",
+        "/assets/fish/Hammerhead_Shark_4.png",
+        "/assets/fish/Hammerhead_Shark_5.png"
       ],
       "description": "A highly successful product of the PROTEUS BIODYNE marine development program. Our goldfish-sized Hammerhead Shark exhibits strong specimen stability, full sensory retention, and an unusually high level of environmental engagement. Wide-ranging patrol behavior has been preserved alongside rapid chum acquisition and dependable feeding response. Behavioral testing confirms that miniaturization has produced no meaningful reduction in exploratory drive or predatory function, exceeding several original development targets.",
       "aboutAttribution": "PROTEUS BIODYNE",
@@ -1753,7 +2205,37 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "complex",
-      "liveBirth": false
+      "liveBirth": false,
+      "waterType": "saltwater",
+      "lifespanDays": 220,
+      "capacityCost": 3,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "chum"
+      ],
+      "variantLabels": [
+        "Hammerhead Shark",
+        "Hammerhead Shark 1",
+        "Hammerhead Shark 2",
+        "Hammerhead Shark 3",
+        "Hammerhead Shark 4",
+        "Hammerhead Shark 5"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "orca",
@@ -1763,7 +2245,7 @@
       "type": "Whale",
       "cost": 60,
       "mealCoins": 4,
-      "asset": "Orca.png",
+      "asset": "/assets/fish/Orca.png",
       "description": "One of the most significant achievements in PROTEUS BIODYNE history. Advanced biological scaling has produced a stable, goldfish-sized Orca while preserving cognitive performance, social recognition, communication, emotional complexity, and behavioral memory at levels consistent with the full-sized animal. Long-term observation confirms persistent social bonding and individual recognition across specimens. Respiratory architecture was intentionally retained without modification, requiring routine surfacing and periodic breaching. Internal assessments classify cognitive retention as exceptional and commercial viability as highly favorable.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -1802,7 +2284,43 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "complex",
-      "liveBirth": true
+      "liveBirth": true,
+      "waterType": "saltwater",
+      "lifespanDays": 320,
+      "capacityCost": 4,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "chum",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "juvenileFoods": [
+        "chum"
+      ],
+      "assetVariants": [
+        "/assets/fish/Orca.png",
+        "/assets/fish/Orca_1.png",
+        "/assets/fish/Orca_2.png",
+        "/assets/fish/Orca_3.png",
+        "/assets/fish/Orca_4.png"
+      ],
+      "variantLabels": [
+        "Orca",
+        "Orca 1",
+        "Orca 2",
+        "Orca 3",
+        "Orca 4"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "chum"
+        ],
+        "dietaryMode": "predator",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "sunfish",
@@ -1812,7 +2330,7 @@
       "type": "Fish",
       "cost": 24,
       "mealCoins": 2,
-      "asset": "Sunfish.png",
+      "asset": "/assets/fish/masturus_lanceolatus.png",
       "description": "Developed under the PROTEUS BIODYNE Compact Marine Initiative, the Ocean Sunfish represents a successful conversion of one of the world's largest bony fish into a commercially practical aquarium specimen. Miniaturization achieved target scale without compromising body plan, temperament, surface-oriented behavior, or characteristic locomotion. Specimen stability has remained exceptionally high throughout evaluation, with no significant behavioral degradation observed. The resulting goldfish-sized Sunfish offers full phenotype retention at a fraction of the spatial requirement.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -1847,7 +2365,48 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "waterType": "saltwater",
+      "lifespanDays": 100,
+      "capacityCost": 1.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "assetVariants": [
+        "/assets/fish/masturus_lanceolatus.png",
+        "/assets/fish/mola_alexandrini.png",
+        "/assets/fish/mola_tecta.png",
+        "/assets/fish/mola-mola_eastern-atlantic.png",
+        "/assets/fish/mola-mola_pacific.png",
+        "/assets/fish/ranzania_laevis.png"
+      ],
+      "variantLabels": [
+        "Masturus Lanceolatus",
+        "Mola Alexandrini",
+        "Mola Tecta",
+        "Mola Mola Eastern Atlantic",
+        "Mola Mola Pacific",
+        "Ranzania Laevis"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "seahorse",
@@ -1856,7 +2415,7 @@
       "type": "Seahorse",
       "cost": 18,
       "mealCoins": 2,
-      "asset": "Seahorse.png",
+      "asset": "/assets/fish/Seahorse.png",
       "description": "A delicate, upright swimmer that prefers drifting to rushing. Seahorses spend much of their time hovering near plants and other perches, often using their curled tails to hold on while they rest and watch the tank around them.",
       "width": 95,
       "bobSpeed": 0.74,
@@ -1890,7 +2449,46 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 45,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/Seahorse.png",
+        "/assets/fish/Seahorse_1.png",
+        "/assets/fish/Seahorse_2.png",
+        "/assets/fish/Seahorse_3.png",
+        "/assets/fish/Seahorse_4.png"
+      ],
+      "variantLabels": [
+        "Seahorse",
+        "Seahorse 1",
+        "Seahorse 2",
+        "Seahorse 3",
+        "Seahorse 4"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     },
     {
       "id": "pilot-fish",
@@ -1899,12 +2497,13 @@
       "type": "Fish",
       "cost": 24,
       "mealCoins": 2,
-      "asset": "Pilot_Fish.png",
+      "asset": "/assets/fish/Pilot_Fish.png",
       "assetVariants": [
-        "Pilot_Fish_1.png",
-        "Pilot_Fish_2.png",
-        "Pilot_Fish_3.png",
-        "Pilot_Fish_4.png"
+        "/assets/fish/Pilot_Fish.png",
+        "/assets/fish/Pilot_Fish_2.png",
+        "/assets/fish/Pilot_Fish_1.png",
+        "/assets/fish/Pilot_Fish_3.png",
+        "/assets/fish/Pilot_Fish_4.png"
       ],
       "description": "An active, curious fish known for following larger animals through open water. In the wild, Pilot Fish often shadow sharks and other big swimmers, picking through scraps and investigating whatever their much larger companions leave behind.",
       "width": 320,
@@ -1937,7 +2536,1849 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 65,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "variantLabels": [
+        "Pilot Fish",
+        "Pilot Fish 2",
+        "Pilot Fish 1",
+        "Pilot Fish 3",
+        "Pilot Fish 4"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "freshwater-shrimp",
+      "name": "Freshwater Shrimp",
+      "genetics": "natural",
+      "type": "Shrimp",
+      "waterType": "freshwater",
+      "cost": 5,
+      "mealCoins": 0,
+      "asset": "/assets/fish/shrimp_body.png",
+      "antennaAsset": "/assets/fish/shrimp_antenna.png",
+      "legAsset": "/assets/fish/shrimp_legs.png",
+      "storeAsset": "/assets/fish/shrimp_preview.png",
+      "description": "A small freshwater scavenger that spends most of its time exploring the bottom, picking at algae, leftovers, and debris with constantly moving legs and feelers.",
+      "width": 118,
+      "displayWidth": 118,
+      "bobSpeed": 0.82,
+      "swimStyle": "peaceful",
+      "speedMin": 0.01,
+      "speedMax": 0.024,
+      "targetMinMs": 3000,
+      "targetMaxMs": 6500,
+      "behavior": "shrimp",
+      "diet": "detritus",
+      "requiresFood": false,
+      "cleanupMinMs": 840000,
+      "cleanupMaxMs": 1680000,
+      "cleanupStrength": 0.09,
+      "cleanupFloor": 0.12,
+      "poopCleanupChance": 0.15,
+      "defaultNames": [
+        "Prawn Solo",
+        "Scampi",
+        "Pebble",
+        "Skitter",
+        "Miso",
+        "Sprout",
+        "Crumb",
+        "Scoot",
+        "Bean",
+        "Noodle"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [
+          "plants"
+        ],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "lifespanDays": 24,
+      "capacityCost": 0.25,
+      "cleanupAnimal": true,
+      "dietProfile": "detritus",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "juvenileFoods": [
+        "algaeWafers"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "algaeWafers"
+        ],
+        "dietaryMode": "grazer",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": false
+    },
+    {
+      "id": "marine-shrimp",
+      "name": "Marine Shrimp",
+      "genetics": "natural",
+      "type": "Shrimp",
+      "waterType": "saltwater",
+      "cost": 7,
+      "mealCoins": 0,
+      "asset": "/assets/fish/shrimp_body.png",
+      "antennaAsset": "/assets/fish/shrimp_antenna.png",
+      "legAsset": "/assets/fish/shrimp_legs.png",
+      "storeAsset": "/assets/fish/shrimp_preview.png",
+      "description": "A small marine scavenger that patrols the lower tank, grazing biofilm and picking up leftover food without replacing normal tank cleaning.",
+      "width": 118,
+      "displayWidth": 118,
+      "bobSpeed": 0.82,
+      "swimStyle": "peaceful",
+      "speedMin": 0.01,
+      "speedMax": 0.024,
+      "targetMinMs": 3200,
+      "targetMaxMs": 6900,
+      "behavior": "shrimp",
+      "diet": "detritus",
+      "requiresFood": false,
+      "cleanupMinMs": 900000,
+      "cleanupMaxMs": 1800000,
+      "cleanupStrength": 0.08,
+      "cleanupFloor": 0.12,
+      "poopCleanupChance": 0.1,
+      "defaultNames": [
+        "Skitter",
+        "Reef",
+        "Pip",
+        "Miso",
+        "Scoot",
+        "Coral",
+        "Pebble",
+        "Crumb",
+        "Nori",
+        "Bean"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [
+          "plants"
+        ],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "lifespanDays": 28,
+      "capacityCost": 0.25,
+      "cleanupAnimal": true,
+      "dietProfile": "detritus",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "juvenileFoods": [
+        "algaeWafers"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "algaeWafers"
+        ],
+        "dietaryMode": "grazer",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": false
+    },
+    {
+      "id": "nerite-snail",
+      "name": "Nerite Snail",
+      "genetics": "natural",
+      "type": "Snail",
+      "waterType": "freshwater",
+      "cost": 4,
+      "mealCoins": 0,
+      "description": "A slow freshwater algae grazer that patrols hard surfaces and helps keep algae and grime under control.",
+      "width": 82,
+      "displayWidth": 104,
+      "bobSpeed": 0.1,
+      "swimStyle": "peaceful",
+      "speedMin": 0.00004,
+      "speedMax": 0.00014,
+      "targetMinMs": 9000,
+      "targetMaxMs": 18000,
+      "behavior": "snail",
+      "diet": "detritus",
+      "requiresFood": false,
+      "cleanupMinMs": 720000,
+      "cleanupMaxMs": 1440000,
+      "cleanupStrength": 0.11,
+      "cleanupFloor": 0.12,
+      "poopCleanupChance": 0,
+      "defaultNames": [
+        "Dot",
+        "Pebble",
+        "Orbit",
+        "Button",
+        "Moss",
+        "Speck",
+        "Bean",
+        "Slowpoke",
+        "Nori",
+        "Marble"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "lifespanDays": 48,
+      "capacityCost": 0.15,
+      "cleanupAnimal": true,
+      "dietProfile": "detritus",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "juvenileFoods": [
+        "algaeWafers"
+      ],
+      "asset": "/assets/fish/snail_1.png",
+      "assetVariants": [
+        "/assets/fish/snail_1.png",
+        "/assets/fish/snail_2.png",
+        "/assets/fish/snail_3.png",
+        "/assets/fish/snail_4.png",
+        "/assets/fish/snail_5.png"
+      ],
+      "storeAsset": "/assets/fish/snail_1.png",
+      "variantLabels": [
+        "Snail 1",
+        "Snail 2",
+        "Snail 3",
+        "Snail 4",
+        "Snail 5"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "algaeWafers"
+        ],
+        "dietaryMode": "grazer",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "firefish",
+      "name": "Firefish",
+      "genetics": "natural",
+      "type": "Fish",
+      "cost": 8,
+      "mealCoins": 1,
+      "asset": "/assets/fish/firefish_1.png",
+      "description": "A tiny reef dartfish with a glowing magenta tail. Firefish hover above a favorite crevice, then flash back to safety when nervous.",
+      "width": 136,
+      "displayWidth": 120,
+      "bobSpeed": 1.08,
+      "swimStyle": "peaceful",
+      "speedMin": 0.016,
+      "speedMax": 0.032,
+      "targetMinMs": 2400,
+      "targetMaxMs": 5400,
+      "defaultNames": [
+        "Ember",
+        "Flicker",
+        "Ruby",
+        "Spark",
+        "Cinder",
+        "Glimmer",
+        "Flare",
+        "Poppy"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 52,
+      "capacityCost": 0.65,
+      "cleanupAnimal": false,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/firefish_1.png",
+        "/assets/fish/firefish_2.png",
+        "/assets/fish/firefish_3.png",
+        "/assets/fish/firefish_4.png",
+        "/assets/fish/firefish_5.png"
+      ],
+      "variantLabels": [
+        "Firefish 1",
+        "Firefish 2",
+        "Firefish 3",
+        "Firefish 4",
+        "Firefish 5"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "six-line-wrasse",
+      "name": "Six-Line Wrasse",
+      "genetics": "natural",
+      "type": "Fish",
+      "cost": 14,
+      "mealCoins": 1,
+      "asset": "/assets/fish/six-line-wrasse_1.png",
+      "description": "A quick striped reef explorer that threads through gaps in rockwork, always searching for tiny morsels hidden in crevices.",
+      "width": 154,
+      "displayWidth": 132,
+      "bobSpeed": 1.24,
+      "swimStyle": "steady",
+      "speedMin": 0.024,
+      "speedMax": 0.04,
+      "targetMinMs": 1900,
+      "targetMaxMs": 4400,
+      "defaultNames": [
+        "Stripe",
+        "Zippy",
+        "Tango",
+        "Sixer",
+        "Dash",
+        "Noodle",
+        "Racer",
+        "Vega"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 64,
+      "capacityCost": 0.85,
+      "cleanupAnimal": false,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "assetVariants": [
+        "/assets/fish/six-line-wrasse_1.png",
+        "/assets/fish/six-line-wrasse_2.png",
+        "/assets/fish/six-line-wrasse_3.png",
+        "/assets/fish/six-line-wrasse_4.png",
+        "/assets/fish/six-line-wrasse_5.png"
+      ],
+      "variantLabels": [
+        "Six Line Wrasse 1",
+        "Six Line Wrasse 2",
+        "Six Line Wrasse 3",
+        "Six Line Wrasse 4",
+        "Six Line Wrasse 5"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "coral-beauty-angelfish",
+      "name": "Coral Beauty Angelfish",
+      "genetics": "natural",
+      "type": "Fish",
+      "cost": 17,
+      "mealCoins": 2,
+      "asset": "/assets/fish/coral-beauty-angelfish_5.png",
+      "description": "A jewel-toned dwarf angelfish that glides around reef structures, alternating calm browsing with short, curious explorations.",
+      "width": 184,
+      "displayWidth": 148,
+      "bobSpeed": 1.08,
+      "swimStyle": "steady",
+      "speedMin": 0.016,
+      "speedMax": 0.03,
+      "targetMinMs": 2500,
+      "targetMaxMs": 5400,
+      "defaultNames": [
+        "Coral",
+        "Indigo",
+        "Saffron",
+        "Aster",
+        "Gem",
+        "Cleo",
+        "Aura",
+        "Marina"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 78,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/coral-beauty-angelfish_5.png",
+        "/assets/fish/coral-beauty-angelfish_1.png",
+        "/assets/fish/coral-beauty-angelfish_2.png",
+        "/assets/fish/coral-beauty-angelfish_3.png",
+        "/assets/fish/coral-beauty-angelfish_4.png"
+      ],
+      "variantLabels": [
+        "Coral Beauty Angelfish 5",
+        "Coral Beauty Angelfish 1",
+        "Coral Beauty Angelfish 2",
+        "Coral Beauty Angelfish 3",
+        "Coral Beauty Angelfish 4"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "cleaner-shrimp",
+      "name": "Cleaner Shrimp",
+      "genetics": "natural",
+      "type": "Shrimp",
+      "cost": 8,
+      "mealCoins": 1,
+      "asset": "/assets/fish/sea-shrimp_body.png",
+      "antennaAsset": "/assets/fish/shrimp_antenna.png",
+      "legAsset": "/assets/fish/shrimp_legs.png",
+      "description": "A red-and-white reef shrimp that keeps a little cleaning station near cover, waving long antennae and picking at tiny leftovers.",
+      "width": 118,
+      "displayWidth": 106,
+      "bobSpeed": 0.72,
+      "swimStyle": "peaceful",
+      "speedMin": 0.008,
+      "speedMax": 0.02,
+      "targetMinMs": 3400,
+      "targetMaxMs": 7000,
+      "behavior": "shrimp",
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "defaultNames": [
+        "Cleo",
+        "Stripe",
+        "Polish",
+        "Ruby",
+        "Tidy",
+        "Pip",
+        "Pearl",
+        "Sushi"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 48,
+      "capacityCost": 0.25,
+      "cleanupAnimal": false,
+      "assetVariants": [
+        "/assets/fish/sea-shrimp_body.png",
+        "/assets/fish/sea-shrimp_antenna.png",
+        "/assets/fish/sea-shrimp_legs.png"
+      ],
+      "variantLabels": [
+        "Sea Shrimp Body",
+        "Sea Shrimp Antenna",
+        "Sea Shrimp Legs"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": false
+    },
+    {
+      "id": "pistol-shrimp",
+      "name": "Pistol Shrimp",
+      "genetics": "natural",
+      "type": "Shrimp",
+      "cost": 9,
+      "mealCoins": 1,
+      "asset": "/assets/fish/shrimp_body.png",
+      "antennaAsset": "/assets/fish/shrimp_antenna.png",
+      "legAsset": "/assets/fish/shrimp_legs.png",
+      "description": "A tiny burrowing shrimp with one oversized snapping claw. It prefers caves and forms a remarkable cross-species friendship with a Yellow Watchman Goby.",
+      "width": 116,
+      "displayWidth": 104,
+      "bobSpeed": 0.65,
+      "swimStyle": "peaceful",
+      "speedMin": 0.006,
+      "speedMax": 0.018,
+      "targetMinMs": 3900,
+      "targetMaxMs": 7600,
+      "behavior": "shrimp",
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "defaultNames": [
+        "Click",
+        "Snap",
+        "Pebble",
+        "Claw",
+        "Pop",
+        "Rivet",
+        "Nori",
+        "Bolt"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 50,
+      "capacityCost": 0.25,
+      "cleanupAnimal": false,
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": false
+    },
+    {
+      "id": "turbo-snail",
+      "name": "Turbo Snail",
+      "genetics": "natural",
+      "type": "Snail",
+      "waterType": "saltwater",
+      "cost": 6,
+      "mealCoins": 0,
+      "asset": "/assets/fish/sea-snail_1.png",
+      "assetVariants": [
+        "/assets/fish/sea-snail_1.png",
+        "/assets/fish/sea-snail_2.png",
+        "/assets/fish/sea-snail_3.png",
+        "/assets/fish/sea-snail_4.png",
+        "/assets/fish/sea-snail_5.png"
+      ],
+      "storeAsset": "/assets/fish/sea-snail_1.png",
+      "description": "A hardy saltwater algae grazer that slowly patrols hard surfaces and helps control algae and grime.",
+      "width": 88,
+      "displayWidth": 112,
+      "bobSpeed": 0.1,
+      "swimStyle": "peaceful",
+      "speedMin": 0.00005,
+      "speedMax": 0.00016,
+      "targetMinMs": 8500,
+      "targetMaxMs": 17000,
+      "behavior": "snail",
+      "diet": "detritus",
+      "requiresFood": false,
+      "cleanupMinMs": 660000,
+      "cleanupMaxMs": 1320000,
+      "cleanupStrength": 0.13,
+      "cleanupFloor": 0.12,
+      "poopCleanupChance": 0,
+      "defaultNames": [
+        "Turbo",
+        "Torque",
+        "Moss",
+        "Nori",
+        "Pebble",
+        "Orbit",
+        "Sprout",
+        "Button",
+        "Drift",
+        "Pesto"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "canBreed": false,
+      "seller": "Common Current",
+      "lifespanDays": 52,
+      "capacityCost": 0.15,
+      "cleanupAnimal": true,
+      "dietProfile": "detritus",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "juvenileFoods": [
+        "algaeWafers"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "algaeWafers"
+        ],
+        "dietaryMode": "grazer",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true,
+      "variantLabels": [
+        "Turbo Snail Olive",
+        "Turbo Snail Zebra",
+        "Turbo Snail Marble",
+        "Turbo Snail Moss",
+        "Turbo Snail Speckled"
+      ]
+    },
+    {
+      "id": "assessor",
+      "name": "Assessor",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/assessor_blue.png",
+      "description": "A natural assessor with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Cove",
+        "Velvet",
+        "Glimmer",
+        "Pip",
+        "Sable",
+        "Drift",
+        "Lumen",
+        "Pico",
+        "Mistral",
+        "Echo",
+        "Mica",
+        "Rook"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/assessor_blue.png",
+        "/assets/fish/assessor_randalls.png"
+      ],
+      "variantLabels": [
+        "Assessor Blue",
+        "Assessor Randalls"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "barb",
+      "name": "Barb",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/barb_black_ruby.png",
+      "description": "A natural barb with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Zest",
+        "Pepper",
+        "Flicker",
+        "Rummy",
+        "Saffron",
+        "Comet",
+        "Tango",
+        "Sprocket",
+        "Jolt",
+        "Poppy",
+        "Cricket",
+        "Dash"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/barb_black_ruby.png",
+        "/assets/fish/barb_cherry.png",
+        "/assets/fish/barb_five_banded.png",
+        "/assets/fish/barb_gold.png",
+        "/assets/fish/barb_green.png",
+        "/assets/fish/barb_odessa.png",
+        "/assets/fish/barb_rosy.png",
+        "/assets/fish/barb_tiger.png"
+      ],
+      "variantLabels": [
+        "Barb Black Ruby",
+        "Barb Cherry",
+        "Barb Five Banded",
+        "Barb Gold",
+        "Barb Green",
+        "Barb Odessa",
+        "Barb Rosy",
+        "Barb Tiger"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "basslets-grammas",
+      "name": "Basslets & Grammas",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/hawkfish_coral.png",
+      "description": "A natural basslets grammas with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Royal",
+        "Violet",
+        "Riff",
+        "Mauve",
+        "Bowie",
+        "Indigo",
+        "Fizz",
+        "Rhapsody",
+        "Juno",
+        "Plum",
+        "Cadence",
+        "Dazzle"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/hawkfish_coral.png",
+        "/assets/fish/basslet_swissguard.png",
+        "/assets/fish/gramma_royal.png"
+      ],
+      "variantLabels": [
+        "Hawkfish Coral",
+        "Basslet Swissguard",
+        "Gramma Royal"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "cardinal",
+      "name": "Cardinal",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/cardinalfish_red.png",
+      "description": "A natural cardinal with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Nova",
+        "Orbit",
+        "Astra",
+        "Ruby",
+        "Vega",
+        "Pulsar",
+        "Kip",
+        "Cinder",
+        "Cosmo",
+        "Sol",
+        "Ember",
+        "Lyra"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/cardinalfish_red.png",
+        "/assets/fish/cardinalfish_ring_tailed.png",
+        "/assets/fish/cardinalfish_seales.png",
+        "/assets/fish/cardinalfish_yellow.png",
+        "/assets/fish/cardinalfish_banggai.png",
+        "/assets/fish/cardinalfish_blackstripe.png",
+        "/assets/fish/cardinalfish_five_lined.png",
+        "/assets/fish/cardinalfish_goldbelly.png",
+        "/assets/fish/cardinalfish_orbic.png",
+        "/assets/fish/cardinalfish_pajama.png"
+      ],
+      "variantLabels": [
+        "Cardinalfish Red",
+        "Cardinalfish Ring Tailed",
+        "Cardinalfish Seales",
+        "Cardinalfish Yellow",
+        "Cardinalfish Banggai",
+        "Cardinalfish Blackstripe",
+        "Cardinalfish Five Lined",
+        "Cardinalfish Goldbelly",
+        "Cardinalfish Orbic",
+        "Cardinalfish Pajama"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "chromis",
+      "name": "Chromis",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/chromis_blue.png",
+      "description": "A natural chromis with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Mint",
+        "Lagoon",
+        "Shamrock",
+        "Spritz",
+        "Kelp",
+        "Clover",
+        "Mako",
+        "Tide",
+        "Beryl",
+        "Zippy",
+        "Mojito",
+        "Jade"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/chromis_blue.png",
+        "/assets/fish/chromis_bluegreen.png",
+        "/assets/fish/chromis_green.png",
+        "/assets/fish/chromis_half_and_half.png",
+        "/assets/fish/chromis_orange.png",
+        "/assets/fish/chromis_purple.png",
+        "/assets/fish/chromis_sunshine.png",
+        "/assets/fish/chromis_vanderbilts.png",
+        "/assets/fish/chromis_yellowtail.png"
+      ],
+      "variantLabels": [
+        "Chromis Blue",
+        "Chromis Bluegreen",
+        "Chromis Green",
+        "Chromis Half And Half",
+        "Chromis Orange",
+        "Chromis Purple",
+        "Chromis Sunshine",
+        "Chromis Vanderbilts",
+        "Chromis Yellowtail"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "cichlid",
+      "name": "Cichlid",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/cichlid_blue_ram.png",
+      "description": "A natural cichlid with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Mosaic",
+        "Rumba",
+        "Topaz",
+        "Rio",
+        "Jasper",
+        "Fresco",
+        "Zazu",
+        "Sundae",
+        "Bramble",
+        "Karma",
+        "Sizzle",
+        "Tinsel"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/cichlid_blue_ram.png",
+        "/assets/fish/cichlid_flameback.png",
+        "/assets/fish/cichlid_frontosa.png",
+        "/assets/fish/cichlid_green_severum.png",
+        "/assets/fish/cichlid_haplochromis.png",
+        "/assets/fish/cichlid_ob_peacock.png",
+        "/assets/fish/cichlid_pseudotropheus.png",
+        "/assets/fish/cichlid_red_empress.png",
+        "/assets/fish/cichlid_tropheus.png",
+        "/assets/fish/cichlid_venustus.png"
+      ],
+      "variantLabels": [
+        "Cichlid Blue Ram",
+        "Cichlid Flameback",
+        "Cichlid Frontosa",
+        "Cichlid Green Severum",
+        "Cichlid Haplochromis",
+        "Cichlid Ob Peacock",
+        "Cichlid Pseudotropheus",
+        "Cichlid Red Empress",
+        "Cichlid Tropheus",
+        "Cichlid Venustus"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "danio",
+      "name": "Danio",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/danio_celestial-pearl_.png",
+      "description": "A natural danio with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Ziggy",
+        "Pixel",
+        "Dart",
+        "Fleck",
+        "Biscotti",
+        "Zoom",
+        "Noodle",
+        "Dottie",
+        "Bolt",
+        "Quark",
+        "Pep",
+        "Marmot"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/danio_celestial-pearl_.png",
+        "/assets/fish/danio_emerald-dwarf.png",
+        "/assets/fish/danio_glowlight.png",
+        "/assets/fish/danio_golden-zebra.png",
+        "/assets/fish/danio_leopard.png",
+        "/assets/fish/danio_longfin-zebra.png",
+        "/assets/fish/danio_orange-finned.png",
+        "/assets/fish/danio_pearl.png",
+        "/assets/fish/danio_zebra.png",
+        "/assets/fish/danio_blue.png"
+      ],
+      "variantLabels": [
+        "Danio Celestial Pearl ",
+        "Danio Emerald Dwarf",
+        "Danio Glowlight",
+        "Danio Golden Zebra",
+        "Danio Leopard",
+        "Danio Longfin Zebra",
+        "Danio Orange Finned",
+        "Danio Pearl",
+        "Danio Zebra",
+        "Danio Blue"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "dottyback",
+      "name": "Dottyback",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/dottyback_diadem.png",
+      "description": "A natural dottyback with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Rascal",
+        "Plum",
+        "Zorro",
+        "Moxie",
+        "Vesper",
+        "Bandit",
+        "Fable",
+        "Fuchsia",
+        "Slick",
+        "Riddle",
+        "Punk",
+        "Loki"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/dottyback_diadem.png",
+        "/assets/fish/dottyback_orchid.png",
+        "/assets/fish/dottyback_springers.png",
+        "/assets/fish/dottyback_striped.png"
+      ],
+      "variantLabels": [
+        "Dottyback Diadem",
+        "Dottyback Orchid",
+        "Dottyback Springers",
+        "Dottyback Striped"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required; brackish specialists use this system."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "endler",
+      "name": "Endler",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/endler_black_bar.png",
+      "description": "A natural endler with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Confetti",
+        "Prism",
+        "Salsa",
+        "Sparkler",
+        "Freckle",
+        "Zing",
+        "Tinsel",
+        "Pico",
+        "Mardi",
+        "Pippin",
+        "Glimmer",
+        "Razzle"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/endler_black_bar.png",
+        "/assets/fish/endler_el_silverado.png",
+        "/assets/fish/endler_lime_green.png",
+        "/assets/fish/endler_peacock.png",
+        "/assets/fish/endler_tiger.png"
+      ],
+      "variantLabels": [
+        "Endler Black Bar",
+        "Endler El Silverado",
+        "Endler Lime Green",
+        "Endler Peacock",
+        "Endler Tiger"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "mosquitofish",
+      "name": "Mosquitofish",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/mosquitofish_big_bend.png",
+      "description": "A natural mosquitofish with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Skeeter",
+        "Buzzer",
+        "Cedar",
+        "Puddle",
+        "Midge",
+        "Swoop",
+        "Cicada",
+        "Twitch",
+        "Brook",
+        "Skiff",
+        "Hopper",
+        "Scout"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/mosquitofish_big_bend.png",
+        "/assets/fish/mosquitofish_clear_creek.png",
+        "/assets/fish/mosquitofish_eastern.png",
+        "/assets/fish/mosquitofish_tex_mex.png",
+        "/assets/fish/mosquitofish_western.png"
+      ],
+      "variantLabels": [
+        "Mosquitofish Big Bend",
+        "Mosquitofish Clear Creek",
+        "Mosquitofish Eastern",
+        "Mosquitofish Tex Mex",
+        "Mosquitofish Western"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "platy",
+      "name": "Platy",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/platy_blue.png",
+      "description": "A natural platy with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Mango",
+        "Pico",
+        "Taffy",
+        "Skittle",
+        "Doodle",
+        "Sorbet",
+        "Blinky",
+        "Puddle",
+        "Nectar",
+        "Peach",
+        "Dapple",
+        "Bop"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/platy_blue.png",
+        "/assets/fish/platy_mickey_mouse.png",
+        "/assets/fish/platy_red_wagtail.png",
+        "/assets/fish/platy_sunburst.png",
+        "/assets/fish/platy_tuxedo.png"
+      ],
+      "variantLabels": [
+        "Platy Blue",
+        "Platy Mickey Mouse",
+        "Platy Red Wagtail",
+        "Platy Sunburst",
+        "Platy Tuxedo"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "rasbora",
+      "name": "Rasbora",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/rasbora_chili.png",
+      "description": "A natural rasbora with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Chili",
+        "Kite",
+        "Poppy",
+        "Rascal",
+        "Saffron",
+        "Sprig",
+        "Miso",
+        "Breeze",
+        "Roo",
+        "Glitter",
+        "Swoosh",
+        "Kiko"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/rasbora_chili.png",
+        "/assets/fish/rasbora_galaxy.png",
+        "/assets/fish/rasbora_harlequin.png",
+        "/assets/fish/rasbora_hengeli.png",
+        "/assets/fish/rasbora_lambchop.png",
+        "/assets/fish/rasbora_scissortail.png"
+      ],
+      "variantLabels": [
+        "Rasbora Chili",
+        "Rasbora Galaxy",
+        "Rasbora Harlequin",
+        "Rasbora Hengeli",
+        "Rasbora Lambchop",
+        "Rasbora Scissortail"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
+    },
+    {
+      "id": "killifish",
+      "name": "Killifish",
+      "genetics": "natural",
+      "cost": 10,
+      "mealCoins": 1,
+      "asset": "/assets/fish/killifish_clown.png",
+      "description": "A natural killifish with selectable appearances.",
+      "width": 179,
+      "bobSpeed": 1.45,
+      "swimStyle": "sporadic",
+      "speedMin": 0.02,
+      "speedMax": 0.036,
+      "targetMinMs": 1400,
+      "targetMaxMs": 3600,
+      "defaultNames": [
+        "Rivulet",
+        "Ember",
+        "Orbit",
+        "Saffy",
+        "Rocket",
+        "Kestrel",
+        "Mochi",
+        "Zest",
+        "Lark",
+        "Vivid",
+        "Fennel",
+        "Pip"
+      ],
+      "caveEnabled": true,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": true,
+      "seller": "Common Current",
+      "waterType": "freshwater",
+      "lifespanDays": 30,
+      "capacityCost": 0.5,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "omnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "assetVariants": [
+        "/assets/fish/killifish_clown.png",
+        "/assets/fish/killifish_redtail-notho.png",
+        "/assets/fish/killifish_lyretail.png",
+        "/assets/fish/killifish_bluefin-notho.png",
+        "/assets/fish/killifish_blue-panchax.png",
+        "/assets/fish/killifish_gardneri.png",
+        "/assets/fish/killifish_wonder-golden.png",
+        "/assets/fish/killifish_orange australe.png",
+        "/assets/fish/killifish_american.png"
+      ],
+      "variantLabels": [
+        "Killifish Clown",
+        "Killifish Redtail Notho",
+        "Killifish Lyretail",
+        "Killifish Bluefin Notho",
+        "Killifish Blue Panchax",
+        "Killifish Gardneri",
+        "Killifish Wonder Golden",
+        "Killifish Orange Australe",
+        "Killifish American"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true
     }
   ]
 }

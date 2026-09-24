@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "d4e82cda-2418-493d-a2d8-9ea509d51f86",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "7857e31f-3fd8-488b-bcce-23835ebba741",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "platy_blue.png"
+        },
+        {
+          "id": "f49dac9a-e3e7-44d8-b352-c403b81df467",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "platy_mickey_mouse.png"
+        },
+        {
+          "id": "d0968807-852e-4656-8efe-cae55a555774",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "platy_red_wagtail.png"
+        },
+        {
+          "id": "e0926414-3265-4681-a072-317afe5acc22",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "platy_sunburst.png"
+        },
+        {
+          "id": "f1f1ac34-7376-40ab-b489-38e12c2f4c71",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "platy_tuxedo.png"
+        }
+      ]
+    }
+  ]
+}

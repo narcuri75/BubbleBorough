@@ -22,10 +22,57 @@ function harness(extra = {}) {
   const c = vm.createContext({ DAY_MS, HOUR_MS: DAY_MS / 24, FISH_NEED_KEYS: keys,
     clamp: (v, min, max) => Math.max(min, Math.min(v, max)),
     getFishMaxHealthUnits: () => 12, getSpeciesForFish: () => ({ behavior: "free" }),
-    getCurrentTank: () => ({ id: "tank" }), pushEvent() {}, ...extra });
+    getCurrentTank: () => ({ id: "tank" }), pushEvent() {},
+    isProteusZombieFish: () => false,
+    ...extra });
   addFunctions(c, "fish/health.js", ["hasActiveCandyBoost", "isFishDead", "markFishAsDead", "getFishHealthRatio"]);
   return c;
 }
+
+test("shrimp and snails live in an Other section inside the Fish storefront", () => {
+  const store = fs.readFileSync(path.join(root, "../websurf-store.js"), "utf8");
+  const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const catalog = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  assert.match(store, /CATEGORY_IDS = \["food", "pharmacy", "fish", "decor", "equipment"\]/);
+  assert.doesNotMatch(store, /categoryLabels[^\n]*cleanup/);
+  assert.doesNotMatch(html, /id="storeCleanupTab"/);
+  assert.doesNotMatch(html, /id="cleanupShop"/);
+  assert.match(catalog, /function isOtherAquariumCreature\(species\)[\s\S]*behavior === "shrimp" \|\| behavior === "snail"/);
+  assert.match(rendering, /renderStoreSubcategorySection\("fish-other", "Other", "Shrimp, snails, and other aquarium creatures\."/);
+  assert.match(rendering, /const otherSourceCatalog = getOtherAquariumCreatureShopCatalog\(\)/);
+});
+
+test("stored creatures stay visible across water types while incompatible restores remain blocked", () => {
+  const inventory = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const placement = fs.readFileSync(path.join(root, "decor/placement-and-dragging.js"), "utf8");
+  assert.match(inventory, /function getStoredFishEntries\(\)[\s\S]*filter\(\(fish\) => !isFishDead\(fish\)\)/);
+  assert.doesNotMatch(inventory, /function getStoredFishEntries\(\)[\s\S]{0,400}isFishCompatibleWithWaterType/);
+  assert.match(inventory, /storageCompatible[\s\S]*Storage ·/);
+  assert.match(placement, /function restoreFishToTank\(fishId\)[\s\S]*!isFishCompatibleWithWaterType\(species, targetWaterType\)/);
+});
+
+test("pointer release retains the overlay position while a custom tool is active", () => {
+  const input = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  assert.match(input, /const toolCursorActive = runtime\.cleaningMode[\s\S]*Boolean\(runtime\.feedingModeFoodKey\)[\s\S]*Boolean\(runtime\.medicineModeKey\)/);
+  assert.match(input, /if \(!toolCursorActive\) \{\s*runtime\.pointerStagePx = null;/);
+});
+
+test("every Fish Care catalog image and fallback resolves to a loose or sprite asset", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/foodandmeds/food-and-meds.json"), "utf8"));
+  const definitions = fs.readFileSync(path.join(root, "assets/sprite-sheet-definitions.js"), "utf8");
+  const names = [
+    catalog.fallbackImage,
+    ...Object.values(catalog.food).map(item => item.image),
+    ...Object.values(catalog.medicine).map(item => item.image)
+  ].filter(Boolean);
+  for (const name of names) {
+    const loose = fs.existsSync(path.join(root, "../../assets/foodandmeds", name));
+    const sprite = definitions.includes(`${JSON.stringify(name)}:`);
+    assert.ok(loose || sprite, `${name} must resolve for Fish Care`);
+  }
+});
+
 test("one candy fills every stat and health, remains active after reload, and expires exactly after 24 hours", () => {
   const now = Date.now();
   const c = harness({ getDerivedFishNeedDefaults: () => ({ hunger: 80, comfort: 34, hygiene: 20, environment: 40 }) });
@@ -86,7 +133,7 @@ test("a Halloween pile buys 10 pieces only in season, and zero stock cannot be d
     TANK_WIDTH: 100, TANK_HEIGHT: 100, createDroppedFoodPellet: foodKey => ({ id: "candy", foodKey }),
     assignFloatingPelletsToHungryFish() {}, stageHungryFishTravelToFoodTank() {}, playDropSoundEffect() {},
     isGuidedTutorialActive: () => false, saveState() {} });
-  addFunctions(c, "tank/catalog-and-equipment.js", ["shouldShowFoodInStore"]);
+  addFunctions(c, "tank/catalog-and-equipment.js", ["shouldShowFoodInStore", "getFoodPackageOptions", "getFoodPackageMeta"]);
   addFunctions(c, "store/catalog.js", ["getBubbleBodegaRescueOfferStatus", "getFoodPurchaseCost", "markBubbleBodegaRescueItemClaimed"]);
   addFunctions(c, "store/purchases.js", ["buyFood"]);
   addFunctions(c, "fish/feeding-and-medicine.js", ["dropSelectedFoodAtPoint"]);
@@ -133,6 +180,17 @@ test("each candy drop chooses an individual image and preserves that choice", ()
   assert.equal(c.pickFoodDropSpritePath(candy), candy.dropImages[1]);
   assert.equal(c.resolveStoredFoodDropSpritePath(candy, candy.dropImages[0]), candy.dropImages[0]);
 });
+test("fish water facets normalize Fresh Water and Freshwater to the same selectable value", () => {
+  const facets = fs.readFileSync(path.join(root, "../store-facets.js"), "utf8");
+  const c = vm.createContext({});
+  addFunctions(c, "../store-facets.js", ["normalizeFacetValue"]);
+  assert.equal(c.normalizeFacetValue("Water type", "Fresh Water"), "Freshwater");
+  assert.equal(c.normalizeFacetValue("Water type", "freshwater"), "Freshwater");
+  assert.equal(c.normalizeFacetValue("Water type", "Salt Water"), "Saltwater");
+  assert.equal(c.normalizeFacetValue("Water type", "marine"), "Saltwater");
+  assert.match(facets, /refreshBubbleBodegaVirtualCatalog\?\.\(\{ sync: true \}\)/);
+});
+
 test("facet choices OR within a group, AND across groups, and handle no matches", () => {
   const selection = { Type: new Set(["plants", "caves"]), Theme: new Set(["Regular"]) };
   const c = vm.createContext({ current: () => selection, values: card => card });
@@ -202,7 +260,7 @@ function offscreenFeedingHarness(foodKey = "basic") {
     clearFishSchoolFollowState() {}, recordFishFeedingMemory() {}, getFishPersonality: () => "calm",
     getFishNeededBoroughServiceType: () => null, getBoroughSectionServiceTypes: () => [],
     randomSwimX: () => .6, randomSwimY: () => .4, setFishBehaviorIntent() {},
-    shouldFishRefuseFoodForComfort: () => false, shouldFishRefuseFoodForDisease: () => false,
+    getFishFoodRefusalReason: () => "", shouldFishRefuseFoodForComfort: () => false, shouldFishRefuseFoodForDisease: () => false,
     recordFishMealCredit: () => 0, scheduleFishPoop() {}, applyFoodBuff() {},
     applyFishMealWindowFoodIntake: () => ({ damageUnits: 0 }) });
   for (const name of ["isTutorialTankDirtinessLocked", "scrubImpossiblePredatorState", "scrubProtectedTankFishPredatorState",
@@ -249,7 +307,7 @@ test("offscreen feeding respects expiry, refusal, diet, dead fish, and active-vi
     if (condition === "wrong-diet") c.canFoodSatisfyFishMeal = () => false;
     if (condition === "dead") { fish.activity = "dead"; fish.deadAt = now; fish.healthUnits = 0; }
     if (condition === "refused") {
-      c.shouldFishRefuseFoodForComfort = () => true;
+      c.getFishFoodRefusalReason = () => "panic";
       c.handleFishRefuseFoodPellet = (f, pellet) => {
         f.feedingPelletId = null; f.activity = "roam"; pellet.targetFishId = ""; return true;
       };
@@ -291,26 +349,217 @@ test("active and inactive cleanliness share tank type, sucker bonus cap, and dea
 
 test("decor purchases enforce calendar availability for ordinary and Buy Another routes", () => {
   let month = 8;
+  let day = 15;
   const halloween = { key: "halloween-pumpkin", name: "Halloween Pumpkin", cost: 10 };
   const christmas = { key: "christmas-tree", name: "Christmas Tree", cost: 10 };
+  const newYear = { key: "new-year-confetti", name: "New Year Confetti", cost: 10 };
   const regular = { key: "plant", name: "Plant", cost: 10 };
   const c = harness({ state: { coins: 100, decorInventory: {} },
-    runtime: { decorMap: new Map([halloween, christmas, regular].map(d => [d.key, d])) },
+    runtime: { decorMap: new Map([halloween, christmas, newYear, regular].map(d => [d.key, d])) },
     MAX_WALLET_COINS: 99999, isHalloweenCalendarDate: () => month === 9,
-    getBoroughReferenceNow: () => new Date(2026, month, 15).getTime(),
+    getBoroughReferenceNow: () => new Date(2026, month, day).getTime(),
     isInfoOnlyTutorialActive: () => false, isGuidedTutorialActive: () => false,
     isDecorShopUnlocked: () => true, canUseDecorWithCurrentContentSettings: () => true,
     isCustomDecorShopKey: () => false, isCustomHideShopKey: () => false,
     showToast() {}, recordWalletTransaction() {}, completeGameAction() {}, pluralize: () => "coins" });
-  addFunctions(c, "tank/catalog-and-equipment.js", ["normalizeStringList", "isHalloweenDecor", "isChristmasDecor", "isSeasonalDecorAvailable"]);
+  addFunctions(c, "tank/catalog-and-equipment.js", ["normalizeStringList", "isHalloweenDecor", "isChristmasDecor", "isNewYearDecor", "isSeasonalDecorAvailable"]);
   addFunctions(c, "store/purchases.js", ["buyDecor", "buyAnotherDecor", "getDecorPurchaseCost", "performCoinTransaction"]);
   for (const buy of [c.buyDecor, c.buyAnotherDecor]) {
     month = 8;
-    for (const item of [halloween, christmas]) assert.equal(buy(item.key).reason, "out-of-season");
+    for (const item of [halloween, christmas, newYear]) assert.equal(buy(item.key).reason, "out-of-season");
     assert.equal(buy(regular.key).ok, true);
     month = 9; assert.equal(buy(halloween.key).ok, true);
-    month = 11; assert.equal(buy(christmas.key).ok, true);
+    month = 11; day = 25; assert.equal(buy(christmas.key).ok, true);
+    assert.equal(buy(newYear.key).reason, "out-of-season");
+    day = 26; assert.equal(buy(christmas.key).reason, "out-of-season");
+    assert.equal(buy(newYear.key).ok, true);
   }
-  assert.equal(c.state.coins, 40);
-  for (const item of [halloween, christmas, regular]) assert.equal(c.state.decorInventory[item.key], 2);
+  assert.equal(c.state.coins, 20);
+  for (const item of [halloween, christmas, newYear, regular]) assert.equal(c.state.decorInventory[item.key], 2);
+});
+
+
+test("Basic and Chum use illustrated bulk tiers while Frisky remains a single spawning formula", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/foodandmeds/food-and-meds.json"))).food;
+  const expected = {
+    basic: [[20, 5], [75, 15], [200, 30]],
+    chum: [[20, 10], [75, 28], [200, 60]]
+  };
+  for (const [foodId, tiers] of Object.entries(expected)) {
+    const packages = catalog[foodId].packages;
+    assert.deepEqual(packages.map((entry) => [entry.servings, entry.cost]), tiers);
+    const unitCosts = packages.map((entry) => entry.cost / entry.servings);
+    assert.ok(unitCosts[0] > unitCosts[1] && unitCosts[1] > unitCosts[2], `${foodId} must get cheaper per serving as package size increases`);
+    assert.equal(catalog[foodId].bottlePellets, 20);
+    assert.notEqual(catalog[foodId].bottlePellets, 99);
+  }
+  assert.deepEqual(catalog.basic.packages.map((entry) => entry.image), [
+    "basic-food_small.png", "basic-food_medium.png", "basic-food_large.png"
+  ]);
+  assert.deepEqual(catalog.chum.packages.map((entry) => entry.image), [
+    "chum_small.png", "chum_medium.png", "chum_large.png"
+  ]);
+  assert.equal(catalog.frisky.name, "Tidewell - Spawning Food - 20 Count");
+  assert.deepEqual(catalog.frisky.packages.map((entry) => [entry.id, entry.servings, entry.cost]), [["small", 20, 8]]);
+});
+
+test("food package purchases add servings to one existing inventory bucket and price the selected package", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/foodandmeds/food-and-meds.json"))).food;
+  const transactions = [];
+  const c = harness({
+    getFoodMeta: (key) => catalog[key] || null,
+    shouldShowFoodInStore: () => true,
+    getBubbleBodegaRescueOfferStatus: () => ({ foodAvailable: false }),
+    markBubbleBodegaRescueItemClaimed: () => false,
+    showToast() {},
+    state: { foodInventory: { basic: 7, frisky: 0, chum: 0, halloweenCandy: 0 } },
+    performCoinTransaction: (options) => { transactions.push(options); options.apply(); return { ok: true, amount: options.amount }; }
+  });
+  addFunctions(c, "tank/catalog-and-equipment.js", ["getFoodPackageOptions", "getFoodPackageMeta"]);
+  addFunctions(c, "store/catalog.js", ["getFoodPurchaseCost"]);
+  addFunctions(c, "store/purchases.js", ["buyFood"]);
+
+  assert.equal(c.getFoodPackageMeta("basic", "medium").image, "basic-food_medium.png");
+  assert.equal(c.getFoodPackageMeta("chum", "large").image, "chum_large.png");
+  c.buyFood("basic", "medium");
+  assert.equal(transactions.at(-1).amount, 15);
+  assert.equal(c.state.foodInventory.basic, 82);
+  c.buyFood("basic", "large");
+  assert.equal(transactions.at(-1).amount, 30);
+  assert.equal(c.state.foodInventory.basic, 282);
+  assert.match(transactions.at(-1).receiptLabel, /Large \| 200 Count \(200 servings\)/);
+  assert.deepEqual(Object.keys(c.state.foodInventory).sort(), ["basic", "chum", "frisky", "halloweenCandy"].sort());
+});
+
+test("the rescue offer grants only the small Basic package for free", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(root, "../../assets/foodandmeds/food-and-meds.json"))).food;
+  const c = harness({
+    getFoodMeta: (key) => catalog[key] || null,
+    getBubbleBodegaRescueOfferStatus: () => ({ foodAvailable: true })
+  });
+  addFunctions(c, "tank/catalog-and-equipment.js", ["getFoodPackageOptions", "getFoodPackageMeta"]);
+  addFunctions(c, "store/catalog.js", ["getFoodPurchaseCost"]);
+  assert.equal(c.getFoodPurchaseCost("basic", "small"), 0);
+  assert.equal(c.getFoodPurchaseCost("basic", "medium"), 15);
+  assert.equal(c.getFoodPurchaseCost("basic", "large"), 30);
+});
+
+test("Phase 7 manual feeding rejects incompatible food without consuming a serving", () => {
+  const food = { id: "basic", name: "Tidewell - Basic Food", piecesPerDrop: 1 };
+  const fish = { id: "puffer", activity: "roam", healthUnits: 12 };
+  const tank = { id: "tank", fish: [fish] };
+  const toasts = [];
+  const c = harness({
+    getFoodMeta: () => food,
+    getCurrentTank: () => tank,
+    canFoodSatisfyFishMeal: () => false,
+    state: { foodInventory: { basic: 4 }, floatingPellets: [] },
+    runtime: { feedingModeFoodKey: "basic", foodTrayOpen: true, toolModeSource: "food" },
+    isInfoOnlyTutorialActive: () => false,
+    showToast: message => toasts.push(message),
+    renderUi() {},
+    saveState() {},
+    TANK_WIDTH: 100,
+    TANK_HEIGHT: 100
+  });
+  addFunctions(c, "fish/feeding-and-medicine.js", ["getFoodCompatibleFishInTank", "getFoodIncompatibilityMessage", "dropSelectedFoodAtPoint"]);
+  const result = c.dropSelectedFoodAtPoint({ x: 50, y: 50 }, 1000);
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "incompatible-food");
+  assert.equal(c.state.foodInventory.basic, 4);
+  assert.equal(c.state.floatingPellets.length, 0);
+  assert.match(toasts.at(-1), /No fish in this tank can eat/);
+});
+
+test("Phase 7 one serving means one feeding action even when a serving renders several morsels", () => {
+  const food = { id: "brineShrimp", name: "Tidewell - Brine Shrimp", piecesPerDrop: 3 };
+  const fish = { id: "tetra", activity: "roam", healthUnits: 12 };
+  const tank = { id: "tank", fish: [fish] };
+  let pelletId = 0;
+  const c = harness({
+    getFoodMeta: () => food,
+    getCurrentTank: () => tank,
+    canFoodSatisfyFishMeal: () => true,
+    state: { foodInventory: { brineShrimp: 4 }, floatingPellets: [] },
+    runtime: { feedingModeFoodKey: "brineShrimp", foodTrayOpen: true, toolModeSource: "food" },
+    isInfoOnlyTutorialActive: () => false,
+    showToast() {}, renderUi() {}, saveState() {}, playDropSoundEffect() {},
+    TANK_WIDTH: 100, TANK_HEIGHT: 100,
+    createDroppedFoodPellet: foodKey => ({ id: `pellet-${++pelletId}`, foodKey }),
+    assignFloatingPelletsToHungryFish() {}, stageHungryFishTravelToFoodTank() {},
+    isGuidedTutorialActive: () => false
+  });
+  addFunctions(c, "fish/feeding-and-medicine.js", ["getFoodCompatibleFishInTank", "getFoodIncompatibilityMessage", "dropSelectedFoodAtPoint"]);
+  const result = c.dropSelectedFoodAtPoint({ x: 50, y: 50 }, 1000);
+  assert.equal(result.ok, true);
+  assert.equal(c.state.foodInventory.brineShrimp, 3, "one action consumes one serving");
+  assert.equal(c.state.floatingPellets.length, 3, "visual morsels do not each consume inventory");
+});
+
+test("Phase 7 auto dispenser refuses incompatible stock without removing it from inventory", () => {
+  const food = { id: "carnivore", name: "Tidewell - Carnivore Food", dispenserAllowed: true };
+  const tank = { id: "tank", fish: [{ id: "goldfish", healthUnits: 12 }], autoDispenser: { installed: true, storedPellets: [], refillAlert: false } };
+  const toasts = [];
+  const c = harness({
+    getCurrentTank: () => tank,
+    hasAutoDispenserInstalled: () => true,
+    getFoodMeta: () => food,
+    isFoodAllowedInAutoDispenser: () => true,
+    getConnectedFoodTanks: () => [tank],
+    canFoodSatisfyFishMeal: () => false,
+    state: { foodInventory: { carnivore: 8 }, autoDispenser: tank.autoDispenser },
+    runtime: { feedingModeFoodKey: "carnivore" },
+    showToast: message => toasts.push(message),
+    renderUi() {}, saveState() {},
+    getAutoDispenserLoadedCount: () => 0,
+    AUTO_DISPENSER_MAX_PELLETS: 99
+  });
+  addFunctions(c, "fish/feeding-and-medicine.js", ["getFoodCompatibleFishInTank", "getFoodCompatibleFishAcrossTanks", "getFoodIncompatibilityMessage", "loadSelectedFoodIntoAutoDispenser"]);
+  c.loadSelectedFoodIntoAutoDispenser(1000);
+  assert.equal(c.state.foodInventory.carnivore, 8);
+  assert.equal(tank.autoDispenser.storedPellets.length, 0);
+  assert.match(toasts.at(-1), /No fish in this tank can eat/);
+});
+
+test("Nerite and shrimp are purchasable Other creatures while Turbo stays hidden without art", () => {
+  const fishTypes = JSON.parse(fs.readFileSync(path.join(root, "../../assets/fish/fish-types.json"), "utf8")).fish;
+  const byId = new Map(fishTypes.map((entry) => [entry.id, entry]));
+  for (const id of ["freshwater-shrimp", "marine-shrimp", "nerite-snail"]) {
+    const entry = byId.get(id);
+    assert.ok(entry, `${id} exists`);
+    assert.equal(entry.cleanupAnimal, true, `${id} is Cleanup Crew`);
+    assert.notEqual(entry.artPending, true, `${id} is not art-pending`);
+    assert.notEqual(entry.storeHiddenUntilArt, true, `${id} is not hidden`);
+  }
+  assert.match(String(byId.get("nerite-snail")?.asset || ""), /snail_1\.png$/);
+  assert.equal(byId.get("nerite-snail")?.assetVariants?.length, 5);
+  assert.equal(byId.get("turbo-snail")?.storeHiddenUntilArt, true);
+});
+
+test("Fishing Lure appearance labels are editable data and thumbnails stay inside fixed buttons", () => {
+  const decor = JSON.parse(fs.readFileSync(path.join(root, "../../assets/decor/decor_types.json"), "utf8")).decor;
+  const lures = decor.filter((entry) => entry.variantGroup === "fishing_lure");
+  assert.equal(lures.length, 7);
+  assert.deepEqual(lures.map((entry) => entry.variantLabel), ["Lure 1", "Lure 2", "Lure 3", "Lure 4", "Lure 5", "Lure 6", "Lure 7"]);
+  const catalog = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  assert.match(catalog, /entry\?\.variantLabel \|\| entry\?\.name/);
+  assert.match(styles, /tankazon-item-variants button[^}]*width: 64px;[^}]*height: 64px;[^}]*overflow: hidden;/);
+  assert.match(styles, /tankazon-item-variants img[^}]*width: 48px !important;[^}]*height: 48px !important;[^}]*object-fit: contain !important;/);
+});
+
+test("water cards have no clipped explanatory line and Decor avoids fragile virtualization", () => {
+  const inventory = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const store = fs.readFileSync(path.join(root, "../websurf-store.js"), "utf8");
+  assert.doesNotMatch(inventory, /Changing water never changes the tank background/);
+  assert.match(store, /if \(category === "decor"\) \{[\s\S]*hydrateTankazonCardImages[\s\S]*continue;/);
+});
+
+test("backgrounds and substrates expose real Add to Cart controls", () => {
+  const decorUi = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const shell = fs.readFileSync(path.join(root, "../websurf-store.js"), "utf8");
+  assert.match(decorUi, /data-buy-background="\$\{escapeHtml\(background\.key\)\}">Add to Cart<\/button>/);
+  assert.match(decorUi, /data-buy-substrate="\$\{escapeHtml\(item\.id\)\}">Add to Cart<\/button>/);
+  assert.match(shell, /\["buySubstrate", "decor", "buySubstrate"\]/);
+  assert.match(shell, /item\.fnName === "buySubstrate" && typeof window\.buySubstrate === "function"/);
 });

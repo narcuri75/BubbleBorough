@@ -3,7 +3,6 @@ const WEBSURF_MAIL_READ_STORAGE_KEY = "bubble-borough-websurf-read-mail-v1";
 const WEBSURF_SILENCED_SENDERS_STORAGE_KEY = "bubble-borough-websurf-silenced-senders-v1";
 const SUPABASE_URL = "https://idljwswasrxtifbkioyg.supabase.co";
 const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_qxhGQH_faz0TDw4_AbYsGw_iYljA_9s";
-const INVITE_FRIEND_ENABLED = false;
 const CLOUD_AUTH_SESSION_KEY = "bubble-borough-cloud-auth-v1";
 const CLOUD_SAVE_META_KEY = "bubble-borough-cloud-meta-v1";
 const CLOUD_REPLACEMENT_BACKUP_KEY = "bubble-borough-cloud-replacement-backup-v1";
@@ -11,7 +10,7 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 50;
+const STATE_VERSION = 62;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -32,6 +31,7 @@ const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /basic render/i,
   /\bwarp\b/i
 ]);
+
 let appConfig = DEFAULT_APP_CONFIG;
 const DEBUG_AUTHORIZED_USER_ID = "37128461-efc9-4997-bdc9-b5e55d6c02df";
 const DEBUG_TOOLS_PREFERENCE_KEY = "bubble-borough-debug-tools-v1";
@@ -97,10 +97,27 @@ const RECOVERY_FEED_STREAK = 4;
 const STARVATION_DAMAGE_MISSED_MEALS_THRESHOLD = 4;
 const MINUTE_MS = 60 * 1000;
 const DAY_MS = 24 * 60 * 60 * 1000;
+const PROTEUS_ZOMBIE_FISH_SPECIES_ID = "proteus-zombie-fish";
+const PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT = 100;
+const PROTEUS_ZOMBIE_FISH_AUTHORIZATION_DELAY_MS = 5 * MINUTE_MS;
+const PROTEUS_ZOMBIE_FISH_VARIANT_COST = 350;
+const PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS = 45 * 1000;
+const PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MAX_MS = 120 * 1000;
+const PROTEUS_ZOMBIE_AGGRESSION_TRIGGER_CHANCE = 1 / 1000000;
+const PROTEUS_ZOMBIE_AGGRESSION_DURATION_MIN_MS = 4 * 1000;
+const PROTEUS_ZOMBIE_AGGRESSION_DURATION_MAX_MS = 10 * 1000;
+const PROTEUS_ZOMBIE_AGGRESSION_BITE_MIN_MS = 1600;
+const PROTEUS_ZOMBIE_AGGRESSION_BITE_MAX_MS = 3000;
+const PROTEUS_ZOMBIE_FEEDING_CALM_MS = 5 * MINUTE_MS;
+const PROTEUS_ZOMBIE_REGEN_DELAY_MS = 1200;
+const PROTEUS_ZOMBIE_REGEN_STEP_MS = 850;
 const WEEK_MS = 7 * DAY_MS;
 const HOUR_MS = 60 * 60 * 1000;
-const NORMAL_MEAL_FOOD_KEYS = Object.freeze(["basic", "frisky"]);
+const STANDARD_FISH_FOOD_KEYS = Object.freeze(["basic", "frisky", "algaeWafers", "brineShrimp", "carnivore", "chum"]);
+const NORMAL_MEAL_FOOD_KEYS = Object.freeze(["basic", "brineShrimp"]);
+const CARNIVORE_MEAL_FOOD_KEYS = Object.freeze(["brineShrimp", "carnivore"]);
 const PREDATOR_MEAL_FOOD_KEYS = Object.freeze(["chum"]);
+const DETRITUS_SNACK_FOOD_KEYS = Object.freeze(["algaeWafers"]);
 const COMFORT_MEAL_WINDOW_MS = 12 * HOUR_MS;
 const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
 const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
@@ -167,24 +184,57 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
-  { id: "swim", label: "Normal Swim", description: "The standard cruising pose, body flex, and tail rhythm." },
-  { id: "turn-around", label: "Turn Around", description: "The fish's configured turnaround animation, played at its real duration." },
-  { id: "eat", label: "Eat", description: "A repeated feeding approach and bite motion." },
-  { id: "waitfood", label: "Wait for Food", description: "An alert hover while anticipating the next meal." },
-  { id: "rest", label: "Rest", description: "A quiet hover with reduced motion and slow breathing." },
-  { id: "sleep", label: "Sleep", description: "The settled sleeping posture and minimal body movement." },
-  { id: "zoomies", label: "Zoomies", description: "Fast, energetic flexing used during a burst around the tank." },
-  { id: "greet", label: "Greet", description: "A friendly approach with a short double nod." },
-  { id: "hangout", label: "Hang Out", description: "Relaxed social swimming with an easy synchronized sway." },
-  { id: "play", label: "Play", description: "A lively roll, bounce, and body squash cycle." },
-  { id: "pebble", label: "Find Pebble", description: "The nose-down search, pickup, and raised carry pose." },
-  { id: "dig", label: "Dig", description: "The steep gravel-facing digging pose and repeated push." },
-  { id: "avoid", label: "Avoid", description: "A startled recoil and fast retreat posture." },
-  { id: "breed", label: "Mate", description: "The courtship sway used during a breeding approach." },
-  { id: "hide", label: "Hide", description: "A compressed, cautious posture used while moving into cover." },
-  { id: "inspect", label: "Inspect", description: "A curious close-look pose with small deliberate nods." },
-  { id: "sick", label: "Sick / Critical", description: "Low-health coloring with sluggish, uneven movement." },
-  { id: "dead", label: "Dead Float", description: "The inverted floating pose used after death." }
+  // Core renderer states. These are wired to the same pose/state fields used by
+  // the live tank renderer so the viewer can inspect the real animation paths.
+  { id: "swim", group: "Core renderer", label: "Normal Swim", description: "The standard live-tank swim pose, body flex, bob, and tail rhythm." },
+  { id: "turn-around", group: "Core renderer", label: "Turn Around (Configured)", description: "The fish's configured turnaround animation, played at its real duration." },
+  { id: "turn-simple", group: "Core renderer", label: "Turn Around (Simple)", description: "The lightweight squash-and-flip turnaround used by simple turn mode." },
+  { id: "turn-complex", group: "Core renderer", label: "Turn Around (Complex)", description: "The segmented authored turnaround rig used by complex turn mode." },
+  { id: "entry", group: "Core renderer", label: "New Fish Entry / Drop", description: "The nose-down settling animation used when a fish first enters the tank." },
+  { id: "feeding-swim", group: "Core renderer", label: "Feeding Swim", description: "The higher-effort movement profile used while chasing food." },
+  { id: "panic", group: "Core renderer", label: "Glass Tap Panic", description: "The fast startled movement profile triggered by glass tapping and nearby threats." },
+  { id: "rest", group: "Core renderer", label: "Rest / Low Motion", description: "A quiet live-tank hover with reduced swim motion." },
+  { id: "sleep", group: "Core renderer", label: "Sleep", description: "The settled sleeping presentation with minimal movement." },
+  { id: "sick", group: "Core renderer", label: "Sick / Critical", description: "Low-health color and sluggish uneven motion using the live health renderer." },
+  { id: "death-animation", group: "Core renderer", label: "Death Animation", description: "The live death transition: motion stops, the body rolls, and the corpse begins to rise." },
+  { id: "dead", group: "Core renderer", label: "Dead Float", description: "The settled inverted corpse float used after the death transition." },
+  { id: "piranha-consumed", group: "Core renderer", label: "Piranha Consumption", description: "The churned dead-fish pose used while piranhas consume a corpse." },
+  { id: "tube-enter", group: "Core renderer", label: "Tube Travel: Entering", description: "The vertical head-first pose used while entering a travel tube." },
+  { id: "tube-emerge", group: "Core renderer", label: "Tube Travel: Emerging", description: "The vertical head-first pose used while emerging from a travel tube." },
+
+  // Behavior gestures that are intentionally stationary in this viewer. They
+  // expose the visual gesture without allowing the preview fish to cross the stage.
+  { id: "eat", group: "Behavior gestures", label: "Eat / Bite", description: "A repeated feeding approach and bite motion." },
+  { id: "waitfood", group: "Behavior gestures", label: "Wait for Food", description: "An alert hover while anticipating the next meal." },
+  { id: "zoomies", group: "Behavior gestures", label: "Zoomies", description: "Fast energetic flexing used during a burst around the tank." },
+  { id: "greet", group: "Behavior gestures", label: "Greet", description: "A friendly approach with a short double nod." },
+  { id: "hangout", group: "Behavior gestures", label: "Hang Out", description: "Relaxed social swimming with an easy synchronized sway." },
+  { id: "play", group: "Behavior gestures", label: "Play", description: "A lively roll, bounce, and body squash cycle." },
+  { id: "pebble", group: "Behavior gestures", label: "Find / Carry Pebble", description: "The nose-down search and raised carry pose used by gravel play." },
+  { id: "dig", group: "Behavior gestures", label: "Dig Gravel", description: "The steep gravel-facing digging pose and repeated push." },
+  { id: "avoid", group: "Behavior gestures", label: "Avoid / Flee", description: "A startled recoil and fast retreat posture." },
+  { id: "breed", group: "Behavior gestures", label: "Mate / Courtship", description: "The courtship sway used during a breeding approach." },
+  { id: "hide", group: "Behavior gestures", label: "Hide", description: "A compressed cautious posture used while moving into cover." },
+  { id: "inspect", group: "Behavior gestures", label: "Inspect", description: "A curious close-look pose with small deliberate nods." },
+
+  // Species-specific render paths. Selecting one automatically switches to a
+  // compatible species when possible so every animation can actually be viewed.
+  { id: "puffer-inflating", group: "Species specific", label: "Puffer: Inflating", preferredSpeciesId: "pufferfish", description: "The live puffer inflation scale-up and inflated artwork transition." },
+  { id: "puffer-inflated", group: "Species specific", label: "Puffer: Inflated", preferredSpeciesId: "pufferfish", description: "The actual inflated sprite, enlarged display scale, and defensive wobble." },
+  { id: "puffer-deflating", group: "Species specific", label: "Puffer: Deflating", preferredSpeciesId: "pufferfish", description: "The eased return from the inflated sprite to normal size." },
+  { id: "sucker-back-glass", group: "Species specific", label: "Sucker: Back Glass", preferredSpeciesId: "otocinclus", description: "The Dwarf Sucker Catfish back-glass artwork and attachment pose." },
+  { id: "sucker-front-glass", group: "Species specific", label: "Sucker: Front Glass", preferredSpeciesId: "otocinclus", description: "The Dwarf Sucker Catfish front-glass artwork and attachment pose." },
+  { id: "sucker-free-swim", group: "Species specific", label: "Sucker: Free Swim", preferredSpeciesId: "otocinclus", description: "The side-swimming artwork used between glass attachments." },
+  { id: "sucker-gravel-scan", group: "Species specific", label: "Sucker: Gravel Scan", preferredSpeciesId: "otocinclus", description: "The nose-down free-swim scan used while searching the gravel." },
+  { id: "surface-breathe", group: "Species specific", label: "Whale: Surface Breath", preferredSpeciesId: "orca", description: "The whale-only ascent and surface-breath presentation." },
+  { id: "yellow-tang-graze", group: "Species specific", label: "Yellow Tang: Decor Graze", preferredSpeciesId: "yellow-tang", description: "The pecking and nose-dip motion used while grazing decor." },
+  { id: "yellow-tang-gravel", group: "Species specific", label: "Yellow Tang: Gravel Graze", preferredSpeciesId: "yellow-tang", description: "The stronger nose-down peck used while grazing the substrate." },
+  { id: "seahorse-perch", group: "Species specific", label: "Seahorse: Perch", preferredSpeciesId: "seahorse", description: "The reduced sway and upright perched motion profile." },
+  { id: "betta-display", group: "Species specific", label: "Betta: Rival Display", preferredSpeciesId: "betta", description: "The body-height flare and display sway used during a Betta confrontation." },
+  { id: "pencil-spar", group: "Species specific", label: "Pencilfish: Harmless Spar", preferredSpeciesId: "pencilfish", description: "The compact sparring posture and rapid lateral sway." },
+  { id: "shrimp-motion", group: "Species specific", label: "Shrimp: Antennae + Legs", preferredSpeciesId: "freshwater-shrimp", description: "The live layered antenna and leg motion used by shrimp sprites." },
+  { id: "snail-settle", group: "Species specific", label: "Snail: Drop / Settle", preferredSpeciesId: "nerite-snail", description: "The only animated snail state: a gentle hand-drop drift and wobble before landing." },
+  { id: "zombie-attack", group: "Species specific", label: "Z-01: Attack", preferredSpeciesId: PROTEUS_ZOMBIE_FISH_SPECIES_ID, description: "The Proteus Z-01 pursuit and bite burst followed by its calm baseline." }
 ]);
 const DEBUG_BEHAVIOR_STEER_REFRESH_MS = 260;
 const DEBUG_BEHAVIOR_FOLLOW_DURATION_MS = 45 * 1000;
@@ -199,6 +249,8 @@ const DEBUG_BEHAVIOR_LURE_INSPECT_DURATION_MS = 45 * 1000;
 const DEBUG_BEHAVIOR_LURE_SIDE_MS = 4200;
 const DEBUG_BEHAVIOR_ANTICIPATE_FOOD_DURATION_MS = 14 * 1000;
 const DISEASE_TYPE_GENERIC = "generic";
+const DISEASE_TYPE_PARASITES = "parasites";
+const DISEASE_TYPE_INFECTION = "infection";
 const DISEASE_TYPE_VIRAL = "viral";
 const DAVY_JONES_VIRAL_PURCHASE_CHANCE = 0.05;
 const DISEASE_CARRIER_MS = 12 * HOUR_MS;
@@ -208,6 +260,16 @@ const DISEASE_VISIBLE_MS = 72 * HOUR_MS;
 const DISEASE_TREATMENT_SLOW_MS = 12 * HOUR_MS;
 const DISEASE_RECOVERY_REQUIRED_MS = 24 * HOUR_MS;
 const DISEASE_RECOVERING_ENTRY_MS = 6 * HOUR_MS;
+const INJURY_RECOVERY_REQUIRED_MS = 6 * HOUR_MS;
+const CALMING_EFFECT_DURATION_MS = 10 * MINUTE_MS;
+const WATER_STRESS_BOOST_DURATION_MS = 6 * HOUR_MS;
+const WATER_STRESS_RECOVERY_REQUIRED_MS = 24 * HOUR_MS;
+const WATER_STRESS_RECOVERY_BOOST_MULTIPLIER = 2;
+const OSMOTIC_STRESS_STAGE_2_MS = 6 * HOUR_MS;
+const OSMOTIC_STRESS_STAGE_3_MS = 18 * HOUR_MS;
+const OSMOTIC_STRESS_STAGE_4_MS = 36 * HOUR_MS;
+const OSMOTIC_STRESS_FATAL_MS = 72 * HOUR_MS;
+const OSMOTIC_STRESS_DAMAGE_INTERVAL_MS = 12 * HOUR_MS;
 const DISEASE_HEALTH_DAMAGE_INTERVAL_MS = 12 * HOUR_MS;
 const DISEASE_HEALTH_DAMAGE_UNITS = 1;
 const DISEASE_BASE_DAILY_CHANCE = 0.001;
@@ -308,6 +370,11 @@ const BEHAVIOR_SIGNAL_COOLDOWN_MS = 4 * MINUTE_MS;
 const BEHAVIOR_INTENT_LINGER_MS = 12 * 1000;
 const FOOD_REFUSAL_RETARGET_MS = 80 * 1000;
 const BEHAVIOR_RELATIONSHIP_CHECK_MS = 2 * MINUTE_MS;
+const FISH_FRIENDSHIP_THRESHOLD = 40;
+const FISH_FRIENDSHIP_PASSIVE_INTERVAL_MS = 2 * MINUTE_MS;
+const FISH_FRIENDSHIP_PROXIMITY_NORM = 0.16;
+const FISH_PAIR_BOND_THRESHOLD = 78;
+const FISH_PAIR_BOND_MOURNING_MS = 4 * HOUR_MS;
 const DISEASE_AVOIDANCE_CHECK_MIN_MS = 900;
 const DISEASE_AVOIDANCE_CHECK_MAX_MS = 2200;
 const FISH_BEHAVIOR_PROFILES = Object.freeze({
@@ -318,6 +385,18 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "molly": { group: "open-water-cruiser", personalities: ["social", "routine-loving", "greedy", "gentle"], rare: ["bold", "curious", "follower"] },
   "livebearer": { group: "small-social", personalities: ["social", "routine-loving", "curious", "follower"], rare: ["greedy", "shy", "bold"] },
   "clownfish": { group: "open-water-cruiser", personalities: ["social", "curious", "bold", "homebody"], rare: ["greedy", "routine-loving", "territorial"] },
+  "green-chromis": { group: "small-social", personalities: ["social", "follower", "curious", "nervous"], rare: ["bold", "routine-loving", "shy"] },
+  "banggai-cardinalfish": { group: "small-social", personalities: ["social", "gentle", "homebody", "shy"], rare: ["curious", "routine-loving", "sensitive"] },
+  "firefish": { group: "small-social", personalities: ["shy", "nervous", "homebody", "curious"], rare: ["social", "bold", "follower"] },
+  "yellow-watchman-goby": { group: "bottom-cleaner", personalities: ["homebody", "curious", "shy", "gentle"], rare: ["digger", "social", "routine-loving"] },
+  "tailspot-blenny": { group: "bottom-cleaner", personalities: ["cleaner", "curious", "homebody", "gentle"], rare: ["digger", "social", "shy"] },
+  "orchid-dottyback": { group: "slow-graceful", personalities: ["territorial", "homebody", "standoffish", "bold"], rare: ["curious", "sensitive", "display"] },
+  "six-line-wrasse": { group: "open-water-cruiser", personalities: ["explorer", "curious", "bold", "hunter"], rare: ["territorial", "social", "routine-loving"] },
+  "coral-beauty-angelfish": { group: "slow-graceful", personalities: ["curious", "gentle", "display", "homebody"], rare: ["territorial", "social", "sensitive"] },
+  "flame-hawkfish": { group: "slow-graceful", personalities: ["homebody", "curious", "bold", "standoffish"], rare: ["territorial", "hunter", "gentle"] },
+  "cleaner-shrimp": { group: "bottom-cleaner", personalities: ["cleaner", "curious", "homebody", "gentle"], rare: ["social", "shy", "night-active"] },
+  "pistol-shrimp": { group: "bottom-cleaner", personalities: ["digger", "homebody", "shy", "curious"], rare: ["social", "night-active", "sensitive"] },
+  "fighting-conch": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "routine-loving", "shy"], rare: ["curious", "night-active", "sensitive"], detritusDiet: true },
   "goldfish": { group: "slow-graceful", personalities: ["greedy", "gentle", "routine-loving", "curious"], rare: ["bold", "homebody", "sensitive"], slowGraceful: true },
   "koi": { group: "slow-graceful", personalities: ["social", "gentle", "routine-loving", "greedy"], rare: ["curious", "digger", "bold"], slowGraceful: true },
   "betta": { group: "slow-graceful", personalities: ["display", "standoffish", "territorial", "sensitive"], rare: ["curious", "homebody", "greedy"], slowGraceful: true },
@@ -338,6 +417,10 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "pencilfish": { group: "small-social", personalities: ["social", "display", "curious", "standoffish"], rare: ["follower", "shy", "routine-loving"] },
   "rummy-nose-tetra": { group: "small-social", personalities: ["social", "follower", "routine-loving", "nervous"], rare: ["curious", "shy", "explorer"] },
   "otocinclus": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "night-active", "shy"], rare: ["curious", "sensitive", "digger"], nightActive: true, detritusDiet: true },
+  "freshwater-shrimp": { group: "bottom-cleaner", personalities: ["cleaner", "curious", "homebody", "shy"], rare: ["digger", "night-active", "social"], detritusDiet: true },
+  "marine-shrimp": { group: "bottom-cleaner", personalities: ["cleaner", "curious", "homebody", "shy"], rare: ["night-active", "social", "sensitive"], detritusDiet: true },
+  "nerite-snail": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "routine-loving", "shy"], rare: ["curious", "night-active", "sensitive"], detritusDiet: true },
+  "turbo-snail": { group: "bottom-cleaner", personalities: ["cleaner", "homebody", "routine-loving", "shy"], rare: ["curious", "night-active", "sensitive"], detritusDiet: true },
   "loach": { group: "bottom-cleaner", personalities: ["digger", "explorer", "cleaner", "night-active"], rare: ["social", "homebody", "curious"], nightActive: true },
   "piranha": { group: "special-predator", personalities: ["hunter", "social", "territorial", "bold"], rare: ["curious", "greedy", "standoffish"], predatorDiet: true },
   "wonder-killifish": { group: "special-predator", personalities: ["hunter", "curious", "bold", "nervous"], rare: ["territorial", "standoffish", "greedy"], predatorDiet: true },
@@ -352,8 +435,7 @@ const FISH_BEHAVIOR_PROFILES = Object.freeze({
   "pilot-fish": { group: "pilot-follower", personalities: ["follower", "social", "explorer", "curious"], rare: ["bold", "routine-loving", "shy"] },
   "davy-dwarf-chimera-barracuda": { group: "special-predator", personalities: ["hunter", "bold", "standoffish", "territorial"], rare: ["curious", "explorer", "sensitive"], predatorDiet: true },
   "davy-bioluminescent-angler-pike": { group: "special-predator", personalities: ["hunter", "homebody", "sensitive", "standoffish"], rare: ["curious", "bold", "territorial"], predatorDiet: true },
-  "davy-bioluminescent-glass-fangfish": { group: "small-social", personalities: ["nervous", "shy", "curious", "explorer"], rare: ["hunter", "sensitive", "homebody"] },
-  "davy-bioluminescent-cherub-goldfish": { group: "slow-graceful", personalities: ["gentle", "social", "follower", "curious"], rare: ["sensitive", "homebody", "greedy"], slowGraceful: true }
+  "davy-bioluminescent-glass-fangfish": { group: "small-social", personalities: ["nervous", "shy", "curious", "explorer"], rare: ["hunter", "sensitive", "homebody"] }
 });
 const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   movementPattern: "cruise",
@@ -387,6 +469,54 @@ const createFishLocomotionProfile = (overrides = {}) => Object.freeze({
   ...overrides
 });
 const FISH_LOCOMOTION_PROFILES = Object.freeze({
+  "green-chromis": createFishLocomotionProfile({ movementPattern: "school-cruise", preferredY: 0.43, verticalSpread: 0.62, targetDistanceMin: 0.2, targetDistanceMax: 0.56, headingPersistence: 0.64, hoverChance: 0.025, schoolStrength: 0.8, schoolSpacingScale: 0.84, schoolDurationScale: 1.45, structureAffinity: 0.88, startleStrength: 1.3, turnDurationScale: 0.82, speedMinBlend: 0.5, speedMaxBlend: 0.94, dartChance: 0.12, targetDurationScale: 0.88 }),
+  "banggai-cardinalfish": createFishLocomotionProfile({ movementPattern: "group-hover", preferredY: 0.48, verticalSpread: 0.5, targetDistanceMin: 0.1, targetDistanceMax: 0.3, headingPersistence: 0.38, hoverChance: 0.38, hoverMinMs: 1300, hoverMaxMs: 3300, schoolStrength: 0.52, structureAffinity: 1.34, caveAffinity: 1.1, startleStrength: 1.15, turnDurationScale: 1.28, speedMinBlend: 0.04, speedMaxBlend: 0.42, targetDurationScale: 1.3 }),
+  "firefish": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.42, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.24, hoverChance: 0.46, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 1.9, caveAffinity: 2.25, homeRangeStrength: 0.86, homeRangeRadius: 0.14, startleStrength: 1.55, turnDurationScale: 0.8, speedMinBlend: 0.06, speedMaxBlend: 0.54, dartChance: 0.28, targetDurationScale: 1.26 }),
+  "yellow-watchman-goby": createFishLocomotionProfile({ movementPattern: "bottom-stop-go", preferredY: 0.86, verticalSpread: 0.22, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.34, hoverChance: 0.52, hoverMinMs: 1500, hoverMaxMs: 3800, structureAffinity: 2.05, caveAffinity: 2.5, homeRangeStrength: 0.96, homeRangeRadius: 0.12, startleStrength: 1.16, turnDurationScale: 1.35, speedMinBlend: 0.02, speedMaxBlend: 0.36, dartChance: 0.1, targetDurationScale: 1.38 }),
+  "tailspot-blenny": createFishLocomotionProfile({ movementPattern: "bottom-graze", preferredY: 0.8, verticalSpread: 0.25, targetDistanceMin: 0.04, targetDistanceMax: 0.2, headingPersistence: 0.32, hoverChance: 0.4, hoverMinMs: 1100, hoverMaxMs: 2900, structureAffinity: 2, caveAffinity: 1.1, homeRangeStrength: 0.5, startleStrength: 1.02, turnDurationScale: 1.18, speedMinBlend: 0.06, speedMaxBlend: 0.44, targetDurationScale: 1.24 }),
+  "orchid-dottyback": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.4, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.26, hoverChance: 0.38, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 2, caveAffinity: 2.3, homeRangeStrength: 0.9, homeRangeRadius: 0.14, startleStrength: 1.15, turnDurationScale: 0.86, speedMinBlend: 0.06, speedMaxBlend: 0.5, dartChance: 0.24, targetDurationScale: 1.2 }),
+  "six-line-wrasse": createFishLocomotionProfile({ movementPattern: "crevice-cruise", preferredY: 0.5, verticalSpread: 0.64, targetDistanceMin: 0.2, targetDistanceMax: 0.52, headingPersistence: 0.58, hoverChance: 0.05, schoolStrength: 0.08, structureAffinity: 1.65, caveAffinity: 1.48, startleStrength: 1.08, turnDurationScale: 0.78, speedMinBlend: 0.5, speedMaxBlend: 0.98, dartChance: 0.18, targetDurationScale: 0.84 }),
+  "coral-beauty-angelfish": createFishLocomotionProfile({ movementPattern: "reef-browse", preferredY: 0.54, verticalSpread: 0.6, targetDistanceMin: 0.14, targetDistanceMax: 0.42, headingPersistence: 0.46, hoverChance: 0.24, hoverMinMs: 900, hoverMaxMs: 2600, structureAffinity: 1.65, caveAffinity: 0.82, startleStrength: 1.02, turnDurationScale: 1.32, speedMinBlend: 0.1, speedMaxBlend: 0.58, targetDurationScale: 1.18 }),
+  "flame-hawkfish": createFishLocomotionProfile({ movementPattern: "perch-dart", preferredY: 0.7, verticalSpread: 0.32, targetDistanceMin: 0.05, targetDistanceMax: 0.2, headingPersistence: 0.3, hoverChance: 0.52, hoverMinMs: 1300, hoverMaxMs: 3600, structureAffinity: 2.1, caveAffinity: 1.1, homeRangeStrength: 0.64, homeRangeRadius: 0.16, startleStrength: 0.94, turnDurationScale: 1.16, speedMinBlend: 0.04, speedMaxBlend: 0.44, dartChance: 0.18, targetDurationScale: 1.3 }),
+  "cleaner-shrimp": createFishLocomotionProfile({ movementPattern: "bottom-graze", preferredY: 0.76, verticalSpread: 0.18, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.3, hoverChance: 0.44, hoverMinMs: 1200, hoverMaxMs: 3300, structureAffinity: 2.1, caveAffinity: 1.35, homeRangeStrength: 0.48, homeRangeRadius: 0.16, startleStrength: 1.2, turnDurationScale: 0.92, speedMinBlend: 0.12, speedMaxBlend: 0.46, targetDurationScale: 1.26 }),
+  "pistol-shrimp": createFishLocomotionProfile({ movementPattern: "bottom-graze", preferredY: 0.88, verticalSpread: 0.12, targetDistanceMin: 0.025, targetDistanceMax: 0.12, headingPersistence: 0.38, hoverChance: 0.6, hoverMinMs: 1500, hoverMaxMs: 4200, structureAffinity: 2.3, caveAffinity: 2.65, homeRangeStrength: 0.94, homeRangeRadius: 0.1, startleStrength: 1.28, turnDurationScale: 1.12, speedMinBlend: 0.05, speedMaxBlend: 0.34, targetDurationScale: 1.46 }),
+  "fighting-conch": createFishLocomotionProfile({ movementPattern: "substrate-crawl", preferredY: 1, verticalSpread: 0.01, targetDistanceMin: 0.008, targetDistanceMax: 0.028, headingPersistence: 0.94, hoverChance: 0.86, hoverMinMs: 6000, hoverMaxMs: 14000, schoolStrength: 0, structureAffinity: 0, caveAffinity: 0, homeRangeStrength: 0, homeRangeRadius: 0.06, startleStrength: 0.08, startleRecoveryScale: 2, turnDurationScale: 1.9, speedMinBlend: 0, speedMaxBlend: 0.08, dartChance: 0, targetDurationScale: 2.8 }),
+  "freshwater-shrimp": createFishLocomotionProfile({
+    movementPattern: "bottom-graze", preferredY: 0.76, verticalSpread: 0.18,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.22, headingPersistence: 0.28,
+    hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2800, schoolStrength: 0.05,
+    structureAffinity: 1.7, caveAffinity: 0.1, homeRangeStrength: 0.18, homeRangeRadius: 0.2,
+    startleStrength: 1.25, startleRecoveryScale: 0.82, turnDurationScale: 0.86,
+    speedMinBlend: 0.18, speedMaxBlend: 0.54, dartChance: 0.05, dartSpeedMinBlend: 0.72,
+    targetDurationScale: 1.18
+  }),
+  "marine-shrimp": createFishLocomotionProfile({
+    movementPattern: "bottom-graze", preferredY: 0.75, verticalSpread: 0.2,
+    targetDistanceMin: 0.05, targetDistanceMax: 0.24, headingPersistence: 0.3,
+    hoverChance: 0.3, hoverMinMs: 900, hoverMaxMs: 2900, schoolStrength: 0.04,
+    structureAffinity: 1.8, caveAffinity: 0.12, homeRangeStrength: 0.16, homeRangeRadius: 0.22,
+    startleStrength: 1.25, startleRecoveryScale: 0.84, turnDurationScale: 0.86,
+    speedMinBlend: 0.18, speedMaxBlend: 0.56, dartChance: 0.05, dartSpeedMinBlend: 0.72,
+    targetDurationScale: 1.2
+  }),
+  "nerite-snail": createFishLocomotionProfile({
+    movementPattern: "substrate-crawl", preferredY: 1, verticalSpread: 0.01,
+    targetDistanceMin: 0.008, targetDistanceMax: 0.028, headingPersistence: 0.94,
+    hoverChance: 0.86, hoverMinMs: 6000, hoverMaxMs: 14000, schoolStrength: 0,
+    structureAffinity: 0, caveAffinity: 0, homeRangeStrength: 0, homeRangeRadius: 0.06,
+    startleStrength: 0.08, startleRecoveryScale: 2, turnDurationScale: 1.9,
+    speedMinBlend: 0, speedMaxBlend: 0.08, dartChance: 0,
+    targetDurationScale: 2.8
+  }),
+  "turbo-snail": createFishLocomotionProfile({
+    movementPattern: "substrate-crawl", preferredY: 1, verticalSpread: 0.01,
+    targetDistanceMin: 0.008, targetDistanceMax: 0.03, headingPersistence: 0.94,
+    hoverChance: 0.84, hoverMinMs: 5600, hoverMaxMs: 13200, schoolStrength: 0,
+    structureAffinity: 0, caveAffinity: 0, homeRangeStrength: 0, homeRangeRadius: 0.06,
+    startleStrength: 0.08, startleRecoveryScale: 2, turnDurationScale: 1.85,
+    speedMinBlend: 0, speedMaxBlend: 0.08, dartChance: 0,
+    targetDurationScale: 2.7
+  }),
   "blue-tang": createFishLocomotionProfile({
     movementPattern: "open-water-cruise", preferredY: 0.48, verticalSpread: 0.74,
     targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
@@ -731,14 +861,6 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.04, schoolStrength: 0.04, structureAffinity: 2.1, caveAffinity: 1.4,
     startleStrength: 1.65, startleRecoveryScale: 0.7, turnDurationScale: 0.55,
     speedMinBlend: 0.42, speedMaxBlend: 0.94, dartChance: 0.62, dartSpeedMinBlend: 0.9, targetDurationScale: 0.66
-  }),
-  "davy-bioluminescent-cherub-goldfish": createFishLocomotionProfile({
-    movementPattern: "companion-hover", preferredY: 0.5, verticalSpread: 0.64,
-    targetDistanceMin: 0.07, targetDistanceMax: 0.28, headingPersistence: 0.36,
-    hoverChance: 0.32, hoverMinMs: 1800, hoverMaxMs: 4800, schoolStrength: 0.48,
-    schoolSpacingScale: 1.15, schoolDurationScale: 1.4, structureAffinity: 0.9, caveAffinity: 0.55,
-    startleStrength: 0.9, startleRecoveryScale: 1.4, turnDurationScale: 1.35,
-    speedMinBlend: 0.08, speedMaxBlend: 0.42, targetDurationScale: 1.25
   })
 });
 const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
@@ -754,6 +876,174 @@ const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "seahorse-drifter": ["gentle", "homebody", "shy", "curious", "routine-loving", "nervous"],
   "pilot-follower": ["follower", "social", "explorer", "curious", "bold", "routine-loving"]
 });
+const FISH_SOCIAL_CATEGORIES = Object.freeze({
+  OWN_KIND_REQUIRED: "own_kind_required",
+  OWN_KIND_PREFERRED: "own_kind_preferred",
+  PAIR_BOND: "pair_bond",
+  FLEXIBLE: "flexible",
+  SOLITARY: "solitary",
+  HOST_BOND: "host_bond"
+});
+const FISH_SOCIAL_CATEGORY_LABELS = Object.freeze({
+  own_kind_required: "Own Kind Required",
+  own_kind_preferred: "Own Kind Preferred",
+  pair_bond: "Pair Bond",
+  flexible: "Flexible",
+  solitary: "Solitary",
+  host_bond: "Host Bond"
+});
+const FISH_SOCIAL_SIZE_CLASSES = Object.freeze({
+  TINY: "tiny",
+  SMALL: "small",
+  MEDIUM: "medium",
+  LARGE: "large",
+  GIANT: "giant"
+});
+const FISH_SOCIAL_SIZE_LABELS = Object.freeze({
+  tiny: "Tiny",
+  small: "Small",
+  medium: "Medium",
+  large: "Large",
+  giant: "Giant"
+});
+const FISH_SOCIAL_SIZE_RANKS = Object.freeze({
+  tiny: 0,
+  small: 1,
+  medium: 2,
+  large: 3,
+  giant: 4
+});
+// Logical social size classes are intentionally independent from sprite pixel width.
+// They describe how a fish perceives another fish as a potential companion.
+const FISH_SOCIAL_SIZE_BY_SPECIES = Object.freeze({
+  "freshwater-shrimp": "tiny",
+  "marine-shrimp": "tiny",
+  "nerite-snail": "tiny",
+  "turbo-snail": "tiny",
+  "cleaner-shrimp": "tiny",
+  "pistol-shrimp": "tiny",
+  "fighting-conch": "tiny",
+  "green-chromis": "tiny",
+  "banggai-cardinalfish": "small",
+  "firefish": "small",
+  "chili-rasbora": "tiny",
+  "ember-tetra": "tiny",
+  "neon-tetra": "tiny",
+  "celestial-pearl-danio": "tiny",
+  "guppy": "tiny",
+  "seahorse": "tiny",
+  "davy-bioluminescent-glass-fangfish": "tiny",
+
+  "betta": "small",
+  "clownfish": "small",
+  "pufferfish": "small",
+  "zebra-danio": "small",
+  "cherry-barb": "small",
+  "royal-gramma": "small",
+  "harlequin-rasbora": "small",
+  "pencilfish": "small",
+  "rummy-nose-tetra": "small",
+  "otocinclus": "small",
+  "blue-ram": "small",
+  "gourami": "small",
+  "wonder-killifish": "small",
+  "molly": "small",
+  "swordtail": "small",
+  "livebearer": "small",
+  "pilot-fish": "small",
+  "davy-bioluminescent-angler-pike": "small",
+  "davy-dwarf-hyperfin": "small",
+  "yellow-watchman-goby": "small",
+  "tailspot-blenny": "small",
+  "orchid-dottyback": "small",
+  "six-line-wrasse": "small",
+  "flame-hawkfish": "small",
+
+  "blue-tang": "medium",
+  "goldfish": "medium",
+  "moor-goldfish": "medium",
+  "angelfish": "medium",
+  "rainbowfish": "medium",
+  "yellow-tang": "medium",
+  "discus": "medium",
+  "piranha": "medium",
+  "lionfish": "medium",
+  "davy-dwarf-chimera-barracuda": "medium",
+  "coral-beauty-angelfish": "medium",
+
+  "koi": "large",
+  "bull-shark": "large",
+  "great-white-shark": "large",
+  "hammerhead-shark": "large",
+  "sunfish": "large",
+
+  "orca": "giant"
+});
+const FISH_SOCIAL_PROFILES = Object.freeze({
+  "zebra-danio": { category: "own_kind_required", ownKindMinimum: 2 },
+  "cherry-barb": { category: "own_kind_required", ownKindMinimum: 2 },
+  "rainbowfish": { category: "own_kind_required", ownKindMinimum: 2 },
+  "discus": { category: "own_kind_required", ownKindMinimum: 2 },
+  "chili-rasbora": { category: "own_kind_required", ownKindMinimum: 2 },
+  "ember-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
+  "harlequin-rasbora": { category: "own_kind_required", ownKindMinimum: 2 },
+  "pencilfish": { category: "own_kind_required", ownKindMinimum: 2 },
+  "rummy-nose-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
+  "otocinclus": { category: "own_kind_required", ownKindMinimum: 2 },
+  "neon-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
+  "celestial-pearl-danio": { category: "own_kind_required", ownKindMinimum: 2 },
+  "koi": { category: "own_kind_required", ownKindMinimum: 2 },
+  "orca": { category: "own_kind_required", ownKindMinimum: 2 },
+  "green-chromis": { category: "own_kind_required", ownKindMinimum: 2 },
+  "banggai-cardinalfish": { category: "own_kind_required", ownKindMinimum: 1 },
+
+  "guppy": { category: "own_kind_preferred" },
+  "molly": { category: "own_kind_preferred" },
+  "swordtail": { category: "own_kind_preferred" },
+  "livebearer": { category: "own_kind_preferred" },
+  "piranha": { category: "own_kind_preferred" },
+
+  "clownfish": { category: "pair_bond" },
+  "angelfish": { category: "pair_bond" },
+  "blue-ram": { category: "pair_bond" },
+  "seahorse": { category: "pair_bond" },
+  "yellow-watchman-goby": { category: "host_bond", hostSpeciesIds: ["pistol-shrimp"] },
+  "pistol-shrimp": { category: "host_bond", hostSpeciesIds: ["yellow-watchman-goby"] },
+
+  "blue-tang": { category: "flexible" },
+  "goldfish": { category: "flexible", affinityGroup: "goldfish" },
+  "moor-goldfish": { category: "flexible", affinityGroup: "goldfish" },
+  "royal-gramma": { category: "flexible" },
+  "yellow-tang": { category: "flexible" },
+  "gourami": { category: "flexible" },
+  "bull-shark": { category: "flexible" },
+  "great-white-shark": { category: "flexible" },
+  "hammerhead-shark": { category: "flexible" },
+  "sunfish": { category: "flexible" },
+  "davy-bioluminescent-glass-fangfish": { category: "flexible" },
+  "davy-dwarf-hyperfin": { category: "flexible" },
+  "coral-beauty-angelfish": { category: "flexible" },
+  "tailspot-blenny": { category: "flexible" },
+  "cleaner-shrimp": { category: "flexible" },
+  "fighting-conch": { category: "solitary" },
+  "firefish": { category: "solitary" },
+  "orchid-dottyback": { category: "solitary" },
+  "six-line-wrasse": { category: "solitary" },
+  "flame-hawkfish": { category: "solitary" },
+
+  "betta": { category: "solitary" },
+  "pufferfish": { category: "solitary" },
+  "wonder-killifish": { category: "solitary" },
+  "lionfish": { category: "solitary" },
+  "davy-bioluminescent-angler-pike": { category: "solitary" },
+  "davy-dwarf-chimera-barracuda": { category: "solitary" },
+
+  "pilot-fish": {
+    category: "host_bond",
+    hostSpeciesIds: ["bull-shark", "great-white-shark", "hammerhead-shark", "sunfish"]
+  }
+});
+const FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM = 2;
 const COMFORT_NEED_LABELS = Object.freeze({
   plants: "Plants",
   cave: "Cave",
@@ -784,6 +1074,18 @@ const COMFORT_CONFLICT_LABELS = Object.freeze({
   the_cure: "The Cure"
 });
 const FISH_COMFORT_PROFILES = Object.freeze({
+  "green-chromis": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "banggai-cardinalfish": { mealCoins: 1, unlock: null, needs: ["hardscape", "school_2_plus"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "firefish": { mealCoins: 1, unlock: null, needs: ["cave", "hardscape"], conflicts: ["aggressive_predator", "fast_eater"] },
+  "yellow-watchman-goby": { mealCoins: 1, unlock: null, needs: ["cave", "hardscape"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "tailspot-blenny": { mealCoins: 1, unlock: null, needs: ["seaweed_algae", "hardscape"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "orchid-dottyback": { mealCoins: 1, unlock: null, needs: ["cave", "hardscape"], conflicts: ["same_species", "aggressive_predator"] },
+  "six-line-wrasse": { mealCoins: 1, unlock: "stable-tank", needs: ["hardscape", "cave"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "coral-beauty-angelfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["coral", "hardscape"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "flame-hawkfish": { mealCoins: 2, unlock: "happy-habitat", needs: ["hardscape", "cave"], conflicts: ["aggressive_predator", "overcrowded"] },
+  "cleaner-shrimp": { mealCoins: 1, unlock: null, needs: ["cave", "hardscape"], conflicts: ["aggressive_predator", "large_fish"] },
+  "pistol-shrimp": { mealCoins: 1, unlock: null, needs: ["cave", "hardscape"], conflicts: ["aggressive_predator", "large_fish"] },
+  "fighting-conch": { mealCoins: 0, unlock: null, needs: ["seaweed_algae", "open_water"], conflicts: ["aggressive_predator", "large_fish"] },
   "guppy": { mealCoins: 1, unlock: null, needs: ["plants", "open_water"], conflicts: ["betta_present", "aggressive_predator", "fin_nipper"] },
   "zebra-danio": { mealCoins: 1, unlock: null, needs: ["open_water", "school_2_plus"], conflicts: ["overcrowded"] },
   "goldfish": { mealCoins: 1, unlock: null, needs: ["open_water", "hardscape"], conflicts: ["overcrowded", "fin_nipper"] },
@@ -1182,6 +1484,7 @@ const MANAGEMENT_HISTORY_PAGE_SIZE = 12;
 const MAX_TANK_EVENT_HISTORY = 2000;
 const MAX_BOROUGH_HAPPENINGS = 160;
 const MAX_MEMORIAL_HISTORY = 240;
+const MAX_CREATURE_REMOVAL_HISTORY = 500;
 const HALLOWEEN_MODE_AUTOMATIC = "automatic";
 const HALLOWEEN_MODE_ON = "on";
 const HALLOWEEN_MODE_OFF = "off";
@@ -1218,6 +1521,8 @@ const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
+const CLEANING_DAILY_COIN_CAP = 6;
+const CLEANING_FULL_TANK_COIN_CREDIT = 6;
 const GRIME_CACHE_PRECISION = 240;
 const GRIME_CANVAS_RENDER_SCALE = 0.5;
 const GRIME_VISUAL_START_DIRTINESS = 0;
@@ -1230,10 +1535,6 @@ const CLEAN_FADE_MS = 950;
 const CLEAN_SPARKLE_MS = 1550;
 const CARE_TASK_COMPLETE_HOLD_MS = 2200;
 const DEFAULT_THEME = "dark";
-// Location selectors are intentionally disabled in the current UI. Keep the
-// underlying settings code available so the feature can be restored later.
-const TOOLBAR_POSITION_SETTING_ENABLED = false;
-const DISPLAY_POSITION_SETTING_ENABLED = false;
 const CAUSTIC_LIGHTING_SETTING_ENABLED = true;
 const DECOR_SHADOWS_SETTING_ENABLED = true;
 
@@ -1267,25 +1568,30 @@ const SUBSTRATE_GROUND_SHADOW = Object.freeze({
   midFadeRatio: 0.38
 });
 const DECOR_GROUND_SHADOWS = Object.freeze({
-  baseAlphaMultiplier: 1.22,
+  // Ground shadows are contact shadows, not projected drop shadows. Keep the
+  // broad penumbra centered just below the decor's real opaque bottom edge and
+  // keep the darkest pass very tight to that contact line so heavy rocks and
+  // hardscape never look like they are hovering above the substrate.
+  baseAlphaMultiplier: 1.28,
   baseRadiusXMultiplier: 1.0,
-  baseRadiusYMultiplier: 1.1,
-  baseOffsetY: -2.8,
-  baseMidAlphaMultiplier: 0.62,
-  contactCoreAlphaMultiplier: 1.3,
-  contactSoftAlphaMultiplier: 0.82,
-  contactRadiusXMultiplier: 1.02,
-  contactRadiusYMultiplier: 1.0,
+  baseRadiusYMultiplier: 0.72,
+  baseOffsetY: 1.4,
+  baseMidAlphaMultiplier: 0.68,
+  contactCoreAlphaMultiplier: 1.58,
+  contactSoftAlphaMultiplier: 0.96,
+  contactRadiusXMultiplier: 1.01,
+  contactRadiusYMultiplier: 0.58,
+  contactOffsetY: 0.8,
   // Authored footprint helpers describe where wide decor actually contacts the
   // substrate. Keep the full-width cast shadow light, then make those authored
   // contact regions noticeably darker. This is especially important for arches
   // and roots, where a single centered ellipse makes the opening look grounded.
-  authoredBaseAlphaMultiplier: 0.24,
-  authoredBaseMidAlphaMultiplier: 0.18,
+  authoredBaseAlphaMultiplier: 0.3,
+  authoredBaseMidAlphaMultiplier: 0.22,
   authoredBaseRadiusXMultiplier: 1.08,
-  authoredBaseRadiusYMultiplier: 0.78,
-  authoredContactCoreAlphaMultiplier: 1.68,
-  authoredContactSoftAlphaMultiplier: 1.08,
+  authoredBaseRadiusYMultiplier: 0.62,
+  authoredContactCoreAlphaMultiplier: 1.9,
+  authoredContactSoftAlphaMultiplier: 1.2,
   authoredSpanMergeGapRatio: 0.028,
   shadowDarknessCap: 3
 });
@@ -1298,12 +1604,15 @@ const DEPTH_EFFECT_LEVEL_MAX = 4;
 const DEPTH_EFFECT_LEVEL_DEFAULT = 1;
 const DEPTH_EFFECT_LEVEL_PREFERENCE_KEY = "bubble-borough-depth-effect-level-v1";
 const DEPTH_EFFECT_LEVEL_LABELS = Object.freeze(["Off", "Subtle", "Medium", "Strong", "Max"]);
+const DEPTH_VISUAL_CACHE_MAX_DIMENSION = 768;
+const DEPTH_BACKGROUND_CACHE_MAX_DIMENSION = 2048;
 const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
   saturation: 1,
   contrast: 1,
   coolTint: 1,
   haze: 1,
   substrate: 1,
+  gravelLayerShadow: 0.35,
   shadow: 1,
   movement: 1,
   shadowDarkness: 1.3
@@ -1311,6 +1620,8 @@ const DEFAULT_DEBUG_DEPTH_TUNING = Object.freeze({
 const WEBSURF_THEME_MODE_AUTO = "auto";
 const WEBSURF_THEME_MODE_YES = "yes";
 const WEBSURF_THEME_MODE_NO = "no";
+const WEBSURF_SITE_HEADER_COLLAPSE_SCROLL_PX = 96;
+const WEBSURF_SITE_HEADER_EXPAND_SCROLL_PX = 28;
 const WEBSURF_THEME_MODES = Object.freeze([
   WEBSURF_THEME_MODE_AUTO,
   WEBSURF_THEME_MODE_YES,
@@ -1331,6 +1642,10 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   careTaskPaneOpen: false,
   soundMuted: false,
   uiSoundsMuted: false,
+  tankAmbienceVolume: 0.70,
+  sfxVolume: 0.60,
+  uiSoundVolume: 0.85,
+  gravelShadowIntensity: 0.35,
   tankMouseInputLocked: false,
   layoutRatioLockEnabled: true,
   layoutRatioLockWidth: 0,
@@ -1359,6 +1674,22 @@ const CUSTOM_DECOR_COST = 10;
 const CUSTOM_HIDE_COST = 10;
 const CUSTOM_BUBBLER_COST = 8;
 const CUSTOM_FISH_COST = 75;
+const CUSTOM_BACKGROUND_COST = 20;
+const CUSTOM_CONTENT_STORAGE_LIMIT_BYTES = 25 * 1024 * 1024;
+const CUSTOM_CONTENT_FISH_MAX_BYTES = 2 * 1024 * 1024;
+const CUSTOM_CONTENT_BACKGROUND_MAX_BYTES = 5 * 1024 * 1024;
+const CUSTOM_CONTENT_ITEM_MAX_BYTES = 2 * 1024 * 1024;
+const CUSTOM_BACKGROUND_KEY_PREFIX = "custom-background:";
+const SUBSTRATE_CATALOG = Object.freeze([
+  Object.freeze({ id: "custom", name: "Custom Gravel", cost: 15, defaultUnlocked: true, description: "The recolorable three-layer gravel bed." }),
+  Object.freeze({ id: "river-rock", name: "River Rock", cost: 25, defaultUnlocked: false, description: "Natural rounded river-stone substrate." }),
+  Object.freeze({ id: "sand", name: "Sand", cost: 20, defaultUnlocked: false, description: "Pale fine-grain aquarium sand." })
+]);
+const TANK_SUBSTRATE_ASSET_PATHS = Object.freeze({
+  "river-rock": "assets/gravel/alt/river-rock.png",
+  sand: "assets/gravel/alt/sand.png"
+});
+const DEFAULT_OWNED_SUBSTRATE_KEYS = Object.freeze(SUBSTRATE_CATALOG.filter((item) => item.defaultUnlocked).map((item) => item.id));
 const CUSTOM_DECOR_DEFAULT_WIDTH = 200;
 const CUSTOM_DECOR_MIN_WIDTH = 40;
 const CUSTOM_DECOR_MAX_WIDTH = 1440;
@@ -1636,6 +1967,12 @@ const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
 const AMBIENT_BUBBLE_COUNT = 30;
 const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
+const TANK_DEPTH_SUBLAYERS = 3;
+const TANK_DEPTH_POSITIONS = TANK_DEPTH_LAYERS * TANK_DEPTH_SUBLAYERS;
+const TANK_SUBLAYER_FRONT = 1;
+const TANK_SUBLAYER_MIDDLE = 2;
+const TANK_SUBLAYER_BACK = 3;
+const DEFAULT_TANK_SUBLAYER = TANK_SUBLAYER_MIDDLE;
 const FISH_LAYER_DEPTH_SCALE_STEP = 0.1;
 const DEFAULT_BUBBLER_SPOUT_QTY = 1;
 const DEFAULT_BUBBLER_INTENSITY = 1;
@@ -1689,6 +2026,36 @@ const DISEASE_GREEN_BUBBLE_CADENCE_MS = 1800;
 const DISEASE_GREEN_BUBBLE_MIN_TRAVEL_MS = 5400;
 const DISEASE_GREEN_BUBBLE_POP_MS = 620;
 const DISEASE_GREEN_BUBBLE_MAX_PER_FISH = 24;
+const MOOD_BUBBLE_CONFIG = Object.freeze({
+  colors: Object.freeze({
+    Happy: "#FFD45A",
+    Cozy: "#F2A6A6",
+    Playful: "#67D7A5",
+    Hyper: "#35D4E8",
+    Curious: "#62C7F2",
+    Social: "#77D89A",
+    Hungry: "#F5B51B",
+    Sleepy: "#7E9BC7",
+    Lonely: "#4C8DFF",
+    Sad: "#52708F",
+    Uneasy: "#F4C65D",
+    Stressed: "#F29B4B",
+    Scared: "#A875E8",
+    Hostile: "#F04D4D",
+    Sick: "#7DDF22",
+    Panicked: "#FF3B30",
+    Unresponsive: "#A7B1AD"
+  }),
+  passiveMoods: Object.freeze(["Sick", "Hungry", "Scared", "Lonely", "Hostile", "Sad"]),
+  passiveIntervalMs: Object.freeze({ mild: [20000, 40000], serious: [10000, 20000], severe: [6000, 12000] }),
+  burstCount: 3,
+  burstSpacingMs: 1000,
+  tapCooldownMs: 0,
+  tapStressPerTap: 0.16,
+  tapStressDecayPerSecond: 0.22,
+  scaredStressThreshold: 1
+});
+const FISH_NEW_TANK_ACCLIMATION_MS = 90 * 1000;
 const DEFAULT_TANK_LAYER = 3;
 const LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX = 0;
 const LAYER_BOTTOM_GRAVEL_STEP_PX = 20;
@@ -1707,6 +2074,7 @@ const GRAVEL_FISH_DISTURB_RADIUS_PX = 56;
 const GRAVEL_FISH_DISTURB_MS_MIN = 1600;
 const GRAVEL_FISH_DISTURB_MS_MAX = 3200;
 const GRAVEL_CACHE_OVERSAMPLE = 1.08;
+const GRAVEL_CACHE_MAX_SCALE = 1.35;
 // Estimated from the desktop reference screenshot: the gravel band reads as
 // roughly 17% of the visible tank stage height.
 const GRAVEL_VIEWPORT_HEIGHT_RATIO = 0.17;
@@ -1794,24 +2162,13 @@ const CAVE_ENTRY_SIDE_OPTIONS = Object.freeze([
   { id: "both", label: "Both" }
 ]);
 const OPTIONAL_BUBBLE_ORB_ASSET_PATH = "assets/misc/bubble.png";
-const ENABLE_PORTABLE_PERFORMANCE_MODE = true;
-const PORTABLE_PERFORMANCE_MEDIA_QUERY = "(hover: none) and (pointer: coarse)";
-const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
-const PORTABLE_PERFORMANCE_MAX_FPS = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_COUNT = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_CLEAN_VISIBLE_COUNT = 30;
-const PORTABLE_PERFORMANCE_WATER_PARTICLE_DIRTY_VISIBLE_COUNT = 30;
-const PORTABLE_PERFORMANCE_AMBIENT_BUBBLE_COUNT = 18;
-const PORTABLE_PERFORMANCE_MAX_BUBBLER_VISIBLE_BUBBLES_PER_SPOUT = 32;
-const PORTABLE_PERFORMANCE_RESIZE_DEBOUNCE_MS = 120;
-const PORTABLE_PERFORMANCE_TANK_BLUR_SCALE = 0.55;
-const PORTABLE_PERFORMANCE_GRIME_BLUR_SCALE = 0.5;
 
 
 const FISH_DIRTINESS_BONUS_MIN = 0.01;
 const FISH_DIRTINESS_BONUS_MAX = 0.10;
 const SUCKER_FISH_CLEAN_DURATION_BONUS = 0.25;
 const SUCKER_FISH_CLEAN_DURATION_BONUS_CAP = 0.9;
+const CLEANUP_CREW_DIRTINESS_FLOOR = 0.12;
 const DEAD_FISH_DIRTINESS_BONUS = 0.5;
 const CRITICAL_TANK_DIRTINESS = 0.999;
 const SICK_FISH_HEALTH_RATIO_THRESHOLD = 0.5;
@@ -1913,7 +2270,13 @@ const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 const FISH_MOTION_SCALE = 1.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
-const FISH_LAYER_TRAVEL_STEP_INTERVAL_MS = 460;
+// Phase 16: the fifteen depth positions form one contiguous travel track. Each
+// adjacent slot is committed quickly enough that a full front-to-back swim does
+// not take forever, while the visual depth scale continues easing between steps.
+const FISH_DEPTH_TRAVEL_STEP_INTERVAL_MS = 190;
+// Legacy name retained for older debug/tests and any code that still refers to
+// layer travel rather than the generalized depth-position travel.
+const FISH_LAYER_TRAVEL_STEP_INTERVAL_MS = FISH_DEPTH_TRAVEL_STEP_INTERVAL_MS;
 // Fish use their actual alpha silhouettes as a final collision check so they
 // cannot visually phase through one another. Broad bounds reject almost every
 // pair before the mask test, keeping this inexpensive during normal swimming.
@@ -1925,6 +2288,32 @@ const FISH_COLLISION_DETOUR_MIN_X_NORM = 0.075;
 const FISH_COLLISION_DETOUR_MAX_X_NORM = 0.15;
 const FISH_COLLISION_DETOUR_MIN_Y_NORM = 0.035;
 const FISH_COLLISION_DETOUR_MAX_Y_NORM = 0.095;
+// Phase 17: navigation memory prevents fish from indefinitely oscillating
+// between the same decor, fish, and depth choices. A successful avoidance
+// lane is held briefly, repeated failures escalate, and stale failures expire.
+const FISH_NAV_SUBLAYER_COMMIT_MS = 1100;
+const FISH_NAV_SUBLAYER_COMMIT_TRAVEL_NORM = 0.05;
+// Plan A / Phase 1: an avoidance lane remains authoritative until the fish has
+// actually moved clear of the obstacle. The target may be several positions
+// away on the 15-slot depth track, but travel still happens one adjacent slot
+// at a time.
+const FISH_NAV_AVOIDANCE_DEPTH_HOLD_MS = 3200;
+const FISH_NAV_AVOIDANCE_CLEAR_TRAVEL_NORM = 0.09;
+const FISH_NAV_FAILURE_WINDOW_MS = 4800;
+const FISH_NAV_RECENT_RETRY_BLOCK_MS = 520;
+const FISH_NAV_PROGRESS_RESET_NORM = 0.035;
+const FISH_NAV_UNSTUCK_LEVEL1_FAILURES = 3;
+const FISH_NAV_UNSTUCK_LEVEL2_FAILURES = 5;
+const FISH_NAV_UNSTUCK_LEVEL3_FAILURES = 7;
+const FISH_NAV_UNSTUCK_COOLDOWN_MS = 900;
+const FISH_NAV_OSCILLATION_WINDOW_MS = 3200;
+const FISH_NAV_OSCILLATION_REVERSALS = 3;
+const FISH_NAV_ESCAPE_WAYPOINT_MS = 1550;
+// Phase 18: a pair of fish shares one deterministic right-of-way decision for
+// the duration of an encounter. This prevents mirrored lane changes where both
+// fish repeatedly choose the same avoidance maneuver.
+const FISH_RIGHT_OF_WAY_DECISION_MS = 1400;
+const FISH_RIGHT_OF_WAY_TARGET_DISTANCE_EPSILON_NORM = 0.018;
 const SUCKER_FISH_FACE_PIVOT_ENABLED = true;
 const SUCKER_FISH_FACE_PIVOT_X = 0.88;
 const SUCKER_FISH_FACE_PIVOT_Y = 0.5;
@@ -1976,7 +2365,9 @@ const OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS = 2;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS = 5;
 const OTOCINCLUS_GRAVEL_SCAN_MIN_DURATION_MS = 5600;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_DURATION_MS = 10800;
-const OTOCINCLUS_GRAVEL_SCAN_COIN_CHANCE_MULTIPLIER = 2;
+const OTOCINCLUS_COIN_FIND_CHANCE = 0.12;
+const OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 5 * MINUTE_MS;
+const OTOCINCLUS_DAILY_COIN_FIND_CAP = 5;
 const OTOCINCLUS_GLASS_SWITCH_CHANCE_AFTER_SCAN = 0.34;
 const OTOCINCLUS_GRAVEL_SPIT_MIN_MS = 420;
 const OTOCINCLUS_GRAVEL_SPIT_MAX_MS = 720;
@@ -1995,8 +2386,10 @@ const WHALE_BREATH_BLOWHOLE_FORWARD_OFFSET_RATIO = 0.27;
 const WHALE_BREATH_ARRIVAL_NORM = 0.012;
 const FISH_SURFACE_MOTION_HEADROOM_PX = 10;
 const FISH_SURFACE_HEIGHT_GUARD_MULTIPLIER = 1.08;
-const DEAD_FISH_SURFACE_FLOAT_INSET_PX = 4;
-const DEAD_FISH_SURFACE_BOB_ALLOWANCE_PX = 3;
+// Dead Fish Phase 24 final readability tuning: keep the opaque body close to
+// the waterline while reserving enough room for the intentionally tiny bob.
+const DEAD_FISH_SURFACE_FLOAT_INSET_PX = 3;
+const DEAD_FISH_SURFACE_BOB_ALLOWANCE_PX = 2;
 const FISH_ENTRY_DURATION_MS = 1450;
 const FISH_ENTRY_FROM_Y_NORM = 0.03;
 const FISH_ENTRY_SPLASH_PROGRESS = 0.22;
@@ -2014,16 +2407,21 @@ const SAME_SPECIES_FOLLOW_MAX_MS = 1250;
 const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.04;
 const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.095;
 const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.05;
-const BABY_FISH_SCALE_MULTIPLIER = 0.25;
+const BABY_FISH_SCALE_MULTIPLIER = 0.45;
 const BABY_FISH_GROWTH_DURATION_MS = 3 * DAY_MS;
+const FISH_ELDERLY_LIFE_FRACTION = 0.85;
+const FISH_ELDERLY_SPEED_MULTIPLIER = 0.82;
+const FISH_ELDERLY_REST_WEIGHT_BONUS = 2.2;
 const BREEDING_MIN_TANK_TIME_MS = 3 * DAY_MS;
 const BREEDING_BASE_CHANCE_PER_WINDOW = 0.06;
+const BREEDING_ATTEMPT_SUCCESS_CHANCE = 0.65;
 const BREEDING_EXTRA_PAIR_BONUS_CHANCE = 0.025;
 const BREEDING_MAX_CHANCE_PER_WINDOW = 0.18;
 const BREEDING_EVENT_TANK_LAYER = 1;
 const FISH_EGG_SINK_DURATION_MS = 18 * 1000;
 const FISH_EGG_RELEASE_DRIFT_DURATION_MS = 8 * 1000;
 const FISH_EGG_INCUBATION_MS = 72 * HOUR_MS;
+const LIVE_BIRTH_GESTATION_MS = 24 * HOUR_MS;
 const FISH_EGG_SHELL_LINGER_MS = 90 * 1000;
 const FISH_EGG_DRAW_WIDTH_MIN_PX = 26;
 const FISH_EGG_DRAW_WIDTH_MAX_PX = 44;
@@ -2136,6 +2534,7 @@ const MEDICINE_VISUAL_DURATION_MS = 60 * 1000;
 const MEDICINE_CLOUD_DURATION_MS = 8 * 1000;
 const FOOD_DROP_SPREAD_NORM = 0.03;
 const FOOD_PELLET_SINK_DURATION_MS = 95 * 1000;
+const ALGAE_WAFER_SINK_DURATION_MS = 8.5 * 1000;
 const FOOD_PELLET_SETTLED_LIFETIME_MS = 36 * HOUR_MS;
 const FOOD_PELLET_SETTLED_Y_OFFSET_PX = 5;
 const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 2 * MINUTE_MS;
@@ -2249,10 +2648,12 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "pendingPoops",
   "poops",
   "fishEggs",
+  "pendingBreedingEvents",
   "placedDecor",
   "customGravelEnabled",
   "customGravelLayerColors",
   "customGravelLayerColorize",
+  "substrateStyle",
   "gravelPalette",
   "gravelSeed",
   "gravelHillSeed",
@@ -2280,11 +2681,19 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "selectedBubbleAsset",
   "theme",
   "lastCleanedAt",
+  "cleaningIncomeDayKey",
+  "cleaningIncomeCredit",
+  "cleaningIncomeCoinsEarned",
+  "otocinclusCoinFindDayKey",
+  "otocinclusCoinsFoundToday",
+  "otocinclusCoinFindLastAttemptAt",
   "lastSimulatedAt",
   "events",
   "lastCorpseSicknessAt",
   "tankTypeId",
   "waterType",
+  "populationCapacity",
+  "populationUsage",
   "setupPending",
   "foodBuffs",
   "medicineEffects",
@@ -2340,7 +2749,7 @@ const DECOR_CATALOG_PATH = "assets/decor/decor_types.json?v=20260908-halloween-s
 
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
-const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food.png";
+const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food_small.png";
 const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-09";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
@@ -2355,8 +2764,6 @@ const PURCHASE_SOUND_PATH = "assets/sounds/purchase.mp3";
 const COIN_SOUND_PATH = "assets/sounds/coin.mp3";
 const COIN_ICON_PATH = resolveAppUrl("assets/icons/coin.png");
 const MAX_WALLET_COINS = 9999;
-// Keep the legacy digital display implementation available, but ship it off.
-const DIGITAL_DISPLAY_ENABLED = false;
 const DISPENSER_SOUND_PATH = "assets/sounds/dispenser.mp3";
 const SUBMARINE_SONAR_SOUND_PATH = "assets/sounds/sonar_sound.mp3";
 const BOAT_HORN_SOUND_PATH = "assets/sounds/boat_horn.mp3";
@@ -2599,10 +3006,21 @@ if (typeof window !== "undefined") {
 
 const FOOD_PELLET_IMAGE_PATH = resolveFoodAndMedAssetPath("pellet.png");
 const TOOL_CURSOR_ICON_PATHS = Object.freeze({
-  feed: resolveAppUrl("assets/icons/feed_fish.png"),
-  medicine: resolveAppUrl("assets/icons/medicine.png"),
-  cleaning: resolveAppUrl("assets/icons/sponge.png"),
-  scoop: resolveAppUrl("assets/icons/scoop.png")
+  foodPellets: resolveAppUrl("assets/icons/food_pellets.png"),
+  algaeWafers: resolveAppUrl("assets/icons/wafer_scoop_contents.png"),
+  brineShrimp: resolveAppUrl("assets/icons/shrimp_scoop_contents.png"),
+  carnivore: resolveAppUrl("assets/icons/meat_scoop_contents.png"),
+  foodScoop: resolveAppUrl("assets/icons/food_scoop.png"),
+  chumBucket: resolveAppUrl("assets/icons/bucket_cursor.png"),
+  fishNet: resolveAppUrl("assets/icons/net_cursor.png"),
+  firstAid: resolveAppUrl("assets/icons/first_aid_cursor.png"),
+  osmoticStress: resolveAppUrl("assets/icons/osmotic-stress_cursor.png"),
+  infection: resolveAppUrl("assets/icons/infection_cursor.png"),
+  antiParasite: resolveAppUrl("assets/icons/anti-parasite_cursor.png"),
+  calmingSerum: resolveAppUrl("assets/icons/calming-serum_cursor.png"),
+  fallbackFeed: resolveAppUrl("assets/icons/feed_fish.png"),
+  fallbackMedicine: resolveAppUrl("assets/icons/medicine.png"),
+  cleaning: resolveAppUrl("assets/icons/sponge.png")
 });
 
 
@@ -2659,15 +3077,50 @@ const CAVE_BEHAVIOR_OVERRIDES = {
   }
 };
 
+// These products were authored before their artwork existed. Keeping them out
+// of the live and offline catalog prevents permanent 404 image requests.
+const UNAVAILABLE_FISH_ASSET_IDS = new Set([
+  "yellow-watchman-goby",
+  "tailspot-blenny",
+  "flame-hawkfish",
+  "fighting-conch"
+]);
+
 const FISH_TYPES = [
   {
-    "id": "blue-tang",
-    "name": "Blue Tang",
+    "id": "tang",
+    "name": "Tang",
     "genetics": "natural",
     "cost": 28,
     "mealCoins": 2,
-    "asset": "/assets/fish/bluetang.png",
-    "description": "A bright, energetic reef fish known for its bold blue coloring and constant movement. Blue Tangs love having plenty of room to cruise and rarely spend much time sitting still.",
+    "asset": "/assets/fish/tang_yellow.png",
+    "assetVariants": [
+      "/assets/fish/tang_yellow.png",
+      "/assets/fish/tang_bluespine-unicornfish.png",
+      "/assets/fish/tang_vlamings-unicornfish.png",
+      "/assets/fish/tang_lined-surgeonfish.png",
+      "/assets/fish/tang_kole.png",
+      "/assets/fish/tang_achilles.png",
+      "/assets/fish/tang_naso.png",
+      "/assets/fish/tang_pacific-sailfin.png",
+      "/assets/fish/tang_purple.png",
+      "/assets/fish/tang_powder-blue.png",
+      "/assets/fish/tang_blue.png"
+    ],
+    "variantLabels": [
+      "Tang Yellow",
+      "Tang Bluespine Unicornfish",
+      "Tang Vlamings Unicornfish",
+      "Tang Lined Surgeonfish",
+      "Tang Kole",
+      "Tang Achilles",
+      "Tang Naso",
+      "Tang Pacific Sailfin",
+      "Tang Purple",
+      "Tang Powder Blue",
+      "Tang Blue"
+    ],
+    "description": "A hardy family of active reef grazers with a wide range of colors and body shapes. Tangs cruise open water, browse algae, and need plenty of room to move.",
     "width": 398,
     "displayWidth": 260,
     "bobSpeed": 1.32,
@@ -2708,7 +3161,36 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 100,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "goldfish",
@@ -2716,7 +3198,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 5,
     "mealCoins": 1,
-    "asset": "/assets/fish/goldfish.png",
+    "asset": "/assets/fish/goldfish_common.png",
     "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
     "width": 405,
     "displayWidth": 250,
@@ -2758,7 +3240,60 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 120,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/goldfish_common.png",
+      "/assets/fish/goldfish_celestial.png",
+      "/assets/fish/goldfish_comet.png",
+      "/assets/fish/goldfish_bubble_eye.png",
+      "/assets/fish/goldfish_fantail.png",
+      "/assets/fish/goldfish_lionhead.png",
+      "/assets/fish/goldfish_oranda.png",
+      "/assets/fish/goldfish_ranchu.png",
+      "/assets/fish/goldfish_ryukin.png",
+      "/assets/fish/goldfish_shubunkin.png"
+    ],
+    "variantLabels": [
+      "Goldfish Common",
+      "Goldfish Celestial",
+      "Goldfish Comet",
+      "Goldfish Bubble Eye",
+      "Goldfish Fantail",
+      "Goldfish Lionhead",
+      "Goldfish Oranda",
+      "Goldfish Ranchu",
+      "Goldfish Ryukin",
+      "Goldfish Shubunkin"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "guppy",
@@ -2766,7 +3301,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 4,
     "mealCoins": 1,
-    "asset": "/assets/fish/guppy.png",
+    "asset": "/assets/fish/guppy_cobra.png",
     "description": "A small, colorful fish with a big personality and a flowing tail. Guppies are lively swimmers that alternate between quick bursts of energy and relaxed cruising around the tank.",
     "width": 179,
     "bobSpeed": 1.45,
@@ -2807,7 +3342,47 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": true
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/guppy_cobra.png",
+      "/assets/fish/guppy_full_red.png",
+      "/assets/fish/guppy_mosaic.png",
+      "/assets/fish/guppy_moscow_blue.png",
+      "/assets/fish/guppy_tuxedo.png"
+    ],
+    "variantLabels": [
+      "Guppy Cobra",
+      "Guppy Full Red",
+      "Guppy Mosaic",
+      "Guppy Moscow Blue",
+      "Guppy Tuxedo"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "betta",
@@ -2815,12 +3390,18 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 10,
     "mealCoins": 1,
-    "asset": "/assets/fish/betta.png",
+    "asset": "/assets/fish/betta_crowntail.png",
     "assetVariants": [
-      "/assets/fish/betta_1.png",
-      "/assets/fish/betta_2.png",
-      "/assets/fish/betta_3.png",
-      "/assets/fish/betta_4.png"
+      "/assets/fish/betta_crowntail.png",
+      "/assets/fish/betta_delta.png",
+      "/assets/fish/betta_double_tail.png",
+      "/assets/fish/betta_dumbo_ear.png",
+      "/assets/fish/betta_giant.png",
+      "/assets/fish/betta_half_moon.png",
+      "/assets/fish/betta_koi.png",
+      "/assets/fish/betta_plakat.png",
+      "/assets/fish/betta_rosetail.png",
+      "/assets/fish/betta_veiltail.png"
     ],
     "description": "A striking fish known for its flowing fins, bold colors, and unmistakable presence. Bettas are graceful swimmers, but they can be highly territorial and aggressive, especially around other bettas.",
     "width": 219,
@@ -2862,7 +3443,46 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 45,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "variantLabels": [
+      "Betta Crowntail",
+      "Betta Delta",
+      "Betta Double Tail",
+      "Betta Dumbo Ear",
+      "Betta Giant",
+      "Betta Half Moon",
+      "Betta Koi",
+      "Betta Plakat",
+      "Betta Rosetail",
+      "Betta Veiltail"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "clownfish",
@@ -2870,7 +3490,14 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 20,
     "mealCoins": 2,
-    "asset": "/assets/fish/clownfish.png",
+    "asset": "/assets/fish/clownfish_1.png",
+    "assetVariants": [
+      "/assets/fish/clownfish_1.png",
+      "/assets/fish/clownfish_5.png",
+      "/assets/fish/clownfish_4.png",
+      "/assets/fish/clownfish_3.png",
+      "/assets/fish/clownfish_2.png"
+    ],
     "description": "A colorful, energetic fish known for its bold stripes and curious personality. Clownfish often form close bonds with anemones and tend to stick near a favorite part of the tank.",
     "width": 162,
     "bobSpeed": 1.35,
@@ -2911,7 +3538,40 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 100,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "variantLabels": [
+      "Clownfish 1",
+      "Clownfish 5",
+      "Clownfish 4",
+      "Clownfish 3",
+      "Clownfish 2"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "angelfish",
@@ -2919,12 +3579,18 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 36,
     "mealCoins": 2,
-    "asset": "/assets/fish/angelfish.png",
+    "asset": "/assets/fish/angelfish_altum.png",
     "assetVariants": [
-      "/assets/fish/angelfish_1.png",
-      "/assets/fish/angelfish_2.png",
-      "/assets/fish/angelfish_3.png",
-      "/assets/fish/angelfish_4.png"
+      "/assets/fish/angelfish_altum.png",
+      "/assets/fish/angelfish_black_lace.png",
+      "/assets/fish/angelfish_blue_blushing.png",
+      "/assets/fish/angelfish_emperor.png",
+      "/assets/fish/angelfish_flame.png",
+      "/assets/fish/angelfish_gold_pearlscale.png",
+      "/assets/fish/angelfish_koi.png",
+      "/assets/fish/angelfish_marble.png",
+      "/assets/fish/angelfish_silver.png",
+      "/assets/fish/angelfish_zebra.png"
     ],
     "description": "A graceful fish known for its tall body, long fins, and slow, sweeping movements. Angelfish usually carry themselves calmly, but they can become territorial as they mature, especially when pairing or breeding.",
     "width": 456,
@@ -2967,7 +3633,68 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 80,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "variantLabels": [
+      "Angelfish Altum",
+      "Angelfish Black Lace",
+      "Angelfish Blue Blushing",
+      "Angelfish Emperor",
+      "Angelfish Flame",
+      "Angelfish Gold Pearlscale",
+      "Angelfish Koi",
+      "Angelfish Marble",
+      "Angelfish Silver",
+      "Angelfish Zebra"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "variantRequirements": {
+      "angelfish_emperor.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "herbivore",
+        "taxonNote": "Emperor Angelfish (Pomacanthus imperator).",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ]
+      },
+      "angelfish_flame.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "herbivore",
+        "taxonNote": "Flame Angelfish (Centropyge loricula).",
+        "acceptedFoods": [
+          "basic",
+          "algaeWafers",
+          "brineShrimp"
+        ]
+      }
+    },
+    "Fish_enabled": true
   },
   {
     "id": "pufferfish",
@@ -2975,7 +3702,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 40,
     "mealCoins": 2,
-    "asset": "/assets/fish/pufferfish.png",
+    "asset": "/assets/fish/puffer_amazon.png",
     "description": "A curious little oddball with a round body, expressive face, and plenty of personality. Pufferfish are known for investigating their surroundings and, when seriously threatened, inflating themselves into a much larger shape.",
     "width": 150,
     "bobSpeed": 1.55,
@@ -3016,105 +3743,141 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "zebra-danio",
-    "name": "Zebra Danio",
-    "genetics": "natural",
-    "cost": 4,
-    "mealCoins": 1,
-    "asset": "/assets/fish/zebradanio.png",
-    "description": "A small, energetic fish known for its bold horizontal stripes and nonstop activity. Zebra Danios are quick, social swimmers that love racing back and forth and rarely stay still for long.",
-    "width": 143,
-    "bobSpeed": 1.5,
-    "swimStyle": "sporadic",
-    "speedMin": 0.032,
-    "speedMax": 0.052,
-    "targetMinMs": 1200,
-    "targetMaxMs": 3200,
-    "defaultNames": [
-      "Zig",
-      "Dash",
-      "Stripe",
-      "Volt",
-      "Zoom",
-      "Racer",
-      "Streak",
-      "Flash",
-      "Skid",
-      "Bolt",
-      "Turbo",
-      "Rocket",
-      "Pepper",
-      "Jolt",
-      "Whip",
-      "Jitter",
-      "Sonic",
-      "Flicker",
-      "Quickdraw",
-      "Skippy"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 80,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "assetVariants": [
+      "/assets/fish/puffer_amazon.png",
+      "/assets/fish/puffer_dogface.png",
+      "/assets/fish/puffer_dwarf.png",
+      "/assets/fish/puffer_fahaka.png",
+      "/assets/fish/puffer_figure8.png",
+      "/assets/fish/puffer_green_spotted.png",
+      "/assets/fish/puffer_map.png",
+      "/assets/fish/puffer_mbu.png",
+      "/assets/fish/puffer_oceanic.png",
+      "/assets/fish/puffer_valentinis_sharpnose.png"
+    ],
+    "variantLabels": [
+      "Puffer Amazon",
+      "Puffer Dogface",
+      "Puffer Dwarf",
+      "Puffer Fahaka",
+      "Puffer Figure8",
+      "Puffer Green Spotted",
+      "Puffer Map",
+      "Puffer Mbu",
+      "Puffer Oceanic",
+      "Puffer Valentinis Sharpnose"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirements": {
+      "puffer_amazon.png": {
+        "waterType": "freshwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_dogface.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_dwarf.png": {
+        "waterType": "freshwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_fahaka.png": {
+        "waterType": "freshwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_figure8.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "salinityNote": "Brackish; represented as saltwater.",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_green_spotted.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "salinityNote": "Brackish to marine; represented as saltwater.",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_map.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_mbu.png": {
+        "waterType": "freshwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_oceanic.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
+      },
+      "puffer_valentinis_sharpnose.png": {
+        "waterType": "saltwater",
+        "dietaryMode": "carnivore",
+        "acceptedFoods": [
+          "brineShrimp",
+          "carnivore"
+        ]
       }
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "cherry-barb",
-    "name": "Cherry Barb",
-    "genetics": "natural",
-    "cost": 5,
-    "mealCoins": 1,
-    "asset": "/assets/fish/cherrybarb.png",
-    "description": "A small, peaceful fish known for its warm red coloring and relaxed personality. Cherry Barbs are social swimmers that do especially well in groups and tend to explore the tank at an easy, steady pace.",
-    "width": 165,
-    "bobSpeed": 1.28,
-    "swimStyle": "steady",
-    "speedMin": 0.02,
-    "speedMax": 0.03,
-    "targetMinMs": 2200,
-    "targetMaxMs": 4600,
-    "defaultNames": [
-      "Cherry",
-      "Blush",
-      "Ruby",
-      "Ember",
-      "Scarlet",
-      "Poppy",
-      "Rose",
-      "Berry",
-      "Cranberry",
-      "Maraschino",
-      "Rosie",
-      "Crimson",
-      "Garnet",
-      "Valentine",
-      "Sangria",
-      "Twizzler",
-      "Blazer",
-      "Cupid",
-      "Reddy",
-      "Jam"
-    ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
-    },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "rainbowfish",
@@ -3122,7 +3885,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 16,
     "mealCoins": 1,
-    "asset": "/assets/fish/rainbowfish.png",
+    "asset": "/assets/fish/rainbow_bleheri.png",
     "description": "A lively, shimmering fish known for its metallic colors and graceful movement. Rainbowfish are active, social swimmers that look especially striking as they glide through the tank and catch the light.",
     "width": 241,
     "bobSpeed": 1.2,
@@ -3163,109 +3926,53 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "royal-gramma",
-    "name": "Royal Gramma",
-    "genetics": "natural",
-    "cost": 20,
-    "mealCoins": 2,
-    "asset": "/assets/fish/royalgramma.png",
-    "description": "A striking little fish known for its vivid purple and yellow coloring. Royal Grammas tend to stay close to rocks, caves, and other hiding places, often hovering nearby before darting back to safety.",
-    "width": 260,
-    "bobSpeed": 1.18,
-    "swimStyle": "peaceful",
-    "speedMin": 0.016,
-    "speedMax": 0.024,
-    "targetMinMs": 3200,
-    "targetMaxMs": 6200,
-    "defaultNames": [
-      "Royal",
-      "Velour",
-      "Crown",
-      "Majesty",
-      "Regal",
-      "Prince",
-      "Queenie",
-      "Scepter",
-      "Velvet",
-      "Amethyst",
-      "Goldie",
-      "Monarch",
-      "Duke",
-      "Baron",
-      "Luxe",
-      "Gilded",
-      "Violet",
-      "Imperial",
-      "Treasure",
-      "Sultan"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 70,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
-    },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "yellow-tang",
-    "name": "Yellow Tang",
-    "genetics": "natural",
-    "cost": 24,
-    "mealCoins": 2,
-    "asset": "/assets/fish/yellowtang.png",
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
     "assetVariants": [
-      "/assets/fish/yellowtang_1.png"
+      "/assets/fish/rainbow_bleheri.png",
+      "/assets/fish/rainbow_boesemani.png",
+      "/assets/fish/rainbow_fluviatilis.png",
+      "/assets/fish/rainbow_incisus.png",
+      "/assets/fish/rainbow_parkinsoni.png",
+      "/assets/fish/rainbow_praecox.png",
+      "/assets/fish/rainbow_trifasciata.png",
+      "/assets/fish/rainbow_turquoise.png"
     ],
-    "description": "A bright, active fish known for its vivid yellow coloring and constant grazing. Yellow Tangs spend much of their time cruising around the tank and picking at algae as they explore.",
-    "width": 360,
-    "displayWidth": 245,
-    "bobSpeed": 1.25,
-    "swimStyle": "steady",
-    "speedMin": 0.024,
-    "speedMax": 0.034,
-    "targetMinMs": 2400,
-    "targetMaxMs": 5200,
-    "defaultNames": [
-      "Sunny",
-      "Lemon",
-      "Zest",
-      "Goldie",
-      "Banana",
-      "Butter",
-      "Dandelion",
-      "Sunkist",
-      "Yuzu",
-      "Nacho",
-      "Mustard",
-      "Topaz",
-      "Blondie",
-      "Canary",
-      "Sunbeam",
-      "Dijon",
-      "Cheese",
-      "Marigold",
-      "Mellow",
-      "Pikachu"
+    "variantLabels": [
+      "Rainbow Bleheri",
+      "Rainbow Boesemani",
+      "Rainbow Fluviatilis",
+      "Rainbow Incisus",
+      "Rainbow Parkinsoni",
+      "Rainbow Praecox",
+      "Rainbow Trifasciata",
+      "Rainbow Turquoise"
     ],
-    "caveEnabled": false,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "discus",
@@ -3273,7 +3980,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 32,
     "mealCoins": 2,
-    "asset": "/assets/fish/discus.png",
+    "asset": "/assets/fish/discus_blue_diamond.png",
     "description": "An elegant, round-bodied fish known for its striking colors and calm, deliberate movement. Discus tend to glide gracefully through the tank and have a reputation for being a little more delicate than the average aquarium fish.",
     "width": 488,
     "displayWidth": 260,
@@ -3315,7 +4022,56 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 110,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "assetVariants": [
+      "/assets/fish/discus_blue_diamond.png",
+      "/assets/fish/discus_checkerboard_pigeon.png",
+      "/assets/fish/discus_cobalt.png",
+      "/assets/fish/discus_heckel.png",
+      "/assets/fish/discus_leopard.png",
+      "/assets/fish/discus_leopard_snakeskin.png",
+      "/assets/fish/discus_red_eagle.png",
+      "/assets/fish/discus_snakeskin.png",
+      "/assets/fish/discus_turquoise.png"
+    ],
+    "variantLabels": [
+      "Discus Blue Diamond",
+      "Discus Checkerboard Pigeon",
+      "Discus Cobalt",
+      "Discus Heckel",
+      "Discus Leopard",
+      "Discus Leopard Snakeskin",
+      "Discus Red Eagle",
+      "Discus Snakeskin",
+      "Discus Turquoise"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "moor-goldfish",
@@ -3323,7 +4079,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 4,
     "mealCoins": 1,
-    "asset": "/assets/fish/moorgoldfish.png",
+    "asset": "/assets/fish/moor_black.png",
     "description": "A distinctive goldfish known for its deep black coloring, rounded body, and large telescope eyes. Black Moors are gentle, unhurried swimmers that tend to drift calmly around the tank.",
     "width": 378,
     "displayWidth": 250,
@@ -3365,185 +4121,70 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "chili-rasbora",
-    "name": "Chili Rasbora",
-    "genetics": "natural",
-    "cost": 3,
-    "mealCoins": 1,
-    "asset": "/assets/fish/ChiliRasbora.png",
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 120,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
     "assetVariants": [
-      "/assets/fish/ChiliRasbora_1.png",
-      "/assets/fish/ChiliRasbora_2.png",
-      "/assets/fish/ChiliRasbora_3.png",
-      "/assets/fish/ChiliRasbora_4.png"
+      "/assets/fish/moor_black.png",
+      "/assets/fish/moor_bronze.png",
+      "/assets/fish/moor_calico.png",
+      "/assets/fish/moor_gold.png",
+      "/assets/fish/moor_orangewhite.png",
+      "/assets/fish/moor_panda.png",
+      "/assets/fish/moor_redblack.png",
+      "/assets/fish/moor_white.png"
     ],
-    "description": "A tiny, peaceful fish known for its brilliant red coloring and lively personality. Chili Rasboras feel most at home in groups, weaving through plants and open spaces in quick little bursts.",
-    "width": 105,
-    "bobSpeed": 1.48,
-    "swimStyle": "sporadic",
-    "speedMin": 0.022,
-    "speedMax": 0.036,
-    "targetMinMs": 1500,
-    "targetMaxMs": 3600,
-    "defaultNames": [
-      "Pepper",
-      "Chili",
-      "Paprika",
-      "Pico",
-      "Ruby",
-      "Ember",
-      "Dot",
-      "Pip",
-      "Saffron",
-      "Crimson",
-      "Speck",
-      "Miso",
-      "Pep",
-      "Berry",
-      "Flick",
-      "Tango",
-      "Niblet",
-      "Rosie",
-      "Spark",
-      "Tiny"
+    "variantLabels": [
+      "Moor Black",
+      "Moor Bronze",
+      "Moor Calico",
+      "Moor Gold",
+      "Moor Orangewhite",
+      "Moor Panda",
+      "Moor Redblack",
+      "Moor White"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 5,
-        "alike": true
-      }
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "ember-tetra",
-    "name": "Ember Tetra",
-    "genetics": "natural",
-    "cost": 4,
-    "mealCoins": 1,
-    "asset": "/assets/fish/embertetra.png",
-    "assetVariants": [
-      "/assets/fish/embertetra_1.png",
-      "/assets/fish/embertetra_2.png",
-      "/assets/fish/embertetra_3.png",
-      "/assets/fish/embertetra_4.png"
-    ],
-    "description": "A tiny, peaceful fish known for its warm orange coloring and gentle nature. Ember Tetras are happiest in groups, where they spend much of their time calmly schooling through the middle of the tank.",
-    "width": 110,
-    "bobSpeed": 1.42,
-    "swimStyle": "steady",
-    "speedMin": 0.022,
-    "speedMax": 0.034,
-    "targetMinMs": 1900,
-    "targetMaxMs": 4300,
-    "defaultNames": [
-      "Ember",
-      "Cinder",
-      "Sunny",
-      "Tangerine",
-      "Glow",
-      "Spark",
-      "Copper",
-      "Maple",
-      "Mango",
-      "Peach",
-      "Flame",
-      "Poppy",
-      "Ginger",
-      "Amber",
-      "Flicker",
-      "Clementine",
-      "Torch",
-      "Honey",
-      "Blaze",
-      "Apricot"
-    ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 5,
-        "alike": true
-      }
-    },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "harlequin-rasbora",
-    "name": "Harlequin Rasbora",
-    "genetics": "natural",
-    "cost": 6,
-    "mealCoins": 1,
-    "asset": "/assets/fish/HarlequinRasbora.png",
-    "assetVariants": [
-      "/assets/fish/HarlequinRasbora_1.png",
-      "/assets/fish/HarlequinRasbora_2.png",
-      "/assets/fish/HarlequinRasbora_3.png",
-      "/assets/fish/HarlequinRasbora_4.png"
-    ],
-    "description": "A peaceful, active fish known for its coppery coloring and distinctive black markings. Harlequin Rasboras are social swimmers that do best in groups and fit comfortably into calm community tanks.",
-    "width": 155,
-    "bobSpeed": 1.32,
-    "swimStyle": "steady",
-    "speedMin": 0.024,
-    "speedMax": 0.036,
-    "targetMinMs": 2000,
-    "targetMaxMs": 4500,
-    "defaultNames": [
-      "Harley",
-      "Jester",
-      "Patch",
-      "Copper",
-      "Ace",
-      "Domino",
-      "Trickster",
-      "Tango",
-      "Penny",
-      "Rook",
-      "Mosaic",
-      "Maple",
-      "Quinn",
-      "Pip",
-      "Clover",
-      "Pixel",
-      "Rascal",
-      "Scout",
-      "Marble",
-      "Harlow"
-    ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 5,
-        "alike": true
-      }
-    },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "pencilfish",
-    "name": "Golden Pencilfish",
+    "name": "Pencilfish",
     "genetics": "natural",
     "cost": 7,
     "mealCoins": 1,
-    "asset": "/assets/fish/Pencilfish.png",
+    "asset": "/assets/fish/pencil_marginatus.png",
     "assetVariants": [
-      "/assets/fish/Pencilfish_1.png",
-      "/assets/fish/Pencilfish_2.png",
-      "/assets/fish/Pencilfish_3.png",
-      "/assets/fish/Pencilfish_4.png"
+      "/assets/fish/pencil_marginatus.png",
+      "/assets/fish/pencil_mortenthaleri.png",
+      "/assets/fish/pencil_rubrocaudatus.png",
+      "/assets/fish/pencil_trifasciatus.png",
+      "/assets/fish/pencil_unifasciatus.png"
     ],
     "description": "A slender, peaceful fish known for its golden coloring and delicate shape. Golden Pencilfish prefer staying near plants and cover, moving in relaxed groups with the occasional quick burst or harmless sparring display.",
     "width": 185,
@@ -3585,62 +4226,40 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "rummy-nose-tetra",
-    "name": "Rummy-Nose Tetra",
-    "genetics": "natural",
-    "cost": 7,
-    "mealCoins": 1,
-    "asset": "/assets/fish/RummyNoseTetra.png",
-    "assetVariants": [
-      "/assets/fish/RummyNoseTetra_1.png",
-      "/assets/fish/RummyNoseTetra_2.png",
-      "/assets/fish/RummyNoseTetra_3.png",
-      "/assets/fish/RummyNoseTetra_4.png"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 45,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "description": "A peaceful, social fish known for its bright red nose and tightly coordinated schooling. Rummy-Nose Tetras move through the tank in impressive unison, and their coloring becomes especially vivid when they’re comfortable.",
-    "width": 158,
-    "bobSpeed": 1.36,
-    "swimStyle": "steady",
-    "speedMin": 0.026,
-    "speedMax": 0.038,
-    "targetMinMs": 1800,
-    "targetMaxMs": 4100,
-    "defaultNames": [
-      "Rummy",
-      "Ruby",
-      "Rouge",
-      "Beacon",
-      "Signal",
-      "Cherry",
-      "Blush",
-      "Scarlet",
-      "Radar",
-      "Pinot",
-      "Rosy",
-      "Flash",
-      "Nosey",
-      "Pepper",
-      "Crimson",
-      "Dash",
-      "Merlot",
-      "Berry",
-      "Spark",
-      "Socks"
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 5,
-        "alike": true
-      }
+    "variantLabels": [
+      "Pencil Marginatus",
+      "Pencil Mortenthaleri",
+      "Pencil Rubrocaudatus",
+      "Pencil Trifasciatus",
+      "Pencil Unifasciatus"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "otocinclus",
@@ -3648,7 +4267,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 6,
     "mealCoins": 0,
-    "asset": "/assets/fish/otocinclus.png",
+    "asset": "/assets/fish/otocinclus_0.png",
     "fallbackAsset": "/assets/fish/pufferfish.png",
     "description": "A small, hardworking grazer that spends much of its time attached to glass, plants, and other surfaces. Dwarf Sucker Catfish steadily browse for algae and biofilm, helping keep the tank a little cleaner as they go.",
     "width": 170,
@@ -3663,6 +4282,8 @@ const FISH_TYPES = [
     "cleanupMinMs": 660000,
     "cleanupMaxMs": 1320000,
     "cleanupStrength": 0.16,
+    "cleanupFloor": 0.15,
+    "poopCleanupChance": 0,
     "defaultNames": [
       "Mochi",
       "Peb",
@@ -3695,56 +4316,58 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "blue-ram",
-    "name": "Blue Ram",
-    "genetics": "natural",
-    "cost": 11,
-    "mealCoins": 1,
-    "asset": "/assets/fish/BlueRam.png",
-    "description": "A small, colorful cichlid known for its brilliant blue markings and confident personality. Blue Rams usually move with calm, deliberate turns, but they can become territorial when pairing or guarding a chosen spot.",
-    "width": 240,
-    "bobSpeed": 1.18,
-    "swimStyle": "peaceful",
-    "speedMin": 0.016,
-    "speedMax": 0.024,
-    "targetMinMs": 4200,
-    "targetMaxMs": 7600,
-    "defaultNames": [
-      "Lapis",
-      "Indigo",
-      "Cobalt",
-      "Marina",
-      "Sapphire",
-      "Rambo",
-      "Azure",
-      "Mako",
-      "Triton",
-      "Borealis",
-      "Koda",
-      "Denim",
-      "Navy",
-      "Bluey",
-      "Aegean",
-      "Zephyr",
-      "Storm",
-      "Glacier",
-      "Echo",
-      "Rio"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 55,
+    "capacityCost": 0.5,
+    "cleanupAnimal": true,
+    "canBreed": true,
+    "dietProfile": "detritus",
+    "acceptedFoods": [
+      "algaeWafers"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
+    "juvenileFoods": [
+      "algaeWafers"
+    ],
+    "assetVariants": [
+      "/assets/fish/otocinclus_0.png",
+      "/assets/fish/otocinclus_0_bottom.png",
+      "/assets/fish/otocinclus_0_side.png",
+      "/assets/fish/otocinclus_1.png",
+      "/assets/fish/otocinclus_1_bottom.png",
+      "/assets/fish/otocinclus_1_side.png",
+      "/assets/fish/otocinclus_2.png",
+      "/assets/fish/otocinclus_2_bottom.png",
+      "/assets/fish/otocinclus_2_side.png",
+      "/assets/fish/otocinclus_3.png",
+      "/assets/fish/otocinclus_3_bottom.png",
+      "/assets/fish/otocinclus_3_side.png"
+    ],
+    "variantLabels": [
+      "Otocinclus 0",
+      "Otocinclus 0 Bottom",
+      "Otocinclus 0 Side",
+      "Otocinclus 1",
+      "Otocinclus 1 Bottom",
+      "Otocinclus 1 Side",
+      "Otocinclus 2",
+      "Otocinclus 2 Bottom",
+      "Otocinclus 2 Side",
+      "Otocinclus 3",
+      "Otocinclus 3 Bottom",
+      "Otocinclus 3 Side"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "dietaryMode": "grazer",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": false
   },
   {
     "id": "gourami",
@@ -3752,7 +4375,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 18,
     "mealCoins": 1,
-    "asset": "/assets/fish/Gourami.png",
+    "asset": "/assets/fish/gourami_blue.png",
     "description": "A graceful fish known for its flowing fins, long feelers, and calm presence. Gouramis tend to move at an easy pace and often explore the tank with slow, deliberate turns near the surface.",
     "width": 158,
     "bobSpeed": 1.08,
@@ -3793,65 +4416,106 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "wonder-killifish",
-    "name": "Wonder Killifish",
-    "genetics": "natural",
-    "cost": 15,
-    "mealCoins": 1,
-    "asset": "/assets/fish/wonderkillifish.png",
-    "description": "A flashy little hunter known for its bold markings, curious nature, and sudden bursts of speed. Wonder Killifish often patrol near the surface, watching everything around them before darting off after something interesting.",
-    "width": 243,
-    "bobSpeed": 1.34,
-    "swimStyle": "sporadic",
-    "speedMin": 0.02,
-    "speedMax": 0.038,
-    "targetMinMs": 1400,
-    "targetMaxMs": 3400,
-    "defaultNames": [
-      "Comet",
-      "Glint",
-      "Flicker",
-      "Nova",
-      "Rocket",
-      "Vandal",
-      "Rascal",
-      "Jinx",
-      "Maverick",
-      "Blitz",
-      "Pistol",
-      "Riot",
-      "Zippy",
-      "Bandit",
-      "Rumble",
-      "Hex",
-      "Chaos",
-      "Skipper",
-      "Ace",
-      "Havoc"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 60,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "caveEnabled": false,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/gourami_blue.png",
+      "/assets/fish/gourami_chocolate.png",
+      "/assets/fish/gourami_dwarf.png",
+      "/assets/fish/gourami_giant.png",
+      "/assets/fish/gourami_gold.png",
+      "/assets/fish/gourami_honey.png",
+      "/assets/fish/gourami_moonlight.png",
+      "/assets/fish/gourami_opaline.png",
+      "/assets/fish/gourami_pearl.png",
+      "/assets/fish/gourami_sparkling.png"
+    ],
+    "variantLabels": [
+      "Gourami Blue",
+      "Gourami Chocolate",
+      "Gourami Dwarf",
+      "Gourami Giant",
+      "Gourami Gold",
+      "Gourami Honey",
+      "Gourami Moonlight",
+      "Gourami Opaline",
+      "Gourami Pearl",
+      "Gourami Sparkling"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
-    "id": "neon-tetra",
-    "name": "Neon Tetra",
+    "id": "tetra",
+    "name": "Tetra",
     "genetics": "natural",
     "cost": 5,
     "mealCoins": 1,
-    "asset": "/assets/fish/NeonTetra.png",
-    "description": "A tiny, peaceful fish known for its glowing blue stripe and vivid red coloring. Neon Tetras are social swimmers that look their best in groups, moving together in lively little schools.",
+    "asset": "/assets/fish/tetra_neon.png",
+    "assetVariants": [
+      "/assets/fish/tetra_neon.png",
+      "/assets/fish/tetra_lemon.png",
+      "/assets/fish/tetra_cosmic-blue.png",
+      "/assets/fish/tetra_cave.png",
+      "/assets/fish/tetra_black-phantom.png",
+      "/assets/fish/tetra_emperor.png",
+      "/assets/fish/tetra_glofish.png",
+      "/assets/fish/tetra_white-skirt.png",
+      "/assets/fish/tetra_cochus-blue.png",
+      "/assets/fish/tetra_penguin.png",
+      "/assets/fish/tetra_glass.png",
+      "/assets/fish/tetra_ember.png",
+      "/assets/fish/tetra_black-skirt.png",
+      "/assets/fish/tetra_rummy-nose.png",
+      "/assets/fish/tetra_congo.png",
+      "/assets/fish/tetra_gold-neon.png",
+      "/assets/fish/tetra_black-neon.png",
+      "/assets/fish/tetra_green-neon.png"
+    ],
+    "variantLabels": [
+      "Tetra Neon",
+      "Tetra Lemon",
+      "Tetra Cosmic Blue",
+      "Tetra Cave",
+      "Tetra Black Phantom",
+      "Tetra Emperor",
+      "Tetra Glofish",
+      "Tetra White Skirt",
+      "Tetra Cochus Blue",
+      "Tetra Penguin",
+      "Tetra Glass",
+      "Tetra Ember",
+      "Tetra Black Skirt",
+      "Tetra Rummy Nose",
+      "Tetra Congo",
+      "Tetra Gold Neon",
+      "Tetra Black Neon",
+      "Tetra Green Neon"
+    ],
+    "description": "A peaceful family of schooling tetras with luminous colors and varied patterns. Tetras thrive in groups and bring lively motion to freshwater tanks.",
     "width": 136,
     "bobSpeed": 1.42,
     "swimStyle": "steady",
@@ -3891,62 +4555,33 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
-  },
-  {
-    "id": "celestial-pearl-danio",
-    "name": "Celestial Pearl Danio",
-    "genetics": "natural",
-    "cost": 3,
-    "mealCoins": 1,
-    "asset": "/assets/fish/CelestialPearlDanio.png",
-    "assetVariants": [
-      "/assets/fish/CelestialPearlDanio_1.png",
-      "/assets/fish/CelestialPearlDanio_2.png",
-      "/assets/fish/CelestialPearlDanio_3.png",
-      "/assets/fish/CelestialPearlDanio_4.png"
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 50,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "description": "A tiny, striking fish covered in pearl-like spots with flashes of red and orange on its fins. Celestial Pearl Danios are curious little swimmers that alternate between quick darts and brief, watchful pauses.",
-    "width": 105,
-    "bobSpeed": 1.38,
-    "swimStyle": "sporadic",
-    "speedMin": 0.02,
-    "speedMax": 0.034,
-    "targetMinMs": 1500,
-    "targetMaxMs": 3600,
-    "defaultNames": [
-      "Starlit",
-      "Pearlie",
-      "Orbit",
-      "Dot",
-      "Cosmo",
-      "Nova",
-      "Galaxy",
-      "Pip",
-      "Speck",
-      "Twinkle",
-      "Comet",
-      "Astro",
-      "Starbean",
-      "Niblet",
-      "Luna",
-      "Glimmer",
-      "Sparkle",
-      "Pluto",
-      "Skittle",
-      "Blinky"
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": false
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "molly",
@@ -3954,7 +4589,14 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 7,
     "mealCoins": 1,
-    "asset": "/assets/fish/molly.png",
+    "asset": "/assets/fish/molly_black.png",
+    "assetVariants": [
+      "/assets/fish/molly_black.png",
+      "/assets/fish/molly_creamsicle_lyretail.png",
+      "/assets/fish/molly_dalmatian.png",
+      "/assets/fish/molly_gold_dust.png",
+      "/assets/fish/molly_sailfin.png"
+    ],
     "description": "A hardy, easygoing fish known for its rounded shape, active nature, and friendly demeanor. Mollies spend much of their time steadily exploring the tank and tend to get along well with other peaceful fish.",
     "width": 287,
     "bobSpeed": 1.22,
@@ -3995,7 +4637,43 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": true
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 45,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "variantLabels": [
+      "Molly Black",
+      "Molly Creamsicle Lyretail",
+      "Molly Dalmatian",
+      "Molly Gold Dust",
+      "Molly Sailfin"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "swordtail",
@@ -4003,7 +4681,33 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 9,
     "mealCoins": 1,
-    "asset": "/assets/fish/Swordtail.png",
+    "asset": "/assets/fish/swordtail_black.png",
+    "assetVariants": [
+      "/assets/fish/swordtail_black.png",
+      "/assets/fish/swordtail_yellow-tuxedo.png",
+      "/assets/fish/swordtail_fancy-hi-fin.png",
+      "/assets/fish/swordtail_red-tuxedo.png",
+      "/assets/fish/swordtail_neon.png",
+      "/assets/fish/swordtail_showa.png",
+      "/assets/fish/swordtail_pineapple-wagtail.png",
+      "/assets/fish/swordtail_koi.png",
+      "/assets/fish/swordtail_yellow-comet.png",
+      "/assets/fish/swordtail_golden.png",
+      "/assets/fish/swordtail_red.png"
+    ],
+    "variantLabels": [
+      "Swordtail Black",
+      "Swordtail Yellow Tuxedo",
+      "Swordtail Fancy Hi Fin",
+      "Swordtail Red Tuxedo",
+      "Swordtail Neon",
+      "Swordtail Showa",
+      "Swordtail Pineapple Wagtail",
+      "Swordtail Koi",
+      "Swordtail Yellow Comet",
+      "Swordtail Golden",
+      "Swordtail Red"
+    ],
     "description": "A sleek, active fish best known for the long, sword-like extension on the male’s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
     "width": 220,
     "bobSpeed": 1.3,
@@ -4044,56 +4748,36 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": true
-  },
-  {
-    "id": "livebearer",
-    "name": "Livebearer",
-    "genetics": "natural",
-    "cost": 8,
-    "mealCoins": 1,
-    "asset": "/assets/fish/Livebearer.png",
-    "description": "A lively, social fish best known for giving birth to free-swimming young instead of laying eggs. Livebearers are active, curious swimmers that settle easily into peaceful community tanks.",
-    "width": 141,
-    "bobSpeed": 1.26,
-    "swimStyle": "steady",
-    "speedMin": 0.02,
-    "speedMax": 0.032,
-    "targetMinMs": 2400,
-    "targetMaxMs": 5200,
-    "defaultNames": [
-      "Coral",
-      "Willow",
-      "Miso",
-      "Poppy",
-      "Skipper",
-      "Pebble",
-      "Rosie",
-      "Sunny",
-      "Blinky",
-      "Noodle",
-      "Daisy",
-      "Pickles",
-      "Clover",
-      "Biscuit",
-      "Tango",
-      "Bubbles",
-      "Pip",
-      "Sprout",
-      "Mango",
-      "Wiggles"
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 45,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
     ],
-    "caveEnabled": true,
-    "needs": {
-      "decor": [],
-      "friends": {
-        "min": 0,
-        "alike": false
-      }
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Freshwater required."
     },
-    "dislikedTypes": [],
-    "turnAnimation": "simple",
-    "liveBirth": true
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "piranha",
@@ -4101,7 +4785,7 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 12,
     "mealCoins": 1,
-    "asset": "/assets/fish/piranha.png",
+    "asset": "/assets/fish/piranha_lobetoothed.png",
     "fallbackAsset": "/assets/fish/cherrybarb.png",
     "description": "A sharp-toothed predator with a reputation that speaks for itself. Piranhas hunt in groups, ignore ordinary pellets, and will quickly turn most living tankmates into lunch. Why buy one? Seriously. Why?",
     "width": 284,
@@ -4135,7 +4819,55 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 110,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "assetVariants": [
+      "/assets/fish/piranha_lobetoothed.png",
+      "/assets/fish/piranha_manueli.png",
+      "/assets/fish/piranha_piraya.png",
+      "/assets/fish/piranha_red_bellied.png",
+      "/assets/fish/piranha_spotted.png",
+      "/assets/fish/piranha_white.png",
+      "/assets/fish/piranha_wimple.png",
+      "/assets/fish/piranha_black.png",
+      "/assets/fish/piranha_cariba.png",
+      "/assets/fish/piranha_elongated.png"
+    ],
+    "variantLabels": [
+      "Piranha Lobetoothed",
+      "Piranha Manueli",
+      "Piranha Piraya",
+      "Piranha Red Bellied",
+      "Piranha Spotted",
+      "Piranha White",
+      "Piranha Wimple",
+      "Piranha Black",
+      "Piranha Cariba",
+      "Piranha Elongated"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "koi",
@@ -4143,12 +4875,18 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 30,
     "mealCoins": 2,
-    "asset": "/assets/fish/Koi_1.png",
+    "asset": "/assets/fish/koi_asagi.png",
     "assetVariants": [
-      "/assets/fish/Koi_2.png",
-      "/assets/fish/Koi_3.png",
-      "/assets/fish/Koi_4.png",
-      "/assets/fish/Koi_5.png"
+      "/assets/fish/koi_asagi.png",
+      "/assets/fish/koi_chagoi.png",
+      "/assets/fish/koi_goshiki.png",
+      "/assets/fish/koi_kohaku.png",
+      "/assets/fish/koi_shiro_bekko.png",
+      "/assets/fish/koi_shiro_utsuri.png",
+      "/assets/fish/koi_showa_sanshoku.png",
+      "/assets/fish/koi_taisho_sanke.png",
+      "/assets/fish/koi_tancho.png",
+      "/assets/fish/koi_yamabuki_ogon.png"
     ],
     "description": "A large, peaceful ornamental carp bred for bold colors and striking patterns. Koi are steady, social swimmers that cruise open water and nose around the bottom for food, so they appreciate plenty of room to move.",
     "width": 420,
@@ -4194,7 +4932,48 @@ const FISH_TYPES = [
     "liveBirth": false,
     "diet": "pellet",
     "breedingMethod": "egg-scatterer",
-    "spawnPreference": "plants-or-substrate"
+    "spawnPreference": "plants-or-substrate",
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 240,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "herbivore",
+    "acceptedFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "variantLabels": [
+      "Koi Asagi",
+      "Koi Chagoi",
+      "Koi Goshiki",
+      "Koi Kohaku",
+      "Koi Shiro Bekko",
+      "Koi Shiro Utsuri",
+      "Koi Showa Sanshoku",
+      "Koi Taisho Sanke",
+      "Koi Tancho",
+      "Koi Yamabuki Ogon"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "algaeWafers",
+        "brineShrimp"
+      ],
+      "dietaryMode": "herbivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "lionfish",
@@ -4202,10 +4981,11 @@ const FISH_TYPES = [
     "genetics": "natural",
     "cost": 35,
     "mealCoins": 2,
-    "asset": "/assets/fish/Lionfish_1.png",
+    "asset": "/assets/fish/Lionfish_3.png",
     "assetVariants": [
-      "/assets/fish/Lionfish_2.png",
       "/assets/fish/Lionfish_3.png",
+      "/assets/fish/Lionfish_2.png",
+      "/assets/fish/Lionfish_1.png",
       "/assets/fish/Lionfish_4.png",
       "/assets/fish/Lionfish_5.png"
     ],
@@ -4254,7 +5034,38 @@ const FISH_TYPES = [
     "diet": "chum",
     "chumOnly": true,
     "breedingMethod": "floating-egg-mass",
-    "spawnPreference": "open-water"
+    "spawnPreference": "open-water",
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 120,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "variantLabels": [
+      "Lionfish 3",
+      "Lionfish 2",
+      "Lionfish 1",
+      "Lionfish 4",
+      "Lionfish 5"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "bull-shark",
@@ -4264,12 +5075,13 @@ const FISH_TYPES = [
     "type": "Shark",
     "cost": 42,
     "mealCoins": 3,
-    "asset": "/assets/fish/Bull_Shark.png",
+    "asset": "/assets/fish/Bull_Shark_3.png",
     "assetVariants": [
-      "/assets/fish/Bull_Shark_1.png",
-      "/assets/fish/Bull_Shark_2.png",
       "/assets/fish/Bull_Shark_3.png",
-      "/assets/fish/Bull_Shark_4.png"
+      "/assets/fish/Bull_Shark_2.png",
+      "/assets/fish/Bull_Shark_1.png",
+      "/assets/fish/Bull_Shark_4.png",
+      "/assets/fish/Bull_Shark.png"
     ],
     "description": "A proven success in the PROTEUS BIODYNE marine scaling program. Our goldfish-sized Bull Shark demonstrates excellent specimen stability while retaining the adaptability, confidence, and predatory response profile of a mature animal. Chum recognition remains exceptionally strong, territorial movement is consistent, and predatory retention meets all behavioral integrity targets. Cohabitation performance is considered acceptable under normal feeding conditions. Periods of nutritional deficiency may result in opportunistic reassessment of nearby tankmates.",
     "aboutAttribution": "PROTEUS BIODYNE",
@@ -4309,7 +5121,36 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "complex",
-    "liveBirth": false
+    "liveBirth": false,
+    "waterType": "saltwater",
+    "lifespanDays": 180,
+    "capacityCost": 3,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "chum"
+    ],
+    "variantLabels": [
+      "Bull Shark 3",
+      "Bull Shark 2",
+      "Bull Shark 1",
+      "Bull Shark 4",
+      "Bull Shark"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "great-white-shark",
@@ -4319,7 +5160,7 @@ const FISH_TYPES = [
     "type": "Shark",
     "cost": 55,
     "mealCoins": 4,
-    "asset": "/assets/fish/Great_White_Shark.png",
+    "asset": "/assets/fish/Great_White_Shark_4.png",
     "description": "A flagship achievement in PROTEUS BIODYNE biological miniaturization. This goldfish-sized Great White Shark maintains exceptional behavioral integrity, preserving the patrol patterns, feeding responses, and predatory instincts expected from a full-grown apex predator. Specimen stability remains high despite the extreme reduction in body mass, with reliable chum acquisition and excellent predatory retention. Interaction with neighboring specimens is minimal while nutritional requirements are satisfied. Hunger-related pursuit behavior is considered an expected expression of retained phenotype.",
     "aboutAttribution": "PROTEUS BIODYNE",
     "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4358,7 +5199,43 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "complex",
-    "liveBirth": false
+    "liveBirth": false,
+    "waterType": "saltwater",
+    "lifespanDays": 260,
+    "capacityCost": 3,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "chum"
+    ],
+    "assetVariants": [
+      "/assets/fish/Great_White_Shark_4.png",
+      "/assets/fish/Great_White_Shark.png",
+      "/assets/fish/Great_White_Shark_1.png",
+      "/assets/fish/Great_White_Shark_2.png",
+      "/assets/fish/Great_White_Shark_3.png"
+    ],
+    "variantLabels": [
+      "Great White Shark 4",
+      "Great White Shark",
+      "Great White Shark 1",
+      "Great White Shark 2",
+      "Great White Shark 3"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "hammerhead-shark",
@@ -4370,10 +5247,12 @@ const FISH_TYPES = [
     "mealCoins": 3,
     "asset": "/assets/fish/Hammerhead_Shark.png",
     "assetVariants": [
+      "/assets/fish/Hammerhead_Shark.png",
       "/assets/fish/Hammerhead_Shark_1.png",
       "/assets/fish/Hammerhead_Shark_2.png",
       "/assets/fish/Hammerhead_Shark_3.png",
-      "/assets/fish/Hammerhead_Shark_4.png"
+      "/assets/fish/Hammerhead_Shark_4.png",
+      "/assets/fish/Hammerhead_Shark_5.png"
     ],
     "description": "A highly successful product of the PROTEUS BIODYNE marine development program. Our goldfish-sized Hammerhead Shark exhibits strong specimen stability, full sensory retention, and an unusually high level of environmental engagement. Wide-ranging patrol behavior has been preserved alongside rapid chum acquisition and dependable feeding response. Behavioral testing confirms that miniaturization has produced no meaningful reduction in exploratory drive or predatory function, exceeding several original development targets.",
     "aboutAttribution": "PROTEUS BIODYNE",
@@ -4413,7 +5292,37 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "complex",
-    "liveBirth": false
+    "liveBirth": false,
+    "waterType": "saltwater",
+    "lifespanDays": 220,
+    "capacityCost": 3,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "chum"
+    ],
+    "variantLabels": [
+      "Hammerhead Shark",
+      "Hammerhead Shark 1",
+      "Hammerhead Shark 2",
+      "Hammerhead Shark 3",
+      "Hammerhead Shark 4",
+      "Hammerhead Shark 5"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "orca",
@@ -4462,7 +5371,43 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "complex",
-    "liveBirth": true
+    "liveBirth": true,
+    "waterType": "saltwater",
+    "lifespanDays": 320,
+    "capacityCost": 4,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "chum",
+    "acceptedFoods": [
+      "chum"
+    ],
+    "juvenileFoods": [
+      "chum"
+    ],
+    "assetVariants": [
+      "/assets/fish/Orca.png",
+      "/assets/fish/Orca_1.png",
+      "/assets/fish/Orca_2.png",
+      "/assets/fish/Orca_3.png",
+      "/assets/fish/Orca_4.png"
+    ],
+    "variantLabels": [
+      "Orca",
+      "Orca 1",
+      "Orca 2",
+      "Orca 3",
+      "Orca 4"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "chum"
+      ],
+      "dietaryMode": "predator",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "sunfish",
@@ -4472,7 +5417,7 @@ const FISH_TYPES = [
     "type": "Fish",
     "cost": 24,
     "mealCoins": 2,
-    "asset": "/assets/fish/Sunfish.png",
+    "asset": "/assets/fish/masturus_lanceolatus.png",
     "description": "Developed under the PROTEUS BIODYNE Compact Marine Initiative, the Ocean Sunfish represents a successful conversion of one of the world's largest bony fish into a commercially practical aquarium specimen. Miniaturization achieved target scale without compromising body plan, temperament, surface-oriented behavior, or characteristic locomotion. Specimen stability has remained exceptionally high throughout evaluation, with no significant behavioral degradation observed. The resulting goldfish-sized Sunfish offers full phenotype retention at a fraction of the spatial requirement.",
     "aboutAttribution": "PROTEUS BIODYNE",
     "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4507,7 +5452,48 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "waterType": "saltwater",
+    "lifespanDays": 100,
+    "capacityCost": 1.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "assetVariants": [
+      "/assets/fish/masturus_lanceolatus.png",
+      "/assets/fish/mola_alexandrini.png",
+      "/assets/fish/mola_tecta.png",
+      "/assets/fish/mola-mola_eastern-atlantic.png",
+      "/assets/fish/mola-mola_pacific.png",
+      "/assets/fish/ranzania_laevis.png"
+    ],
+    "variantLabels": [
+      "Masturus Lanceolatus",
+      "Mola Alexandrini",
+      "Mola Tecta",
+      "Mola Mola Eastern Atlantic",
+      "Mola Mola Pacific",
+      "Ranzania Laevis"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "seahorse",
@@ -4550,7 +5536,46 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 45,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/Seahorse.png",
+      "/assets/fish/Seahorse_1.png",
+      "/assets/fish/Seahorse_2.png",
+      "/assets/fish/Seahorse_3.png",
+      "/assets/fish/Seahorse_4.png"
+    ],
+    "variantLabels": [
+      "Seahorse",
+      "Seahorse 1",
+      "Seahorse 2",
+      "Seahorse 3",
+      "Seahorse 4"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   },
   {
     "id": "pilot-fish",
@@ -4561,8 +5586,9 @@ const FISH_TYPES = [
     "mealCoins": 2,
     "asset": "/assets/fish/Pilot_Fish.png",
     "assetVariants": [
-      "/assets/fish/Pilot_Fish_1.png",
+      "/assets/fish/Pilot_Fish.png",
       "/assets/fish/Pilot_Fish_2.png",
+      "/assets/fish/Pilot_Fish_1.png",
       "/assets/fish/Pilot_Fish_3.png",
       "/assets/fish/Pilot_Fish_4.png"
     ],
@@ -4597,7 +5623,1849 @@ const FISH_TYPES = [
     },
     "dislikedTypes": [],
     "turnAnimation": "simple",
-    "liveBirth": false
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 65,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "variantLabels": [
+      "Pilot Fish",
+      "Pilot Fish 2",
+      "Pilot Fish 1",
+      "Pilot Fish 3",
+      "Pilot Fish 4"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "freshwater-shrimp",
+    "name": "Freshwater Shrimp",
+    "genetics": "natural",
+    "type": "Shrimp",
+    "waterType": "freshwater",
+    "cost": 5,
+    "mealCoins": 0,
+    "asset": "/assets/fish/shrimp_body.png",
+    "antennaAsset": "/assets/fish/shrimp_antenna.png",
+    "legAsset": "/assets/fish/shrimp_legs.png",
+    "storeAsset": "/assets/fish/shrimp_preview.png",
+    "description": "A small freshwater scavenger that spends most of its time exploring the bottom, picking at algae, leftovers, and debris with constantly moving legs and feelers.",
+    "width": 118,
+    "displayWidth": 118,
+    "bobSpeed": 0.82,
+    "swimStyle": "peaceful",
+    "speedMin": 0.01,
+    "speedMax": 0.024,
+    "targetMinMs": 3000,
+    "targetMaxMs": 6500,
+    "behavior": "shrimp",
+    "diet": "detritus",
+    "requiresFood": false,
+    "cleanupMinMs": 840000,
+    "cleanupMaxMs": 1680000,
+    "cleanupStrength": 0.09,
+    "cleanupFloor": 0.12,
+    "poopCleanupChance": 0.15,
+    "defaultNames": [
+      "Prawn Solo",
+      "Scampi",
+      "Pebble",
+      "Skitter",
+      "Miso",
+      "Sprout",
+      "Crumb",
+      "Scoot",
+      "Bean",
+      "Noodle"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [
+        "plants"
+      ],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "lifespanDays": 24,
+    "capacityCost": 0.25,
+    "cleanupAnimal": true,
+    "dietProfile": "detritus",
+    "acceptedFoods": [
+      "algaeWafers"
+    ],
+    "juvenileFoods": [
+      "algaeWafers"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "dietaryMode": "grazer",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": false
+  },
+  {
+    "id": "marine-shrimp",
+    "name": "Marine Shrimp",
+    "genetics": "natural",
+    "type": "Shrimp",
+    "waterType": "saltwater",
+    "cost": 7,
+    "mealCoins": 0,
+    "asset": "/assets/fish/shrimp_body.png",
+    "antennaAsset": "/assets/fish/shrimp_antenna.png",
+    "legAsset": "/assets/fish/shrimp_legs.png",
+    "storeAsset": "/assets/fish/shrimp_preview.png",
+    "description": "A small marine scavenger that patrols the lower tank, grazing biofilm and picking up leftover food without replacing normal tank cleaning.",
+    "width": 118,
+    "displayWidth": 118,
+    "bobSpeed": 0.82,
+    "swimStyle": "peaceful",
+    "speedMin": 0.01,
+    "speedMax": 0.024,
+    "targetMinMs": 3200,
+    "targetMaxMs": 6900,
+    "behavior": "shrimp",
+    "diet": "detritus",
+    "requiresFood": false,
+    "cleanupMinMs": 900000,
+    "cleanupMaxMs": 1800000,
+    "cleanupStrength": 0.08,
+    "cleanupFloor": 0.12,
+    "poopCleanupChance": 0.1,
+    "defaultNames": [
+      "Skitter",
+      "Reef",
+      "Pip",
+      "Miso",
+      "Scoot",
+      "Coral",
+      "Pebble",
+      "Crumb",
+      "Nori",
+      "Bean"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [
+        "plants"
+      ],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "lifespanDays": 28,
+    "capacityCost": 0.25,
+    "cleanupAnimal": true,
+    "dietProfile": "detritus",
+    "acceptedFoods": [
+      "algaeWafers"
+    ],
+    "juvenileFoods": [
+      "algaeWafers"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "dietaryMode": "grazer",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": false
+  },
+  {
+    "id": "nerite-snail",
+    "name": "Nerite Snail",
+    "genetics": "natural",
+    "type": "Snail",
+    "waterType": "freshwater",
+    "cost": 4,
+    "mealCoins": 0,
+    "description": "A slow freshwater algae grazer that patrols hard surfaces and helps keep algae and grime under control.",
+    "width": 82,
+    "displayWidth": 104,
+    "bobSpeed": 0.1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.00004,
+    "speedMax": 0.00014,
+    "targetMinMs": 9000,
+    "targetMaxMs": 18000,
+    "behavior": "snail",
+    "diet": "detritus",
+    "requiresFood": false,
+    "cleanupMinMs": 720000,
+    "cleanupMaxMs": 1440000,
+    "cleanupStrength": 0.11,
+    "cleanupFloor": 0.12,
+    "poopCleanupChance": 0,
+    "defaultNames": [
+      "Dot",
+      "Pebble",
+      "Orbit",
+      "Button",
+      "Moss",
+      "Speck",
+      "Bean",
+      "Slowpoke",
+      "Nori",
+      "Marble"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "lifespanDays": 48,
+    "capacityCost": 0.15,
+    "cleanupAnimal": true,
+    "dietProfile": "detritus",
+    "acceptedFoods": [
+      "algaeWafers"
+    ],
+    "juvenileFoods": [
+      "algaeWafers"
+    ],
+    "asset": "/assets/fish/snail_1.png",
+    "assetVariants": [
+      "/assets/fish/snail_1.png",
+      "/assets/fish/snail_2.png",
+      "/assets/fish/snail_3.png",
+      "/assets/fish/snail_4.png",
+      "/assets/fish/snail_5.png"
+    ],
+    "storeAsset": "/assets/fish/snail_1.png",
+    "variantLabels": [
+      "Snail 1",
+      "Snail 2",
+      "Snail 3",
+      "Snail 4",
+      "Snail 5"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "dietaryMode": "grazer",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "firefish",
+    "name": "Firefish",
+    "genetics": "natural",
+    "type": "Fish",
+    "cost": 8,
+    "mealCoins": 1,
+    "asset": "/assets/fish/firefish_1.png",
+    "description": "A tiny reef dartfish with a glowing magenta tail. Firefish hover above a favorite crevice, then flash back to safety when nervous.",
+    "width": 136,
+    "displayWidth": 120,
+    "bobSpeed": 1.08,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.032,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5400,
+    "defaultNames": [
+      "Ember",
+      "Flicker",
+      "Ruby",
+      "Spark",
+      "Cinder",
+      "Glimmer",
+      "Flare",
+      "Poppy"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 52,
+    "capacityCost": 0.65,
+    "cleanupAnimal": false,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/firefish_1.png",
+      "/assets/fish/firefish_2.png",
+      "/assets/fish/firefish_3.png",
+      "/assets/fish/firefish_4.png",
+      "/assets/fish/firefish_5.png"
+    ],
+    "variantLabels": [
+      "Firefish 1",
+      "Firefish 2",
+      "Firefish 3",
+      "Firefish 4",
+      "Firefish 5"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "six-line-wrasse",
+    "name": "Six-Line Wrasse",
+    "genetics": "natural",
+    "type": "Fish",
+    "cost": 14,
+    "mealCoins": 1,
+    "asset": "/assets/fish/six-line-wrasse_1.png",
+    "description": "A quick striped reef explorer that threads through gaps in rockwork, always searching for tiny morsels hidden in crevices.",
+    "width": 154,
+    "displayWidth": 132,
+    "bobSpeed": 1.24,
+    "swimStyle": "steady",
+    "speedMin": 0.024,
+    "speedMax": 0.04,
+    "targetMinMs": 1900,
+    "targetMaxMs": 4400,
+    "defaultNames": [
+      "Stripe",
+      "Zippy",
+      "Tango",
+      "Sixer",
+      "Dash",
+      "Noodle",
+      "Racer",
+      "Vega"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 64,
+    "capacityCost": 0.85,
+    "cleanupAnimal": false,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "assetVariants": [
+      "/assets/fish/six-line-wrasse_1.png",
+      "/assets/fish/six-line-wrasse_2.png",
+      "/assets/fish/six-line-wrasse_3.png",
+      "/assets/fish/six-line-wrasse_4.png",
+      "/assets/fish/six-line-wrasse_5.png"
+    ],
+    "variantLabels": [
+      "Six Line Wrasse 1",
+      "Six Line Wrasse 2",
+      "Six Line Wrasse 3",
+      "Six Line Wrasse 4",
+      "Six Line Wrasse 5"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "coral-beauty-angelfish",
+    "name": "Coral Beauty Angelfish",
+    "genetics": "natural",
+    "type": "Fish",
+    "cost": 17,
+    "mealCoins": 2,
+    "asset": "/assets/fish/coral-beauty-angelfish_5.png",
+    "description": "A jewel-toned dwarf angelfish that glides around reef structures, alternating calm browsing with short, curious explorations.",
+    "width": 184,
+    "displayWidth": 148,
+    "bobSpeed": 1.08,
+    "swimStyle": "steady",
+    "speedMin": 0.016,
+    "speedMax": 0.03,
+    "targetMinMs": 2500,
+    "targetMaxMs": 5400,
+    "defaultNames": [
+      "Coral",
+      "Indigo",
+      "Saffron",
+      "Aster",
+      "Gem",
+      "Cleo",
+      "Aura",
+      "Marina"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 78,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "algaeWafers",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/coral-beauty-angelfish_5.png",
+      "/assets/fish/coral-beauty-angelfish_1.png",
+      "/assets/fish/coral-beauty-angelfish_2.png",
+      "/assets/fish/coral-beauty-angelfish_3.png",
+      "/assets/fish/coral-beauty-angelfish_4.png"
+    ],
+    "variantLabels": [
+      "Coral Beauty Angelfish 5",
+      "Coral Beauty Angelfish 1",
+      "Coral Beauty Angelfish 2",
+      "Coral Beauty Angelfish 3",
+      "Coral Beauty Angelfish 4"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "cleaner-shrimp",
+    "name": "Cleaner Shrimp",
+    "genetics": "natural",
+    "type": "Shrimp",
+    "cost": 8,
+    "mealCoins": 1,
+    "asset": "/assets/fish/sea-shrimp_body.png",
+    "antennaAsset": "/assets/fish/shrimp_antenna.png",
+    "legAsset": "/assets/fish/shrimp_legs.png",
+    "description": "A red-and-white reef shrimp that keeps a little cleaning station near cover, waving long antennae and picking at tiny leftovers.",
+    "width": 118,
+    "displayWidth": 106,
+    "bobSpeed": 0.72,
+    "swimStyle": "peaceful",
+    "speedMin": 0.008,
+    "speedMax": 0.02,
+    "targetMinMs": 3400,
+    "targetMaxMs": 7000,
+    "behavior": "shrimp",
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "defaultNames": [
+      "Cleo",
+      "Stripe",
+      "Polish",
+      "Ruby",
+      "Tidy",
+      "Pip",
+      "Pearl",
+      "Sushi"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 48,
+    "capacityCost": 0.25,
+    "cleanupAnimal": false,
+    "assetVariants": [
+      "/assets/fish/sea-shrimp_body.png",
+      "/assets/fish/sea-shrimp_antenna.png",
+      "/assets/fish/sea-shrimp_legs.png"
+    ],
+    "variantLabels": [
+      "Sea Shrimp Body",
+      "Sea Shrimp Antenna",
+      "Sea Shrimp Legs"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": false
+  },
+  {
+    "id": "pistol-shrimp",
+    "name": "Pistol Shrimp",
+    "genetics": "natural",
+    "type": "Shrimp",
+    "cost": 9,
+    "mealCoins": 1,
+    "asset": "/assets/fish/shrimp_body.png",
+    "antennaAsset": "/assets/fish/shrimp_antenna.png",
+    "legAsset": "/assets/fish/shrimp_legs.png",
+    "description": "A tiny burrowing shrimp with one oversized snapping claw. It prefers caves and forms a remarkable cross-species friendship with a Yellow Watchman Goby.",
+    "width": 116,
+    "displayWidth": 104,
+    "bobSpeed": 0.65,
+    "swimStyle": "peaceful",
+    "speedMin": 0.006,
+    "speedMax": 0.018,
+    "targetMinMs": 3900,
+    "targetMaxMs": 7600,
+    "behavior": "shrimp",
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "defaultNames": [
+      "Click",
+      "Snap",
+      "Pebble",
+      "Claw",
+      "Pop",
+      "Rivet",
+      "Nori",
+      "Bolt"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 50,
+    "capacityCost": 0.25,
+    "cleanupAnimal": false,
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": false
+  },
+  {
+    "id": "turbo-snail",
+    "name": "Turbo Snail",
+    "genetics": "natural",
+    "type": "Snail",
+    "waterType": "saltwater",
+    "cost": 6,
+    "mealCoins": 0,
+    "asset": "/assets/fish/sea-snail_1.png",
+    "assetVariants": [
+      "/assets/fish/sea-snail_1.png",
+      "/assets/fish/sea-snail_2.png",
+      "/assets/fish/sea-snail_3.png",
+      "/assets/fish/sea-snail_4.png",
+      "/assets/fish/sea-snail_5.png"
+    ],
+    "storeAsset": "/assets/fish/sea-snail_1.png",
+    "description": "A hardy saltwater algae grazer that slowly patrols hard surfaces and helps control algae and grime.",
+    "width": 88,
+    "displayWidth": 112,
+    "bobSpeed": 0.1,
+    "swimStyle": "peaceful",
+    "speedMin": 0.00005,
+    "speedMax": 0.00016,
+    "targetMinMs": 8500,
+    "targetMaxMs": 17000,
+    "behavior": "snail",
+    "diet": "detritus",
+    "requiresFood": false,
+    "cleanupMinMs": 660000,
+    "cleanupMaxMs": 1320000,
+    "cleanupStrength": 0.13,
+    "cleanupFloor": 0.12,
+    "poopCleanupChance": 0,
+    "defaultNames": [
+      "Turbo",
+      "Torque",
+      "Moss",
+      "Nori",
+      "Pebble",
+      "Orbit",
+      "Sprout",
+      "Button",
+      "Drift",
+      "Pesto"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "canBreed": false,
+    "seller": "Common Current",
+    "lifespanDays": 52,
+    "capacityCost": 0.15,
+    "cleanupAnimal": true,
+    "dietProfile": "detritus",
+    "acceptedFoods": [
+      "algaeWafers"
+    ],
+    "juvenileFoods": [
+      "algaeWafers"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "algaeWafers"
+      ],
+      "dietaryMode": "grazer",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true,
+    "variantLabels": [
+      "Turbo Snail Olive",
+      "Turbo Snail Zebra",
+      "Turbo Snail Marble",
+      "Turbo Snail Moss",
+      "Turbo Snail Speckled"
+    ]
+  },
+  {
+    "id": "assessor",
+    "name": "Assessor",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/assessor_blue.png",
+    "description": "A natural assessor with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Cove",
+      "Velvet",
+      "Glimmer",
+      "Pip",
+      "Sable",
+      "Drift",
+      "Lumen",
+      "Pico",
+      "Mistral",
+      "Echo",
+      "Mica",
+      "Rook"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/assessor_blue.png",
+      "/assets/fish/assessor_randalls.png"
+    ],
+    "variantLabels": [
+      "Assessor Blue",
+      "Assessor Randalls"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "barb",
+    "name": "Barb",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/barb_black_ruby.png",
+    "description": "A natural barb with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Zest",
+      "Pepper",
+      "Flicker",
+      "Rummy",
+      "Saffron",
+      "Comet",
+      "Tango",
+      "Sprocket",
+      "Jolt",
+      "Poppy",
+      "Cricket",
+      "Dash"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/barb_black_ruby.png",
+      "/assets/fish/barb_cherry.png",
+      "/assets/fish/barb_five_banded.png",
+      "/assets/fish/barb_gold.png",
+      "/assets/fish/barb_green.png",
+      "/assets/fish/barb_odessa.png",
+      "/assets/fish/barb_rosy.png",
+      "/assets/fish/barb_tiger.png"
+    ],
+    "variantLabels": [
+      "Barb Black Ruby",
+      "Barb Cherry",
+      "Barb Five Banded",
+      "Barb Gold",
+      "Barb Green",
+      "Barb Odessa",
+      "Barb Rosy",
+      "Barb Tiger"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "basslets-grammas",
+    "name": "Basslets & Grammas",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/hawkfish_coral.png",
+    "description": "A natural basslets grammas with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Royal",
+      "Violet",
+      "Riff",
+      "Mauve",
+      "Bowie",
+      "Indigo",
+      "Fizz",
+      "Rhapsody",
+      "Juno",
+      "Plum",
+      "Cadence",
+      "Dazzle"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/hawkfish_coral.png",
+      "/assets/fish/basslet_swissguard.png",
+      "/assets/fish/gramma_royal.png"
+    ],
+    "variantLabels": [
+      "Hawkfish Coral",
+      "Basslet Swissguard",
+      "Gramma Royal"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "cardinal",
+    "name": "Cardinal",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/cardinalfish_red.png",
+    "description": "A natural cardinal with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Nova",
+      "Orbit",
+      "Astra",
+      "Ruby",
+      "Vega",
+      "Pulsar",
+      "Kip",
+      "Cinder",
+      "Cosmo",
+      "Sol",
+      "Ember",
+      "Lyra"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/cardinalfish_red.png",
+      "/assets/fish/cardinalfish_ring_tailed.png",
+      "/assets/fish/cardinalfish_seales.png",
+      "/assets/fish/cardinalfish_yellow.png",
+      "/assets/fish/cardinalfish_banggai.png",
+      "/assets/fish/cardinalfish_blackstripe.png",
+      "/assets/fish/cardinalfish_five_lined.png",
+      "/assets/fish/cardinalfish_goldbelly.png",
+      "/assets/fish/cardinalfish_orbic.png",
+      "/assets/fish/cardinalfish_pajama.png"
+    ],
+    "variantLabels": [
+      "Cardinalfish Red",
+      "Cardinalfish Ring Tailed",
+      "Cardinalfish Seales",
+      "Cardinalfish Yellow",
+      "Cardinalfish Banggai",
+      "Cardinalfish Blackstripe",
+      "Cardinalfish Five Lined",
+      "Cardinalfish Goldbelly",
+      "Cardinalfish Orbic",
+      "Cardinalfish Pajama"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "chromis",
+    "name": "Chromis",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/chromis_blue.png",
+    "description": "A natural chromis with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Mint",
+      "Lagoon",
+      "Shamrock",
+      "Spritz",
+      "Kelp",
+      "Clover",
+      "Mako",
+      "Tide",
+      "Beryl",
+      "Zippy",
+      "Mojito",
+      "Jade"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/chromis_blue.png",
+      "/assets/fish/chromis_bluegreen.png",
+      "/assets/fish/chromis_green.png",
+      "/assets/fish/chromis_half_and_half.png",
+      "/assets/fish/chromis_orange.png",
+      "/assets/fish/chromis_purple.png",
+      "/assets/fish/chromis_sunshine.png",
+      "/assets/fish/chromis_vanderbilts.png",
+      "/assets/fish/chromis_yellowtail.png"
+    ],
+    "variantLabels": [
+      "Chromis Blue",
+      "Chromis Bluegreen",
+      "Chromis Green",
+      "Chromis Half And Half",
+      "Chromis Orange",
+      "Chromis Purple",
+      "Chromis Sunshine",
+      "Chromis Vanderbilts",
+      "Chromis Yellowtail"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "cichlid",
+    "name": "Cichlid",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/cichlid_blue_ram.png",
+    "description": "A natural cichlid with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Mosaic",
+      "Rumba",
+      "Topaz",
+      "Rio",
+      "Jasper",
+      "Fresco",
+      "Zazu",
+      "Sundae",
+      "Bramble",
+      "Karma",
+      "Sizzle",
+      "Tinsel"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/cichlid_blue_ram.png",
+      "/assets/fish/cichlid_flameback.png",
+      "/assets/fish/cichlid_frontosa.png",
+      "/assets/fish/cichlid_green_severum.png",
+      "/assets/fish/cichlid_haplochromis.png",
+      "/assets/fish/cichlid_ob_peacock.png",
+      "/assets/fish/cichlid_pseudotropheus.png",
+      "/assets/fish/cichlid_red_empress.png",
+      "/assets/fish/cichlid_tropheus.png",
+      "/assets/fish/cichlid_venustus.png"
+    ],
+    "variantLabels": [
+      "Cichlid Blue Ram",
+      "Cichlid Flameback",
+      "Cichlid Frontosa",
+      "Cichlid Green Severum",
+      "Cichlid Haplochromis",
+      "Cichlid Ob Peacock",
+      "Cichlid Pseudotropheus",
+      "Cichlid Red Empress",
+      "Cichlid Tropheus",
+      "Cichlid Venustus"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "danio",
+    "name": "Danio",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/danio_celestial-pearl_.png",
+    "description": "A natural danio with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Ziggy",
+      "Pixel",
+      "Dart",
+      "Fleck",
+      "Biscotti",
+      "Zoom",
+      "Noodle",
+      "Dottie",
+      "Bolt",
+      "Quark",
+      "Pep",
+      "Marmot"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/danio_celestial-pearl_.png",
+      "/assets/fish/danio_emerald-dwarf.png",
+      "/assets/fish/danio_glowlight.png",
+      "/assets/fish/danio_golden-zebra.png",
+      "/assets/fish/danio_leopard.png",
+      "/assets/fish/danio_longfin-zebra.png",
+      "/assets/fish/danio_orange-finned.png",
+      "/assets/fish/danio_pearl.png",
+      "/assets/fish/danio_zebra.png",
+      "/assets/fish/danio_blue.png"
+    ],
+    "variantLabels": [
+      "Danio Celestial Pearl ",
+      "Danio Emerald Dwarf",
+      "Danio Glowlight",
+      "Danio Golden Zebra",
+      "Danio Leopard",
+      "Danio Longfin Zebra",
+      "Danio Orange Finned",
+      "Danio Pearl",
+      "Danio Zebra",
+      "Danio Blue"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "dottyback",
+    "name": "Dottyback",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/dottyback_diadem.png",
+    "description": "A natural dottyback with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Rascal",
+      "Plum",
+      "Zorro",
+      "Moxie",
+      "Vesper",
+      "Bandit",
+      "Fable",
+      "Fuchsia",
+      "Slick",
+      "Riddle",
+      "Punk",
+      "Loki"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/dottyback_diadem.png",
+      "/assets/fish/dottyback_orchid.png",
+      "/assets/fish/dottyback_springers.png",
+      "/assets/fish/dottyback_striped.png"
+    ],
+    "variantLabels": [
+      "Dottyback Diadem",
+      "Dottyback Orchid",
+      "Dottyback Springers",
+      "Dottyback Striped"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required; brackish specialists use this system."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "endler",
+    "name": "Endler",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/endler_black_bar.png",
+    "description": "A natural endler with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Confetti",
+      "Prism",
+      "Salsa",
+      "Sparkler",
+      "Freckle",
+      "Zing",
+      "Tinsel",
+      "Pico",
+      "Mardi",
+      "Pippin",
+      "Glimmer",
+      "Razzle"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/endler_black_bar.png",
+      "/assets/fish/endler_el_silverado.png",
+      "/assets/fish/endler_lime_green.png",
+      "/assets/fish/endler_peacock.png",
+      "/assets/fish/endler_tiger.png"
+    ],
+    "variantLabels": [
+      "Endler Black Bar",
+      "Endler El Silverado",
+      "Endler Lime Green",
+      "Endler Peacock",
+      "Endler Tiger"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "mosquitofish",
+    "name": "Mosquitofish",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/mosquitofish_big_bend.png",
+    "description": "A natural mosquitofish with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Skeeter",
+      "Buzzer",
+      "Cedar",
+      "Puddle",
+      "Midge",
+      "Swoop",
+      "Cicada",
+      "Twitch",
+      "Brook",
+      "Skiff",
+      "Hopper",
+      "Scout"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/mosquitofish_big_bend.png",
+      "/assets/fish/mosquitofish_clear_creek.png",
+      "/assets/fish/mosquitofish_eastern.png",
+      "/assets/fish/mosquitofish_tex_mex.png",
+      "/assets/fish/mosquitofish_western.png"
+    ],
+    "variantLabels": [
+      "Mosquitofish Big Bend",
+      "Mosquitofish Clear Creek",
+      "Mosquitofish Eastern",
+      "Mosquitofish Tex Mex",
+      "Mosquitofish Western"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "platy",
+    "name": "Platy",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/platy_blue.png",
+    "description": "A natural platy with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Mango",
+      "Pico",
+      "Taffy",
+      "Skittle",
+      "Doodle",
+      "Sorbet",
+      "Blinky",
+      "Puddle",
+      "Nectar",
+      "Peach",
+      "Dapple",
+      "Bop"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/platy_blue.png",
+      "/assets/fish/platy_mickey_mouse.png",
+      "/assets/fish/platy_red_wagtail.png",
+      "/assets/fish/platy_sunburst.png",
+      "/assets/fish/platy_tuxedo.png"
+    ],
+    "variantLabels": [
+      "Platy Blue",
+      "Platy Mickey Mouse",
+      "Platy Red Wagtail",
+      "Platy Sunburst",
+      "Platy Tuxedo"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "rasbora",
+    "name": "Rasbora",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/rasbora_chili.png",
+    "description": "A natural rasbora with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Chili",
+      "Kite",
+      "Poppy",
+      "Rascal",
+      "Saffron",
+      "Sprig",
+      "Miso",
+      "Breeze",
+      "Roo",
+      "Glitter",
+      "Swoosh",
+      "Kiko"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/rasbora_chili.png",
+      "/assets/fish/rasbora_galaxy.png",
+      "/assets/fish/rasbora_harlequin.png",
+      "/assets/fish/rasbora_hengeli.png",
+      "/assets/fish/rasbora_lambchop.png",
+      "/assets/fish/rasbora_scissortail.png"
+    ],
+    "variantLabels": [
+      "Rasbora Chili",
+      "Rasbora Galaxy",
+      "Rasbora Harlequin",
+      "Rasbora Hengeli",
+      "Rasbora Lambchop",
+      "Rasbora Scissortail"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "killifish",
+    "name": "Killifish",
+    "genetics": "natural",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/killifish_clown.png",
+    "description": "A natural killifish with selectable appearances.",
+    "width": 179,
+    "bobSpeed": 1.45,
+    "swimStyle": "sporadic",
+    "speedMin": 0.02,
+    "speedMax": 0.036,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Rivulet",
+      "Ember",
+      "Orbit",
+      "Saffy",
+      "Rocket",
+      "Kestrel",
+      "Mochi",
+      "Zest",
+      "Lark",
+      "Vivid",
+      "Fennel",
+      "Pip"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "seller": "Common Current",
+    "waterType": "freshwater",
+    "lifespanDays": 30,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "assetVariants": [
+      "/assets/fish/killifish_clown.png",
+      "/assets/fish/killifish_redtail-notho.png",
+      "/assets/fish/killifish_lyretail.png",
+      "/assets/fish/killifish_bluefin-notho.png",
+      "/assets/fish/killifish_blue-panchax.png",
+      "/assets/fish/killifish_gardneri.png",
+      "/assets/fish/killifish_wonder-golden.png",
+      "/assets/fish/killifish_orange australe.png",
+      "/assets/fish/killifish_american.png"
+    ],
+    "variantLabels": [
+      "Killifish Clown",
+      "Killifish Redtail Notho",
+      "Killifish Lyretail",
+      "Killifish Bluefin Notho",
+      "Killifish Blue Panchax",
+      "Killifish Gardneri",
+      "Killifish Wonder Golden",
+      "Killifish Orange Australe",
+      "Killifish American"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
   }
 ];
 
@@ -4610,6 +7478,25 @@ const WATER_TYPE_META = Object.freeze({
     id: "saltwater",
     name: "Saltwater"
   }
+});
+
+const WATER_TREATMENT_KITS = Object.freeze({
+  freshwater: Object.freeze({
+    id: "freshwater",
+    name: "Fresh Water Treatment Kit",
+    targetWaterType: "freshwater",
+    cost: 10,
+    image: "assets/misc/fresh-water_kit.png",
+    description: "Converts one saltwater aquarium to freshwater."
+  }),
+  saltwater: Object.freeze({
+    id: "saltwater",
+    name: "Marine Salt Kit",
+    targetWaterType: "saltwater",
+    cost: 15,
+    image: "assets/misc/salt-water_kit.png",
+    description: "Converts one freshwater aquarium to saltwater."
+  })
 });
 
 const TANK_TYPE_META = Object.freeze({
@@ -4721,13 +7608,14 @@ const DECOR_META = {
       "perchable",
       "sway",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "amazon-sword__plant__theme-natural.png": {
     "name": "Amazon Sword",
     "cost": 8,
     "width": 280,
-    "defaultScale": 1,
+    "defaultScale": 2.1,
     "description": "A amazon sword decoration for the aquarium.",
     "categories": [
       "plant"
@@ -4740,7 +7628,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "anubias-rock__plant-rock__theme-natural.png": {
     "name": "Anubias Rock",
@@ -4762,13 +7651,14 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "bacopa__plant__theme-natural.png": {
     "name": "Bacopa",
     "cost": 8,
     "width": 280,
-    "defaultScale": 1,
+    "defaultScale": 1.9,
     "description": "A bacopa decoration for the aquarium.",
     "categories": [
       "plant"
@@ -4781,13 +7671,14 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "bronze-red-crypt__plant__theme-natural.png": {
     "name": "Bronze Red Crypt",
     "cost": 8,
     "width": 280,
-    "defaultScale": 1,
+    "defaultScale": 2.1,
     "description": "A bronze red crypt decoration for the aquarium.",
     "categories": [
       "plant"
@@ -4800,7 +7691,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "cabomba__plant__theme-natural.png": {
     "name": "Cabomba",
@@ -4819,7 +7711,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "cryptocoryne__plant__theme-natural.png": {
     "name": "Cryptocoryne",
@@ -4838,7 +7731,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "hornwort__plant__theme-natural.png": {
     "name": "Hornwort",
@@ -4857,7 +7751,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "java-fern-cluster__plant__theme-natural.png": {
     "name": "Java Fern Cluster",
@@ -4876,7 +7771,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "java-moss__plant__theme-natural.png": {
     "name": "Java Moss",
@@ -4895,7 +7791,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "ludwigia__plant__theme-natural.png": {
     "name": "Ludwigia",
@@ -4914,7 +7811,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "marimo-moss-ball__plant__theme-natural.png": {
     "name": "Marimo Moss Ball",
@@ -4933,7 +7831,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "monte-carlo-carpet__plant__theme-natural.png": {
     "name": "Monte Carlo Carpet",
@@ -4952,7 +7851,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "red-stem__plant__theme-natural.png": {
     "name": "Red Stem",
@@ -4971,7 +7871,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "rotala__plant__theme-natural.png": {
     "name": "Rotala",
@@ -4990,7 +7891,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "small-moss-patch__plant__theme-natural.png": {
     "name": "Small Moss Patch",
@@ -5009,7 +7911,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "tiger-lotus__plant__theme-natural.png": {
     "name": "Tiger Lotus",
@@ -5028,7 +7931,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "vallisneria-clump__plant__theme-natural.png": {
     "name": "Vallisneria Clump",
@@ -5047,7 +7951,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "vallisneria-cutout__plant__theme-natural.png": {
     "name": "Vallisneria Cutout",
@@ -5066,7 +7971,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "water-wisteria__plant__theme-natural.png": {
     "name": "Water Wisteria",
@@ -5085,7 +7991,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "hammer-coral__coral__theme-reef.png": {
     "name": "Hammer Coral",
@@ -5104,7 +8011,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "leather-coral__coral__theme-reef.png": {
     "name": "Leather Coral",
@@ -5123,7 +8031,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "macroalgae__plant__theme-reef.png": {
     "name": "Macroalgae",
@@ -5142,7 +8051,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "large-mushroom-coral__coral__theme-reef.png": {
     "name": "Mushroom Coral",
@@ -5161,7 +8071,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "mushroom-coral-colony__coral__theme-reef.png": {
     "name": "Mushroom Coral Colony",
@@ -5180,7 +8091,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-anemone__coral__theme-reef.png": {
     "name": "Sea Anemone 2",
@@ -5201,7 +8113,8 @@ const DECOR_META = {
       "sway",
       "anemone",
       "clownfish-host"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-anemone__coral__theme-reef__v2.png": {
     "name": "Sea Anemone 5",
@@ -5222,7 +8135,8 @@ const DECOR_META = {
       "sway",
       "anemone",
       "clownfish-host"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-fan-gorgonian__coral__theme-reef.png": {
     "name": "Sea Fan Gorgonian",
@@ -5241,7 +8155,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "seaweed__plant__theme-reef.png": {
     "name": "Seaweed",
@@ -5260,7 +8175,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "seaweed-bunch__plant__theme-reef.png": {
     "name": "Seaweed Bunch",
@@ -5279,7 +8195,8 @@ const DECOR_META = {
       "grazable",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "torch-coral__coral__theme-reef.png": {
     "name": "Torch Coral",
@@ -5298,7 +8215,8 @@ const DECOR_META = {
       "hardscape",
       "perchable",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-bubbler__bubbler__theme-frozen.png": {
     "name": "Frozen Bubbler",
@@ -5319,7 +8237,8 @@ const DECOR_META = {
     ],
     "bubbler": {
       "spoutQty": 1
-    }
+    },
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-cauldron__bubbler__theme-halloween__front.png": {
     "name": "Haunted Cauldron Bubbler",
@@ -5362,7 +8281,8 @@ const DECOR_META = {
       "hardscape",
       "bubble-emitter",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-jack-o-lantern__bubbler__theme-halloween__front.png": {
     "name": "Jack-o'-Lantern Bubbler",
@@ -5405,7 +8325,8 @@ const DECOR_META = {
       "hardscape",
       "bubble-emitter",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "volcano__bubbler__theme-natural__front.png": {
     "name": "Volcano Bubbler 1",
@@ -5441,7 +8362,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "bubble-emitter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "volcano__bubbler__theme-natural__v2__front.png": {
     "name": "Volcano Bubbler 2",
@@ -5490,7 +8412,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "bubble-emitter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "treasure-chest__bubbler__theme-treasure__front.png": {
     "name": "Treasure Chest Bubbler",
@@ -5531,13 +8454,14 @@ const DECOR_META = {
       "treasure",
       "hardscape",
       "bubble-emitter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "broken-pot-fragment__cave__theme-artificial__front.png": {
     "name": "Broken Pot Fragment",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 2.4,
     "description": "A broken pot fragment decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5549,13 +8473,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "broken-terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Broken Terracotta Pot",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.45,
     "description": "A broken terracotta pot decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5567,13 +8492,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "ceramic-tube-cluster__cave__theme-artificial__front.png": {
     "name": "Ceramic Tube Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.45,
     "description": "A ceramic tube cluster decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5585,13 +8511,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "clay-multi__cave__theme-artificial__front.png": {
     "name": "Clay Multi",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.55,
     "description": "A clay multi decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5603,13 +8530,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
     "name": "Extra Narrow Pleco Tubes",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.45,
     "description": "A extra narrow pleco tubes decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5621,13 +8549,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "pvc-pipe__cave__theme-artificial__front.png": {
     "name": "PVC Pipe",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.65,
     "description": "A pvc pipe decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5639,13 +8568,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Terracotta Pot",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.65,
     "description": "A terracotta pot decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5657,13 +8587,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "terracotta-tunnel__cave__theme-artificial__front.png": {
     "name": "Terracotta Tunnel",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.6,
     "description": "A terracotta tunnel decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5675,13 +8606,14 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "blue-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 1",
     "cost": 16,
     "width": 595,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "caveSettings": {
       "entryCount": 3,
       "entries": [
@@ -5734,13 +8666,14 @@ const DECOR_META = {
       "fantasy",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "wizard-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 2",
     "cost": 16,
     "width": 600,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "caveSettings": {
       "entryCount": 3,
       "entries": [
@@ -5850,13 +8783,14 @@ const DECOR_META = {
       "fantasy",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-cave__cave__theme-frozen__front.png": {
     "name": "Frozen Cave",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "description": "A frozen cave decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5868,13 +8802,14 @@ const DECOR_META = {
       "frozen",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-cave__cave__theme-frozen__v2__front.png": {
     "name": "Frozen Cave 2",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A frozen cave 2 decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5886,12 +8821,13 @@ const DECOR_META = {
       "frozen",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-crypt__cave__theme-halloween__front.png": {
     "name": "Crypt Cave",
     "width": 590,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave"
     ],
@@ -5904,12 +8840,13 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-haunted-house__cave__theme-halloween__front.png": {
     "name": "Haunted House Cave",
     "width": 590,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "caveSettings": {
       "entryCount": 3,
       "entries": [
@@ -5975,13 +8912,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coconut-shell-hideaway__cave__theme-natural__front.png": {
     "name": "Coconut Shell Hideaway",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A coconut shell hideaway decoration for the aquarium.",
     "categories": [
       "cave"
@@ -5993,13 +8931,14 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
     "name": "Hollow Mossy Driftwood",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.5,
     "description": "A hollow mossy driftwood decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6014,13 +8953,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "live-root-overhang__cave-wood__theme-natural__front.png": {
     "name": "Live Root Overhang",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "description": "A live root overhang decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6035,13 +8975,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "mangrove-roots__cave-wood__theme-natural__front.png": {
     "name": "Mangrove Roots",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A mangrove roots decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6056,13 +8997,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "slate__cave-rock__theme-natural__front.png": {
     "name": "Slate Cave",
     "cost": 12,
     "width": 620,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "caveSettings": {
       "entryCount": 1,
       "entries": [
@@ -6136,13 +9078,14 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "slate-stack__cave-rock__theme-natural__front.png": {
     "name": "Slate Stack",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "description": "A slate stack decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6156,13 +9099,14 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
     "name": "Tangled Driftwood Rootscape",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "description": "A tangled driftwood rootscape decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6177,13 +9121,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-1__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 1",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6198,13 +9143,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-10__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 10",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6219,13 +9165,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-2__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 2",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6240,13 +9187,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-3__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 3",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6261,13 +9209,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-4__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 4",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6282,13 +9231,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-5__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 5",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6303,13 +9253,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-6__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 6",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6324,13 +9275,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-7__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 7",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6345,13 +9297,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral-shelf-9__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 9",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "categories": [
       "cave",
       "coral"
@@ -6366,13 +9319,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
     "name": "Coralline Live Rock",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A coralline live rock decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6389,13 +9343,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "live-rock-cluster__cave-rock__theme-reef__front.png": {
     "name": "Live Rock Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A live rock cluster decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6409,13 +9364,14 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-anemone-1__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 1",
     "cost": 14,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "categories": [
       "cave",
       "coral"
@@ -6436,13 +9392,14 @@ const DECOR_META = {
     "motionBehavior": "anchored_sway",
     "motionLayer": "front",
     "motionSplitY": 0.55,
-    "motionSwaySide": "above"
+    "motionSwaySide": "above",
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-anemone-3__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 3",
     "cost": 14,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.45,
     "categories": [
       "cave",
       "coral"
@@ -6463,13 +9420,14 @@ const DECOR_META = {
     "motionBehavior": "anchored_sway",
     "motionLayer": "front",
     "motionSplitY": 0.55,
-    "motionSwaySide": "above"
+    "motionSwaySide": "above",
+    "seller": "Arcadia Home Aquatics"
   },
   "sea-anemone-4__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 4",
     "cost": 14,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.35,
     "categories": [
       "cave",
       "coral"
@@ -6490,13 +9448,14 @@ const DECOR_META = {
     "motionBehavior": "anchored_sway",
     "motionLayer": "front",
     "motionSplitY": 0.55,
-    "motionSwaySide": "above"
+    "motionSwaySide": "above",
+    "seller": "Arcadia Home Aquatics"
   },
   "seashell-cluster__cave-coral__theme-reef__front.png": {
     "name": "Seashell Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1,
+    "defaultScale": 1.4,
     "description": "A seashell cluster decoration for the aquarium.",
     "categories": [
       "cave",
@@ -6511,13 +9470,14 @@ const DECOR_META = {
       "hardscape",
       "shelter",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "meteor__cave-rock__theme-space__front.png": {
     "name": "Meteor Cave",
     "cost": 16,
     "width": 585,
-    "defaultScale": 1,
+    "defaultScale": 1.1,
     "caveSettings": {
       "entryCount": 1,
       "entries": [
@@ -6557,7 +9517,8 @@ const DECOR_META = {
       "space",
       "hardscape",
       "shelter"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "fishing-lure__lure__theme-artificial.png": {
     "name": "Fishing Lure",
@@ -6579,7 +9540,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 1"
   },
   "fishing-lure__lure__theme-artificial__v2.png": {
     "name": "Fishing Lure",
@@ -6601,7 +9564,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 2"
   },
   "fishing-lure__lure__theme-artificial__v3.png": {
     "name": "Fishing Lure",
@@ -6623,7 +9588,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 3"
   },
   "fishing-lure__lure__theme-artificial__v4.png": {
     "name": "Fishing Lure",
@@ -6645,7 +9612,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 4"
   },
   "fishing-lure__lure__theme-artificial__v5.png": {
     "name": "Fishing Lure",
@@ -6667,7 +9636,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 5"
   },
   "fishing-lure__lure__theme-artificial__v6.png": {
     "name": "Fishing Lure",
@@ -6689,7 +9660,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 6"
   },
   "fishing-lure__lure__theme-artificial__v7.png": {
     "name": "Fishing Lure",
@@ -6711,7 +9684,9 @@ const DECOR_META = {
       "lure",
       "artificial",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantLabel": "Lure 7"
   },
   "halloween-gorebag__lure__theme-halloween.png": {
     "name": "Gorebag",
@@ -6733,7 +9708,8 @@ const DECOR_META = {
       "halloween",
       "sway",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-glacier__rock__theme-frozen.png": {
     "name": "Frozen Glacier",
@@ -6751,7 +9727,8 @@ const DECOR_META = {
       "frozen",
       "hardscape",
       "surface-cover"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-iceberg__rock__theme-frozen.png": {
     "name": "Frozen Iceberg",
@@ -6769,7 +9746,8 @@ const DECOR_META = {
       "frozen",
       "hardscape",
       "surface-cover"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-webs__ornament__theme-halloween.png": {
     "name": "Aquarium Webs",
@@ -6787,7 +9765,8 @@ const DECOR_META = {
       "hardscape",
       "surface-cover",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-skeleton__ornament__theme-halloween.png": {
     "name": "Floating Fish Skeleton",
@@ -6805,7 +9784,8 @@ const DECOR_META = {
       "hardscape",
       "surface-cover",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-ghost__ornament__theme-halloween.png": {
     "name": "Floating Ghost",
@@ -6829,7 +9809,8 @@ const DECOR_META = {
       "hardscape",
       "surface-cover",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-floating-seaweed__plant__theme-halloween.png": {
     "name": "Haunted Floating Seaweed",
@@ -6849,7 +9830,8 @@ const DECOR_META = {
       "surface-cover",
       "sway",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "floating-lettuce-root__plant__theme-natural.png": {
     "name": "Floating Lettuce Root",
@@ -6869,7 +9851,8 @@ const DECOR_META = {
       "perchable",
       "surface-cover",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "floating-swamp-moss__plant__theme-natural.png": {
     "name": "Floating Swamp Moss",
@@ -6889,7 +9872,8 @@ const DECOR_META = {
       "perchable",
       "surface-cover",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "floating-seaweed__plant__theme-reef.png": {
     "name": "Floating Seaweed",
@@ -6909,7 +9893,8 @@ const DECOR_META = {
       "perchable",
       "surface-cover",
       "sway"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-anchor__ornament__theme-frozen.png": {
     "name": "Frozen Anchor",
@@ -6926,7 +9911,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-arch__ornament__theme-frozen.png": {
     "name": "Frozen Arch",
@@ -6943,7 +9929,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-arch__ornament__theme-frozen__v2.png": {
     "name": "Frozen Arch 2",
@@ -6960,7 +9947,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-column__ornament__theme-frozen.png": {
     "name": "Frozen Column",
@@ -6977,7 +9965,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-column__ornament__theme-frozen__v2.png": {
     "name": "Frozen Column 2",
@@ -6994,7 +9983,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-column__ornament__theme-frozen__v3.png": {
     "name": "Frozen Column 3",
@@ -7011,7 +10001,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-crystals__rock__theme-frozen.png": {
     "name": "Frozen Crystals",
@@ -7028,7 +10019,8 @@ const DECOR_META = {
       "rock",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-fossil__rock__theme-frozen.png": {
     "name": "Frozen Fossil",
@@ -7045,7 +10037,8 @@ const DECOR_META = {
       "rock",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-plant__plant__theme-frozen.png": {
     "name": "Frozen Plant",
@@ -7063,7 +10056,8 @@ const DECOR_META = {
       "frozen",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-plant__plant__theme-frozen__v2.png": {
     "name": "Frozen Plant 2",
@@ -7081,7 +10075,8 @@ const DECOR_META = {
       "frozen",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-plant__plant__theme-frozen__v3.png": {
     "name": "Frozen Plant 3",
@@ -7099,7 +10094,8 @@ const DECOR_META = {
       "frozen",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-plant__plant__theme-frozen__v4.png": {
     "name": "Frozen Plant 4",
@@ -7117,7 +10113,8 @@ const DECOR_META = {
       "frozen",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-plant__plant__theme-frozen__v5.png": {
     "name": "Frozen Plant 5",
@@ -7135,7 +10132,8 @@ const DECOR_META = {
       "frozen",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-rock__rock__theme-frozen.png": {
     "name": "Frozen Rock",
@@ -7152,7 +10150,8 @@ const DECOR_META = {
       "rock",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-rock__rock__theme-frozen__v2.png": {
     "name": "Frozen Rock 2",
@@ -7169,7 +10168,8 @@ const DECOR_META = {
       "rock",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-root__wood__theme-frozen.png": {
     "name": "Frozen Root",
@@ -7187,7 +10187,8 @@ const DECOR_META = {
       "frozen",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-treasure__ornament__theme-frozen.png": {
     "name": "Frozen Treasure",
@@ -7204,7 +10205,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-ufo__ornament__theme-frozen.png": {
     "name": "Frozen UFO",
@@ -7221,7 +10223,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-sunken-submarine__ornament__theme-frozen.png": {
     "name": "Plane Crash",
@@ -7241,7 +10244,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "frozen-ship__ornament__theme-frozen.png": {
     "name": "Shipwreck",
@@ -7261,7 +10265,8 @@ const DECOR_META = {
       "ornament",
       "frozen",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-spider__ornament__theme-halloween.png": {
     "name": "Aquarium Spider",
@@ -7284,7 +10289,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-fish-head-effigy__ornament__theme-halloween__v3.png": {
     "name": "Danio Fish Head Effigy",
@@ -7306,7 +10312,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-ghost-ship__ornament__theme-halloween.png": {
     "name": "Ghost Ship",
@@ -7329,7 +10336,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-gravestone__ornament__theme-halloween.png": {
     "name": "Gravestone 1",
@@ -7346,7 +10354,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-gravestone__ornament__theme-halloween__v2.png": {
     "name": "Gravestone 2",
@@ -7363,7 +10372,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-gravestone__ornament__theme-halloween__v3.png": {
     "name": "Gravestone 3",
@@ -7380,7 +10390,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-gravestone__ornament__theme-halloween__v4.png": {
     "name": "Gravestone 4",
@@ -7397,7 +10408,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-gravestone__ornament__theme-halloween__v5.png": {
     "name": "Gravestone 5",
@@ -7414,7 +10426,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-fish-head-effigy__ornament__theme-halloween__v2.png": {
     "name": "Guppy Fish Head Effigy",
@@ -7436,7 +10449,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-haunted-tree__ornament__theme-halloween.png": {
     "name": "Haunted Tree",
@@ -7459,7 +10473,8 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "halloween-fish-head-effigy__ornament__theme-halloween.png": {
     "name": "Neon Fish Head Effigy",
@@ -7481,13 +10496,14 @@ const DECOR_META = {
       "halloween",
       "hardscape",
       "spooky"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "alder-cone-cluster__botanical__theme-natural.png": {
     "name": "Alder Cone Cluster",
     "cost": 8,
     "width": 220,
-    "defaultScale": 1,
+    "defaultScale": 2.15,
     "description": "A alder cone cluster decoration for the aquarium.",
     "categories": [
       "botanical"
@@ -7497,7 +10513,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "autumn-leaf-litter-mound__botanical__theme-natural.png": {
     "name": "Autumn Leaf Litter Mound",
@@ -7513,7 +10530,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "branch-canopy__wood__theme-natural.png": {
     "name": "Branch Canopy",
@@ -7531,7 +10549,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "dirt__rock__theme-natural.png": {
     "name": "Dirt Mound",
@@ -7548,7 +10567,8 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "dried-catappa-leaf-pile__botanical__theme-natural.png": {
     "name": "Dried Catappa Leaf Pile",
@@ -7564,7 +10584,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "driftwood__wood__theme-natural.png": {
     "name": "Driftwood",
@@ -7582,7 +10603,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "driftwood-root__wood__theme-natural.png": {
     "name": "Driftwood Root",
@@ -7600,7 +10622,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "flat-spawning-stone__rock__theme-natural.png": {
     "name": "Flat Spawning Stone",
@@ -7617,7 +10640,8 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "mixed-leaf-litter-scatter__botanical__theme-natural.png": {
     "name": "Mixed Leaf Litter Scatter",
@@ -7633,7 +10657,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "moss-bridge__wood-plant__theme-natural.png": {
     "name": "Moss Bridge",
@@ -7654,7 +10679,8 @@ const DECOR_META = {
       "hardscape",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "moss-covered-driftwood__wood-plant__theme-natural.png": {
     "name": "Moss Covered Driftwood",
@@ -7675,7 +10701,8 @@ const DECOR_META = {
       "hardscape",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "moss-covered-rock-formation__rock-plant__theme-natural.png": {
     "name": "Moss Covered Rock Formation",
@@ -7696,7 +10723,8 @@ const DECOR_META = {
       "hardscape",
       "grazable",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "river-stone-mound__rock__theme-natural.png": {
     "name": "River Stone Mound",
@@ -7713,7 +10741,8 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "rock-bricks__rock__theme-natural.png": {
     "name": "Rock 1",
@@ -7730,7 +10759,9 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-rocks"
   },
   "rock-bricks__rock__theme-natural__v2.png": {
     "name": "Rock 2",
@@ -7747,7 +10778,9 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-rocks"
   },
   "rock-bricks__rock__theme-natural__v3.png": {
     "name": "Rock 3",
@@ -7764,7 +10797,9 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-rocks"
   },
   "rock-bricks__rock__theme-natural__v4.png": {
     "name": "Rock 4",
@@ -7781,7 +10816,9 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-rocks"
   },
   "rock-bricks__rock__theme-natural__v5.png": {
     "name": "Rock 5",
@@ -7798,7 +10835,9 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-rocks"
   },
   "root-debris-scatter__wood__theme-natural.png": {
     "name": "Root Debris Scatter",
@@ -7816,7 +10855,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "seed-pod-cluster__botanical__theme-natural.png": {
     "name": "Seed Pod Cluster",
@@ -7832,7 +10872,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "single-catappa-leaf__botanical__theme-natural.png": {
     "name": "Single Catappa Leaf",
@@ -7848,7 +10889,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "single-loose-leaf__botanical__theme-natural.png": {
     "name": "Single Loose Leaf",
@@ -7864,7 +10906,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "single-twig__botanical__theme-natural.png": {
     "name": "Single Twig",
@@ -7880,7 +10923,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "small-botanical-scatter-pieces__botanical__theme-natural.png": {
     "name": "Small Botanical Scatter Pieces",
@@ -7896,7 +10940,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "small-branch-pile__wood__theme-natural.png": {
     "name": "Small Branch Pile",
@@ -7914,7 +10959,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "small-stone-shard-cluster__rock__theme-natural.png": {
     "name": "Small Stone Shard Cluster",
@@ -7931,7 +10977,8 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "small-wood-branch-cluster__wood__theme-natural.png": {
     "name": "Small Wood Branch Cluster",
@@ -7949,7 +10996,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "sprawling-spider-wood-rootscape__wood__theme-natural.png": {
     "name": "Sprawling Spider Wood Rootscape",
@@ -7967,7 +11015,8 @@ const DECOR_META = {
       "natural",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "stone-pebble-cluster__rock__theme-natural.png": {
     "name": "Stone Pebble Cluster",
@@ -7984,7 +11033,8 @@ const DECOR_META = {
       "rock",
       "natural",
       "hardscape"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "twig-and-pod-mix__botanical__theme-natural.png": {
     "name": "Twig And Pod Mix",
@@ -8000,7 +11050,8 @@ const DECOR_META = {
     "tags": [
       "botanical",
       "natural"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "volcanic-rock-bricks__rock__theme-natural.png": {
     "name": "Volcanic Rock 1",
@@ -8019,7 +11070,9 @@ const DECOR_META = {
       "hardscape",
       "volcanic",
       "sharp"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-volcanic-rocks"
   },
   "volcanic-rock-bricks__rock__theme-natural__v2.png": {
     "name": "Volcanic Rock 2",
@@ -8038,7 +11091,9 @@ const DECOR_META = {
       "hardscape",
       "volcanic",
       "sharp"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-volcanic-rocks"
   },
   "volcanic-rock-bricks__rock__theme-natural__v3.png": {
     "name": "Volcanic Rock 3",
@@ -8057,7 +11112,9 @@ const DECOR_META = {
       "hardscape",
       "volcanic",
       "sharp"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-volcanic-rocks"
   },
   "volcanic-rock-bricks__rock__theme-natural__v4.png": {
     "name": "Volcanic Rock 4",
@@ -8076,7 +11133,9 @@ const DECOR_META = {
       "hardscape",
       "volcanic",
       "sharp"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics",
+    "variantGroup": "arcadia-volcanic-rocks"
   },
   "barnacle-covered-reef-rock__rock-coral__theme-reef.png": {
     "name": "Barnacle Covered Reef Rock",
@@ -8096,7 +11155,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "brain-coral__coral__theme-reef.png": {
     "name": "Brain Coral",
@@ -8114,7 +11174,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef.png": {
     "name": "Branch Coral 1",
@@ -8132,7 +11193,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v10.png": {
     "name": "Branch Coral 10",
@@ -8150,7 +11212,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v2.png": {
     "name": "Branch Coral 2",
@@ -8168,7 +11231,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v3.png": {
     "name": "Branch Coral 3",
@@ -8186,7 +11250,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v4.png": {
     "name": "Branch Coral 4",
@@ -8204,7 +11269,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v5.png": {
     "name": "Branch Coral 5",
@@ -8222,7 +11288,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v6.png": {
     "name": "Branch Coral 6",
@@ -8240,7 +11307,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v7.png": {
     "name": "Branch Coral 7",
@@ -8258,7 +11326,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v8.png": {
     "name": "Branch Coral 8",
@@ -8276,7 +11345,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "coral__coral__theme-reef__v9.png": {
     "name": "Branch Coral 9",
@@ -8294,7 +11364,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "zoanthid-mat__coral__theme-reef.png": {
     "name": "Zoanthid Mat",
@@ -8312,7 +11383,8 @@ const DECOR_META = {
       "reef",
       "hardscape",
       "perchable"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   },
   "transit-tube__transit__theme-artificial__front.png": {
     "name": "Borough Transit Tube",
@@ -8337,7 +11409,8 @@ const DECOR_META = {
       "artificial",
       "hardscape",
       "transport"
-    ]
+    ],
+    "seller": "Arcadia Home Aquatics"
   }
 };
 
@@ -8436,12 +11509,11 @@ const DECOR_RGB_CYCLE_MS = 22000;
 const DECOR_RGB_CYCLE_CACHE_STEPS = 120;
 
 
-const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl(OPTIONAL_BUBBLE_ORB_ASSET_PATH);
+const CUSTOM_BUBBLER_DECOR_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
 const CUSTOM_BUBBLER_THUMBNAIL_IMAGE = resolveAppUrl("assets/misc/custom_bubbler.png");
 const CUSTOM_DECOR_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_decor.png");
 const CUSTOM_HIDE_SHOP_IMAGE = resolveAppUrl("assets/misc/custom_hide.png");
 const CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl("assets/web/proteus/PB_Custom_Fish.png");
-const CUSTOM_FISH_TEMPLATE_IMAGE = resolveAppUrl("assets/misc/fish_template.png");
 
 const dom = {
   coinCount: document.querySelector("#coinCount"),
@@ -8505,8 +11577,6 @@ const dom = {
   resetMealsButton: document.querySelector("#resetMealsButton"),
   addHundredCoinsButton: document.querySelector("#addHundredCoinsButton"),
   completeMealsButton: document.querySelector("#completeMealsButton"),
-  spongeButton: document.querySelector("#spongeButton"),
-  scoopButton: document.querySelector("#scoopButton"),
   debugDamageFishButton: document.querySelector("#debugDamageFishButton"),
   debugBreedButton: document.querySelector("#debugBreedButton"),
   resetFishHealthButton: document.querySelector("#resetFishHealthButton"),
@@ -8532,8 +11602,6 @@ const dom = {
   displayTab: document.querySelector("#displayTab"),
   tankSidebar: document.querySelector("#tankSidebar"),
   tankBottomDock: document.querySelector(".tank-bottom-dock"),
-  toolbarCareMenu: document.querySelector("#toolbarCareMenu"),
-  toolbarEditMenu: document.querySelector("#toolbarEditMenu"),
   careMenuButton: document.querySelector("#careMenuButton"),
   editMenuButton: document.querySelector("#editMenuButton"),
   toolbarFastTooltip: document.querySelector("#toolbarFastTooltip"),
@@ -8582,6 +11650,7 @@ const dom = {
   editTankTray: document.querySelector("#editTankTray"),
   closeEditTankTrayButton: document.querySelector("#closeEditTankTrayButton"),
   editTankTrayScroller: document.querySelector("#editTankTrayScroller"),
+  editTankWaterTypePanel: document.querySelector("#editTankWaterTypePanel"),
   editTankBackgroundColorPanel: document.querySelector("#editTankBackgroundColorPanel"),
   editTankBackgroundList: document.querySelector("#editTankBackgroundList"),
   editTankCustomGravelPanel: document.querySelector("#editTankCustomGravelPanel"),
@@ -8621,6 +11690,7 @@ const dom = {
   storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
   webHomePage: document.querySelector("#webHomePage"),
+  bubbleBodegaHomePage: document.querySelector("#bubbleBodegaHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
   webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
   webSurfSettingsTab: document.querySelector("#webSurfSettingsTab"),
@@ -8673,6 +11743,14 @@ const dom = {
   trypophobiaToggleInput: document.querySelector("#trypophobiaToggleInput"),
   soundMuteToggleInput: document.querySelector("#soundMuteToggleInput"),
   uiMuteToggleInput: document.querySelector("#uiMuteToggleInput"),
+  tankAmbienceVolumeInput: document.querySelector("#tankAmbienceVolumeInput"),
+  tankAmbienceVolumeOutput: document.querySelector("#tankAmbienceVolumeOutput"),
+  sfxVolumeInput: document.querySelector("#sfxVolumeInput"),
+  sfxVolumeOutput: document.querySelector("#sfxVolumeOutput"),
+  uiSoundVolumeInput: document.querySelector("#uiSoundVolumeInput"),
+  uiSoundVolumeOutput: document.querySelector("#uiSoundVolumeOutput"),
+  gravelShadowIntensityInput: document.querySelector("#gravelShadowIntensityInput"),
+  gravelShadowIntensityOutput: document.querySelector("#gravelShadowIntensityOutput"),
   ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
@@ -8741,7 +11819,9 @@ const dom = {
   inspectorNeeds: document.querySelector("#inspectorNeeds"),
   inspectorNeedsBars: document.querySelector("#inspectorNeedsBars"),
   inspectorLifeStory: document.querySelector("#inspectorLifeStory"),
+  inspectorCondition: document.querySelector("#inspectorCondition"),
   inspectorAge: document.querySelector("#inspectorAge"),
+  inspectorBreeding: document.querySelector("#inspectorBreeding"),
   inspectorMeal: document.querySelector("#inspectorMeal"),
   inspectorFishSettingsButton: document.querySelector("#inspectorFishSettingsButton"),
   fishInspectorSettings: document.querySelector("#fishInspectorSettings"),
@@ -8756,12 +11836,7 @@ const dom = {
   toast: document.querySelector("#toast"),
   tabButtons: [...document.querySelectorAll(".tab-button")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
-  medicineButton: document.querySelector("#medicineButton"),
-  tipsButton: document.querySelector("#tipsButton"),
   toggleFishShop: document.querySelector("#toggleFishShop"),
-  fishEditModeDockButton: document.querySelector("#fishEditModeDockButton"),
-  editModeDockButton: document.querySelector("#editModeDockButton"),
-  equipmentEditModeDockButton: document.querySelector("#equipmentEditModeDockButton"),
   toggleMouseLockButton: document.querySelector("#toggleMouseLockButton"),
   editLayerUpButton: document.querySelector("#editLayerUpButton"),
   editLayerDownButton: document.querySelector("#editLayerDownButton"),
@@ -8808,21 +11883,31 @@ const runtime = {
   settingsOverlayOpen: false,
   equipmentOverlayOpen: false,
   storeTab: "food",
-  toolbarActionMenu: "",
+  // Session-only so a new game launch begins at BubbleBodega Home.
+  bubbleBodegaHomeOpen: false,
+  bubbleBodegaSessionVisited: false,
   toolbarCareTaskCount: 0,
   toolbarCareTaskCountAt: 0,
   storeSorts: {
     food: "cost",
     pharmacy: "cost",
     fish: "cost",
+    cleanup: "cost",
     decor: "cost",
     equipment: "cost"
   },
   storeFilters: {
     fish: "all"
   },
+  storeWaterFilters: {
+    fish: false,
+    cleanup: false,
+    decor: false
+  },
+  storeFoodInTank: false,
   storeSearches: {
     fish: "",
+    cleanup: "",
     decor: ""
   },
   storeScrollPointerId: null,
@@ -8855,6 +11940,7 @@ const runtime = {
   tankEditMode: false,
   editTankTrayTab: "background",
   editTankBackgroundMode: "",
+  pendingWaterConversionTarget: "",
   editTankGravelLayer: 0,
   tankColorPickerDrag: null,
   foodTrayOpen: false,
@@ -8964,6 +12050,7 @@ const runtime = {
   fishRenderFrameCache: null,
   fishRenderRecordPool: [],
   fishRenderLayerBuckets: null,
+  fishRenderPassBuckets: null,
   fishSpeciesMergeCache: new Map(),
   deferredStateSaveDirty: false,
   deferredStateSaveRequestedAt: 0,
@@ -9128,6 +12215,7 @@ const runtime = {
   missingFishImageWarnings: new Set(),
   pendingFishPurchases: new Set(),
   alphaMaskCache: new Map(),
+  fishSymptomOverlayCache: new Map(),
   bubblerSpoutOriginCache: new Map(),
   maskRegionCache: new Map(),
   caveInteriorMaskCache: new Map(),
@@ -9161,9 +12249,15 @@ const runtime = {
   fishLayerDepthScaleTransitions: new Map(),
   fishLayerTravelStepTransitions: new Map(),
   fishCollisionAvoidanceById: new Map(),
+  fishNavigationMemoryById: new Map(),
+  fishRightOfWayByPair: new Map(),
+  corpseMotionByFishId: new Map(),
   customGravelTopLayerDepthCacheKey: "",
   customGravelTopLayerDepthCanvas: null,
   diseaseGreenBubblesByFishId: new Map(),
+  moodBubbleByFishId: new Map(),
+  glassTapMoodCheckAt: 0,
+  glassTapStressByTankId: new Map(),
   debugBehaviorSteeringByFishId: new Map(),
   debugForcedOtocinclusStateByFishId: new Map(),
   fishGravelPebbleActions: new Map(),
@@ -9224,7 +12318,6 @@ const runtime = {
   layoutRatioLockWidth: 0,
   layoutRatioLockHeight: 0,
   layoutRatioLockScale: 1,
-  portablePerformanceActive: null,
   resizeObserver: null,
   wallpaperEngineFpsLimit: wallpaperEngineGeneralPropertyState.fps,
   wallpaperEngineFpsCarrySeconds: 0,
@@ -9323,25 +12416,21 @@ const CUSTOM_ASSET_EDITOR_OVERLAY_CONFIGS = Object.freeze({
 
 const TUTORIAL_TOOLBAR_CONTROL_IDS = Object.freeze([
   "openStoreButton",
-  "editModeDockButton",
+  "editMenuButton",
   "feedButton",
-  "fishEditModeDockButton",
+  "careMenuButton",
   "openEquipmentButton",
   "careTaskPaneButton",
-  "spongeButton",
-  "scoopButton",
   "overviewButton"
 ]);
 
 const TUTORIAL_TOOLBAR_BLOCK_MESSAGES = Object.freeze({
   openStoreButton: "Finish this task first.",
-  editModeDockButton: "Decoration comes next.",
+  editMenuButton: "Decoration comes next.",
   feedButton: "Feeding comes next.",
-  fishEditModeDockButton: "Available after the tutorial.",
+  careMenuButton: "Cleaning comes next.",
   openEquipmentButton: "Available after the tutorial.",
   careTaskPaneButton: "Available after the tutorial.",
-  spongeButton: "Cleaning comes next.",
-  scoopButton: "Use the sponge here.",
   overviewButton: "Available after the tutorial."
 });
 
@@ -9373,18 +12462,14 @@ const TUTORIAL_TASK_DEFS = Object.freeze({
 
 const TUTORIAL_CORE_TOOLBAR_BUTTON_IDS = Object.freeze([
   "openStoreButton",
-  "editModeDockButton",
+  "editMenuButton",
   "feedButton",
-  "spongeButton"
+  "careMenuButton"
 ]);
 const TUTORIAL_REVEAL_TOOLBAR_BUTTON_IDS = Object.freeze([
-  "scoopButton",
-  "fishEditModeDockButton",
   "openEquipmentButton",
   "openManagementButton",
   "careTaskPaneButton",
-  "medicineButton",
-  "tipsButton",
   "toggleMouseLockButton"
 ]);
 const TUTORIAL_ALL_TOOLBAR_BUTTON_IDS = Object.freeze([
@@ -9449,8 +12534,8 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
       const hasDecor = Boolean(ctx.tutorial?.decorKey);
       const editModeOpen = runtime.editTankMode === true;
       return createTutorialUiStateConfig({
-        visibleButtons: hasDecor ? ["openStoreButton", "editModeDockButton"] : ["openStoreButton"],
-        pulseButtons: hasDecor && !editModeOpen ? ["editModeDockButton"] : (!hasDecor ? ["openStoreButton"] : []),
+        visibleButtons: hasDecor ? ["openStoreButton", "editMenuButton"] : ["openStoreButton"],
+        pulseButtons: hasDecor && !editModeOpen ? ["editMenuButton"] : (!hasDecor ? ["openStoreButton"] : []),
         pulseDecorKey: hasDecor && editModeOpen ? ctx.tutorial.decorKey : ""
       });
     },
@@ -9467,7 +12552,7 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
       }
     }),
     toolbar: (ctx) => createTutorialToolbarConfig(ctx.tutorial?.decorKey
-      ? ["openStoreButton", "editModeDockButton"]
+      ? ["openStoreButton", "editMenuButton"]
       : ["openStoreButton"]),
     resume: () => false
   },
@@ -9475,9 +12560,9 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
     id: TUTORIAL_STAGE_PLACE_DECORATION_DONE,
     popup: () => createTutorialTaskPopup(TUTORIAL_TASK_PLACE_DECORATION, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["openStoreButton", "editModeDockButton"]
+      visibleButtons: ["openStoreButton", "editMenuButton"]
     }),
-    toolbar: () => createTutorialToolbarConfig(["editModeDockButton"]),
+    toolbar: () => createTutorialToolbarConfig(["editMenuButton"]),
     advance: createTutorialTimedAdvance(
       TUTORIAL_TASK_COMPLETE_DELAY_MS,
       TUTORIAL_STAGE_FEED_FISH,
@@ -9489,12 +12574,12 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
     id: TUTORIAL_STAGE_FEED_FISH,
     popup: () => createTutorialTaskPopup(TUTORIAL_TASK_FEED_FISH),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton"],
-      pulseButtons: runtime.editTankMode ? ["editModeDockButton"] : (runtime.foodTrayOpen ? [] : ["feedButton"]),
+      visibleButtons: ["openStoreButton", "editMenuButton", "feedButton"],
+      pulseButtons: runtime.editTankMode ? ["editMenuButton"] : (runtime.foodTrayOpen ? [] : ["feedButton"]),
       pulseFoodKey: runtime.foodTrayOpen ? TUTORIAL_BASIC_FOOD_KEY : ""
     }),
     toolbar: () => createTutorialToolbarConfig(runtime.editTankMode
-      ? ["editModeDockButton", "feedButton"]
+      ? ["editMenuButton", "feedButton"]
       : ["feedButton"]),
     resume: (ctx) => resumeTutorialFoodState(ctx.tutorial, ctx.now)
   },
@@ -9502,7 +12587,7 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
     id: TUTORIAL_STAGE_FEED_FISH_DONE,
     popup: () => createTutorialTaskPopup(TUTORIAL_TASK_FEED_FISH, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton"]
+      visibleButtons: ["openStoreButton", "editMenuButton", "feedButton"]
     }),
     toolbar: () => createTutorialToolbarConfig([]),
     advance: {
@@ -9524,17 +12609,17 @@ const TUTORIAL_STAGE_DEFS = Object.freeze({
     id: TUTORIAL_STAGE_CLEAN_TANK,
     popup: () => createTutorialTaskPopup(TUTORIAL_TASK_CLEAN_TANK),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton", "spongeButton"],
-      pulseButtons: ["spongeButton"]
+      visibleButtons: ["openStoreButton", "editMenuButton", "feedButton", "careMenuButton"],
+      pulseButtons: ["careMenuButton"]
     }),
-    toolbar: () => createTutorialToolbarConfig(["spongeButton"]),
+    toolbar: () => createTutorialToolbarConfig(["careMenuButton"]),
     resume: () => false
   },
   [TUTORIAL_STAGE_CLEAN_TANK_DONE]: {
     id: TUTORIAL_STAGE_CLEAN_TANK_DONE,
     popup: () => createTutorialTaskPopup(TUTORIAL_TASK_CLEAN_TANK, true),
     ui: () => createTutorialUiStateConfig({
-      visibleButtons: ["openStoreButton", "editModeDockButton", "feedButton", "spongeButton"]
+      visibleButtons: ["openStoreButton", "editMenuButton", "feedButton", "careMenuButton"]
     }),
     toolbar: () => createTutorialToolbarConfig([]),
     advance: createTutorialTimedAdvance(TUTORIAL_TASK_COMPLETE_DELAY_MS, TUTORIAL_STAGE_TOOLBAR_REVEAL),
@@ -9630,6 +12715,8 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
     async save({ pending, now }) {
       const rawName = String(pending.name || "").replace(/\s+/g, " ").trim();
       const name = sanitizeCustomDecorName(rawName);
+      const storageCheck = validateCustomContentUpload(pending.dataUrl, "item");
+      if (!storageCheck.ok) { showToast(storageCheck.message); return false; }
       const storedImage = await storeCustomImageDataUrl(pending.dataUrl, "custom-decor");
       await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
       const decorKey = `${CUSTOM_DECOR_KEY_PREFIX}${createId("asset")}`;
@@ -9738,6 +12825,8 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
     },
     async save({ pending, now }) {
       const name = sanitizeCustomDecorName(String(pending.name || "").replace(/\s+/g, " ").trim(), "Custom Hide");
+      const storageCheck = validateCustomContentUpload([pending.frontDataUrl, pending.bgDataUrl], "item");
+      if (!storageCheck.ok) { showToast(storageCheck.message); return false; }
       const [frontImage, backgroundImage] = await Promise.all([
         storeCustomImageDataUrl(pending.frontDataUrl, "custom-hide-front"),
         storeCustomImageDataUrl(pending.bgDataUrl, "custom-hide-background")
@@ -9831,7 +12920,10 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
         return false;
       }
       const outputDataUrl = await getPendingCustomFishOutputDataUrl(pending);
-      const storedImage = await storeCustomImageDataUrl(outputDataUrl || pending.dataUrl, "custom-fish");
+      const finalDataUrl = outputDataUrl || pending.dataUrl;
+      const storageCheck = validateCustomContentUpload(finalDataUrl, "fish");
+      if (!storageCheck.ok) { showToast(storageCheck.message); return false; }
+      const storedImage = await storeCustomImageDataUrl(finalDataUrl, "custom-fish");
       await preloadImages([storedImage.runtimeUrl || storedImage.dataUrl]);
       const speciesKey = `${CUSTOM_FISH_KEY_PREFIX}${createId("species")}`;
       const specimenId = proteusPurchase ? generateProteusSpecimenId() : "";
@@ -9890,11 +12982,6 @@ const CUSTOM_ASSET_TYPES = Object.freeze({
       } else {
         state.coins -= CUSTOM_FISH_COST;
         recordWalletTransaction({ amount: CUSTOM_FISH_COST, direction: "debit", now, place: "BubbleBodega", label: `Created custom fish ${asset.name}.` });
-      }
-      maybeSeedNewFishDiseaseCarrier(fish, now);
-      if (!isMealFreeFish(fish) && canFoodSatisfyFishMeal(fish, "basic")) {
-        setFishNeedValue(fish, "hunger", 82, now);
-        fish.lastAteAt = now;
       }
       if (!proteusPurchase) recordBubbleBodegaOrder([{
         key: CUSTOM_FISH_SHOP_KEY,
@@ -10013,17 +13100,6 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       { selector: "[data-confirm-dispenser-reset]", run: () => returnAutoDispenserPelletsToInventory() }
     ])
   },
-  tips: {
-    id: "tips",
-    exclusive: true,
-    render: () => ({
-      kicker: "Care",
-      title: "Current Tank Tips",
-      body: renderTipsOverlay(),
-      footer: "",
-      closable: true
-    })
-  },
   "tank-management": {
     id: "tank-management",
     exclusive: true,
@@ -10058,15 +13134,6 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     render: renderLegalUtilityOverlay,
     onHeaderClick: handleLegalUtilityOverlayBodyClick,
     onBodyClick: handleLegalUtilityOverlayBodyClick
-  },
-  "invite-friend": {
-    id: "invite-friend",
-    exclusive: true,
-    render: renderInviteFriendUtilityOverlay,
-    onBodyInput: handleInviteFriendUtilityOverlayInput,
-    onFooterClick: createUtilityOverlayActionHandler([
-      { selector: "[data-send-friend-invite]", run: (ctx, button) => sendInviteFriendEmails(button) }
-    ])
   },
   "bubbler-settings": createPlacedDecorUtilityMode({
     id: "bubbler-settings",

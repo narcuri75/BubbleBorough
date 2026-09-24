@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,13 +14,13 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "b99be0ce-36f3-4c64-bbb6-7d1c030617c7",
+      "id": "88eaffe6-5a3c-4c71-b597-fec12962cb4a",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "27c11e97-c2b5-4d35-bbce-14f2ca04fe1a",
+          "id": "3bda2e79-6097-4f6e-bbda-7775d2500254",
           "width": 512,
           "height": 512,
           "x": 0,
@@ -28,10 +28,10 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "angelfish_3.png"
+          "name": "angelfish_altum.png"
         },
         {
-          "id": "a1ae9ef7-ac2f-4d71-b29f-bb4b66c22f46",
+          "id": "48a5eda2-1cfb-4d90-bafa-001a00608b06",
           "width": 512,
           "height": 512,
           "x": 0,
@@ -39,10 +39,10 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "angelfish_2.png"
+          "name": "angelfish_black_lace.png"
         },
         {
-          "id": "31f1d4c6-0251-4805-aa26-af5e2c866c39",
+          "id": "bc099dad-af64-4040-aebd-1609d6712ccb",
           "width": 512,
           "height": 512,
           "x": 0,
@@ -50,10 +50,10 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "angelfish_1.png"
+          "name": "angelfish_blue_blushing.png"
         },
         {
-          "id": "a8d3d9a8-60e5-4452-82a1-07692c2c3810",
+          "id": "a39d7077-9f04-451b-874a-82628a65a18a",
           "width": 512,
           "height": 512,
           "x": 0,
@@ -61,10 +61,10 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "angelfish.png"
+          "name": "angelfish_emperor.png"
         },
         {
-          "id": "c28a33a8-20c4-4cdc-aa62-80fe2a7ecd37",
+          "id": "ad173361-66eb-4a36-9115-6c2969ef8c99",
           "width": 512,
           "height": 512,
           "x": 0,
@@ -72,7 +72,62 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "angelfish_4.png"
+          "name": "angelfish_flame.png"
+        },
+        {
+          "id": "73daadd6-577d-428f-8eb6-014e91709063",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_gold_pearlscale.png"
+        },
+        {
+          "id": "9e74f1a0-3a26-4e02-a33c-70a014263048",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_koi.png"
+        },
+        {
+          "id": "e2b218fc-8b8d-4bad-bb9a-08bb7235d3aa",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_marble.png"
+        },
+        {
+          "id": "0ad8b539-b29a-424b-8441-b101967008be",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_silver.png"
+        },
+        {
+          "id": "1e3308d2-55d4-4073-a111-634a979d55cd",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "angelfish_zebra.png"
         }
       ]
     }

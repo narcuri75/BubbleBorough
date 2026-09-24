@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "46e16c04-c571-4d7b-82db-2dcd72a17c99",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ba188f86-5227-465c-86a7-a294b51849d0",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sea-snail_1.png"
+        },
+        {
+          "id": "f758dd35-5f52-4449-a734-d24e0a349751",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sea-snail_2.png"
+        },
+        {
+          "id": "d8d1255b-645f-4acd-8d47-a3c2d70f311e",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sea-snail_3.png"
+        },
+        {
+          "id": "e97411a7-8b02-441c-8c4e-cc106d18d848",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sea-snail_4.png"
+        },
+        {
+          "id": "bf1f6530-6ad3-489f-8806-de3789dcfd90",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sea-snail_5.png"
+        }
+      ]
+    }
+  ]
+}

@@ -11,8 +11,14 @@ function getCaveInsideLayerForItem(item) {
     return clampTankLayer(CAVE_SEAT_LOCKED_LAYER);
   }
 
-  // Cave interiors are a render sublayer, not a separate global tank layer.
   return clampTankLayer(getDecorTankLayer(item));
+}
+
+function getCaveInsideSubLayerForItem(item) {
+  if (!item || !isCaveDecorKey(item.decorKey)) {
+    return DEFAULT_TANK_SUBLAYER;
+  }
+  return TANK_SUBLAYER_MIDDLE;
 }
 
 function isCaveNightWindow(timestamp = Date.now()) {
@@ -615,6 +621,7 @@ function clearFishCaveBehavior(fish) {
   fish.caveSeatId = null;
   fish.caveFrontLayer = null;
   fish.caveBackLayer = null;
+  fish.caveReturnSubLayer = null;
   fish.caveApproachXNorm = null;
   fish.caveApproachYNorm = null;
   fish.caveEntryXNorm = null;

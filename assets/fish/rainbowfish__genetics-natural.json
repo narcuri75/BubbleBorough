@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,98 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "e92c0475-9b87-40f1-9b43-c939738f4083",
+      "id": "e91b9e5e-a619-4dd0-9bbb-74fe7892453b",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "d1adc224-ed5c-4d17-80cf-7309dea8593f",
+          "id": "690c3bbb-8934-45ad-a9ed-8ef2290b3e0e",
           "width": 512,
-          "height": 256,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "rainbowfish.png"
+          "name": "rainbow_bleheri.png"
         },
         {
-          "id": "b3398587-3336-4041-94b5-24a3e4015b52",
+          "id": "e10ffe43-8a5a-40fc-a012-7e4f51a524b6",
           "width": 512,
-          "height": 256,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "rainbowfish_1.png"
+          "name": "rainbow_boesemani.png"
         },
         {
-          "id": "e3442bfa-4327-4903-aefa-d15cf425de1c",
+          "id": "46f44f7a-1bd9-4da8-9748-6a44fa935dc2",
           "width": 512,
-          "height": 256,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "rainbowfish_2.png"
+          "name": "rainbow_fluviatilis.png"
         },
         {
-          "id": "527e7b9a-75e5-4641-8a42-541ce5def7e2",
+          "id": "94db48be-7635-416b-96ca-4312e5b62ae6",
           "width": 512,
-          "height": 256,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "rainbowfish_3.png"
+          "name": "rainbow_incisus.png"
         },
         {
-          "id": "945e3232-1c36-42dc-855d-672fa0534a2f",
+          "id": "bb75e41a-2d5d-4b10-8a91-a03fbc5d72d1",
           "width": 512,
-          "height": 256,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "rainbowfish_4.png"
+          "name": "rainbow_parkinsoni.png"
+        },
+        {
+          "id": "a0000305-1a8d-403f-bb03-50e94dc9383e",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_praecox.png"
+        },
+        {
+          "id": "8c81e66b-9515-408d-9788-791ca9b76002",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_trifasciata.png"
+        },
+        {
+          "id": "3c9dac2a-7db1-4391-a5b5-57c802587044",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "rainbow_turquoise.png"
         }
       ]
     }

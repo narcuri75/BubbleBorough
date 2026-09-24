@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "486a7a7b-18d5-4055-965e-6d3acff34cb9",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "89d1a6e7-3cdb-4690-88eb-0382295ccb5d",
+          "width": 1024,
+          "height": 1024,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "shrimp_body.png"
+        },
+        {
+          "id": "44918f0c-f645-4753-84e2-0ab66645089c",
+          "width": 1024,
+          "height": 1024,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "shrimp_antenna.png"
+        },
+        {
+          "id": "2567aac6-97bd-4760-b335-f7881d58738d",
+          "width": 1024,
+          "height": 1024,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "shrimp_legs.png"
+        }
+      ]
+    }
+  ]
+}

@@ -178,7 +178,11 @@ function syncCurrentTankState(now, options = {}) {
     changed = processFishNeedsAutonomy(now) || changed;
   }
 
+  if (typeof processPendingBreedingEvents === "function") changed = processPendingBreedingEvents(now) || changed;
   changed = processFishEggs(now) || changed;
+  if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && typeof processCurrentTankFishAging === "function") {
+    changed = processCurrentTankFishAging(now) || changed;
+  }
 
   const droppedPoops = [];
   state.pendingPoops = state.pendingPoops.filter((poop) => {
@@ -233,6 +237,7 @@ function syncCurrentTankState(now, options = {}) {
 
   if (!(typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     changed = processTankMedicineEffects(now) || changed;
+    if (typeof processFishConditionFramework === "function") changed = processFishConditionFramework(now) || changed;
     changed = processFishDisease(now) || changed;
   }
   changed = processFishBehaviorState(now) || changed;
@@ -648,6 +653,10 @@ function applyCriticalComfortHealthEffects(now) {
   const corpsesPresent = hasExposedDeadTankFish(now);
 
   for (const fish of livingFish) {
+    if (isProteusZombieFish(fish)) {
+      fish.comfortDamageProgressMs = 0;
+      continue;
+    }
     const unboostedExposureMs = Number(fish.candyBoostUntil) > 0
       ? Math.min(exposureMs, Math.max(0, now - fish.candyBoostUntil)) : exposureMs;
     if (hasActiveCandyBoost(fish, now)) {
@@ -722,6 +731,25 @@ function processFishDecayStates(now) {
   return changed;
 }
 
+function getCleanupCrewDirtinessFloor(species) {
+  return clamp(Number(species?.cleanupFloor) || CLEANUP_CREW_DIRTINESS_FLOOR, 0.05, 0.5);
+}
+
+function applyCleanupCrewGrimeReduction(species, now) {
+  const dirtiness = getBaseTankDirtiness(now);
+  const cleanupFloor = getCleanupCrewDirtinessFloor(species);
+  if (dirtiness <= cleanupFloor) return false;
+
+  const dirtyDurationMs = getTankMaxDirtyDurationMs();
+  const cleanupStrength = clamp(Number(species?.cleanupStrength) || 0, 0, 0.45);
+  const reduction = cleanupStrength * HOUR_MS / Math.max(1, dirtyDurationMs);
+  const nextDirtiness = Math.max(cleanupFloor, dirtiness - reduction);
+  if (nextDirtiness >= dirtiness) return false;
+
+  state.lastCleanedAt = now - nextDirtiness * dirtyDurationMs;
+  return true;
+}
+
 function processDetritusFish(now) {
   let changed = false;
 
@@ -753,13 +781,13 @@ function processDetritusFish(now) {
     if (canClearNearbyPoop) {
       state.poops.splice(nearbyPoopIndex, 1);
       changed = true;
-    } else {
-      const dirtiness = getBaseTankDirtiness(now);
-      if (dirtiness > 0.03) {
-        const cleanupStrength = species.cleanupStrength * (nearbyPoopIndex !== -1 ? 0.35 : 1);
-        state.lastCleanedAt = Math.min(now, state.lastCleanedAt + cleanupStrength * HOUR_MS);
-        changed = true;
-      }
+    } else if (nearbyPoopIndex === -1) {
+      if (applyCleanupCrewGrimeReduction(species, now)) changed = true;
+    } else if (Math.random() < 0.35) {
+      if (applyCleanupCrewGrimeReduction({
+        ...species,
+        cleanupStrength: Number(species.cleanupStrength) * 0.35
+      }, now)) changed = true;
     }
 
     fish.nextDetritusSnackAt = now + species.cleanupMinMs + Math.random() * Math.max(1000, species.cleanupMaxMs - species.cleanupMinMs);

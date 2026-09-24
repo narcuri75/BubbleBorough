@@ -1,0 +1,91 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "13cd622c-7356-4599-aa48-ca6718cc8338",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "6aeaf781-4348-4072-b178-d405cb405027",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "basic-food_large.png"
+        },
+        {
+          "id": "6e92fc9f-5f67-4e82-b3dd-8c7dddd256da",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "basic-food_medium.png"
+        },
+        {
+          "id": "a1f83520-aeb0-45ad-8704-9bc72f14ea4e",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "basic-food_small.png"
+        },
+        {
+          "id": "811cde52-2a74-4cc7-a1e3-931ae7b5f51c",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_large.png"
+        },
+        {
+          "id": "bb9c3026-01c3-46c7-8b44-3f41b46ad832",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_medium.png"
+        },
+        {
+          "id": "14ce66a8-e7ee-4b59-ae26-d323b0a5c778",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "chum_small.png"
+        }
+      ]
+    }
+  ]
+}

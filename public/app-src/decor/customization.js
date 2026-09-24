@@ -1,6 +1,81 @@
 // Source fragment: decor/customization.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getFishPopulationCapacityCost(fish, species = getSpeciesForFish(fish)) {
+  return clamp(Number(fish?.capacityCost) || Number(species?.capacityCost) || 1, 0.1, 8);
+}
+
+function getTankPopulationCapacity(tank = getCurrentTank()) {
+  return clamp(Number(tank?.populationCapacity) || 20, 1, 100);
+}
+
+function calculateTankPopulationUsage(tank) {
+  return Math.round(((Array.isArray(tank?.fish) ? tank.fish : [])
+    .filter((fish) => fish && !isFishDead(fish))
+    .reduce((total, fish) => total + getFishPopulationCapacityCost(fish), 0)) * 100) / 100;
+}
+
+function getTankReservedPopulationCapacity(tank = getCurrentTank()) {
+  if (!tank) return 0;
+  const pendingBreeding = (Array.isArray(tank.pendingBreedingEvents) ? tank.pendingBreedingEvents : [])
+    .filter((event) => event?.status === "pending")
+    .reduce((total, event) => total + clamp(Number(event.reservedCapacity) || 0, 0, 100), 0);
+  const unhatchedEggs = (Array.isArray(tank.fishEggs) ? tank.fishEggs : [])
+    .filter((egg) => egg && !egg.hatchedAt)
+    .reduce((total, egg) => total + clamp(Number(egg.reservedCapacity) || 0, 0, 100), 0);
+  return Math.round((pendingBreeding + unhatchedEggs) * 100) / 100;
+}
+
+function getTankAvailablePopulationCapacity(tank = getCurrentTank()) {
+  if (!tank) return 0;
+  const reserved = typeof getTankReservedPopulationCapacity === "function" ? getTankReservedPopulationCapacity(tank) : 0;
+  const available = getTankPopulationCapacity(tank) - calculateTankPopulationUsage(tank) - reserved;
+  return Math.max(0, Math.round(available * 100) / 100);
+}
+
+function getTankPopulationFit(fish, tank = getCurrentTank()) {
+  const capacity = getTankPopulationCapacity(tank);
+  const usage = calculateTankPopulationUsage(tank);
+  const reserved = typeof getTankReservedPopulationCapacity === "function" ? getTankReservedPopulationCapacity(tank) : 0;
+  const cost = fish && !isFishDead(fish) ? getFishPopulationCapacityCost(fish) : 0;
+  const available = Math.max(0, Math.round((capacity - usage - reserved) * 100) / 100);
+  return {
+    capacity,
+    usage,
+    reserved,
+    cost,
+    available,
+    fits: Boolean(tank) && usage + reserved + cost <= capacity + 0.0001
+  };
+}
+
+function canTankAcceptFish(fish, tank = getCurrentTank()) {
+  return getTankPopulationFit(fish, tank).fits;
+}
+
+function syncTankPopulationUsageField(tank) {
+  if (!tank) return false;
+  const usage = calculateTankPopulationUsage(tank);
+  const capacity = getTankPopulationCapacity(tank);
+  const changed = Number(tank.populationUsage) !== usage || Number(tank.populationCapacity) !== capacity;
+  tank.populationUsage = usage;
+  tank.populationCapacity = capacity;
+  return changed;
+}
+
+function formatPopulationCapacityValue(value) {
+  const number = Math.max(0, Number(value) || 0);
+  return Number.isInteger(number) ? String(number) : String(Math.round(number * 100) / 100);
+}
+
+function syncTankPopulationUsageFields(targetState = state) {
+  let changed = false;
+  for (const tank of getAllTanks(targetState)) {
+    changed = syncTankPopulationUsageField(tank) || changed;
+  }
+  return changed;
+}
+
 function createTankState(options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const typeMeta = getTankTypeMeta("rectangular");
@@ -31,12 +106,15 @@ function createTankState(options = {}) {
     createdAt: Number.isFinite(Number(options.createdAt)) ? Number(options.createdAt) : now,
     tankTypeId: typeMeta.id,
     waterType: normalizeWaterType(options.waterType, typeMeta.defaultWaterType || "freshwater"),
-    setupPending: false,
+    populationCapacity: clamp(Number(options.populationCapacity) || 20, 1, 100),
+    populationUsage: Math.max(0, Number.isFinite(Number(options.populationUsage)) ? Number(options.populationUsage) : 0),
+    setupPending: options.setupPending === true,
     fish: Array.isArray(options.fish) ? options.fish : [],
     feedHistory: options.feedHistory && typeof options.feedHistory === "object" ? options.feedHistory : {},
     pendingPoops: Array.isArray(options.pendingPoops) ? options.pendingPoops : [],
     poops: Array.isArray(options.poops) ? options.poops : [],
     fishEggs: Array.isArray(options.fishEggs) ? options.fishEggs : [],
+    pendingBreedingEvents: Array.isArray(options.pendingBreedingEvents) ? options.pendingBreedingEvents : [],
     placedDecor: Array.isArray(options.placedDecor) ? options.placedDecor : [],
     freeDecorPlacement: options.freeDecorPlacement === true,
     customGravelEnabled: true,
@@ -46,6 +124,11 @@ function createTankState(options = {}) {
     customGravelLayerColorize: Array.isArray(options.customGravelLayerColorize)
       ? options.customGravelLayerColorize
       : getDefaultCustomGravelLayerColorizeSettings(),
+    substrateStyle: typeof normalizeSubstrateStyle === "function"
+      ? normalizeSubstrateStyle(options.substrateStyle, "auto")
+      : (["auto", "custom", "river-rock", "sand"].includes(String(options.substrateStyle || ""))
+        ? String(options.substrateStyle)
+        : "auto"),
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
     gravelSeed,
     gravelHillSeed,
@@ -73,6 +156,26 @@ function createTankState(options = {}) {
     selectedBubbleAsset: options.selectedBubbleAsset ?? (runtime.bubbleCatalog[0]?.key || null),
     theme: DEFAULT_THEME,
     lastCleanedAt: Number.isFinite(options.lastCleanedAt) ? options.lastCleanedAt : now,
+    cleaningIncomeDayKey: typeof options.cleaningIncomeDayKey === "string" && options.cleaningIncomeDayKey
+      ? options.cleaningIncomeDayKey
+      : getLocalDayKey(now),
+    cleaningIncomeCredit: clamp(Number(options.cleaningIncomeCredit) || 0, 0, CLEANING_DAILY_COIN_CAP),
+    cleaningIncomeCoinsEarned: clamp(
+      Math.floor(Number(options.cleaningIncomeCoinsEarned) || 0),
+      0,
+      CLEANING_DAILY_COIN_CAP
+    ),
+    otocinclusCoinFindDayKey: typeof options.otocinclusCoinFindDayKey === "string" && options.otocinclusCoinFindDayKey
+      ? options.otocinclusCoinFindDayKey
+      : getLocalDayKey(now),
+    otocinclusCoinsFoundToday: clamp(
+      Math.floor(Number(options.otocinclusCoinsFoundToday) || 0),
+      0,
+      OTOCINCLUS_DAILY_COIN_FIND_CAP
+    ),
+    otocinclusCoinFindLastAttemptAt: Number.isFinite(Number(options.otocinclusCoinFindLastAttemptAt))
+      ? Number(options.otocinclusCoinFindLastAttemptAt)
+      : 0,
     lastSimulatedAt: Number.isFinite(options.lastSimulatedAt) ? options.lastSimulatedAt : now,
     events: Array.isArray(options.events) ? options.events : [],
     lastCorpseSicknessAt: Number.isFinite(Number(options.lastCorpseSicknessAt)) ? Number(options.lastCorpseSicknessAt) : null,
@@ -294,6 +397,278 @@ function getTransitTubeJourney(sourceTank, destinationTank) {
   return null;
 }
 
+function normalizeStartingSubstrateStyle(value, fallback = "custom") {
+  const normalized = normalizeSubstrateStyle(value, fallback);
+  return ["custom", "river-rock", "sand"].includes(normalized) ? normalized : fallback;
+}
+
+function applyTankStartingSetup(tank, waterType, substrateStyle) {
+  if (!tank) return false;
+  tank.waterType = normalizeWaterType(waterType, "freshwater");
+  tank.substrateStyle = normalizeStartingSubstrateStyle(substrateStyle, "custom");
+  state.ownedSubstrateInventory ||= sanitizeOwnedSubstrateInventory(null);
+  state.ownedSubstrateInventory[tank.substrateStyle] = 1;
+  tank.setupPending = false;
+  runtime.gravelBedCacheKey = "";
+  runtime.gravelBedCanvas = null;
+  runtime.gravelCapCanvas = null;
+  invalidateCustomGravelVisualCaches();
+  return true;
+}
+
+function completeAquariumExpansionAt(gridX, gridY, options = {}) {
+  const x = Number(gridX);
+  const y = Number(gridY);
+  const valid = getValidAquariumExpansionSpaces().some((space) => space.gridX === x && space.gridY === y);
+  const expansionCost = getAquariumExpansionCost();
+  if (!valid || getAquariumSectionAt(x, y)) {
+    showToast("Choose an adjacent space within the borough limit: 3 rows, 5 columns, 15 tanks.");
+    return false;
+  }
+  if (state.coins < expansionCost) {
+    showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
+    return false;
+  }
+
+  const now = Date.now();
+  state.coins -= expansionCost;
+  recordWalletTransaction({ amount: expansionCost, direction: "debit", now, place: "BubbleBodega", label: "Aquarium expansion" });
+  const section = createTankState({
+    now,
+    name: getNextAvailableTankName(),
+    gridX: x,
+    gridY: y,
+    waterType: normalizeWaterType(options.waterType, "freshwater"),
+    substrateStyle: normalizeStartingSubstrateStyle(options.substrateStyle, "custom"),
+    setupPending: false
+  });
+  state.tanks.push(section);
+  state.activeTankId = section.id;
+  runtime.aquariumExpansionMode = true;
+  runtime.boroughOverviewOpen = true;
+  pushEvent(`Extended Bubble Borough with ${getTankLabel(section)}.`, now, section);
+  saveState();
+  playPurchaseSoundEffect();
+  renderUi(now);
+  showToast(`${getTankLabel(section)} is ready.`);
+  return true;
+}
+
+function getPendingTankSetup() {
+  return getAllTanks().find((tank) => tank?.setupPending === true) || null;
+}
+
+function openTankSetupDialog(options = {}) {
+  if (document.querySelector("[data-tank-setup-dialog]")) return false;
+
+  const pendingTank = options.tankId ? getTankById(options.tankId) : null;
+  const isExpansion = !pendingTank && Number.isInteger(Number(options.gridX)) && Number.isInteger(Number(options.gridY));
+  if (!pendingTank && !isExpansion) return false;
+
+  const required = pendingTank?.setupPending === true;
+  const expansionCost = isExpansion ? getAquariumExpansionCost() : 0;
+  const existingProfile = sanitizeAccountProfile(state?.accountProfile);
+  let selectedWaterType = normalizeWaterType(pendingTank?.waterType, "freshwater");
+  let selectedSubstrate = normalizeStartingSubstrateStyle(pendingTank?.substrateStyle, "custom");
+  const waterStep = isExpansion ? 1 : 2;
+  const substrateStep = isExpansion ? 2 : 3;
+
+  const dialog = document.createElement("dialog");
+  dialog.className = "decor-layout-dialog tank-setup-dialog";
+  dialog.dataset.tankSetupDialog = "true";
+  dialog.setAttribute("aria-labelledby", "tankSetupTitle");
+  dialog.innerHTML = `
+    <div class="decor-layout-heading tank-setup-heading">
+      <div>
+        <span class="tank-setup-eyebrow">${isExpansion ? "NEW NEIGHBORHOOD" : "WELCOME TO BUBBLE BOROUGH"}</span>
+        <h2 id="tankSetupTitle">${isExpansion ? "Set Up New Tank" : "Set Up Your First Tank"}</h2>
+      </div>
+      ${required ? "" : '<button class="small-button alt" type="button" data-tank-setup-cancel>Cancel</button>'}
+    </div>
+    <p class="tank-setup-intro">${isExpansion
+      ? `Choose how this tank starts before paying the ${formatPopulationCapacityValue(expansionCost)} coin expansion cost.`
+      : `Choose a username, then pick the water type and substrate for your first tank. No fish are included, so your ${STARTING_COINS} starting coins stay available for BubbleBodega.`}</p>
+
+    ${isExpansion ? "" : `
+      <section class="tank-setup-section tank-setup-username-section" aria-labelledby="tankSetupUsernameHeading">
+        <div class="tank-setup-step-heading">
+          <span class="tank-setup-step-number" aria-hidden="true">1</span>
+          <div class="tank-setup-section-heading">
+            <strong id="tankSetupUsernameHeading">Choose a Username</strong>
+            <small>This is how Bubble Borough will address you around town.</small>
+          </div>
+        </div>
+        <label class="tank-setup-username-input-wrap">
+          <span class="tank-setup-username-icon" aria-hidden="true">@</span>
+          <input type="text" maxlength="20" autocomplete="nickname" placeholder="Enter username" value="${escapeHtml(existingProfile.username)}" data-tank-setup-username />
+        </label>
+      </section>
+    `}
+
+    <section class="tank-setup-section" aria-labelledby="tankSetupWaterHeading">
+      <div class="tank-setup-step-heading">
+        <span class="tank-setup-step-number" aria-hidden="true">${waterStep}</span>
+        <div class="tank-setup-section-heading">
+          <strong id="tankSetupWaterHeading">Choose a Water Type</strong>
+          <small>Controls which living animals and decor are compatible.</small>
+        </div>
+      </div>
+      <div class="tank-setup-choice-grid tank-setup-water-grid">
+        <button type="button" class="tank-setup-choice tank-setup-water-choice" data-tank-setup-water="freshwater">
+          <span class="tank-setup-choice-preview tank-setup-freshwater-preview" aria-hidden="true">
+            <img class="tank-setup-preview-rock" src="assets/decor/static/rock-bricks__rock__theme-natural.png" alt="" draggable="false" />
+            <img class="tank-setup-preview-plant" src="assets/decor/anchored_sway/amazon-sword__plant__theme-natural.png" alt="" draggable="false" />
+          </span>
+          <span class="tank-setup-choice-copy">
+            <strong>Freshwater</strong>
+            <span>Rivers, lakes, streams, and freshwater species.</span>
+          </span>
+          <span class="tank-setup-choice-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="tank-setup-choice tank-setup-water-choice" data-tank-setup-water="saltwater">
+          <span class="tank-setup-choice-preview tank-setup-saltwater-preview" aria-hidden="true">
+            <img class="tank-setup-preview-coral" src="assets/decor/static/coral__coral__theme-reef__v6.png" alt="" draggable="false" />
+            <img class="tank-setup-preview-live-rock" src="assets/decor/cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__front.png" alt="" draggable="false" />
+          </span>
+          <span class="tank-setup-choice-copy">
+            <strong>Saltwater</strong>
+            <span>Marine fish, coral, anemones, and ocean species.</span>
+          </span>
+          <span class="tank-setup-choice-check" aria-hidden="true">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <section class="tank-setup-section" aria-labelledby="tankSetupSubstrateHeading">
+      <div class="tank-setup-step-heading">
+        <span class="tank-setup-step-number" aria-hidden="true">${substrateStep}</span>
+        <div class="tank-setup-section-heading">
+          <strong id="tankSetupSubstrateHeading">Choose a Starting Substrate</strong>
+          <small>This is visual only. It does not have to match the water type.</small>
+        </div>
+      </div>
+      <div class="tank-setup-choice-grid tank-setup-substrate-grid">
+        <button type="button" class="tank-setup-choice tank-setup-substrate-choice" data-tank-setup-substrate="custom">
+          <span class="tank-setup-choice-preview tank-setup-substrate-preview" aria-hidden="true"><img src="assets/gravel/Gravel_L3.png" alt="" draggable="false" /></span>
+          <span class="tank-setup-choice-copy"><strong>Gravel</strong><span>The standard layered aquarium gravel.</span></span>
+          <span class="tank-setup-choice-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="tank-setup-choice tank-setup-substrate-choice" data-tank-setup-substrate="river-rock">
+          <span class="tank-setup-choice-preview tank-setup-substrate-preview" aria-hidden="true"><img src="assets/gravel/alt/river-rock.png" alt="" draggable="false" /></span>
+          <span class="tank-setup-choice-copy"><strong>River Rock</strong><span>Natural rounded stones.</span></span>
+          <span class="tank-setup-choice-check" aria-hidden="true">✓</span>
+        </button>
+        <button type="button" class="tank-setup-choice tank-setup-substrate-choice" data-tank-setup-substrate="sand">
+          <span class="tank-setup-choice-preview tank-setup-substrate-preview" aria-hidden="true"><img src="assets/gravel/alt/sand.png" alt="" draggable="false" /></span>
+          <span class="tank-setup-choice-copy"><strong>Sand</strong><span>Fine pale aquarium sand.</span></span>
+          <span class="tank-setup-choice-check" aria-hidden="true">✓</span>
+        </button>
+      </div>
+    </section>
+
+    <div class="tank-setup-footer">
+      <span class="tank-setup-note">${isExpansion ? `${expansionCost} coins will be charged when the tank is created.` : `${STARTING_COINS} coins remain available after setup.`}</span>
+      <button class="small-button tank-setup-confirm" type="button" data-tank-setup-confirm>${isExpansion ? "Create Tank" : "Enter Tank"}<span aria-hidden="true">→</span></button>
+    </div>
+  `;
+
+  const syncChoices = () => {
+    for (const button of dialog.querySelectorAll("[data-tank-setup-water]")) {
+      const selected = button.dataset.tankSetupWater === selectedWaterType;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    }
+    for (const button of dialog.querySelectorAll("[data-tank-setup-substrate]")) {
+      const selected = button.dataset.tankSetupSubstrate === selectedSubstrate;
+      button.classList.toggle("is-selected", selected);
+      button.setAttribute("aria-pressed", String(selected));
+    }
+  };
+
+  dialog.addEventListener("input", (event) => {
+    const usernameInput = event.target.closest("[data-tank-setup-username]");
+    if (!usernameInput) return;
+    usernameInput.classList.remove("is-invalid");
+    usernameInput.closest(".tank-setup-username-input-wrap")?.classList.remove("is-invalid");
+  });
+
+  dialog.addEventListener("click", (event) => {
+    const waterButton = event.target.closest("[data-tank-setup-water]");
+    if (waterButton) {
+      selectedWaterType = normalizeWaterType(waterButton.dataset.tankSetupWater, "freshwater");
+      syncChoices();
+      return;
+    }
+    const substrateButton = event.target.closest("[data-tank-setup-substrate]");
+    if (substrateButton) {
+      selectedSubstrate = normalizeStartingSubstrateStyle(substrateButton.dataset.tankSetupSubstrate, "custom");
+      syncChoices();
+      return;
+    }
+    if (event.target.closest("[data-tank-setup-cancel]")) {
+      dialog.close("cancel");
+      return;
+    }
+    if (!event.target.closest("[data-tank-setup-confirm]")) return;
+
+    let nextProfile = null;
+    if (!isExpansion) {
+      const usernameInput = dialog.querySelector("[data-tank-setup-username]");
+      const session = runtime.cloudSession || (typeof getCloudSession === "function" ? getCloudSession() : null);
+      nextProfile = sanitizeAccountProfile({
+        username: usernameInput?.value || "",
+        userId: session?.user?.id || existingProfile.userId || ""
+      });
+      if (!nextProfile.username) {
+        usernameInput?.closest(".tank-setup-username-input-wrap")?.classList.add("is-invalid");
+        usernameInput?.focus();
+        showToast("Enter a username before entering your tank.");
+        return;
+      }
+    }
+
+    let completed = false;
+    if (isExpansion) {
+      completed = completeAquariumExpansionAt(Number(options.gridX), Number(options.gridY), {
+        waterType: selectedWaterType,
+        substrateStyle: selectedSubstrate
+      });
+    } else if (pendingTank) {
+      completed = applyTankStartingSetup(pendingTank, selectedWaterType, selectedSubstrate);
+      if (completed) {
+        state.accountProfile = nextProfile;
+        state.activeTankId = pendingTank.id;
+        pushEvent(`${getTankLabel(pendingTank)} set up as ${selectedWaterType === "saltwater" ? "Saltwater" : "Freshwater"} with ${selectedSubstrate === "river-rock" ? "River Rock" : selectedSubstrate === "sand" ? "Sand" : "Gravel"}.`, Date.now(), pendingTank);
+        saveState();
+        renderUi(Date.now());
+        showToast(`${getTankLabel(pendingTank)} is ready.`);
+      }
+    }
+    if (completed) dialog.close("complete");
+  });
+
+  dialog.addEventListener("cancel", (event) => {
+    if (required) {
+      event.preventDefault();
+    }
+  });
+  dialog.addEventListener("keydown", (event) => event.stopPropagation());
+  dialog.addEventListener("close", () => dialog.remove());
+
+  document.body.append(dialog);
+  syncChoices();
+  dialog.showModal();
+  if (!isExpansion) {
+    window.setTimeout(() => dialog.querySelector("[data-tank-setup-username]")?.focus(), 0);
+  }
+  return true;
+}
+
+function maybeOpenPendingTankSetup() {
+  const pendingTank = getPendingTankSetup();
+  return pendingTank ? openTankSetupDialog({ tankId: pendingTank.id }) : false;
+}
+
 function extendAquariumAt(gridX, gridY) {
   const x = Number(gridX);
   const y = Number(gridY);
@@ -307,19 +682,7 @@ function extendAquariumAt(gridX, gridY) {
     showToast("Payment method declined. Insufficient Funds.", { force: true, tone: "error" });
     return false;
   }
-  state.coins -= expansionCost;
-  recordWalletTransaction({ amount: expansionCost, direction: "debit", now: Date.now(), place: "BubbleBodega", label: "Aquarium expansion" });
-  const section = createTankState({ now: Date.now(), name: getNextAvailableTankName(), gridX: x, gridY: y });
-  state.tanks.push(section);
-  state.activeTankId = section.id;
-  runtime.aquariumExpansionMode = true;
-  runtime.boroughOverviewOpen = true;
-  pushEvent(`Extended Bubble Borough with ${getTankLabel(section)}.`, Date.now(), section);
-  saveState();
-  playPurchaseSoundEffect();
-  renderUi(Date.now());
-  showToast(`${getTankLabel(section)} is ready to build.`);
-  return true;
+  return openTankSetupDialog({ gridX: x, gridY: y });
 }
 
 function saveBoroughTankName(tankId, value = runtime.editingTankNameValue) {
@@ -611,6 +974,9 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
   if (!fish) return null;
   const dead = isFishDead(fish);
   const storageMoodTone = !dead ? (getFishCareStatus(fish, now)?.tone || "good") : "";
+  if (dead && typeof clearRemovedDeadFishRuntimeState === "function") {
+    clearRemovedDeadFishRuntimeState(fish);
+  }
   clearPiranhaAttackState(fish);
   clearFishCaveBehavior(fish);
   clearFishBoroughServiceReservation(fish);
@@ -644,26 +1010,44 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
       : fish.tankLayer || DEFAULT_TANK_LAYER;
     setFishTankLayers(fish, storageLayer, storageLayer);
   }
-  fish.storageFrozen = true;
-  fish.storageMoodTone = storageMoodTone;
-  fish.storedAt = now;
-  fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
-  fish.frozenLastSimulatedAt = now;
+  if (typeof prepareFishForStorageState === "function") {
+    prepareFishForStorageState(fish, now, {
+      moodTone: storageMoodTone,
+      mealSlotKey: getCurrentMealSlot(now)?.key || ""
+    });
+  } else {
+    fish.storageState = "stored";
+    fish.storageFrozen = true;
+    fish.storageMoodTone = storageMoodTone;
+    fish.storedAt = now;
+    fish.frozenMealSlotKey = getCurrentMealSlot(now)?.key || "";
+    fish.frozenLastSimulatedAt = now;
+  }
   return fish;
 }
 
 function returnSoldTankFishToStorage(tank, now = Date.now()) {
   const fishList = Array.isArray(tank?.fish) ? tank.fish : [];
   if (!fishList.length) return 0;
+  const livingFish = fishList.filter((fish) => fish && !isFishDead(fish));
+  const deadFish = fishList.filter((fish) => fish && isFishDead(fish));
   const fishIds = new Set(fishList.map((fish) => String(fish?.id || "")).filter(Boolean));
   withActiveTank(tank.id, () => {
-    for (const fish of fishList) {
+    for (const fish of livingFish) {
       prepareFishForTankStorageTransfer(fish, now);
+    }
+    for (const fish of deadFish) {
+      queueProteusCorpseDonation(fish, now, { source: "tank-sale" });
+      recordCreatureRemovalHistory(fish, fish.deathCause || "Unknown", now, { source: "tank-sale" });
+      if (typeof clearRemovedDeadFishRuntimeState === "function") {
+        clearRemovedDeadFishRuntimeState(fish);
+      }
     }
   });
   state.storedFish ||= [];
-  state.storedFish.push(...fishList);
+  state.storedFish.push(...livingFish);
   tank.fish = [];
+  if (typeof syncTankPopulationUsageField === "function") syncTankPopulationUsageField(tank);
   tank.pendingPoops = Array.isArray(tank.pendingPoops)
     ? tank.pendingPoops.filter((poop) => !fishIds.has(String(poop?.fishId || "")))
     : [];
@@ -680,7 +1064,7 @@ function returnSoldTankFishToStorage(tank, now = Date.now()) {
   }
   if (fishIds.has(String(runtime.selectedFishId || ""))) runtime.selectedFishId = null;
   if (fishIds.has(String(runtime.debugForcedCaveFishId || ""))) clearDebugCaveTestSelection();
-  return fishList.length;
+  return livingFish.length;
 }
 
 function returnSoldTankDecorToStorage(tank) {
@@ -996,7 +1380,7 @@ function openExclusiveOverlay(kind, options = {}) {
 
   switch (overlayKind) {
     case "store": {
-      const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : "food";
+      const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : options.tab === "cleanup" ? "fish" : "food";
       const allowedTabs = getTutorialAllowedStoreTabs();
       runtime.storeOverlayOpen = true;
       runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
@@ -1088,6 +1472,7 @@ function returnFromProteusDesignerToSite() {
   runtime.webSurfLastPage = "proteus";
   renderStoreOverlay();
   window.showProteusBiodynePage?.(document.querySelector('#storeOverlay .webpage-tab[data-webpage-destination="proteus"]'));
+  window.requestAnimationFrame(() => syncProteusZombieFishOfferPanel());
 }
 
 function cancelProteusDesignerPage() {
@@ -1174,10 +1559,75 @@ function getWebSurfSessionScrollElement(page) {
   if (page === "home") return dom.webHomePage;
   if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
   if (page === "locker") return dom.davyJonesLockerPage;
+  if (page === "proteus") return document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll");
   if (page === "store") return document.getElementById("tankazonCatalogArea");
   if (page === "designer") return document.getElementById("proteusDesignerRoute");
   if (page === "settings") return dom.settingsOverlay?.querySelector(".settings-panel-body");
   return null;
+}
+
+
+function getWebSurfSiteHeader(page) {
+  if (!dom.storeOverlay) return null;
+  return dom.storeOverlay.querySelector(`[data-websurf-site-header="${page}"]`);
+}
+
+function syncWebSurfSiteHeader(page, scrollTop = null) {
+  const header = getWebSurfSiteHeader(page);
+  const scroller = getWebSurfSessionScrollElement(page);
+  if (!(header instanceof HTMLElement) || !(scroller instanceof HTMLElement)) return false;
+
+  // BubbleBodega always uses its compact chrome. Scrolling the catalogue should
+  // never resize the site's header because that makes the shopping surface jump.
+  if (page === "store") {
+    header.classList.add("is-collapsed");
+    header.dataset.websurfCollapsed = "true";
+    return true;
+  }
+
+  // Proteus keeps its full corporate masthead at every scroll position. The
+  // compact treatment makes the logo and navigation feel like they jump while
+  // moving between the longer research and specimen pages.
+  if (page === "proteus") {
+    header.classList.remove("is-collapsed");
+    header.dataset.websurfCollapsed = "false";
+    return false;
+  }
+
+  // The bank navigation is deliberately compact but must remain stable while
+  // its statement scrolls; collapsing it moves the account controls mid-use.
+  if (page === "bank") {
+    header.classList.remove("is-collapsed");
+    header.dataset.websurfCollapsed = "false";
+    return false;
+  }
+
+  const top = Math.max(0, Number(scrollTop ?? scroller.scrollTop) || 0);
+  const wasCollapsed = header.classList.contains("is-collapsed");
+  const collapse = wasCollapsed
+    ? top > WEBSURF_SITE_HEADER_EXPAND_SCROLL_PX
+    : top >= WEBSURF_SITE_HEADER_COLLAPSE_SCROLL_PX;
+  header.classList.toggle("is-collapsed", collapse);
+  header.dataset.websurfCollapsed = collapse ? "true" : "false";
+  return collapse;
+}
+
+function syncWebSurfSiteChrome(page = getActiveWebSurfSessionPage()) {
+  const sitePages = ["store", "bank", "locker", "proteus"];
+  for (const sitePage of sitePages) {
+    const header = getWebSurfSiteHeader(sitePage);
+    if (!(header instanceof HTMLElement)) continue;
+    if (sitePage === page) syncWebSurfSiteHeader(sitePage);
+    else if (sitePage === "store") {
+      // BubbleBodega has one fixed compact header size. Never restore a larger
+      // dormant state that can flash when returning from another WebSurf page.
+      header.classList.add("is-collapsed");
+      header.dataset.websurfCollapsed = "true";
+    } else {
+      header.classList.remove("is-collapsed");
+      header.dataset.websurfCollapsed = "false";
+    }
+  }
 }
 
 function captureWebSurfSessionState() {
@@ -1209,6 +1659,8 @@ function restoreWebSurfSessionScroll(page) {
 
 function resetWebSurfSessionState() {
   runtime.webSurfLastPage = "home";
+  runtime.bubbleBodegaHomeOpen = false;
+  runtime.bubbleBodegaSessionVisited = false;
   runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
   runtime.webSurfSelectedMailId = "";
   runtime.webSurfSettingsTabOpen = false;
@@ -1270,6 +1722,7 @@ function openWebSurfSettingsPage() {
 
   closeProteusDesignerSession();
   window.closeProteusBiodynePage?.(false);
+  window.closeWebSurfSubsidiaryPage?.(false);
   runtime.webSurfSettingsTabOpen = true;
   runtime.settingsOverlayOpen = true;
   runtime.webHomeOpen = false;
@@ -1308,6 +1761,7 @@ function openWebSurfSessionPage() {
   if (page === "proteus" && window.hasDiscoveredProteus?.()) {
     if (!openStoreOverlay(runtime.storeTab || "food", { rememberWebSurfPage: false })) return;
     window.showProteusBiodynePage?.(dom.openStoreButton);
+    window.requestAnimationFrame(() => syncProteusZombieFishOfferPanel());
     return;
   }
   if (page === "locker" && state?.davyJonesLockerUnlocked === true) {
@@ -1333,6 +1787,16 @@ function openWebSurfSessionPage() {
   restoreWebSurfSessionScroll("home");
 }
 
+function resolveBubbleBodegaOpeningView(tab, options = {}) {
+  const categories = ["food", "pharmacy", "fish", "decor", "equipment"];
+  const category = categories.includes(tab) ? tab : tab === "cleanup" ? "fish" : "food";
+  if (options.forceCategory === true || getActiveTutorial() || options.openHome === false) return category;
+  if (options.openAll === true) return "all";
+  if (options.openHome === true || runtime.bubbleBodegaSessionVisited !== true) return "home";
+  const saved = window.getBubbleBodegaSavedView?.();
+  return saved === "all" || categories.includes(saved) ? saved : "home";
+}
+
 function openStoreOverlay(tab = "food", options = {}) {
   window.rememberWebSurfPage = (page) => {
     runtime.webSurfLastPage = normalizeWebSurfSessionPage(page);
@@ -1354,16 +1818,29 @@ function openStoreOverlay(tab = "food", options = {}) {
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
-  if (options.rememberWebSurfPage !== false) runtime.webSurfLastPage = "store";
-
-  // BubbleBodega normally restores the shopper's last category. A tutorial task
-  // must always open the category it teaches, including when its toolbar
-  // button calls this function without an explicit option.
-  if (dom.storeOverlay && (options.forceCategory === true || getActiveTutorial())) {
-    dom.storeOverlay.dataset.requestedCategory = tab;
+  // Home, Bank and Settings also use this window. Preparing their shared shell
+  // is not a Bodega visit and must not consume its first-open default.
+  runtime.bubbleBodegaHomeOpen = false;
+  if (options.rememberWebSurfPage !== false) {
+    const view = resolveBubbleBodegaOpeningView(tab, options);
+    runtime.bubbleBodegaHomeOpen = view === "home";
+    runtime.bubbleBodegaSessionVisited = true;
+    runtime.webSurfLastPage = "store";
+    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(view)) tab = view;
+    window.prepareBubbleBodegaView?.(view);
   }
+  // A request made while the window was already open used to remain here until
+  // a later reopen, when it could overwrite Home. Navigation is synchronous now.
+  if (dom.storeOverlay) delete dom.storeOverlay.dataset.requestedCategory;
   openExclusiveOverlay("store", { tab, render: options.render });
   return true;
+}
+
+function openBubbleBodegaHome() {
+  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    ? runtime.storeTab
+    : "food";
+  return openStoreOverlay(previousStoreTab, { openHome: true });
 }
 
 function openDavyJonesLockerPage() {
@@ -1402,6 +1879,72 @@ function openBubbleBank(tab = "account", options = {}) {
 
 function handleWebPageNavigation(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  // The Bodega shell owns the aggregate catalogue, but this click must first
+  // leave the internal Home route. Its capture listener then mounts the full
+  // listing over this freshly visible native catalogue.
+  if (target?.closest("#tankazonAllCategories")) {
+    event?.preventDefault?.();
+    const tab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+      ? runtime.storeTab
+      : "food";
+    openStoreOverlay(tab, { openAll: true });
+    return;
+  }
+  if (target?.closest("[data-open-bubblebodega-home]")) {
+    event?.preventDefault?.();
+    openBubbleBodegaHome();
+    return;
+  }
+  const bodegaHomeCategory = target?.closest("[data-bodega-home-category]");
+  if (bodegaHomeCategory) {
+    event?.preventDefault?.();
+    const category = String(bodegaHomeCategory.dataset.bodegaHomeCategory || "food");
+    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(category)) {
+      runtime.bubbleBodegaHomeOpen = false;
+      openStoreOverlay(category, { forceCategory: true, openHome: false });
+    }
+    return;
+  }
+  const zombieAuthenticate = target?.closest("[data-proteus-zombie-authenticate]");
+  if (zombieAuthenticate && !zombieAuthenticate.disabled) {
+    event?.preventDefault?.();
+    authenticateProteusZombieFishAccess(Date.now());
+    return;
+  }
+  const zombieCancel = target?.closest("[data-proteus-zombie-cancel]");
+  if (zombieCancel && !zombieCancel.disabled) {
+    event?.preventDefault?.();
+    runtime.proteusZombiePendingPurchase = null;
+    syncProteusZombieFishOfferPanel();
+    return;
+  }
+  const zombiePurchase = target?.closest("[data-proteus-zombie-purchase]");
+  if (zombiePurchase && !zombiePurchase.disabled) {
+    event?.preventDefault?.();
+    const mode = zombiePurchase.getAttribute("data-mode") === "variant" ? "variant" : "claim";
+    const select = document.querySelector("#proteusZombieFishOffer [data-proteus-zombie-variant-select]");
+    const key = mode === "variant" ? String(select?.value || "") : "";
+    if (mode === "variant" && !key) {
+      showToast("No alternate Z-01 configuration is currently available.");
+      return;
+    }
+    runtime.proteusZombiePendingPurchase = { mode, key };
+    syncProteusZombieFishOfferPanel();
+    return;
+  }
+  const zombieConfirm = target?.closest("[data-proteus-zombie-confirm]");
+  if (zombieConfirm && !zombieConfirm.disabled) {
+    event?.preventDefault?.();
+    const pending = runtime.proteusZombiePendingPurchase;
+    runtime.proteusZombiePendingPurchase = null;
+    const operation = pending?.mode === "variant"
+      ? purchaseProteusZombieFishVariant(pending.key, Date.now())
+      : claimProteusZombieFish(Date.now());
+    void Promise.resolve(operation).then(() => {
+      window.requestAnimationFrame(() => syncProteusZombieFishOfferPanel());
+    });
+    return;
+  }
   if (target?.closest("[data-open-websurf-settings]")) {
     openSettingsOverlay();
     return;
@@ -1502,6 +2045,7 @@ function handleWebPageNavigation(event) {
   if (target?.closest("[data-close-web-browser]")) {
     captureWebSurfSessionState();
     window.closeProteusBiodynePage?.(false);
+    window.closeWebSurfSubsidiaryPage?.(true);
     closeStoreOverlay({ preserveWebSurfSession: true });
     return;
   }
@@ -1512,6 +2056,11 @@ function handleWebPageNavigation(event) {
     openSettingsOverlay();
     return;
   }
+  if (["arcadia", "clearwell", "commoncurrent", "tidewell"].includes(destination)) {
+    window.showWebSurfSubsidiaryPage?.(destination, tab);
+    return;
+  }
+  window.closeWebSurfSubsidiaryPage?.(false);
   captureWebSurfSessionState();
   if (runtime.settingsOverlayOpen) deactivateWebSurfSettingsPage();
   if (destination === "home") {
@@ -1547,6 +2096,7 @@ function handleWebPageNavigation(event) {
     runtime.webSurfLastPage = "proteus";
     renderStoreOverlay();
     window.showProteusBiodynePage?.(tab);
+    window.requestAnimationFrame(() => syncProteusZombieFishOfferPanel());
     return;
   }
   if (destination === "locker") {
@@ -1575,9 +2125,11 @@ function closeStoreOverlay(options = {}) {
 
   if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
   window.closeProteusBiodynePage?.(false);
+  window.closeWebSurfSubsidiaryPage?.(true);
   if (runtime.proteusDesignerOpen === true || runtime.proteusDesignerCompleting === true) closeProteusDesignerSession();
   runtime.storeOverlayOpen = false;
   runtime.webHomeOpen = false;
+  runtime.bubbleBodegaHomeOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
   runtime.davyJonesLockerTabOpen = false;
@@ -1608,9 +2160,6 @@ function closeStoreBeforePrimaryViewChange() {
 
 function openUtilityOverlay(mode, options = {}) {
   const nextMode = String(mode || "");
-  if (nextMode === "invite-friend" && !INVITE_FRIEND_ENABLED) {
-    return false;
-  }
   openExclusiveOverlay("utility", {
     ...options,
     mode: nextMode

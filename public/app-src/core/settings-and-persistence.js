@@ -68,7 +68,13 @@ function setMarkupIfChanged(cacheKey, element, markup) {
     return;
   }
 
-  if (runtime.renderedMarkup[cacheKey] === markup) {
+  // Store virtualization temporarily moves product cards into a viewport
+  // slice. If that slice is later discarded while changing aisles, the cached
+  // markup text is still current but its source element is empty. Treat that
+  // as a cache miss so switching tabs never leaves a blank catalogue.
+  const expectedStoreCards = typeof markup === "string" && markup.includes("shop-card");
+  const lostStoreCards = expectedStoreCards && !element.querySelector(".shop-card");
+  if (runtime.renderedMarkup[cacheKey] === markup && !lostStoreCards) {
     return;
   }
 
@@ -146,7 +152,7 @@ function sanitizePurchaseHistory(rawHistory) {
       if (!rawItem || typeof rawItem !== "object") return null;
       const name = typeof rawItem.name === "string" ? rawItem.name.trim().slice(0, 120) : "Store item";
       const category = typeof rawItem.category === "string" ? rawItem.category.trim().slice(0, 32) : "";
-      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/misc/Store_Logo.png";
+      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/web/bodega/Store_Logo.png";
       const seller = typeof rawItem.seller === "string" ? rawItem.seller.trim().slice(0, 120) : "";
       return {
         key: typeof rawItem.key === "string" ? rawItem.key.slice(0, 180) : "",
@@ -235,6 +241,44 @@ function sanitizeWebSurfSentEmails(rawEmails) {
   }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time));
 }
 
+function sanitizeProteusCorpseDonationDigests(rawDigests) {
+  if (!Array.isArray(rawDigests)) return [];
+  const seenDigestIds = new Set();
+  const seenFishIds = new Set();
+  return rawDigests.map((rawDigest) => {
+    if (!rawDigest || typeof rawDigest !== "object") return null;
+    const scheduledAt = Number.isFinite(Number(rawDigest.scheduledAt)) ? Math.max(0, Number(rawDigest.scheduledAt)) : 0;
+    if (!scheduledAt) return null;
+    const id = typeof rawDigest.id === "string" && rawDigest.id.trim()
+      ? rawDigest.id.trim().slice(0, 180)
+      : `proteus-corpse-donation-${Math.floor(scheduledAt)}`;
+    if (seenDigestIds.has(id)) return null;
+    seenDigestIds.add(id);
+    const fish = (Array.isArray(rawDigest.fish) ? rawDigest.fish : []).map((rawFish) => {
+      if (!rawFish || typeof rawFish !== "object") return null;
+      const fishId = typeof rawFish.fishId === "string" ? rawFish.fishId.trim().slice(0, 100) : "";
+      if (!fishId || seenFishIds.has(fishId)) return null;
+      seenFishIds.add(fishId);
+      return {
+        fishId,
+        fishName: typeof rawFish.fishName === "string" && rawFish.fishName.trim() ? rawFish.fishName.trim().slice(0, 80) : "Unnamed specimen",
+        speciesId: typeof rawFish.speciesId === "string" ? rawFish.speciesId.trim().slice(0, 100) : "",
+        speciesName: typeof rawFish.speciesName === "string" && rawFish.speciesName.trim() ? rawFish.speciesName.trim().slice(0, 100) : "Unclassified aquatic specimen",
+        diedAt: Number.isFinite(Number(rawFish.diedAt)) ? Math.max(0, Number(rawFish.diedAt)) : 0,
+        donatedAt: Number.isFinite(Number(rawFish.donatedAt)) ? Math.max(0, Number(rawFish.donatedAt)) : scheduledAt,
+        source: typeof rawFish.source === "string" ? rawFish.source.trim().slice(0, 40) : "removal"
+      };
+    }).filter(Boolean).slice(0, 100);
+    if (!fish.length) return null;
+    return {
+      id,
+      scheduledAt,
+      createdAt: Number.isFinite(Number(rawDigest.createdAt)) ? Math.max(0, Number(rawDigest.createdAt)) : Math.min(...fish.map((entry) => entry.donatedAt || scheduledAt)),
+      fish
+    };
+  }).filter(Boolean).sort((left, right) => Number(right.scheduledAt) - Number(left.scheduledAt)).slice(0, 180);
+}
+
 function getAccountUsernameForUser(userId = "") {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const expectedUserId = String(userId || "").trim();
@@ -312,6 +356,14 @@ function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
   return WEBSURF_THEME_MODE_AUTO;
 }
 
+function normalizeSettingsVolume(value, fallback = 1) {
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) {
+    return clamp(Number(fallback) || 0, 0, 1);
+  }
+  return clamp(numeric, 0, 1);
+}
+
 function normalizeDepthEffectLevel(value, legacyEnabled = undefined) {
   const numeric = Number(value);
   if (Number.isFinite(numeric)) {
@@ -352,10 +404,14 @@ function saveDepthEffectLevelPreference(value) {
 
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+  const hasTankAmbienceVolume = Object.prototype.hasOwnProperty.call(source, "tankAmbienceVolume");
+  const hasSfxVolume = Object.prototype.hasOwnProperty.call(source, "sfxVolume");
+  const hasUiSoundVolume = Object.prototype.hasOwnProperty.call(source, "uiSoundVolume");
+  const hasAnyCategoryVolume = hasTankAmbienceVolume || hasSfxVolume || hasUiSoundVolume;
+  const migrateLegacyAllMute = !hasAnyCategoryVolume && source.soundMuted === true;
+  const migrateLegacyUiMute = !hasUiSoundVolume && source.uiSoundsMuted === true;
   return {
-    toolbarPosition: TOOLBAR_POSITION_SETTING_ENABLED
-      ? normalizeToolbarPosition(source.toolbarPosition)
-      : DEFAULT_UI_SETTINGS.toolbarPosition,
+    toolbarPosition: DEFAULT_UI_SETTINGS.toolbarPosition,
     toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
     webSurfThemeMode: normalizeWebSurfThemeMode(
       source.webSurfThemeMode,
@@ -363,14 +419,22 @@ function sanitizeUiSettings(rawSettings) {
         ? source.webSurfDarkModeEnabled
         : (typeof source.webSurfDarkMode === "boolean" ? source.webSurfDarkMode : undefined)
     ),
-    displayPosition: DISPLAY_POSITION_SETTING_ENABLED
-      ? normalizeDisplayPosition(source.displayPosition)
-      : DEFAULT_UI_SETTINGS.displayPosition,
+    displayPosition: DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
     careTaskPaneOpen: false,
-    soundMuted: source.soundMuted === true,
-    uiSoundsMuted: source.uiSoundsMuted === true,
+    soundMuted: migrateLegacyAllMute ? false : source.soundMuted === true,
+    uiSoundsMuted: (migrateLegacyAllMute || migrateLegacyUiMute) ? false : source.uiSoundsMuted === true,
+    tankAmbienceVolume: migrateLegacyAllMute
+      ? 0
+      : normalizeSettingsVolume(source.tankAmbienceVolume, DEFAULT_UI_SETTINGS.tankAmbienceVolume),
+    sfxVolume: migrateLegacyAllMute
+      ? 0
+      : normalizeSettingsVolume(source.sfxVolume, DEFAULT_UI_SETTINGS.sfxVolume),
+    uiSoundVolume: (migrateLegacyAllMute || migrateLegacyUiMute)
+      ? 0
+      : normalizeSettingsVolume(source.uiSoundVolume, DEFAULT_UI_SETTINGS.uiSoundVolume),
+    gravelShadowIntensity: normalizeSettingsVolume(source.gravelShadowIntensity, DEFAULT_UI_SETTINGS.gravelShadowIntensity),
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     layoutRatioLockEnabled: source.layoutRatioLockEnabled !== false,
     layoutRatioLockWidth: Math.max(0, Math.round(Number(source.layoutRatioLockWidth) || 0)),
@@ -761,6 +825,18 @@ function restorePeacefulModeState(now = Date.now()) {
       if (Number.isFinite(Number(tank.createdAt)) && Number(tank.createdAt) >= mode.startedAt) tank.createdAt = now;
     }
     tank.lastSimulatedAt = now;
+    for (const egg of Array.isArray(tank.fishEggs) ? tank.fishEggs : []) {
+      if (!egg) continue;
+      for (const key of ["createdAt", "hatchAt", "hatchedAt", "shellExpiresAt", "releasedAt"]) {
+        if (Number.isFinite(Number(egg[key])) && Number(egg[key]) > 0) egg[key] = Number(egg[key]) + pauseDuration;
+      }
+    }
+    for (const spawn of Array.isArray(tank.pendingBreedingEvents) ? tank.pendingBreedingEvents : []) {
+      if (!spawn) continue;
+      for (const key of ["createdAt", "resolutionAt"]) {
+        if (Number.isFinite(Number(spawn[key])) && Number(spawn[key]) > 0) spawn[key] = Number(spawn[key]) + pauseDuration;
+      }
+    }
     for (const event of Array.isArray(tank.events) ? tank.events : []) {
       if (!event || event.progressionEligible === false) continue;
       const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
@@ -772,13 +848,6 @@ function restorePeacefulModeState(now = Date.now()) {
     const progressionTime = Number.isFinite(Number(event.progressionTime)) ? Number(event.progressionTime) : Number(event.time);
     if (Number.isFinite(progressionTime)) event.progressionTime = progressionTime + pauseDuration;
   }
-  for (const egg of Array.isArray(state.fishEggs) ? state.fishEggs : []) {
-    if (!egg) continue;
-    for (const key of ["createdAt", "hatchAt", "hatchedAt", "shellExpiresAt", "releasedAt"]) {
-      if (Number.isFinite(Number(egg[key])) && Number(egg[key]) > 0) egg[key] = Number(egg[key]) + pauseDuration;
-    }
-  }
-
   const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
   for (const fish of allFish) {
     if (!fish?.id || isFishDead(fish)) continue;
@@ -899,6 +968,278 @@ function shouldPersistReconciledState(rawState) {
   return incomingVersion !== STATE_VERSION || incomingHealthModelVersion < HEALTH_MODEL_VERSION || !welcomeMailCurrent;
 }
 
+// Keep save migrations small, explicit, and non-mutating. New simulation
+// systems should add one-time shape conversions here, while sanitizers remain
+// the source of truth for malformed or incomplete values.
+function migrateSaveSchema(rawState) {
+  const source = rawState && typeof rawState === "object" && !Array.isArray(rawState) ? rawState : {};
+  const incomingVersion = Number.isFinite(Number(source.version)) ? Number(source.version) : 0;
+  let migrated = source;
+
+  // v51 establishes water type as a durable tank attribute. Earlier saves
+  // could contain the value, but restore code replaced it with freshwater.
+  // Normalize historical aliases without mutating the source snapshot.
+  if (incomingVersion < 51 && Array.isArray(source.tanks)) {
+    migrated = {
+      ...source,
+      tanks: source.tanks.map((tank) => {
+        if (!tank || typeof tank !== "object" || Array.isArray(tank)) return tank;
+        return { ...tank, waterType: normalizeWaterType(tank.waterType, "freshwater") };
+      })
+    };
+  }
+
+  // v52 establishes the durable biological/population schema. Detailed fish
+  // defaults are resolved by sanitizeFish so species metadata remains the
+  // single source of truth, while tank capacity gets a safe persisted shape.
+  if (incomingVersion < 52 && Array.isArray(migrated.tanks)) {
+    migrated = {
+      ...migrated,
+      tanks: migrated.tanks.map((tank) => {
+        if (!tank || typeof tank !== "object" || Array.isArray(tank)) return tank;
+        return {
+          ...tank,
+          populationCapacity: clamp(Number(tank.populationCapacity) || 20, 1, 100),
+          populationUsage: Math.max(0, Number(tank.populationUsage) || 0)
+        };
+      })
+    };
+  }
+
+  // v53 makes Storage a durable suspended simulation state. Older stored fish
+  // are explicitly marked frozen; sanitizeFish supplies a safe storedAt value
+  // when legacy saves do not have one yet.
+  if (incomingVersion < 53 && Array.isArray(migrated.storedFish)) {
+    migrated = {
+      ...migrated,
+      storedFish: migrated.storedFish.map((fish) => (
+        fish && typeof fish === "object" && !Array.isArray(fish)
+          ? { ...fish, storageState: "stored", storageFrozen: true }
+          : fish
+      ))
+    };
+  }
+
+  // v54 introduces functional active/inactive state for living decor. The
+  // compatibility value itself is resolved after runtime decor metadata has
+  // loaded, so migration preserves any explicit state and sanitizers provide
+  // the boolean shape.
+  if (incomingVersion < 54 && Array.isArray(migrated.tanks)) {
+    migrated = {
+      ...migrated,
+      tanks: migrated.tanks.map((tank) => {
+        if (!tank || typeof tank !== "object" || Array.isArray(tank)) return tank;
+        return {
+          ...tank,
+          placedDecor: Array.isArray(tank.placedDecor)
+            ? tank.placedDecor.map((item) => (
+                item && typeof item === "object" && !Array.isArray(item)
+                  ? { ...item, active: item.active !== false }
+                  : item
+              ))
+            : tank.placedDecor
+        };
+      })
+    };
+  }
+
+
+  // v55 separates Osmotic Stress from contagious disease and adds durable
+  // condition/recovery timers used by targeted medicine and Storage pausing.
+  if (incomingVersion < 55) {
+    const migrateFishCondition = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish)) return fish;
+      if (fish.diseaseSource !== "salinity-mismatch") return fish;
+      const stressProgress = Math.max(1, Number(fish.diseaseProgressMs) || 0);
+      return {
+        ...fish,
+        condition: "osmotic-stress",
+        osmoticStressStartedAt: Math.max(0, Number(fish.diseaseInfectedAt) || 0),
+        osmoticStressProgressMs: stressProgress,
+        osmoticStressLastProgressAt: Math.max(0, Number(fish.diseaseLastProgressAt) || 0),
+        osmoticStressLastDamageAt: Math.max(0, Number(fish.diseaseLastDamageAt) || 0),
+        diseaseState: "none",
+        diseaseType: "",
+        diseaseInfectedAt: 0,
+        diseaseProgressMs: 0,
+        diseaseLastProgressAt: 0,
+        diseaseExposureLevel: 0,
+        diseaseRecoveryProgressMs: 0,
+        diseaseTreatedUntil: 0,
+        diseaseLastDamageAt: 0,
+        diseaseSource: "",
+        diseaseRequiresTreatment: false
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? { ...tank, fish: Array.isArray(tank.fish) ? tank.fish.map(migrateFishCondition) : tank.fish }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(migrateFishCondition) : migrated.storedFish
+    };
+  }
+
+  // v56 activates lifespan aging. Fish without the new derived stage marker are
+  // left with their existing birthAt when present; sanitizeFish assigns a safe
+  // adult starting age for legacy records that never had biological age data.
+  // The notification timestamp prevents an elderly fish from announcing the
+  // same transition more than once after save/load.
+  if (incomingVersion < 56) {
+    const migrateFishAging = (fish) => (
+      fish && typeof fish === "object" && !Array.isArray(fish)
+        ? { ...fish, elderlyNotifiedAt: Math.max(0, Number(fish.elderlyNotifiedAt) || 0) }
+        : fish
+    );
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? { ...tank, fish: Array.isArray(tank.fish) ? tank.fish.map(migrateFishAging) : tank.fish }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(migrateFishAging) : migrated.storedFish
+    };
+  }
+
+  // v57 makes Spawning Food readiness individual and stores a durable
+  // pending spawn record after each fish's single successful lifetime spawn.
+  if (incomingVersion < 57 && Array.isArray(migrated.tanks)) {
+    migrated = {
+      ...migrated,
+      tanks: migrated.tanks.map((tank) => {
+        if (!tank || typeof tank !== "object" || Array.isArray(tank)) return tank;
+        return {
+          ...tank,
+          pendingBreedingEvents: Array.isArray(tank.pendingBreedingEvents) ? tank.pendingBreedingEvents : [],
+          fish: Array.isArray(tank.fish)
+            ? tank.fish.map((fish) => fish && typeof fish === "object" && !Array.isArray(fish)
+              ? {
+                  ...fish,
+                  breedingReadyUntil: Number.isFinite(Number(fish.breedingReadyUntil)) ? Number(fish.breedingReadyUntil) : 0,
+                  spawningFoodUntil: Number.isFinite(Number(fish.spawningFoodUntil)) ? Number(fish.spawningFoodUntil) : 0
+                }
+              : fish)
+            : tank.fish
+        };
+      })
+    };
+  }
+
+  // v58 turns pending lifetime spawns into capacity-reserved egg clusters or
+  // delayed live births, and stores clutch lineage/inheritance on eggs.
+  if (incomingVersion < 58 && Array.isArray(migrated.tanks)) {
+    migrated = {
+      ...migrated,
+      tanks: migrated.tanks.map((tank) => {
+        if (!tank || typeof tank !== "object" || Array.isArray(tank)) return tank;
+        return {
+          ...tank,
+          pendingBreedingEvents: Array.isArray(tank.pendingBreedingEvents)
+            ? tank.pendingBreedingEvents.map((event) => event && typeof event === "object" && !Array.isArray(event)
+              ? { ...event, plannedClutchSize: Math.max(1, Math.floor(Number(event.plannedClutchSize) || 1)) }
+              : event)
+            : [],
+          fishEggs: Array.isArray(tank.fishEggs)
+            ? tank.fishEggs.map((egg) => egg && typeof egg === "object" && !Array.isArray(egg)
+              ? { ...egg, clutchSize: Math.max(1, Math.floor(Number(egg.clutchSize) || 1)) }
+              : egg)
+            : []
+        };
+      })
+    };
+  }
+
+  // v59 adds a hidden permanent creature-removal ledger. It is intentionally
+  // not rendered yet; future UI can consume these normalized records.
+  if (incomingVersion < 59) {
+    migrated = {
+      ...migrated,
+      removalHistory: Array.isArray(migrated.removalHistory) ? migrated.removalHistory : []
+    };
+  }
+
+  // v62 retires the automatic "new-fish carrier" roll. Arrivals are now
+  // healthy and unfed; keep only explicitly scripted sources (for example,
+  // Davy Jones) or illness acquired through the tank simulation. Clear the
+  // artificial arrival illness and its matching pre-fed fields in old saves.
+  if (incomingVersion < 62) {
+    const clearRetiredArrivalState = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish) || fish.diseaseSource !== "new-fish") return fish;
+      return {
+        ...fish,
+        needs: null,
+        lastAteAt: 0,
+        satiatedUntil: 0,
+        lastMealSlotKey: "",
+        mealSlotFoodCount: 0,
+        diseaseState: "none",
+        diseaseType: "",
+        diseaseInfectedAt: 0,
+        diseaseProgressMs: 0,
+        diseaseLastProgressAt: 0,
+        diseaseExposureLevel: 0,
+        diseaseRecoveryProgressMs: 0,
+        diseaseTreatedUntil: 0,
+        diseaseLastDamageAt: 0,
+        diseaseSource: "",
+        diseaseRequiresTreatment: false,
+        nextGreenBubbleAt: 0
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? { ...tank, fish: Array.isArray(tank.fish) ? tank.fish.map(clearRetiredArrivalState) : tank.fish }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(clearRetiredArrivalState) : migrated.storedFish
+    };
+  }
+
+  return migrated;
+}
+
+
+function sanitizeCreatureRemovalHistory(entries) {
+  if (!Array.isArray(entries)) return [];
+  const seenFishIds = new Set();
+  return entries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+      const fishId = String(entry.fishId || "").trim().slice(0, 100);
+      if (!fishId || seenFishIds.has(fishId)) return null;
+      seenFishIds.add(fishId);
+      const name = String(entry.name || "Unnamed").trim().slice(0, 80) || "Unnamed";
+      const speciesId = String(entry.speciesId || "").trim().slice(0, 100);
+      const speciesName = String(entry.speciesName || "Fish").trim().slice(0, 100) || "Fish";
+      const reason = String(entry.reason || "Unknown").trim().slice(0, 80) || "Unknown";
+      const ageDays = Math.max(0, Math.floor(Number(entry.ageDays) || 0));
+      const removedAt = Math.max(0, Number(entry.removedAt) || 0);
+      const rehomeValue = Math.max(0, Math.floor(Number(entry.rehomeValue) || 0));
+      const source = String(entry.source || "removal").trim().slice(0, 40) || "removal";
+      const summary = String(entry.summary || `${name} - ${speciesName} - ${ageDays} days - ${reason}`).trim().slice(0, 260);
+      return {
+        id: String(entry.id || `removed-${fishId}-${removedAt}`).trim().slice(0, 140),
+        fishId,
+        name,
+        speciesId,
+        speciesName,
+        ageDays,
+        reason,
+        removedAt,
+        source,
+        rehomeValue,
+        summary
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.removedAt - left.removedAt)
+    .slice(0, MAX_CREATURE_REMOVAL_HISTORY);
+}
 
 function canDecorLiveInCurrentTank(decorOrKey, tank = getCurrentTank()) {
   return true;
@@ -1100,7 +1441,7 @@ function sanitizeOwnedBackgroundInventory(rawInventory, fallbackSelectedKeys = [
 function sanitizeTankStateSnapshot(rawTank, options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const legacyHealthModel = Boolean(options.legacyHealthModel);
-  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel });
+  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "tank" });
   const incomingTank = rawTank && typeof rawTank === "object" ? rawTank : {};
   const typeId = getTankTypeMeta("rectangular").id;
   const localBackgroundImageDataUrl = typeof incomingTank.localBackgroundImageDataUrl === "string"
@@ -1121,18 +1462,22 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     gridX: incomingTank.gridX,
     gridY: incomingTank.gridY,
     tankTypeId: typeId,
-    waterType: "freshwater",
-    setupPending: false,
-    fish: Array.isArray(incomingTank.fish) ? incomingTank.fish.map(sanitizeFishEntry).filter(Boolean) : [],
+    waterType: normalizeWaterType(incomingTank.waterType, "freshwater"),
+    populationCapacity: clamp(Number(incomingTank.populationCapacity) || 20, 1, 100),
+    populationUsage: Math.max(0, Number(incomingTank.populationUsage) || 0),
+    setupPending: incomingTank.setupPending === true,
+    fish: Array.isArray(incomingTank.fish) ? incomingTank.fish.map((fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "tank" })).filter(Boolean) : [],
     feedHistory: sanitizeHistory(incomingTank.feedHistory),
     pendingPoops: Array.isArray(incomingTank.pendingPoops) ? incomingTank.pendingPoops.map(sanitizePoop).filter(Boolean) : [],
     poops: Array.isArray(incomingTank.poops) ? incomingTank.poops.map(sanitizePoop).filter(Boolean) : [],
     fishEggs: Array.isArray(incomingTank.fishEggs) ? incomingTank.fishEggs.map(sanitizeFishEgg).filter(Boolean) : [],
+    pendingBreedingEvents: Array.isArray(incomingTank.pendingBreedingEvents) ? incomingTank.pendingBreedingEvents.map(sanitizePendingBreedingEvent).filter(Boolean) : [],
     placedDecor: Array.isArray(incomingTank.placedDecor) ? incomingTank.placedDecor.map(sanitizePlacedDecor).filter(Boolean) : [],
     freeDecorPlacement: incomingTank.freeDecorPlacement === true,
     customGravelEnabled: true,
     customGravelLayerColors: sanitizeCustomGravelLayerColors(incomingTank.customGravelLayerColors),
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
+    substrateStyle: normalizeSubstrateStyle(incomingTank.substrateStyle, "custom"),
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
     gravelHillSeed: Number.isFinite(incomingTank.gravelHillSeed) ? Math.abs(Math.floor(incomingTank.gravelHillSeed)) : undefined,
@@ -1160,6 +1505,18 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
       ? incomingTank.selectedBubbleAsset
       : (runtime.bubbleCatalog[0]?.key || null),
     lastCleanedAt: Number.isFinite(incomingTank.lastCleanedAt) ? incomingTank.lastCleanedAt : now,
+    cleaningIncomeDayKey: typeof incomingTank.cleaningIncomeDayKey === "string" ? incomingTank.cleaningIncomeDayKey : "",
+    cleaningIncomeCredit: Number(incomingTank.cleaningIncomeCredit) || 0,
+    cleaningIncomeCoinsEarned: Number(incomingTank.cleaningIncomeCoinsEarned) || 0,
+    otocinclusCoinFindDayKey: typeof incomingTank.otocinclusCoinFindDayKey === "string" ? incomingTank.otocinclusCoinFindDayKey : "",
+    otocinclusCoinsFoundToday: clamp(
+      Math.floor(Number(incomingTank.otocinclusCoinsFoundToday) || 0),
+      0,
+      OTOCINCLUS_DAILY_COIN_FIND_CAP
+    ),
+    otocinclusCoinFindLastAttemptAt: Number.isFinite(Number(incomingTank.otocinclusCoinFindLastAttemptAt))
+      ? Number(incomingTank.otocinclusCoinFindLastAttemptAt)
+      : 0,
     lastSimulatedAt: Number.isFinite(incomingTank.lastSimulatedAt) ? incomingTank.lastSimulatedAt : now,
     events: Array.isArray(incomingTank.events)
       ? incomingTank.events.map(sanitizeEvent).filter(Boolean).slice(0, MAX_TANK_EVENT_HISTORY)
@@ -1181,16 +1538,18 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     name: incoming?.name,
     tankTypeId: "rectangular",
     waterType: "freshwater",
-    setupPending: false,
+    setupPending: options.setupPending === true,
     fish: incoming?.fish,
     feedHistory: incoming?.feedHistory,
     pendingPoops: incoming?.pendingPoops,
     poops: incoming?.poops,
     fishEggs: incoming?.fishEggs,
+    pendingBreedingEvents: incoming?.pendingBreedingEvents,
     placedDecor: incoming?.placedDecor,
     customGravelEnabled: true,
     customGravelLayerColors: incoming?.customGravelLayerColors,
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
+    substrateStyle: incoming?.substrateStyle || "custom",
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,
     gravelHillSeed: incoming?.gravelHillSeed,
@@ -1216,6 +1575,12 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     autoDispenser: incoming?.autoDispenser,
     selectedBubbleAsset: incoming?.selectedBubbleAsset,
     lastCleanedAt: incoming?.lastCleanedAt,
+    cleaningIncomeDayKey: incoming?.cleaningIncomeDayKey,
+    cleaningIncomeCredit: incoming?.cleaningIncomeCredit,
+    cleaningIncomeCoinsEarned: incoming?.cleaningIncomeCoinsEarned,
+    otocinclusCoinFindDayKey: incoming?.otocinclusCoinFindDayKey,
+    otocinclusCoinsFoundToday: incoming?.otocinclusCoinsFoundToday,
+    otocinclusCoinFindLastAttemptAt: incoming?.otocinclusCoinFindLastAttemptAt,
     lastSimulatedAt: incoming?.lastSimulatedAt,
     lastCorpseSicknessAt: incoming?.lastCorpseSicknessAt,
     lastGravelCoinFoundAt: incoming?.lastGravelCoinFoundAt,
@@ -1307,9 +1672,20 @@ function sanitizeBoroughEventHistory(rawEvents, fallbackTanks = []) {
   }).filter(Boolean).sort((left, right) => Number(right.time) - Number(left.time)).slice(0, MAX_BOROUGH_EVENT_HISTORY);
 }
 
+function countUniqueProteusCorpseDonations(rawDigests) {
+  const fishIds = new Set();
+  for (const digest of sanitizeProteusCorpseDonationDigests(rawDigests)) {
+    for (const fish of digest.fish || []) {
+      if (fish?.fishId) fishIds.add(fish.fishId);
+    }
+  }
+  return fishIds.size;
+}
+
 function reconcileState(rawState) {
   const now = Date.now();
   const isBrandNewGame = !rawState || typeof rawState !== "object";
+  const incoming = migrateSaveSchema(rawState);
   const base = {
     version: STATE_VERSION,
     healthModelVersion: HEALTH_MODEL_VERSION,
@@ -1326,6 +1702,12 @@ function reconcileState(rawState) {
     webSurfMailStates: {},
     webSurfSenderStates: {},
     webSurfSentEmails: [],
+    proteusCorpseDonationDigests: [],
+    proteusCorpseDonationCount: 0,
+    proteusZombieFishUnlockedAt: 0,
+    proteusZombieFishOfferAt: 0,
+    proteusZombieFishAuthenticatedAt: 0,
+    proteusZombieFishClaimedAt: 0,
     engineeredSpecimenDesignCredits: 0,
     engineeredSpecimenDesignOrderIds: [],
     engineeredSpecimenCompletedOrderIds: [],
@@ -1342,6 +1724,7 @@ function reconcileState(rawState) {
     savedDecorLayouts: [],
     customDecorAssets: {},
     customFishAssets: {},
+    customBackgroundAssets: {},
     decorScaleDefaults: {},
     fishScaleDefaults: {},
     tanks: [createTankState({ now, name: buildDefaultTankName(0) })],
@@ -1354,8 +1737,10 @@ function reconcileState(rawState) {
     boatOwned: false,
     activeTankId: null,
     ownedBackgroundInventory: sanitizeOwnedBackgroundInventory(null),
+    ownedSubstrateInventory: sanitizeOwnedSubstrateInventory(null),
     foodInventory: getDefaultFoodInventory(),
     medicineInventory: getDefaultMedicineInventory(),
+    waterTreatmentInventory: { freshwater: 0, saltwater: 0 },
     dailyBonus: buildDefaultDailyBonusState(),
     notificationCenter: buildDefaultNotificationCenterState(),
     tutorial: buildDefaultTutorialState(),
@@ -1366,10 +1751,10 @@ function reconcileState(rawState) {
     boroughHappenings: [],
     boroughEvents: [],
     memorialHistory: [],
+    removalHistory: [],
     events: []
   };
 
-  const incoming = rawState && typeof rawState === "object" ? rawState : {};
   const incomingVersion = Number.isFinite(incoming.version) ? incoming.version : 0;
   const incomingHealthModelVersion = Number.isFinite(incoming.healthModelVersion) ? incoming.healthModelVersion : 1;
   const legacyHealthModel = incomingHealthModelVersion < LEGACY_HEALTH_SCALE_MODEL_VERSION;
@@ -1377,11 +1762,13 @@ function reconcileState(rawState) {
   syncRuntimeCustomDecorAssetsFromState({ customDecorAssets: incomingCustomDecorAssets });
   const incomingCustomFishAssets = sanitizeCustomFishAssets(incoming.customFishAssets);
   syncRuntimeCustomFishAssetsFromState({ customFishAssets: incomingCustomFishAssets });
+  const incomingCustomBackgroundAssets = sanitizeCustomBackgroundAssets(incoming.customBackgroundAssets);
+  syncRuntimeCustomBackgroundAssetsFromState({ customBackgroundAssets: incomingCustomBackgroundAssets });
   const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel });
   const incomingHasTanks = Array.isArray(incoming.tanks) && incoming.tanks.length > 0;
   const tanks = incomingHasTanks
     ? incoming.tanks.map((tank) => sanitizeTankStateSnapshot(tank, { now, legacyHealthModel })).filter(Boolean)
-    : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel })];
+    : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel, setupPending: isBrandNewGame })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
   const storedSubmarines = (Array.isArray(incoming.storedSubmarines)
@@ -1428,6 +1815,27 @@ function reconcileState(rawState) {
     webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
     webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
     webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
+    proteusCorpseDonationDigests: sanitizeProteusCorpseDonationDigests(incoming.proteusCorpseDonationDigests),
+    proteusCorpseDonationCount: Math.max(
+      0,
+      Math.floor(
+        Number.isFinite(Number(incoming.proteusCorpseDonationCount))
+          ? Number(incoming.proteusCorpseDonationCount)
+          : countUniqueProteusCorpseDonations(incoming.proteusCorpseDonationDigests)
+      )
+    ),
+    proteusZombieFishUnlockedAt: Number.isFinite(Number(incoming.proteusZombieFishUnlockedAt))
+      ? Math.max(0, Number(incoming.proteusZombieFishUnlockedAt))
+      : 0,
+    proteusZombieFishOfferAt: Number.isFinite(Number(incoming.proteusZombieFishOfferAt))
+      ? Math.max(0, Number(incoming.proteusZombieFishOfferAt))
+      : 0,
+    proteusZombieFishAuthenticatedAt: Number.isFinite(Number(incoming.proteusZombieFishAuthenticatedAt))
+      ? Math.max(0, Number(incoming.proteusZombieFishAuthenticatedAt))
+      : 0,
+    proteusZombieFishClaimedAt: Number.isFinite(Number(incoming.proteusZombieFishClaimedAt))
+      ? Math.max(0, Number(incoming.proteusZombieFishClaimedAt))
+      : 0,
     engineeredSpecimenDesignCredits: Math.max(0, Math.floor(Number(incoming.engineeredSpecimenDesignCredits) || 0)),
     engineeredSpecimenDesignOrderIds: Array.isArray(incoming.engineeredSpecimenDesignOrderIds)
       ? incoming.engineeredSpecimenDesignOrderIds.filter((id) => typeof id === "string").slice(0, 20)
@@ -1448,11 +1856,14 @@ function reconcileState(rawState) {
     ),
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
-    storedFish: Array.isArray(incoming.storedFish) ? incoming.storedFish.map(sanitizeFishEntry).filter(Boolean) : [],
+    storedFish: Array.isArray(incoming.storedFish)
+      ? incoming.storedFish.map((fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "stored" })).filter(Boolean)
+      : [],
     decorInventory: sanitizeDecorInventory(incoming.decorInventory),
     savedDecorLayouts: sanitizeSavedDecorLayouts(incoming.savedDecorLayouts),
     customDecorAssets: incomingCustomDecorAssets,
     customFishAssets: incomingCustomFishAssets,
+    customBackgroundAssets: incomingCustomBackgroundAssets,
     decorScaleDefaults: sanitizeDecorScaleDefaults(incoming.decorScaleDefaults),
     fishScaleDefaults: sanitizeFishScaleDefaults(incoming.fishScaleDefaults),
     tanks,
@@ -1470,6 +1881,12 @@ function reconcileState(rawState) {
       incoming.ownedBackgroundInventory ?? incoming.ownedBackgrounds,
       tanks.map((tank) => tank.selectedBackground)
     ),
+    ownedSubstrateInventory: sanitizeOwnedSubstrateInventory(
+      incoming.ownedSubstrateInventory ?? incoming.ownedSubstrates,
+      tanks.map((tank) => normalizeSubstrateStyle(tank.substrateStyle, "custom") === "auto"
+        ? (normalizeWaterType(tank.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock")
+        : tank.substrateStyle)
+    ),
     foodInventory: Object.fromEntries(getFoodCatalog().map((food) => [
       food.id,
       Math.max(0, Number(sanitizeInventory(incoming.foodInventory)[food.id]) || 0)
@@ -1477,6 +1894,10 @@ function reconcileState(rawState) {
     medicineInventory: {
       ...getDefaultMedicineInventory(),
       ...sanitizeInventory(incoming.medicineInventory)
+    },
+    waterTreatmentInventory: {
+      freshwater: Math.max(0, Math.floor(Number(incoming.waterTreatmentInventory?.freshwater) || 0)),
+      saltwater: Math.max(0, Math.floor(Number(incoming.waterTreatmentInventory?.saltwater) || 0))
     },
     dailyBonus: sanitizeDailyBonusState(incoming.dailyBonus),
     notificationCenter: sanitizeNotificationCenterState(incoming.notificationCenter),
@@ -1491,6 +1912,7 @@ function reconcileState(rawState) {
     boroughHappenings: sanitizeBoroughHappenings(incoming.boroughHappenings),
     boroughEvents: sanitizeBoroughEventHistory(incoming.boroughEvents, tanks),
     memorialHistory: sanitizeMemorialHistory(incoming.memorialHistory),
+    removalHistory: sanitizeCreatureRemovalHistory(incoming.removalHistory),
     version: STATE_VERSION
   };
 
@@ -1607,6 +2029,29 @@ function reconcileState(rawState) {
   ]);
   delete nextState.foodInventory.upgraded;
 
+  if (!(Number(nextState.proteusZombieFishAuthenticatedAt) > 0) && Number(nextState.proteusZombieFishClaimedAt) > 0) {
+    // Saves from the first Z-01 implementation could already own the specimen
+    // before the explicit classified authentication gate existed. Preserve that access.
+    nextState.proteusZombieFishAuthenticatedAt = Number(nextState.proteusZombieFishClaimedAt);
+  }
+
+  if (
+    nextState.proteusCorpseDonationCount >= PROTEUS_ZOMBIE_FISH_DONATION_UNLOCK_COUNT
+    && !(Number(nextState.proteusZombieFishUnlockedAt) > 0)
+  ) {
+    const latestDonationAt = nextState.proteusCorpseDonationDigests
+      .flatMap((digest) => digest.fish || [])
+      .reduce((latest, fish) => Math.max(latest, Number(fish?.donatedAt) || 0), 0);
+    const unlockedAt = latestDonationAt || now;
+    nextState.proteusZombieFishUnlockedAt = unlockedAt;
+    nextState.proteusZombieFishOfferAt = Math.max(
+      Number(nextState.proteusZombieFishOfferAt) || 0,
+      getNextProteusCorpseDonationMorning(unlockedAt) + PROTEUS_ZOMBIE_FISH_AUTHORIZATION_DELAY_MS
+    );
+    nextState.proteusDiscovered = true;
+    if (!(Number(nextState.proteusDiscoveredAt) > 0)) nextState.proteusDiscoveredAt = unlockedAt;
+  }
+
   if (!nextState.tanks.some((tank) => tank.events.length)) {
     nextState.tanks[0].events = [
       {
@@ -1619,6 +2064,12 @@ function reconcileState(rawState) {
 
   pruneState(now, nextState);
   installTankStateAccessors(nextState);
+  for (const tank of nextState.tanks || []) {
+    if (typeof syncTankLivingDecorActivity === "function") {
+      syncTankLivingDecorActivity(tank);
+    }
+  }
+
   return nextState;
 }
 
@@ -1908,6 +2359,9 @@ async function copyPendingExternalLink() {
 }
 
 async function createSaveExportData(timestamp = Date.now()) {
+  if (typeof syncDeadFishCorpsePersistenceForSave === "function") {
+    syncDeadFishCorpsePersistenceForSave(timestamp);
+  }
   const exportState = await createPortableExportState(state);
   const payload = {
     format: SAVE_FILE_FORMAT,

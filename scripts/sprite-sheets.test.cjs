@@ -3,7 +3,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 const vm = require("node:vm");
+const sharp = require("sharp");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
 const root = path.resolve(__dirname, "..");
 
@@ -34,6 +36,72 @@ function runtimeContext() {
   }
   return { context, requests, draws };
 }
+
+
+async function writeProteusZombieEditorSheet(assetRoot, frameNames) {
+  const fishDirectory = path.join(assetRoot, "fish");
+  fs.mkdirSync(fishDirectory, { recursive: true });
+  const cellSize = 8;
+  const columns = Math.max(1, frameNames.length);
+  await sharp({
+    create: {
+      width: cellSize * columns,
+      height: cellSize,
+      channels: 4,
+      background: { r: 0, g: 0, b: 0, alpha: 0 }
+    }
+  }).webp({ lossless: true }).toFile(path.join(fishDirectory, "zombie_fish.webp"));
+  const editorJson = {
+    version: 2,
+    columns,
+    negativeSpacingEnabled: false,
+    manualCellSizeEnabled: false,
+    layers: [{
+      id: "base",
+      name: "Base",
+      visible: true,
+      locked: false,
+      sprites: frameNames.map((name, index) => ({
+        id: `z-${index}`,
+        width: cellSize,
+        height: cellSize,
+        x: 0,
+        y: 0,
+        rotation: 0,
+        flipX: false,
+        flipY: false,
+        name
+      }))
+    }]
+  };
+  fs.writeFileSync(path.join(fishDirectory, "zombie_fish.json"), JSON.stringify(editorJson));
+}
+
+test("optional Proteus Z-01 sprite pipeline supports absent, base-only, and multi-variant art while rejecting half-authored pairs", async () => {
+  const absentRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bb-z01-absent-"));
+  const baseRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bb-z01-base-"));
+  const multiRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bb-z01-multi-"));
+  const incompleteRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bb-z01-incomplete-"));
+  try {
+    assert.equal(buildDefinitions(absentRoot).some(sheet => /zombie_fish\.webp$/i.test(sheet.path)), false);
+
+    await writeProteusZombieEditorSheet(baseRoot, ["zombie_fish.png"]);
+    const base = buildDefinitions(baseRoot).find(sheet => /zombie_fish\.webp$/i.test(sheet.path));
+    assert.ok(base);
+    assert.deepEqual(Object.keys(base.frames), ["zombie_fish.png"]);
+
+    await writeProteusZombieEditorSheet(multiRoot, ["zombie_fish.png", "zombie_fish_2.png", "zombie_fish_3.png"]);
+    const multi = buildDefinitions(multiRoot).find(sheet => /zombie_fish\.webp$/i.test(sheet.path));
+    assert.ok(multi);
+    assert.deepEqual(Object.keys(multi.frames), ["zombie_fish.png", "zombie_fish_2.png", "zombie_fish_3.png"]);
+
+    fs.mkdirSync(path.join(incompleteRoot, "fish"), { recursive: true });
+    fs.writeFileSync(path.join(incompleteRoot, "fish/zombie_fish.json"), "{}");
+    assert.throws(() => buildDefinitions(incompleteRoot), /Proteus Z-01 sprite assets are incomplete/);
+  } finally {
+    for (const directory of [absentRoot, baseRoot, multiRoot, incompleteRoot]) fs.rmSync(directory, { recursive: true, force: true });
+  }
+});
 
 test("all editor exports match their WebP bounds and retain distinct named frames", () => {
   const sheets = buildDefinitions();

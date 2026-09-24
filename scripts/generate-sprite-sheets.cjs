@@ -6,6 +6,22 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const root = path.resolve(__dirname, "..");
 const output = path.join(root, "public/app-src/assets/sprite-sheet-definitions.js");
+const OPTIONAL_SPRITE_SHEET_PAIRS = [
+  { base: "web/proteus/dna_fish/zombie_fish", label: "Proteus Z-01" }
+];
+
+function validateOptionalSpriteSheetPairs(assetRoot = path.join(root, "assets")) {
+  for (const pair of OPTIONAL_SPRITE_SHEET_PAIRS) {
+    const webp = path.join(assetRoot, `${pair.base}.webp`);
+    const json = path.join(assetRoot, `${pair.base}.json`);
+    const hasWebp = fs.existsSync(webp);
+    const hasJson = fs.existsSync(json);
+    if (hasWebp === hasJson) continue;
+    const relativeWebp = path.relative(root, webp).replace(/\\/g, "/");
+    const relativeJson = path.relative(root, json).replace(/\\/g, "/");
+    throw new Error(`${pair.label} sprite assets are incomplete: expected both ${relativeWebp} and ${relativeJson}, or neither while the optional art is unauthored.`);
+  }
+}
 
 function webpSize(buffer) {
   if (buffer.toString("ascii", 0, 4) !== "RIFF" || buffer.toString("ascii", 8, 12) !== "WEBP") throw new Error("Invalid WebP");
@@ -25,6 +41,7 @@ function webpSize(buffer) {
 }
 
 function buildDefinitions(assetRoot = path.join(root, "assets")) {
+  validateOptionalSpriteSheetPairs(assetRoot);
   const definitions = [];
   const names = new Set();
   const directories = [];
@@ -56,7 +73,11 @@ function buildDefinitions(assetRoot = path.join(root, "assets")) {
         if (!sprite.name || /[/\\]/.test(sprite.name) || sprite.rotation || sprite.flipX || sprite.flipY) fail(`Unsupported sprite name/transform: ${sprite.name}`);
         const { x = 0, y = 0, width: w, height: h } = sprite;
         if (![x, y, w, h].every(Number.isInteger) || x < 0 || y < 0 || w < 1 || h < 1 || x + w > cellWidth || y + h > cellHeight) fail(`Frame exceeds its cell: ${sprite.name}`);
-        const key = `${directory.relativeDirectory}/${sprite.name}`.replace(/^\//, "").toLowerCase();
+        // Frame names are scoped by the sheet delivery root. Multiple atlases
+
+        // in one directory may reuse names because generated paths include the
+        // sheet base name.
+        const key = `${directory.relativeDirectory}/${file}/${sprite.name}`.replace(/^\//, "").toLowerCase();
         if (names.has(key)) fail(`Duplicate sprite: ${sprite.name}`);
         names.add(key);
         frames[sprite.name] = [(index % data.columns) * cellWidth + x, Math.floor(index / data.columns) * cellHeight + y, w, h];
@@ -107,4 +128,4 @@ if (require.main === module) {
     }))));
   } else console.log(`Validated ${definitions.length} sprite sheets / ${definitions.reduce((count, sheet) => count + Object.keys(sheet.frames).length, 0)} frames.`);
 }
-module.exports = { buildDefinitions, generate, webpSize };
+module.exports = { buildDefinitions, generate, webpSize, validateOptionalSpriteSheetPairs };

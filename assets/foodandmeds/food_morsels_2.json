@@ -1,0 +1,58 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "4c92698b-32f1-42d7-8ca5-f10cbb86253e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "f2c6a504-081d-42fb-8dd1-ac9cf92692f6",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "brine-shrimp_morsel.png"
+        },
+        {
+          "id": "31956c1d-2419-4b1c-9659-0e938cbff238",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "carnivore_morsel.png"
+        },
+        {
+          "id": "2b6195a7-d16f-45a4-9f57-519f6a7cb3bf",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "wafer_morsel.png"
+        }
+      ]
+    }
+  ]
+}

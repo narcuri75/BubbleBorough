@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "60772fa9-95f7-4261-8e9c-c9acfb163e2e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "1c67c6db-6161-4edc-b7df-2861a864c1d4",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "six-line-wrasse_1.png"
+        },
+        {
+          "id": "849613d7-e88f-4123-80fa-2ab40e976c32",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "six-line-wrasse_2.png"
+        },
+        {
+          "id": "964f1046-e25c-4de0-879d-190cd0fe0f5f",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "six-line-wrasse_3.png"
+        },
+        {
+          "id": "0614f0e2-4718-4220-851e-85bc4b0a2532",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "six-line-wrasse_4.png"
+        },
+        {
+          "id": "ae8ec74b-29c7-4adf-8c30-23cb641b36ba",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "six-line-wrasse_5.png"
+        }
+      ]
+    }
+  ]
+}

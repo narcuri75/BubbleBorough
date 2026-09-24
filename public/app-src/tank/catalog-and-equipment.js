@@ -18,12 +18,17 @@ function isHalloweenDecor(decor) {
 }
 
 function isChristmasDecor(decor) {
-  return /christmas|xmas|new[ _-]?year/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
-    || normalizeStringList(decor?.categories).some((tag) => ["christmas", "xmas", "new-year"].includes(tag.toLowerCase()));
+  return /christmas|xmas/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => ["christmas", "xmas"].includes(tag.toLowerCase()));
+}
+
+function isNewYearDecor(decor) {
+  return /new[ _-]?year|newyear|new year's|nye/i.test([decor?.name, decor?.key, decor?.file, decor?.theme].filter(Boolean).join(" "))
+    || normalizeStringList(decor?.categories).some((tag) => ["new-year", "newyear", "new-years", "nye"].includes(tag.toLowerCase()));
 }
 
 function isSeasonalDecor(decor) {
-  return isHalloweenDecor(decor) || isChristmasDecor(decor);
+  return isHalloweenDecor(decor) || isChristmasDecor(decor) || isNewYearDecor(decor);
 }
 
 function isSeasonalDecorAvailable(decor, now = Date.now()) {
@@ -32,8 +37,12 @@ function isSeasonalDecorAvailable(decor, now = Date.now()) {
   if (isHalloweenDecor(decor)) {
     return isHalloweenCalendarDate(now);
   }
+  const date = new Date(getBoroughReferenceNow(now));
+  if (isNewYearDecor(decor)) {
+    return date.getMonth() === 11 && date.getDate() >= 26;
+  }
   if (isChristmasDecor(decor)) {
-    return new Date(getBoroughReferenceNow(now)).getMonth() === 11;
+    return date.getMonth() === 11 && date.getDate() <= 25;
   }
   return true;
 }
@@ -250,6 +259,318 @@ function normalizeComfortTagList(values) {
     .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
 }
 
+function normalizeFishSocialCategory(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s-]+/g, "_");
+  const allowed = typeof FISH_SOCIAL_CATEGORIES !== "undefined"
+    ? Object.values(FISH_SOCIAL_CATEGORIES)
+    : ["own_kind_required", "own_kind_preferred", "pair_bond", "flexible", "solitary", "host_bond"];
+  return allowed.includes(normalized) ? normalized : "";
+}
+
+function normalizeFishSocialSizeClass(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "-");
+  const allowed = typeof FISH_SOCIAL_SIZE_CLASSES !== "undefined"
+    ? Object.values(FISH_SOCIAL_SIZE_CLASSES)
+    : ["tiny", "small", "medium", "large", "giant"];
+  return allowed.includes(normalized) ? normalized : "";
+}
+
+function getFishSocialSizeLabel(sizeClass) {
+  const normalized = normalizeFishSocialSizeClass(sizeClass) || "medium";
+  if (typeof FISH_SOCIAL_SIZE_LABELS !== "undefined" && FISH_SOCIAL_SIZE_LABELS[normalized]) {
+    return FISH_SOCIAL_SIZE_LABELS[normalized];
+  }
+  return normalized ? normalized[0].toUpperCase() + normalized.slice(1) : "Medium";
+}
+
+function getFishSocialSizeRank(sizeClass) {
+  const normalized = normalizeFishSocialSizeClass(sizeClass) || "medium";
+  if (typeof FISH_SOCIAL_SIZE_RANKS !== "undefined" && Number.isFinite(Number(FISH_SOCIAL_SIZE_RANKS[normalized]))) {
+    return Number(FISH_SOCIAL_SIZE_RANKS[normalized]);
+  }
+  return ({ tiny: 0, small: 1, medium: 2, large: 3, giant: 4 })[normalized] ?? 2;
+}
+
+function getFishSocialCategoryLabel(category) {
+  const normalized = normalizeFishSocialCategory(category) || "flexible";
+  if (typeof FISH_SOCIAL_CATEGORY_LABELS !== "undefined" && FISH_SOCIAL_CATEGORY_LABELS[normalized]) {
+    return FISH_SOCIAL_CATEGORY_LABELS[normalized];
+  }
+  return normalized.split("_").map((part) => part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
+}
+
+function getFishSocialProfile(speciesOrFish) {
+  const fish = speciesOrFish && typeof speciesOrFish === "object" && speciesOrFish.speciesId
+    ? speciesOrFish
+    : null;
+  const species = fish
+    ? (typeof getSpeciesForFish === "function" ? getSpeciesForFish(fish) : null)
+    : typeof speciesOrFish === "string"
+      ? (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(speciesOrFish) : null)
+      : speciesOrFish;
+  const speciesId = String(species?.id || fish?.speciesId || (typeof speciesOrFish === "string" ? speciesOrFish : "") || "");
+  const explicitCategory = normalizeFishSocialCategory(
+    fish?.socialCategory
+    || species?.socialCategory
+    || species?.socialProfile?.category
+  );
+  const configuredSpeciesProfile = speciesId && typeof FISH_SOCIAL_PROFILES !== "undefined"
+    ? FISH_SOCIAL_PROFILES[speciesId]
+    : null;
+
+  let category = explicitCategory;
+  let source = explicitCategory ? "explicit" : "default";
+
+  if (!category && configuredSpeciesProfile) {
+    category = normalizeFishSocialCategory(configuredSpeciesProfile.category);
+    if (category) {
+      source = "species-social-profile";
+    }
+  }
+
+  if (!category && species?.customAsset) {
+    const affinity = typeof normalizeCustomFishSocialAffinity === "function"
+      ? normalizeCustomFishSocialAffinity(species.socialAffinity)
+      : ["independent", "schooling"].includes(String(species.socialAffinity || "").toLowerCase())
+        ? String(species.socialAffinity || "").toLowerCase()
+        : "adaptive";
+    if (affinity === "independent") {
+      category = "solitary";
+      source = "custom-social-affinity";
+    } else if (affinity === "schooling") {
+      category = "own_kind_required";
+      source = "custom-social-affinity";
+    }
+  }
+
+  if (!category) {
+    const legacyNeeds = typeof FISH_COMFORT_PROFILES !== "undefined"
+      ? FISH_COMFORT_PROFILES[speciesId]?.needs
+      : null;
+    if (Array.isArray(legacyNeeds) && legacyNeeds.includes("school_2_plus")) {
+      category = "own_kind_required";
+      source = "legacy-schooling-need";
+    }
+  }
+
+  if (!category) {
+    category = "flexible";
+  }
+
+  const configuredMinimum = Number(
+    fish?.socialOwnKindMinimum
+    ?? species?.socialOwnKindMinimum
+    ?? species?.socialProfile?.ownKindMinimum
+    ?? configuredSpeciesProfile?.ownKindMinimum
+  );
+  const defaultMinimum = typeof FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM !== "undefined"
+    ? FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM
+    : 2;
+  const ownKindMinimum = category === "own_kind_required"
+    ? Math.max(2, Number.isFinite(configuredMinimum) ? Math.round(configuredMinimum) : defaultMinimum)
+    : 0;
+  const configuredHostSpeciesIds = (
+    fish?.socialHostSpeciesIds
+    ?? species?.socialHostSpeciesIds
+    ?? species?.socialProfile?.hostSpeciesIds
+    ?? configuredSpeciesProfile?.hostSpeciesIds
+  );
+  const hostSpeciesIds = (Array.isArray(configuredHostSpeciesIds) ? configuredHostSpeciesIds : [])
+    .map((value) => String(value || "").trim())
+    .filter(Boolean);
+  const compatibleFriendRequired = Boolean(
+    fish?.compatibleFriendRequired
+    ?? species?.compatibleFriendRequired
+    ?? species?.socialProfile?.compatibleFriendRequired
+    ?? configuredSpeciesProfile?.compatibleFriendRequired
+  );
+  const affinityGroup = String(
+    fish?.socialAffinityGroup
+    ?? species?.socialAffinityGroup
+    ?? species?.socialProfile?.affinityGroup
+    ?? configuredSpeciesProfile?.affinityGroup
+    ?? ""
+  ).trim();
+  const rawSocialSizeClass = (
+    fish?.socialSizeClass
+    ?? species?.socialSizeClass
+    ?? species?.socialProfile?.sizeClass
+    ?? configuredSpeciesProfile?.sizeClass
+    ?? (speciesId && typeof FISH_SOCIAL_SIZE_BY_SPECIES !== "undefined" ? FISH_SOCIAL_SIZE_BY_SPECIES[speciesId] : "")
+  );
+  const configuredSocialSizeClass = typeof normalizeFishSocialSizeClass === "function"
+    ? normalizeFishSocialSizeClass(rawSocialSizeClass)
+    : (["tiny", "small", "medium", "large", "giant"].includes(String(rawSocialSizeClass || "").toLowerCase())
+      ? String(rawSocialSizeClass || "").toLowerCase()
+      : "");
+  // Unknown/custom fish default to Medium rather than deriving social compatibility
+  // from artwork dimensions. A custom species can explicitly supply socialSizeClass.
+  const sizeClass = configuredSocialSizeClass || "medium";
+  const sizeRank = typeof getFishSocialSizeRank === "function"
+    ? getFishSocialSizeRank(sizeClass)
+    : ({ tiny: 0, small: 1, medium: 2, large: 3, giant: 4 })[sizeClass] ?? 2;
+  const sizeLabel = typeof getFishSocialSizeLabel === "function"
+    ? getFishSocialSizeLabel(sizeClass)
+    : sizeClass[0].toUpperCase() + sizeClass.slice(1);
+
+  return {
+    category,
+    label: getFishSocialCategoryLabel(category),
+    source,
+    ownKindMinimum,
+    hostSpeciesIds,
+    compatibleFriendRequired,
+    affinityGroup,
+    sizeClass,
+    sizeLabel,
+    sizeRank,
+    requiresOwnKind: category === "own_kind_required",
+    prefersOwnKind: ["own_kind_required", "own_kind_preferred", "pair_bond"].includes(category),
+    pairBondCapable: category === "pair_bond",
+    hostBondCapable: category === "host_bond",
+    solitary: category === "solitary",
+    crossSpeciesFriendshipCapable: category !== "solitary"
+  };
+}
+
+function getFishSocialSizeClass(fishOrSpecies) {
+  return getFishSocialProfile(fishOrSpecies).sizeClass;
+}
+
+function getFishSocialSizeDistance(fishOrSpecies, otherFishOrSpecies) {
+  const left = getFishSocialProfile(fishOrSpecies);
+  const right = getFishSocialProfile(otherFishOrSpecies);
+  return Math.abs((Number(left.sizeRank) || 0) - (Number(right.sizeRank) || 0));
+}
+
+function areFishSocialSizesCompatible(fishOrSpecies, otherFishOrSpecies) {
+  if (!fishOrSpecies || !otherFishOrSpecies) return false;
+  const leftSpeciesId = String(
+    fishOrSpecies?.speciesId
+    || fishOrSpecies?.id
+    || ""
+  );
+  const rightSpeciesId = String(
+    otherFishOrSpecies?.speciesId
+    || otherFishOrSpecies?.id
+    || ""
+  );
+  if (leftSpeciesId && rightSpeciesId && leftSpeciesId === rightSpeciesId) return true;
+  return getFishSocialSizeDistance(fishOrSpecies, otherFishOrSpecies) <= 1;
+}
+
+function areFishEstablishedFriends(fish, otherFish) {
+  if (!fish || !otherFish || fish.id === otherFish.id) return false;
+  if (fish.pairBondPartnerId === otherFish.id || otherFish.pairBondPartnerId === fish.id) return true;
+  const direct = fish.relationships && typeof fish.relationships === "object"
+    ? fish.relationships[otherFish.id]
+    : null;
+  const reverse = otherFish.relationships && typeof otherFish.relationships === "object"
+    ? otherFish.relationships[fish.id]
+    : null;
+  if (direct?.kind === "friend" || reverse?.kind === "friend") return true;
+  // Special host bonds are intentionally treated as established social bonds
+  // even though they can cross the normal size/predator friendship gates.
+  if (typeof isFishHostBondMatch === "function" && isFishHostBondMatch(fish, otherFish)) return true;
+  return false;
+}
+
+function getFishBiologicalSocialStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+  const profile = getFishSocialProfile(fish);
+  if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
+    return {
+      ...profile,
+      requiresOwnKind: false,
+      compatibleFriendRequired: false,
+      requirement: null,
+      satisfied: true,
+      lonelinessEligible: false,
+      matchingCompanionCount: 0,
+      missingReason: ""
+    };
+  }
+  const livingFish = (Array.isArray(tank?.fish) ? tank.fish : [])
+    .filter((entry) => entry && (typeof isFishDead !== "function" || !isFishDead(entry)));
+  const sameSpeciesCount = livingFish.filter((entry) => entry.speciesId === fish?.speciesId).length;
+  const peacefulOverride = Boolean(
+    fish
+    && (typeof isFishDead !== "function" || !isFishDead(fish))
+    && typeof isPeacefulModeEnabled === "function"
+    && isPeacefulModeEnabled()
+  );
+
+  let satisfied = true;
+  let requirement = null;
+  let missingReason = "";
+  let matchingCompanionCount = Math.max(0, sameSpeciesCount - (livingFish.includes(fish) ? 1 : 0));
+
+  if (profile.requiresOwnKind) {
+    requirement = "own_kind";
+    satisfied = peacefulOverride || sameSpeciesCount >= profile.ownKindMinimum;
+    if (!satisfied) {
+      missingReason = `Needs ${Math.max(0, profile.ownKindMinimum - sameSpeciesCount)} more of its own kind.`;
+    }
+  } else if (profile.compatibleFriendRequired) {
+    requirement = "compatible_friend";
+    const compatibleFriends = livingFish.filter((entry) => {
+      if (!entry || entry.id === fish?.id) return false;
+      const directRelationship = fish?.relationships?.[entry.id];
+      const reverseRelationship = entry?.relationships?.[fish?.id];
+      const establishedFriend = typeof areFishEstablishedFriends === "function"
+        ? areFishEstablishedFriends(fish, entry)
+        : fish?.pairBondPartnerId === entry.id
+          || entry?.pairBondPartnerId === fish?.id
+          || directRelationship?.kind === "friend"
+          || reverseRelationship?.kind === "friend";
+      if (!establishedFriend) return false;
+      if (typeof canFishBuildFriendship === "function") {
+        return canFishBuildFriendship(fish, entry, now, { passive: false });
+      }
+      if (typeof areFishSocialSizesCompatible === "function" && !areFishSocialSizesCompatible(fish, entry)) {
+        return false;
+      }
+      if (typeof getRelationshipKindForFish !== "function") return true;
+      return ["friend", "neutral"].includes(getRelationshipKindForFish(fish, entry));
+    });
+    matchingCompanionCount = compatibleFriends.length;
+    satisfied = peacefulOverride || compatibleFriends.length > 0;
+    if (!satisfied) {
+      missingReason = "Needs a compatible peaceful friend.";
+    }
+  }
+
+  return {
+    ...profile,
+    requirement,
+    satisfied,
+    lonelinessEligible: profile.requiresOwnKind || profile.compatibleFriendRequired,
+    sameSpeciesCount,
+    matchingCompanionCount,
+    missingReason,
+    checkedAt: now
+  };
+}
+
+function isFishBiologicalSocialNeedMet(fish, tank = getCurrentTank(), now = Date.now()) {
+  return getFishBiologicalSocialStatus(fish, tank, now).satisfied;
+}
+
+function doesFishRequireOwnKind(fishOrSpecies) {
+  return getFishSocialProfile(fishOrSpecies).requiresOwnKind;
+}
+
+function doesFishPreferOwnKind(fishOrSpecies) {
+  return getFishSocialProfile(fishOrSpecies).prefersOwnKind;
+}
+
+function isFishPairBondCapable(fishOrSpecies) {
+  return getFishSocialProfile(fishOrSpecies).pairBondCapable;
+}
+
+function isFishHostBondCapable(fishOrSpecies) {
+  return getFishSocialProfile(fishOrSpecies).hostBondCapable;
+}
+
 function getSpeciesComfortProfile(speciesOrId) {
   const speciesId = typeof speciesOrId === "string"
     ? speciesOrId
@@ -320,8 +641,16 @@ function isNormalMealFood(foodKey) {
   return NORMAL_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
 }
 
+function isCarnivoreMealFood(foodKey) {
+  return CARNIVORE_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
+}
+
 function isPredatorMealFood(foodKey) {
   return PREDATOR_MEAL_FOOD_KEYS.includes(String(foodKey || ""));
+}
+
+function isDetritusSnackFood(foodKey) {
+  return DETRITUS_SNACK_FOOD_KEYS.includes(String(foodKey || ""));
 }
 
 function getFishSpeciesType(target) {
@@ -514,24 +843,61 @@ function isFoodAllowedInAutoDispenser(foodOrKey) {
   return Boolean(food && food.dispenserAllowed !== false);
 }
 
+function getFishAcceptedFoodKeys(fish, options = {}) {
+  if (!fish) return [];
+  const species = fish?.speciesId ? getSpeciesForFish(fish) : fish;
+  if (!species) return [];
+
+  const juvenile = options.juvenile === true
+    || (fish?.speciesId && typeof isFishJuvenile === "function" && isFishJuvenile(fish));
+  const authored = juvenile && Array.isArray(species.juvenileFoods) && species.juvenileFoods.length
+    ? species.juvenileFoods
+    : species.acceptedFoods;
+  if (Array.isArray(authored)) {
+    return authored
+      .map((foodKey) => String(foodKey || "").trim())
+      .filter((foodKey, index, list) => foodKey && foodKey !== "frisky" && list.indexOf(foodKey) === index);
+  }
+
+  // Backward-compatible fallback for custom/legacy definitions that have not
+  // authored acceptedFoods yet. New first-party species use explicit lists.
+  const diet = String(species.diet || "").trim().toLowerCase();
+  const dietProfile = String(species.dietProfile || "").trim().toLowerCase();
+  if (isChumOnlyFish(species)) return ["chum"];
+  if (diet === "detritus" || dietProfile === "detritus") return ["algaeWafers"];
+  if (diet === "none" || dietProfile === "none") return [];
+  if (diet === "carnivore" || dietProfile === "carnivore") return ["brineShrimp", "carnivore"];
+  if (dietProfile === "herbivore") return ["basic", "algaeWafers"];
+  if (isPiranhaSpecies(species) || (typeof isPredatoryFishSpecies === "function" && isPredatoryFishSpecies(species))) {
+    return ["brineShrimp", "carnivore", "chum"];
+  }
+  return ["basic", "brineShrimp"];
+}
+
+function canFishUseSpawningFood(fish, now = Date.now()) {
+  if (typeof isFishBreedingEligible === "function") {
+    return isFishBreedingEligible(fish, now, getCurrentTank(), { requireReady: false, requireCapacity: false });
+  }
+  if (!fish || isFishDead(fish)) return false;
+  const species = getSpeciesForFish(fish);
+  if (!species || species.canBreed === false || fish.spawnUsed === true || fish.breedingAvailable === false) return false;
+  if (typeof isFishJuvenile === "function" && isFishJuvenile(fish, now)) return false;
+  return true;
+}
+
 function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
   if (foodKey === "halloweenCandy") return Boolean(fish);
   if (!fish || isFishDead(fish)) {
     return false;
   }
-  if (isChumOnlyFish(fish)) {
-    return isPredatorMealFood(foodKey);
+  const normalizedFoodKey = String(foodKey || "basic");
+  if (normalizedFoodKey === "frisky") {
+    return canFishUseSpawningFood(fish);
   }
-  if (fish.speciesId === "pilot-fish" && foodKey === "chum") {
-    return true;
+  if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
+    return ["basic", "brineShrimp", "carnivore", "chum"].includes(normalizedFoodKey);
   }
-  if (isPiranhaSpecies(fish)) {
-    return isPredatorMealFood(foodKey);
-  }
-  if (isMealFreeFish(fish)) {
-    return false;
-  }
-  return isNormalMealFood(foodKey);
+  return getFishAcceptedFoodKeys(fish).includes(normalizedFoodKey);
 }
 
 function canFishOverfeed(fish) {
@@ -576,6 +942,7 @@ function getTankComfortDecorTags(tank = getCurrentTank()) {
   const tags = new Set();
   const placedDecor = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
   for (const item of placedDecor) {
+    if (typeof isPlacedDecorFunctionallyActive === "function" && !isPlacedDecorFunctionallyActive(item, tank)) continue;
     const categories = new Set(getDecorCategoryList(item));
     const metadataTags = new Set(getDecorTagList(item));
     const behavior = getDecorBehaviorType(item);
@@ -639,7 +1006,7 @@ function getTankComfortFacts(tank = getCurrentTank(), now = Date.now()) {
     hasBetta: livingFish.some((fish) => fish.speciesId === "betta"),
     hasPuffer: livingFish.some((fish) => fish.speciesId === "pufferfish"),
     hasAggressivePredator: livingFish.some((fish) => isPiranhaSpecies(fish) || fish.speciesId === "pufferfish"),
-    hasTang: livingFish.some((fish) => fish.speciesId === "yellow-tang" || fish.speciesId === "blue-tang"),
+    hasTang: livingFish.some((fish) => fish.speciesId === "tang"),
     hasFastEater: livingFish.some((fish) => ["zebra-danio", "rainbowfish", "swordtail"].includes(fish.speciesId)),
     hasFinNipper: livingFish.some((fish) => ["zebra-danio", "betta", "piranha"].includes(fish.speciesId)),
     surfaceFishCount: livingFish.filter((fish) => ["wonder-killifish", "gourami", "betta"].includes(fish.speciesId)).length
@@ -666,7 +1033,9 @@ function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankCo
     case "open_water":
       return facts.spacePoints >= 12;
     case "school_2_plus":
-      return (facts.countsBySpecies.get(fish?.speciesId) || 0) >= 2;
+      return typeof getFishBiologicalSocialStatus === "function"
+        ? getFishBiologicalSocialStatus(fish, tank, facts.now).satisfied
+        : (facts.countsBySpecies.get(fish?.speciesId) || 0) >= 2;
     default:
       return false;
   }
@@ -675,11 +1044,26 @@ function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankCo
 function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
   const species = getSpeciesForFish(fish);
   const facts = getTankComfortFacts(tank, now);
-  return getSpeciesNeedTags(species).map((tag) => ({
+  const statuses = getSpeciesNeedTags(species).map((tag) => ({
     tag,
     label: getComfortTagLabel(tag),
     met: isFishNeedMet(fish, tag, tank, facts)
   }));
+  const socialStatus = typeof getFishBiologicalSocialStatus === "function"
+    ? getFishBiologicalSocialStatus(fish, tank, now)
+    : null;
+  if (
+    socialStatus?.requiresOwnKind
+    && !statuses.some((item) => item.tag === "school_2_plus" || item.tag === "social_own_kind")
+  ) {
+    statuses.push({
+      tag: "social_own_kind",
+      label: `Own Kind ${socialStatus.ownKindMinimum}+`,
+      met: socialStatus.satisfied,
+      social: true
+    });
+  }
+  return statuses;
 }
 
 function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts = getTankComfortFacts(tank)) {
@@ -696,7 +1080,7 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
     case "betta_present":
       return otherFish.some((other) => other.speciesId === "betta");
     case "aggressive_predator":
-      return otherFish.some((other) => isPiranhaSpecies(other) || other.speciesId === "pufferfish");
+      return otherFish.some((other) => isPiranhaSpecies(other) || other.speciesId === "pufferfish" || (typeof isProteusZombieFish === "function" && isProteusZombieFish(other)));
     case "fin_nipper":
       return otherFish.some((other) => ["zebra-danio", "betta", "piranha"].includes(other.speciesId));
     case "large_fish":
@@ -706,7 +1090,7 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
     case "same_species":
       return otherFish.some((other) => other.speciesId === fish.speciesId);
     case "tang_present":
-      return ["yellow-tang", "blue-tang"].includes(species?.id) && otherFish.some((other) => ["yellow-tang", "blue-tang"].includes(other.speciesId));
+      return species?.id === "tang" && otherFish.some((other) => other.speciesId === "tang");
     case "puffer_present":
       return species?.id === "pufferfish" && otherFish.some((other) => other.speciesId === "pufferfish");
     case "surface_crowding":
@@ -868,6 +1252,25 @@ function normalizeWaterType(value, fallback = "freshwater") {
   return WATER_TYPE_META[normalized]?.id || fallback;
 }
 
+function normalizeSubstrateStyle(value, fallback = "auto") {
+  const normalized = typeof value === "string" ? value.trim().toLowerCase().replace(/[\s_]+/g, "-") : "";
+  if (["auto", "custom", "river-rock", "sand"].includes(normalized)) return normalized;
+  if (normalized === "riverrock" || normalized === "river-stone" || normalized === "river-stones") return "river-rock";
+  return fallback;
+}
+
+function getResolvedTankSubstrateStyle(tank = getCurrentTank()) {
+  const style = normalizeSubstrateStyle(tank?.substrateStyle, "auto");
+  if (style !== "auto") return style;
+  return normalizeWaterType(tank?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock";
+}
+
+function getTankSubstrateAssetPath(tank = getCurrentTank()) {
+  const style = getResolvedTankSubstrateStyle(tank);
+  const path = TANK_SUBSTRATE_ASSET_PATHS[style] || "";
+  return path ? resolveAppUrl(path) : "";
+}
+
 function inferWaterTypeFromTheme(themeValue, fallback = "freshwater") {
   const normalized = typeof themeValue === "string" ? themeValue.trim().toLowerCase() : "";
   if (normalized.includes("salt")) {
@@ -877,6 +1280,17 @@ function inferWaterTypeFromTheme(themeValue, fallback = "freshwater") {
     return "freshwater";
   }
   return fallback;
+}
+
+function isFishWaterTypeMismatch(fish, tank = null) {
+  if (!fish || isFishDead(fish)) return false;
+  const resolvedTank = tank
+    || (typeof getTankContainingFish === "function" ? getTankContainingFish(fish.id) : null)
+    || (typeof getCurrentTank === "function" ? getCurrentTank() : null);
+  if (!resolvedTank) return false;
+  const species = getSpeciesForFish(fish);
+  if (!species) return false;
+  return getFishStoreWaterType(species) !== normalizeWaterType(resolvedTank.waterType, "freshwater");
 }
 
 function getTankById(tankId, targetState = state) {
@@ -1021,6 +1435,41 @@ function getMedicineMeta(medicineKey) {
   return getMedicineCatalogEntries()[medicineKey] || null;
 }
 
+function getFoodPackageOptions(foodOrKey) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  if (!food) {
+    return [];
+  }
+  const authored = Array.isArray(food.packages)
+    ? food.packages.filter((entry) => entry && Number(entry.servings) > 0)
+    : [];
+  if (authored.length) {
+    return authored.map((entry) => ({
+      id: typeof entry.id === "string" && entry.id ? entry.id : "standard",
+      name: typeof entry.name === "string" && entry.name ? entry.name : "Package",
+      servings: Math.max(1, Math.floor(Number(entry.servings) || 1)),
+      cost: Math.max(0, Math.floor(Number(entry.cost) || 0)),
+      image: typeof entry.image === "string" ? entry.image.trim() : ""
+    }));
+  }
+  return [{
+    id: "standard",
+    name: food.id === "halloweenCandy" ? "Pile" : "Bottle",
+    servings: Math.max(1, Math.floor(Number(food.bottlePellets) || 1)),
+    cost: Math.max(0, Math.floor(Number(food.cost) || 0)),
+    image: ""
+  }];
+}
+
+function getFoodPackageMeta(foodOrKey, packageId = "") {
+  const packages = getFoodPackageOptions(foodOrKey);
+  if (!packages.length) {
+    return null;
+  }
+  const requestedId = typeof packageId === "string" ? packageId.trim() : "";
+  return (requestedId ? packages.find((entry) => entry.id === requestedId) : null) || packages[0];
+}
+
 function getDefaultFoodKey() {
   return getFoodMeta("basic")?.id || getFoodCatalog()[0]?.id || "basic";
 }
@@ -1135,6 +1584,14 @@ function sanitizeDispenserStoredPellet(entry) {
   };
 }
 
+function isTankCareAutomationPaused() {
+  return Boolean(
+    runtime?.debugSimulationPaused === true
+    || (typeof isWallpaperEnginePauseActive === "function" && isWallpaperEnginePauseActive())
+    || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())
+  );
+}
+
 function createDefaultAutoDispenserState(options = {}) {
   const source = options && typeof options === "object" ? options : {};
   const storedPellets = Array.isArray(source.storedPellets ?? source.pellets)
@@ -1158,7 +1615,9 @@ function createDefaultAutoDispenserState(options = {}) {
     lastDispensedSlotKey: typeof source.lastDispensedSlotKey === "string" ? source.lastDispensedSlotKey : "",
     lastSmartDispensedAt: Number.isFinite(Number(source.lastSmartDispensedAt)) ? Math.max(0, Number(source.lastSmartDispensedAt)) : 0,
     smartDispensedAtByFishId: sanitizeFishNeedEventMap(source.smartDispensedAtByFishId),
-    refillAlert: Boolean(source.refillAlert) && mealPortion > 0 && storedPellets.length === 0
+    lastEmptyAlertSlotKey: typeof source.lastEmptyAlertSlotKey === "string" ? source.lastEmptyAlertSlotKey : "",
+    lastFoodMismatchAlertSlotKey: typeof source.lastFoodMismatchAlertSlotKey === "string" ? source.lastFoodMismatchAlertSlotKey : "",
+    refillAlert: Boolean(source.refillAlert) && storedPellets.length === 0
   };
 }
 

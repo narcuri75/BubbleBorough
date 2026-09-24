@@ -18,14 +18,15 @@
         "perchable",
         "sway",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "amazon-sword__plant__theme-natural.png",
       "name": "Amazon Sword",
       "cost": 8,
       "width": 280,
-      "defaultScale": 1,
+      "defaultScale": 2.1,
       "description": "A amazon sword decoration for the aquarium.",
       "categories": [
         "plant"
@@ -38,7 +39,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "anubias-rock__plant-rock__theme-natural.png",
@@ -61,14 +63,15 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "bacopa__plant__theme-natural.png",
       "name": "Bacopa",
       "cost": 8,
       "width": 280,
-      "defaultScale": 1,
+      "defaultScale": 1.9,
       "description": "A bacopa decoration for the aquarium.",
       "categories": [
         "plant"
@@ -81,14 +84,15 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "bronze-red-crypt__plant__theme-natural.png",
       "name": "Bronze Red Crypt",
       "cost": 8,
       "width": 280,
-      "defaultScale": 1,
+      "defaultScale": 2.1,
       "description": "A bronze red crypt decoration for the aquarium.",
       "categories": [
         "plant"
@@ -101,7 +105,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "cabomba__plant__theme-natural.png",
@@ -121,7 +126,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "cryptocoryne__plant__theme-natural.png",
@@ -141,7 +147,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "hornwort__plant__theme-natural.png",
@@ -161,7 +168,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "java-fern-cluster__plant__theme-natural.png",
@@ -181,7 +189,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "java-moss__plant__theme-natural.png",
@@ -201,7 +210,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "ludwigia__plant__theme-natural.png",
@@ -221,7 +231,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "marimo-moss-ball__plant__theme-natural.png",
@@ -241,7 +252,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "monte-carlo-carpet__plant__theme-natural.png",
@@ -261,7 +273,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "red-stem__plant__theme-natural.png",
@@ -281,7 +294,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "rotala__plant__theme-natural.png",
@@ -301,7 +315,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "small-moss-patch__plant__theme-natural.png",
@@ -321,7 +336,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "tiger-lotus__plant__theme-natural.png",
@@ -341,7 +357,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "vallisneria-clump__plant__theme-natural.png",
@@ -361,7 +378,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "vallisneria-cutout__plant__theme-natural.png",
@@ -381,7 +399,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "water-wisteria__plant__theme-natural.png",
@@ -401,7 +420,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "hammer-coral__coral__theme-reef.png",
@@ -421,7 +441,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "leather-coral__coral__theme-reef.png",
@@ -441,7 +462,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "macroalgae__plant__theme-reef.png",
@@ -461,7 +483,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "large-mushroom-coral__coral__theme-reef.png",
@@ -481,7 +504,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "mushroom-coral-colony__coral__theme-reef.png",
@@ -501,7 +525,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-anemone__coral__theme-reef.png",
@@ -523,7 +548,8 @@
         "sway",
         "anemone",
         "clownfish-host"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-anemone__coral__theme-reef__v2.png",
@@ -545,7 +571,8 @@
         "sway",
         "anemone",
         "clownfish-host"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-fan-gorgonian__coral__theme-reef.png",
@@ -565,7 +592,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "seaweed__plant__theme-reef.png",
@@ -585,7 +613,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "seaweed-bunch__plant__theme-reef.png",
@@ -605,7 +634,8 @@
         "grazable",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "torch-coral__coral__theme-reef.png",
@@ -625,7 +655,8 @@
         "hardscape",
         "perchable",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-bubbler__bubbler__theme-frozen.png",
@@ -647,7 +678,8 @@
       ],
       "bubbler": {
         "spoutQty": 1
-      }
+      },
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-cauldron__bubbler__theme-halloween__front.png",
@@ -691,7 +723,8 @@
         "hardscape",
         "bubble-emitter",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-jack-o-lantern__bubbler__theme-halloween__front.png",
@@ -735,7 +768,8 @@
         "hardscape",
         "bubble-emitter",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "volcano__bubbler__theme-natural__front.png",
@@ -772,7 +806,8 @@
         "natural",
         "hardscape",
         "bubble-emitter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "volcano__bubbler__theme-natural__v2__front.png",
@@ -822,7 +857,8 @@
         "natural",
         "hardscape",
         "bubble-emitter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "treasure-chest__bubbler__theme-treasure__front.png",
@@ -864,14 +900,15 @@
         "treasure",
         "hardscape",
         "bubble-emitter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "broken-pot-fragment__cave__theme-artificial__front.png",
       "name": "Broken Pot Fragment",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 2.4,
       "description": "A broken pot fragment decoration for the aquarium.",
       "categories": [
         "cave"
@@ -883,14 +920,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "broken-terracotta-pot__cave__theme-artificial__front.png",
       "name": "Broken Terracotta Pot",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.45,
       "description": "A broken terracotta pot decoration for the aquarium.",
       "categories": [
         "cave"
@@ -902,14 +940,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "ceramic-tube-cluster__cave__theme-artificial__front.png",
       "name": "Ceramic Tube Cluster",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.45,
       "description": "A ceramic tube cluster decoration for the aquarium.",
       "categories": [
         "cave"
@@ -921,14 +960,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "clay-multi__cave__theme-artificial__front.png",
       "name": "Clay Multi",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.55,
       "description": "A clay multi decoration for the aquarium.",
       "categories": [
         "cave"
@@ -940,14 +980,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "extra-narrow-pleco-tubes__cave__theme-artificial__front.png",
       "name": "Extra Narrow Pleco Tubes",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.45,
       "description": "A extra narrow pleco tubes decoration for the aquarium.",
       "categories": [
         "cave"
@@ -959,14 +1000,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "pvc-pipe__cave__theme-artificial__front.png",
       "name": "PVC Pipe",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.65,
       "description": "A pvc pipe decoration for the aquarium.",
       "categories": [
         "cave"
@@ -978,14 +1020,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "terracotta-pot__cave__theme-artificial__front.png",
       "name": "Terracotta Pot",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.65,
       "description": "A terracotta pot decoration for the aquarium.",
       "categories": [
         "cave"
@@ -997,14 +1040,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "terracotta-tunnel__cave__theme-artificial__front.png",
       "name": "Terracotta Tunnel",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.6,
       "description": "A terracotta tunnel decoration for the aquarium.",
       "categories": [
         "cave"
@@ -1016,14 +1060,15 @@
         "artificial",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "blue-castle__cave__theme-fantasy__front.png",
       "name": "Castle Cave 1",
       "cost": 16,
       "width": 595,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "caveSettings": {
         "entryCount": 3,
         "entries": [
@@ -1076,14 +1121,15 @@
         "fantasy",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "wizard-castle__cave__theme-fantasy__front.png",
       "name": "Castle Cave 2",
       "cost": 16,
       "width": 600,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "caveSettings": {
         "entryCount": 3,
         "entries": [
@@ -1193,14 +1239,15 @@
         "fantasy",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-cave__cave__theme-frozen__front.png",
       "name": "Frozen Cave",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "description": "A frozen cave decoration for the aquarium.",
       "categories": [
         "cave"
@@ -1212,14 +1259,15 @@
         "frozen",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-cave__cave__theme-frozen__v2__front.png",
       "name": "Frozen Cave 2",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A frozen cave 2 decoration for the aquarium.",
       "categories": [
         "cave"
@@ -1231,13 +1279,14 @@
         "frozen",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-crypt__cave__theme-halloween__front.png",
       "name": "Crypt Cave",
       "width": 590,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave"
       ],
@@ -1250,13 +1299,14 @@
         "hardscape",
         "shelter",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-haunted-house__cave__theme-halloween__front.png",
       "name": "Haunted House Cave",
       "width": 590,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "caveSettings": {
         "entryCount": 3,
         "entries": [
@@ -1322,14 +1372,15 @@
         "hardscape",
         "shelter",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coconut-shell-hideaway__cave__theme-natural__front.png",
       "name": "Coconut Shell Hideaway",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A coconut shell hideaway decoration for the aquarium.",
       "categories": [
         "cave"
@@ -1341,14 +1392,15 @@
         "natural",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "hollow-mossy-driftwood__cave-wood__theme-natural__front.png",
       "name": "Hollow Mossy Driftwood",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.5,
       "description": "A hollow mossy driftwood decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1363,14 +1415,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "live-root-overhang__cave-wood__theme-natural__front.png",
       "name": "Live Root Overhang",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "description": "A live root overhang decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1385,14 +1438,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "mangrove-roots__cave-wood__theme-natural__front.png",
       "name": "Mangrove Roots",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A mangrove roots decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1407,14 +1461,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "slate__cave-rock__theme-natural__front.png",
       "name": "Slate Cave",
       "cost": 12,
       "width": 620,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "caveSettings": {
         "entryCount": 1,
         "entries": [
@@ -1488,14 +1543,15 @@
         "natural",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "slate-stack__cave-rock__theme-natural__front.png",
       "name": "Slate Stack",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "description": "A slate stack decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1509,14 +1565,15 @@
         "natural",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png",
       "name": "Tangled Driftwood Rootscape",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "description": "A tangled driftwood rootscape decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1531,14 +1588,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-1__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 1",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1553,14 +1611,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-10__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 10",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1575,14 +1634,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-2__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 2",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1597,14 +1657,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-3__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 3",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1619,14 +1680,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-4__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 4",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1641,14 +1703,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-5__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 5",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1663,14 +1726,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-6__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 6",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1685,14 +1749,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-7__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 7",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1707,14 +1772,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral-shelf-9__cave-coral__theme-reef__front.png",
       "name": "Coral Shelf Cave 9",
       "cost": 16,
       "width": 520,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "categories": [
         "cave",
         "coral"
@@ -1729,14 +1795,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coralline-live-rock__cave-rock-coral__theme-reef__front.png",
       "name": "Coralline Live Rock",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A coralline live rock decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1753,14 +1820,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "live-rock-cluster__cave-rock__theme-reef__front.png",
       "name": "Live Rock Cluster",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A live rock cluster decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1774,14 +1842,15 @@
         "reef",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-anemone-1__cave-coral__theme-reef__front.png",
       "name": "Sea Anemone Cave 1",
       "cost": 14,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "categories": [
         "cave",
         "coral"
@@ -1802,14 +1871,15 @@
       "motionBehavior": "anchored_sway",
       "motionLayer": "front",
       "motionSplitY": 0.55,
-      "motionSwaySide": "above"
+      "motionSwaySide": "above",
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-anemone-3__cave-coral__theme-reef__front.png",
       "name": "Sea Anemone Cave 3",
       "cost": 14,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.45,
       "categories": [
         "cave",
         "coral"
@@ -1830,14 +1900,15 @@
       "motionBehavior": "anchored_sway",
       "motionLayer": "front",
       "motionSplitY": 0.55,
-      "motionSwaySide": "above"
+      "motionSwaySide": "above",
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sea-anemone-4__cave-coral__theme-reef__front.png",
       "name": "Sea Anemone Cave 4",
       "cost": 14,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.35,
       "categories": [
         "cave",
         "coral"
@@ -1858,14 +1929,15 @@
       "motionBehavior": "anchored_sway",
       "motionLayer": "front",
       "motionSplitY": 0.55,
-      "motionSwaySide": "above"
+      "motionSwaySide": "above",
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "seashell-cluster__cave-coral__theme-reef__front.png",
       "name": "Seashell Cluster",
       "cost": 8,
       "width": 420,
-      "defaultScale": 1,
+      "defaultScale": 1.4,
       "description": "A seashell cluster decoration for the aquarium.",
       "categories": [
         "cave",
@@ -1880,14 +1952,15 @@
         "hardscape",
         "shelter",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "meteor__cave-rock__theme-space__front.png",
       "name": "Meteor Cave",
       "cost": 16,
       "width": 585,
-      "defaultScale": 1,
+      "defaultScale": 1.1,
       "caveSettings": {
         "entryCount": 1,
         "entries": [
@@ -1927,7 +2000,8 @@
         "space",
         "hardscape",
         "shelter"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "fishing-lure__lure__theme-artificial.png",
@@ -1950,7 +2024,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 1"
     },
     {
       "name": "Fishing Lure",
@@ -1973,7 +2049,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 2"
     },
     {
       "name": "Fishing Lure",
@@ -1996,7 +2074,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 3"
     },
     {
       "name": "Fishing Lure",
@@ -2019,7 +2099,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 4"
     },
     {
       "name": "Fishing Lure",
@@ -2042,7 +2124,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 5"
     },
     {
       "name": "Fishing Lure",
@@ -2065,7 +2149,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 6"
     },
     {
       "name": "Fishing Lure",
@@ -2088,7 +2174,9 @@
         "lure",
         "artificial",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantLabel": "Lure 7"
     },
     {
       "file": "halloween-gorebag__lure__theme-halloween.png",
@@ -2111,7 +2199,8 @@
         "halloween",
         "sway",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-glacier__rock__theme-frozen.png",
@@ -2130,7 +2219,8 @@
         "frozen",
         "hardscape",
         "surface-cover"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-iceberg__rock__theme-frozen.png",
@@ -2149,7 +2239,8 @@
         "frozen",
         "hardscape",
         "surface-cover"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-webs__ornament__theme-halloween.png",
@@ -2168,7 +2259,8 @@
         "hardscape",
         "surface-cover",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-skeleton__ornament__theme-halloween.png",
@@ -2187,7 +2279,8 @@
         "hardscape",
         "surface-cover",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-ghost__ornament__theme-halloween.png",
@@ -2212,7 +2305,8 @@
         "hardscape",
         "surface-cover",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-floating-seaweed__plant__theme-halloween.png",
@@ -2233,7 +2327,8 @@
         "surface-cover",
         "sway",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "floating-lettuce-root__plant__theme-natural.png",
@@ -2254,7 +2349,8 @@
         "perchable",
         "surface-cover",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "floating-swamp-moss__plant__theme-natural.png",
@@ -2275,7 +2371,8 @@
         "perchable",
         "surface-cover",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "floating-seaweed__plant__theme-reef.png",
@@ -2296,7 +2393,8 @@
         "perchable",
         "surface-cover",
         "sway"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-anchor__ornament__theme-frozen.png",
@@ -2314,7 +2412,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-arch__ornament__theme-frozen.png",
@@ -2332,7 +2431,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-arch__ornament__theme-frozen__v2.png",
@@ -2350,7 +2450,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-column__ornament__theme-frozen.png",
@@ -2368,7 +2469,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-column__ornament__theme-frozen__v2.png",
@@ -2386,7 +2488,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-column__ornament__theme-frozen__v3.png",
@@ -2404,7 +2507,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-crystals__rock__theme-frozen.png",
@@ -2422,7 +2526,8 @@
         "rock",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-fossil__rock__theme-frozen.png",
@@ -2440,7 +2545,8 @@
         "rock",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-plant__plant__theme-frozen.png",
@@ -2459,7 +2565,8 @@
         "frozen",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-plant__plant__theme-frozen__v2.png",
@@ -2478,7 +2585,8 @@
         "frozen",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-plant__plant__theme-frozen__v3.png",
@@ -2497,7 +2605,8 @@
         "frozen",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-plant__plant__theme-frozen__v4.png",
@@ -2516,7 +2625,8 @@
         "frozen",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-plant__plant__theme-frozen__v5.png",
@@ -2535,7 +2645,8 @@
         "frozen",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-rock__rock__theme-frozen.png",
@@ -2553,7 +2664,8 @@
         "rock",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-rock__rock__theme-frozen__v2.png",
@@ -2571,7 +2683,8 @@
         "rock",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-root__wood__theme-frozen.png",
@@ -2590,7 +2703,8 @@
         "frozen",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-treasure__ornament__theme-frozen.png",
@@ -2608,7 +2722,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-ufo__ornament__theme-frozen.png",
@@ -2626,7 +2741,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-sunken-submarine__ornament__theme-frozen.png",
@@ -2647,7 +2763,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "frozen-ship__ornament__theme-frozen.png",
@@ -2668,7 +2785,8 @@
         "ornament",
         "frozen",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-spider__ornament__theme-halloween.png",
@@ -2692,7 +2810,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-fish-head-effigy__ornament__theme-halloween__v3.png",
@@ -2715,7 +2834,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-ghost-ship__ornament__theme-halloween.png",
@@ -2739,7 +2859,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-gravestone__ornament__theme-halloween.png",
@@ -2757,7 +2878,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-gravestone__ornament__theme-halloween__v2.png",
@@ -2775,7 +2897,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-gravestone__ornament__theme-halloween__v3.png",
@@ -2793,7 +2916,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-gravestone__ornament__theme-halloween__v4.png",
@@ -2811,7 +2935,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-gravestone__ornament__theme-halloween__v5.png",
@@ -2829,7 +2954,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-fish-head-effigy__ornament__theme-halloween__v2.png",
@@ -2852,7 +2978,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-haunted-tree__ornament__theme-halloween.png",
@@ -2876,7 +3003,8 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "halloween-fish-head-effigy__ornament__theme-halloween.png",
@@ -2899,14 +3027,15 @@
         "halloween",
         "hardscape",
         "spooky"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "alder-cone-cluster__botanical__theme-natural.png",
       "name": "Alder Cone Cluster",
       "cost": 8,
       "width": 220,
-      "defaultScale": 1,
+      "defaultScale": 2.15,
       "description": "A alder cone cluster decoration for the aquarium.",
       "categories": [
         "botanical"
@@ -2916,7 +3045,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "autumn-leaf-litter-mound__botanical__theme-natural.png",
@@ -2933,7 +3063,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "branch-canopy__wood__theme-natural.png",
@@ -2952,7 +3083,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "dirt__rock__theme-natural.png",
@@ -2970,7 +3102,8 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "dried-catappa-leaf-pile__botanical__theme-natural.png",
@@ -2987,7 +3120,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "driftwood__wood__theme-natural.png",
@@ -3006,7 +3140,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "driftwood-root__wood__theme-natural.png",
@@ -3025,7 +3160,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "flat-spawning-stone__rock__theme-natural.png",
@@ -3043,7 +3179,8 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "mixed-leaf-litter-scatter__botanical__theme-natural.png",
@@ -3060,7 +3197,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "moss-bridge__wood-plant__theme-natural.png",
@@ -3082,7 +3220,8 @@
         "hardscape",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "moss-covered-driftwood__wood-plant__theme-natural.png",
@@ -3104,7 +3243,8 @@
         "hardscape",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "moss-covered-rock-formation__rock-plant__theme-natural.png",
@@ -3126,7 +3266,8 @@
         "hardscape",
         "grazable",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "river-stone-mound__rock__theme-natural.png",
@@ -3144,7 +3285,8 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "rock-bricks__rock__theme-natural.png",
@@ -3162,7 +3304,9 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-rocks"
     },
     {
       "file": "rock-bricks__rock__theme-natural__v2.png",
@@ -3180,7 +3324,9 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-rocks"
     },
     {
       "file": "rock-bricks__rock__theme-natural__v3.png",
@@ -3198,7 +3344,9 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-rocks"
     },
     {
       "file": "rock-bricks__rock__theme-natural__v4.png",
@@ -3216,7 +3364,9 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-rocks"
     },
     {
       "file": "rock-bricks__rock__theme-natural__v5.png",
@@ -3234,7 +3384,9 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-rocks"
     },
     {
       "file": "root-debris-scatter__wood__theme-natural.png",
@@ -3253,7 +3405,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "seed-pod-cluster__botanical__theme-natural.png",
@@ -3270,7 +3423,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "single-catappa-leaf__botanical__theme-natural.png",
@@ -3287,7 +3441,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "single-loose-leaf__botanical__theme-natural.png",
@@ -3304,7 +3459,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "single-twig__botanical__theme-natural.png",
@@ -3321,7 +3477,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "small-botanical-scatter-pieces__botanical__theme-natural.png",
@@ -3338,7 +3495,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "small-branch-pile__wood__theme-natural.png",
@@ -3357,7 +3515,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "small-stone-shard-cluster__rock__theme-natural.png",
@@ -3375,7 +3534,8 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "small-wood-branch-cluster__wood__theme-natural.png",
@@ -3394,7 +3554,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "sprawling-spider-wood-rootscape__wood__theme-natural.png",
@@ -3413,7 +3574,8 @@
         "natural",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "stone-pebble-cluster__rock__theme-natural.png",
@@ -3431,7 +3593,8 @@
         "rock",
         "natural",
         "hardscape"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "twig-and-pod-mix__botanical__theme-natural.png",
@@ -3448,7 +3611,8 @@
       "tags": [
         "botanical",
         "natural"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "volcanic-rock-bricks__rock__theme-natural.png",
@@ -3468,7 +3632,9 @@
         "hardscape",
         "volcanic",
         "sharp"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-volcanic-rocks"
     },
     {
       "file": "volcanic-rock-bricks__rock__theme-natural__v2.png",
@@ -3488,7 +3654,9 @@
         "hardscape",
         "volcanic",
         "sharp"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-volcanic-rocks"
     },
     {
       "file": "volcanic-rock-bricks__rock__theme-natural__v3.png",
@@ -3508,7 +3676,9 @@
         "hardscape",
         "volcanic",
         "sharp"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-volcanic-rocks"
     },
     {
       "file": "volcanic-rock-bricks__rock__theme-natural__v4.png",
@@ -3528,7 +3698,9 @@
         "hardscape",
         "volcanic",
         "sharp"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics",
+      "variantGroup": "arcadia-volcanic-rocks"
     },
     {
       "file": "barnacle-covered-reef-rock__rock-coral__theme-reef.png",
@@ -3549,7 +3721,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "brain-coral__coral__theme-reef.png",
@@ -3568,7 +3741,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef.png",
@@ -3587,7 +3761,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v10.png",
@@ -3606,7 +3781,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v2.png",
@@ -3625,7 +3801,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v3.png",
@@ -3644,7 +3821,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v4.png",
@@ -3663,7 +3841,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v5.png",
@@ -3682,7 +3861,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v6.png",
@@ -3701,7 +3881,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v7.png",
@@ -3720,7 +3901,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v8.png",
@@ -3739,7 +3921,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "coral__coral__theme-reef__v9.png",
@@ -3758,7 +3941,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "zoanthid-mat__coral__theme-reef.png",
@@ -3777,7 +3961,8 @@
         "reef",
         "hardscape",
         "perchable"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     },
     {
       "file": "transit-tube__transit__theme-artificial__front.png",
@@ -3803,7 +3988,8 @@
         "artificial",
         "hardscape",
         "transport"
-      ]
+      ],
+      "seller": "Arcadia Home Aquatics"
     }
   ]
 }

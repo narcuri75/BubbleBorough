@@ -1,0 +1,113 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "003832f5-da1b-4279-a484-f9c0c862ae4a",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "09789428-48d1-49f4-8d49-b1553d10ed6b",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_black_ruby.png"
+        },
+        {
+          "id": "489afd42-af05-4217-930a-e364ce0bdf22",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_cherry.png"
+        },
+        {
+          "id": "e84f9441-8e5a-46e5-8511-709ab7b47851",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_five_banded.png"
+        },
+        {
+          "id": "e9fa4782-2996-4f4b-9ebe-00812a78c38c",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_gold.png"
+        },
+        {
+          "id": "e6d351c9-af1d-4274-a187-a0b1a2cf7b38",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_green.png"
+        },
+        {
+          "id": "46f68d53-a918-4c67-bddd-3047114eeb85",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_odessa.png"
+        },
+        {
+          "id": "3d1cd931-8f0e-4f39-b954-6b76c3513923",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_rosy.png"
+        },
+        {
+          "id": "746d3e56-806f-42e4-9bda-6552391f7628",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_tiger.png"
+        }
+      ]
+    }
+  ]
+}

@@ -45,6 +45,21 @@ function clearCloudSession() {
   renderStartupActions();
 }
 
+// Local playtesting only: append ?playtest=1 while running on localhost to
+// skip account sign-in and expose the debug tools. This can never activate on
+// a deployed hostname.
+function isLocalPlaytestMode() {
+  if (typeof window === "undefined") return false;
+  const hostname = String(window.location?.hostname || "");
+  const localHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(hostname);
+  if (!localHost) return false;
+  try {
+    return new URLSearchParams(window.location.search).get("playtest") === "1";
+  } catch {
+    return false;
+  }
+}
+
 function getCloudMeta() {
   try {
     const raw = localStorage.getItem(CLOUD_SAVE_META_KEY);
@@ -465,6 +480,12 @@ async function getCloudSaveRecord() {
 }
 
 async function createCloudSavePayload(timestamp = Date.now()) {
+  // Dead Fish Phase 23: cloud upload is a save boundary too. Flush the
+  // authoritative runtime corpse state even when upload is invoked directly
+  // instead of arriving through saveState().
+  if (typeof syncDeadFishCorpsePersistenceForSave === "function") {
+    syncDeadFishCorpsePersistenceForSave(timestamp);
+  }
   const exportState = await createPortableExportState(state);
   return {
     format: SAVE_FILE_FORMAT,
@@ -897,7 +918,8 @@ function renderStartupActions() {
   recovery.hidden = true;
   const hasLocal = Boolean(runtime.hadLocalSaveAtStartup);
   const session = getCloudSession();
-  const signedIn = Boolean(session) && !runtime.cloudForceLogin;
+  const localPlaytest = isLocalPlaytestMode();
+  const signedIn = (Boolean(session) && !runtime.cloudForceLogin) || localPlaytest;
   const authStatus = auth.querySelector("[data-startup-auth-status]");
   if (!signedIn) {
     overlay?.classList.add("is-auth-mode");
@@ -911,9 +933,10 @@ function renderStartupActions() {
   overlay?.classList.remove("is-auth-mode");
   overlay?.classList.add("is-welcome-mode");
   auth.hidden = true;
-  const username = getAccountUsernameForUser(session?.user?.id || "");
+  const username = localPlaytest ? "Local Playtest" : getAccountUsernameForUser(session?.user?.id || "");
   const shouldStartFresh = !hasLocal && (
-    runtime.cloudAuthCallbackType === "signup"
+    localPlaytest
+    || runtime.cloudAuthCallbackType === "signup"
     || (runtime.cloudChecked === true && runtime.freshGameSaveLocked === true)
   );
   const notice = runtime.cloudAuthNotice
@@ -1173,7 +1196,7 @@ function renderCloudAccountPanel() {
   const pendingEmail = session?.user?.new_email || "";
   const userId = session?.user?.id || "";
   if (hasCloudPasswordRecoverySession() || !session) {
-    container.innerHTML = getCloudAuthFormMarkup(hasCloudPasswordRecoverySession(), true).replace(" hidden>", ">");
+    container.innerHTML = `${getCloudAuthFormMarkup(hasCloudPasswordRecoverySession(), true).replace(" hidden>", ">")}${renderCustomContentStorageMeter({ compact: true, manage: true, label: "Custom Asset Storage" })}`;
     container.querySelector("form")?.addEventListener("submit", event => {
       event.preventDefault();
       const button = event.target.querySelector('button[type="submit"]');
@@ -1184,11 +1207,15 @@ function renderCloudAccountPanel() {
     const syncStatus = runtime.cloudSyncStatus || "checking";
     const presentation = getCloudSyncStatusPresentation(syncStatus, runtime.cloudSyncLabel || "");
     const syncBusy = syncStatus === "syncing" || syncStatus === "checking";
+    const customContentUsage = getCustomContentUsageStats();
+    const customContentManagerMarkup = customContentUsage.usedBytes > 0
+      ? `<div class="cloud-account-custom-library">${renderCustomContentLibraryManager()}</div>`
+      : "";
     container.innerHTML = `
       <div class="cloud-account-shell">
         <div class="cloud-account-section-heading cloud-account-main-heading">
           <span class="cloud-account-title-icon" aria-hidden="true"><img data-sprite-src="assets/icons/account-cloud.png" alt="" /></span>
-          <div><strong>Account &amp; Cloud Save</strong><span>Manage your account and keep your aquarium safe in the cloud.</span></div>
+          <div><strong>Account &amp; Cloud</strong><span>Your account, cloud saves, and data management.</span></div>
         </div>
 
         <div class="cloud-account-dashboard">
@@ -1209,6 +1236,10 @@ function renderCloudAccountPanel() {
               <img class="cloud-sync-light" data-cloud-sync-light data-sprite-src="${escapeHtml(getCloudSyncIconPath(syncStatus))}" alt="" aria-hidden="true" />
               <span class="cloud-sync-state-copy"><span class="cloud-sync-label">Cloud Save Status</span><span class="cloud-sync-title-line"><strong data-cloud-sync-text>${escapeHtml(presentation.title)}</strong><span data-cloud-sync-time>${escapeHtml(presentation.timestamp || "")}</span></span><span data-cloud-sync-detail>${escapeHtml(presentation.detail)}</span></span>
             </button>
+
+            <div class="cloud-account-storage-card">
+              ${renderCustomContentStorageMeter({ compact: true, label: "Custom Asset Storage" })}
+            </div>
           </div>
 
           <div class="cloud-account-side-actions">
@@ -1216,6 +1247,8 @@ function renderCloudAccountPanel() {
             <button class="cloud-account-compact-action cloud-account-logout-action" type="button" data-cloud-signout><img data-sprite-src="assets/icons/logout.png" alt="" aria-hidden="true" /><strong>Log Out</strong></button>
           </div>
         </div>
+
+        ${customContentManagerMarkup}
 
         <div class="cloud-account-editor-overlay" data-cloud-username-editor hidden>
           <div class="cloud-account-editor-dialog" role="dialog" aria-modal="true" aria-labelledby="cloudUsernameEditorTitle">
@@ -1255,6 +1288,19 @@ async function handleCloudSettingsClick(event) {
   const target = event.target instanceof Element ? event.target : null;
   const panel = target?.closest("[data-cloud-account-panel]");
   if (!panel) return false;
+  const deleteCustomContentButton = target.closest("[data-delete-custom-content-kind]");
+  if (deleteCustomContentButton) {
+    event.preventDefault();
+    const kind = deleteCustomContentButton.dataset.deleteCustomContentKind;
+    const key = deleteCustomContentButton.dataset.deleteCustomContentKey;
+    const entry = getCustomContentLibraryEntries().find((item) => item.kind === kind && item.key === key);
+    if (!entry) return true;
+    const confirmed = typeof confirm !== "function" || confirm(`Delete ${entry.name} permanently? This reclaims ${formatExportByteCount(entry.byteSize)} of custom storage.`);
+    if (!confirmed) return true;
+    await deleteCustomContentAsset(kind, key);
+    renderCloudAccountPanel();
+    return true;
+  }
   if (target.closest('button[type="submit"]')) event.preventDefault();
   const message = panel.querySelector("[data-cloud-settings-message]");
   const email = String(panel.querySelector("[data-cloud-settings-email]")?.value || "").trim();

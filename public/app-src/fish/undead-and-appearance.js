@@ -364,13 +364,12 @@ function getPufferInflatedAssetPathForBaseAsset(baseAsset) {
     return null;
   }
 
+  // Current puffer atlases use descriptive frame names such as
+  // puffer_amazon.png.  Keep the state suffix adjacent to that frame name.
+  // The older pufferfish[_N] form remains supported for saved legacy fish.
   return baseAsset.replace(
-    /(pufferfish)(?:_(\d+))?(\.[^./\?]+)(\?.*)?$/i,
-    (_match, stem, variantIndex, extension, query = "") => (
-      variantIndex
-        ? `${stem}_inflated_${variantIndex}${extension}${query}`
-        : `${stem}_inflated${extension}${query}`
-    )
+    /(puffer(?:fish)?(?:_[a-z0-9]+)*?)(?:_inflated)?(\.[^./\?]+)(\?.*)?$/i,
+    (_match, stem, extension, query = "") => `${stem}_inflated${extension}${query}`
   );
 }
 
@@ -580,6 +579,9 @@ function getFishCatalogAssetPath(species) {
   if (!species) {
     return null;
   }
+  if (species.storeAsset) {
+    return species.storeAsset;
+  }
 
   return [
     ...getFishAssetVariants(species),
@@ -641,6 +643,7 @@ function getFishAdultScale(fish, species = getSpeciesForFish(fish)) {
 
 function getFishGrowthProgress(fish, now = Date.now()) {
   if (typeof getPeacefulModeSimulationNow === "function") now = getPeacefulModeSimulationNow(now);
+  if (typeof getFishStorageSimulationNow === "function") now = getFishStorageSimulationNow(fish, now);
   if (
     !fish
     || !Number.isFinite(Number(fish.growthStartedAt))

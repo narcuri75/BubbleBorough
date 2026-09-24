@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "d54f95f2-6349-4aa2-885f-bc0da230ca76",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "d8ae325a-3710-4c35-8393-835d3c2f76b7",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_blue_diamond.png"
+        },
+        {
+          "id": "61f7a7f2-0e8a-4115-9c5a-850364e0c64e",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_checkerboard_pigeon.png"
+        },
+        {
+          "id": "3f33c0e9-c034-418f-bf49-6a64a295e6a3",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_cobalt.png"
+        },
+        {
+          "id": "b91a66d5-83ea-45f3-8790-68b4ef73c20f",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_heckel.png"
+        },
+        {
+          "id": "64340c2d-1766-450c-975c-17a11e830227",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_leopard.png"
+        },
+        {
+          "id": "538d1bde-532b-4401-8183-8806c3d5b9cc",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_leopard_snakeskin.png"
+        },
+        {
+          "id": "47b0a756-2722-4fce-afc0-7506a90ec699",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_red_eagle.png"
+        },
+        {
+          "id": "97c49c41-847a-40cd-9b43-19f1e7d0cff0",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_snakeskin.png"
+        },
+        {
+          "id": "312bfa86-0553-4f33-9aaf-19da2aff34c4",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "discus_turquoise.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/discus__genetics-natural.webp"
+  }
+}

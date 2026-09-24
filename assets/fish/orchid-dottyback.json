@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "60772fa9-95f7-4261-8e9c-c9acfb163e2e",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "3ec8fd3f-3184-4f58-9357-5650d341edf9",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "orchid-dottyback_1.png"
+        },
+        {
+          "id": "dd1f4fe0-9c4a-424b-b5c8-dca436a4390d",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "orchid-dottyback_2.png"
+        },
+        {
+          "id": "ee97e5e6-3682-4571-90d5-c407a3a0fb21",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "orchid-dottyback_3.png"
+        },
+        {
+          "id": "e316011a-6663-40f0-8290-c8d3b9a91188",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "orchid-dottyback_4.png"
+        },
+        {
+          "id": "0e65eb15-282d-4f2c-93b9-dcf3ae5df6f4",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "orchid-dottyback_5.png"
+        }
+      ]
+    }
+  ]
+}

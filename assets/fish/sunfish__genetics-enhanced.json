@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,76 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "a3ca8689-f777-4e4f-ba13-78ffaaeff959",
+      "id": "987a8e30-8a07-484a-82c8-ed4d05ae0238",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "5503f886-e702-4e92-ae10-ba51fd6042d4",
-          "width": 364,
-          "height": 384,
+          "id": "662f7b05-afd7-48a6-84dc-4f06e91b654e",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Sunfish.png"
+          "name": "masturus_lanceolatus.png"
         },
         {
-          "id": "71743a29-f379-4349-9023-a72020be0373",
-          "width": 364,
-          "height": 384,
+          "id": "4ffcd43e-baf2-49fb-bdb3-c04c210336ff",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Sunfish_1.png"
+          "name": "mola_alexandrini.png"
         },
         {
-          "id": "94ba8a03-c606-48ba-9351-dbd185d9ca35",
-          "width": 364,
-          "height": 384,
+          "id": "d41df22d-501a-4462-9259-8124e8f76e13",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Sunfish_2.png"
+          "name": "mola_tecta.png"
         },
         {
-          "id": "4402f552-f469-465e-aea2-9fbe076c5acc",
-          "width": 364,
-          "height": 384,
+          "id": "ca4312c1-a155-49d6-8302-d43ca375114c",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Sunfish_3.png"
+          "name": "mola-mola_eastern-atlantic.png"
         },
         {
-          "id": "c4c76012-adc2-47d3-ac76-6c6c30f66473",
-          "width": 364,
-          "height": 384,
+          "id": "27a623ee-32ca-4e5e-803d-ea2cd0b4c721",
+          "width": 512,
+          "height": 512,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "Sunfish_4.png"
+          "name": "mola-mola_pacific.png"
+        },
+        {
+          "id": "b4425f79-e8e6-4f4e-98ba-7589e88f1003",
+          "width": 512,
+          "height": 512,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "ranzania_laevis.png"
         }
       ]
     }

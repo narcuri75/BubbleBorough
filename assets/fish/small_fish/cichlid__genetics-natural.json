@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "9b30d079-c118-4bae-ad72-7e8b8d45ede4",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "6ab3be58-6a68-4da3-87a6-bd679a8c5576",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_blue_ram.png"
+        },
+        {
+          "id": "e0b672e6-ad78-4ee1-bb81-48fe523a8f0d",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_flameback.png"
+        },
+        {
+          "id": "ab9929f3-45ff-45b9-94e3-dd3ef4f482bb",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_frontosa.png"
+        },
+        {
+          "id": "1505d2ef-5336-40aa-800a-771fbef47fcc",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_green_severum.png"
+        },
+        {
+          "id": "cb0696ab-26ab-4cc3-8aff-0ffbfd64f8c7",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_haplochromis.png"
+        },
+        {
+          "id": "0918031f-b1a2-453a-9ec8-31094ffdd27c",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_ob_peacock.png"
+        },
+        {
+          "id": "d9c29988-82ee-45c3-bbf0-4e380f078059",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_pseudotropheus.png"
+        },
+        {
+          "id": "ad946080-17ce-47af-a533-34b2880b544d",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_red_empress.png"
+        },
+        {
+          "id": "2d5711d0-ee50-47c8-9c23-a75e535bf776",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_tropheus.png"
+        },
+        {
+          "id": "52e940c1-a704-499b-b754-2fb4b92cf551",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "cichlid_venustus.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/cichlid__genetics-natural.webp"
+  }
+}

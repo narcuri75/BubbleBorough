@@ -1,6 +1,6 @@
 {
   "version": 2,
-  "columns": 2,
+  "columns": 3,
   "negativeSpacingEnabled": false,
   "backgroundColor": "transparent",
   "manualCellSizeEnabled": false,
@@ -14,65 +14,65 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "b85c1309-60e1-45ee-bf9d-dcb946b5bf3c",
+      "id": "e3e1c7c4-7371-45bc-a5e1-dd194d44cab5",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "60b0f7c0-d943-48ee-b5cc-13240e270d9a",
+          "id": "ac974741-18aa-43c6-afaf-398a0d1dca4e",
           "width": 512,
-          "height": 283,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "guppy.png"
+          "name": "guppy_cobra.png"
         },
         {
-          "id": "03a69df6-340b-43b6-9622-4ea2bcda90fb",
+          "id": "96826723-2a07-4d67-bbb1-0fb54d875468",
           "width": 512,
-          "height": 283,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "guppy_1.png"
+          "name": "guppy_full_red.png"
         },
         {
-          "id": "7cf950c0-486c-4757-a195-01c719398ab1",
+          "id": "5c6d9805-7be4-466a-b733-859cdb29c41b",
           "width": 512,
-          "height": 283,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "guppy_2.png"
+          "name": "guppy_mosaic.png"
         },
         {
-          "id": "ee754d8e-c1e5-4dd0-83c9-90641fe91773",
+          "id": "c0ea0fea-7264-4ffd-babd-d3c67d655bcf",
           "width": 512,
-          "height": 283,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "guppy_3.png"
+          "name": "guppy_moscow_blue.png"
         },
         {
-          "id": "e8992dcf-24f4-423a-91e6-249855cf65c2",
+          "id": "fcd67a1b-de3b-4246-9b09-a56e6565959d",
           "width": 512,
-          "height": 283,
+          "height": 384,
           "x": 0,
           "y": 0,
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "guppy_4.png"
+          "name": "guppy_tuxedo.png"
         }
       ]
     }

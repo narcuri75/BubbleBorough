@@ -78,7 +78,7 @@ function clearFishPanicState(fish) {
 function getPufferInflationMinDurationMs() { return 5200; }
 function getPufferInflationMaxDurationMs() { return 7200; }
 function getPufferInflationWobbleMs() { return 1800; }
-function getPufferInflationRiseMs() { return 3000; }
+function getPufferInflationRiseMs() { return 420; }
 function getPufferInflationCooldownMs() { return 12000; }
 function getPufferDeflationDurationMs() { return 780; }
 function getPufferInflationBubbleCountMin() { return 12; }
@@ -120,6 +120,13 @@ function getPufferDeflationProgress(fish, now = Date.now()) {
   }
   const inflatedUntil = Number(fish.pufferInflatedUntil) || now;
   const rawProgress = clamp((now - inflatedUntil) / getPufferDeflationDurationMs(), 0, 1);
+  return rawProgress * rawProgress * (3 - 2 * rawProgress);
+}
+
+function getPufferInflationProgress(fish, now = Date.now()) {
+  if (!isPufferInflatedActive(fish, now)) return 1;
+  const startedAt = Number(fish?.pufferInflatedAt) || now;
+  const rawProgress = clamp((now - startedAt) / getPufferInflationRiseMs(), 0, 1);
   return rawProgress * rawProgress * (3 - 2 * rawProgress);
 }
 
@@ -289,6 +296,20 @@ function startPufferInflation(fish, species, now = Date.now()) {
     species,
     Math.max(species.speedMin * 0.42, Math.min(species.speedMax * 0.34, species.speedMin + (species.speedMax - species.speedMin) * 0.12))
   );
+  // A puff is one continuous defensive pose. Keep the current facing locked
+  // until deflation has completed so small drift-target changes cannot queue
+  // a string of left/right turnaround animations.
+  fish.pufferFacingDirection = getFishFacingDirection(fish);
+  fish.direction = fish.pufferFacingDirection;
+  fish.displayDirection = fish.pufferFacingDirection;
+  fish.displayAngle = fish.pufferFacingDirection < 0 ? Math.PI : 0;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.targetXNorm = fish.xNorm;
+  fish.targetYNorm = fish.yNorm;
+  fish.motionVelocityXNorm = 0;
+  fish.motionVelocityYNorm = 0;
   // Inflation is the defensive response. Once the fish puffs, it stops doing
   // a full-speed panic dash and becomes awkward and buoyant instead.
   fish.panicUntil = null;
@@ -312,17 +333,17 @@ function updatePufferInflationMotionTarget(fish, species, now = Date.now()) {
     ? Number(fish.pufferDriftPhase)
     : (fish.pufferDriftPhase = Math.random() * Math.PI * 2);
   const riseBias = (Number(fish.pufferRiseUntil) || 0) > now ? 0.05 : 0.02;
-  const lateralDrift = Math.sin(now / 780 + driftPhase) * 0.026;
+  const lateralDrift = Math.sin(now / 1500 + driftPhase) * 0.008;
   const targetLayer = getFishTankLayer(fish);
   fish.targetXNorm = clamp((fish.xNorm || 0.5) + lateralDrift, 0.1, 0.9);
   fish.targetYNorm = clampFishYNormToLayer(
-    (fish.yNorm || 0.5) - riseBias + Math.sin(now / 540 + driftPhase * 1.3) * 0.006,
+    (fish.yNorm || 0.5) - riseBias + Math.sin(now / 1300 + driftPhase * 1.3) * 0.003,
     fish,
     species,
     targetLayer,
     { minYNorm: 0.16, maxYNorm: 0.72 }
   );
-  fish.targetAt = now + 220;
+  fish.targetAt = now + 500;
   fish.swimSpeed = Number(fish.pufferInflatedSwimSpeed) || normalizeFishSpeed(species, species.speedMin * 0.42);
   setFishDesiredTankLayer(fish, targetLayer);
   return true;
@@ -349,6 +370,7 @@ function updatePufferInflationState(fish, species, now = Date.now()) {
 
   if ((Number(fish.pufferInflatedUntil) || 0) > 0 && now >= Number(fish.pufferInflatedUntil) + getPufferDeflationDurationMs()) {
     clearPufferInflationState(fish, { clearBurst: false });
+    delete fish.pufferFacingDirection;
     fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 80);
     fish.swimSpeed = normalizeFishSpeed(species);
   }
@@ -503,26 +525,6 @@ function setContentSetting(settingKey, value) {
   );
 }
 
-function setToolbarPosition(toolbarPosition) {
-  if (!state || !TOOLBAR_POSITION_SETTING_ENABLED) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    toolbarPosition
-  });
-  if (currentSettings.toolbarPosition === nextSettings.toolbarPosition) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  runtime.toolbarActionMenu = "";
-  saveState();
-  renderUi(Date.now());
-}
-
 function getEffectiveWebSurfTheme(mode = getUiSettings().webSurfThemeMode) {
   const normalizedMode = normalizeWebSurfThemeMode(mode);
   if (normalizedMode === WEBSURF_THEME_MODE_YES) {
@@ -593,25 +595,6 @@ function setToolbarTileColor(value) {
   renderUi(Date.now(), { full: false });
 }
 
-function setDisplayPosition(displayPosition) {
-  if (!state || !DISPLAY_POSITION_SETTING_ENABLED) {
-    return;
-  }
-
-  const currentSettings = getUiSettings();
-  const nextSettings = sanitizeUiSettings({
-    ...currentSettings,
-    displayPosition
-  });
-  if (currentSettings.displayPosition === nextSettings.displayPosition) {
-    return;
-  }
-
-  state.uiSettings = nextSettings;
-  saveState();
-  renderUi(Date.now(), { full: false });
-}
-
 function setSoundMuted(value, options = {}) {
   if (!state) {
     return false;
@@ -672,6 +655,106 @@ function setUiSoundsMuted(value, options = {}) {
   }
   if (shouldShowToast) {
     showToast(nextSettings.uiSoundsMuted ? "UI sounds muted." : "UI sounds on.");
+  }
+  return true;
+}
+
+function setAudioCategoryVolume(settingKey, value, options = {}) {
+  if (!state || !["tankAmbienceVolume", "sfxVolume", "uiSoundVolume"].includes(settingKey)) {
+    return false;
+  }
+
+  const currentSettings = getUiSettings();
+  const nextVolume = normalizeSettingsVolume(value, currentSettings[settingKey]);
+  const patch = {
+    ...currentSettings,
+    [settingKey]: nextVolume
+  };
+
+  // The old settings screen stored separate mute flags. Moving a category above
+  // zero is an explicit request for sound, so clear those legacy mutes rather
+  // than leaving the new slider looking active while the category stays silent.
+  if (nextVolume > 0 && currentSettings.soundMuted) {
+    patch.soundMuted = false;
+  }
+  if (settingKey === "uiSoundVolume" && nextVolume > 0 && currentSettings.uiSoundsMuted) {
+    patch.uiSoundsMuted = false;
+  }
+
+  const nextSettings = sanitizeUiSettings(patch);
+  const muteChanged = currentSettings.soundMuted !== nextSettings.soundMuted
+    || currentSettings.uiSoundsMuted !== nextSettings.uiSoundsMuted;
+  const volumeChanged = currentSettings[settingKey] !== nextSettings[settingKey];
+
+  // Always install the sanitized settings object. This also commits legacy
+  // mute migration even when the user lands on the same numeric slider value.
+  state.uiSettings = nextSettings;
+
+  if (settingKey === "tankAmbienceVolume") {
+    // A fade or crossfade captures its starting target. Cancel it before a
+    // live slider update so an old animation cannot push the ambience volume
+    // back toward the previous setting after the user moves the control.
+    stopAmbienceAudioFade();
+    stopAmbienceAudioCrossfade();
+    syncAmbienceAudio();
+  } else if (settingKey === "uiSoundVolume") {
+    syncActiveSoundEffectVolumes("ui");
+  } else {
+    syncActiveSoundEffectVolumes("sfx");
+    syncSubmarineSonarSound();
+  }
+
+  // A change event can arrive after the input event already updated state.
+  // Honor an explicit save request even when the numeric value is unchanged.
+  if (options.save !== false) {
+    saveState();
+  }
+  if (options.render === true && (volumeChanged || muteChanged)) {
+    renderUi(Date.now(), { full: false });
+  }
+  return volumeChanged || muteChanged;
+}
+
+function setTankAmbienceVolume(value, options = {}) {
+  return setAudioCategoryVolume("tankAmbienceVolume", value, options);
+}
+
+function setSfxVolume(value, options = {}) {
+  return setAudioCategoryVolume("sfxVolume", value, options);
+}
+
+function setUiSoundVolume(value, options = {}) {
+  return setAudioCategoryVolume("uiSoundVolume", value, options);
+}
+
+function setGravelShadowIntensity(value, options = {}) {
+  if (!state) {
+    return false;
+  }
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({
+    ...currentSettings,
+    gravelShadowIntensity: normalizeSettingsVolume(value, currentSettings.gravelShadowIntensity)
+  });
+  const intensityChanged = currentSettings.gravelShadowIntensity !== nextSettings.gravelShadowIntensity;
+  state.uiSettings = nextSettings;
+  if (!intensityChanged) {
+    if (options.save !== false) {
+      saveState();
+    }
+    return false;
+  }
+  if (typeof isDebugModeEnabled === "function" && isDebugModeEnabled() && typeof setDebugTankDepthTuningValue === "function") {
+    setDebugTankDepthTuningValue("gravelLayerShadow", nextSettings.gravelShadowIntensity, { persist: true, invalidate: false });
+  }
+  if (typeof invalidateTankDepthVisualCaches === "function") {
+    invalidateTankDepthVisualCaches();
+  }
+  if (options.save !== false) {
+    saveState();
+  }
+  if (options.render !== false) {
+    renderUi(Date.now(), { full: false });
   }
   return true;
 }
@@ -924,9 +1007,6 @@ function toggleToolbarCollapsed(force = null) {
   }
 
   state.uiSettings = nextSettings;
-  if (nextSettings.toolbarCollapsed) {
-    runtime.toolbarActionMenu = "";
-  }
   saveState();
   playUiCollapseToggleSound(nextSettings.toolbarCollapsed);
   renderUi(Date.now(), { full: false });
@@ -1373,6 +1453,11 @@ function handleBettaRivalAttacks(now = Date.now()) {
       continue;
     }
 
+    if ((typeof isFishCalmed === "function" && (isFishCalmed(aggressor, now) || isFishCalmed(target, now)))) {
+      resolveBettaRivalEncounter(aggressor, target, now, { nipped: false });
+      changed = true;
+      continue;
+    }
     if (!isViolenceEnabled() || now < (Number(aggressor.bettaRivalNipAt) || 0)) {
       continue;
     }
@@ -1973,6 +2058,39 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     if (Math.abs(fish.targetXNorm - fish.xNorm) > 0.002) {
       setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
     }
+    return;
+  }
+
+  if (resolvedMove?.blockingDecor) {
+    fish.hangoutDecorId = null;
+    fish.blockedDecorId = resolvedMove.blockingDecor.id || null;
+    fish.blockedDecorUntil = now + 2400;
+  }
+
+  const attemptedDirection = Math.abs(attemptedXNorm - fish.xNorm) > 0.0001
+    ? (attemptedXNorm >= fish.xNorm ? 1 : -1)
+    : (fish.direction || 1);
+  recordFishNavigationFailure(fish, resolvedMove?.blockingDecor ? "decor-block" : "world-block", now, {
+    key: resolvedMove?.blockingDecor?.id ? `decor:${String(resolvedMove.blockingDecor.id)}` : "world-boundary",
+    direction: attemptedDirection
+  });
+
+  // A decor collision is often best solved in depth rather than by repeatedly
+  // picking new X/Y targets around the same silhouette. Search the full depth
+  // track immediately and commit to a clear lane, even when that lane is
+  // several adjacent positions away. World bounds still use the planar path.
+  if (resolvedMove?.blockingDecor && tryFishNavigationDepthEscape(fish, species, now, {
+    xNorm: attemptedXNorm,
+    yNorm: attemptedYNorm,
+    reason: "decor"
+  })) {
+    fish.wallAvoidUntil = Math.max(Number(fish.wallAvoidUntil) || 0, now + 420);
+    return;
+  }
+
+  if (maybeEscalateFishNavigationUnstuck(fish, species, now, {
+    reason: resolvedMove?.blockingDecor ? "decor" : "world"
+  })) {
     return;
   }
 
@@ -2592,8 +2710,6 @@ function getDavyMutationBehaviorKey(speciesOrFish) {
       return "siren-pike";
     case "davy-bioluminescent-glass-fangfish":
       return "glass-spitter";
-    case "davy-bioluminescent-cherub-goldfish":
-      return "cherub";
     case "davy-dwarf-hyperfin":
       return "hyperfin";
     default:
@@ -3044,8 +3160,140 @@ function getDavyMutationMotionSpeedMultiplier(fish, species, now = Date.now()) {
   return 1;
 }
 
+function clearProteusZombieAggression(fish, now = Date.now(), options = {}) {
+  if (!fish || !isProteusZombieFish(fish)) return false;
+  const hadAggression = Boolean(fish.zombieAggressionTargetId || Number(fish.zombieAggressionUntil) > now);
+  fish.zombieAggressionTargetId = "";
+  fish.zombieAggressionUntil = 0;
+  fish.zombieAggressionNextBiteAt = 0;
+  if (options.keepCooldown !== true) {
+    fish.zombieAggressionNextAt = now + randomBetween(
+      PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS,
+      PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MAX_MS
+    );
+  }
+  if (fish.activity === "roam") fish.targetAt = Math.min(Number(fish.targetAt) || now, now + 450);
+  return hadAggression;
+}
+
+function getProteusZombieAggressionCandidates(fish) {
+  if (!fish || !Array.isArray(state?.fish)) return [];
+  return state.fish.filter((other) => (
+    other
+    && other.id !== fish.id
+    && !isFishDead(other)
+    && !isProteusZombieFish(other)
+  ));
+}
+
+function updateProteusZombieFishAggression(fish, species, now = Date.now(), deltaSeconds = 0) {
+  if (!fish || !species || !isProteusZombieFish(fish) || isFishDead(fish)) return false;
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    clearProteusZombieAggression(fish, now);
+    return false;
+  }
+  if (Number(fish.satiatedUntil) > now) {
+    clearProteusZombieAggression(fish, now, { keepCooldown: true });
+    fish.zombieAggressionNextAt = Math.max(Number(fish.zombieAggressionNextAt) || 0, Number(fish.satiatedUntil));
+    return false;
+  }
+
+  let target = String(fish.zombieAggressionTargetId || "")
+    ? state.fish.find((other) => other?.id === fish.zombieAggressionTargetId)
+    : null;
+  const aggressionActive = Boolean(
+    target
+    && !isFishDead(target)
+    && Number(fish.zombieAggressionUntil) > now
+  );
+
+  if (!aggressionActive) {
+    if (fish.zombieAggressionTargetId || Number(fish.zombieAggressionUntil) > 0) {
+      clearProteusZombieAggression(fish, now);
+    }
+    if (!(Number(fish.zombieAggressionNextAt) > 0)) {
+      fish.zombieAggressionNextAt = now + randomBetween(
+        PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS,
+        PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MAX_MS
+      );
+      return false;
+    }
+    if (now < Number(fish.zombieAggressionNextAt)) return false;
+    if (Math.random() >= PROTEUS_ZOMBIE_AGGRESSION_TRIGGER_CHANCE) {
+      fish.zombieAggressionNextAt = now + randomBetween(
+        PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS,
+        PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MAX_MS
+      );
+      return false;
+    }
+
+    const candidates = getProteusZombieAggressionCandidates(fish);
+    if (!candidates.length) {
+      fish.zombieAggressionNextAt = now + PROTEUS_ZOMBIE_AGGRESSION_COOLDOWN_MIN_MS;
+      return false;
+    }
+    target = candidates[Math.floor(Math.random() * candidates.length)];
+    fish.zombieAggressionTargetId = target.id;
+    fish.zombieAggressionUntil = now + randomBetween(
+      PROTEUS_ZOMBIE_AGGRESSION_DURATION_MIN_MS,
+      PROTEUS_ZOMBIE_AGGRESSION_DURATION_MAX_MS
+    );
+    fish.zombieAggressionNextBiteAt = now + randomBetween(450, 900);
+  }
+
+  if (!target || isFishDead(target)) {
+    clearProteusZombieAggression(fish, now);
+    return false;
+  }
+
+  clearFishSchoolFollowState(fish);
+  fish.behaviorIntent = null;
+  fish.feedingPelletId = null;
+  fish.hangoutDecorId = null;
+  fish.hangoutZoneType = null;
+  fish.panicUntil = null;
+  fish.panicSpeedBoost = null;
+  if (fish.caveState) abortFishCaveBehavior(fish, now, false);
+  fish.activity = "roam";
+  fish.targetXNorm = clamp(Number(target.xNorm) || 0.5, 0.08, 0.92);
+  fish.targetYNorm = clamp(Number(target.yNorm) || 0.5, 0.14, 0.8);
+  fish.targetAt = now + 220;
+  fish.swimSpeed = normalizeFishSpeed(
+    species,
+    Math.max(Number(species.speedMax) || 0.07, (Number(species.speedMin) || 0.02) * 1.7)
+  );
+
+  const distance = Math.hypot(
+    (Number(target.xNorm) || 0.5) - (Number(fish.xNorm) || 0.5),
+    (Number(target.yNorm) || 0.5) - (Number(fish.yNorm) || 0.5)
+  );
+  if (distance <= 0.07 && now >= (Number(fish.zombieAggressionNextBiteAt) || 0)) {
+    applyFishDamage(
+      target,
+      1,
+      now,
+      `${fish.name} attacked ${target.name}.`,
+      `${target.name} died after an attack by ${fish.name}.`
+    );
+    if (!isFishDead(target) && typeof makeFishScurryFromAttack === "function") {
+      makeFishScurryFromAttack(target, fish, now);
+    }
+    fish.zombieAggressionNextBiteAt = now + randomBetween(
+      PROTEUS_ZOMBIE_AGGRESSION_BITE_MIN_MS,
+      PROTEUS_ZOMBIE_AGGRESSION_BITE_MAX_MS
+    );
+  }
+
+  if (Number(fish.zombieAggressionUntil) <= now || isFishDead(target)) {
+    clearProteusZombieAggression(fish, now);
+    return false;
+  }
+  return true;
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
+    if (typeof pruneDeadFishCorpseMotionStates === "function") pruneDeadFishCorpseMotionStates();
     runtime.fishGravelPebbleActions.clear();
     runtime.fishPebbleTosses = [];
     runtime.forcedGravelDigUntilByFishId.clear();
@@ -3070,16 +3318,18 @@ function updateFishMotion(now, deltaSeconds) {
   const activePiranhaPrey = getActivePiranhaPrey(now);
   let retargetsThisFrame = 0;
   updatePiranhaSwarmTargets(now);
+  if (typeof pruneDeadFishCorpseMotionStates === "function") pruneDeadFishCorpseMotionStates();
 
   for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
     if (!species) {
       continue;
     }
-    if (species.behavior === "sucker") {
+    const fishDead = isFishDead(fish);
+    const effectiveBehavior = fishDead ? species.behavior : getEffectiveFishBehavior(fish, species);
+    if (!fishDead && species.behavior === "sucker") {
       updateSuckerFishFreeSwimState(fish, species, now);
     }
-    const effectiveBehavior = getEffectiveFishBehavior(fish, species);
     const pendingTravel = runtime.pendingNeighborhoodTravel.get(fish.id);
     const pendingTubeTravel = pendingTravel?.mode === "tube";
     const debugCaveTestFish = isDebugCaveTestFish(fish);
@@ -3093,7 +3343,7 @@ function updateFishMotion(now, deltaSeconds) {
     let pelletPose = null;
     let pelletBounds = null;
 
-    if (fish.id === activelyDraggedFishId) {
+    if (!fishDead && fish.id === activelyDraggedFishId) {
       if (isWhaleBreathActive(fish, species)) {
         clearWhaleBreathState(fish, now);
       }
@@ -3115,17 +3365,11 @@ function updateFishMotion(now, deltaSeconds) {
       continue;
     }
 
-    if (isFishDead(fish)) {
+    if (fishDead) {
       clearWhaleBreathState(fish, now, { reschedule: false });
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
-      fish.activity = "dead";
-      fish.feedingPelletId = null;
-      setFishTankLayers(
-        fish,
-        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish),
-        effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish)
-      );
+      enterFishDeadState(fish, now);
       fish.hangoutDecorId = null;
       fish.panicUntil = null;
       fish.panicSpeedBoost = null;
@@ -3142,45 +3386,12 @@ function updateFishMotion(now, deltaSeconds) {
       fish.turnFromAngle = fish.displayAngle;
       fish.turnToAngle = fish.displayAngle;
       fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
-      if (isFishBeingConsumedByPiranhas(fish, now)) {
-        const livingPiranhas = getLivingPiranhaFish();
-        const swarmCenter = livingPiranhas.length
-          ? livingPiranhas.reduce((accumulator, piranha) => ({
-            xNorm: accumulator.xNorm + piranha.xNorm,
-            yNorm: accumulator.yNorm + piranha.yNorm
-          }), { xNorm: 0, yNorm: 0 })
-          : { xNorm: fish.xNorm, yNorm: fish.yNorm };
-        if (livingPiranhas.length) {
-          swarmCenter.xNorm /= livingPiranhas.length;
-          swarmCenter.yNorm /= livingPiranhas.length;
-        }
-
-        fish.xNorm = clamp(
-          fish.xNorm + (swarmCenter.xNorm - fish.xNorm) * Math.min(1, deltaSeconds * 1.6) + Math.sin(now / 360 + fish.phase * Math.PI) * deltaSeconds * 0.005,
-          0.08,
-          0.92
-        );
-        fish.yNorm = clamp(
-          fish.yNorm + (swarmCenter.yNorm - fish.yNorm) * Math.min(1, deltaSeconds * 1.6) + Math.cos(now / 290 + fish.phase * Math.PI * 1.6) * deltaSeconds * 0.004,
-          0.16,
-          0.78
-        );
-        fish.motionLevel = clamp(fish.motionLevel + (0.42 - fish.motionLevel) * Math.min(1, deltaSeconds * 6), 0.12, 0.7);
-        fish.wiggleClock += deltaSeconds * 1.8;
-        continue;
-      }
-
-      const surfaceYNorm = getDeadFishFloatYNorm(fish, species);
-      fish.yNorm = clamp(fish.yNorm + (surfaceYNorm - fish.yNorm) * Math.min(1, deltaSeconds * 1.05), 0.12, 0.8);
-      fish.xNorm = clamp(
-        fish.xNorm + Math.sin(now / 2600 + fish.phase * Math.PI * 2) * deltaSeconds * 0.0036,
-        0.08,
-        0.92
-      );
-      fish.motionLevel = clamp(fish.motionLevel + (0.05 - fish.motionLevel) * Math.min(1, deltaSeconds * 3), 0.02, 0.18);
-      fish.wiggleClock += deltaSeconds * 0.18;
+      updateDeadFishCorpseMotion(fish, species, now, deltaSeconds);
       continue;
     }
+
+    updateProteusZombieFishRegeneration(fish, now);
+    const zombieAggressionOwnsMovement = updateProteusZombieFishAggression(fish, species, now, deltaSeconds);
 
     if (runtime.fishActionMenuFishId === fish.id && updateFishActionMenuHold(fish, species, now, deltaSeconds)) {
       continue;
@@ -3214,7 +3425,7 @@ function updateFishMotion(now, deltaSeconds) {
       fish.motionVelocityYNorm = 0;
     }
 
-    if (!piranhaLockedOnPrey && !breedingRole && isFishCriticallyLowHealth(fish) && fish.activity === "roam" && Math.random() < deltaSeconds * 0.35) {
+    if (!piranhaLockedOnPrey && !zombieAggressionOwnsMovement && !isProteusZombieFish(fish) && !breedingRole && isFishCriticallyLowHealth(fish) && fish.activity === "roam" && Math.random() < deltaSeconds * 0.35) {
       fish.panicUntil = now + randomBetween(1600, 3200);
       fish.panicSpeedBoost = randomBetween(1.45, 2.15);
       fish.targetAt = now;
@@ -3305,7 +3516,7 @@ function updateFishMotion(now, deltaSeconds) {
       fish.hangoutZoneType = null;
       fish.panicUntil = null;
       fish.panicSpeedBoost = null;
-    } else if (piranhaLockedOnPrey) {
+    } else if (piranhaLockedOnPrey || zombieAggressionOwnsMovement) {
       clearFishGravelPebbleAction(fish, species, now, { resetTarget: false });
       clearForcedGravelDigPrompt(fish);
       if (fish.caveState) {
@@ -3455,6 +3666,15 @@ function updateFishMotion(now, deltaSeconds) {
       if (fish.activity === "roam" && !fish.caveState && !breedingRole && !fishActionOwnsMovement && !debugBehaviorOwnsMovement && !diseaseAvoidanceOwnsMovement && !panicOwnsMovement && !pufferInflatedOwnsMovement && !pendingTravel) {
         updateFishSchoolFollowTarget(fish, species, now);
       }
+
+      if (fish.activity === "roam" && !fish.caveState && !breedingRole && !pendingTravel) {
+        applyFishMoodDepthPreference(fish, species, now, {
+          panicOwnsMovement,
+          fishActionOwnsMovement,
+          debugBehaviorOwnsMovement,
+          diseaseAvoidanceOwnsMovement
+        });
+      }
       }
     }
 
@@ -3493,6 +3713,7 @@ function updateFishMotion(now, deltaSeconds) {
       ? getActiveFishActionQueueItem(fish, now)
       : null;
     const isDirectedSwim = panicOwnsMovement
+      || zombieAggressionOwnsMovement
       || pufferInflatedOwnsMovement
       || whaleBreathOwnsMovement
       || fish.activity === "feeding"
@@ -3510,6 +3731,9 @@ function updateFishMotion(now, deltaSeconds) {
         : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
           ? 0.9
           : (isFishCriticallyLowHealth(fish) ? 0.22 : 0.08);
+    if (zombieAggressionOwnsMovement) {
+      motionTarget = Math.max(motionTarget, 0.92);
+    }
     if (pendingTravel) {
       motionTarget = Math.max(motionTarget, 0.58);
     }
@@ -3564,6 +3788,21 @@ function updateFishMotion(now, deltaSeconds) {
           : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
             ? 1.34
             : 1;
+
+      if (fish.activity === "feeding") {
+        // Personality changes how confidently a fish approaches food, never
+        // whether an otherwise healthy hungry fish is allowed to eat it.
+        const feedingPersonality = getFishPersonality(fish);
+        if (feedingPersonality === "greedy") {
+          speedMultiplier *= 1.18;
+        } else if (feedingPersonality === "shy") {
+          speedMultiplier *= 0.82;
+        } else if (feedingPersonality === "nervous") {
+          speedMultiplier *= 0.88;
+        } else if (feedingPersonality === "sensitive") {
+          speedMultiplier *= 0.9;
+        }
+      }
 
       if (Number.isFinite(fish.panicUntil)) {
         if (now < fish.panicUntil) {
@@ -3660,7 +3899,12 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.18, 1.4);
       }
       speedMultiplier *= getFishDiseaseSpeedMultiplier(fish, now);
+      if (typeof getFishConditionSpeedMultiplier === "function") speedMultiplier *= getFishConditionSpeedMultiplier(fish, now);
       speedMultiplier *= getDavyMutationMotionSpeedMultiplier(fish, species, now);
+      // A snail crawls rather than swims. Keep every interaction (including
+      // feeding and collision avoidance) deliberately slow so it never reads
+      // like a fish suddenly darting along the substrate.
+      if (species.behavior === "snail") speedMultiplier *= 0.12;
       if (segmentedTurnaroundActive) {
         speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
       }
@@ -3828,6 +4072,10 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      if (!pendingTravel) {
+        updateFishNavigationProgress(fish, now);
+      }
+
       const freeSwimmingOtocinclus = species.id === "otocinclus"
         && isSuckerFishFreeSwimming(fish, species, now);
       if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
@@ -3870,7 +4118,7 @@ function updateFishMotion(now, deltaSeconds) {
         } else {
           setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
         }
-      } else if (!handledDirectionThisFrame) {
+      } else if (!handledDirectionThisFrame && !pufferInflatedOwnsMovement) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
         const signatureBehaviorFacing = panicOwnsMovement ? null : getFishSignatureBehaviorFacingDirection(fish, species, now);
         const facingDx = fish.activity === "feeding" && pelletPose
@@ -3905,10 +4153,10 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
-    const debugFaceDirectionAtRest = !panicOwnsMovement && !handledDirectionThisFrame
+    const debugFaceDirectionAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
-    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !handledDirectionThisFrame
+    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame
       ? getFishSignatureBehaviorFacingDirection(fish, species, now)
       : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
@@ -3923,6 +4171,7 @@ function updateFishMotion(now, deltaSeconds) {
       fish.activity === "roam" &&
       !fish.caveState &&
       !panicOwnsMovement &&
+      !pufferInflatedOwnsMovement &&
       !handledDirectionThisFrame &&
       !(Number.isFinite(fish.wallAvoidUntil) && now < fish.wallAvoidUntil)
     ) {
@@ -3944,12 +4193,16 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
+    const isSnail = species.behavior === "snail";
+    if (isSnail) motionTarget = Math.min(motionTarget, 0.035);
     fish.motionLevel = clamp(
       fish.motionLevel + (motionTarget - fish.motionLevel) * Math.min(1, deltaSeconds * (isDirectedSwim ? 6.2 : 4.2)),
-      0.04,
-      1
+      isSnail ? 0.01 : 0.04,
+      isSnail ? 0.035 : 1
     );
-    fish.wiggleClock += deltaSeconds * (0.35 + fish.motionLevel * (1.85 + fish.swimSpeed * 18)) * (isFishCriticallyLowHealth(fish) ? 1.22 : 1);
+    fish.wiggleClock += deltaSeconds * (isSnail
+      ? 0.03
+      : (0.35 + fish.motionLevel * (1.85 + fish.swimSpeed * 18)) * (isFishCriticallyLowHealth(fish) ? 1.22 : 1));
 
     if (fish.activity === "feeding" && pellet && pelletPose) {
       const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
@@ -3967,9 +4220,11 @@ function updateFishMotion(now, deltaSeconds) {
         : Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024;
       if (mouthReachedPellet) {
         const diseaseForcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
-        const refusalPrechecked = typeof pellet.refusalPrecheckedFishId === "string" && pellet.refusalPrecheckedFishId === fish.id;
-        if (diseaseForcedRefusal || (!refusalPrechecked && shouldFishRefuseFoodForComfort(fish, pellet.foodKey, now))) {
-          handleFishRefuseFoodPellet(fish, pellet, now);
+        const refusalReason = diseaseForcedRefusal
+          ? "severe sickness"
+          : getFishFoodRefusalReason(fish, pellet.foodKey, now);
+        if (refusalReason) {
+          handleFishRefuseFoodPellet(fish, pellet, now, refusalReason);
           assignFloatingPelletsToHungryFish(now);
           syncFishDrawLayer(fish, species, now);
           continue;
@@ -4113,6 +4368,228 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
   };
 }
 
+function getFishMoodDepthTargetFish(fish, mood, now = Date.now()) {
+  if (!fish || isFishDead(fish) || !Array.isArray(state?.fish)) {
+    return null;
+  }
+
+  const getLivingFish = (id) => {
+    if (!id) return null;
+    const candidate = state.fish.find((entry) => entry?.id === id) || null;
+    return candidate && !isFishDead(candidate) ? candidate : null;
+  };
+  const intent = typeof getFishBehaviorIntent === "function"
+    ? getFishBehaviorIntent(fish, now)
+    : (fish.behaviorIntent || null);
+  const activeAction = typeof getActiveFishActionQueueItem === "function"
+    ? getActiveFishActionQueueItem(fish, now)
+    : null;
+  const steering = runtime?.fishActionSteeringByFishId instanceof Map
+    ? runtime.fishActionSteeringByFishId.get(fish.id)
+    : null;
+
+  for (const id of [intent?.targetId, activeAction?.targetId, steering?.targetFishId, fish.followFishId]) {
+    const candidate = getLivingFish(id);
+    if (candidate) return candidate;
+  }
+
+  if (mood === "Scared" || mood === "Panicked") {
+    const immediateThreat = typeof getFishImmediateFoodThreat === "function"
+      ? getFishImmediateFoodThreat(fish, now)?.fish
+      : null;
+    if (immediateThreat && !isFishDead(immediateThreat)) return immediateThreat;
+    if (typeof getFishActionPartner === "function") {
+      const negative = getFishActionPartner(fish, { preferNegative: true, now });
+      if (negative && !isFishDead(negative)) return negative;
+    }
+    return null;
+  }
+
+  if (mood === "Hostile" && typeof getFishActionPartner === "function") {
+    const rival = getFishActionPartner(fish, { preferNegative: true, now });
+    return rival && !isFishDead(rival) ? rival : null;
+  }
+
+  if (mood === "Social") {
+    const relationships = typeof sanitizeFishRelationships === "function"
+      ? sanitizeFishRelationships(fish.relationships)
+      : (fish.relationships && typeof fish.relationships === "object" ? fish.relationships : {});
+    return state.fish
+      .filter((otherFish) => otherFish && otherFish.id !== fish.id && !isFishDead(otherFish))
+      .filter((otherFish) => (
+        typeof areFishEstablishedFriends === "function"
+          ? areFishEstablishedFriends(fish, otherFish)
+          : relationships[otherFish.id]?.kind === "friend"
+      ))
+      .sort((left, right) => (
+        Math.hypot((left.xNorm || 0.5) - (fish.xNorm || 0.5), (left.yNorm || 0.5) - (fish.yNorm || 0.5))
+        - Math.hypot((right.xNorm || 0.5) - (fish.xNorm || 0.5), (right.yNorm || 0.5) - (fish.yNorm || 0.5))
+      ))[0] || null;
+  }
+
+  return null;
+}
+
+function getFishSocialCompanionDepthSubLayer(fish, companion) {
+  const companionSubLayer = getFishTankSubLayer(companion);
+  const currentSubLayer = getFishTankSubLayer(fish);
+  if (Math.abs(currentSubLayer - companionSubLayer) === 1) {
+    return currentSubLayer;
+  }
+  if (companionSubLayer === TANK_SUBLAYER_FRONT) return TANK_SUBLAYER_MIDDLE;
+  if (companionSubLayer === TANK_SUBLAYER_BACK) return TANK_SUBLAYER_MIDDLE;
+  return String(fish?.id || "").localeCompare(String(companion?.id || "")) <= 0
+    ? TANK_SUBLAYER_FRONT
+    : TANK_SUBLAYER_BACK;
+}
+
+function getFishMoodDepthPreference(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || isFishDead(fish) || fish.caveState || getEffectiveFishBehavior(fish, species) === "sucker") {
+    return null;
+  }
+  const disposition = typeof getFishDisposition === "function" ? getFishDisposition(fish, now) : { mood: "Happy" };
+  const mood = String(disposition?.mood || "Happy");
+  const currentLayer = getFishTankLayer(fish);
+  const currentSubLayer = getFishTankSubLayer(fish);
+  const desiredLayer = getDesiredFishTankLayer(fish);
+  const targetFish = getFishMoodDepthTargetFish(fish, mood, now);
+
+  if (mood === "Panicked") {
+    const currentIndex = getFishTankDepthIndex(fish);
+    const threatIndex = targetFish ? getFishTankDepthIndex(targetFish) : null;
+    const candidates = [currentIndex - 1, currentIndex + 1]
+      .filter((index) => index >= 0 && index < TANK_DEPTH_POSITIONS)
+      .map((index) => getTankDepthPositionFromIndex(index))
+      .filter((position) => (
+        typeof canFishChangeToDepthPosition !== "function"
+        || canFishChangeToDepthPosition(fish, species, now, position)
+      ));
+    if (!candidates.length) return null;
+    candidates.sort((left, right) => {
+      const leftThreatDistance = threatIndex == null ? 0 : Math.abs(left.index - threatIndex);
+      const rightThreatDistance = threatIndex == null ? 0 : Math.abs(right.index - threatIndex);
+      if (leftThreatDistance !== rightThreatDistance) return rightThreatDistance - leftThreatDistance;
+      const leftBackBias = left.subLayer === TANK_SUBLAYER_BACK ? 1 : 0;
+      const rightBackBias = right.subLayer === TANK_SUBLAYER_BACK ? 1 : 0;
+      if (leftBackBias !== rightBackBias) return rightBackBias - leftBackBias;
+      return Math.abs(left.index - currentIndex) - Math.abs(right.index - currentIndex);
+    });
+    return { ...candidates[0], mood, reason: "panic-escape" };
+  }
+
+  if (mood === "Hostile" && targetFish) {
+    return {
+      layer: getFishTankLayer(targetFish),
+      subLayer: getFishSocialCompanionDepthSubLayer(fish, targetFish),
+      mood,
+      reason: "hostile-target"
+    };
+  }
+
+  if (mood === "Social" && targetFish) {
+    return {
+      layer: getFishTankLayer(targetFish),
+      subLayer: getFishSocialCompanionDepthSubLayer(fish, targetFish),
+      mood,
+      reason: "social-companion"
+    };
+  }
+
+  if (mood === "Scared") {
+    return {
+      layer: currentLayer,
+      subLayer: TANK_SUBLAYER_BACK,
+      mood,
+      reason: "protected-depth"
+    };
+  }
+
+  if (mood === "Cozy") {
+    const sheltered = Boolean(fish.hangoutDecorId || fish.favoriteSpot || options.sheltered);
+    return {
+      layer: desiredLayer,
+      subLayer: sheltered || Math.random() < 0.72 ? TANK_SUBLAYER_BACK : TANK_SUBLAYER_MIDDLE,
+      mood,
+      reason: sheltered ? "cozy-shelter" : "cozy-depth"
+    };
+  }
+
+  if (mood === "Curious") {
+    return {
+      layer: desiredLayer,
+      subLayer: Math.random() < 0.76 ? TANK_SUBLAYER_FRONT : TANK_SUBLAYER_MIDDLE,
+      mood,
+      reason: "curious-front"
+    };
+  }
+
+  return null;
+}
+
+function applyFishMoodDepthPreference(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || isFishDead(fish) || fish.activity !== "roam" || fish.caveState || getEffectiveFishBehavior(fish, species) === "sucker") {
+    return false;
+  }
+  const disposition = typeof getFishDisposition === "function" ? getFishDisposition(fish, now) : { mood: "Happy" };
+  const mood = String(disposition?.mood || "Happy");
+  const activelySchoolFollowing = Boolean(
+    fish.followFishId
+    && Number.isFinite(Number(fish.followUntil))
+    && Number(fish.followUntil) > now
+  );
+  if (activelySchoolFollowing && ["Cozy", "Curious", "Social"].includes(mood)) {
+    return false;
+  }
+  if (typeof getActiveFishCollisionAvoidance === "function" && getActiveFishCollisionAvoidance(fish, now)) {
+    return false;
+  }
+  if (!["Scared", "Panicked", "Cozy", "Curious", "Social", "Hostile"].includes(mood)) {
+    return false;
+  }
+
+  const memory = typeof getFishNavigationMemory === "function" ? getFishNavigationMemory(fish, now, true) : null;
+  const refreshMs = mood === "Panicked" ? 180 : mood === "Scared" || mood === "Hostile" ? 420 : mood === "Social" ? 700 : 1100;
+  if (memory && memory.moodDepthMood === mood && Number(memory.moodDepthNextAt) > now) {
+    return false;
+  }
+
+  const preference = getFishMoodDepthPreference(fish, species, now, options);
+  if (memory) {
+    memory.moodDepthMood = mood;
+    memory.moodDepthNextAt = now + refreshMs;
+    memory.moodDepthReason = preference?.reason || null;
+  }
+  if (!preference) return false;
+
+  const targetLayer = clampTankLayer(preference.layer);
+  const targetSubLayer = clampTankSubLayer(preference.subLayer);
+  const currentIndex = getFishTankDepthIndex(fish);
+  const targetIndex = getTankDepthPositionIndex(targetLayer, targetSubLayer);
+  if (targetIndex === currentIndex && getDesiredFishTankDepthIndex(fish) === targetIndex) {
+    return false;
+  }
+
+  if (mood !== "Panicked") {
+    const nextPosition = getAdjacentTankDepthPosition(
+      getFishTankLayer(fish),
+      getFishTankSubLayer(fish),
+      targetLayer,
+      targetSubLayer
+    );
+    if (
+      nextPosition.index !== currentIndex
+      && typeof canFishChangeToDepthPosition === "function"
+      && !canFishChangeToDepthPosition(fish, species, now, nextPosition)
+    ) {
+      return false;
+    }
+  }
+
+  setFishDesiredTankLayer(fish, targetLayer);
+  setFishDesiredTankSubLayer(fish, targetSubLayer);
+  return true;
+}
+
 function assignSpeciesRoamTarget(fish, species, now) {
   fish.behaviorIntent = null;
   const profile = getFishLocomotionProfile(fish || species);
@@ -4151,6 +4628,45 @@ function assignSpeciesRoamTarget(fish, species, now) {
   fish.swimSpeed = isFishCriticallyLowHealth(fish)
     ? normalizeFishSpeed(species, randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax))
     : (hoverTarget?.speed || getFishProfileRoamSpeed(species, profile, { dart: isDart }));
+}
+
+function assignGobyPistolSharedBurrowTarget(fish, species, now) {
+  const speciesId = String(species?.id || fish?.speciesId || "");
+  const partnerSpeciesId = speciesId === "yellow-watchman-goby"
+    ? "pistol-shrimp"
+    : (speciesId === "pistol-shrimp" ? "yellow-watchman-goby" : "");
+  if (!partnerSpeciesId) return false;
+  const partner = (typeof getAllTankFish === "function" ? getAllTankFish(state) : [])
+    .find((entry) => entry && !isFishDead(entry) && entry.speciesId === partnerSpeciesId);
+  if (!partner) return false;
+
+  // A goby and pistol shrimp should visibly use the same burrow. Once either
+  // has selected a cave or hardscape hangout, the other returns to that exact
+  // area instead of merely becoming an invisible relationship record.
+  if (partner.hangoutDecorId || Math.hypot((partner.xNorm || 0.5) - (fish.xNorm || 0.5), (partner.yNorm || 0.75) - (fish.yNorm || 0.75)) < 0.42) {
+    const placement = clampFishPlacement(
+      clamp((partner.targetXNorm ?? partner.xNorm) + randomBetween(-0.035, 0.035), 0.08, 0.92),
+      clamp((partner.targetYNorm ?? partner.yNorm) + randomBetween(-0.025, 0.025), 0.68, 0.82),
+      species,
+      { fish, layer: getFishTankLayer(partner) }
+    );
+    fish.targetXNorm = placement.xNorm;
+    fish.targetYNorm = placement.yNorm;
+    fish.targetAt = now + randomBetween(3600, 6800);
+    setFishDesiredTankLayer(fish, getFishTankLayer(partner));
+    fish.hangoutDecorId = partner.hangoutDecorId || null;
+    fish.hangoutZoneType = partner.hangoutZoneType || "shared-burrow";
+    fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
+    setFishBehaviorIntent(fish, "shared burrow", "host bond", now, { targetId: partner.id, targetName: partner.name });
+    return true;
+  }
+
+  const cavePlan = pickCaveEntryBehavior(species, fish, now);
+  if (!cavePlan) return false;
+  setFishBehaviorIntent(fish, "shared burrow", "host bond", now, { targetId: partner.id, targetName: partner.name });
+  beginFishCaveBehavior(fish, cavePlan, now);
+  fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
+  return true;
 }
 
 function assignSwimTarget(fish, species, now) {
@@ -4339,6 +4855,10 @@ function assignSwimTarget(fish, species, now) {
     }
   }
 
+  if (assignGobyPistolSharedBurrowTarget(fish, species, now)) {
+    return;
+  }
+
   const hangout = pickDecorHangoutTarget(species, fish, now);
   if (hangout) {
     fish.targetXNorm = hangout.xNorm;
@@ -4367,6 +4887,7 @@ function assignSwimTarget(fish, species, now) {
     fish.targetYNorm = socialFollow.yNorm;
     fish.targetAt = now + socialFollow.lingerMs;
     setFishDesiredTankLayer(fish, socialFollow.targetLayer);
+    setFishDesiredTankSubLayer(fish, socialFollow.targetSubLayer);
     fish.hangoutDecorId = null;
     fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
     return;

@@ -1,0 +1,84 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "e3e1c7c4-7371-45bc-a5e1-dd194d44cab5",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "ac974741-18aa-43c6-afaf-398a0d1dca4e",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_cobra.png"
+        },
+        {
+          "id": "96826723-2a07-4d67-bbb1-0fb54d875468",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_full_red.png"
+        },
+        {
+          "id": "5c6d9805-7be4-466a-b733-859cdb29c41b",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_mosaic.png"
+        },
+        {
+          "id": "c0ea0fea-7264-4ffd-babd-d3c67d655bcf",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_moscow_blue.png"
+        },
+        {
+          "id": "fcd67a1b-de3b-4246-9b09-a56e6565959d",
+          "width": 64,
+          "height": 48,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "guppy_tuxedo.png"
+        }
+      ]
+    }
+  ],
+  "smallFishGeneration": {
+    "longestSide": 64,
+    "source": "assets/fish/guppy__genetics-natural.webp"
+  }
+}

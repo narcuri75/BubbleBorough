@@ -1,6 +1,42 @@
 // Source fragment: audio/system.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getTankAmbienceVolumeMultiplier() {
+  return normalizeSettingsVolume(getUiSettings()?.tankAmbienceVolume, DEFAULT_UI_SETTINGS.tankAmbienceVolume);
+}
+
+function getTankAmbienceTargetVolume() {
+  return clamp(AMBIENCE_AUDIO_VOLUME * getTankAmbienceVolumeMultiplier(), 0, 1);
+}
+
+function getSoundEffectCategoryVolumeMultiplier(category = "sfx") {
+  const uiSettings = getUiSettings();
+  if (category === "ui") {
+    return normalizeSettingsVolume(uiSettings?.uiSoundVolume, DEFAULT_UI_SETTINGS.uiSoundVolume);
+  }
+  return normalizeSettingsVolume(uiSettings?.sfxVolume, DEFAULT_UI_SETTINGS.sfxVolume);
+}
+
+function syncActiveSoundEffectVolumes(category = "") {
+  for (const audio of runtime.activeSoundEffects || []) {
+    if (!audio) continue;
+    const audioCategory = audio.__bbSoundEffectCategory || "sfx";
+    if (category && audioCategory !== category) continue;
+    const baseVolume = clamp(Number(audio.__bbSoundEffectBaseVolume) || SOUND_EFFECT_VOLUME, 0, 1);
+    const gain = Math.max(0, Number(audio.__bbSoundEffectGain) || 1);
+    const categoryVolume = getSoundEffectCategoryVolumeMultiplier(audioCategory);
+    const requestedVolume = baseVolume * categoryVolume;
+    const gainApplied = audio.__bbSoundEffectGainApplied === true;
+    const uiSettings = getUiSettings();
+    const muted = requestedVolume <= 0
+      || uiSettings.soundMuted
+      || (audioCategory === "ui" && uiSettings.uiSoundsMuted);
+    syncAudioElementMutedState(audio, muted, {
+      volumeWhenUnmuted: gainApplied ? requestedVolume : clamp(requestedVolume * gain, 0, 1)
+    });
+  }
+}
+
 function createAmbienceAudioChannel() {
   const audio = new Audio(resolveAppUrl(AMBIENCE_AUDIO_PATH));
   audio.loop = false;
@@ -84,7 +120,9 @@ function fadeAmbienceAudioIn(audio) {
 
   stopAmbienceAudioFade();
   const startedAt = performance.now();
-  audio.volume = 0;
+  const targetVolume = getTankAmbienceTargetVolume();
+  const startVolume = clamp(Number(audio.volume) || 0, 0, targetVolume);
+  audio.volume = startVolume;
 
   const step = (timestamp) => {
     if (!state || getUiSettings().soundMuted || isWallpaperEnginePauseActive() || audio.paused) {
@@ -94,14 +132,14 @@ function fadeAmbienceAudioIn(audio) {
 
     const elapsed = Math.max(0, timestamp - startedAt);
     const progress = Math.min(1, elapsed / AMBIENCE_AUDIO_FADE_IN_MS);
-    audio.volume = AMBIENCE_AUDIO_VOLUME * progress;
+    audio.volume = startVolume + ((targetVolume - startVolume) * progress);
 
     if (progress < 1) {
       runtime.ambienceAudioFadeFrame = window.requestAnimationFrame(step);
       return;
     }
 
-    audio.volume = AMBIENCE_AUDIO_VOLUME;
+    audio.volume = targetVolume;
     runtime.ambienceAudioFadeFrame = 0;
   };
 
@@ -114,8 +152,9 @@ function beginAmbienceAudioCrossfade(fromAudio, toAudio, toIndex, options = {}) 
 
   const durationMs = options.force ? Math.min(650, AMBIENCE_AUDIO_CROSSFADE_MS) : AMBIENCE_AUDIO_CROSSFADE_MS;
   const startedAt = performance.now();
+  const targetVolume = getTankAmbienceTargetVolume();
   const fromStartVolume = fromAudio && !fromAudio.paused
-    ? clamp(Number(fromAudio.volume) || AMBIENCE_AUDIO_VOLUME, 0, AMBIENCE_AUDIO_VOLUME)
+    ? clamp(Number(fromAudio.volume) || targetVolume, 0, Math.max(targetVolume, Number(fromAudio.volume) || 0))
     : 0;
 
   runtime.ambienceAudioActiveIndex = toIndex;
@@ -136,7 +175,7 @@ function beginAmbienceAudioCrossfade(fromAudio, toAudio, toIndex, options = {}) 
     if (fromAudio && !fromAudio.paused) {
       fromAudio.volume = fromStartVolume * (1 - eased);
     }
-    toAudio.volume = AMBIENCE_AUDIO_VOLUME * eased;
+    toAudio.volume = targetVolume * eased;
 
     if (progress < 1) {
       runtime.ambienceAudioCrossfadeFrame = window.requestAnimationFrame(step);
@@ -144,7 +183,7 @@ function beginAmbienceAudioCrossfade(fromAudio, toAudio, toIndex, options = {}) 
     }
 
     resetAmbienceAudioChannel(fromAudio);
-    toAudio.volume = AMBIENCE_AUDIO_VOLUME;
+    toAudio.volume = targetVolume;
     runtime.ambienceAudioCrossfadeFrame = 0;
     runtime.ambienceAudioCrossfade = null;
   };
@@ -153,7 +192,7 @@ function beginAmbienceAudioCrossfade(fromAudio, toAudio, toIndex, options = {}) 
 }
 
 function restartAmbienceAudioLoop(audio = getAmbienceAudio(), options = {}) {
-  if (!audio || getUiSettings().soundMuted || isWallpaperEnginePauseActive() || isAmbienceAudioCrossfadeActive()) {
+  if (!audio || getUiSettings().soundMuted || getTankAmbienceTargetVolume() <= 0 || isWallpaperEnginePauseActive() || isAmbienceAudioCrossfadeActive()) {
     return;
   }
 
@@ -207,7 +246,7 @@ function restartAmbienceAudioLoop(audio = getAmbienceAudio(), options = {}) {
 }
 
 function handleAmbienceAudioEnded(audio) {
-  if (getUiSettings().soundMuted || isWallpaperEnginePauseActive()) {
+  if (getUiSettings().soundMuted || getTankAmbienceTargetVolume() <= 0 || isWallpaperEnginePauseActive()) {
     return;
   }
 
@@ -226,6 +265,7 @@ function updateAmbienceAudioLoop() {
     !audio
     || audio.paused
     || getUiSettings().soundMuted
+    || getTankAmbienceTargetVolume() <= 0
     || isAmbienceAudioCrossfadeActive()
     || !Number.isFinite(audio.duration)
     || audio.duration <= AMBIENCE_AUDIO_LOOP_END_PADDING_SECONDS + 0.25
@@ -307,12 +347,13 @@ function syncAmbienceAudio() {
   }
 
   const uiSettings = getUiSettings();
+  const targetVolume = getTankAmbienceTargetVolume();
   const shouldWaitForLoadingOverlay = Boolean(
     dom.loadingOverlay
     && !dom.loadingOverlay.hidden
     && !dom.loadingOverlay.classList.contains("is-hiding")
   );
-  const shouldSilence = uiSettings.soundMuted || isWallpaperEnginePauseActive() || shouldWaitForLoadingOverlay;
+  const shouldSilence = uiSettings.soundMuted || targetVolume <= 0 || isWallpaperEnginePauseActive() || shouldWaitForLoadingOverlay;
   for (const channel of channels) {
     channel.loop = false;
   }
@@ -329,7 +370,7 @@ function syncAmbienceAudio() {
 
   for (const channel of channels) {
     syncAudioElementMutedState(channel, false, {
-      volumeWhenUnmuted: channel === audio ? Math.min(AMBIENCE_AUDIO_VOLUME, Math.max(0, Number(channel.volume) || 0)) : 0
+      volumeWhenUnmuted: channel === audio ? Math.min(targetVolume, Math.max(0, Number(channel.volume) || 0)) : 0
     });
     if (channel !== audio && !isAmbienceAudioCrossfadeActive()) {
       resetAmbienceAudioChannel(channel);
@@ -338,7 +379,7 @@ function syncAmbienceAudio() {
 
   if (!audio.paused) {
     clearAmbienceAudioResumeListeners();
-    if (!runtime.ambienceAudioFadeFrame && !isAmbienceAudioCrossfadeActive() && audio.volume < AMBIENCE_AUDIO_VOLUME) {
+    if (!runtime.ambienceAudioFadeFrame && !isAmbienceAudioCrossfadeActive() && audio.volume < targetVolume) {
       fadeAmbienceAudioIn(audio);
     }
     return;
@@ -549,7 +590,7 @@ function primeSoundEffectAudio(audio) {
             console.debug("Sound effect prime cleanup skipped.", error);
           }
           runtime.activeSoundEffects.delete(audio);
-          audio.volume = getUiSettings().soundMuted ? 0 : SOUND_EFFECT_VOLUME;
+          audio.volume = getUiSettings().soundMuted ? 0 : SOUND_EFFECT_VOLUME * getSoundEffectCategoryVolumeMultiplier("sfx");
         })
         .catch((error) => {
           runtime.activeSoundEffects.delete(audio);
@@ -581,7 +622,7 @@ function primeSoundEffectAudio(audio) {
     console.debug("Sound effect prime cleanup skipped.", error);
   }
   runtime.activeSoundEffects.delete(audio);
-  audio.volume = getUiSettings().soundMuted ? 0 : SOUND_EFFECT_VOLUME;
+  audio.volume = getUiSettings().soundMuted ? 0 : SOUND_EFFECT_VOLUME * getSoundEffectCategoryVolumeMultiplier("sfx");
 }
 
 function primeSoundEffects() {
@@ -600,7 +641,16 @@ function primeSoundEffects() {
 }
 
 function playSoundEffect(pathOrPaths, options = {}) {
-  if (isWallpaperEnginePauseActive() || getUiSettings().soundMuted || typeof Audio !== "function") {
+  const uiSettings = getUiSettings();
+  const category = options.category === "ui" ? "ui" : "sfx";
+  const categoryVolume = getSoundEffectCategoryVolumeMultiplier(category);
+  if (
+    isWallpaperEnginePauseActive()
+    || uiSettings.soundMuted
+    || (category === "ui" && uiSettings.uiSoundsMuted)
+    || categoryVolume <= 0
+    || typeof Audio !== "function"
+  ) {
     return null;
   }
 
@@ -609,12 +659,16 @@ function playSoundEffect(pathOrPaths, options = {}) {
     return null;
   }
 
-  const volume = Math.max(0, Math.min(1, Number(options.volume) || SOUND_EFFECT_VOLUME));
+  const baseVolume = Math.max(0, Math.min(1, Number(options.volume) || SOUND_EFFECT_VOLUME));
+  const volume = baseVolume * categoryVolume;
   const gain = Math.max(0, Number(options.gain) || 1);
   const audio = getNextSoundEffectAudio(path);
   if (!audio) {
     return null;
   }
+  audio.__bbSoundEffectCategory = category;
+  audio.__bbSoundEffectBaseVolume = baseVolume;
+  audio.__bbSoundEffectGain = gain;
 
   try {
     audio.pause();
@@ -623,6 +677,7 @@ function playSoundEffect(pathOrPaths, options = {}) {
     console.debug("Sound effect reset skipped.", error);
   }
   const gainApplied = setSoundEffectOutputGain(audio, gain);
+  audio.__bbSoundEffectGainApplied = gainApplied;
   const fallbackVolume = Math.max(0, Math.min(1, volume * gain));
   syncAudioElementMutedState(audio, false, { volumeWhenUnmuted: gainApplied ? volume : fallbackVolume });
   runtime.activeSoundEffects.add(audio);
@@ -650,14 +705,14 @@ function playSoundEffect(pathOrPaths, options = {}) {
 
 function areUiSoundsMuted() {
   const uiSettings = getUiSettings();
-  return uiSettings.soundMuted || uiSettings.uiSoundsMuted;
+  return uiSettings.soundMuted || uiSettings.uiSoundsMuted || getSoundEffectCategoryVolumeMultiplier("ui") <= 0;
 }
 
 function playUiSoundEffect(pathOrPaths, options = {}) {
   if (areUiSoundsMuted()) {
     return null;
   }
-  return playSoundEffect(pathOrPaths, options);
+  return playSoundEffect(pathOrPaths, { ...options, category: "ui" });
 }
 
 function stopActiveSoundEffects() {
@@ -710,6 +765,7 @@ function syncSubmarineSonarSound(submarine = getSubmarine()) {
     submarine?.mission
     && isSubmarineAutopilotEnabled(submarine)
     && !getUiSettings().soundMuted
+    && getSoundEffectCategoryVolumeMultiplier("sfx") > 0
     && !isWallpaperEnginePauseActive()
   );
   if (!shouldPlay) {
@@ -722,7 +778,7 @@ function syncSubmarineSonarSound(submarine = getSubmarine()) {
     return false;
   }
   audio.loop = true;
-  syncAudioElementMutedState(audio, false, { volumeWhenUnmuted: SUBMARINE_SONAR_SOUND_VOLUME });
+  syncAudioElementMutedState(audio, false, { volumeWhenUnmuted: SUBMARINE_SONAR_SOUND_VOLUME * getSoundEffectCategoryVolumeMultiplier("sfx") });
   if (!audio.paused) {
     runtime.activeSoundEffects.add(audio);
     return true;
@@ -784,11 +840,11 @@ function playRegularButtonSoundEffect() {
 }
 
 function playPurchaseSoundEffect() {
-  playUiSoundEffect(PURCHASE_SOUND_PATH, { volume: 0.66 });
+  playSoundEffect(PURCHASE_SOUND_PATH, { volume: 0.66 });
 }
 
 function playCoinSoundEffect() {
-  playUiSoundEffect(COIN_SOUND_PATH, { volume: 0.66 });
+  playSoundEffect(COIN_SOUND_PATH, { volume: 0.66 });
 }
 
 function getEnabledSoundActionTarget(event, selector) {
@@ -1011,9 +1067,9 @@ function getToolbarButtonControlState(button) {
     case "careTaskPaneButton":
       return getUiSettings().careTaskPaneOpen === true;
     case "careMenuButton":
-      return runtime.toolbarActionMenu === "care";
+      return runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
     case "editMenuButton":
-      return runtime.toolbarActionMenu === "edit";
+      return runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode;
     case "openEquipmentButton":
       return runtime.equipmentOverlayOpen;
     case "openSettingsButton":
@@ -1022,16 +1078,6 @@ function getToolbarButtonControlState(button) {
       return runtime.debugSidebarOpen;
     case "feedButton":
       return runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey);
-    case "medicineButton":
-      return runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey);
-    case "spongeButton":
-      return runtime.cleaningMode;
-    case "scoopButton":
-      return runtime.scoopMode;
-    case "fishEditModeDockButton":
-      return runtime.fishEditMode;
-    case "editModeDockButton":
-      return runtime.editTankMode;
     default:
       return false;
   }

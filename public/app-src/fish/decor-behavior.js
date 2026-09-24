@@ -302,6 +302,7 @@ function getDecorHangoutZonesCacheKey() {
       Number(item.xNorm).toFixed(4),
       Number(item.yNorm).toFixed(4),
       Number(item.scale).toFixed(4),
+      item.active === false ? "inactive" : "active",
       getDecorTankLayer(item)
     ].join("|"))
     .join("::");
@@ -323,6 +324,7 @@ function buildDecorHangoutZones() {
   const zones = [];
 
   for (const item of state.placedDecor) {
+    if (typeof isPlacedDecorFunctionallyActive === "function" && !isPlacedDecorFunctionallyActive(item, getCurrentTank())) continue;
     const bounds = getPlacedDecorBounds(item);
     if (!bounds) {
       continue;
@@ -906,6 +908,16 @@ function materializeCoarseFishActivities(targetTank = getCurrentTank(), now = Da
   }
   let changed = false;
   for (const fish of targetTank.fish) {
+    // Dead Fish Phase 19: renderer changes must never materialize a stale living
+    // coarse-activity route onto a corpse. Older/edge-case state can still carry
+    // one, so discard it without touching corpse position, depth, or stage.
+    if (isFishDead(fish)) {
+      if (fish?.coarseActivity) {
+        fish.coarseActivity = null;
+        changed = true;
+      }
+      continue;
+    }
     if (!fish?.coarseActivity) {
       continue;
     }

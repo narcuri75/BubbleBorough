@@ -152,9 +152,12 @@ function openSettingsOverlay() {
   return openWebSurfSettingsPage();
 }
 
-function closeSettingsOverlay() {
+function closeSettingsOverlay(options = {}) {
   const tutorialChanged = finishTutorialFeatureStep(TUTORIAL_FEATURE_SETTINGS);
   if (tutorialChanged) saveState();
+  if (options.closeWebSurf === true) {
+    return closeStoreOverlay({ force: true });
+  }
   return closeWebSurfSettingsPage({ removeTab: true });
 }
 
@@ -994,6 +997,15 @@ function canScrollElement(element, deltaY) {
     return false;
   }
 
+  // A tall child is not necessarily a scroll container. Proteus, in
+  // particular, has cropped media and cards whose scrollHeight exceeds their
+  // box while overflow remains hidden. Treating those as scrollable traps the
+  // wheel over the card instead of allowing its page scroller to handle it.
+  const overflowY = window.getComputedStyle(element).overflowY;
+  if (overflowY !== "auto" && overflowY !== "scroll" && overflowY !== "overlay") {
+    return false;
+  }
+
   const maxScroll = element.scrollHeight - element.clientHeight;
   if (maxScroll <= 1) {
     return false;
@@ -1027,6 +1039,16 @@ function handleOverlayWheelScroll(event) {
     return;
   }
 
+  // Proteus owns a single, ordinary vertical scroller. Let the browser handle
+  // its wheel and trackpad input directly so momentum, acceleration, and large
+  // deltas are preserved instead of replaying every tick through scrollTop.
+  const proteusScroller = event.target instanceof Element
+    ? event.target.closest(".proteus-biodyne-scroll")
+    : null;
+  if (proteusScroller && root.contains(proteusScroller)) {
+    return;
+  }
+
   const { x, y } = getWheelDeltaPixels(event);
   const delta = Math.abs(y) >= Math.abs(x) ? y : x;
   if (!delta) {
@@ -1051,6 +1073,8 @@ function getActiveStoreScroller() {
     case "pharmacy":
       return dom.pharmacyShop;
     case "fish":
+      return dom.fishShop;
+    case "cleanup":
       return dom.fishShop;
     case "decor":
       return dom.decorShop;

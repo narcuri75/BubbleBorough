@@ -1,0 +1,80 @@
+{
+  "version": 2,
+  "columns": 3,
+  "negativeSpacingEnabled": false,
+  "backgroundColor": "transparent",
+  "manualCellSizeEnabled": false,
+  "manualCellWidth": 64,
+  "manualCellHeight": 64,
+  "hueShift": 0,
+  "saturationShift": 0,
+  "brightnessShift": 0,
+  "contrastShift": 0,
+  "sepiaAmount": 0,
+  "invertEnabled": false,
+  "layers": [
+    {
+      "id": "abe928d8-725c-4a90-9cb1-fb7ef1568746",
+      "name": "Base",
+      "visible": true,
+      "locked": false,
+      "sprites": [
+        {
+          "id": "6fefeb32-ba2d-4aa7-8792-665b50a74246",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "endler_black_bar.png"
+        },
+        {
+          "id": "213fbeca-f576-4564-ae10-f6634d97a3ff",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "endler_el_silverado.png"
+        },
+        {
+          "id": "6ddd5401-3bee-4886-a434-2b374013e1fd",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "endler_lime_green.png"
+        },
+        {
+          "id": "0fe5a30e-5592-4d29-9f56-cd1a9fa030d5",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "endler_peacock.png"
+        },
+        {
+          "id": "ab308619-9054-4195-9ee7-44d763615f71",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "endler_tiger.png"
+        }
+      ]
+    }
+  ]
+}

@@ -339,9 +339,9 @@ function sanitizePellet(pellet) {
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
-  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating);
+  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating || pellet.foodKey === "fishFlakes");
   const yNorm = surfaceFloating
-    ? clamp(Number(pellet.yNorm) || WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24)
+    ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
     : settled
     ? floorYNorm
     : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);

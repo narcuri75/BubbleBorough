@@ -331,8 +331,9 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   }
 
   const floorYNorm = getPelletFloorYNormAtX(pellet.xNorm);
-  if (pellet.surfaceFloating) {
-    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24);
+  if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
+    pellet.surfaceFloating = true;
+    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24);
     if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
       pellet.yNorm = surfaceYNorm;
       return true;
@@ -411,7 +412,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
   // A hand-fed click chooses the horizontal spot, not an underwater launch
   // point. Food enters at the surface and then follows its own sink/float
   // behavior; only equipment drops provide an explicit start position.
-  const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.035 : 0.055);
+  const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.012 : 0.055);
   const dropYNorm = hasCustomDropStart
     ? clamp(Number(yNorm), 0.09, 0.9)
     : clamp(surfaceYNorm, 0.09, 0.24);

@@ -45508,9 +45508,9 @@ function sanitizePellet(pellet) {
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
-  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating);
+  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating || pellet.foodKey === "fishFlakes");
   const yNorm = surfaceFloating
-    ? clamp(Number(pellet.yNorm) || WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24)
+    ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
     : settled
     ? floorYNorm
     : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);
@@ -52084,8 +52084,9 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   }
 
   const floorYNorm = getPelletFloorYNormAtX(pellet.xNorm);
-  if (pellet.surfaceFloating) {
-    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24);
+  if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
+    pellet.surfaceFloating = true;
+    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24);
     if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
       pellet.yNorm = surfaceYNorm;
       return true;
@@ -52164,7 +52165,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
   // A hand-fed click chooses the horizontal spot, not an underwater launch
   // point. Food enters at the surface and then follows its own sink/float
   // behavior; only equipment drops provide an explicit start position.
-  const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.035 : 0.055);
+  const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.012 : 0.055);
   const dropYNorm = hasCustomDropStart
     ? clamp(Number(yNorm), 0.09, 0.9)
     : clamp(surfaceYNorm, 0.09, 0.24);
@@ -93517,7 +93518,7 @@ function drawFoodSpritePiece(x, y, pellet, spritePath, now = Date.now()) {
   tankContext.scale(1, renderScaleY);
   const lifetime = Math.max(1, Number(pellet?.expiresAt) - Number(pellet?.createdAt));
   const remaining = clamp((Number(pellet?.expiresAt) - now) / lifetime, 0, 1);
-  tankContext.globalAlpha = pellet?.surfaceFloating ? 0.96 * Math.min(1, remaining * 18) : 0.96;
+  tankContext.globalAlpha = (pellet?.surfaceFloating || pellet?.foodKey === "fishFlakes") ? 0.96 * Math.min(1, remaining * 18) : 0.96;
   tankContext.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   tankContext.restore();
   return true;
@@ -100946,11 +100947,12 @@ function getPelletPose(pellet, now) {
     0.18,
     0.96
   );
-  if (pellet.surfaceFloating) {
+  if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
+    pellet.surfaceFloating = true;
     const phase = (Number(pellet.sway) || 0) * Math.PI * 2;
     return {
       xNorm: clamp((Number(pellet.xNorm) || 0.5) + Math.sin(now / 2200 + phase) * 0.0025, 0.08, 0.92),
-      yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035 + Math.sin(now / 1100 + phase) * 0.002, 0.09, 0.24)
+      yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012 + Math.sin(now / 1100 + phase) * 0.001, 0.09, 0.24)
     };
   }
   if (pellet.settled) {

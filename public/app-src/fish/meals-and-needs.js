@@ -265,11 +265,12 @@ function getPelletPose(pellet, now) {
     0.18,
     0.96
   );
-  if (pellet.surfaceFloating) {
+  if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
+    pellet.surfaceFloating = true;
     const phase = (Number(pellet.sway) || 0) * Math.PI * 2;
     return {
       xNorm: clamp((Number(pellet.xNorm) || 0.5) + Math.sin(now / 2200 + phase) * 0.0025, 0.08, 0.92),
-      yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035 + Math.sin(now / 1100 + phase) * 0.002, 0.09, 0.24)
+      yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012 + Math.sin(now / 1100 + phase) * 0.001, 0.09, 0.24)
     };
   }
   if (pellet.settled) {

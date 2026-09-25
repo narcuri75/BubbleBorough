@@ -1983,7 +1983,7 @@ function drawFoodSpritePiece(x, y, pellet, spritePath, now = Date.now()) {
   tankContext.scale(1, renderScaleY);
   const lifetime = Math.max(1, Number(pellet?.expiresAt) - Number(pellet?.createdAt));
   const remaining = clamp((Number(pellet?.expiresAt) - now) / lifetime, 0, 1);
-  tankContext.globalAlpha = pellet?.surfaceFloating ? 0.96 * Math.min(1, remaining * 18) : 0.96;
+  tankContext.globalAlpha = (pellet?.surfaceFloating || pellet?.foodKey === "fishFlakes") ? 0.96 * Math.min(1, remaining * 18) : 0.96;
   tankContext.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   tankContext.restore();
   return true;

@@ -2406,8 +2406,8 @@
       "module": "assets/image-storage-and-import.js",
       "sourceLine": 326,
       "originalLine": 24438,
-      "characters": 2963,
-      "sourceHash": "e928d2fd8ffd0f56c284cc6aa3d55f3fbb10b3885b65366fad9f77fa84631f31",
+      "characters": 2974,
+      "sourceHash": "f3c0946a474170eff4044770a6e6e4552f90dd6f37d4ebb38eb825ad5787ab37",
       "calls": [
         "clamp",
         "createId",
@@ -21291,8 +21291,8 @@
       "module": "fish/feeding-and-medicine.js",
       "sourceLine": 328,
       "originalLine": 27317,
-      "characters": 1785,
-      "sourceHash": "9667dc03f19576da276a31694f56175b4b964bc787635b963b988012f779894e",
+      "characters": 1855,
+      "sourceHash": "9c03c552a3ff84c7833a1d1a9e843bec1624ec47a220d0d693904302c40e6468",
       "calls": [
         "clamp",
         "getPelletFloorYNormAtX"
@@ -21301,7 +21301,7 @@
     {
       "name": "releasePelletsTargetingFishIds",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 381,
+      "sourceLine": 382,
       "originalLine": 27361,
       "characters": 452,
       "sourceHash": "5d1ea868934e16e49fb65c675630e0219b9f40b3cc3e1d33d700df75c46ed930",
@@ -21310,10 +21310,10 @@
     {
       "name": "createDroppedFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 399,
+      "sourceLine": 400,
       "originalLine": 27379,
       "characters": 2165,
-      "sourceHash": "5ff7e66a7a0c47812afb8b92067eb224168bb36f72689fae0d4e024a4bb979b4",
+      "sourceHash": "375686369dacd9ac410f5b40014f3e6f48c27abdadbfa7aad7992593edfc9c9b",
       "calls": [
         "clamp",
         "createId",
@@ -21328,7 +21328,7 @@
     {
       "name": "createAutoDispenserStoredPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 441,
+      "sourceLine": 442,
       "originalLine": 27404,
       "characters": 347,
       "sourceHash": "6deecf6d2880850c5bc4ca32d8a40560f894a8392ba13e113162b7ad89ab2f11",
@@ -21343,7 +21343,7 @@
     {
       "name": "createAutoDispenserDroppedPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 454,
+      "sourceLine": 455,
       "originalLine": 27417,
       "characters": 1951,
       "sourceHash": "2ac273711a40b8f71f2848595cc7fd1b6f430efbf7929aa80cf4cf156935450e",
@@ -21363,7 +21363,7 @@
     {
       "name": "setAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 502,
+      "sourceLine": 503,
       "originalLine": 27462,
       "characters": 684,
       "sourceHash": "64120d56c20df38487696562673cb1b4c2605d7d7fb86774f66dc8b9ced359bc",
@@ -21378,7 +21378,7 @@
     {
       "name": "adjustAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 530,
+      "sourceLine": 531,
       "originalLine": 27490,
       "characters": 239,
       "sourceHash": "dac1af68a4ad2c0970f683b2012f1902d62e5e6145e86d58982d39f01852a5a9",
@@ -21390,7 +21390,7 @@
     {
       "name": "getFoodCompatibleFishInTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 538,
+      "sourceLine": 539,
       "originalLine": null,
       "characters": 237,
       "sourceHash": "d763b3b1cf60be9233dbd0208bf910c24ee2b9f40b20d54ba6aa76051cc9a078",
@@ -21403,7 +21403,7 @@
     {
       "name": "getFoodCompatibleFishAcrossTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 543,
+      "sourceLine": 544,
       "originalLine": null,
       "characters": 216,
       "sourceHash": "b7fb5fe2193a76ee12ff8c5ce6cda4c43cb315b47fd39e1961a0f0562711d997",
@@ -21415,7 +21415,7 @@
     {
       "name": "getFoodIncompatibilityMessage",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 549,
+      "sourceLine": 550,
       "originalLine": null,
       "characters": 244,
       "sourceHash": "23ee8cdfb1800f859ec594b2f97e97c310360da77b910cabd1bb21f33d7c54df",
@@ -21424,7 +21424,7 @@
     {
       "name": "loadSelectedFoodIntoAutoDispenser",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 555,
+      "sourceLine": 556,
       "originalLine": 27498,
       "characters": 2423,
       "sourceHash": "437e24c9cea869a8b1d6b9d069f69334774ace46222b72d4495c9511dc6c36b6",
@@ -21447,7 +21447,7 @@
     {
       "name": "returnAutoDispenserPelletsToInventory",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 629,
+      "sourceLine": 630,
       "originalLine": 27564,
       "characters": 1374,
       "sourceHash": "860a3730d615d5c6c5d7302de9ea89c3e7543c017a7287c3f0fab1311346c1f7",
@@ -21464,7 +21464,7 @@
     {
       "name": "applyFoodBuff",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 668,
+      "sourceLine": 669,
       "originalLine": 27604,
       "characters": 313,
       "sourceHash": "dab8bdd9d200b7c6665250ab33768f4eedb20b6654cbe46c8bc27d0d27a853b5",
@@ -21475,7 +21475,7 @@
     {
       "name": "applyFishMealWindowFoodIntake",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 683,
+      "sourceLine": 684,
       "originalLine": 27621,
       "characters": 1536,
       "sourceHash": "5ec9fb9160533bacb37f272c0cd3d9ebd5773125139d34b19310395eae965f22",
@@ -21488,7 +21488,7 @@
     {
       "name": "applyFoodPelletToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 727,
+      "sourceLine": 728,
       "originalLine": 27662,
       "characters": 4920,
       "sourceHash": "6b005f97908b766f65281ea2d0fbb8611c7a22feae978a6dc64363a632de31f8",
@@ -21518,7 +21518,7 @@
     {
       "name": "handleFishEatFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 849,
+      "sourceLine": 850,
       "originalLine": 27723,
       "characters": 139,
       "sourceHash": "ad26382e04b17f15dbdff10e68ceeac7d553cc27a859a78a0aa334bb066cc4bb",
@@ -21529,7 +21529,7 @@
     {
       "name": "consumeOffscreenFishFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 853,
+      "sourceLine": 854,
       "originalLine": null,
       "characters": 1105,
       "sourceHash": "aecd42140531804b413a5d209585ccc33c4dfea8c88be19af12bc105501d1aa9",
@@ -21544,7 +21544,7 @@
     {
       "name": "getConnectedFoodTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 878,
+      "sourceLine": 879,
       "originalLine": null,
       "characters": 341,
       "sourceHash": "b7f8df2991c401f6c469a9375129a606aff3acd5c76b5d45dad029b1c0c7b24c",
@@ -21557,7 +21557,7 @@
     {
       "name": "allocateAutoDispenserPellets",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 889,
+      "sourceLine": 890,
       "originalLine": null,
       "characters": 871,
       "sourceHash": "46b1ed630bbefd48841b45c11dbc094122b6199f3c48591a719119f09547121c",
@@ -21568,7 +21568,7 @@
     {
       "name": "processSmartAutoFeeder",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 911,
+      "sourceLine": 912,
       "originalLine": 27731,
       "characters": 6226,
       "sourceHash": "03457ad92f8b62c2ca6bce69f992128a2109042757a9cfda510f820a48100421",
@@ -21593,7 +21593,7 @@
     {
       "name": "dropSelectedFoodAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1047,
+      "sourceLine": 1048,
       "originalLine": 27788,
       "characters": 2359,
       "sourceHash": "75a391341e9d92199a960f23bbf9bec076ca47f72aaa81f78b5ac65ea250cfbc",
@@ -21618,7 +21618,7 @@
     {
       "name": "stageHungryFishTravelToFoodTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1118,
+      "sourceLine": 1119,
       "originalLine": null,
       "characters": 838,
       "sourceHash": "022e86409f0d3fc670451f27a60416a79963527495efa040f0719b40cdafeff1",
@@ -21634,7 +21634,7 @@
     {
       "name": "getNextDayStartTimestamp",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1144,
+      "sourceLine": 1145,
       "originalLine": 27853,
       "characters": 187,
       "sourceHash": "cb1fae1cfe22dc2c0b3469cff9ecd8c41e90c6183f85565b80a168911aa15921",
@@ -21643,7 +21643,7 @@
     {
       "name": "hasActiveTankMedicineEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1151,
+      "sourceLine": 1152,
       "originalLine": 27860,
       "characters": 411,
       "sourceHash": "9bcc4edfb8db89dba9e1abf76b3bbef6ea75cea38ef477bd6c17577469b551f0",
@@ -21654,7 +21654,7 @@
     {
       "name": "addMedicineVisualEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1158,
+      "sourceLine": 1159,
       "originalLine": null,
       "characters": 523,
       "sourceHash": "da361ace7bd7910b5f6392bf30d1674ebe443b3e854549c144da0e9efe9e1bf8",
@@ -21666,7 +21666,7 @@
     {
       "name": "consumeSelectedMedicineDose",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1175,
+      "sourceLine": 1176,
       "originalLine": null,
       "characters": 319,
       "sourceHash": "e631b121a535fc0ae8d9192efab90f17e994babcd400330fca34150658fbd61c",
@@ -21675,7 +21675,7 @@
     {
       "name": "applyTargetedMedicineToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1183,
+      "sourceLine": 1184,
       "originalLine": null,
       "characters": 2869,
       "sourceHash": "4f948e34949195945eeb7876caedf253472ad93c70e377978a52967bec2a0318",
@@ -21689,7 +21689,7 @@
     {
       "name": "applySelectedMedicineAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1236,
+      "sourceLine": 1237,
       "originalLine": 27864,
       "characters": 2473,
       "sourceHash": "d32052caab3458505db95b2c215b5b71da8e061fd69d4d79ca764604e94b8403",
@@ -21714,7 +21714,7 @@
     {
       "name": "processTankMedicineEffects",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1304,
+      "sourceLine": 1305,
       "originalLine": 27920,
       "characters": 328,
       "sourceHash": "0321333db4a71ed5727d0024ee79794b37cf407c620c89811643a95e81e2d588",
@@ -24070,8 +24070,8 @@
       "module": "fish/meals-and-needs.js",
       "sourceLine": 251,
       "originalLine": 57662,
-      "characters": 3679,
-      "sourceHash": "2fcf9240a24ad95ce9179ae3cd4972a27c2c2fa1abc102826b62d3d0ddef5149",
+      "characters": 3749,
+      "sourceHash": "df3bf3cf185ed68ffd2e852e8e52e37e02262a2255ab6975e282b19a27323f2f",
       "calls": [
         "clamp",
         "getPelletFloorYNormAtX",
@@ -24082,7 +24082,7 @@
     {
       "name": "getPelletHitBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 336,
+      "sourceLine": 337,
       "originalLine": 57718,
       "characters": 1720,
       "sourceHash": "82dd1ffbec4427fed45365dad3883ae7d0cd5a3f4e3219e17097254ac2884832",
@@ -24099,7 +24099,7 @@
     {
       "name": "rgbaString",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 383,
+      "sourceLine": 384,
       "originalLine": 57760,
       "characters": 197,
       "sourceHash": "ebcd78e39543b52932460411644a0b473ba235ec0554ad1b690353ecd2ad04a2",
@@ -24110,7 +24110,7 @@
     {
       "name": "getBubbleOrbPalette",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 387,
+      "sourceLine": 388,
       "originalLine": 57764,
       "characters": 1287,
       "sourceHash": "8ff8b683369e3d5ddc8a6f9370c2aea82d44951bf63343e9aac5cd0325344dbc",
@@ -24126,7 +24126,7 @@
     {
       "name": "getOptionalBubbleOrbSprite",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 410,
+      "sourceLine": 411,
       "originalLine": 57787,
       "characters": 125,
       "sourceHash": "2b03a2f69c6a74c7087010ce147ab65b1e9faf9135e7666937964f967d6dd4dc",
@@ -24137,7 +24137,7 @@
     {
       "name": "getTintedBubbleOrbSprite",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 414,
+      "sourceLine": 415,
       "originalLine": 57791,
       "characters": 2345,
       "sourceHash": "ceea2363b184076da9eebec5b28006cf557c5710903817784166ed2eb5eec1f1",
@@ -24149,7 +24149,7 @@
     {
       "name": "drawBubbleOrbInteriorFillToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 491,
+      "sourceLine": 492,
       "originalLine": 57862,
       "characters": 396,
       "sourceHash": "b11c77ea38938440b7ef070464b297c6c8e394490ec5e930d73ed6b235c9f8cf",
@@ -24158,7 +24158,7 @@
     {
       "name": "drawMalformedBubbleSpriteToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 507,
+      "sourceLine": 508,
       "originalLine": 57879,
       "characters": 4607,
       "sourceHash": "e2283212e9077586e2fb2059964ee607aa63251ab309d24b5d399ef34a270b6f",
@@ -24172,7 +24172,7 @@
     {
       "name": "drawBubbleOrbToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 612,
+      "sourceLine": 613,
       "originalLine": 57984,
       "characters": 2064,
       "sourceHash": "31df99d1dd2898e5573d668ef5700b9767b27dffc095e2bcd93e3d254bccbc24",
@@ -24186,7 +24186,7 @@
     {
       "name": "drawBubbleOrb",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 662,
+      "sourceLine": 663,
       "originalLine": 58035,
       "characters": 154,
       "sourceHash": "aff82bc11252d5db873e5c79ef05f29f51a3234221e3c7d7a8f921dd75f0047d",
@@ -24197,7 +24197,7 @@
     {
       "name": "drawBubblePopBurstToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 666,
+      "sourceLine": 667,
       "originalLine": 58039,
       "characters": 1857,
       "sourceHash": "510236623fd5e3b490f1de4f1041433a7813fad6fe5db968196c634cc42e0e95",
@@ -24211,7 +24211,7 @@
     {
       "name": "getBubblerSpoutSourceOffsetRatio",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 710,
+      "sourceLine": 711,
       "originalLine": 58083,
       "characters": 1025,
       "sourceHash": "a045f2a5c53d41e850b02175617d79deaf0dcbe26d81a71d3d7a7c159bbdcf1c",
@@ -24223,7 +24223,7 @@
     {
       "name": "getBubblerSpoutHorizontalLocation",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 740,
+      "sourceLine": 741,
       "originalLine": 58113,
       "characters": 395,
       "sourceHash": "98cb10e6b7fcca56c242226db4d4bbbe35fd4f096680602fbfaeb7bce9e43608",
@@ -24234,7 +24234,7 @@
     {
       "name": "getBubblerDirectionVector",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 749,
+      "sourceLine": 750,
       "originalLine": 58122,
       "characters": 309,
       "sourceHash": "b9435a1c7d576ed8583150553d7c038fc734ec15c586bb1c30580235645342d0",
@@ -24245,7 +24245,7 @@
     {
       "name": "drawDecorBubblerEffectToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 763,
+      "sourceLine": 764,
       "originalLine": 58136,
       "characters": 15957,
       "sourceHash": "a8cbf5746eaf8f77700626add346e2ae7c46383701edf81b198cb3b0354f928f",
@@ -24277,7 +24277,7 @@
     {
       "name": "drawDecorBubblerEffect",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1072,
+      "sourceLine": 1073,
       "originalLine": 58400,
       "characters": 169,
       "sourceHash": "d690ec1a74cb0a997c660068d9ad5b3b2aceadcdc23e1bd9895208292226e823",
@@ -24288,7 +24288,7 @@
     {
       "name": "drawTransitTubeBursts",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1076,
+      "sourceLine": 1077,
       "originalLine": null,
       "characters": 1451,
       "sourceHash": "dbc73973a2b06a85dc601ed66d27e3c440e423a735eed26c685e579d0cff7fa5",
@@ -24301,7 +24301,7 @@
     {
       "name": "drawDecorBubbleStreams",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1113,
+      "sourceLine": 1114,
       "originalLine": 58404,
       "characters": 1679,
       "sourceHash": "1c3ef10c8cc2046d3defafcfd169eb021ec5b31580e9a9c5deec538660ce36af",
@@ -24316,7 +24316,7 @@
     {
       "name": "getDecorBubbleIntensity",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1160,
+      "sourceLine": 1161,
       "originalLine": 58451,
       "characters": 330,
       "sourceHash": "5a0ec4968c52d6ea62d3f8ae6706fa7613fe74352feaac0cdd33b1eb8b519cd8",
@@ -24327,7 +24327,7 @@
     {
       "name": "getBubbleSpriteByIndex",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1168,
+      "sourceLine": 1169,
       "originalLine": 58465,
       "characters": 344,
       "sourceHash": "ff704e43f90a2cbc2d3dcffee78f26dd2bd53e4fdda8222bc6d9b1e79f65d4d3",
@@ -24338,7 +24338,7 @@
     {
       "name": "getPoopPose",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1182,
+      "sourceLine": 1183,
       "originalLine": 58479,
       "characters": 1235,
       "sourceHash": "da44bdca1137d22187eda52ed9b64af0c6f321398a2084d5f7da3a4672624ae4",
@@ -24352,7 +24352,7 @@
     {
       "name": "findFloatingPelletAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1220,
+      "sourceLine": 1221,
       "originalLine": 58517,
       "characters": 508,
       "sourceHash": "9c1dc3a0d93a12b47801422b268aa24e1b0c03e6b4ab8d9e20eb0edf6b224a81",
@@ -24363,7 +24363,7 @@
     {
       "name": "findPoopAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1242,
+      "sourceLine": 1243,
       "originalLine": 58539,
       "characters": 427,
       "sourceHash": "d82dff96388778a8cba7db5f7e5bd23b3e5b388c740cb2e3f08ecef5c26a08c8",
@@ -24374,7 +24374,7 @@
     {
       "name": "getAutoDispenserLayout",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1264,
+      "sourceLine": 1265,
       "originalLine": 58561,
       "characters": 2653,
       "sourceHash": "63372b0015ee5ffe5ba88cf0ad4f9633f143d0ca3129ecc6a2f7e58865570d90",
@@ -24388,7 +24388,7 @@
     {
       "name": "pointInSimpleBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1348,
+      "sourceLine": 1349,
       "originalLine": 58638,
       "characters": 178,
       "sourceHash": "6013914f3508e9cae15099ed2d697101335ef568bf5fef8e196ab71a0d747764",
@@ -24397,7 +24397,7 @@
     {
       "name": "expandBoundsAroundCenter",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1358,
+      "sourceLine": 1359,
       "originalLine": 58648,
       "characters": 530,
       "sourceHash": "ce7f640ba947caa7bd2637be5d6de84a3fec767f8a13599292ffdd5bbd0a880a",
@@ -24406,7 +24406,7 @@
     {
       "name": "getAutoDispenserHitTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1375,
+      "sourceLine": 1376,
       "originalLine": 58665,
       "characters": 236,
       "sourceHash": "238bdd94957e89ce3c77d65c0dd7c2bac7d0218e4bfe321e04b624b41987276d",
@@ -24419,7 +24419,7 @@
     {
       "name": "handleAutoDispenserInteractionAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1387,
+      "sourceLine": 1388,
       "originalLine": 58689,
       "characters": 427,
       "sourceHash": "e8638e412c7574f44d78c12f912ec91d42e6fd19151f20acc60c409b86e4edec",
@@ -24433,7 +24433,7 @@
     {
       "name": "getAutoDispenserHitBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1405,
+      "sourceLine": 1406,
       "originalLine": null,
       "characters": 151,
       "sourceHash": "1d8e2be2f55bc52d19bb8f93e5e91161513d7a308040c06148eadafc7d32877a",
@@ -24445,7 +24445,7 @@
     {
       "name": "setAutoDispenserPositionFromPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1410,
+      "sourceLine": 1411,
       "originalLine": null,
       "characters": 557,
       "sourceHash": "5cab2521765dda2d20cd433ae7c24bfce048a5465d82d8463c74878c8b679bf1",
@@ -24460,7 +24460,7 @@
     {
       "name": "setAutoDispenserTankLayer",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1423,
+      "sourceLine": 1424,
       "originalLine": null,
       "characters": 356,
       "sourceHash": "96b89d523f6f35f4aeef1a0caa0f4533cc560a21ee7087fa4f042d99d0e2648f",
@@ -24474,7 +24474,7 @@
     {
       "name": "scoopTankItemAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1434,
+      "sourceLine": 1435,
       "originalLine": 58727,
       "characters": 1520,
       "sourceHash": "9a9c0b1c869a7ce5808de4620165257eb8cc77ed6cb59309bbf4c05d450717f2",
@@ -24493,7 +24493,7 @@
     {
       "name": "handleScoopAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1494,
+      "sourceLine": 1495,
       "originalLine": 58767,
       "characters": 324,
       "sourceHash": "b41bc1adb9106efcfc348ea75bc247fc9103a077edc47c50ba17a9f6efc87bb1",
@@ -24507,7 +24507,7 @@
     {
       "name": "findFishEggAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1513,
+      "sourceLine": 1514,
       "originalLine": 58786,
       "characters": 873,
       "sourceHash": "cb6b0e4af7812d6fae0d011bb87d32974186220bda510f308af19dfb11dbd452",
@@ -24519,7 +24519,7 @@
     {
       "name": "findFishAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1546,
+      "sourceLine": 1547,
       "originalLine": 58819,
       "characters": 551,
       "sourceHash": "400d177bf7a3c1d117641c8a5eb5231b278deb398c78e4a346a889a21a751829",
@@ -24533,7 +24533,7 @@
     {
       "name": "updateComfortHistoryEvents",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1564,
+      "sourceLine": 1565,
       "originalLine": 58851,
       "characters": 943,
       "sourceHash": "0dacaae4ab28409df4aca7fe68da0855171417a30786b481c08d0eb65c6060aa",
@@ -24548,7 +24548,7 @@
     {
       "name": "getFishComfort",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1589,
+      "sourceLine": 1590,
       "originalLine": 58876,
       "characters": 2973,
       "sourceHash": "3330d74191775be91fc645c6432e69b8258deb32ccaeb72f843d28b7629f8521",
@@ -24575,7 +24575,7 @@
     {
       "name": "getFishNeedValue",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1658,
+      "sourceLine": 1659,
       "originalLine": 58945,
       "characters": 178,
       "sourceHash": "3f1a97dfe114a1edff2e214976cfca808a5db4a1e57ac3691430731b00074b96",
@@ -24587,7 +24587,7 @@
     {
       "name": "setFishNeedValue",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1663,
+      "sourceLine": 1664,
       "originalLine": 58950,
       "characters": 434,
       "sourceHash": "24e33dbdd4a281b5df9bf958c2ab00e0f69396763aac7f86462068d37fefb027",
@@ -24600,7 +24600,7 @@
     {
       "name": "adjustFishNeed",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1674,
+      "sourceLine": 1675,
       "originalLine": 58960,
       "characters": 173,
       "sourceHash": "aedef731b226da7cde8cdfcf2332958ba5f596141117fd9f0008ce11d57b5f18",
@@ -24612,7 +24612,7 @@
     {
       "name": "getFishNeedsSnapshot",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1678,
+      "sourceLine": 1679,
       "originalLine": 58964,
       "characters": 487,
       "sourceHash": "6eae566b169aeb066f09a4d572ff330109613d7148e2207cf16f0d93808bd92a",
@@ -24627,7 +24627,7 @@
     {
       "name": "getFishCareStatus",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1687,
+      "sourceLine": 1688,
       "originalLine": null,
       "characters": 2867,
       "sourceHash": "1983387c9e6b9fe2dd5d9150c5f336db00f681fb6d8715f95be366dbacff8ed7",
@@ -24650,7 +24650,7 @@
     {
       "name": "getFishMoodPresentation",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1737,
+      "sourceLine": 1738,
       "originalLine": null,
       "characters": 952,
       "sourceHash": "4aeb0338c9177cc6b1aa22febf903299029da1ad7c685a43bf29ce0824d1824c",
@@ -24659,7 +24659,7 @@
     {
       "name": "getFishDisposition",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1760,
+      "sourceLine": 1761,
       "originalLine": null,
       "characters": 14018,
       "sourceHash": "2789b81dd05a6046e926e42befb33711baa169f52eb929ae02f0c80f811e77e6",
@@ -24693,7 +24693,7 @@
     {
       "name": "getFishHungerLabel",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2019,
+      "sourceLine": 2020,
       "originalLine": 58970,
       "characters": 131,
       "sourceHash": "d850732c51cf0087ae769afa41902a3d79bfd4f4d51a0f36c4adaa34eb7fba6b",
@@ -24705,7 +24705,7 @@
     {
       "name": "isFishHungryByNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2023,
+      "sourceLine": 2024,
       "originalLine": 58974,
       "characters": 237,
       "sourceHash": "155bdd17a814d98ae765c69aacd78f7083505e3067f0b70ed04f6cce4e2b3e05",
@@ -24718,7 +24718,7 @@
     {
       "name": "getHungryFishByNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2030,
+      "sourceLine": 2031,
       "originalLine": 58981,
       "characters": 218,
       "sourceHash": "2671fa21428496eb9790bb7d0af3126c64f322102fcea0216fcef5db393ba9e0",
@@ -24730,7 +24730,7 @@
     {
       "name": "getPersonalityNeedModifier",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2034,
+      "sourceLine": 2035,
       "originalLine": 58985,
       "characters": 893,
       "sourceHash": "59a4eeaaa3c81c2a92fec50fab37e76a472346566c658adc9abc34c459b36cff",
@@ -24741,7 +24741,7 @@
     {
       "name": "getFishEnvironmentNeedTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2049,
+      "sourceLine": 2050,
       "originalLine": 59000,
       "characters": 684,
       "sourceHash": "9e0c114dfadc87ea030a0679242717883aadf3df8e7d9d974fbde49d04fd5219",
@@ -24756,7 +24756,7 @@
     {
       "name": "getFishSocialNeedTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2059,
+      "sourceLine": 2060,
       "originalLine": 59010,
       "characters": 889,
       "sourceHash": "70fb67beba0a38919225ccbb1850333399e31458b8554a96021a0451e5d6f35a",
@@ -24773,7 +24773,7 @@
     {
       "name": "calculateFishNeedDeltas",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2076,
+      "sourceLine": 2077,
       "originalLine": 59024,
       "characters": 724,
       "sourceHash": "0aacabc7b19cbecabdabcf97607e398d7f03c87c6af74d82b824be6f6f0483c1",
@@ -24787,7 +24787,7 @@
     {
       "name": "updateFishNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2090,
+      "sourceLine": 2091,
       "originalLine": 59110,
       "characters": 1728,
       "sourceHash": "166e7d8515187bc97cbdfbf4d43563c0e0db33d181ccd45ee2640a17069d1e2d",
@@ -24810,7 +24810,7 @@
     {
       "name": "maybeRecordFishNeedEvent",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2128,
+      "sourceLine": 2129,
       "originalLine": 59151,
       "characters": 483,
       "sourceHash": "cddd5f421625a1021896fb8e6d04ab8b0414e5754b7646ecdd9efa46bf50c5af",
@@ -24823,7 +24823,7 @@
     {
       "name": "formatFishAgeDuration",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2141,
+      "sourceLine": 2142,
       "originalLine": null,
       "characters": 608,
       "sourceHash": "11be4025806ff7e5e072029d22bbb9de0e382249b68cb4079e0c0a4c2b910d6e",
@@ -24832,7 +24832,7 @@
     {
       "name": "formatFishAge",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2163,
+      "sourceLine": 2164,
       "originalLine": 59164,
       "characters": 119,
       "sourceHash": "62e6f10c9c2e1d9607dbd8cde43a892f6aa9e498cee7af9fb867898a9975f690",
@@ -24843,7 +24843,7 @@
     {
       "name": "formatFishBiologicalAge",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2167,
+      "sourceLine": 2168,
       "originalLine": null,
       "characters": 258,
       "sourceHash": "0c428e41798f307706b99266e060abdf0c41e144488d17f482171223b524e364",
@@ -35431,8 +35431,8 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 1948,
       "originalLine": 54109,
-      "characters": 2145,
-      "sourceHash": "66d7dc9e5d9843c126480b994eb1dd01017e893300a1adca6c2cbdb702a627c4",
+      "characters": 2183,
+      "sourceHash": "05ffd2fdab826c26c04aa431d738ceea991cf67e2c2894817f0ff1580f817208",
       "calls": [
         "clamp",
         "getChumSpriteVisualScale",

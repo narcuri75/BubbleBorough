@@ -2517,34 +2517,6 @@
       "path": "assets/fish/tetra_glass.png?v=2e5359d1f0ad"
     },
     {
-      "key": "tetra_glofish_cosmic-blue.png",
-      "path": "assets/fish/tetra_glofish_cosmic-blue.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish_electric-green.png",
-      "path": "assets/fish/tetra_glofish_electric-green.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish_galactic-purple.png",
-      "path": "assets/fish/tetra_glofish_galactic-purple.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish_moonrise-pink.png",
-      "path": "assets/fish/tetra_glofish_moonrise-pink.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish_starfire-red.png",
-      "path": "assets/fish/tetra_glofish_starfire-red.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish_sunburst-orange.png",
-      "path": "assets/fish/tetra_glofish_sunburst-orange.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_glofish.png",
-      "path": "assets/fish/tetra_glofish.png?v=2e5359d1f0ad"
-    },
-    {
       "key": "tetra_gold-neon.png",
       "path": "assets/fish/tetra_gold-neon.png?v=2e5359d1f0ad"
     },
@@ -2557,12 +2529,40 @@
       "path": "assets/fish/tetra_lemon.png?v=2e5359d1f0ad"
     },
     {
+      "key": "tetra_neon-black-skirt-neon-blue.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-blue.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_neon-black-skirt-neon-green.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-green.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_neon-black-skirt-neon-orange.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-orange.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_neon-black-skirt-neon-pink.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-pink.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_neon-black-skirt-neon-purple.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-purple.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_neon-black-skirt-neon-red.png",
+      "path": "assets/fish/tetra_neon-black-skirt-neon-red.png?v=2e5359d1f0ad"
+    },
+    {
       "key": "tetra_neon.png",
       "path": "assets/fish/tetra_neon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_penguin.png",
       "path": "assets/fish/tetra_penguin.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_pink-blush-black-skirt.png",
+      "path": "assets/fish/tetra_pink-blush-black-skirt.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_rummy-nose.png",

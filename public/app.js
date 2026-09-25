@@ -4485,13 +4485,13 @@ const FISH_TYPES = [
       "/assets/fish/tetra_cave.png",
       "/assets/fish/tetra_black-phantom.png",
       "/assets/fish/tetra_emperor.png",
-      "/assets/fish/tetra_glofish.png",
-      "/assets/fish/tetra_glofish_galactic-purple.png",
-      "/assets/fish/tetra_glofish_cosmic-blue.png",
-      "/assets/fish/tetra_glofish_electric-green.png",
-      "/assets/fish/tetra_glofish_moonrise-pink.png",
-      "/assets/fish/tetra_glofish_starfire-red.png",
-      "/assets/fish/tetra_glofish_sunburst-orange.png",
+      "/assets/fish/tetra_pink-blush-black-skirt.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-purple.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-blue.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-green.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-pink.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-red.png",
+      "/assets/fish/tetra_neon-black-skirt-neon-orange.png",
       "/assets/fish/tetra_white-skirt.png",
       "/assets/fish/tetra_cochus-blue.png",
       "/assets/fish/tetra_penguin.png",
@@ -4511,13 +4511,13 @@ const FISH_TYPES = [
       "Tetra Cave",
       "Tetra Black Phantom",
       "Tetra Emperor",
-      "Tetra Glofish",
-      "Tetra GloFish Galactic Purple",
-      "Tetra GloFish Cosmic Blue",
-      "Tetra GloFish Electric Green",
-      "Tetra GloFish Moonrise Pink",
-      "Tetra GloFish Starfire Red",
-      "Tetra GloFish Sunburst Orange",
+      "Pink Blush Black Skirt Tetra",
+      "Neon Black Skirt Tetra - Neon Purple",
+      "Neon Black Skirt Tetra - Neon Blue",
+      "Neon Black Skirt Tetra - Neon Green",
+      "Neon Black Skirt Tetra - Neon Pink",
+      "Neon Black Skirt Tetra - Neon Red",
+      "Neon Black Skirt Tetra - Neon Orange",
       "Tetra White Skirt",
       "Tetra Cochus Blue",
       "Tetra Penguin",
@@ -112561,7 +112561,7 @@ function getSpriteSheetDefinitions() {
           512,
           512
         ],
-        "tetra_glofish.png": [
+        "tetra_pink-blush-black-skirt.png": [
           0,
           512,
           512,
@@ -112609,37 +112609,37 @@ function getSpriteSheetDefinitions() {
           512,
           512
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-black-skirt-neon-purple.png": [
           1024,
           1536,
           512,
           512
         ],
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-black-skirt-neon-blue.png": [
           0,
           2048,
           512,
           512
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-black-skirt-neon-green.png": [
           512,
           2048,
           512,
           512
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-black-skirt-neon-pink.png": [
           1024,
           2048,
           512,
           512
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-black-skirt-neon-red.png": [
           0,
           2560,
           512,
           512
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-black-skirt-neon-orange.png": [
           512,
           2560,
           512,
@@ -112690,7 +112690,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/tetra__genetics-natural",
-        "version": "e63780c54430-v1",
+        "version": "aa07babb7c89-v1",
         "standalone": false
       }
     },
@@ -115310,7 +115310,7 @@ function getSpriteSheetDefinitions() {
           64,
           64
         ],
-        "tetra_glofish.png": [
+        "tetra_pink-blush-black-skirt.png": [
           0,
           64,
           64,
@@ -115358,37 +115358,37 @@ function getSpriteSheetDefinitions() {
           64,
           64
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-black-skirt-neon-purple.png": [
           128,
           192,
           64,
           64
         ],
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-black-skirt-neon-blue.png": [
           0,
           256,
           64,
           64
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-black-skirt-neon-green.png": [
           64,
           256,
           64,
           64
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-black-skirt-neon-pink.png": [
           128,
           256,
           64,
           64
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-black-skirt-neon-red.png": [
           0,
           320,
           64,
           64
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-black-skirt-neon-orange.png": [
           64,
           320,
           64,
@@ -115439,7 +115439,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra__genetics-natural",
-        "version": "20500c04ce83-v1",
+        "version": "31ac358958d8-v1",
         "standalone": false
       }
     },

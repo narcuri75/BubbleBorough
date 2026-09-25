@@ -20,13 +20,11 @@ jobs:
       - name: Write build info
         shell: bash
         run: |
-          BUILD_VERSION="$(node -e "const fs=require('fs'); try { const j=JSON.parse(fs.readFileSync('public/build-info.json','utf8')); process.stdout.write(j.version || 'Beta Version 0.2.1'); } catch { process.stdout.write('Beta Version 0.2.1'); }")"
           PUSH_TIME="$(TZ=America/Los_Angeles date '+%m/%d/%Y %-I:%M %p %Z')"
           SHORT_SHA="${GITHUB_SHA::7}"
 
           cat > public/build-info.json <<EOF_JSON
           {
-            "version": "${BUILD_VERSION}",
             "lastPushed": "${PUSH_TIME}",
             "commit": "${SHORT_SHA}"
           }

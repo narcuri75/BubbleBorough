@@ -663,6 +663,10 @@
       "path": "assets/decor/cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__front.png?v=2e0e49ea7b06"
     },
     {
+      "key": "tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.png",
+      "path": "assets/decor/cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.png?v=7806050eb489"
+    },
+    {
       "key": "terracotta-pot__cave__theme-artificial__bg.png",
       "path": "assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__bg.png?v=96642872508b"
     },
@@ -2474,75 +2478,99 @@
     },
     {
       "key": "tetra_black-neon.png",
-      "path": "assets/fish/tetra_black-neon.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_black-neon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_black-phantom.png",
-      "path": "assets/fish/tetra_black-phantom.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_black-phantom.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_black-skirt.png",
-      "path": "assets/fish/tetra_black-skirt.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_black-skirt.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_cave.png",
-      "path": "assets/fish/tetra_cave.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_cave.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_cochus-blue.png",
-      "path": "assets/fish/tetra_cochus-blue.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_cochus-blue.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_congo.png",
-      "path": "assets/fish/tetra_congo.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_congo.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_cosmic-blue.png",
-      "path": "assets/fish/tetra_cosmic-blue.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_cosmic-blue.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_ember.png",
-      "path": "assets/fish/tetra_ember.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_ember.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_emperor.png",
-      "path": "assets/fish/tetra_emperor.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_emperor.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_glass.png",
-      "path": "assets/fish/tetra_glass.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_glass.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_cosmic-blue.png",
+      "path": "assets/fish/tetra_glofish_cosmic-blue.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_electric-green.png",
+      "path": "assets/fish/tetra_glofish_electric-green.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_galactic-purple.png",
+      "path": "assets/fish/tetra_glofish_galactic-purple.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_moonrise-pink.png",
+      "path": "assets/fish/tetra_glofish_moonrise-pink.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_starfire-red.png",
+      "path": "assets/fish/tetra_glofish_starfire-red.png?v=2e5359d1f0ad"
+    },
+    {
+      "key": "tetra_glofish_sunburst-orange.png",
+      "path": "assets/fish/tetra_glofish_sunburst-orange.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_glofish.png",
-      "path": "assets/fish/tetra_glofish.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_glofish.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_gold-neon.png",
-      "path": "assets/fish/tetra_gold-neon.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_gold-neon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_green-neon.png",
-      "path": "assets/fish/tetra_green-neon.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_green-neon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_lemon.png",
-      "path": "assets/fish/tetra_lemon.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_lemon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_neon.png",
-      "path": "assets/fish/tetra_neon.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_neon.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_penguin.png",
-      "path": "assets/fish/tetra_penguin.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_penguin.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_rummy-nose.png",
-      "path": "assets/fish/tetra_rummy-nose.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_rummy-nose.png?v=2e5359d1f0ad"
     },
     {
       "key": "tetra_white-skirt.png",
-      "path": "assets/fish/tetra_white-skirt.png?v=0d9e4d1e03a6"
+      "path": "assets/fish/tetra_white-skirt.png?v=2e5359d1f0ad"
     }
   ],
   "gravel": [

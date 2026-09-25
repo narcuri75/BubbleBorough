@@ -4486,6 +4486,12 @@ const FISH_TYPES = [
       "/assets/fish/tetra_black-phantom.png",
       "/assets/fish/tetra_emperor.png",
       "/assets/fish/tetra_glofish.png",
+      "/assets/fish/tetra_glofish_galactic-purple.png",
+      "/assets/fish/tetra_glofish_cosmic-blue.png",
+      "/assets/fish/tetra_glofish_electric-green.png",
+      "/assets/fish/tetra_glofish_moonrise-pink.png",
+      "/assets/fish/tetra_glofish_starfire-red.png",
+      "/assets/fish/tetra_glofish_sunburst-orange.png",
       "/assets/fish/tetra_white-skirt.png",
       "/assets/fish/tetra_cochus-blue.png",
       "/assets/fish/tetra_penguin.png",
@@ -4506,6 +4512,12 @@ const FISH_TYPES = [
       "Tetra Black Phantom",
       "Tetra Emperor",
       "Tetra Glofish",
+      "Tetra GloFish Galactic Purple",
+      "Tetra GloFish Cosmic Blue",
+      "Tetra GloFish Electric Green",
+      "Tetra GloFish Moonrise Pink",
+      "Tetra GloFish Starfire Red",
+      "Tetra GloFish Sunburst Orange",
       "Tetra White Skirt",
       "Tetra Cochus Blue",
       "Tetra Penguin",
@@ -112527,122 +112539,158 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/tetra__genetics-natural.webp",
-      "version": "0d9e4d1e03a6",
+      "version": "2e5359d1f0ad",
       "width": 1536,
-      "height": 3072,
+      "height": 4096,
       "frames": {
-        "tetra_neon.png": [
+        "tetra_ember.png": [
           0,
           0,
-          512,
-          512
-        ],
-        "tetra_lemon.png": [
-          512,
-          0,
-          512,
-          512
-        ],
-        "tetra_cosmic-blue.png": [
-          1024,
-          0,
-          512,
-          512
-        ],
-        "tetra_cave.png": [
-          0,
-          512,
-          512,
-          512
-        ],
-        "tetra_black-phantom.png": [
-          512,
-          512,
           512,
           512
         ],
         "tetra_emperor.png": [
-          1024,
           512,
+          0,
+          512,
+          512
+        ],
+        "tetra_glass.png": [
+          1024,
+          0,
           512,
           512
         ],
         "tetra_glofish.png": [
           0,
-          1024,
           512,
-          512
-        ],
-        "tetra_white-skirt.png": [
-          512,
-          1024,
-          512,
-          512
-        ],
-        "tetra_cochus-blue.png": [
-          1024,
-          1024,
-          512,
-          512
-        ],
-        "tetra_penguin.png": [
-          0,
-          1536,
-          512,
-          512
-        ],
-        "tetra_glass.png": [
-          512,
-          1536,
-          512,
-          512
-        ],
-        "tetra_ember.png": [
-          1024,
-          1536,
-          512,
-          512
-        ],
-        "tetra_black-skirt.png": [
-          0,
-          2048,
-          512,
-          512
-        ],
-        "tetra_rummy-nose.png": [
-          512,
-          2048,
-          512,
-          512
-        ],
-        "tetra_congo.png": [
-          1024,
-          2048,
           512,
           512
         ],
         "tetra_gold-neon.png": [
-          0,
-          2560,
           512,
-          512
-        ],
-        "tetra_black-neon.png": [
           512,
-          2560,
           512,
           512
         ],
         "tetra_green-neon.png": [
           1024,
+          512,
+          512,
+          512
+        ],
+        "tetra_lemon.png": [
+          0,
+          1024,
+          512,
+          512
+        ],
+        "tetra_neon.png": [
+          512,
+          1024,
+          512,
+          512
+        ],
+        "tetra_penguin.png": [
+          1024,
+          1024,
+          512,
+          512
+        ],
+        "tetra_rummy-nose.png": [
+          0,
+          1536,
+          512,
+          512
+        ],
+        "tetra_white-skirt.png": [
+          512,
+          1536,
+          512,
+          512
+        ],
+        "tetra_glofish_galactic-purple.png": [
+          1024,
+          1536,
+          512,
+          512
+        ],
+        "tetra_glofish_cosmic-blue.png": [
+          0,
+          2048,
+          512,
+          512
+        ],
+        "tetra_glofish_electric-green.png": [
+          512,
+          2048,
+          512,
+          512
+        ],
+        "tetra_glofish_moonrise-pink.png": [
+          1024,
+          2048,
+          512,
+          512
+        ],
+        "tetra_glofish_starfire-red.png": [
+          0,
           2560,
+          512,
+          512
+        ],
+        "tetra_glofish_sunburst-orange.png": [
+          512,
+          2560,
+          512,
+          512
+        ],
+        "tetra_black-neon.png": [
+          1024,
+          2560,
+          512,
+          512
+        ],
+        "tetra_black-phantom.png": [
+          0,
+          3072,
+          512,
+          512
+        ],
+        "tetra_black-skirt.png": [
+          512,
+          3072,
+          512,
+          512
+        ],
+        "tetra_cave.png": [
+          1024,
+          3072,
+          512,
+          512
+        ],
+        "tetra_cochus-blue.png": [
+          0,
+          3584,
+          512,
+          512
+        ],
+        "tetra_congo.png": [
+          512,
+          3584,
+          512,
+          512
+        ],
+        "tetra_cosmic-blue.png": [
+          1024,
+          3584,
           512,
           512
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/tetra__genetics-natural",
-        "version": "bb543eb19a32-v1",
+        "version": "e63780c54430-v1",
         "standalone": false
       }
     },
@@ -115240,122 +115288,158 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/tetra__genetics-natural.webp",
-      "version": "ee7745c93827",
+      "version": "eebfd226a2a2",
       "width": 192,
-      "height": 384,
+      "height": 512,
       "frames": {
-        "tetra_neon.png": [
+        "tetra_ember.png": [
           0,
           0,
-          64,
-          64
-        ],
-        "tetra_lemon.png": [
-          64,
-          0,
-          64,
-          64
-        ],
-        "tetra_cosmic-blue.png": [
-          128,
-          0,
-          64,
-          64
-        ],
-        "tetra_cave.png": [
-          0,
-          64,
-          64,
-          64
-        ],
-        "tetra_black-phantom.png": [
-          64,
-          64,
           64,
           64
         ],
         "tetra_emperor.png": [
-          128,
           64,
+          0,
+          64,
+          64
+        ],
+        "tetra_glass.png": [
+          128,
+          0,
           64,
           64
         ],
         "tetra_glofish.png": [
           0,
-          128,
           64,
-          64
-        ],
-        "tetra_white-skirt.png": [
-          64,
-          128,
-          64,
-          64
-        ],
-        "tetra_cochus-blue.png": [
-          128,
-          128,
-          64,
-          64
-        ],
-        "tetra_penguin.png": [
-          0,
-          192,
-          64,
-          64
-        ],
-        "tetra_glass.png": [
-          64,
-          192,
-          64,
-          64
-        ],
-        "tetra_ember.png": [
-          128,
-          192,
-          64,
-          64
-        ],
-        "tetra_black-skirt.png": [
-          0,
-          256,
-          64,
-          64
-        ],
-        "tetra_rummy-nose.png": [
-          64,
-          256,
-          64,
-          64
-        ],
-        "tetra_congo.png": [
-          128,
-          256,
           64,
           64
         ],
         "tetra_gold-neon.png": [
-          0,
-          320,
           64,
-          64
-        ],
-        "tetra_black-neon.png": [
           64,
-          320,
           64,
           64
         ],
         "tetra_green-neon.png": [
           128,
+          64,
+          64,
+          64
+        ],
+        "tetra_lemon.png": [
+          0,
+          128,
+          64,
+          64
+        ],
+        "tetra_neon.png": [
+          64,
+          128,
+          64,
+          64
+        ],
+        "tetra_penguin.png": [
+          128,
+          128,
+          64,
+          64
+        ],
+        "tetra_rummy-nose.png": [
+          0,
+          192,
+          64,
+          64
+        ],
+        "tetra_white-skirt.png": [
+          64,
+          192,
+          64,
+          64
+        ],
+        "tetra_glofish_galactic-purple.png": [
+          128,
+          192,
+          64,
+          64
+        ],
+        "tetra_glofish_cosmic-blue.png": [
+          0,
+          256,
+          64,
+          64
+        ],
+        "tetra_glofish_electric-green.png": [
+          64,
+          256,
+          64,
+          64
+        ],
+        "tetra_glofish_moonrise-pink.png": [
+          128,
+          256,
+          64,
+          64
+        ],
+        "tetra_glofish_starfire-red.png": [
+          0,
           320,
+          64,
+          64
+        ],
+        "tetra_glofish_sunburst-orange.png": [
+          64,
+          320,
+          64,
+          64
+        ],
+        "tetra_black-neon.png": [
+          128,
+          320,
+          64,
+          64
+        ],
+        "tetra_black-phantom.png": [
+          0,
+          384,
+          64,
+          64
+        ],
+        "tetra_black-skirt.png": [
+          64,
+          384,
+          64,
+          64
+        ],
+        "tetra_cave.png": [
+          128,
+          384,
+          64,
+          64
+        ],
+        "tetra_cochus-blue.png": [
+          0,
+          448,
+          64,
+          64
+        ],
+        "tetra_congo.png": [
+          64,
+          448,
+          64,
+          64
+        ],
+        "tetra_cosmic-blue.png": [
+          128,
+          448,
           64,
           64
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra__genetics-natural",
-        "version": "b3bd17ede186-v1",
+        "version": "20500c04ce83-v1",
         "standalone": false
       }
     },

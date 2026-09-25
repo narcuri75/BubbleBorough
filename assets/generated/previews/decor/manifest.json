@@ -563,6 +563,10 @@
     "sourceHash": "16db6e764752cfe8ca39061866c26168fdb92b0a98495deee84bc8a288b401bf",
     "outputHash": "414a10a11ee4bddc2ebb49b1f98882744e599c408b19cb97de6fd34953c55695"
   },
+  "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.png": {
+    "sourceHash": "59856ce48b0b048b03e6b7d86bb5e1321516bd67c8b7b7791ab52e6934271fec",
+    "outputHash": "a0571a2bb41c3dd6c5fabad760bf1a896d867c1a9dfef851bab9369e04ad4871"
+  },
   "cave_layered/terracotta-pot__cave__theme-artificial__bg.png": {
     "sourceHash": "8ee4618684e1be01574d3c0385827dce7a14d5b413b137a8c3c1a8535d51f90c",
     "outputHash": "238830bf3e968f1de32071b452d8f693cf0337c16f2f2377c73c391ac7cc3e1e"

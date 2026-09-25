@@ -40,6 +40,25 @@
       ],
       "seller": "Tidewell"
     },
+    "fishFlakes": {
+      "id": "fishFlakes",
+      "name": "Tidewell - Fish Flakes",
+      "description": "Light, colorful flakes that sprinkle across the surface. They float for up to 24 hours before fading away.",
+      "bottlePellets": 20,
+      "cost": 5,
+      "image": "fish-flakes_small.png",
+      "dropStyle": "sprite",
+      "dropImages": ["fish-flake_1.png", "fish-flake_2.png", "fish-flake_3.png", "fish-flake_4.png"],
+      "piecesPerDrop": 12,
+      "surfaceFloating": true,
+      "dispenserAllowed": false,
+      "packages": [
+        { "id": "small", "name": "Small | 20 Count", "description": "A small container of surface-floating fish flakes.", "servings": 20, "cost": 5, "image": "fish-flakes_small.png" },
+        { "id": "medium", "name": "Medium | 75 Count", "description": "A medium container of fish flakes for busy tanks.", "servings": 75, "cost": 15, "image": "fish-flakes_medium.png" },
+        { "id": "large", "name": "Large | 200 Count", "description": "A large container of fish flakes for a full collection.", "servings": 200, "cost": 30, "image": "fish-flakes_large.png" }
+      ],
+      "seller": "Tidewell"
+    },
     "frisky": {
       "id": "frisky",
       "name": "Tidewell - Spawning Food - 20 Count",

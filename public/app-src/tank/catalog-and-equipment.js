@@ -891,13 +891,16 @@ function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
     return false;
   }
   const normalizedFoodKey = String(foodKey || "basic");
-  if (normalizedFoodKey === "frisky") {
+  // Fish Flakes are the surface-floating form of Basic Food: every species
+  // that accepts basic pellets also accepts flakes.
+  const dietaryFoodKey = normalizedFoodKey === "fishFlakes" ? "basic" : normalizedFoodKey;
+  if (dietaryFoodKey === "frisky") {
     return canFishUseSpawningFood(fish);
   }
   if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
-    return ["basic", "brineShrimp", "carnivore", "chum"].includes(normalizedFoodKey);
+    return ["basic", "brineShrimp", "carnivore", "chum"].includes(dietaryFoodKey);
   }
-  return getFishAcceptedFoodKeys(fish).includes(normalizedFoodKey);
+  return getFishAcceptedFoodKeys(fish).includes(dietaryFoodKey);
 }
 
 function canFishOverfeed(fish) {

@@ -331,6 +331,14 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   }
 
   const floorYNorm = getPelletFloorYNormAtX(pellet.xNorm);
+  if (pellet.surfaceFloating) {
+    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24);
+    if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
+      pellet.yNorm = surfaceYNorm;
+      return true;
+    }
+    return false;
+  }
   pellet.floorYNorm = floorYNorm;
   let changed = false;
   const previousYNorm = Number(pellet.yNorm) || floorYNorm;
@@ -416,6 +424,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     sway: Math.random(),
     rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
     scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
+    surfaceFloating: Boolean(food.surfaceFloating),
     sinkDurationMs: food.id === "algaeWafers"
       ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
       : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
@@ -423,7 +432,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
     dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
     createdAt: now,
-    expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
+    expiresAt: now + (food.surfaceFloating ? SURFACE_FOOD_LIFETIME_MS : FOOD_PELLET_SETTLED_LIFETIME_MS)
   });
 }
 

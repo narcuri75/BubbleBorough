@@ -2536,6 +2536,7 @@ const FOOD_DROP_SPREAD_NORM = 0.03;
 const FOOD_PELLET_SINK_DURATION_MS = 95 * 1000;
 const ALGAE_WAFER_SINK_DURATION_MS = 8.5 * 1000;
 const FOOD_PELLET_SETTLED_LIFETIME_MS = 36 * HOUR_MS;
+const SURFACE_FOOD_LIFETIME_MS = 24 * HOUR_MS;
 const FOOD_PELLET_SETTLED_Y_OFFSET_PX = 5;
 const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 2 * MINUTE_MS;
 const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 15 * MINUTE_MS;
@@ -2750,7 +2751,7 @@ const DECOR_CATALOG_PATH = "assets/decor/decor_types.json?v=20260908-halloween-s
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
 const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food_small.png";
-const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-09";
+const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-25";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
 const AMBIENCE_AUDIO_FADE_IN_MS = 2000;
@@ -3007,6 +3008,7 @@ if (typeof window !== "undefined") {
 const FOOD_PELLET_IMAGE_PATH = resolveFoodAndMedAssetPath("pellet.png");
 const TOOL_CURSOR_ICON_PATHS = Object.freeze({
   foodPellets: resolveAppUrl("assets/icons/food_pellets.png"),
+  fishFlakes: resolveAppUrl("assets/icons/fish-flakes_scoop_contents.png"),
   algaeWafers: resolveAppUrl("assets/icons/wafer_scoop_contents.png"),
   brineShrimp: resolveAppUrl("assets/icons/shrimp_scoop_contents.png"),
   carnivore: resolveAppUrl("assets/icons/meat_scoop_contents.png"),
@@ -7466,6 +7468,411 @@ const FISH_TYPES = [
       "Killifish Wonder Golden",
       "Killifish Orange Australe",
       "Killifish American"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-angelfish",
+    "name": "Neon Angelfish",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 18,
+    "mealCoins": 1,
+    "asset": "/assets/fish/angelfish_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/angelfish_neon-blue.png",
+      "/assets/fish/angelfish_neon-green.png",
+      "/assets/fish/angelfish_neon-orange.png",
+      "/assets/fish/angelfish_neon-pink.png",
+      "/assets/fish/angelfish_neon-purple.png",
+      "/assets/fish/angelfish_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A compact, bioluminescent angelfish engineered for bright freshwater displays.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 150,
+    "displayWidth": 100,
+    "bobSpeed": 1.2,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 3200,
+    "targetMaxMs": 5800,
+    "defaultNames": [
+      "Aura",
+      "Prism",
+      "Lumen",
+      "Glimmer",
+      "Nova",
+      "Pulse"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 55,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-barb",
+    "name": "Neon Barb",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 12,
+    "mealCoins": 1,
+    "asset": "/assets/fish/barb_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/barb_neon-blue.png",
+      "/assets/fish/barb_neon-green.png",
+      "/assets/fish/barb_neon-orange.png",
+      "/assets/fish/barb_neon-pink.png",
+      "/assets/fish/barb_neon-purple.png",
+      "/assets/fish/barb_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A small, quick-moving barb with a vivid engineered glow.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 130,
+    "displayWidth": 100,
+    "bobSpeed": 1.5,
+    "swimStyle": "sporadic",
+    "speedMin": 0.024,
+    "speedMax": 0.04,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3400,
+    "defaultNames": [
+      "Flash",
+      "Zing",
+      "Spark",
+      "Vivid",
+      "Flicker",
+      "Volt"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "waterType": "freshwater",
+    "lifespanDays": 35,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-rainbow-shark",
+    "name": "Neon Rainbow Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/rainbow-shark_neon-1.png",
+    "assetVariants": [
+      "/assets/fish/rainbow-shark_neon-1.png",
+      "/assets/fish/rainbow-shark_neon-2.png",
+      "/assets/fish/rainbow-shark_neon-3.png",
+      "/assets/fish/rainbow-shark_neon-4.png",
+      "/assets/fish/rainbow-shark_neon-5.png",
+      "/assets/fish/rainbow-shark_neon-6.png"
+    ],
+    "variantLabels": [
+      "Neon Variant 1",
+      "Neon Variant 2",
+      "Neon Variant 3",
+      "Neon Variant 4",
+      "Neon Variant 5",
+      "Neon Variant 6"
+    ],
+    "description": "A compact rainbow shark with a luminous engineered coloration.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 160,
+    "displayWidth": 120,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.036,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Ray",
+      "Comet",
+      "Sable",
+      "Glow",
+      "Rift",
+      "Echo"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 60,
+    "capacityCost": 0.75,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-tetra",
+    "name": "Neon Tetra",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 9,
+    "mealCoins": 1,
+    "asset": "/assets/fish/tetra_glofish_cosmic-blue.png",
+    "assetVariants": [
+      "/assets/fish/tetra_glofish_cosmic-blue.png",
+      "/assets/fish/tetra_glofish_electric-green.png",
+      "/assets/fish/tetra_glofish_galactic-purple.png",
+      "/assets/fish/tetra_glofish_moonrise-pink.png",
+      "/assets/fish/tetra_glofish_starfire-red.png",
+      "/assets/fish/tetra_glofish_sunburst-orange.png"
+    ],
+    "variantLabels": [
+      "Cosmic Blue",
+      "Electric Green",
+      "Galactic Purple",
+      "Moonrise Pink",
+      "Starfire Red",
+      "Sunburst Orange"
+    ],
+    "description": "A tiny tetra with stable, high-intensity bioluminescent color.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 120,
+    "displayWidth": 90,
+    "bobSpeed": 1.5,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.042,
+    "targetMinMs": 1800,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Nova",
+      "Pixel",
+      "Laser",
+      "Pulse",
+      "Glow",
+      "Lux"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 50,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-zebra-danio",
+    "name": "Neon Zebra Danio",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/zebra-danio_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/zebra-danio_neon-blue.png",
+      "/assets/fish/zebra-danio_neon-green.png",
+      "/assets/fish/zebra-danio_neon-orange.png",
+      "/assets/fish/zebra-danio_neon-pink.png",
+      "/assets/fish/zebra-danio_neon-purple.png",
+      "/assets/fish/zebra-danio_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A tiny, energetic zebra danio with a bright engineered glow.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 120,
+    "displayWidth": 90,
+    "bobSpeed": 1.58,
+    "swimStyle": "sporadic",
+    "speedMin": 0.026,
+    "speedMax": 0.044,
+    "targetMinMs": 1300,
+    "targetMaxMs": 3200,
+    "defaultNames": [
+      "Zip",
+      "Stripe",
+      "Fizz",
+      "Dash",
+      "Blink",
+      "Spark"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "waterType": "freshwater",
+    "lifespanDays": 35,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
     ],
     "careRequirements": {
       "waterType": "freshwater",

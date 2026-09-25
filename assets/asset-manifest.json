@@ -1173,6 +1173,30 @@
       "path": "assets/fish/angelfish_marble.png?v=e7cf190be202"
     },
     {
+      "key": "angelfish_neon-blue.png",
+      "path": "assets/fish/angelfish_neon-blue.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-green.png",
+      "path": "assets/fish/angelfish_neon-green.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-orange.png",
+      "path": "assets/fish/angelfish_neon-orange.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-pink.png",
+      "path": "assets/fish/angelfish_neon-pink.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-purple.png",
+      "path": "assets/fish/angelfish_neon-purple.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-red.png",
+      "path": "assets/fish/angelfish_neon-red.png?v=b74f14f22a57"
+    },
+    {
       "key": "angelfish_silver.png",
       "path": "assets/fish/angelfish_silver.png?v=e7cf190be202"
     },
@@ -1207,6 +1231,30 @@
     {
       "key": "barb_green.png",
       "path": "assets/fish/barb_green.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_neon-blue.png",
+      "path": "assets/fish/barb_neon-blue.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-green.png",
+      "path": "assets/fish/barb_neon-green.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-orange.png",
+      "path": "assets/fish/barb_neon-orange.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-pink.png",
+      "path": "assets/fish/barb_neon-pink.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-purple.png",
+      "path": "assets/fish/barb_neon-purple.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-red.png",
+      "path": "assets/fish/barb_neon-red.png?v=4145c5e1ef3f"
     },
     {
       "key": "barb_odessa.png",
@@ -2253,6 +2301,30 @@
       "path": "assets/fish/rainbow_turquoise.png?v=7a139b2822c5"
     },
     {
+      "key": "rainbow-shark_neon-1.png",
+      "path": "assets/fish/rainbow-shark_neon-1.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-2.png",
+      "path": "assets/fish/rainbow-shark_neon-2.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-3.png",
+      "path": "assets/fish/rainbow-shark_neon-3.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-4.png",
+      "path": "assets/fish/rainbow-shark_neon-4.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-5.png",
+      "path": "assets/fish/rainbow-shark_neon-5.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-6.png",
+      "path": "assets/fish/rainbow-shark_neon-6.png?v=d34c3fb5b111"
+    },
+    {
       "key": "ranzania_laevis.png",
       "path": "assets/fish/ranzania_laevis.png?v=37bb581b7395"
     },
@@ -2478,99 +2550,119 @@
     },
     {
       "key": "tetra_black-neon.png",
-      "path": "assets/fish/tetra_black-neon.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_black-neon.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_black-phantom.png",
-      "path": "assets/fish/tetra_black-phantom.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_black-phantom.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_black-skirt.png",
-      "path": "assets/fish/tetra_black-skirt.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_black-skirt.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_cave.png",
-      "path": "assets/fish/tetra_cave.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_cave.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_cochus-blue.png",
-      "path": "assets/fish/tetra_cochus-blue.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_cochus-blue.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_congo.png",
-      "path": "assets/fish/tetra_congo.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_congo.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_cosmic-blue.png",
-      "path": "assets/fish/tetra_cosmic-blue.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_cosmic-blue.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_ember.png",
-      "path": "assets/fish/tetra_ember.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_ember.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_emperor.png",
-      "path": "assets/fish/tetra_emperor.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_emperor.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_glass.png",
-      "path": "assets/fish/tetra_glass.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_glass.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_glofish_cosmic-blue.png",
+      "path": "assets/fish/tetra_glofish_cosmic-blue.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_glofish_electric-green.png",
+      "path": "assets/fish/tetra_glofish_electric-green.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_glofish_galactic-purple.png",
+      "path": "assets/fish/tetra_glofish_galactic-purple.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_glofish_moonrise-pink.png",
+      "path": "assets/fish/tetra_glofish_moonrise-pink.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_glofish_starfire-red.png",
+      "path": "assets/fish/tetra_glofish_starfire-red.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_glofish_sunburst-orange.png",
+      "path": "assets/fish/tetra_glofish_sunburst-orange.png?v=8325540060fc"
     },
     {
       "key": "tetra_gold-neon.png",
-      "path": "assets/fish/tetra_gold-neon.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_gold-neon.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_green-neon.png",
-      "path": "assets/fish/tetra_green-neon.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_green-neon.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_lemon.png",
-      "path": "assets/fish/tetra_lemon.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-blue.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-blue.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-green.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-green.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-orange.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-orange.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-pink.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-pink.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-purple.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-purple.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_neon-black-skirt-neon-red.png",
-      "path": "assets/fish/tetra_neon-black-skirt-neon-red.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_lemon.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_neon.png",
-      "path": "assets/fish/tetra_neon.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_neon.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_penguin.png",
-      "path": "assets/fish/tetra_penguin.png?v=2e5359d1f0ad"
-    },
-    {
-      "key": "tetra_pink-blush-black-skirt.png",
-      "path": "assets/fish/tetra_pink-blush-black-skirt.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_penguin.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_rummy-nose.png",
-      "path": "assets/fish/tetra_rummy-nose.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_rummy-nose.png?v=4fe17e4e9e22"
     },
     {
       "key": "tetra_white-skirt.png",
-      "path": "assets/fish/tetra_white-skirt.png?v=2e5359d1f0ad"
+      "path": "assets/fish/tetra_white-skirt.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "zebra-danio_neon-blue.png",
+      "path": "assets/fish/zebra-danio_neon-blue.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-green.png",
+      "path": "assets/fish/zebra-danio_neon-green.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-orange.png",
+      "path": "assets/fish/zebra-danio_neon-orange.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-pink.png",
+      "path": "assets/fish/zebra-danio_neon-pink.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-purple.png",
+      "path": "assets/fish/zebra-danio_neon-purple.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-red.png",
+      "path": "assets/fish/zebra-danio_neon-red.png?v=32e4f3102817"
     }
   ],
   "gravel": [

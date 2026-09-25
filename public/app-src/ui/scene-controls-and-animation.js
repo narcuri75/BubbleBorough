@@ -1214,6 +1214,14 @@ function getActiveToolCursorSpec() {
         variant: "frisky-food"
       };
     }
+    if (runtime.feedingModeFoodKey === "fishFlakes") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.fishFlakes,
+        variant: "fish-flakes"
+      };
+    }
     if (runtime.feedingModeFoodKey === "algaeWafers") {
       return {
         type: "layered-food",

@@ -2539,6 +2539,7 @@ const FOOD_DROP_SPREAD_NORM = 0.03;
 const FOOD_PELLET_SINK_DURATION_MS = 95 * 1000;
 const ALGAE_WAFER_SINK_DURATION_MS = 8.5 * 1000;
 const FOOD_PELLET_SETTLED_LIFETIME_MS = 36 * HOUR_MS;
+const SURFACE_FOOD_LIFETIME_MS = 24 * HOUR_MS;
 const FOOD_PELLET_SETTLED_Y_OFFSET_PX = 5;
 const FOOD_PELLET_SETTLED_OPEN_TARGET_MS = 2 * MINUTE_MS;
 const FOOD_PELLET_SETTLED_STALE_TARGET_MS = 15 * MINUTE_MS;
@@ -2753,7 +2754,7 @@ const DECOR_CATALOG_PATH = "assets/decor/decor_types.json?v=20260908-halloween-s
 const BACKGROUND_CATALOG_PATH = "assets/backgrounds/backgrounds.json";
 const FOOD_AND_MEDS_CATALOG_PATH = "assets/foodandmeds/food-and-meds.json";
 const FOOD_AND_MEDS_FALLBACK_IMAGE_NAME = "basic-food_small.png";
-const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-09";
+const FOOD_AND_MEDS_ASSET_VERSION = "2026-09-25";
 const AMBIENCE_AUDIO_PATH = "assets/sounds/ambience.mp3";
 const AMBIENCE_AUDIO_VOLUME = 0.55;
 const AMBIENCE_AUDIO_FADE_IN_MS = 2000;
@@ -3010,6 +3011,7 @@ if (typeof window !== "undefined") {
 const FOOD_PELLET_IMAGE_PATH = resolveFoodAndMedAssetPath("pellet.png");
 const TOOL_CURSOR_ICON_PATHS = Object.freeze({
   foodPellets: resolveAppUrl("assets/icons/food_pellets.png"),
+  fishFlakes: resolveAppUrl("assets/icons/fish-flakes_scoop_contents.png"),
   algaeWafers: resolveAppUrl("assets/icons/wafer_scoop_contents.png"),
   brineShrimp: resolveAppUrl("assets/icons/shrimp_scoop_contents.png"),
   carnivore: resolveAppUrl("assets/icons/meat_scoop_contents.png"),
@@ -7469,6 +7471,411 @@ const FISH_TYPES = [
       "Killifish Wonder Golden",
       "Killifish Orange Australe",
       "Killifish American"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-angelfish",
+    "name": "Neon Angelfish",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 18,
+    "mealCoins": 1,
+    "asset": "/assets/fish/angelfish_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/angelfish_neon-blue.png",
+      "/assets/fish/angelfish_neon-green.png",
+      "/assets/fish/angelfish_neon-orange.png",
+      "/assets/fish/angelfish_neon-pink.png",
+      "/assets/fish/angelfish_neon-purple.png",
+      "/assets/fish/angelfish_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A compact, bioluminescent angelfish engineered for bright freshwater displays.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 150,
+    "displayWidth": 100,
+    "bobSpeed": 1.2,
+    "swimStyle": "peaceful",
+    "speedMin": 0.016,
+    "speedMax": 0.024,
+    "targetMinMs": 3200,
+    "targetMaxMs": 5800,
+    "defaultNames": [
+      "Aura",
+      "Prism",
+      "Lumen",
+      "Glimmer",
+      "Nova",
+      "Pulse"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 55,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-barb",
+    "name": "Neon Barb",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 12,
+    "mealCoins": 1,
+    "asset": "/assets/fish/barb_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/barb_neon-blue.png",
+      "/assets/fish/barb_neon-green.png",
+      "/assets/fish/barb_neon-orange.png",
+      "/assets/fish/barb_neon-pink.png",
+      "/assets/fish/barb_neon-purple.png",
+      "/assets/fish/barb_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A small, quick-moving barb with a vivid engineered glow.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 130,
+    "displayWidth": 100,
+    "bobSpeed": 1.5,
+    "swimStyle": "sporadic",
+    "speedMin": 0.024,
+    "speedMax": 0.04,
+    "targetMinMs": 1400,
+    "targetMaxMs": 3400,
+    "defaultNames": [
+      "Flash",
+      "Zing",
+      "Spark",
+      "Vivid",
+      "Flicker",
+      "Volt"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "waterType": "freshwater",
+    "lifespanDays": 35,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-rainbow-shark",
+    "name": "Neon Rainbow Shark",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 20,
+    "mealCoins": 2,
+    "asset": "/assets/fish/rainbow-shark_neon-1.png",
+    "assetVariants": [
+      "/assets/fish/rainbow-shark_neon-1.png",
+      "/assets/fish/rainbow-shark_neon-2.png",
+      "/assets/fish/rainbow-shark_neon-3.png",
+      "/assets/fish/rainbow-shark_neon-4.png",
+      "/assets/fish/rainbow-shark_neon-5.png",
+      "/assets/fish/rainbow-shark_neon-6.png"
+    ],
+    "variantLabels": [
+      "Neon Variant 1",
+      "Neon Variant 2",
+      "Neon Variant 3",
+      "Neon Variant 4",
+      "Neon Variant 5",
+      "Neon Variant 6"
+    ],
+    "description": "A compact rainbow shark with a luminous engineered coloration.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 160,
+    "displayWidth": 120,
+    "bobSpeed": 1.28,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.036,
+    "targetMinMs": 2200,
+    "targetMaxMs": 4600,
+    "defaultNames": [
+      "Ray",
+      "Comet",
+      "Sable",
+      "Glow",
+      "Rift",
+      "Echo"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 60,
+    "capacityCost": 0.75,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-tetra",
+    "name": "Neon Tetra",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 9,
+    "mealCoins": 1,
+    "asset": "/assets/fish/tetra_glofish_cosmic-blue.png",
+    "assetVariants": [
+      "/assets/fish/tetra_glofish_cosmic-blue.png",
+      "/assets/fish/tetra_glofish_electric-green.png",
+      "/assets/fish/tetra_glofish_galactic-purple.png",
+      "/assets/fish/tetra_glofish_moonrise-pink.png",
+      "/assets/fish/tetra_glofish_starfire-red.png",
+      "/assets/fish/tetra_glofish_sunburst-orange.png"
+    ],
+    "variantLabels": [
+      "Cosmic Blue",
+      "Electric Green",
+      "Galactic Purple",
+      "Moonrise Pink",
+      "Starfire Red",
+      "Sunburst Orange"
+    ],
+    "description": "A tiny tetra with stable, high-intensity bioluminescent color.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 120,
+    "displayWidth": 90,
+    "bobSpeed": 1.5,
+    "swimStyle": "steady",
+    "speedMin": 0.028,
+    "speedMax": 0.042,
+    "targetMinMs": 1800,
+    "targetMaxMs": 3600,
+    "defaultNames": [
+      "Nova",
+      "Pixel",
+      "Laser",
+      "Pulse",
+      "Glow",
+      "Lux"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "waterType": "freshwater",
+    "lifespanDays": 50,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "careRequirements": {
+      "waterType": "freshwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "dietaryMode": "omnivore",
+      "waterNote": "Freshwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true
+  },
+  {
+    "id": "neon-zebra-danio",
+    "name": "Neon Zebra Danio",
+    "genetics": "enhanced",
+    "seller": "Proteus Biodyne",
+    "type": "Fish",
+    "cost": 10,
+    "mealCoins": 1,
+    "asset": "/assets/fish/zebra-danio_neon-blue.png",
+    "assetVariants": [
+      "/assets/fish/zebra-danio_neon-blue.png",
+      "/assets/fish/zebra-danio_neon-green.png",
+      "/assets/fish/zebra-danio_neon-orange.png",
+      "/assets/fish/zebra-danio_neon-pink.png",
+      "/assets/fish/zebra-danio_neon-purple.png",
+      "/assets/fish/zebra-danio_neon-red.png"
+    ],
+    "variantLabels": [
+      "Neon Blue",
+      "Neon Green",
+      "Neon Orange",
+      "Neon Pink",
+      "Neon Purple",
+      "Neon Red"
+    ],
+    "description": "A tiny, energetic zebra danio with a bright engineered glow.",
+    "aboutAttribution": "PROTEUS BIODYNE",
+    "aboutTagline": "Adaptive Biology. Engineered.",
+    "width": 120,
+    "displayWidth": 90,
+    "bobSpeed": 1.58,
+    "swimStyle": "sporadic",
+    "speedMin": 0.026,
+    "speedMax": 0.044,
+    "targetMinMs": 1300,
+    "targetMaxMs": 3200,
+    "defaultNames": [
+      "Zip",
+      "Stripe",
+      "Fizz",
+      "Dash",
+      "Blink",
+      "Spark"
+    ],
+    "caveEnabled": true,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": true,
+    "waterType": "freshwater",
+    "lifespanDays": 35,
+    "capacityCost": 0.5,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "omnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp"
     ],
     "careRequirements": {
       "waterType": "freshwater",
@@ -16417,13 +16824,16 @@ function canFoodSatisfyFishMeal(fish, foodKey = "basic") {
     return false;
   }
   const normalizedFoodKey = String(foodKey || "basic");
-  if (normalizedFoodKey === "frisky") {
+  // Fish Flakes are the surface-floating form of Basic Food: every species
+  // that accepts basic pellets also accepts flakes.
+  const dietaryFoodKey = normalizedFoodKey === "fishFlakes" ? "basic" : normalizedFoodKey;
+  if (dietaryFoodKey === "frisky") {
     return canFishUseSpawningFood(fish);
   }
   if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
-    return ["basic", "brineShrimp", "carnivore", "chum"].includes(normalizedFoodKey);
+    return ["basic", "brineShrimp", "carnivore", "chum"].includes(dietaryFoodKey);
   }
-  return getFishAcceptedFoodKeys(fish).includes(normalizedFoodKey);
+  return getFishAcceptedFoodKeys(fish).includes(dietaryFoodKey);
 }
 
 function canFishOverfeed(fish) {
@@ -45089,7 +45499,10 @@ function sanitizePellet(pellet) {
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
-  const yNorm = settled
+  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating);
+  const yNorm = surfaceFloating
+    ? clamp(Number(pellet.yNorm) || WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24)
+    : settled
     ? floorYNorm
     : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);
   return {
@@ -45099,6 +45512,7 @@ function sanitizePellet(pellet) {
     startYNorm: clamp(Number.isFinite(Number(pellet.startYNorm)) ? Number(pellet.startYNorm) : yNorm, 0.09, floorYNorm),
     floorYNorm,
     settled,
+    surfaceFloating,
     settledAt: settled && Number.isFinite(Number(pellet.settledAt)) ? Number(pellet.settledAt) : null,
     sway: clamp(Number(pellet.sway) || Math.random(), 0, 1),
     targetFishId: typeof pellet.targetFishId === "string" ? pellet.targetFishId : "",
@@ -45123,7 +45537,9 @@ function sanitizePellet(pellet) {
       ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
       : null,
     createdAt: pellet.createdAt,
-    expiresAt: pellet.expiresAt
+    expiresAt: surfaceFloating
+      ? Math.min(Number(pellet.expiresAt) || (pellet.createdAt + SURFACE_FOOD_LIFETIME_MS), pellet.createdAt + SURFACE_FOOD_LIFETIME_MS)
+      : pellet.expiresAt
   };
 }
 
@@ -51659,6 +52075,14 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   }
 
   const floorYNorm = getPelletFloorYNormAtX(pellet.xNorm);
+  if (pellet.surfaceFloating) {
+    const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24);
+    if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
+      pellet.yNorm = surfaceYNorm;
+      return true;
+    }
+    return false;
+  }
   pellet.floorYNorm = floorYNorm;
   let changed = false;
   const previousYNorm = Number(pellet.yNorm) || floorYNorm;
@@ -51744,6 +52168,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     sway: Math.random(),
     rotation: pelletLikeDrop ? randomBetween(-0.22, 0.22) : randomBetween(-0.95, 0.95),
     scale: pelletLikeDrop ? randomBetween(0.94, 1.08) : randomBetween(0.92, 1.18),
+    surfaceFloating: Boolean(food.surfaceFloating),
     sinkDurationMs: food.id === "algaeWafers"
       ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
       : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
@@ -51751,7 +52176,7 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
     dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
     createdAt: now,
-    expiresAt: now + FOOD_PELLET_SETTLED_LIFETIME_MS
+    expiresAt: now + (food.surfaceFloating ? SURFACE_FOOD_LIFETIME_MS : FOOD_PELLET_SETTLED_LIFETIME_MS)
   });
 }
 
@@ -83554,6 +83979,14 @@ function getActiveToolCursorSpec() {
         variant: "frisky-food"
       };
     }
+    if (runtime.feedingModeFoodKey === "fishFlakes") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.fishFlakes,
+        variant: "fish-flakes"
+      };
+    }
     if (runtime.feedingModeFoodKey === "algaeWafers") {
       return {
         type: "layered-food",
@@ -93071,7 +93504,9 @@ function drawFoodSpritePiece(x, y, pellet, spritePath, now = Date.now()) {
   tankContext.translate(x, y);
   tankContext.rotate(renderRotation);
   tankContext.scale(1, renderScaleY);
-  tankContext.globalAlpha = 0.96;
+  const lifetime = Math.max(1, Number(pellet?.expiresAt) - Number(pellet?.createdAt));
+  const remaining = clamp((Number(pellet?.expiresAt) - now) / lifetime, 0, 1);
+  tankContext.globalAlpha = pellet?.surfaceFloating ? 0.96 * Math.min(1, remaining * 18) : 0.96;
   tankContext.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   tankContext.restore();
   return true;
@@ -100500,6 +100935,13 @@ function getPelletPose(pellet, now) {
     0.18,
     0.96
   );
+  if (pellet.surfaceFloating) {
+    const phase = (Number(pellet.sway) || 0) * Math.PI * 2;
+    return {
+      xNorm: clamp((Number(pellet.xNorm) || 0.5) + Math.sin(now / 2200 + phase) * 0.0025, 0.08, 0.92),
+      yNorm: clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.035 + Math.sin(now / 1100 + phase) * 0.002, 0.09, 0.24)
+    };
+  }
   if (pellet.settled) {
     return {
       xNorm: clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92),
@@ -109983,6 +110425,55 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/angelfish-neon__genetics-enhanced.webp",
+      "version": "b74f14f22a57",
+      "width": 1536,
+      "height": 1024,
+      "frames": {
+        "angelfish_neon-blue.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "angelfish_neon-green.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "angelfish_neon-orange.png": [
+          1024,
+          0,
+          512,
+          512
+        ],
+        "angelfish_neon-pink.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "angelfish_neon-purple.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "angelfish_neon-red.png": [
+          1024,
+          512,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/angelfish-neon__genetics-enhanced",
+        "version": "3249e36415f3-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/angelfish__genetics-natural.webp",
       "version": "e7cf190be202",
       "width": 1536,
@@ -110077,6 +110568,55 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/fish/assessor__genetics-natural",
         "version": "5bddecb715c4-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/barb-neon__genetics-enhanced.webp",
+      "version": "4145c5e1ef3f",
+      "width": 1536,
+      "height": 822,
+      "frames": {
+        "barb_neon-blue.png": [
+          0,
+          0,
+          512,
+          411
+        ],
+        "barb_neon-green.png": [
+          512,
+          0,
+          512,
+          411
+        ],
+        "barb_neon-orange.png": [
+          1024,
+          0,
+          512,
+          411
+        ],
+        "barb_neon-pink.png": [
+          0,
+          411,
+          512,
+          411
+        ],
+        "barb_neon-purple.png": [
+          512,
+          411,
+          512,
+          411
+        ],
+        "barb_neon-red.png": [
+          1024,
+          411,
+          512,
+          411
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/barb-neon__genetics-enhanced",
+        "version": "b38b4f786677-v1",
         "standalone": false
       }
     },
@@ -112104,6 +112644,55 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/rainbow-shark-neon__genetics-enhanced.webp",
+      "version": "d34c3fb5b111",
+      "width": 1536,
+      "height": 682,
+      "frames": {
+        "rainbow-shark_neon-2.png": [
+          0,
+          0,
+          512,
+          341
+        ],
+        "rainbow-shark_neon-3.png": [
+          512,
+          0,
+          512,
+          341
+        ],
+        "rainbow-shark_neon-4.png": [
+          1024,
+          0,
+          512,
+          341
+        ],
+        "rainbow-shark_neon-5.png": [
+          0,
+          341,
+          512,
+          341
+        ],
+        "rainbow-shark_neon-6.png": [
+          512,
+          341,
+          512,
+          341
+        ],
+        "rainbow-shark_neon-1.png": [
+          1024,
+          341,
+          512,
+          341
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/rainbow-shark-neon__genetics-enhanced",
+        "version": "e865ddb46dd8-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/rainbowfish__genetics-natural.webp",
       "version": "7a139b2822c5",
       "width": 1536,
@@ -112538,159 +113127,166 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/tetra__genetics-natural.webp",
-      "version": "2e5359d1f0ad",
+      "path": "assets/fish/tetra-neon__genetics-enhanced.webp",
+      "version": "8325540060fc",
       "width": 1536,
-      "height": 4096,
+      "height": 1024,
       "frames": {
-        "tetra_ember.png": [
+        "tetra_glofish_cosmic-blue.png": [
           0,
           0,
           512,
           512
         ],
-        "tetra_emperor.png": [
+        "tetra_glofish_electric-green.png": [
           512,
           0,
           512,
           512
         ],
-        "tetra_glass.png": [
+        "tetra_glofish_galactic-purple.png": [
           1024,
           0,
           512,
           512
         ],
-        "tetra_pink-blush-black-skirt.png": [
+        "tetra_glofish_moonrise-pink.png": [
           0,
           512,
+          512,
+          512
+        ],
+        "tetra_glofish_starfire-red.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "tetra_glofish_sunburst-orange.png": [
+          1024,
+          512,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/tetra-neon__genetics-enhanced",
+        "version": "8d488dd6d523-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/tetra__genetics-natural.webp",
+      "version": "4fe17e4e9e22",
+      "width": 1536,
+      "height": 3072,
+      "frames": {
+        "tetra_black-neon.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "tetra_black-phantom.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "tetra_black-skirt.png": [
+          1024,
+          0,
+          512,
+          512
+        ],
+        "tetra_cave.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "tetra_cochus-blue.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "tetra_congo.png": [
+          1024,
+          512,
+          512,
+          512
+        ],
+        "tetra_cosmic-blue.png": [
+          0,
+          1024,
+          512,
+          512
+        ],
+        "tetra_ember.png": [
+          512,
+          1024,
+          512,
+          512
+        ],
+        "tetra_emperor.png": [
+          1024,
+          1024,
+          512,
+          512
+        ],
+        "tetra_glass.png": [
+          0,
+          1536,
           512,
           512
         ],
         "tetra_gold-neon.png": [
           512,
-          512,
+          1536,
           512,
           512
         ],
         "tetra_green-neon.png": [
           1024,
-          512,
+          1536,
           512,
           512
         ],
         "tetra_lemon.png": [
           0,
-          1024,
+          2048,
           512,
           512
         ],
         "tetra_neon.png": [
           512,
-          1024,
+          2048,
           512,
           512
         ],
         "tetra_penguin.png": [
           1024,
-          1024,
+          2048,
           512,
           512
         ],
         "tetra_rummy-nose.png": [
           0,
-          1536,
+          2560,
           512,
           512
         ],
         "tetra_white-skirt.png": [
           512,
-          1536,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-purple.png": [
-          1024,
-          1536,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-blue.png": [
-          0,
-          2048,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-green.png": [
-          512,
-          2048,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-pink.png": [
-          1024,
-          2048,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-red.png": [
-          0,
           2560,
-          512,
-          512
-        ],
-        "tetra_neon-black-skirt-neon-orange.png": [
-          512,
-          2560,
-          512,
-          512
-        ],
-        "tetra_black-neon.png": [
-          1024,
-          2560,
-          512,
-          512
-        ],
-        "tetra_black-phantom.png": [
-          0,
-          3072,
-          512,
-          512
-        ],
-        "tetra_black-skirt.png": [
-          512,
-          3072,
-          512,
-          512
-        ],
-        "tetra_cave.png": [
-          1024,
-          3072,
-          512,
-          512
-        ],
-        "tetra_cochus-blue.png": [
-          0,
-          3584,
-          512,
-          512
-        ],
-        "tetra_congo.png": [
-          512,
-          3584,
-          512,
-          512
-        ],
-        "tetra_cosmic-blue.png": [
-          1024,
-          3584,
           512,
           512
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/tetra__genetics-natural",
-        "version": "aa07babb7c89-v1",
+        "version": "f531426ff32d-v1",
         "standalone": false
       }
     },
@@ -112734,6 +113330,104 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/fish/turbo_snail",
         "version": "8aee56ed28e3-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/zebra-danio-neon__genetics-enhanced.webp",
+      "version": "32e4f3102817",
+      "width": 1536,
+      "height": 1024,
+      "frames": {
+        "zebra-danio_neon-blue.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "zebra-danio_neon-green.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "zebra-danio_neon-orange.png": [
+          1024,
+          0,
+          512,
+          512
+        ],
+        "zebra-danio_neon-pink.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "zebra-danio_neon-purple.png": [
+          512,
+          512,
+          512,
+          512
+        ],
+        "zebra-danio_neon-red.png": [
+          1024,
+          512,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/zebra-danio-neon__genetics-enhanced",
+        "version": "765d5b09ccd8-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/small_fish/angelfish-neon__genetics-enhanced.webp",
+      "version": "685bb9490b6c",
+      "width": 192,
+      "height": 128,
+      "frames": {
+        "angelfish_neon-blue.png": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "angelfish_neon-green.png": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "angelfish_neon-orange.png": [
+          128,
+          0,
+          64,
+          64
+        ],
+        "angelfish_neon-pink.png": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "angelfish_neon-purple.png": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "angelfish_neon-red.png": [
+          128,
+          64,
+          64,
+          64
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/angelfish-neon__genetics-enhanced",
+        "version": "9757afc29651-v1",
         "standalone": false
       }
     },
@@ -112832,6 +113526,55 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/assessor__genetics-natural",
         "version": "d4b1c771c7c6-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/small_fish/barb-neon__genetics-enhanced.webp",
+      "version": "8125c0245fd4",
+      "width": 192,
+      "height": 102,
+      "frames": {
+        "barb_neon-blue.png": [
+          0,
+          0,
+          64,
+          51
+        ],
+        "barb_neon-green.png": [
+          64,
+          0,
+          64,
+          51
+        ],
+        "barb_neon-orange.png": [
+          128,
+          0,
+          64,
+          51
+        ],
+        "barb_neon-pink.png": [
+          0,
+          51,
+          64,
+          51
+        ],
+        "barb_neon-purple.png": [
+          64,
+          51,
+          64,
+          51
+        ],
+        "barb_neon-red.png": [
+          128,
+          51,
+          64,
+          51
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/barb-neon__genetics-enhanced",
+        "version": "ec2218733931-v1",
         "standalone": false
       }
     },
@@ -114853,6 +115596,55 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/small_fish/rainbow-shark-neon__genetics-enhanced.webp",
+      "version": "9af31622769b",
+      "width": 192,
+      "height": 86,
+      "frames": {
+        "rainbow-shark_neon-2.png": [
+          0,
+          0,
+          64,
+          43
+        ],
+        "rainbow-shark_neon-3.png": [
+          64,
+          0,
+          64,
+          43
+        ],
+        "rainbow-shark_neon-4.png": [
+          128,
+          0,
+          64,
+          43
+        ],
+        "rainbow-shark_neon-5.png": [
+          0,
+          43,
+          64,
+          43
+        ],
+        "rainbow-shark_neon-6.png": [
+          64,
+          43,
+          64,
+          43
+        ],
+        "rainbow-shark_neon-1.png": [
+          128,
+          43,
+          64,
+          43
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/rainbow-shark-neon__genetics-enhanced",
+        "version": "514dd8488aff-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/small_fish/rainbowfish__genetics-natural.webp",
       "version": "585ea06cf451",
       "width": 192,
@@ -115287,159 +116079,166 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/fish/small_fish/tetra__genetics-natural.webp",
-      "version": "eebfd226a2a2",
+      "path": "assets/fish/small_fish/tetra-neon__genetics-enhanced.webp",
+      "version": "0abd25f3b5c9",
       "width": 192,
-      "height": 512,
+      "height": 128,
       "frames": {
-        "tetra_ember.png": [
+        "tetra_glofish_cosmic-blue.png": [
           0,
           0,
           64,
           64
         ],
-        "tetra_emperor.png": [
+        "tetra_glofish_electric-green.png": [
           64,
           0,
           64,
           64
         ],
-        "tetra_glass.png": [
+        "tetra_glofish_galactic-purple.png": [
           128,
           0,
           64,
           64
         ],
-        "tetra_pink-blush-black-skirt.png": [
+        "tetra_glofish_moonrise-pink.png": [
           0,
           64,
+          64,
+          64
+        ],
+        "tetra_glofish_starfire-red.png": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "tetra_glofish_sunburst-orange.png": [
+          128,
+          64,
+          64,
+          64
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced",
+        "version": "0c98d744730b-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/small_fish/tetra__genetics-natural.webp",
+      "version": "5c5dabdfae98",
+      "width": 192,
+      "height": 384,
+      "frames": {
+        "tetra_black-neon.png": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "tetra_black-phantom.png": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "tetra_black-skirt.png": [
+          128,
+          0,
+          64,
+          64
+        ],
+        "tetra_cave.png": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "tetra_cochus-blue.png": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "tetra_congo.png": [
+          128,
+          64,
+          64,
+          64
+        ],
+        "tetra_cosmic-blue.png": [
+          0,
+          128,
+          64,
+          64
+        ],
+        "tetra_ember.png": [
+          64,
+          128,
+          64,
+          64
+        ],
+        "tetra_emperor.png": [
+          128,
+          128,
+          64,
+          64
+        ],
+        "tetra_glass.png": [
+          0,
+          192,
           64,
           64
         ],
         "tetra_gold-neon.png": [
           64,
-          64,
+          192,
           64,
           64
         ],
         "tetra_green-neon.png": [
           128,
-          64,
+          192,
           64,
           64
         ],
         "tetra_lemon.png": [
           0,
-          128,
+          256,
           64,
           64
         ],
         "tetra_neon.png": [
           64,
-          128,
+          256,
           64,
           64
         ],
         "tetra_penguin.png": [
           128,
-          128,
+          256,
           64,
           64
         ],
         "tetra_rummy-nose.png": [
           0,
-          192,
+          320,
           64,
           64
         ],
         "tetra_white-skirt.png": [
           64,
-          192,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-purple.png": [
-          128,
-          192,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-blue.png": [
-          0,
-          256,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-green.png": [
-          64,
-          256,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-pink.png": [
-          128,
-          256,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-red.png": [
-          0,
           320,
-          64,
-          64
-        ],
-        "tetra_neon-black-skirt-neon-orange.png": [
-          64,
-          320,
-          64,
-          64
-        ],
-        "tetra_black-neon.png": [
-          128,
-          320,
-          64,
-          64
-        ],
-        "tetra_black-phantom.png": [
-          0,
-          384,
-          64,
-          64
-        ],
-        "tetra_black-skirt.png": [
-          64,
-          384,
-          64,
-          64
-        ],
-        "tetra_cave.png": [
-          128,
-          384,
-          64,
-          64
-        ],
-        "tetra_cochus-blue.png": [
-          0,
-          448,
-          64,
-          64
-        ],
-        "tetra_congo.png": [
-          64,
-          448,
-          64,
-          64
-        ],
-        "tetra_cosmic-blue.png": [
-          128,
-          448,
           64,
           64
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra__genetics-natural",
-        "version": "31ac358958d8-v1",
+        "version": "640657ad8fa9-v1",
         "standalone": false
       }
     },
@@ -115483,6 +116282,55 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/turbo_snail",
         "version": "273bebcf8d73-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/fish/small_fish/zebra-danio-neon__genetics-enhanced.webp",
+      "version": "1503308d0296",
+      "width": 192,
+      "height": 128,
+      "frames": {
+        "zebra-danio_neon-blue.png": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "zebra-danio_neon-green.png": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "zebra-danio_neon-orange.png": [
+          128,
+          0,
+          64,
+          64
+        ],
+        "zebra-danio_neon-pink.png": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "zebra-danio_neon-purple.png": [
+          64,
+          64,
+          64,
+          64
+        ],
+        "zebra-danio_neon-red.png": [
+          128,
+          64,
+          64,
+          64
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/zebra-danio-neon__genetics-enhanced",
+        "version": "1bc9f0ddb052-v1",
         "standalone": false
       }
     },
@@ -115551,6 +116399,74 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/foodandmeds/Halloween_Candy",
         "version": "ee3002412301-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/fish-flake_containers.webp",
+      "version": "3e428379ba87",
+      "width": 2048,
+      "height": 512,
+      "frames": {
+        "fish-flakes_large.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "fish-flakes_medium.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "fish-flakes_small.png": [
+          1024,
+          0,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/fish-flake_containers",
+        "version": "39a2496f18b6-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/foodandmeds/fish-flake_morsels.webp",
+      "version": "2c232b585f6b",
+      "width": 400,
+      "height": 100,
+      "frames": {
+        "fish-flake_1.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "fish-flake_2.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "fish-flake_3.png": [
+          200,
+          0,
+          100,
+          100
+        ],
+        "fish-flake_4.png": [
+          300,
+          0,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/foodandmeds/fish-flake_morsels",
+        "version": "43488e1280b6-v1",
         "standalone": false
       }
     },
@@ -115898,86 +116814,92 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/icons/cursors.webp",
-      "version": "30155f525fe9",
-      "width": 512,
-      "height": 384,
+      "version": "94eb860edde8",
+      "width": 384,
+      "height": 640,
       "frames": {
+        "food_scoop.png": [
+          0,
+          0,
+          128,
+          128
+        ],
         "food_pellets.png": [
-          0,
-          0,
-          128,
-          128
-        ],
-        "wafer_scoop_contents.png": [
           128,
           0,
           128,
           128
         ],
-        "shrimp_scoop_contents.png": [
+        "fish-flakes_scoop_contents.png": [
           256,
           0,
           128,
           128
         ],
         "meat_scoop_contents.png": [
-          384,
-          0,
-          128,
-          128
-        ],
-        "food_scoop.png": [
           0,
           128,
           128,
           128
         ],
-        "net_cursor.png": [
+        "shrimp_scoop_contents.png": [
           128,
+          128,
+          128,
+          128
+        ],
+        "wafer_scoop_contents.png": [
+          256,
           128,
           128,
           128
         ],
         "bucket_cursor.png": [
-          256,
-          128,
-          128,
-          128
-        ],
-        "first_aid_cursor.png": [
-          384,
-          128,
-          128,
-          128
-        ],
-        "osmotic-stress_cursor.png": [
           0,
           256,
           128,
           128
         ],
-        "infection_cursor.png": [
+        "first_aid_cursor.png": [
           128,
-          256,
-          128,
-          128
-        ],
-        "anti-parasite_cursor.png": [
-          256,
           256,
           128,
           128
         ],
         "calming-serum_cursor.png": [
-          384,
           256,
+          256,
+          128,
+          128
+        ],
+        "infection_cursor.png": [
+          0,
+          384,
+          128,
+          128
+        ],
+        "anti-parasite_cursor.png": [
+          128,
+          384,
+          128,
+          128
+        ],
+        "osmotic-stress_cursor.png": [
+          256,
+          384,
+          128,
+          128
+        ],
+        "net_cursor.png": [
+          0,
+          512,
           128,
           128
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/icons/cursors",
-        "version": "ecb55ce467a2-v1",
+        "version": "f95e1e3317b4-v1",
         "standalone": false
       }
     },

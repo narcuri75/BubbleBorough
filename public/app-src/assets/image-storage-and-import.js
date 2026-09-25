@@ -339,7 +339,10 @@ function sanitizePellet(pellet) {
   const xNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
-  const yNorm = settled
+  const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating);
+  const yNorm = surfaceFloating
+    ? clamp(Number(pellet.yNorm) || WATER_SURFACE_Y / TANK_HEIGHT + 0.035, 0.09, 0.24)
+    : settled
     ? floorYNorm
     : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);
   return {
@@ -349,6 +352,7 @@ function sanitizePellet(pellet) {
     startYNorm: clamp(Number.isFinite(Number(pellet.startYNorm)) ? Number(pellet.startYNorm) : yNorm, 0.09, floorYNorm),
     floorYNorm,
     settled,
+    surfaceFloating,
     settledAt: settled && Number.isFinite(Number(pellet.settledAt)) ? Number(pellet.settledAt) : null,
     sway: clamp(Number(pellet.sway) || Math.random(), 0, 1),
     targetFishId: typeof pellet.targetFishId === "string" ? pellet.targetFishId : "",
@@ -373,7 +377,9 @@ function sanitizePellet(pellet) {
       ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
       : null,
     createdAt: pellet.createdAt,
-    expiresAt: pellet.expiresAt
+    expiresAt: surfaceFloating
+      ? Math.min(Number(pellet.expiresAt) || (pellet.createdAt + SURFACE_FOOD_LIFETIME_MS), pellet.createdAt + SURFACE_FOOD_LIFETIME_MS)
+      : pellet.expiresAt
   };
 }
 

@@ -15672,6 +15672,14 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   filter: drop-shadow(0 3px 5px rgba(0, 0, 0, 0.28));
 }
 
+/* Store cards keep the source artwork at its natural scale. In the compact
+   care toolbar, expand food art so its visible pixels fill the tile instead
+   of being lost inside transparent sprite padding. */
+.care-food-card .care-medicine-card-image {
+  transform: scale(1.7);
+  transform-origin: center;
+}
+
 .care-medicine-card-name {
   width: 100%;
   overflow: hidden;

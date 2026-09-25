@@ -81192,7 +81192,7 @@ function renderMedicineTray() {
         const label = `${food.name} - ${quantity} left`;
         return `
           <button
-            class="care-medicine-card ${active ? "is-active" : ""}"
+            class="care-medicine-card care-food-card ${active ? "is-active" : ""}"
             type="button"
             data-select-food="${food.id}"
             title="${label}"

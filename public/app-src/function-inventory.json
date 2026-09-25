@@ -43096,8 +43096,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 2436,
       "originalLine": 46622,
-      "characters": 8304,
-      "sourceHash": "cc95b1fa2ec4297f5d29e738851f492950a375cd792f0403c04b48074ea525fa",
+      "characters": 8319,
+      "sourceHash": "2115c0d98ecf306beb5272364a8e49c50c63024263d390df42e431af21a2f33c",
       "calls": [
         "assetImageAttributes",
         "getCurrentTank",

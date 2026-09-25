@@ -17453,6 +17453,15 @@ function isPelletSizedFoodSprite(foodOrKey) {
 }
 
 function getFoodSpriteVisualSize(foodOrKey, scale, stableScale = getViewportStableAssetScale()) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  if (food?.id === "fishFlakes") {
+    // Flakes are a light surface sprinkle, deliberately half the size of the
+    // other loose food sprites.
+    return {
+      maxSize: 12 * scale,
+      minSize: 5 * stableScale
+    };
+  }
   if (isPelletSizedFoodSprite(foodOrKey)) {
     // Candy uses detailed sprite art rather than a tiny pellet. Keep it large
     // enough to read clearly in the tank, especially on desktop displays.
@@ -52152,11 +52161,13 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     && Number.isFinite(Number(options.dropStartXNorm))
     && Number.isFinite(Number(options.dropStartYNorm));
   const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
-  const dropYNorm = clamp(
-    Number(yNorm),
-    hasCustomDropStart ? 0.09 : WATER_SURFACE_Y / TANK_HEIGHT + 0.1,
-    hasCustomDropStart ? 0.9 : 0.72
-  );
+  // A hand-fed click chooses the horizontal spot, not an underwater launch
+  // point. Food enters at the surface and then follows its own sink/float
+  // behavior; only equipment drops provide an explicit start position.
+  const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.035 : 0.055);
+  const dropYNorm = hasCustomDropStart
+    ? clamp(Number(yNorm), 0.09, 0.9)
+    : clamp(surfaceYNorm, 0.09, 0.24);
   return sanitizePellet({
     id: createId("pellet"),
     foodKey,

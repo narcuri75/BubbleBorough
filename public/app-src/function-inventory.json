@@ -21312,8 +21312,8 @@
       "module": "fish/feeding-and-medicine.js",
       "sourceLine": 399,
       "originalLine": 27379,
-      "characters": 1887,
-      "sourceHash": "8f8011e2636e0632518bc5c1412e1309d5bed3087a7059951e36e579c652c0d8",
+      "characters": 2165,
+      "sourceHash": "5ff7e66a7a0c47812afb8b92067eb224168bb36f72689fae0d4e024a4bb979b4",
       "calls": [
         "clamp",
         "createId",
@@ -21328,7 +21328,7 @@
     {
       "name": "createAutoDispenserStoredPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 439,
+      "sourceLine": 441,
       "originalLine": 27404,
       "characters": 347,
       "sourceHash": "6deecf6d2880850c5bc4ca32d8a40560f894a8392ba13e113162b7ad89ab2f11",
@@ -21343,7 +21343,7 @@
     {
       "name": "createAutoDispenserDroppedPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 452,
+      "sourceLine": 454,
       "originalLine": 27417,
       "characters": 1951,
       "sourceHash": "2ac273711a40b8f71f2848595cc7fd1b6f430efbf7929aa80cf4cf156935450e",
@@ -21363,7 +21363,7 @@
     {
       "name": "setAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 500,
+      "sourceLine": 502,
       "originalLine": 27462,
       "characters": 684,
       "sourceHash": "64120d56c20df38487696562673cb1b4c2605d7d7fb86774f66dc8b9ced359bc",
@@ -21378,7 +21378,7 @@
     {
       "name": "adjustAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 528,
+      "sourceLine": 530,
       "originalLine": 27490,
       "characters": 239,
       "sourceHash": "dac1af68a4ad2c0970f683b2012f1902d62e5e6145e86d58982d39f01852a5a9",
@@ -21390,7 +21390,7 @@
     {
       "name": "getFoodCompatibleFishInTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 536,
+      "sourceLine": 538,
       "originalLine": null,
       "characters": 237,
       "sourceHash": "d763b3b1cf60be9233dbd0208bf910c24ee2b9f40b20d54ba6aa76051cc9a078",
@@ -21403,7 +21403,7 @@
     {
       "name": "getFoodCompatibleFishAcrossTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 541,
+      "sourceLine": 543,
       "originalLine": null,
       "characters": 216,
       "sourceHash": "b7fb5fe2193a76ee12ff8c5ce6cda4c43cb315b47fd39e1961a0f0562711d997",
@@ -21415,7 +21415,7 @@
     {
       "name": "getFoodIncompatibilityMessage",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 547,
+      "sourceLine": 549,
       "originalLine": null,
       "characters": 244,
       "sourceHash": "23ee8cdfb1800f859ec594b2f97e97c310360da77b910cabd1bb21f33d7c54df",
@@ -21424,7 +21424,7 @@
     {
       "name": "loadSelectedFoodIntoAutoDispenser",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 553,
+      "sourceLine": 555,
       "originalLine": 27498,
       "characters": 2423,
       "sourceHash": "437e24c9cea869a8b1d6b9d069f69334774ace46222b72d4495c9511dc6c36b6",
@@ -21447,7 +21447,7 @@
     {
       "name": "returnAutoDispenserPelletsToInventory",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 627,
+      "sourceLine": 629,
       "originalLine": 27564,
       "characters": 1374,
       "sourceHash": "860a3730d615d5c6c5d7302de9ea89c3e7543c017a7287c3f0fab1311346c1f7",
@@ -21464,7 +21464,7 @@
     {
       "name": "applyFoodBuff",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 666,
+      "sourceLine": 668,
       "originalLine": 27604,
       "characters": 313,
       "sourceHash": "dab8bdd9d200b7c6665250ab33768f4eedb20b6654cbe46c8bc27d0d27a853b5",
@@ -21475,7 +21475,7 @@
     {
       "name": "applyFishMealWindowFoodIntake",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 681,
+      "sourceLine": 683,
       "originalLine": 27621,
       "characters": 1536,
       "sourceHash": "5ec9fb9160533bacb37f272c0cd3d9ebd5773125139d34b19310395eae965f22",
@@ -21488,7 +21488,7 @@
     {
       "name": "applyFoodPelletToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 725,
+      "sourceLine": 727,
       "originalLine": 27662,
       "characters": 4920,
       "sourceHash": "6b005f97908b766f65281ea2d0fbb8611c7a22feae978a6dc64363a632de31f8",
@@ -21518,7 +21518,7 @@
     {
       "name": "handleFishEatFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 847,
+      "sourceLine": 849,
       "originalLine": 27723,
       "characters": 139,
       "sourceHash": "ad26382e04b17f15dbdff10e68ceeac7d553cc27a859a78a0aa334bb066cc4bb",
@@ -21529,7 +21529,7 @@
     {
       "name": "consumeOffscreenFishFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 851,
+      "sourceLine": 853,
       "originalLine": null,
       "characters": 1105,
       "sourceHash": "aecd42140531804b413a5d209585ccc33c4dfea8c88be19af12bc105501d1aa9",
@@ -21544,7 +21544,7 @@
     {
       "name": "getConnectedFoodTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 876,
+      "sourceLine": 878,
       "originalLine": null,
       "characters": 341,
       "sourceHash": "b7f8df2991c401f6c469a9375129a606aff3acd5c76b5d45dad029b1c0c7b24c",
@@ -21557,7 +21557,7 @@
     {
       "name": "allocateAutoDispenserPellets",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 887,
+      "sourceLine": 889,
       "originalLine": null,
       "characters": 871,
       "sourceHash": "46b1ed630bbefd48841b45c11dbc094122b6199f3c48591a719119f09547121c",
@@ -21568,7 +21568,7 @@
     {
       "name": "processSmartAutoFeeder",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 909,
+      "sourceLine": 911,
       "originalLine": 27731,
       "characters": 6226,
       "sourceHash": "03457ad92f8b62c2ca6bce69f992128a2109042757a9cfda510f820a48100421",
@@ -21593,7 +21593,7 @@
     {
       "name": "dropSelectedFoodAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1045,
+      "sourceLine": 1047,
       "originalLine": 27788,
       "characters": 2359,
       "sourceHash": "75a391341e9d92199a960f23bbf9bec076ca47f72aaa81f78b5ac65ea250cfbc",
@@ -21618,7 +21618,7 @@
     {
       "name": "stageHungryFishTravelToFoodTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1116,
+      "sourceLine": 1118,
       "originalLine": null,
       "characters": 838,
       "sourceHash": "022e86409f0d3fc670451f27a60416a79963527495efa040f0719b40cdafeff1",
@@ -21634,7 +21634,7 @@
     {
       "name": "getNextDayStartTimestamp",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1142,
+      "sourceLine": 1144,
       "originalLine": 27853,
       "characters": 187,
       "sourceHash": "cb1fae1cfe22dc2c0b3469cff9ecd8c41e90c6183f85565b80a168911aa15921",
@@ -21643,7 +21643,7 @@
     {
       "name": "hasActiveTankMedicineEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1149,
+      "sourceLine": 1151,
       "originalLine": 27860,
       "characters": 411,
       "sourceHash": "9bcc4edfb8db89dba9e1abf76b3bbef6ea75cea38ef477bd6c17577469b551f0",
@@ -21654,7 +21654,7 @@
     {
       "name": "addMedicineVisualEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1156,
+      "sourceLine": 1158,
       "originalLine": null,
       "characters": 523,
       "sourceHash": "da361ace7bd7910b5f6392bf30d1674ebe443b3e854549c144da0e9efe9e1bf8",
@@ -21666,7 +21666,7 @@
     {
       "name": "consumeSelectedMedicineDose",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1173,
+      "sourceLine": 1175,
       "originalLine": null,
       "characters": 319,
       "sourceHash": "e631b121a535fc0ae8d9192efab90f17e994babcd400330fca34150658fbd61c",
@@ -21675,7 +21675,7 @@
     {
       "name": "applyTargetedMedicineToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1181,
+      "sourceLine": 1183,
       "originalLine": null,
       "characters": 2869,
       "sourceHash": "4f948e34949195945eeb7876caedf253472ad93c70e377978a52967bec2a0318",
@@ -21689,7 +21689,7 @@
     {
       "name": "applySelectedMedicineAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1234,
+      "sourceLine": 1236,
       "originalLine": 27864,
       "characters": 2473,
       "sourceHash": "d32052caab3458505db95b2c215b5b71da8e061fd69d4d79ca764604e94b8403",
@@ -21714,7 +21714,7 @@
     {
       "name": "processTankMedicineEffects",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1302,
+      "sourceLine": 1304,
       "originalLine": 27920,
       "characters": 328,
       "sourceHash": "0321333db4a71ed5727d0024ee79794b37cf407c620c89811643a95e81e2d588",
@@ -39449,9 +39449,10 @@
       "module": "tank/catalog-and-equipment.js",
       "sourceLine": 1522,
       "originalLine": null,
-      "characters": 451,
-      "sourceHash": "dde01fe4842a2f8c430a068a858e45fb499c5598818a89185a285d4e366c459b",
+      "characters": 762,
+      "sourceHash": "6e394329c71e06e6ad82d006da06cc986f6a8bd576a7a96b6c66d09da682c1fa",
       "calls": [
+        "getFoodMeta",
         "getViewportStableAssetScale",
         "isPelletSizedFoodSprite"
       ]
@@ -39459,7 +39460,7 @@
     {
       "name": "getChumSpriteVisualScale",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1537,
+      "sourceLine": 1546,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "0907a1175543317e61a55b7579110f7d23ae9a089b32ebd4e067f0edc3496ff6",
@@ -39468,7 +39469,7 @@
     {
       "name": "getFoodDropAppearance",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1550,
+      "sourceLine": 1559,
       "originalLine": 3804,
       "characters": 1092,
       "sourceHash": "9bf9a9ba175f37a27e6a94fc77e3f37b010c90a3fb313e4b4d61fd8b8ff1a501",
@@ -39483,7 +39484,7 @@
     {
       "name": "getDefaultMedicineInventory",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1569,
+      "sourceLine": 1578,
       "originalLine": 3823,
       "characters": 129,
       "sourceHash": "07621c0aee4d2ee82ce10d487e37ffbb1b97faed877d71a00f04bd32f1a38171",
@@ -39494,7 +39495,7 @@
     {
       "name": "sanitizeDispenserStoredPellet",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1573,
+      "sourceLine": 1582,
       "originalLine": 3827,
       "characters": 388,
       "sourceHash": "5889a9bed5703583bd4d27781d4c1d2422727f3bb06a5e3da185f1bf9f62e50d",
@@ -39507,7 +39508,7 @@
     {
       "name": "isTankCareAutomationPaused",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1590,
+      "sourceLine": 1599,
       "originalLine": null,
       "characters": 282,
       "sourceHash": "fb90a3cb99b2c8024b246e39042c6e3132b1fa2fc29b7558f973f3a5ecf93f06",
@@ -39519,7 +39520,7 @@
     {
       "name": "createDefaultAutoDispenserState",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1598,
+      "sourceLine": 1607,
       "originalLine": 3844,
       "characters": 1752,
       "sourceHash": "52e1ec42842ca0c153d42c15c3bd379544ca48422cd279079160a6adc678edeb",
@@ -39533,7 +39534,7 @@
     {
       "name": "getAutoDispenserLoadedCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1627,
+      "sourceLine": 1636,
       "originalLine": 3866,
       "characters": 161,
       "sourceHash": "5b6bbba76cba57a511bc0e621c7f02851b7b053a1f89bd5b90fc86692ba96a7e",
@@ -39542,7 +39543,7 @@
     {
       "name": "isAutoDispenserFoodLow",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1631,
+      "sourceLine": 1640,
       "originalLine": 3870,
       "characters": 403,
       "sourceHash": "bbcc6d9bdb3479749522a58f4128c53b9555a47e0b24b29a07feac187cc657a5",
@@ -39554,7 +39555,7 @@
     {
       "name": "getAutoDispenserDemandCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1645,
+      "sourceLine": 1654,
       "originalLine": null,
       "characters": 382,
       "sourceHash": "edf5e781a91b8053c2b11540f2c4dd58f0bb547e7253d08f1a89bbaf6423ec72",
@@ -39569,7 +39570,7 @@
     {
       "name": "hasAutoDispenserInstalled",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1651,
+      "sourceLine": 1660,
       "originalLine": 3884,
       "characters": 125,
       "sourceHash": "d9f5f3165c899b64cc5ed24dbd2feb22ad171a781278aea67f43e5dccbe580a8",
@@ -39580,7 +39581,7 @@
     {
       "name": "deployAutoDispenser",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1655,
+      "sourceLine": 1664,
       "originalLine": null,
       "characters": 767,
       "sourceHash": "2857f78d421efea92232dc996a13e12c16bd9ee2395e1e86e290afe48aacc15e",
@@ -39596,7 +39597,7 @@
     {
       "name": "recallAutoDispenser",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1672,
+      "sourceLine": 1681,
       "originalLine": null,
       "characters": 516,
       "sourceHash": "e27e7ee757398290367942996fe1aa918e7909a82063380508906a16124d4f53",

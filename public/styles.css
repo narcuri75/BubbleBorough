@@ -472,6 +472,10 @@ html[data-layout-ratio-lock="true"] .app-shell {
 html[data-layout-ratio-lock="true"] body {
   width: 100vw;
   height: 100vh;
+  /* The unused viewport around the scaled, locked composition is deliberate
+     letterboxing. Keep it fully opaque so no background gradients or scene
+     effects bleed into the top/bottom bars. */
+  background: #000;
 }
 
 .tank-page {

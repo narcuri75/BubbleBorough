@@ -49,7 +49,7 @@
       "image": "fish-flakes_small.png",
       "dropStyle": "sprite",
       "dropImages": ["fish-flake_1.png", "fish-flake_2.png", "fish-flake_3.png", "fish-flake_4.png"],
-      "piecesPerDrop": 12,
+      "piecesPerDrop": 6,
       "surfaceFloating": true,
       "dispenserAllowed": false,
       "packages": [

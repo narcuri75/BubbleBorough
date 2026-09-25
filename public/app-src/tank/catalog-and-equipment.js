@@ -1520,6 +1520,15 @@ function isPelletSizedFoodSprite(foodOrKey) {
 }
 
 function getFoodSpriteVisualSize(foodOrKey, scale, stableScale = getViewportStableAssetScale()) {
+  const food = typeof foodOrKey === "string" ? getFoodMeta(foodOrKey) : foodOrKey;
+  if (food?.id === "fishFlakes") {
+    // Flakes are a light surface sprinkle, deliberately half the size of the
+    // other loose food sprites.
+    return {
+      maxSize: 12 * scale,
+      minSize: 5 * stableScale
+    };
+  }
   if (isPelletSizedFoodSprite(foodOrKey)) {
     // Candy uses detailed sprite art rather than a tiny pellet. Keep it large
     // enough to read clearly in the tank, especially on desktop displays.

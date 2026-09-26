@@ -16,7 +16,7 @@ function loadTankazonFunctions(names, bindings) {
   assert.equal(parsed.parseDiagnostics.length, 0);
   const context = vm.createContext({ itemReturnPreview: null, tankazonNavigationRevision: 0, ...bindings });
   const visit = node => {
-    if (ts.isFunctionDeclaration(node) && [...names, "isTankazonCustomProduct"].includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
+    if (ts.isFunctionDeclaration(node) && [...names, "isTankazonCustomProduct", "isTankazonLockedFishVariant", "getTankazonSelectableVariant"].includes(node.name?.text)) vm.runInContext(node.getText(parsed), context);
     ts.forEachChild(node, visit);
   };
   visit(parsed);
@@ -456,12 +456,14 @@ test("custom fish reproductive mode chooses live young or an egg", () => {
     ["custom-egg", { id: "custom-egg", behavior: "free", liveBirth: false }]
   ]);
   const c = load("fish/lifecycle-and-breeding.js", ["spawnBreedingOffspring"], {
+    state: { fish: [] },
     runtime: { fishMap },
     DEFAULT_TANK_LAYER: 1,
     SUCKER_FISH_BACK_GLASS_LAYER: 0,
     clampTankLayer: value => value,
     sanitizeTankName: value => String(value || ""),
     getFishAssetVariants: () => ["a.png"],
+    getFishAppearanceVariantKey: value => String(value || "").split("/").pop(),
     createBabyFishFromSpecies: (speciesId, now, options) => ({ id: `baby-${speciesId}`, speciesId, parentNames: options.parentNames }),
     addFishToTank: fish => babies.push(fish),
     createFishEggRecord: (speciesId, now, options) => ({ id: `egg-${speciesId}`, speciesId, parentNames: options.parentNames }),
@@ -951,7 +953,7 @@ test("fish discovers numbered artwork through _5 with gaps, and ignores absent v
       queueMicrotask(() => this.naturalWidth ? this.onload?.() : this.onerror?.());
     }
   }
-  const c = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishStoreVariants", "getFishAppearanceVariantKey", "discoverFishAppearanceVariants"], {
+  const c = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishStoreVariants", "getFishAppearanceVariantKey", "getFishVariantLabelFromTileName", "discoverFishAppearanceVariants"], {
     Image: TestImage, runtime: { images: new Map() }, setTimeout, clearTimeout, getSpriteAssetFrame: () => null
   });
   const fish = { asset: "assets/fish/guppy.png" };
@@ -977,34 +979,177 @@ test("a saved fish keeps its chosen artwork when new variants change numeric ind
   assert.equal(c.getFishAssetPath({ appearanceVariant: 1 }, species), "guppy_1.png");
 });
 
-test("fish purchases save the selected version per fish, default to main, and reject missing variants", async () => {
+test("Phase 22 fish purchases keep the base available, reject locked alternates, then preserve the exact appearance after mastery unlock", async () => {
   const helpers = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishAppearanceVariantKey"]);
-  const species = { id: "guppy", name: "Guppy", asset: "guppy.png", assetVariants: ["guppy.png", "guppy_3.png"] };
+  const species = { id: "guppy", name: "Guppy", asset: "guppy.png", assetVariants: ["guppy.png", "guppy_3.png"], variantLabels: ["Main", "Moscow Blue"] };
   const state = { coins: 20 };
   const fish = [];
+  const mastery = { unlockedVariantKeys: new Set(["guppy.png"]) };
+  const messages = [];
   const c = load("store/purchases.js", ["buyFish"], {
     state, runtime: { fishMap: new Map([["guppy", species]]), pendingFishPurchases: new Set() },
     ...Object.fromEntries(["isInfoOnlyTutorialActive", "isCustomFishShopKey", "isGuidedTutorialActive"].map(name => [name, () => false])),
     isFishSpeciesShopUnlocked: () => true, getFishPurchaseCost: () => 4,
     getFishAssetVariants: helpers.getFishAssetVariants, getFishAppearanceVariantKey: helpers.getFishAppearanceVariantKey,
+    isFishAppearanceVariantUnlocked: (entry, key) => key === helpers.getFishAppearanceVariantKey(entry.asset) || mastery.unlockedVariantKeys.has(key),
     getFishAssetPath: (record, entry) => entry.assetVariants[record.appearanceVariant],
     FISH_ENTRY_DURATION_MS: 100, FISH_ENTRY_FROM_Y_NORM: 0,
     createFishRecord: (speciesId, options) => ({ ...options, speciesId, id: String(fish.length), name: "Gup" }),
     ensureFishPurchaseImageReady: async () => true,
     performCoinTransaction: transaction => { state.coins -= transaction.amount; transaction.apply(); return { ok: true }; },
     addFishToTank: record => fish.push(record), maybeSeedNewFishDiseaseCarrier() {}, isMealFreeFish: () => true,
-    getFishDisplaySpeciesName: () => "Guppy", pluralize: word => word
+    getFishDisplaySpeciesName: () => "Guppy", pluralize: word => word,
+    showToast: message => messages.push(message)
   });
-  assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_3.png" })).ok, true);
-  assert.equal((await c.buyFish("guppy")).ok, true);
-  assert.equal(fish[0].appearanceVariantKey, "guppy_3.png");
-  assert.equal(fish[0].appearanceAssetPath, "guppy_3.png");
-  assert.equal(fish[0].appearanceVariant, 1);
-  assert.equal(fish[1].appearanceVariantKey, "guppy.png");
+
+  assert.equal((await c.buyFish("guppy")).ok, true, "the authored base appearance must remain immediately purchasable");
+  assert.equal(fish[0].appearanceVariantKey, "guppy.png");
+  assert.equal(state.coins, 16);
+
+  assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_3.png" })).reason, "variant-locked");
+  assert.equal(state.coins, 16, "locked variant must fail before any money is spent");
+  assert.equal(fish.length, 1);
+  assert.match(messages.at(-1), /Moscow Blue is locked/);
+
+  mastery.unlockedVariantKeys.add("guppy_3.png");
+  assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_3.png" })).ok, true,
+    "the same authored appearance becomes purchasable after its stable key is added to species mastery");
+  assert.equal(fish[1].appearanceVariantKey, "guppy_3.png");
+  assert.equal(fish[1].appearanceAssetPath, "guppy_3.png");
+  assert.equal(fish[1].appearanceVariant, 1, "purchased fish must retain the exact selected appearance index as well as its stable key");
   assert.equal(state.coins, 12);
   assert.equal((await c.buyFish("guppy", { appearanceVariantKey: "guppy_4.png" })).reason, "variant-unavailable");
   assert.equal(state.coins, 12);
   assert.equal(fish.length, 2);
+});
+
+test("Phase 22 central appearance helper allows base/unlocked/special/debug and rejects locked normal variants", () => {
+  const mastery = { unlockedVariantKeys: ["goldfish.png", "goldfish_oranda.png"] };
+  let debug = false;
+  let progressionEnabled = true;
+  const species = { id: "goldfish", asset: "assets/fish/goldfish.png" };
+  const c = load("fish/needs-disease-and-behavior.js", ["getFishAppearanceVariantKey", "isFishAppearanceVariantUnlocked"], {
+    isFishSpeciesCareProgressionEligible: () => progressionEnabled,
+    getFishBaseAppearanceVariantKey: () => "goldfish.png",
+    getFishSpeciesMasteryRecord: () => mastery,
+    isDebugModeEnabled: () => debug
+  });
+
+  assert.equal(c.isFishAppearanceVariantUnlocked(species, "assets/fish/goldfish.png?v=2"), true);
+  assert.equal(c.isFishAppearanceVariantUnlocked(species, "goldfish_oranda.png"), true);
+  assert.equal(c.isFishAppearanceVariantUnlocked(species, "goldfish_ranchu.png"), false);
+
+  debug = true;
+  assert.equal(c.isFishAppearanceVariantUnlocked(species, "goldfish_ranchu.png"), true);
+  assert.equal(c.isFishAppearanceVariantUnlocked(species, "goldfish_ranchu.png", { allowDebugBypass: false }), false);
+
+  debug = false;
+  progressionEnabled = false;
+  assert.equal(c.isFishAppearanceVariantUnlocked({ id: "special", asset: "special.png" }, "special_alt.png"), true);
+});
+
+test("Phase 23 species unlocks seed only the base appearance while alternate variants stay progression-locked", () => {
+  const state = { unlockedFishSpecies: [], fishSpeciesMastery: {} };
+  const species = {
+    id: "betta",
+    name: "Betta",
+    unlockRequirement: "stable-tank",
+    asset: "assets/fish/betta/betta_base.png",
+    assetVariants: [
+      "assets/fish/betta/betta_base.png",
+      "assets/fish/betta/betta_blue.png",
+      "assets/fish/betta/betta_red.png"
+    ]
+  };
+  const runtime = { fishMap: new Map([[species.id, species]]) };
+  const appearanceKey = value => String(value || "").split(/[?#]/)[0].split("/").pop();
+
+  const mastery = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "getFishBaseAppearanceVariantKey",
+    "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord"
+  ], {
+    state, runtime,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAppearanceVariantKey: appearanceKey
+  });
+
+  const catalog = load("store/catalog.js", [
+    "isFishSpeciesProgressUnlocked", "isFishSpeciesShopUnlocked", "isFishSpeciesUnlocked", "unlockFishSpecies"
+  ], {
+    state, runtime,
+    isDebugModeEnabled: () => false,
+    sanitizeUnlockedFishSpecies: values => [...new Set((Array.isArray(values) ? values : []).filter(Boolean))],
+    getFishSpeciesMasteryRecord: mastery.getFishSpeciesMasteryRecord,
+    pushEvent: () => null
+  });
+
+  assert.equal(catalog.isFishSpeciesProgressUnlocked(species), false);
+  assert.equal(catalog.isFishSpeciesShopUnlocked(species), false);
+  assert.equal(catalog.unlockFishSpecies("betta", 1000, "Betta unlocked."), true);
+  assert.equal(catalog.isFishSpeciesProgressUnlocked(species), true);
+  assert.equal(catalog.isFishSpeciesShopUnlocked(species), true);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(state.fishSpeciesMastery.betta.unlockedVariantKeys)),
+    ["betta_base.png"],
+    "species unlock should seed only the authored base appearance"
+  );
+
+  const variants = load("fish/needs-disease-and-behavior.js", [
+    "getFishAppearanceVariantKey", "isFishAppearanceVariantUnlocked"
+  ], {
+    isFishSpeciesCareProgressionEligible: () => true,
+    getFishBaseAppearanceVariantKey: () => "betta_base.png",
+    getFishSpeciesMasteryRecord: mastery.getFishSpeciesMasteryRecord,
+    isDebugModeEnabled: () => false
+  });
+  assert.equal(variants.isFishAppearanceVariantUnlocked(species, "betta_base.png"), true);
+  assert.equal(variants.isFishAppearanceVariantUnlocked(species, "betta_blue.png"), false);
+  assert.equal(variants.isFishAppearanceVariantUnlocked(species, "betta_red.png"), false);
+});
+
+test("Phase 23 variant mastery cannot unlock a species that still requires its milestone", async () => {
+  const species = {
+    id: "betta",
+    name: "Betta",
+    unlockRequirement: "stable-tank",
+    asset: "betta_base.png",
+    assetVariants: ["betta_base.png", "betta_blue.png"]
+  };
+  const state = {
+    coins: 20,
+    unlockedFishSpecies: [],
+    fishSpeciesMastery: {
+      betta: {
+        highestLevel: 5,
+        unlockedVariantKeys: ["betta_base.png", "betta_blue.png"],
+        masteredAt: 1000,
+        totalCareLevelUps: 4,
+        lastVariantUnlockedAt: 1000,
+        collectionCompletedAt: 1000
+      }
+    }
+  };
+  const runtime = { fishMap: new Map([[species.id, species]]), pendingFishPurchases: new Set() };
+  const catalog = load("store/catalog.js", ["isFishSpeciesProgressUnlocked", "isFishSpeciesShopUnlocked"], {
+    state, runtime,
+    isDebugModeEnabled: () => false
+  });
+  const messages = [];
+  const purchases = load("store/purchases.js", ["buyFish"], {
+    state, runtime,
+    isInfoOnlyTutorialActive: () => false,
+    isCustomFishShopKey: () => false,
+    isDebugModeEnabled: () => false,
+    isFishSpeciesShopUnlocked: catalog.isFishSpeciesShopUnlocked,
+    showToast: message => messages.push(message)
+  });
+
+  assert.equal(catalog.isFishSpeciesProgressUnlocked(species), false, "variant mastery must not satisfy the species milestone gate");
+  const result = await purchases.buyFish("betta", { appearanceVariantKey: "betta_blue.png" });
+  assert.equal(result.reason, "species-locked");
+  assert.equal(state.coins, 20, "species lock must fail before any purchase can spend coins");
+  assert.match(messages.at(-1), /Betta has not been unlocked yet\./);
 });
 
 test("catalog dot selections flow into item/cart descriptors and stale selections fall back to Main", () => {
@@ -1020,27 +1165,84 @@ test("catalog dot selections flow into item/cart descriptors and stale selection
   assert.equal(c.getButtonDescriptor(button).variantKey, "otocinclus.png");
 });
 
-test("BubbleBodega keeps different fish variants in separate cart entries and forwards the exact selection", async () => {
+test("Phase 21 BubbleBodega falls back from stale locked fish selections and blocks them from cart selection", () => {
+  const variants = [
+    { key: "goldfish.png", image: "goldfish.png", label: "Main", unlocked: true, locked: false, isBase: true },
+    { key: "goldfish_ranchu.png", image: "goldfish_ranchu.png", label: "Ranchu", unlocked: false, locked: true, isBase: false }
+  ];
+  const card = {
+    querySelector: selector => selector === ".price-tag" ? { textContent: "4 coins" }
+      : selector === "img" ? { getAttribute: () => "goldfish.png", dataset: {} }
+      : { textContent: "Goldfish" },
+    dataset: { storeSeller: "BubbleBodega" }
+  };
+  const button = { dataset: { buyFish: "goldfish", fishVariants: JSON.stringify(variants), shopVariantKey: "goldfish_ranchu.png" }, closest: () => card, textContent: "Add to Cart" };
+  const c = loadTankazonFunctions(["getButtonDescriptor", "selectTankazonFishVariant", "addToCart"], {
+    cart: new Map(), purchaseErrorMessage: "", saveTankazonCart() {}, renderCart() {}, beginTankazonCustomization() {}
+  });
+  const descriptor = c.getButtonDescriptor(button);
+  assert.equal(descriptor.variantKey, "goldfish.png");
+  assert.equal(descriptor.key, "buyFish:goldfish:variant:goldfish.png");
+  c.addToCart({ ...descriptor, variantKey: "goldfish_ranchu.png", key: "buyFish:goldfish:variant:goldfish_ranchu.png" });
+  assert.equal(c.cart.size, 1);
+  assert.ok(c.cart.has("buyFish:goldfish:variant:goldfish.png"));
+  assert.equal(c.cart.has("buyFish:goldfish:variant:goldfish_ranchu.png"), false);
+});
+
+test("Phase 21 fish locks do not change non-fish variant selection behavior", () => {
+  const c = loadTankazonFunctions(["selectTankazonFishVariant"], {});
+  const decor = { fnName: "buyDecor", id: "rock", baseName: "Rock", variants: [
+    { key: "rock_a.png", image: "rock_a.png", label: "A" },
+    { key: "rock_b.png", image: "rock_b.png", label: "B", locked: true }
+  ] };
+  const selected = c.selectTankazonFishVariant(decor, "rock_b.png");
+  assert.equal(selected.variantKey, "rock_b.png");
+  assert.equal(selected.key, "buyDecor:rock:variant:rock_b.png");
+});
+
+test("Phase 21 catalog variant controls ignore stale locked fish appearances without displaying them", () => {
+  const source = fs.readFileSync(path.join(__dirname, "../public/store-variants.js"), "utf8");
+  assert.match(source, /function isLockedFishVariant\(/);
+  assert.match(source, /if \(locked\) \{[\s\S]*?dot\.disabled = true;[\s\S]*?dot\.hidden = true/);
+  assert.doesNotMatch(source, /classList\.add\("is-locked"\)|shop-variant-lock|🔒/);
+  assert.match(source, /if \(entry && !isLockedFishVariant\(entry, variant\)\) select\(entry, dot\.dataset\.shopVariant\)/);
+  assert.match(source, /entry\.button\.dataset\.shopVariantKey = variant\.key/);
+});
+
+test("BubbleBodega keeps only unlocked fish appearances selectable, then preserves separate cart entries and the exact selection after mastery unlock", async () => {
   const bought = [];
+  const mastery = { unlockedVariantKeys: new Set(["guppy.png"]) };
+  const buildItem = () => ({ fnName: "buyFish", id: "guppy", cost: 4, baseName: "Guppy", variants: [
+    { key: "guppy.png", image: "guppy.png", label: "Main", unlocked: true, locked: false, isBase: true },
+    { key: "guppy_3.png", image: "guppy_3.png", label: "Variant 3", unlocked: mastery.unlockedVariantKeys.has("guppy_3.png"), locked: !mastery.unlockedVariantKeys.has("guppy_3.png"), isBase: false }
+  ] });
   const c = loadTankazonFunctions(["selectTankazonFishVariant", "executeTankazonNativePurchase", "addToCart"], {
     cart: new Map(), purchaseErrorMessage: "", saveTankazonCart() {}, renderCart() {},
     ensureTankazonNativePurchaseButton: async () => ({ disabled: false, textContent: "Buy" }),
     getTankazonCoinBalance: () => 20, waitForTankazonRender: async () => {},
     window: { buyFish: async (id, options) => { bought.push({ id, ...options }); return { ok: true }; } }
   });
-  const item = { fnName: "buyFish", id: "guppy", cost: 4, baseName: "Guppy", variants: [
-    { key: "guppy.png", image: "guppy.png", label: "Main" },
-    { key: "guppy_3.png", image: "guppy_3.png", label: "Variant 3" }
-  ] };
+
+  let item = buildItem();
   const main = c.selectTankazonFishVariant(item, "guppy.png");
+  const lockedAttempt = c.selectTankazonFishVariant(item, "guppy_3.png");
+  assert.equal(main.variantKey, "guppy.png");
+  assert.equal(lockedAttempt.variantKey, "guppy.png", "a locked authored appearance must fall back to the unlocked base instead of becoming selectable");
+  c.addToCart(main);
+  assert.equal(c.cart.size, 1);
+  assert.equal(c.cart.has("buyFish:guppy:variant:guppy_3.png"), false);
+
+  mastery.unlockedVariantKeys.add("guppy_3.png");
+  item = buildItem();
   const variant = c.selectTankazonFishVariant(item, "guppy_3.png");
-  c.addToCart(main); c.addToCart(variant); c.addToCart(variant);
-  assert.equal(c.cart.size, 2);
+  c.addToCart(variant); c.addToCart(variant);
+  assert.equal(c.cart.size, 2, "the newly unlocked appearance keeps its own cart entry");
   assert.equal(c.cart.get(main.key).quantity, 1);
   assert.equal(c.cart.get(variant.key).quantity, 2);
   assert.equal(variant.name, "Guppy (Variant 3)");
   await c.executeTankazonNativePurchase(variant);
-  assert.deepEqual(bought, [{ id: "guppy", appearanceVariantKey: "guppy_3.png" }]);
+  assert.deepEqual(bought, [{ id: "guppy", appearanceVariantKey: "guppy_3.png" }],
+    "checkout must forward the exact newly unlocked appearance key");
 });
 
 test("Halloween switches both machines and respects local October boundaries", () => {
@@ -1307,43 +1509,81 @@ test("idle hover holds its simulation position for render-time bobbing", () => {
   assert.equal(target.yNorm, fish.yNorm);
 });
 
-test("manual cleaning accumulates proportional credit, caps at six coins per local day, and resets the next day", () => {
+test("manual cleaning accumulates proportional credit, caps at four coins per tank per local day, and resets the next day", () => {
   const tank = {
     cleaningIncomeDayKey: "day-1",
     cleaningIncomeCredit: 0,
     cleaningIncomeCoinsEarned: 0
   };
-  const c = load("tank/cleaning-and-glass.js", ["getTankCleaningIncomeStatus", "awardManualCleaningIncome"], {
-    CLEANING_DAILY_COIN_CAP: 6,
-    CLEANING_FULL_TANK_COIN_CREDIT: 6,
+  const state = { boroughCleaningIncomeDayKey: "day-1", boroughCleaningCoinsEarned: 0 };
+  const c = load("tank/cleaning-and-glass.js", ["getBoroughCleaningIncomeStatus", "getTankCleaningIncomeStatus", "awardManualCleaningIncome"], {
+    CLEANING_DAILY_COIN_CAP: 4,
+    CLEANING_FULL_TANK_COIN_CREDIT: 4,
+    BOROUGH_DAILY_CLEANING_COIN_CAP: 8,
+    state,
     getCurrentTank: () => tank,
     getLocalDayKey: now => Number(now) < 200 ? "day-1" : "day-2"
   });
 
   let result = c.awardManualCleaningIncome(0.10, 100, tank);
-  assert.ok(Math.abs(result.credit - 0.6) < 1e-9);
+  assert.ok(Math.abs(result.credit - 0.4) < 1e-9);
   assert.equal(result.coinsAwarded, 0);
   assert.equal(result.coinsEarned, 0);
 
-  result = c.awardManualCleaningIncome(0.10, 110, tank);
-  assert.ok(Math.abs(result.credit - 1.2) < 1e-9);
+  result = c.awardManualCleaningIncome(0.15, 110, tank);
+  assert.ok(Math.abs(result.credit - 1) < 1e-9);
   assert.equal(result.coinsAwarded, 1);
   assert.equal(result.coinsEarned, 1);
 
   result = c.awardManualCleaningIncome(1, 120, tank);
-  assert.equal(result.credit, 6);
-  assert.equal(result.coinsAwarded, 5);
-  assert.equal(result.coinsEarned, 6);
+  assert.equal(result.credit, 4);
+  assert.equal(result.coinsAwarded, 3);
+  assert.equal(result.coinsEarned, 4);
+  assert.equal(result.boroughCoinsEarned, 4);
 
   result = c.awardManualCleaningIncome(1, 130, tank);
-  assert.equal(result.credit, 6);
+  assert.equal(result.credit, 4);
   assert.equal(result.coinsAwarded, 0);
-  assert.equal(result.coinsEarned, 6);
+  assert.equal(result.coinsEarned, 4);
 
   const nextDay = c.getTankCleaningIncomeStatus(tank, 200);
   assert.equal(nextDay.dayKey, "day-2");
   assert.equal(nextDay.credit, 0);
   assert.equal(nextDay.coinsEarned, 0);
+  assert.equal(nextDay.boroughCoinsEarned, 0);
+});
+
+test("manual cleaning pays no more than eight coins borough-wide while later tanks still clean and build their own daily credit", () => {
+  const state = { boroughCleaningIncomeDayKey: "day-1", boroughCleaningCoinsEarned: 0 };
+  const tanks = ["a", "b", "c"].map(id => ({ id, cleaningIncomeDayKey: "day-1", cleaningIncomeCredit: 0, cleaningIncomeCoinsEarned: 0 }));
+  const c = load("tank/cleaning-and-glass.js", ["getBoroughCleaningIncomeStatus", "getTankCleaningIncomeStatus", "awardManualCleaningIncome"], {
+    CLEANING_DAILY_COIN_CAP: 4,
+    CLEANING_FULL_TANK_COIN_CREDIT: 4,
+    BOROUGH_DAILY_CLEANING_COIN_CAP: 8,
+    state,
+    getCurrentTank: () => tanks[0],
+    getLocalDayKey: now => Number(now) < 200 ? "day-1" : "day-2"
+  });
+
+  const first = c.awardManualCleaningIncome(1, 100, tanks[0]);
+  assert.equal(first.coinsAwarded, 4);
+  assert.equal(first.boroughCoinsEarned, 4);
+
+  const second = c.awardManualCleaningIncome(1, 110, tanks[1]);
+  assert.equal(second.coinsAwarded, 4);
+  assert.equal(second.boroughCoinsEarned, 8);
+
+  const capped = c.awardManualCleaningIncome(1, 120, tanks[2]);
+  assert.equal(capped.coinsAwarded, 0, "borough cap blocks money, not cleaning");
+  assert.equal(capped.credit, 4, "the third tank still receives its full daily cleaning credit");
+  assert.equal(capped.coinsEarned, 4, "tank progress reaches 4/4 even when borough payout is capped");
+  assert.equal(capped.boroughCoinsEarned, 8);
+  assert.equal(capped.boroughRemainingCoins, 0);
+
+  const nextDay = c.getTankCleaningIncomeStatus(tanks[2], 200);
+  assert.equal(nextDay.credit, 0, "unpaid prior-day cleaning credit must not carry forward");
+  assert.equal(nextDay.coinsEarned, 0);
+  assert.equal(nextDay.boroughCoinsEarned, 0);
 });
 
 test("automatic sucker cleaning cannot award manual cleaning income", () => {
@@ -1430,6 +1670,42 @@ test("insufficient purchases use the red payment error and BubbleBodega exposes 
   assert.match(html, />Buy<\/button>/);
 });
 
+test("Neon Tetra uses neutral neon variant names and stale saved keys preserve the numeric appearance", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const neonTetra = catalog.fish.find((fish) => fish.id === "neon-tetra");
+  assert.ok(neonTetra);
+  assert.deepEqual(neonTetra.assetVariants, [
+    "/assets/fish/tetra_neon-blue.png",
+    "/assets/fish/tetra_neon-green.png",
+    "/assets/fish/tetra_neon-purple.png",
+    "/assets/fish/tetra_neon-pink.png",
+    "/assets/fish/tetra_neon-red.png",
+    "/assets/fish/tetra_neon-orange.png"
+  ]);
+  assert.deepEqual(neonTetra.variantLabels, ["Neon Blue", "Neon Green", "Neon Purple", "Neon Pink", "Neon Red", "Neon Orange"]);
+
+  const c = load("fish/appearance.js", [
+    "hashStringToUint32",
+    "getFishAppearanceVariantSeed",
+    "normalizeFishAppearanceVariantIndex",
+    "resolveCanonicalFishAppearanceSelection"
+  ], {
+    getFishAssetVariants: species => species.assetVariants,
+    getFishAppearanceVariantKey: value => typeof value === "string" ? value.split(/[?#]/)[0].split("/").pop() : ""
+  });
+  const staleKey = ["tetra", "glo" + "fish", "starfire-red.png"].join("_");
+  const migrated = c.resolveCanonicalFishAppearanceSelection({
+    id: "saved-neon",
+    name: "Nova",
+    appearanceVariant: 4,
+    appearanceVariantKey: staleKey,
+    appearanceAssetPath: `/assets/fish/${staleKey}`
+  }, neonTetra);
+  assert.equal(migrated.appearanceVariant, 4);
+  assert.equal(migrated.appearanceVariantKey, "tetra_neon-red.png");
+  assert.equal(migrated.appearanceAssetPath, "/assets/fish/tetra_neon-red.png");
+});
+
 test("Koi and Lionfish remain in the natural fish catalog with sprite variants", () => {
   const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   const koi = catalog.fish.find((fish) => fish.id === "koi");
@@ -1485,7 +1761,7 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   assert.match(websurfStore, /getTankazonSellerName[\s\S]*return seller \|\| "BubbleBodega"/);
   assert.match(websurfStore, /tankazonItemSeller[\s\S]*Visit the \$\{seller\} Store/);
   assert.match(normalizationSource, /id: CUSTOM_FISH_SHOP_KEY,[\s\S]*seller: "Proteus Biodyne"/);
-  assert.match(bootstrap, /const CUSTOM_FISH_COST = 75;/);
+  assert.match(bootstrap, /const CUSTOM_FISH_COST = 125;/);
   assert.match(bootstrap, /CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl\("assets\/web\/proteus\/PB_Custom_Fish\.png"\)/);
   assert.match(normalizationSource, /A bespoke biological design service from PROTEUS BIODYNE/);
   assert.match(normalizationSource, /aboutTagline: "Adaptive Biology\. Engineered\."/);
@@ -1608,7 +1884,7 @@ test("WebSurf persists mailbox state and FIN sends the intro plus randomized vag
   const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
   const templates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8")).templates;
 
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(saveSource, /webSurfMailStates: sanitizeWebSurfMailStates\(incoming\.webSurfMailStates\)/);
   assert.match(saveSource, /webSurfSenderStates: sanitizeWebSurfSenderStates\(incoming\.webSurfSenderStates\)/);
   assert.match(saveSource, /webSurfSentEmails: sanitizeWebSurfSentEmails\(incoming\.webSurfSentEmails\)/);
@@ -1659,9 +1935,10 @@ test("fish progression is paced through Borough Legends and gates engineered spe
   const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
   const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8"));
 
-  assert.match(catalogSource, /unlockedCatalog\.find\(\(species\) => species\.id === "goldfish"\)/);
+  assert.match(catalogSource, /const preferredStarterId = activeWaterType === "saltwater" \? "firefish" : "goldfish"/);
+  assert.match(catalogSource, /species\?\.starterFish === true[\s\S]*isFishCompatibleWithWaterType\(species, activeWaterType\)/);
   assert.doesNotMatch(catalogSource, /state\.coins <= 0 && getOwnedFishCount\(\) === 0/);
-  assert.match(bootstrap, /id: "borough-legends"[\s\S]*unlocks: \["great-white-shark", "orca", "__custom-fish-shop__"\][\s\S]*30 \* DAY_MS/);
+  assert.match(bootstrap, /id: "borough-legends"[\s\S]*unlocks: \["great-white-shark", "orca", "__custom-fish-shop__"\][\s\S]*stats\.hasMasteredSpecies[\s\S]*stats\.goodRecaps >= 15[\s\S]*stats\.hasSparklingFish/);
   assert.match(normalizationSource, /name: "Engineered Aquatic Specimen"[\s\S]*unlockRequirement: "borough-legends"/);
   assert.match(renderingSource, /const progressLocked = !isFishSpeciesProgressUnlocked\(fish\);[\s\S]*const locked = !isFishSpeciesShopUnlocked\(fish\);/);
   assert.match(purchaseSource, /isCustomFishShopKey\(speciesId\)[\s\S]*!isFishSpeciesShopUnlocked\(speciesId\)/);
@@ -2193,7 +2470,7 @@ test("wallet receipts persist purchases and expose a compact toolbar history", (
   assert.match(html, /id="walletTransactionMenu"/);
 });
 
-test("Bubble Borough Bank exposes account, reward math, and unlocked milestone views", () => {
+test("Bubble Borough Bank exposes account, recap reports, and unlocked milestone views", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui", "main-and-store-rendering.js"), "utf8");
   const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
@@ -2218,7 +2495,9 @@ test("Bubble Borough Bank exposes account, reward math, and unlocked milestone v
   assert.match(overlays, /function renderBubbleBankAccount\(/);
   assert.match(overlays, /function renderBubbleBankRewards\(/);
   assert.match(overlays, /function renderBubbleBankMilestones\(/);
-  assert.match(overlays, /Reward = max\(0, score\)/);
+  assert.match(overlays, /Weekly Reports/);
+  assert.match(overlays, /Weekly Care Award/);
+  assert.match(overlays, /Daily Recap scores measure care and progression\. They do not pay Fish Coins\./);
   assert.match(styles, /\.bubble-bank-balance-card/);
 });
 
@@ -2745,7 +3024,7 @@ test("feeding care eligibility counts only unfed fish within the shared daily ca
   };
   const c = load("fish/feeding-and-medicine.js", ["getDailyFeedingCareStatus"], {
     state: { mealHistory },
-    FISH_DAILY_FEEDING_CARE_COIN_CAP: 8,
+    FISH_DAILY_FEEDING_CARE_COIN_CAP: 5,
     getCurrentTank: () => tank,
     getLocalDayKey: () => dayKey,
     getMealHistoryEntry: key => mealHistory[key] || null,
@@ -2756,12 +3035,56 @@ test("feeding care eligibility counts only unfed fish within the shared daily ca
 
   const status = c.getDailyFeedingCareStatus(tank, Date.now());
   assert.equal(status.earned, 2);
-  assert.equal(status.remainingCap, 6);
-  assert.equal(status.eligibleCoins, 6);
+  assert.equal(status.remainingCap, 3);
+  assert.equal(status.eligibleCoins, 3);
   assert.equal(status.eligibleFish, 2);
 
-  mealHistory[`feeding-care-${dayKey}`].coinsEarned = 8;
+  mealHistory[`feeding-care-${dayKey}`].coinsEarned = 5;
   assert.equal(c.getDailyFeedingCareStatus(tank, Date.now()).eligibleCoins, 0);
+});
+
+test("feeding rewards share one borough-wide 5 coin cap across tanks", () => {
+  const dayKey = "2026-09-25";
+  const state = { coins: 0, mealHistory: {} };
+  const transactions = [];
+  const tankA = { id: "tank-a", name: "Freshwater" };
+  const tankB = { id: "tank-b", name: "Saltwater" };
+  const c = load("fish/feeding-and-medicine.js", ["ensureMealHistoryEntry", "recordFishMealCredit"], {
+    state,
+    FISH_DAILY_FEEDING_CARE_COIN_CAP: 5,
+    MAX_WALLET_COINS: 9999,
+    getCurrentTank: () => tankA,
+    getLocalDayKey: () => dayKey,
+    getMealHistoryEntry: key => state.mealHistory[key] || null,
+    getSpeciesForFish: fish => ({ name: fish.speciesName, mealCoins: fish.mealCoins }),
+    isMealFreeFish: () => false,
+    isPeacefulModeEnabled: () => false,
+    recordFishDailyMealIndicator: () => true,
+    recordDailyIncomeCategory: () => true,
+    recordWalletTransaction: entry => transactions.push(entry),
+    getTankLabel: tank => tank.name
+  });
+
+  const first = { id: "fish-a", name: "Alpha", speciesName: "Guppy", mealCoins: 4 };
+  const second = { id: "fish-b", name: "Beta", speciesName: "Firefish", mealCoins: 4 };
+  const third = { id: "fish-c", name: "Gamma", speciesName: "Tetra", mealCoins: 2 };
+
+  assert.equal(c.recordFishMealCredit(first, Date.now(), tankA), 4);
+  assert.equal(c.recordFishMealCredit(second, Date.now(), tankB), 1);
+  assert.equal(c.recordFishMealCredit(third, Date.now(), tankA), 0);
+  assert.equal(c.recordFishMealCredit(first, Date.now(), tankA), 0, "same fish cannot earn twice in one day");
+  assert.equal(state.coins, 5);
+  assert.equal(state.mealHistory[`feeding-care-${dayKey}`].coinsEarned, 5);
+  assert.deepEqual(new Set(state.mealHistory[`feeding-care-${dayKey}`].fishIds), new Set(["fish-a", "fish-b", "fish-c"]));
+  assert.equal(transactions.filter(entry => entry.amount > 0).reduce((sum, entry) => sum + entry.amount, 0), 5);
+});
+
+test("AM and PM feeding indicators remain separate from the shared feeding coin cap", () => {
+  const source = fs.readFileSync(path.join(root, "fish/feeding-and-medicine.js"), "utf8");
+  assert.match(source, /daily-feeding-\$\{normalizedDayKey\}-am/);
+  assert.match(source, /daily-feeding-\$\{normalizedDayKey\}-pm/);
+  assert.match(source, /feeding-care-\$\{getLocalDayKey\(now\)\}/);
+  assert.doesNotMatch(source, /feeding-care-\$\{getLocalDayKey\(now\)\}-(?:am|pm)/);
 });
 
 test("Chum Skiff resource icon uses the existing chum food art", () => {
@@ -3131,7 +3454,7 @@ test("Otocinclus uses top, side and bottom views with dedicated gravel scanning"
 
   assert.match(bootstrap, /otocinclus:\s*"assets\/fish\/otocinclus_bottom\.png"/);
   assert.match(bootstrap, /otocinclus:\s*"assets\/fish\/otocinclus_side\.png"/);
-  assert.match(bootstrap, /OTOCINCLUS_COIN_FIND_CHANCE\s*=\s*0\.12/);
+  assert.match(bootstrap, /OTOCINCLUS_COIN_FIND_CHANCE\s*=\s*0\.08/);
   assert.match(bootstrap, /OTOCINCLUS_STATE_COMMIT_MS\s*=\s*20 \* 1000/);
   assert.match(appearance, /view === "swim"[\s\S]*getSuckerFishFreeSwimAssetPath/);
   assert.match(appearance, /view === "front"[\s\S]*getSuckerFishFrontGlassAssetPath/);
@@ -3733,26 +4056,92 @@ test("WebSurf account actions keep vertical clearance below the top action row",
   assert.match(styles, /cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px/);
 });
 
-test("Otocinclus coin finds use a small spaced chance with a five-coin per-tank daily cap", () => {
-  const tank = {
+test("normal gravel coin finds use a 5 percent chance, 30 minute cooldown, and two-coin borough daily cap", () => {
+  const state = {
+    coins: 10,
+    gravelCoinFindDayKey: "day-1",
+    gravelCoinsFoundToday: 0,
+    lastGravelCoinFoundAt: 0
+  };
+  const deterministicMath = Object.create(Math);
+  deterministicMath.random = () => 0;
+  let transactions = 0;
+  const c = load("fish/gravel-and-schooling.js", ["getBoroughGravelCoinFindStatus", "attemptGravelCoinFind"], {
+    Math: deterministicMath,
+    state,
+    GRAVEL_DAILY_COIN_FIND_CAP: 2,
+    GRAVEL_COIN_FIND_COOLDOWN_MS: 30 * 60 * 1000,
+    GRAVEL_COIN_FIND_CHANCE: 0.05,
+    MAX_WALLET_COINS: 9999,
+    TANK_WIDTH: 1000,
+    TANK_HEIGHT: 700,
+    getLocalDayKey: now => Number(now) < 10_000_000 ? "day-1" : "day-2",
+    getTankLabel: () => "Current Tank",
+    recordDailyIncomeCategory: () => true,
+    recordWalletTransaction: () => { transactions += 1; },
+    pushEvent() {},
+    spawnCoinGlint() {},
+    saveState() {},
+    renderUi() {},
+    isPeacefulModeEnabled: () => false
+  });
+
+  const fishA = { id: "fish-a", name: "A" };
+  const fishB = { id: "fish-b", name: "B" };
+  const fishC = { id: "fish-c", name: "C" };
+  const makeAction = () => ({ pickupXNorm: 0.5, pickupYNorm: 0.7 });
+
+  assert.equal(c.attemptGravelCoinFind(fishA, makeAction(), 2_000_000), true);
+  assert.equal(c.attemptGravelCoinFind(fishB, makeAction(), 2_000_000 + 1_800_001), true);
+  assert.equal(c.attemptGravelCoinFind(fishC, makeAction(), 2_000_000 + 3_600_002), false);
+  assert.equal(state.gravelCoinsFoundToday, 2);
+  assert.equal(state.coins, 12);
+  assert.equal(transactions, 2);
+
+  const nextDay = c.getBoroughGravelCoinFindStatus(10_000_000);
+  assert.equal(nextDay.dayKey, "day-2");
+  assert.equal(nextDay.coinsFound, 0);
+  assert.equal(nextDay.lastFoundAt, 3_800_001);
+});
+
+test("normal gravel find chance and cooldown constants match Phase 5", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  assert.match(bootstrap, /GRAVEL_COIN_FIND_CHANCE = 0\.05/);
+  assert.match(bootstrap, /GRAVEL_COIN_FIND_COOLDOWN_MS = 30 \* MINUTE_MS/);
+  assert.match(bootstrap, /GRAVEL_DAILY_COIN_FIND_CAP = 2/);
+});
+
+test("Otocinclus coin finds use an 8 percent chance, 15 minute cooldown, and two-coin borough daily cap", () => {
+  const tankA = {
     otocinclusCoinFindDayKey: "day-1",
     otocinclusCoinsFoundToday: 0,
     otocinclusCoinFindLastAttemptAt: 0
   };
-  const state = { coins: 10 };
+  const tankB = {
+    otocinclusCoinFindDayKey: "day-1",
+    otocinclusCoinsFoundToday: 0,
+    otocinclusCoinFindLastAttemptAt: 0
+  };
+  let currentTank = tankA;
+  const state = {
+    coins: 10,
+    boroughOtocinclusCoinFindDayKey: "day-1",
+    boroughOtocinclusCoinsFoundToday: 0,
+    boroughOtocinclusCoinFindLastAttemptAt: 0
+  };
   const runtime = { tankStateDirty: false, coinGlints: [] };
   const deterministicMath = Object.create(Math);
   deterministicMath.random = () => 0;
   let transactions = 0;
   let saves = 0;
   let sounds = 0;
-  const c = load("fish/gravel-and-schooling.js", ["getTankOtocinclusCoinFindStatus", "attemptOtocinclusCoinFind"], {
+  const c = load("fish/gravel-and-schooling.js", ["getBoroughOtocinclusCoinFindStatus", "getTankOtocinclusCoinFindStatus", "attemptOtocinclusCoinFind"], {
     Math: deterministicMath,
     state,
     runtime,
-    OTOCINCLUS_DAILY_COIN_FIND_CAP: 5,
-    OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS: 300000,
-    OTOCINCLUS_COIN_FIND_CHANCE: 0.12,
+    OTOCINCLUS_DAILY_COIN_FIND_CAP: 2,
+    OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS: 15 * 60 * 1000,
+    OTOCINCLUS_COIN_FIND_CHANCE: 0.08,
     MAX_WALLET_COINS: 9999,
     TANK_WIDTH: 1000,
     TANK_HEIGHT: 700,
@@ -3760,13 +4149,14 @@ test("Otocinclus coin finds use a small spaced chance with a five-coin per-tank 
     GLASS_MARGIN_X: 20,
     WATER_SURFACE_Y: 20,
     GLASS_MARGIN_BOTTOM: 20,
-    getLocalDayKey: now => Number(now) < 2_000_000 ? "day-1" : "day-2",
-    getCurrentTank: () => tank,
+    getLocalDayKey: now => Number(now) < 10_000_000 ? "day-1" : "day-2",
+    getCurrentTank: () => currentTank,
     getSpeciesForFish: () => ({ id: "otocinclus", behavior: "sucker" }),
     getEffectiveFishBehavior: () => "sucker",
     isFishDead: () => false,
     isPeacefulModeEnabled: () => false,
-    getTankLabel: () => "Tank 1",
+    getTankLabel: () => currentTank === tankA ? "Tank A" : "Tank B",
+    recordDailyIncomeCategory: () => true,
     recordWalletTransaction: () => { transactions += 1; },
     pushEvent() {},
     spawnCoinGlint() {},
@@ -3778,33 +4168,51 @@ test("Otocinclus coin finds use a small spaced chance with a five-coin per-tank 
   });
 
   const fish = { id: "oto-1", speciesId: "otocinclus", name: "Oto", xNorm: 0.5, yNorm: 0.7 };
-  for (let i = 0; i < 6; i += 1) {
-    c.attemptOtocinclusCoinFind(fish, { xNorm: 0.5, yNorm: 0.7 }, 100 + i * 300001, { context: "glass" });
-  }
-  assert.equal(tank.otocinclusCoinsFoundToday, 5);
-  assert.equal(state.coins, 15);
-  assert.equal(transactions, 5);
-  assert.equal(saves, 5);
-  assert.equal(sounds, 5);
+  assert.equal(c.attemptOtocinclusCoinFind(fish, { xNorm: 0.5, yNorm: 0.7 }, 1_000_000, { context: "glass" }), true);
+  currentTank = tankB;
+  assert.equal(c.attemptOtocinclusCoinFind(fish, { xNorm: 0.5, yNorm: 0.7 }, 1_900_001, { context: "gravel" }), true);
+  currentTank = tankA;
+  assert.equal(c.attemptOtocinclusCoinFind(fish, { xNorm: 0.5, yNorm: 0.7 }, 2_800_002, { context: "glass" }), false);
 
-  const nextDay = c.getTankOtocinclusCoinFindStatus(tank, 2_000_000);
+  assert.equal(state.boroughOtocinclusCoinsFoundToday, 2);
+  assert.equal(state.coins, 12);
+  assert.equal(transactions, 2);
+  assert.equal(saves, 2);
+  assert.equal(sounds, 2);
+  assert.equal(tankA.otocinclusCoinsFoundToday, 0, "live economy must not update Tank A's legacy counter");
+  assert.equal(tankB.otocinclusCoinsFoundToday, 0, "live economy must not update Tank B's legacy counter");
+
+  const compatibilityStatus = c.getTankOtocinclusCoinFindStatus(tankB, 2_800_002);
+  assert.equal(compatibilityStatus.coinsFound, 2, "legacy helper should report the borough-wide status");
+
+  const nextDay = c.getBoroughOtocinclusCoinFindStatus(10_000_000);
   assert.equal(nextDay.dayKey, "day-2");
   assert.equal(nextDay.coinsFound, 0);
+  assert.equal(nextDay.lastAttemptAt, 1_900_001, "daily reset must not erase the 15-minute attempt cooldown timestamp");
 });
 
-test("Otocinclus coin discovery is wired to both gravel scanning and successful glass cleaning", () => {
+test("Otocinclus coin discovery remains wired to both gravel scanning and successful glass cleaning", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const gravel = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
   const cleaning = fs.readFileSync(path.join(root, "tank/cleaning-and-glass.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
 
-  assert.match(bootstrap, /OTOCINCLUS_COIN_FIND_CHANCE = 0\.12/);
-  assert.match(bootstrap, /OTOCINCLUS_DAILY_COIN_FIND_CAP = 5/);
+  assert.match(bootstrap, /OTOCINCLUS_COIN_FIND_CHANCE = 0\.08/);
+  assert.match(bootstrap, /OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 15 \* MINUTE_MS/);
+  assert.match(bootstrap, /OTOCINCLUS_DAILY_COIN_FIND_CAP = 2/);
   assert.match(gravel, /performOtocinclusGravelScan[\s\S]*attemptOtocinclusCoinFind/);
   assert.match(cleaning, /dirtinessReduced[\s\S]*attemptOtocinclusCoinFind\(fish/);
-  assert.match(persistence, /otocinclusCoinFindDayKey/);
-  assert.match(persistence, /otocinclusCoinsFoundToday/);
-  assert.match(persistence, /otocinclusCoinFindLastAttemptAt/);
+  assert.match(persistence, /boroughOtocinclusCoinFindDayKey/);
+  assert.match(persistence, /boroughOtocinclusCoinsFoundToday/);
+  assert.match(persistence, /boroughOtocinclusCoinFindLastAttemptAt/);
+});
+
+test("Phase 5 save reconciliation migrates legacy Otocinclus tank counters into the borough cap", () => {
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(persistence, /legacyOtocinclusTanksToday/);
+  assert.match(persistence, /reduce\(\(sum, tank\) => sum \+ \(Math\.floor\(Number\(tank\.otocinclusCoinsFoundToday\)/);
+  assert.match(persistence, /OTOCINCLUS_DAILY_COIN_FIND_CAP/);
+  assert.match(persistence, /migratedOtocinclusLastAttemptAt/);
 });
 
 test("Phase 3 food refusal is deterministic and ignores comfort/personality randomness", () => {
@@ -5652,7 +6060,7 @@ test("Phase 22 old tank saves initialize new economy fields without NaN or over-
     createDefaultAutoDispenserState: value => value || {},
     DEFAULT_THEME: "classic",
     getLocalDayKey: () => "2026-09-18",
-    CLEANING_DAILY_COIN_CAP: 6,
+    CLEANING_DAILY_COIN_CAP: 4,
     OTOCINCLUS_DAILY_COIN_FIND_CAP: 5
   });
   const old = c.createTankState({ now: 1000, fish: [] });
@@ -5663,8 +6071,8 @@ test("Phase 22 old tank saves initialize new economy fields without NaN or over-
   assert.equal(old.otocinclusCoinsFoundToday, 0);
   assert.equal(old.otocinclusCoinFindLastAttemptAt, 0);
   const clamped = c.createTankState({ now: 1000, cleaningIncomeCredit: 99, cleaningIncomeCoinsEarned: 99, otocinclusCoinsFoundToday: 99 });
-  assert.equal(clamped.cleaningIncomeCredit, 6);
-  assert.equal(clamped.cleaningIncomeCoinsEarned, 6);
+  assert.equal(clamped.cleaningIncomeCredit, 4);
+  assert.equal(clamped.cleaningIncomeCoinsEarned, 4);
   assert.equal(clamped.otocinclusCoinsFoundToday, 5);
   for (const value of [old.cleaningIncomeCredit, old.cleaningIncomeCoinsEarned, old.otocinclusCoinsFoundToday, old.otocinclusCoinFindLastAttemptAt]) {
     assert.equal(Number.isFinite(value), true);
@@ -8969,7 +9377,7 @@ test("Expansion Phase 1 save schema persists fish, tank, storage, and living dec
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const customContent = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
 
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /"populationCapacity"/);
   assert.match(bootstrap, /"populationUsage"/);
   for (const field of ["birthAt", "lifespanMultiplier", "breedingAvailable", "spawnUsed", "generation", "visualVariant", "storageState", "condition", "cleanupAnimal", "capacityCost"]) {
@@ -9078,7 +9486,7 @@ test("Expansion Phase 2 enforces capacity across purchases, restore, offspring, 
   assert.ok((borough.match(/canTankAcceptFish\(fish, move\.destination\)/g) || []).length >= 2);
   assert.ok((borough.match(/canTankAcceptFish\(fish, destination\)/g) || []).length >= 2);
   assert.match(appearance, /getFishStorageSimulationNow\(fish, now\)/);
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(persistence, /incomingVersion < 53/);
   assert.match(persistence, /storageFrozen: true/);
 });
@@ -9426,7 +9834,7 @@ test("Expansion Phase 5 inactive living decor loses benefits without becoming tr
   assert.match(behavior, /isPlacedDecorFunctionallyActive\(item, tank\)/);
   assert.match(hangouts, /isPlacedDecorFunctionallyActive/);
   assert.match(comfort, /isPlacedDecorFunctionallyActive/);
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(persistence, /incomingVersion < 54/);
   assert.match(persistence, /syncTankLivingDecorActivity\(tank\)/);
 });
@@ -9438,7 +9846,7 @@ test("Expansion Phase 6 formalizes conditions, recovery timers, and v55 salinity
   const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
 
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /const CALMING_EFFECT_DURATION_MS = 10 \* MINUTE_MS;/);
   assert.match(bootstrap, /const WATER_STRESS_BOOST_DURATION_MS = 6 \* HOUR_MS;/);
   assert.match(bootstrap, /const DISEASE_RECOVERY_REQUIRED_MS = 24 \* HOUR_MS;/);
@@ -9660,7 +10068,7 @@ test("Expansion Phase 8 activates biological aging, elderly state, and v56 migra
   const actions = fs.readFileSync(path.join(root, "fish/actions.js"), "utf8");
   const borough = fs.readFileSync(path.join(root, "borough/living-borough.js"), "utf8");
   const health = fs.readFileSync(path.join(root, "fish/health.js"), "utf8");
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /FISH_ELDERLY_LIFE_FRACTION = 0\.85/);
   for (const fn of ["getFishAgeMs", "getFishLifespanMs", "getFishLifeProgress", "getFishLifeStage", "isFishElderly"]) {
     assert.match(layout, new RegExp(`function ${fn}\\b`));
@@ -9828,7 +10236,7 @@ test("Expansion Phase 9 persists breeding readiness, pending spawns, v57 migrati
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const feeding = fs.readFileSync(path.join(root, "fish/feeding-and-medicine.js"), "utf8");
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /BREEDING_ATTEMPT_SUCCESS_CHANCE = 0\.65/);
   assert.match(layout, /breedingReadyUntil:/);
   assert.match(layout, /function sanitizePendingBreedingEvent/);
@@ -9940,7 +10348,7 @@ test("Expansion Phase 10 reserves unborn capacity, starts juveniles near half sc
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
   const simulation = fs.readFileSync(path.join(root, "tank/simulation.js"), "utf8");
-  assert.match(bootstrap, /const STATE_VERSION = 62;/);
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /BABY_FISH_SCALE_MULTIPLIER = 0\.45/);
   assert.match(bootstrap, /LIVE_BIRTH_GESTATION_MS = 24 \* HOUR_MS/);
   assert.match(customization, /function getTankReservedPopulationCapacity/);
@@ -9982,4 +10390,1753 @@ test("Expansion Phase 10 unborn offspring reserve capacity against purchases and
   tank.pendingBreedingEvents = [];
   tank.fishEggs = [{ id: "egg", clutchSize: 2, reservedCapacity: 2, hatchedAt: null }];
   assert.equal(c.getTankReservedPopulationCapacity(tank), 2, "egg clusters must keep offspring space reserved until hatch");
+});
+
+test("Phase 6 Daily Recap finalization records score without paying coins", () => {
+  const state = {
+    coins: 40,
+    dailyBonus: {
+      claimedByTankDay: {},
+      lastClaimedDayKey: null,
+      lastQualifiedDayKey: "2026-09-24"
+    }
+  };
+  const events = [];
+  let walletTransactions = 0;
+  const c = load("tank/events-recaps-and-save.js", ["getDailyBonusClaimKey", "grantDailyRecapRewardAutomatically"], {
+    state,
+    BOROUGH_DAILY_RECAP_ID: "borough",
+    isPeacefulModeEnabled: () => false,
+    recordWalletTransaction: () => { walletTransactions += 1; },
+    getCurrentTank: () => ({ id: "tank-a" }),
+    pushEvent: text => events.push(text)
+  });
+  const summary = { dayKey: "2026-09-24", score: 7, reward: 30 };
+
+  assert.equal(c.grantDailyRecapRewardAutomatically(summary, 12345), true);
+  assert.equal(state.coins, 40, "Daily Recap finalization must not alter the wallet");
+  assert.equal(walletTransactions, 0, "Daily Recap finalization must not create a wallet credit");
+  assert.equal(summary.reward, 0, "legacy reward field should be normalized to zero");
+  assert.equal(state.dailyBonus.claimedByTankDay["borough:2026-09-24"], true);
+  assert.equal(state.dailyBonus.lastClaimedDayKey, "2026-09-24");
+  assert.match(events[0], /Daily recap completed\. Score \+7 recorded\./);
+  assert.equal(c.grantDailyRecapRewardAutomatically(summary, 12346), false, "same recap day must remain idempotent");
+  assert.equal(walletTransactions, 0);
+});
+
+test("Phase 6 Daily Recap summaries preserve score but always store zero monetary reward", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const recaps = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+
+  assert.match(bootstrap, /DAILY_RECAP_REWARD_CAP = 0/);
+  assert.match(recaps, /const score = rows\.reduce[\s\S]*?const reward = 0;/);
+  assert.match(recaps, /scoreModel: BOROUGH_RECAP_SCORE_MODEL,[\s\S]*?rawScore,[\s\S]*?score,[\s\S]*?reward: 0,/);
+  assert.doesNotMatch(recaps, /label: "Daily Award"/);
+  assert.match(persistence, /reward: 0,/);
+});
+
+test("Phase 6 Bank and notification UI present Daily Recap score as progression rather than currency", () => {
+  const bank = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const notifications = fs.readFileSync(path.join(root, "ui/notifications.js"), "utf8");
+  const overlay = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+
+  const bankStart = bank.indexOf("function renderBubbleBankRewards()");
+  const bankEnd = bank.indexOf("\nfunction renderBubbleBankMilestones()", bankStart);
+  const bankRecaps = bank.slice(bankStart, bankEnd);
+  assert.match(bank, /\["rewards", "Progress", "✚"\]/);
+  assert.match(bankRecaps, /bubble-bank-recap-score/);
+  assert.match(bankRecaps, /Daily Recap scores measure care and progression\. They do not pay Fish Coins\./);
+  assert.match(bankRecaps, /Daily Recap scores measure care and progression\. They do not pay Fish Coins\./);
+  assert.doesNotMatch(bankRecaps, /Reward = max\(0, score\)/);
+  assert.match(notifications, /detail: `Bubble Borough · Score /);
+  assert.doesNotMatch(notifications, /coin bonus/);
+  assert.match(overlay, /<span>Daily Recap Score<\/span>/);
+  assert.doesNotMatch(overlay, /<span>Total Bonus<\/span>/);
+});
+
+
+test("Phase 7 Weekly Report consumes exactly seven unique unreported recaps and pays at most 12 coins", () => {
+  const dayKeys = ["2026-09-24", "2026-09-23", "2026-09-22", "2026-09-21", "2026-09-20", "2026-09-19", "2026-09-18"];
+  const state = {
+    coins: 10,
+    incomeHistoryByDay: {},
+    walletTransactions: [],
+    progressionHistory: [],
+    dailyBonus: {
+      recapHistory: dayKeys.map((dayKey, index) => ({ dayKey, score: 10 - index, rows: [] })),
+      weeklyReports: [],
+      milestoneCompletions: []
+    }
+  };
+  const receipts = [];
+  const c = load("tank/events-recaps-and-save.js", [
+    "getWeeklyReportConsumedDayKeys", "getWeeklyReportIncomeTotals", "getWeeklyReportProgressionCounts",
+    "getWeeklyReportBirthDeathCounts", "buildWeeklyReport", "maybeGenerateWeeklyReports"
+  ], {
+    state,
+    WEEKLY_REPORT_RECAP_COUNT: 7,
+    WEEKLY_REPORT_HISTORY_LIMIT: 52,
+    WEEKLY_REPORT_REWARD_MULTIPLIER: 1.5,
+    WEEKLY_REPORT_REWARD_CAP: 12,
+    MAX_WALLET_COINS: 999999,
+    isPeacefulModeEnabled: () => false,
+    recordDailyIncomeCategory: () => true,
+    recordWalletTransaction: entry => { receipts.push(entry); return true; },
+    getLocalDayKey: () => "2026-09-25",
+    getCurrentTank: () => ({ id: "tank-a" }),
+    pushEvent: () => true,
+    enqueueNotificationCenterEntry: () => true,
+    pluralize: (label, count) => count === 1 ? label : `${label}s`
+  });
+
+  const generated = c.maybeGenerateWeeklyReports(123456);
+  assert.equal(generated.length, 1);
+  assert.equal(state.dailyBonus.weeklyReports.length, 1);
+  assert.deepEqual([...state.dailyBonus.weeklyReports[0].dayKeys].sort(), [...dayKeys].sort());
+  assert.equal(state.dailyBonus.weeklyReports[0].averageRecapScore, 7);
+  assert.equal(state.dailyBonus.weeklyReports[0].weeklyReward, 11);
+  assert.equal(state.dailyBonus.weeklyReports[0].rewardPaid, 11);
+  assert.equal(state.coins, 21);
+  assert.equal(receipts.length, 1);
+  assert.equal(receipts[0].label, "Weekly Care Award");
+  assert.equal(receipts[0].category, "awards");
+  assert.equal(c.maybeGenerateWeeklyReports(123457).length, 0, "consumed recap days cannot generate a second report");
+  assert.equal(receipts.length, 1, "weekly award must remain idempotent");
+});
+
+test("Phase 7 Weekly Report includes requested care, economy, life, milestone, and progression stats", () => {
+  const dayKeys = ["2026-09-24", "2026-09-23", "2026-09-22", "2026-09-21", "2026-09-20", "2026-09-19", "2026-09-18"];
+  const summaries = dayKeys.map((dayKey, index) => ({
+    dayKey,
+    score: index === 2 ? 9 : 5,
+    rows: index === 0
+      ? [{ type: "birth", text: "2 juvenile Guppies were born." }, { type: "death", text: "Bubbles died." }]
+      : []
+  }));
+  const state = {
+    incomeHistoryByDay: Object.fromEntries(dayKeys.map((dayKey) => [dayKey, { feeding: 1, cleaning: 2, randomFinds: 1 }])),
+    walletTransactions: [],
+    progressionHistory: [
+      { type: "fish-level-up", dayKey: "2026-09-24" },
+      { type: "variant-unlocked", dayKey: "2026-09-23" }
+    ],
+    dailyBonus: {
+      milestoneCompletions: [{ milestoneId: "first-care", dayKey: "2026-09-22" }]
+    }
+  };
+  const c = load("tank/events-recaps-and-save.js", [
+    "getWeeklyReportIncomeTotals", "getWeeklyReportProgressionCounts", "getWeeklyReportBirthDeathCounts", "buildWeeklyReport"
+  ], {
+    state,
+    WEEKLY_REPORT_RECAP_COUNT: 7,
+    WEEKLY_REPORT_REWARD_MULTIPLIER: 1.5,
+    WEEKLY_REPORT_REWARD_CAP: 12,
+    isPeacefulModeEnabled: () => false,
+    getLocalDayKey: () => "2026-09-24"
+  });
+  const report = c.buildWeeklyReport(summaries, 777);
+  assert.equal(report.feedingIncome, 7);
+  assert.equal(report.cleaningIncome, 14);
+  assert.equal(report.randomCoinFinds, 7);
+  assert.equal(report.fishLevelUps, 1);
+  assert.equal(report.variantsUnlocked, 1);
+  assert.equal(report.milestonesCompleted, 1);
+  assert.equal(report.births, 2);
+  assert.equal(report.deaths, 1);
+  assert.equal(report.bestDayKey, "2026-09-22");
+  assert.equal(report.bestDayScore, 9);
+});
+
+test("Phase 7 Peaceful Mode can create the report but never pays the Weekly Care Award", () => {
+  const state = {
+    coins: 33,
+    incomeHistoryByDay: {},
+    walletTransactions: [],
+    progressionHistory: [],
+    dailyBonus: {
+      recapHistory: Array.from({ length: 7 }, (_, index) => ({ dayKey: `2026-09-${String(18 + index).padStart(2, "0")}`, score: 8, rows: [] })),
+      weeklyReports: [],
+      milestoneCompletions: []
+    }
+  };
+  let receipts = 0;
+  const c = load("tank/events-recaps-and-save.js", [
+    "getWeeklyReportConsumedDayKeys", "getWeeklyReportIncomeTotals", "getWeeklyReportProgressionCounts",
+    "getWeeklyReportBirthDeathCounts", "buildWeeklyReport", "maybeGenerateWeeklyReports"
+  ], {
+    state,
+    WEEKLY_REPORT_RECAP_COUNT: 7,
+    WEEKLY_REPORT_HISTORY_LIMIT: 52,
+    WEEKLY_REPORT_REWARD_MULTIPLIER: 1.5,
+    WEEKLY_REPORT_REWARD_CAP: 12,
+    MAX_WALLET_COINS: 999999,
+    isPeacefulModeEnabled: () => true,
+    recordDailyIncomeCategory: () => true,
+    recordWalletTransaction: () => { receipts += 1; return true; },
+    getLocalDayKey: () => "2026-09-25",
+    getCurrentTank: () => ({ id: "tank-a" }),
+    pushEvent: () => true,
+    enqueueNotificationCenterEntry: () => true,
+    pluralize: (label, count) => count === 1 ? label : `${label}s`
+  });
+  const generated = c.maybeGenerateWeeklyReports(444);
+  assert.equal(generated.length, 1);
+  assert.equal(generated[0].weeklyReward, 12);
+  assert.equal(generated[0].rewardPaid, 0);
+  assert.equal(generated[0].rewardSuppressedByPeacefulMode, true);
+  assert.equal(state.coins, 33);
+  assert.equal(receipts, 0);
+});
+
+test("Phase 7 Weekly Report state and Bank presentation persist separately from Daily Recaps", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const bank = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
+  const purchases = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
+  assert.match(bootstrap, /WEEKLY_REPORT_RECAP_COUNT = 7/);
+  assert.match(bootstrap, /WEEKLY_REPORT_REWARD_MULTIPLIER = 1\.5/);
+  assert.match(bootstrap, /WEEKLY_REPORT_REWARD_CAP = 12/);
+  assert.match(persistence, /weeklyReports: \[\]/);
+  assert.match(persistence, /milestoneCompletions: \[\]/);
+  assert.match(purchases, /category: typeof options\.category === "string"/);
+  assert.match(bank, /Weekly Reports/);
+  assert.match(bank, /Weekly Care Award/);
+  assert.match(bank, /The Weekly Care Award is the only recap-based coin payout\./);
+});
+
+test("Phase 8 marks exactly six real starter fish with four-coin pricing split across both water types", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8"));
+  const fish = Array.isArray(catalog?.fish) ? catalog.fish : [];
+  const starterIds = fish.filter((entry) => entry?.starterFish === true).map((entry) => entry.id).sort();
+  assert.deepEqual(starterIds, ["cardinal", "chromis", "firefish", "goldfish", "guppy", "tetra"]);
+
+  const starters = fish.filter((entry) => entry?.starterFish === true);
+  assert.equal(starters.length, 6);
+  assert.ok(starters.every((entry) => entry.cost === 4), "every Phase 8 starter should cost exactly 4 coins");
+  assert.ok(starters.every((entry) => entry.cost < 5), "every starter must remain below 5 coins");
+  assert.equal(starters.filter((entry) => entry.waterType === "freshwater").length, 3);
+  assert.equal(starters.filter((entry) => entry.waterType === "saltwater").length, 3);
+  assert.ok(starters.every((entry) => entry.cleanupAnimal !== true), "cleanup animals must never be starter fish");
+});
+
+test("Phase 8 fish normalization preserves starter metadata and prevents milestone gating of explicit starters", () => {
+  const source = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  assert.match(source, /const starterFish = entry\.starterFish === true;/);
+  assert.match(source, /Fish_enabled:[\s\S]*?starterFish,/);
+  assert.match(source, /unlockRequirement: starterFish\s*\? null/);
+});
+
+test("Phase 8 tutorial starter selection follows the active tank water type", () => {
+  const starters = [
+    { id: "goldfish", name: "Goldfish", starterFish: true, waterType: "freshwater", cost: 4, width: 250 },
+    { id: "guppy", name: "Guppy", starterFish: true, waterType: "freshwater", cost: 4, width: 179 },
+    { id: "tetra", name: "Tetra", starterFish: true, waterType: "freshwater", cost: 4, width: 136 },
+    { id: "firefish", name: "Firefish", starterFish: true, waterType: "saltwater", cost: 4, width: 120 },
+    { id: "chromis", name: "Chromis", starterFish: true, waterType: "saltwater", cost: 4, width: 179 },
+    { id: "cardinal", name: "Cardinal", starterFish: true, waterType: "saltwater", cost: 4, width: 179 },
+    { id: "betta", name: "Betta", starterFish: false, waterType: "freshwater", cost: 18, width: 180 }
+  ];
+  let activeWaterType = "freshwater";
+  const c = load("store/catalog.js", ["getStarterFishSpecies"], {
+    getActiveStoreWaterType: () => activeWaterType,
+    getFishShopCatalog: () => starters,
+    isFishCompatibleWithWaterType: (species, waterType) => species.waterType === waterType,
+    isFishSpeciesUnlocked: () => true,
+    compareFishCatalogBySize: (left, right) => (left.width || 0) - (right.width || 0)
+  });
+
+  assert.equal(c.getStarterFishSpecies()?.id, "goldfish");
+  activeWaterType = "saltwater";
+  assert.equal(c.getStarterFishSpecies()?.id, "firefish");
+});
+
+test("Phase 8 tutorial starter fallback stays inside explicit starter metadata and matching water", () => {
+  const catalog = [
+    { id: "guppy", starterFish: true, waterType: "freshwater", width: 180 },
+    { id: "tetra", starterFish: true, waterType: "freshwater", width: 130 },
+    { id: "chromis", starterFish: true, waterType: "saltwater", width: 175 },
+    { id: "cardinal", starterFish: true, waterType: "saltwater", width: 165 },
+    { id: "tiny-wrong-water", starterFish: false, waterType: "freshwater", width: 20 }
+  ];
+  let activeWaterType = "freshwater";
+  const c = load("store/catalog.js", ["getStarterFishSpecies"], {
+    getActiveStoreWaterType: () => activeWaterType,
+    getFishShopCatalog: () => catalog,
+    isFishCompatibleWithWaterType: (species, waterType) => species.waterType === waterType,
+    isFishSpeciesUnlocked: () => true,
+    compareFishCatalogBySize: (left, right) => (left.width || 0) - (right.width || 0)
+  });
+
+  assert.equal(c.getStarterFishSpecies()?.id, "tetra", "freshwater fallback should remain a freshwater starter");
+  activeWaterType = "saltwater";
+  assert.equal(c.getStarterFishSpecies()?.id, "cardinal", "saltwater fallback should remain a saltwater starter");
+});
+
+test("Phase 9 new and sanitized fish persist Care XP fields with safe Level 1 defaults", () => {
+  const lifecycle = fs.readFileSync(path.join(root, "fish/lifecycle-and-breeding.js"), "utf8");
+  const sanitizer = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+
+  assert.match(bootstrap, /FISH_DAILY_CARE_XP_CAP = 5/);
+  assert.match(bootstrap, /FISH_CARE_LEVEL_MIN = 1/);
+  assert.match(bootstrap, /FISH_CARE_LEVEL_MAX = 5/);
+  assert.match(lifecycle, /careXp: Math\.max\(0, Math\.floor\(Number\(options\.careXp\) \|\| 0\)\)/);
+  assert.match(lifecycle, /careLevel: clamp\(Math\.floor\(Number\(options\.careLevel\) \|\| FISH_CARE_LEVEL_MIN\), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX\)/);
+  assert.match(lifecycle, /lastCareXpDayKey: typeof options\.lastCareXpDayKey === "string" \? options\.lastCareXpDayKey : ""/);
+  assert.match(sanitizer, /careXp: Math\.max\(0, Math\.floor\(Number\(fish\.careXp\) \|\| 0\)\)/);
+  assert.match(sanitizer, /careLevel: clamp\(Math\.floor\(Number\(fish\.careLevel\) \|\| FISH_CARE_LEVEL_MIN\), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX\)/);
+  assert.match(sanitizer, /lastCareXpDayKey: typeof fish\.lastCareXpDayKey === "string" \? fish\.lastCareXpDayKey : ""/);
+});
+
+test("Phase 9 completed Daily Recap awards at most five Care XP and is idempotent by dayKey", () => {
+  const fish = { id: "fish-a", speciesId: "guppy", name: "Bubbles", acquiredAt: 0, careXp: 0, careLevel: 1, lastCareXpDayKey: "" };
+  const tank = { id: "tank-a", fish: [fish] };
+  const state = { tanks: [tank] };
+  const species = { id: "guppy", cleanupAnimal: false, lifespanDays: 30 };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishCareProgressionEligible", "getFishCareLevelThresholds", "getFishCareLevelForXp", "updateFishCareLevelFromXp",
+    "getFishCareXpConditionsForRecapDay", "processFishCareLevelIncreaseProgression", "awardFishCareXpForCompletedDailyRecap"
+  ], {
+    state,
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (entry) => clamp(Math.round(Number(entry?.lifespanDays) || 60), 5, 600),
+    getSpeciesForFish: () => species,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlots: () => [
+      { key: "daily-feeding-2026-09-24-am", start: 0, end: 43200000 },
+      { key: "daily-feeding-2026-09-24-pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => true,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [{ met: true }, { met: true }],
+    getFishComfort: () => ({ value: 0.9 }),
+    getTankCleanlinessPercentForMilestones: () => 100,
+    getAllTanks: () => [tank],
+    isFishDead: () => false,
+    isFishSpeciesCareProgressionEligible: () => true,
+    isPeacefulModeEnabled: () => false
+  });
+  const summary = { dayKey: "2026-09-24", tankCareSnapshots: [{ tankId: "tank-a", cleanPercent: 95 }] };
+
+  const first = c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.equal(first.length, 1);
+  assert.equal(first[0].awardedXp, 5);
+  assert.equal(fish.careXp, 5);
+  assert.equal(fish.careLevel, 1, "5 XP is below the 15 XP Level 2 threshold for a 30-day species");
+  assert.equal(fish.lastCareXpDayKey, "2026-09-24");
+  assert.equal(summary.careXpEarned, 5);
+
+  const second = c.awardFishCareXpForCompletedDailyRecap(summary, 86400001);
+  assert.equal(second.length, 0, "the same recap day cannot evaluate the fish twice");
+  assert.equal(fish.careXp, 5, "forced or repeated recap processing must not duplicate Care XP");
+});
+
+test("Phase 9 each care category contributes exactly one XP point", () => {
+  const fish = { id: "fish-a", speciesId: "guppy", acquiredAt: 0 };
+  const tank = { id: "tank-a", fish: [fish] };
+  const species = { id: "guppy", cleanupAnimal: false };
+  let fed = true;
+  let health = 1;
+  let clean = 100;
+  let needs = true;
+  let comfort = 0.9;
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareXpConditionsForRecapDay"], {
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlots: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => fed,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => health,
+    getFishNeedsStatus: () => [{ met: needs }],
+    getFishComfort: () => ({ value: comfort }),
+    getTankCleanlinessPercentForMilestones: () => clean
+  });
+  const evaluate = () => c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 86400000, { cleanPercent: clean }).points;
+
+  assert.equal(evaluate(), 5);
+  fed = false; assert.equal(evaluate(), 4);
+  fed = true; health = 0.5; assert.equal(evaluate(), 4);
+  health = 1; clean = 79; assert.equal(evaluate(), 4);
+  clean = 100; needs = false; assert.equal(evaluate(), 4);
+  needs = true; comfort = 0.79; assert.equal(evaluate(), 4);
+});
+
+
+test("Phase 10 AM/PM feeding slots can be reconstructed from an explicit recap dayKey", () => {
+  const midnight = new Date(2026, 8, 24, 0, 0, 0, 0).getTime();
+  const c = load("fish/feeding-and-medicine.js", ["getDailyMealIndicatorSlotsForDayKey"], {
+    getLocalDayStartTimestamp: (dayKey) => {
+      assert.equal(dayKey, "2026-09-24");
+      return midnight;
+    }
+  });
+  const [am, pm] = c.getDailyMealIndicatorSlotsForDayKey("2026-09-24");
+  assert.equal(am.key, "daily-feeding-2026-09-24-am");
+  assert.equal(pm.key, "daily-feeding-2026-09-24-pm");
+  assert.equal(am.start, midnight);
+  assert.equal(am.end, new Date(2026, 8, 24, 12, 0, 0, 0).getTime());
+  assert.equal(pm.start, am.end);
+  assert.equal(pm.end, new Date(2026, 8, 25, 0, 0, 0, 0).getTime());
+});
+
+test("Phase 10 Properly Fed evaluates the recap day and only requires meal windows the fish existed in", () => {
+  const fish = { id: "fish-a", speciesId: "guppy", acquiredAt: 13 * 60 * 60 * 1000 };
+  const tank = { id: "tank-a", fish: [fish] };
+  const eaten = new Set(["daily-feeding-2026-09-24-pm"]);
+  let requestedDayKey = "";
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareXpConditionsForRecapDay"], {
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: (dayKey) => {
+      requestedDayKey = dayKey;
+      return [
+        { key: `daily-feeding-${dayKey}-am`, start: 0, end: 43200000 },
+        { key: `daily-feeding-${dayKey}-pm`, start: 43200000, end: 86400000 }
+      ];
+    },
+    hasFishEatenInSlot: (_fish, slot) => eaten.has(slot.key),
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [],
+    getFishComfort: () => ({ value: 1 }),
+    getTankCleanlinessPercentForMilestones: () => 100
+  });
+
+  let result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 99999999, { cleanPercent: 100 });
+  assert.equal(requestedDayKey, "2026-09-24");
+  assert.equal(result.properlyFed, true, "fish acquired after AM ended should owe PM only");
+
+  fish.acquiredAt = 11 * 60 * 60 * 1000;
+  result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 99999999, { cleanPercent: 100 });
+  assert.equal(result.properlyFed, false, "fish present before AM ended should owe both AM and PM");
+
+  eaten.add("daily-feeding-2026-09-24-am");
+  result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 99999999, { cleanPercent: 100 });
+  assert.equal(result.properlyFed, true);
+});
+
+test("Phase 10 Care XP uses exact health, per-tank cleanliness, applicable needs, and 80% comfort thresholds", () => {
+  const fish = { id: "fish-a", speciesId: "guppy", acquiredAt: 0 };
+  const tank = { id: "tank-a", fish: [fish] };
+  let health = 1;
+  let needs = [{ met: true }];
+  let comfort = 0.8;
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareXpConditionsForRecapDay"], {
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => true,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => health,
+    getFishNeedsStatus: () => needs,
+    getFishComfort: () => ({ value: comfort }),
+    getTankCleanlinessPercentForMilestones: () => 100
+  });
+
+  let result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 86400000, { cleanPercent: 79 });
+  assert.equal(result.healthy, true);
+  assert.equal(result.cleanEnvironment, false, "fish must use its tank recap cleanliness rather than a borough/fallback value");
+  assert.equal(result.speciesNeedsSatisfied, true);
+  assert.equal(result.comfortable, true, "80% comfort is sufficient");
+
+  health = 0.999;
+  needs = [{ met: true }, { met: false }];
+  comfort = 0.799;
+  result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 86400000, { cleanPercent: 80 });
+  assert.equal(result.healthy, false, "health must be fully restored");
+  assert.equal(result.cleanEnvironment, true, "80% cleanliness is sufficient");
+  assert.equal(result.speciesNeedsSatisfied, false, "every applicable species need must be met");
+  assert.equal(result.comfortable, false);
+});
+
+test("Phase 10 meal-free fish keep existing feeding behavior without a fake meal requirement", () => {
+  const fish = { id: "fish-a", speciesId: "meal-free", acquiredAt: 0 };
+  const tank = { id: "tank-a", fish: [fish] };
+  let mealLookupCount = 0;
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareXpConditionsForRecapDay"], {
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => { mealLookupCount += 1; return false; },
+    isMealFreeFish: () => true,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [],
+    getFishComfort: () => ({ value: 1 }),
+    getTankCleanlinessPercentForMilestones: () => 100
+  });
+  const result = c.getFishCareXpConditionsForRecapDay(fish, tank, "2026-09-24", 86400000, { cleanPercent: 100 });
+  assert.equal(result.properlyFed, true);
+  assert.equal(mealLookupCount, 0);
+});
+
+
+test("Phase 11 Care Level thresholds scale from the species base lifespan", () => {
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareLevelThresholds", "getFishCareLevelForXp"], {
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (species) => clamp(Math.round(Number(species?.lifespanDays) || 60), 5, 600)
+  });
+  const species = { id: "long-lived", lifespanDays: 100 };
+  const thresholds = c.getFishCareLevelThresholds(species);
+  assert.deepEqual(JSON.parse(JSON.stringify(thresholds)), { 1: 0, 2: 50, 3: 125, 4: 225, 5: 325 });
+  assert.equal(c.getFishCareLevelForXp(species, 49), 1);
+  assert.equal(c.getFishCareLevelForXp(species, 50), 2);
+  assert.equal(c.getFishCareLevelForXp(species, 124), 2);
+  assert.equal(c.getFishCareLevelForXp(species, 125), 3);
+  assert.equal(c.getFishCareLevelForXp(species, 225), 4);
+  assert.equal(c.getFishCareLevelForXp(species, 325), 5);
+});
+
+test("Phase 11 short-lived species keep at least five XP between Care Level thresholds", () => {
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareLevelThresholds"], {
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (species) => clamp(Math.round(Number(species?.lifespanDays) || 60), 5, 600)
+  });
+  const thresholds = c.getFishCareLevelThresholds({ id: "short-lived", lifespanDays: 5 });
+  assert.deepEqual(JSON.parse(JSON.stringify(thresholds)), { 1: 0, 2: 5, 3: 10, 4: 15, 5: 20 });
+  assert.ok(thresholds[3] - thresholds[2] >= 5);
+  assert.ok(thresholds[4] - thresholds[3] >= 5);
+  assert.ok(thresholds[5] - thresholds[4] >= 5);
+});
+
+test("Phase 11 Care Levels advance from cumulative Care XP and never decrease", () => {
+  const species = { id: "guppy", lifespanDays: 20 };
+  const c = load("tank/events-recaps-and-save.js", ["getFishCareLevelThresholds", "getFishCareLevelForXp", "updateFishCareLevelFromXp"], {
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (entry) => clamp(Math.round(Number(entry?.lifespanDays) || 60), 5, 600),
+    getSpeciesForFish: () => species
+  });
+  const fish = { id: "g1", speciesId: "guppy", careXp: 10, careLevel: 1, lifespanMultiplier: 0.9, birthAt: 0 };
+  let result = c.updateFishCareLevelFromXp(fish, species);
+  assert.equal(result.oldLevel, 1);
+  assert.equal(result.newLevel, 2);
+  assert.equal(fish.careLevel, 2);
+
+  fish.careXp = 0;
+  result = c.updateFishCareLevelFromXp(fish, species);
+  assert.equal(result.newLevel, 2, "later neglect or corrected XP must never reduce a previously earned Care Level");
+  assert.equal(fish.careLevel, 2);
+});
+
+test("Phase 11 Daily Recap XP can trigger a real Care Level increase", () => {
+  const fish = { id: "fish-level", speciesId: "guppy", name: "Bubbles", acquiredAt: 0, careXp: 5, careLevel: 1, lastCareXpDayKey: "" };
+  const tank = { id: "tank-a", fish: [fish] };
+  const species = { id: "guppy", cleanupAnimal: false, lifespanDays: 20 };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible", "getFishCareLevelThresholds", "getFishCareLevelForXp", "updateFishCareLevelFromXp",
+    "getFishCareXpConditionsForRecapDay", "processFishCareLevelIncreaseProgression", "awardFishCareXpForCompletedDailyRecap"
+  ], {
+    state: { tanks: [tank] },
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (entry) => clamp(Math.round(Number(entry?.lifespanDays) || 60), 5, 600),
+    getSpeciesForFish: () => species,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => true,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [{ met: true }],
+    getFishComfort: () => ({ value: 0.9 }),
+    getTankCleanlinessPercentForMilestones: () => 100,
+    getAllTanks: () => [tank],
+    isFishDead: () => false,
+    isPeacefulModeEnabled: () => false
+  });
+  const summary = { dayKey: "2026-09-24", tankCareSnapshots: [{ tankId: "tank-a", cleanPercent: 100 }] };
+  const awards = c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.equal(fish.careXp, 10);
+  assert.equal(fish.careLevel, 2);
+  assert.equal(awards[0].previousCareLevel, 1);
+  assert.equal(awards[0].careLevel, 2);
+  assert.equal(awards[0].levelsGained, 1);
+});
+
+test("Phase 12 species mastery is persistent account-wide state with safe normalized fields", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(bootstrap, /const STATE_VERSION = 65;/);
+  assert.match(persistence, /fishSpeciesMastery: \{\}/);
+  assert.match(persistence, /fishSpeciesMastery: sanitizeFishSpeciesMastery\(incoming\.fishSpeciesMastery\)/);
+  assert.match(persistence, /incomingVersion < 63/);
+
+  const c = load("core/settings-and-persistence.js", ["sanitizeFishSpeciesMastery"], {
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5
+  });
+  const normalized = c.sanitizeFishSpeciesMastery({
+    guppy: {
+      highestLevel: 9,
+      unlockedVariantKeys: ["guppy_blue.png", "guppy_blue.png", "", 42, "guppy_red.png"],
+      masteredAt: 1234,
+      totalCareLevelUps: 7.9,
+      lastVariantUnlockedAt: 2345,
+      collectionCompletedAt: 3456
+    },
+    broken: null
+  });
+  assert.deepEqual(JSON.parse(JSON.stringify(normalized)), {
+    guppy: {
+      highestLevel: 5,
+      unlockedVariantKeys: ["guppy_blue.png", "guppy_red.png"],
+      masteredAt: 1234,
+      totalCareLevelUps: 7,
+      lastVariantUnlockedAt: 2345,
+      collectionCompletedAt: 3456
+    }
+  });
+});
+
+test("Phase 12 species mastery tracks the highest Care Level permanently and counts real personal level-ups", () => {
+  const state = { fishSpeciesMastery: {} };
+  const c = load("tank/events-recaps-and-save.js", [
+    "getFishSpeciesMasteryRecord", "getFishCrossedCareLevels", "updateFishSpeciesMasteryForLevelIncrease"
+  ], {
+    state,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5
+  });
+
+  const firstFish = { id: "g1", speciesId: "guppy", name: "Bubbles", lifeState: "alive" };
+  let result = c.updateFishSpeciesMasteryForLevelIncrease(firstFish, 1, 4, 1000);
+  assert.equal(result.levelsGained, 3);
+  assert.equal(result.highestLevelIncreased, true);
+  assert.equal(result.masteredNow, false);
+  assert.equal(state.fishSpeciesMastery.guppy.highestLevel, 4);
+  assert.equal(state.fishSpeciesMastery.guppy.totalCareLevelUps, 3);
+  assert.equal(state.fishSpeciesMastery.guppy.masteredAt, 0);
+
+  firstFish.lifeState = "dead";
+  result = c.updateFishSpeciesMasteryForLevelIncrease(firstFish, 4, 5, 2000);
+  assert.equal(result.masteredNow, true);
+  assert.equal(state.fishSpeciesMastery.guppy.highestLevel, 5);
+  assert.equal(state.fishSpeciesMastery.guppy.masteredAt, 2000);
+  assert.equal(state.fishSpeciesMastery.guppy.totalCareLevelUps, 4);
+
+  const laterFish = { id: "g2", speciesId: "guppy", name: "Ripple", lifeState: "alive" };
+  result = c.updateFishSpeciesMasteryForLevelIncrease(laterFish, 1, 2, 3000);
+  assert.equal(result.highestLevelIncreased, false, "a later lower-level fish must not reduce or re-increase species mastery");
+  assert.equal(result.masteredNow, false, "masteredAt must only be set the first time Level 5 is reached");
+  assert.equal(state.fishSpeciesMastery.guppy.highestLevel, 5);
+  assert.equal(state.fishSpeciesMastery.guppy.masteredAt, 2000);
+  assert.equal(state.fishSpeciesMastery.guppy.totalCareLevelUps, 5, "later generations still count their own real Care Level increases");
+});
+
+test("Phase 12 completed Daily Recap level-ups raise species mastery without tying it to fish age", () => {
+  const fish = { id: "fish-level", speciesId: "guppy", name: "Bubbles", acquiredAt: 0, careXp: 5, careLevel: 1, lastCareXpDayKey: "" };
+  const tank = { id: "tank-a", fish: [fish] };
+  const species = { id: "guppy", cleanupAnimal: false, lifespanDays: 20 };
+  const state = { tanks: [tank], fishSpeciesMastery: {} };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishCareProgressionEligible", "getFishSpeciesMasteryRecord", "getFishCrossedCareLevels", "updateFishSpeciesMasteryForLevelIncrease",
+    "getFishCareLevelThresholds", "getFishCareLevelForXp", "updateFishCareLevelFromXp",
+    "getFishCareXpConditionsForRecapDay", "processFishCareLevelIncreaseProgression", "awardFishCareXpForCompletedDailyRecap"
+  ], {
+    state,
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: (entry) => clamp(Math.round(Number(entry?.lifespanDays) || 60), 5, 600),
+    getSpeciesForFish: () => species,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => true,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [{ met: true }],
+    getFishComfort: () => ({ value: 0.9 }),
+    getTankCleanlinessPercentForMilestones: () => 100,
+    getAllTanks: () => [tank],
+    isFishDead: () => false,
+    isPeacefulModeEnabled: () => false,
+    isFishSpeciesCareProgressionEligible: () => true
+  });
+
+  const summary = { dayKey: "2026-09-24", tankCareSnapshots: [{ tankId: "tank-a", cleanPercent: 100 }] };
+  const awards = c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.equal(fish.careLevel, 2);
+  assert.equal(state.fishSpeciesMastery.guppy.highestLevel, 2);
+  assert.equal(state.fishSpeciesMastery.guppy.totalCareLevelUps, 1);
+  assert.equal(awards[0].speciesMasteryLevel, 2);
+  assert.equal(awards[0].speciesMasteryIncreased, true);
+  assert.equal(awards[0].speciesMasteredNow, false);
+});
+
+test("Phase 13 preserves the authored fish appearance architecture and stable filename keys", () => {
+  const source = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
+  assert.match(source, /function getFishAssetVariants\(species\)/);
+  assert.match(source, /species\.assetVariants/);
+  assert.match(source, /species\.asset/);
+  assert.match(source, /function discoverFishAppearanceVariants\(catalog, availableAssets = null\)/);
+  assert.match(source, /function getFishStoreVariants\(species\)/);
+  assert.match(source, /const key = getFishAppearanceVariantKey\(path\)/);
+  assert.match(source, /function getFishAppearanceVariantKey\(path\)/);
+  assert.match(source, /split\(\/\[\?#\]\//);
+
+  const c = load("fish/needs-disease-and-behavior.js", [
+    "getFishAssetVariants", "getFishAppearanceVariantKey", "getFishStoreVariants"
+  ], {
+    getFishDirectionalSpritePath: path => path
+  });
+  const species = {
+    asset: "assets/fish/guppy/guppy_base.png?v=1",
+    assetVariants: [
+      "assets/fish/guppy/guppy_base.png?v=1",
+      "assets/fish/guppy/guppy_moscow-blue.png?cache=2"
+    ],
+    variantLabels: ["Base Guppy", "Moscow Blue"]
+  };
+  assert.deepEqual(JSON.parse(JSON.stringify(c.getFishAssetVariants(species))), species.assetVariants);
+  assert.equal(c.getFishAppearanceVariantKey(species.assetVariants[1]), "guppy_moscow-blue.png");
+  const variants = JSON.parse(JSON.stringify(c.getFishStoreVariants(species)));
+  assert.equal(variants[0].key, "guppy_base.png");
+  assert.equal(variants[1].key, "guppy_moscow-blue.png");
+  assert.equal(variants[1].label, "Moscow Blue", "display labels remain presentation data, not save identifiers");
+});
+
+test("Phase 13 species mastery canonicalizes permanent appearance unlock IDs to stable filename keys", () => {
+  const state = {
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 3,
+        unlockedVariantKeys: [
+          "assets/fish/guppy/guppy_base.png?v=7",
+          "guppy_base.png",
+          "assets/fish/guppy/guppy_red.png#sprite"
+        ],
+        masteredAt: 0,
+        totalCareLevelUps: 2,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const c = load("tank/events-recaps-and-save.js", ["getFishSpeciesMasteryRecord"], {
+    state,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAppearanceVariantKey: pathValue => typeof pathValue === "string" ? pathValue.split(/[?#]/)[0].split("/").pop() : ""
+  });
+  const record = c.getFishSpeciesMasteryRecord("guppy");
+  assert.deepEqual(JSON.parse(JSON.stringify(record.unlockedVariantKeys)), ["guppy_base.png", "guppy_red.png"]);
+});
+
+test("Phase 14 normal progression species always normalize their authored base appearance as unlocked", () => {
+  const state = {
+    unlockedFishSpecies: [],
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 2,
+        unlockedVariantKeys: ["guppy_moscow-blue.png"],
+        masteredAt: 0,
+        totalCareLevelUps: 1,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const speciesList = [
+    {
+      id: "guppy",
+      asset: "assets/fish/guppy/guppy_base.png?v=4",
+      assetVariants: [
+        "assets/fish/guppy/guppy_base.png?v=4",
+        "assets/fish/guppy/guppy_moscow-blue.png",
+        "assets/fish/guppy/guppy_red.png"
+      ]
+    },
+    {
+      id: "cardinal",
+      asset: "assets/fish/cardinal/cardinal.png",
+      assetVariants: ["assets/fish/cardinal/cardinal.png"]
+    },
+    {
+      id: "betta",
+      asset: "assets/fish/betta/betta_base.png",
+      assetVariants: ["assets/fish/betta/betta_base.png", "assets/fish/betta/betta_blue.png"],
+      unlockRequirement: { milestone: "some-milestone" }
+    },
+    {
+      id: "shrimp",
+      asset: "assets/fish/shrimp/shrimp.png",
+      assetVariants: ["assets/fish/shrimp/shrimp.png", "assets/fish/shrimp/shrimp_legs.png"],
+      cleanupAnimal: true
+    }
+  ];
+  const runtime = { fishMap: new Map(speciesList.map(species => [species.id, species])) };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey",
+    "ensureFishSpeciesBaseVariantUnlocked",
+    "normalizeFishSpeciesMasteryBaseVariants",
+    "getFishSpeciesMasteryRecord"
+  ], {
+    state,
+    runtime,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAppearanceVariantKey: pathValue => typeof pathValue === "string" ? pathValue.split(/[?#]/)[0].split("/").pop() : "",
+    isFishSpeciesProgressUnlocked: species => !species.unlockRequirement
+  });
+
+  assert.equal(c.normalizeFishSpeciesMasteryBaseVariants(), true);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(state.fishSpeciesMastery.guppy.unlockedVariantKeys)),
+    ["guppy_base.png", "guppy_moscow-blue.png"],
+    "the base is added while a previously grandfathered alternate remains unlocked"
+  );
+  assert.equal(state.fishSpeciesMastery.guppy.unlockedVariantKeys.includes("guppy_red.png"), false, "other authored alternates must not unlock automatically");
+  assert.deepEqual(JSON.parse(JSON.stringify(state.fishSpeciesMastery.cardinal.unlockedVariantKeys)), ["cardinal.png"], "single-appearance species still normalize their base deterministically");
+  assert.equal(state.fishSpeciesMastery.betta, undefined, "a still-locked species should not receive progression state merely from loading the catalog");
+  assert.equal(state.fishSpeciesMastery.shrimp, undefined, "cleanup animals must not treat pose/body assets as cosmetic unlocks");
+  assert.equal(c.normalizeFishSpeciesMasteryBaseVariants(), false, "normalization must be idempotent once bases are present");
+});
+
+test("Phase 14 newly unlocked species seed only their base appearance into mastery", () => {
+  const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
+  const startupSource = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  assert.match(catalogSource, /function unlockFishSpecies\([\s\S]*?getFishSpeciesMasteryRecord\(speciesId, \{ species \}\)/);
+  assert.match(startupSource, /state = reconcileState\(rawState\);\s*const masteryBaseVariantsChanged = normalizeFishSpeciesMasteryBaseVariants\(\);/);
+  assert.match(startupSource, /needsReconcileSave \|\| masteryBaseVariantsChanged/);
+
+  const state = { fishSpeciesMastery: {} };
+  const species = {
+    id: "betta",
+    asset: "assets/fish/betta/betta_base.png",
+    assetVariants: [
+      "assets/fish/betta/betta_base.png",
+      "assets/fish/betta/betta_blue.png",
+      "assets/fish/betta/betta_red.png"
+    ]
+  };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey",
+    "ensureFishSpeciesBaseVariantUnlocked",
+    "getFishSpeciesMasteryRecord"
+  ], {
+    state,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAppearanceVariantKey: pathValue => typeof pathValue === "string" ? pathValue.split(/[?#]/)[0].split("/").pop() : ""
+  });
+  const record = c.getFishSpeciesMasteryRecord("betta", { species });
+  assert.deepEqual(JSON.parse(JSON.stringify(record.unlockedVariantKeys)), ["betta_base.png"]);
+});
+
+test("Phase 15 level-up variant discovery selects directly from the remaining locked non-base pool", () => {
+  let randomCalls = 0;
+  const math = Object.create(Math);
+  math.random = () => {
+    randomCalls += 1;
+    return 0;
+  };
+  const state = {
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 3,
+        unlockedVariantKeys: ["guppy_base.png", "guppy_blue.png"],
+        masteredAt: 0,
+        totalCareLevelUps: 2,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const species = {
+    id: "guppy",
+    name: "Guppy",
+    asset: "assets/fish/guppy/guppy_base.png",
+    assetVariants: [
+      "assets/fish/guppy/guppy_base.png",
+      "assets/fish/guppy/guppy_blue.png",
+      "assets/fish/guppy/guppy_red.png",
+      "assets/fish/guppy/guppy_gold.png"
+    ],
+    variantLabels: ["Base", "Blue", "Red", "Gold"]
+  };
+  const fish = { id: "g-1", speciesId: "guppy", name: "Bubbles" };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool", "unlockRandomFishAppearanceVariantForLevel"
+  ], {
+    state,
+    Math: math,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getLocalDayKey: () => "2026-09-25"
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getFishLockedAppearanceVariantPool(species).map(entry => entry.key))),
+    ["guppy_red.png", "guppy_gold.png"],
+    "the pool must contain only currently locked non-base appearances"
+  );
+  const first = c.unlockRandomFishAppearanceVariantForLevel(fish, species, 2, 1000);
+  assert.equal(first.variantKey, "guppy_red.png");
+  assert.equal(first.lockedPoolSizeBeforeUnlock, 2);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getFishLockedAppearanceVariantPool(species).map(entry => entry.key))),
+    ["guppy_gold.png"],
+    "the next opportunity must rebuild the pool after the first unlock"
+  );
+  const second = c.unlockRandomFishAppearanceVariantForLevel(fish, species, 3, 2000);
+  assert.equal(second.variantKey, "guppy_gold.png");
+  assert.equal(second.lockedPoolSizeBeforeUnlock, 1);
+  assert.equal(randomCalls, 2, "each successful level opportunity performs exactly one random selection, with no duplicate rerolls");
+  assert.equal(c.unlockRandomFishAppearanceVariantForLevel(fish, species, 4, 3000), null, "an empty locked pool should do nothing");
+  assert.equal(randomCalls, 2, "an empty pool must not waste a random roll");
+});
+
+test("Phase 15 a later generation can unlock a variant even when species mastery is already Level 5", () => {
+  const math = Object.create(Math);
+  math.random = () => 0.5;
+  const fish = { id: "g-later", speciesId: "guppy", name: "Ripple", acquiredAt: 0, careXp: 5, careLevel: 1, lastCareXpDayKey: "" };
+  const tank = { id: "tank-a", fish: [fish], events: [] };
+  const species = {
+    id: "guppy",
+    name: "Guppy",
+    lifespanDays: 20,
+    asset: "assets/fish/guppy/guppy_base.png",
+    assetVariants: [
+      "assets/fish/guppy/guppy_base.png",
+      "assets/fish/guppy/guppy_blue.png",
+      "assets/fish/guppy/guppy_red.png"
+    ],
+    variantLabels: ["Base", "Blue", "Red"]
+  };
+  const state = {
+    tanks: [tank],
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 5,
+        unlockedVariantKeys: ["guppy_base.png"],
+        masteredAt: 123,
+        totalCareLevelUps: 4,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool", "unlockRandomFishAppearanceVariantForLevel", "unlockFishAppearanceVariantsForLevelIncrease",
+    "getFishCrossedCareLevels", "updateFishSpeciesMasteryForLevelIncrease", "getFishCareLevelThresholds", "getFishCareLevelForXp", "updateFishCareLevelFromXp",
+    "getFishCareXpConditionsForRecapDay", "processFishCareLevelIncreaseProgression", "awardFishCareXpForCompletedDailyRecap"
+  ], {
+    state,
+    Math: math,
+    DAY_MS: 86400000,
+    FISH_DAILY_CARE_XP_CAP: 5,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    FISH_CARE_LEVEL_LIFESPAN_RATIOS: { 2: 0.10, 3: 0.25, 4: 0.45, 5: 0.65 },
+    getFishFoundationLifespanDays: entry => clamp(Math.round(Number(entry?.lifespanDays) || 60), 5, 600),
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getSpeciesForFish: () => species,
+    getLocalDayKey: () => "2026-09-25",
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [
+      { key: "am", start: 0, end: 43200000 },
+      { key: "pm", start: 43200000, end: 86400000 }
+    ],
+    hasFishEatenInSlot: () => true,
+    isMealFreeFish: () => false,
+    getFishHealthRatio: () => 1,
+    getFishNeedsStatus: () => [{ met: true }],
+    getFishComfort: () => ({ value: 0.9 }),
+    getTankCleanlinessPercentForMilestones: () => 100,
+    getAllTanks: () => [tank],
+    isFishDead: () => false,
+    isPeacefulModeEnabled: () => false
+  });
+
+  const summary = { dayKey: "2026-09-25", tankCareSnapshots: [{ tankId: "tank-a", cleanPercent: 100 }] };
+  const awards = c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.equal(fish.careLevel, 2);
+  assert.equal(state.fishSpeciesMastery.guppy.highestLevel, 5, "mastery stays maxed rather than being tied to this later fish");
+  assert.equal(awards[0].speciesMasteryIncreased, false);
+  assert.equal(awards[0].variantUnlocks.length, 1, "the later fish's real Level 1 to 2 transition still gets one discovery opportunity");
+  assert.equal(summary.variantUnlocks.length, 1);
+  assert.equal(summary.variantsUnlocked, 1);
+  assert.equal(state.fishSpeciesMastery.guppy.unlockedVariantKeys.length, 2);
+
+  c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.equal(state.fishSpeciesMastery.guppy.unlockedVariantKeys.length, 2, "reprocessing the same recap day must not create another unlock opportunity");
+});
+
+test("Phase 16 variant unlock odds are uniform and derived only from the current locked pool size", () => {
+  const species = {
+    id: "odds-fish",
+    asset: "assets/fish/odds/base.png",
+    assetVariants: [
+      "assets/fish/odds/base.png",
+      ...Array.from({ length: 10 }, (_, index) => `assets/fish/odds/v${index + 1}.png`)
+    ]
+  };
+  const record = { unlockedVariantKeys: ["base.png"] };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey",
+    "getFishLockedAppearanceVariantPool",
+    "getFishVariantUnlockPoolStats"
+  ], {
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`
+  });
+
+  const expected = new Map([
+    [10, 10],
+    [9, 100 / 9],
+    [8, 12.5],
+    [5, 20],
+    [4, 25],
+    [2, 50],
+    [1, 100]
+  ]);
+
+  for (const [lockedCount, expectedPercent] of expected) {
+    const unlockedAlternateCount = 10 - lockedCount;
+    record.unlockedVariantKeys = [
+      "base.png",
+      ...Array.from({ length: unlockedAlternateCount }, (_, index) => `v${index + 1}.png`)
+    ];
+    const stats = c.getFishVariantUnlockPoolStats(species, record);
+    assert.equal(stats.lockedCount, lockedCount);
+    assert.ok(Math.abs(stats.chancePerVariant - (1 / lockedCount)) < 1e-12);
+    assert.ok(Math.abs(stats.percentPerVariant - expectedPercent) < 1e-9);
+  }
+});
+
+test("Phase 16 uniform selector gives every position in a ten-variant pool one equal interval", () => {
+  const c = load("tank/events-recaps-and-save.js", [
+    "selectUniformFishAppearanceVariantFromLockedPool"
+  ]);
+  const pool = Array.from({ length: 10 }, (_, index) => ({ key: `v${index + 1}.png` }));
+
+  for (let index = 0; index < pool.length; index += 1) {
+    const midpoint = (index + 0.5) / pool.length;
+    assert.equal(
+      c.selectUniformFishAppearanceVariantFromLockedPool(pool, midpoint).key,
+      pool[index].key,
+      `pool position ${index + 1} should own exactly one tenth of the random range`
+    );
+  }
+  assert.equal(c.selectUniformFishAppearanceVariantFromLockedPool([], 0.5), null);
+});
+
+test("Phase 16 consecutive fish level-ups recalculate odds from the newly reduced locked pool", () => {
+  const math = Object.create(Math);
+  math.random = () => 0.999999;
+  const state = {
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 5,
+        unlockedVariantKeys: ["guppy_base.png"],
+        masteredAt: 1,
+        totalCareLevelUps: 4,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const species = {
+    id: "guppy",
+    name: "Guppy",
+    asset: "assets/fish/guppy/guppy_base.png",
+    assetVariants: [
+      "assets/fish/guppy/guppy_base.png",
+      "assets/fish/guppy/guppy_blue.png",
+      "assets/fish/guppy/guppy_red.png",
+      "assets/fish/guppy/guppy_gold.png"
+    ],
+    variantLabels: ["Base", "Blue", "Red", "Gold"]
+  };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool",
+    "unlockRandomFishAppearanceVariantForLevel"
+  ], {
+    state,
+    Math: math,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getLocalDayKey: () => "2026-09-25"
+  });
+
+  const first = c.unlockRandomFishAppearanceVariantForLevel({ id: "g1", speciesId: "guppy", name: "One" }, species, 2, 1000);
+  const second = c.unlockRandomFishAppearanceVariantForLevel({ id: "g2", speciesId: "guppy", name: "Two" }, species, 2, 1000);
+
+  assert.equal(first.lockedPoolSizeBeforeUnlock, 3);
+  assert.ok(Math.abs(first.unlockChanceBeforeUnlock - (1 / 3)) < 1e-12);
+  assert.equal(first.variantKey, "guppy_gold.png");
+  assert.equal(second.lockedPoolSizeBeforeUnlock, 2);
+  assert.equal(second.unlockChanceBeforeUnlock, 0.5);
+  assert.equal(second.variantKey, "guppy_red.png");
+  assert.equal(state.fishSpeciesMastery.guppy.unlockedVariantKeys.includes("guppy_blue.png"), false);
+});
+
+test("Phase 17 multi-level care jumps enumerate each crossed level exactly once in order", () => {
+  const c = load("tank/events-recaps-and-save.js", ["getFishCrossedCareLevels"], {
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5
+  });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(c.getFishCrossedCareLevels(2, 4))), [3, 4]);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.getFishCrossedCareLevels(1, 5))), [2, 3, 4, 5]);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.getFishCrossedCareLevels(4, 4))), []);
+  assert.deepEqual(JSON.parse(JSON.stringify(c.getFishCrossedCareLevels(5, 3))), []);
+});
+
+test("Phase 17 a 2 to 4 jump performs two sequential unlock opportunities and rebuilds the pool between them", () => {
+  const rolls = [0, 0.999999];
+  const math = Object.create(Math);
+  math.random = () => rolls.shift() ?? 0;
+  const state = {
+    fishSpeciesMastery: {
+      guppy: {
+        highestLevel: 2,
+        unlockedVariantKeys: ["guppy_base.png"],
+        masteredAt: 0,
+        totalCareLevelUps: 1,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const species = {
+    id: "guppy",
+    name: "Guppy",
+    asset: "assets/fish/guppy/guppy_base.png",
+    assetVariants: [
+      "assets/fish/guppy/guppy_base.png",
+      "assets/fish/guppy/guppy_blue.png",
+      "assets/fish/guppy/guppy_red.png",
+      "assets/fish/guppy/guppy_gold.png"
+    ],
+    variantLabels: ["Base", "Blue", "Red", "Gold"]
+  };
+  const fish = { id: "jump-1", speciesId: "guppy", name: "Skip", careLevel: 4, variantUnlockCareLevel: 2 };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool",
+    "unlockRandomFishAppearanceVariantForLevel", "getFishCrossedCareLevels", "unlockFishAppearanceVariantsForLevelIncrease"
+  ], {
+    state,
+    Math: math,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getLocalDayKey: () => "2026-09-25"
+  });
+
+  const unlocks = c.unlockFishAppearanceVariantsForLevelIncrease(fish, species, 2, 4, 1000);
+  assert.equal(unlocks.length, 2);
+  assert.deepEqual(JSON.parse(JSON.stringify(unlocks.map(entry => entry.careLevel))), [3, 4]);
+  assert.deepEqual(JSON.parse(JSON.stringify(unlocks.map(entry => entry.lockedPoolSizeBeforeUnlock))), [3, 2]);
+  assert.equal(unlocks[0].variantKey, "guppy_blue.png");
+  assert.equal(unlocks[1].variantKey, "guppy_gold.png");
+  assert.equal(fish.variantUnlockCareLevel, 4, "the fish records that both crossed-level opportunities were consumed");
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getFishLockedAppearanceVariantPool(species).map(entry => entry.key))),
+    ["guppy_red.png"],
+    "the second roll must see the permanent unlock created by the first roll"
+  );
+
+  const duplicate = c.unlockFishAppearanceVariantsForLevelIncrease(fish, species, 2, 4, 2000);
+  assert.deepEqual(JSON.parse(JSON.stringify(duplicate)), [], "the same fish cannot process the same care levels twice");
+  assert.equal(state.fishSpeciesMastery.guppy.unlockedVariantKeys.includes("guppy_red.png"), false);
+});
+
+test("Phase 17 save sanitization marks historical care levels consumed instead of replaying old unlock opportunities", () => {
+  const source = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  assert.match(
+    source,
+    /variantUnlockCareLevel:\s*clamp\([\s\S]*?Number\(fish\.variantUnlockCareLevel\) \|\| Number\(fish\.careLevel\) \|\| FISH_CARE_LEVEL_MIN/,
+    "older fish without the new marker should default to their already-persisted care level"
+  );
+
+  const creationSource = fs.readFileSync(path.join(root, "fish/lifecycle-and-breeding.js"), "utf8");
+  assert.match(
+    creationSource,
+    /variantUnlockCareLevel:\s*clamp\(Math\.floor\(Number\(options\.variantUnlockCareLevel\) \|\| FISH_CARE_LEVEL_MIN\)/,
+    "new fish should begin with only Level 1 marked as consumed"
+  );
+});
+
+test("Phase 18 variant unlock persists a structured progression event and surfaces compact unlock copy", () => {
+  const pushedEvents = [];
+  const toasts = [];
+  const state = {
+    coins: 20,
+    progressionHistory: [],
+    fishSpeciesMastery: {
+      goldfish: {
+        highestLevel: 2,
+        unlockedVariantKeys: ["goldfish_base.png"],
+        masteredAt: 0,
+        totalCareLevelUps: 1,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const species = {
+    id: "goldfish",
+    name: "Goldfish",
+    asset: "assets/fish/goldfish/goldfish_base.png",
+    assetVariants: [
+      "assets/fish/goldfish/goldfish_base.png",
+      "assets/fish/goldfish/goldfish_ranchu.png",
+      "assets/fish/goldfish/goldfish_oranda.png"
+    ],
+    variantLabels: ["Base", "Ranchu", "Oranda"]
+  };
+  const fish = { id: "gold-1", speciesId: "goldfish", name: "Bubbles", careLevel: 2 };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool",
+    "recordProgressionEvent", "getFishVariantUnlockNotificationCopy", "recordFishVariantUnlockProgressionEvent",
+    "unlockRandomFishAppearanceVariantForLevel"
+  ], {
+    state,
+    Math: Object.assign(Object.create(Math), { random: () => 0 }),
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    PROGRESSION_HISTORY_LIMIT: 240,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getLocalDayKey: () => "2026-09-25",
+    createId: prefix => `${prefix}-test`,
+    pushEvent: (...args) => { pushedEvents.push(args); return { id: "event-test" }; },
+    showToast: (...args) => { toasts.push(args); return true; }
+  });
+
+  const result = c.unlockRandomFishAppearanceVariantForLevel(fish, species, 2, 123456);
+  assert.equal(result.type, "variant_unlocked");
+  assert.equal(result.timestamp, 123456);
+  assert.equal(result.dayKey, "2026-09-25");
+  assert.equal(result.fishId, "gold-1");
+  assert.equal(result.fishName, "Bubbles");
+  assert.equal(result.speciesId, "goldfish");
+  assert.equal(result.speciesName, "Goldfish");
+  assert.equal(result.careLevel, 2);
+  assert.equal(result.variantKey, "goldfish_ranchu.png");
+  assert.equal(result.variantLabel, "Ranchu");
+  assert.equal(result.title, "New Goldfish Variant Unlocked!");
+  assert.equal(result.detail, "Ranchu is now available in BubbleBodega.");
+  assert.equal(state.progressionHistory.length, 1);
+  assert.equal(state.progressionHistory[0].id, "progression-test");
+  assert.equal(state.coins, 20, "unlocking access must not award coins");
+  assert.deepEqual(JSON.parse(JSON.stringify(state.fishSpeciesMastery.goldfish.unlockedVariantKeys)), ["goldfish_base.png", "goldfish_ranchu.png"]);
+  assert.equal(pushedEvents.length, 1, "the visible tank history receives one compact progression message");
+  assert.match(pushedEvents[0][0], /New Goldfish Variant Unlocked!/);
+  assert.equal(toasts.length, 1, "the player receives a noticeable unlock notification");
+  assert.match(toasts[0][0], /Ranchu is now available in BubbleBodega\./);
+});
+
+test("Phase 18 structured progression event history remains preserved by the current save schema", () => {
+  const state = { progressionHistory: [] };
+  const c = load("tank/events-recaps-and-save.js", ["recordProgressionEvent"], {
+    state,
+    PROGRESSION_HISTORY_LIMIT: 2,
+    createId: prefix => `${prefix}-${state.progressionHistory.length + 1}`
+  });
+
+  c.recordProgressionEvent({ type: "variant_unlocked", timestamp: 100, variantKey: "one.png" });
+  c.recordProgressionEvent({ type: "variant_unlocked", timestamp: 200, variantKey: "two.png" });
+  c.recordProgressionEvent({ type: "variant_unlocked", timestamp: 300, variantKey: "three.png" });
+  assert.equal(state.progressionHistory.length, 2);
+  assert.deepEqual(state.progressionHistory.map(entry => entry.variantKey), ["three.png", "two.png"]);
+
+  const bootstrapSource = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const persistenceSource = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(bootstrapSource, /const STATE_VERSION = 65;/);
+  assert.match(bootstrapSource, /const PROGRESSION_HISTORY_LIMIT = 240;/);
+  assert.match(persistenceSource, /if \(incomingVersion < 64\)/);
+  assert.match(persistenceSource, /progressionHistory: sanitizeProgressionHistory\(incoming\.progressionHistory\)/);
+});
+
+
+test("Phase 19 final variant discovery permanently completes the species collection without affecting mastery or coins", () => {
+  const pushedEvents = [];
+  const toasts = [];
+  const state = {
+    coins: 20,
+    progressionHistory: [],
+    fishSpeciesMastery: {
+      goldfish: {
+        highestLevel: 3,
+        unlockedVariantKeys: ["goldfish_base.png"],
+        masteredAt: 0,
+        totalCareLevelUps: 2,
+        lastVariantUnlockedAt: 0,
+        collectionCompletedAt: 0
+      }
+    }
+  };
+  const species = {
+    id: "goldfish",
+    name: "Goldfish",
+    asset: "assets/fish/goldfish/goldfish_base.png",
+    assetVariants: [
+      "assets/fish/goldfish/goldfish_base.png",
+      "assets/fish/goldfish/goldfish_ranchu.png"
+    ],
+    variantLabels: ["Base", "Ranchu"]
+  };
+  const fish = { id: "gold-2", speciesId: "goldfish", name: "Bubbles", careLevel: 3 };
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible",
+    "getFishBaseAppearanceVariantKey", "ensureFishSpeciesBaseVariantUnlocked", "getFishSpeciesMasteryRecord",
+    "getFishLockedAppearanceVariantPool", "selectUniformFishAppearanceVariantFromLockedPool",
+    "recordProgressionEvent", "getFishVariantUnlockNotificationCopy", "getFishVariantCollectionCompletionNotificationCopy",
+    "recordFishVariantUnlockProgressionEvent", "recordFishVariantCollectionCompletionProgressionEvent",
+    "unlockRandomFishAppearanceVariantForLevel"
+  ], {
+    state,
+    Math: Object.assign(Object.create(Math), { random: () => 0 }),
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    PROGRESSION_HISTORY_LIMIT: 240,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop(),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    getLocalDayKey: () => "2026-09-25",
+    createId: prefix => `${prefix}-${state.progressionHistory.length + 1}`,
+    pushEvent: (...args) => { pushedEvents.push(args); return { id: `event-${pushedEvents.length}` }; },
+    showToast: (...args) => { toasts.push(args); return true; }
+  });
+
+  const result = c.unlockRandomFishAppearanceVariantForLevel(fish, species, 3, 222222);
+  const mastery = state.fishSpeciesMastery.goldfish;
+  assert.equal(result.variantKey, "goldfish_ranchu.png");
+  assert.equal(result.collectionCompleted, true);
+  assert.equal(result.collectionCompletedAt, 222222);
+  assert.equal(mastery.collectionCompletedAt, 222222, "the first completed timestamp is permanent");
+  assert.equal(mastery.highestLevel, 3, "variant collection completion must not redefine species mastery");
+  assert.equal(mastery.masteredAt, 0, "collection completion must not mark Level 5 mastery complete");
+  assert.equal(state.coins, 20, "collection completion must not award coins");
+  assert.deepEqual(state.progressionHistory.map(entry => entry.type), ["variant_collection_completed", "variant_unlocked"]);
+  assert.equal(state.progressionHistory[0].title, "Goldfish Variant Collection Complete!");
+  assert.match(state.progressionHistory[0].detail, /All Goldfish appearance variants have been discovered\./);
+  assert.equal(pushedEvents.length, 2, "the final unlock and collection completion each create a compact visible history event");
+  assert.equal(toasts.length, 2, "the player receives a special collection-complete notification after the final unlock");
+  assert.match(toasts[1][0], /Goldfish Variant Collection Complete!/);
+
+  assert.equal(c.unlockRandomFishAppearanceVariantForLevel(fish, species, 4, 333333), null, "no remaining variants means later levels do not create fake unlocks");
+  assert.equal(mastery.collectionCompletedAt, 222222, "later levels must not overwrite the original collection completion time");
+});
+
+test("Phase 19 collection completion fields survive structured progression history sanitization", () => {
+  const persistenceSource = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(persistenceSource, /remainingLockedVariantCount:\s*Math\.max\(0, Math\.floor\(Number\(entry\.remainingLockedVariantCount\)/);
+  assert.match(persistenceSource, /collectionCompleted:\s*entry\.collectionCompleted === true/);
+  assert.match(persistenceSource, /collectionCompletedAt:\s*Math\.max\(0, Number\(entry\.collectionCompletedAt\) \|\| 0\)/);
+});
+
+test("Phase 20 fish store variants expose progression lock state and shared next-unlock odds", () => {
+  const species = {
+    id: "goldfish",
+    name: "Goldfish",
+    asset: "assets/fish/goldfish/goldfish_base.png",
+    assetVariants: [
+      "assets/fish/goldfish/goldfish_base.png",
+      "assets/fish/goldfish/goldfish_ranchu.png",
+      "assets/fish/goldfish/goldfish_oranda.png",
+      "assets/fish/goldfish/goldfish_black-moor.png"
+    ],
+    variantLabels: ["Base", "Ranchu", "Oranda", "Black Moor"]
+  };
+  const mastery = { unlockedVariantKeys: ["goldfish_base.png", "goldfish_oranda.png"] };
+  const c = load("fish/needs-disease-and-behavior.js", [
+    "getFishAssetVariants", "getFishAppearanceVariantKey", "getFishVariantLabelFromTileName",
+    "formatFishVariantUnlockChancePercent", "getFishStoreVariants", "getFishStoreVariantProgressMessage"
+  ], {
+    isFishSpeciesCareProgressionEligible: () => true,
+    getFishBaseAppearanceVariantKey: () => "goldfish_base.png",
+    getFishSpeciesMasteryRecord: () => mastery,
+    getFishDirectionalSpritePath: pathValue => pathValue
+  });
+  const variants = JSON.parse(JSON.stringify(c.getFishStoreVariants(species)));
+  assert.equal(variants.length, 4, "all authored normal variants remain visible in BubbleBodega data");
+  assert.deepEqual(variants.map(entry => entry.unlocked), [true, false, true, false]);
+  assert.deepEqual(variants.map(entry => entry.locked), [false, true, false, true]);
+  assert.equal(variants[0].isBase, true);
+  assert.equal(variants[1].unlockChance, 0.5);
+  assert.equal(variants[1].unlockChanceLabel, "50%");
+  assert.equal(variants[3].unlockChance, 0.5);
+  assert.equal(variants[2].unlockChance, 0, "already unlocked alternates do not advertise another unlock roll");
+  assert.equal(c.getFishStoreVariantProgressMessage(species, variants), "2 variants remain. 50% chance each on the next level-up.");
+});
+
+test("Phase 20 fish store progress message handles guaranteed and completed collections", () => {
+  const species = { id: "guppy", name: "Guppy", asset: "guppy_base.png", assetVariants: ["guppy_base.png", "guppy_blue.png"] };
+  let mastery = { unlockedVariantKeys: ["guppy_base.png"] };
+  const c = load("fish/needs-disease-and-behavior.js", [
+    "getFishAssetVariants", "getFishAppearanceVariantKey", "getFishVariantLabelFromTileName",
+    "formatFishVariantUnlockChancePercent", "getFishStoreVariants", "getFishStoreVariantProgressMessage"
+  ], {
+    isFishSpeciesCareProgressionEligible: () => true,
+    getFishBaseAppearanceVariantKey: () => "guppy_base.png",
+    getFishSpeciesMasteryRecord: () => mastery,
+    getFishDirectionalSpritePath: pathValue => pathValue
+  });
+  let variants = JSON.parse(JSON.stringify(c.getFishStoreVariants(species)));
+  assert.equal(c.getFishStoreVariantProgressMessage(species, variants), "1 variant remains. Guaranteed on the next level-up.");
+  mastery = { unlockedVariantKeys: ["guppy_base.png", "guppy_blue.png"] };
+  variants = JSON.parse(JSON.stringify(c.getFishStoreVariants(species)));
+  assert.equal(c.getFishStoreVariantProgressMessage(species, variants), "All variants discovered.");
+});
+
+test("BubbleBodega fish appearance selectors stay as clean dots and never render lock thumbnails", () => {
+  const renderSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
+  const selectorSource = fs.readFileSync(path.join(__dirname, "../public/store-variants.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  assert.match(renderSource, /isDebugModeEnabled\(\)[\s\S]*getFishStoreVariantProgressMessage/,
+    "variant-count/chance spoilers are debug-only in BubbleBodega");
+  assert.match(selectorSource, /variant\.locked === true/);
+  assert.match(selectorSource, /dot\.hidden = true/,
+    "stale locked markup is hidden instead of displaying a padlock");
+  assert.doesNotMatch(selectorSource, /createElement\("img"\)/,
+    "fish variant selectors use dots, not thumbnail tiles");
+  assert.doesNotMatch(selectorSource, /shop-variant-lock|🔒/,
+    "normal fish selectors never render lock icons");
+  assert.match(styles, /shop-variant-dots\.is-fish-variants button::before[\s\S]*display: block/,
+    "fish selectors restore the classic dot marker");
+});
+
+test("BubbleBodega exposes only unlocked fish variants in normal play and all current variants in Debug Mode", () => {
+  const variants = [
+    { key: "base.png", unlocked: true, locked: false },
+    { key: "blue.png", unlocked: false, locked: true, debugBypassed: true }
+  ];
+  let debug = false;
+  const c = load("store/catalog.js", ["getBubbleBodegaFishStoreVariants"], {
+    isDavyMutationSpecies: () => false,
+    getFishStoreVariants: () => variants,
+    isDebugModeEnabled: () => debug,
+    isFishSpeciesCareProgressionEligible: () => true
+  });
+  assert.deepEqual(c.getBubbleBodegaFishStoreVariants({ id: "goldfish" }).map(entry => entry.key), ["base.png"]);
+  debug = true;
+  assert.deepEqual(c.getBubbleBodegaFishStoreVariants({ id: "goldfish" }).map(entry => entry.key), ["base.png", "blue.png"]);
+});
+
+test("Tetra regular collection contains only the current natural sprite-sheet variants", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8")).fish;
+  const tetra = catalog.find(entry => entry.id === "tetra");
+  const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/tetra__genetics-natural.json"), "utf8"));
+  const currentFrames = new Set(metadata.layers.flatMap(layer => layer.sprites || []).map(sprite => sprite.name));
+  const catalogFrames = new Set((tetra.assetVariants || []).map(value => String(value).split("/").pop()));
+  assert.deepEqual([...catalogFrames].sort(), [...currentFrames].sort(),
+    "removed Tetra appearances must not remain in fish-types.json or BubbleBodega");
+  assert.equal([...catalogFrames].some(name => /neon-black-skirt|pink-blush-black-skirt/i.test(name)), false);
+});
+
+test("Phase 24 progression eligibility includes normal natural/enhanced fish but excludes special systems and cleanup animals", () => {
+  const c = load("tank/events-recaps-and-save.js", [
+    "isFishSpeciesCareProgressionEligible", "isFishCareProgressionEligible"
+  ], {
+    isCustomFishShopKey: id => id === "__custom-fish-shop__",
+    isCustomFishAssetKey: id => String(id).startsWith("custom-fish:"),
+    isDavyMutationSpecies: species => species?.davyMutation === true || String(species?.id || "").startsWith("davy-"),
+    isProteusZombieFish: species => species?.proteusZombie === true || species?.id === "proteus-z01"
+  });
+
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "goldfish", genetics: "natural", type: "Fish" }), true);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "neon-tetra", genetics: "enhanced", type: "Fish", seller: "Proteus Biodyne" }), true,
+    "enhanced BubbleBodega fish remain normal progression fish even when Proteus is the seller");
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "custom-fish:abc", customAsset: true, type: "Fish" }), false);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "__custom-fish-shop__", customUploadProduct: true, type: "Fish" }), false);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "davy-dwarf-hyperfin", davyMutation: true, type: "Fish" }), false);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "proteus-z01", proteusExclusive: true, proteusZombie: true, type: "Fish" }), false);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "otocinclus", cleanupAnimal: true, behavior: "sucker", type: "Fish" }), false);
+  assert.equal(c.isFishSpeciesCareProgressionEligible({ id: "cleaner-shrimp", cleanupAnimal: false, behavior: "shrimp", type: "Shrimp" }), false,
+    "non-fish layered cleanup animals stay outside Care XP/mastery even if authored cleanup metadata is incomplete");
+  assert.equal(c.isFishCareProgressionEligible({ speciesId: "goldfish" }, { id: "goldfish", type: "Fish" }), true);
+  assert.equal(c.isFishCareProgressionEligible({ speciesId: "goldfish", customAsset: true }, { id: "goldfish", type: "Fish" }), false);
+});
+
+test("Phase 24 cosmetic progression filters directional, layered and state assets out of the unlock pool", () => {
+  const species = {
+    id: "test-fish",
+    asset: "assets/fish/test_base.png",
+    antennaAsset: "assets/fish/test_antenna.png",
+    legAsset: "assets/fish/test_legs.png",
+    overlayAsset: "assets/fish/test_overlay.png",
+    assetVariants: [
+      "assets/fish/test_base.png",
+      "assets/fish/test_red.png",
+      "assets/fish/test_base_side.png",
+      "assets/fish/test_base_bottom.png",
+      "assets/fish/test_antenna.png",
+      "assets/fish/test_legs.png",
+      "assets/fish/test_inflated.png",
+      "assets/fish/test_blue.png"
+    ]
+  };
+  const c = load("fish/needs-disease-and-behavior.js", [
+    "getFishAssetVariants", "getFishAppearanceVariantKey", "isFishProgressionAppearanceAsset", "getFishProgressionAppearanceVariants"
+  ]);
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getFishProgressionAppearanceVariants(species))),
+    ["assets/fish/test_base.png", "assets/fish/test_red.png", "assets/fish/test_blue.png"]
+  );
+});
+
+test("Phase 24 normalized catalog preserves custom/special metadata used by the progression gate", () => {
+  const source = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  assert.match(source, /customAsset:\s*entry\.customAsset === true/);
+  assert.match(source, /customUploadProduct:\s*entry\.customUploadProduct === true/);
+  assert.match(source, /davyMutation:\s*entry\.davyMutation === true/);
+  assert.match(source, /proteusZombie:\s*entry\.proteusZombie === true/);
+  assert.match(source, /proteusExclusive:\s*entry\.proteusExclusive === true/);
+});
+
+test("Phase 25 breeding appearance pool uses only unlocked cosmetics plus appearances actually owned by parents", () => {
+  const species = {
+    id: "guppy",
+    asset: "assets/fish/guppy_main.png",
+    assetVariants: [
+      "assets/fish/guppy_main.png",
+      "assets/fish/guppy_blue.png",
+      "assets/fish/guppy_red.png"
+    ]
+  };
+  const unlocked = new Set(["guppy_main.png", "guppy_blue.png"]);
+  const c = load("fish/lifecycle-and-breeding.js", ["getBreedingAllowedAppearanceEntries"], {
+    getFishAssetVariants: value => value.assetVariants,
+    getFishProgressionAppearanceVariants: value => value.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split("/").pop(),
+    getFishBaseAppearanceVariantKey: value => String(value.asset || "").split("/").pop(),
+    isFishSpeciesCareProgressionEligible: () => true,
+    isFishAppearanceVariantUnlocked: (_species, key) => unlocked.has(key)
+  });
+
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getBreedingAllowedAppearanceEntries(species).map(entry => entry.key))),
+    ["guppy_main.png", "guppy_blue.png"],
+    "random breeding fallback must not include a progression-locked authored variant"
+  );
+  assert.deepEqual(
+    JSON.parse(JSON.stringify(c.getBreedingAllowedAppearanceEntries(species, {
+      parentVariantKeys: ["guppy_red.png"],
+      includeUnlocked: false
+    }).map(entry => entry.key))),
+    ["guppy_red.png"],
+    "a parent may legitimately pass down the appearance it already possesses"
+  );
+});
+
+test("Phase 25 breeding normalization rejects injected locked offspring variants but preserves legitimate parent inheritance", () => {
+  const species = {
+    id: "guppy",
+    asset: "assets/fish/guppy_main.png",
+    assetVariants: [
+      "assets/fish/guppy_main.png",
+      "assets/fish/guppy_blue.png",
+      "assets/fish/guppy_red.png"
+    ]
+  };
+  const unlocked = new Set(["guppy_main.png", "guppy_blue.png"]);
+  const c = load("fish/lifecycle-and-breeding.js", [
+    "getBreedingAllowedAppearanceEntries", "normalizeBreedingOffspringAppearances"
+  ], {
+    getFishAssetVariants: value => value.assetVariants,
+    getFishProgressionAppearanceVariants: value => value.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split("/").pop(),
+    getFishBaseAppearanceVariantKey: value => String(value.asset || "").split("/").pop(),
+    isFishSpeciesCareProgressionEligible: () => true,
+    isFishAppearanceVariantUnlocked: (_species, key) => unlocked.has(key)
+  });
+
+  const injected = c.normalizeBreedingOffspringAppearances(
+    species, [2], ["guppy_red.png"], 1,
+    { parentVariantKeys: [], includeUnlocked: true }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(injected)), {
+    variants: [0], variantKeys: ["guppy_main.png"]
+  });
+
+  const inherited = c.normalizeBreedingOffspringAppearances(
+    species, [2], ["guppy_red.png"], 1,
+    { parentVariantKeys: ["guppy_red.png"], includeUnlocked: false }
+  );
+  assert.deepEqual(JSON.parse(JSON.stringify(inherited)), {
+    variants: [2], variantKeys: ["guppy_red.png"]
+  });
+});
+
+test("Phase 25 direct live-birth fallback cannot randomly produce a progression-locked appearance", () => {
+  const species = {
+    id: "guppy", name: "Guppy", liveBirth: true,
+    asset: "assets/fish/guppy_main.png",
+    assetVariants: [
+      "assets/fish/guppy_main.png",
+      "assets/fish/guppy_blue.png",
+      "assets/fish/guppy_red.png"
+    ]
+  };
+  const state = { fish: [] };
+  let babyOptions = null;
+  const unlocked = new Set(["guppy_main.png", "guppy_blue.png"]);
+  const c = load("fish/lifecycle-and-breeding.js", [
+    "getBreedingParentAppearanceKeys", "getBreedingAllowedAppearanceEntries", "spawnBreedingOffspring"
+  ], {
+    Math: { random: () => 0.999, floor: Math.floor, max: Math.max, min: Math.min, abs: Math.abs, round: Math.round },
+    state,
+    runtime: { fishMap: new Map([["guppy", species]]) },
+    DEFAULT_TANK_LAYER: 1, SUCKER_FISH_BACK_GLASS_LAYER: 1,
+    clampTankLayer: value => value,
+    getFishAssetVariants: value => value.assetVariants,
+    getFishProgressionAppearanceVariants: value => value.assetVariants,
+    getFishAppearanceVariantKey: value => String(value || "").split("/").pop(),
+    getFishBaseAppearanceVariantKey: value => String(value.asset || "").split("/").pop(),
+    isFishSpeciesCareProgressionEligible: () => true,
+    isFishAppearanceVariantUnlocked: (_species, key) => unlocked.has(key),
+    createBabyFishFromSpecies: (_id, _now, options) => { babyOptions = options; return { id: "baby" }; },
+    addFishToTank: baby => baby
+  });
+
+  const result = c.spawnBreedingOffspring("guppy", 1000, { parentIds: [] });
+  assert.equal(result.kind, "live");
+  assert.equal(babyOptions.appearanceVariant, 1, "highest random roll should choose the last unlocked entry, not the locked red variant");
+  assert.equal(babyOptions.appearanceVariantKey, "guppy_blue.png");
+});
+
+test("Phase 26 stored and dead fish cannot gain Care XP from Daily Recap processing", () => {
+  const stored = { id: "stored", speciesId: "guppy", storageState: "stored", careXp: 20, careLevel: 2, lastCareXpDayKey: "" };
+  const dead = { id: "dead", speciesId: "guppy", lifeState: "dead", careXp: 20, careLevel: 2, lastCareXpDayKey: "" };
+  const tank = { id: "tank-a", fish: [stored, dead] };
+  const state = { tanks: [tank] };
+  let conditionChecks = 0;
+  const c = load("tank/events-recaps-and-save.js", ["awardFishCareXpForCompletedDailyRecap"], {
+    state,
+    DAY_MS: 86400000,
+    getLocalDayStartTimestamp: () => 0,
+    getDailyMealIndicatorSlotsForDayKey: () => [],
+    getAllTanks: () => [tank],
+    isFishDead: fish => fish?.lifeState === "dead",
+    isPeacefulModeEnabled: () => false,
+    getSpeciesForFish: () => ({ id: "guppy" }),
+    isFishCareProgressionEligible: () => true,
+    getFishCareXpConditionsForRecapDay: () => { conditionChecks += 1; return { points: 5 }; }
+  });
+  const summary = { dayKey: "2026-09-24", tankCareSnapshots: [] };
+  const awards = c.awardFishCareXpForCompletedDailyRecap(summary, 86400000);
+  assert.deepEqual(JSON.parse(JSON.stringify(awards)), []);
+  assert.equal(stored.careXp, 20);
+  assert.equal(dead.careXp, 20);
+  assert.equal(stored.lastCareXpDayKey, "");
+  assert.equal(dead.lastCareXpDayKey, "");
+  assert.equal(conditionChecks, 0, "stored/dead fish must be rejected before care conditions are evaluated");
+});
+
+test("Phase 26 Peaceful Mode blocks Care XP, species mastery advancement, and variant unlock rolls", () => {
+  const fish = { id: "fish-a", speciesId: "guppy", careXp: 100, careLevel: 3, variantUnlockCareLevel: 3 };
+  const tank = { id: "tank-a", fish: [fish] };
+  const state = { tanks: [tank] };
+  let masteryCreates = 0;
+  let unlockRolls = 0;
+  const c = load("tank/events-recaps-and-save.js", [
+    "getFishCrossedCareLevels", "awardFishCareXpForCompletedDailyRecap",
+    "updateFishSpeciesMasteryForLevelIncrease", "unlockFishAppearanceVariantsForLevelIncrease"
+  ], {
+    state,
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5,
+    DAY_MS: 86400000,
+    isPeacefulModeEnabled: () => true,
+    getFishSpeciesMasteryRecord: () => { masteryCreates += 1; return null; },
+    isFishCareProgressionEligible: () => true,
+    unlockRandomFishAppearanceVariantForLevel: () => { unlockRolls += 1; return { variantKey: "x.png" }; }
+  });
+  const awards = c.awardFishCareXpForCompletedDailyRecap({ dayKey: "2026-09-24" }, 1000);
+  const mastery = c.updateFishSpeciesMasteryForLevelIncrease(fish, 3, 4, 1000);
+  const unlocks = c.unlockFishAppearanceVariantsForLevelIncrease(fish, { id: "guppy" }, 3, 4, 1000, tank);
+  assert.deepEqual(JSON.parse(JSON.stringify(awards)), []);
+  assert.equal(fish.careXp, 100);
+  assert.equal(mastery.highestLevelIncreased, false);
+  assert.equal(mastery.levelsGained, 0);
+  assert.deepEqual(JSON.parse(JSON.stringify(unlocks)), []);
+  assert.equal(unlockRolls, 0);
+  assert.ok(masteryCreates <= 1, "Peaceful Mode may read existing mastery but must never create or advance it");
+});
+
+test("Phase 26 memorials preserve and render a fish's final Care Level", () => {
+  const borough = fs.readFileSync(path.join(root, "borough/living-borough.js"), "utf8");
+  const c = load("borough/living-borough.js", ["sanitizeMemorialRecord"], {
+    FISH_CARE_LEVEL_MIN: 1,
+    FISH_CARE_LEVEL_MAX: 5
+  });
+  const record = c.sanitizeMemorialRecord({
+    id: "m1", fishId: "f1", name: "Bubbles", speciesId: "guppy", speciesName: "Guppy", careLevel: 4, deathAt: 123
+  });
+  assert.equal(record.careLevel, 4);
+  const legacy = c.sanitizeMemorialRecord({ id: "m2", fishId: "f2", name: "Legacy", deathAt: 123 });
+  assert.equal(legacy.careLevel, 1, "older memorial records safely default to Level 1");
+  assert.match(borough, /careLevel:\s*clamp\(Math\.floor\(Number\(fish\.careLevel\)/);
+  assert.match(borough, /`Lv\. \$\{record\.careLevel\}`/);
+});
+
+test("Phase 26 Peaceful Mode keeps the Weekly Care Award non-paying", () => {
+  const source = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
+  assert.match(source, /rewardPaid:\s*peaceful \? 0 : weeklyReward/);
+  assert.match(source, /if \(report\.rewardPaid > 0\) \{[\s\S]*label:\s*"Weekly Care Award"/);
 });

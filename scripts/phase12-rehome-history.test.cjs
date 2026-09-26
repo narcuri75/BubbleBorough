@@ -34,7 +34,7 @@ function makeLifecycleContext() {
   return { context, species, DAY_MS };
 }
 
-test('creature rehome value uses acquisition price and declines with age', () => {
+test('creature rehome value uses acquisition price and the shared resale formula', () => {
   const { context, DAY_MS } = makeLifecycleContext();
   const now = 10_000 * DAY_MS;
   const freshAdult = {
@@ -45,9 +45,9 @@ test('creature rehome value uses acquisition price and declines with age', () =>
   const elderlyAdult = { ...freshAdult, id: 'fish-3', birthAt: now - 100 * DAY_MS };
   const freeFish = { ...freshAdult, id: 'fish-free', purchasePrice: 0 };
 
-  assert.equal(context.getFishRehomeValue(freshAdult, now), 75);
-  assert.equal(context.getFishRehomeValue(olderAdult, now), 46);
-  assert.equal(context.getFishRehomeValue(elderlyAdult, now), 18);
+  assert.equal(context.getFishRehomeValue(freshAdult, now), 50);
+  assert.equal(context.getFishRehomeValue(olderAdult, now), 50);
+  assert.equal(context.getFishRehomeValue(elderlyAdult, now), 50);
   assert.equal(context.getFishRehomeValue(freeFish, now), 0);
 });
 
@@ -96,7 +96,9 @@ test('save schema persists removal history and purchase price', () => {
   const lifecycle = read('public/app-src/fish/lifecycle-and-breeding.js');
   const layout = read('public/app-src/decor/layout-and-layers.js');
 
-  assert.match(bootstrap, /const STATE_VERSION = (?:59|60|61|62);/);
+  const versionMatch = bootstrap.match(/const STATE_VERSION = (\d+);/);
+  assert.ok(versionMatch, 'state version should be declared');
+  assert.ok(Number(versionMatch[1]) >= 59, 'state version should retain the removal-history schema or later');
   assert.match(settings, /removalHistory: \[\]/);
   assert.match(settings, /removalHistory: sanitizeCreatureRemovalHistory\(incoming\.removalHistory\)/);
   assert.match(settings, /incomingVersion < 59/);

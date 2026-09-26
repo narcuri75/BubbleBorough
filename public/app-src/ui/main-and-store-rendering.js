@@ -517,7 +517,15 @@ function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWat
     ? null
     : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
   const bubbleBodegaVariants = getBubbleBodegaFishStoreVariants(fish);
-  const fishAsset = bubbleBodegaVariants[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+  const fishVariantProgressMessage = typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled()
+    && typeof getFishStoreVariantProgressMessage === "function"
+      ? getFishStoreVariantProgressMessage(fish, getFishStoreVariants(fish))
+      : "";
+  const fishAsset = bubbleBodegaVariants.find((variant) => variant?.unlocked !== false)?.image
+    || bubbleBodegaVariants[0]?.image
+    || getFishCatalogAssetPath(fish)
+    || fish.asset;
   const isDavyMutation = isDavyMutationSpecies(fish);
   const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
   const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
@@ -546,6 +554,7 @@ function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWat
           ${fish.aboutTagline ? `<div class="shop-about-tagline">${escapeHtml(fish.aboutTagline)}</div>` : ""}
           ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
           ${waterRequirement ? `<div class="shop-water-requirement">${escapeHtml(waterRequirement)}</div>` : ""}
+          ${fishVariantProgressMessage ? `<div class="shop-variant-progress-message">${escapeHtml(fishVariantProgressMessage)}</div>` : ""}
         </div>
         <div class="shop-stat-list">
           <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>
@@ -574,8 +583,11 @@ function renderFishShop() {
   const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("fish");
   const fishFilter = tutorialRestriction ? "all" : normalizeFishStoreFilterKey(runtime.storeFilters?.fish);
   const activeWaterType = typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater";
-  const sourceCatalog = getFishShopCatalog();
-  const otherSourceCatalog = getOtherAquariumCreatureShopCatalog();
+  // Species that have not been progression-unlocked do not appear in
+  // BubbleBodega at all. They are future discoveries, not out-of-stock stock.
+  // Debug Mode intentionally keeps its temporary catalog bypass.
+  const sourceCatalog = getFishShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
+  const otherSourceCatalog = getOtherAquariumCreatureShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
   const filterEntry = (fish) => {
     if (!matchesFishStoreFilter(fish, fishFilter)) return false;
     if (!tutorialRestriction) return true;
@@ -1562,7 +1574,28 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
         const fishDrawX = -fishSize * aspect;
         const drawWidth = fishSize * aspect * 2;
         const drawHeight = fishSize * 2;
-        context.drawImage(depthImage, fishDrawX, -fishSize, drawWidth, drawHeight);
+        const warped = !dead
+          && typeof drawFishSwimDepthWarpImage === "function"
+          && drawFishSwimDepthWarpImage(
+            context,
+            depthImage,
+            fishDrawX,
+            -fishSize,
+            drawWidth,
+            drawHeight,
+            fish,
+            species,
+            now,
+            {
+              quality: "borough",
+              imagePath: renderAsset.imagePath,
+              effectiveBehavior: typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species?.behavior,
+              suckerFreeSwimming: typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, now)
+            }
+          );
+        if (!warped) {
+          context.drawImage(depthImage, fishDrawX, -fishSize, drawWidth, drawHeight);
+        }
         context.filter = "none";
         if (dead && typeof drawDeadFishEyeTreatment === "function") {
           // The optional eye detector uses normalized coordinates from the

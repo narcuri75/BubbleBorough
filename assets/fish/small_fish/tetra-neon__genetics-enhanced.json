@@ -28,7 +28,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_cosmic-blue.png"
+          "name": "tetra_neon-blue.png"
         },
         {
           "id": "dabebb93-09e5-4773-a9e6-211aad9f2b53",
@@ -39,7 +39,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_electric-green.png"
+          "name": "tetra_neon-green.png"
         },
         {
           "id": "9d5d39e7-5efd-444e-b94e-645cec288ff0",
@@ -50,7 +50,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_galactic-purple.png"
+          "name": "tetra_neon-purple.png"
         },
         {
           "id": "c9cbd22c-986b-44cb-a2a6-c8be27039a65",
@@ -61,7 +61,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_moonrise-pink.png"
+          "name": "tetra_neon-pink.png"
         },
         {
           "id": "e3b2bb46-4c1a-42ca-be7e-d0d29d1fba58",
@@ -72,7 +72,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_starfire-red.png"
+          "name": "tetra_neon-red.png"
         },
         {
           "id": "dbd6f7d0-e638-476d-bf0c-89d563fa933c",
@@ -83,7 +83,7 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "tetra_glofish_sunburst-orange.png"
+          "name": "tetra_neon-orange.png"
         }
       ]
     }

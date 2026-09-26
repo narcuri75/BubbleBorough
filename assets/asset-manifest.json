@@ -1889,6 +1889,22 @@
       "path": "assets/fish/Lionfish_5.png?v=96263951f4a7"
     },
     {
+      "key": "lookdown-fish_barred.png",
+      "path": "assets/fish/lookdown-fish_barred.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_blue.png",
+      "path": "assets/fish/lookdown-fish_blue.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_classic-silver.png",
+      "path": "assets/fish/lookdown-fish_classic-silver.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_golden.png",
+      "path": "assets/fish/lookdown-fish_golden.png?v=82c4babaf29f"
+    },
+    {
       "key": "masturus_lanceolatus.png",
       "path": "assets/fish/masturus_lanceolatus.png?v=37bb581b7395"
     },
@@ -2589,30 +2605,6 @@
       "path": "assets/fish/tetra_glass.png?v=4fe17e4e9e22"
     },
     {
-      "key": "tetra_glofish_cosmic-blue.png",
-      "path": "assets/fish/tetra_glofish_cosmic-blue.png?v=8325540060fc"
-    },
-    {
-      "key": "tetra_glofish_electric-green.png",
-      "path": "assets/fish/tetra_glofish_electric-green.png?v=8325540060fc"
-    },
-    {
-      "key": "tetra_glofish_galactic-purple.png",
-      "path": "assets/fish/tetra_glofish_galactic-purple.png?v=8325540060fc"
-    },
-    {
-      "key": "tetra_glofish_moonrise-pink.png",
-      "path": "assets/fish/tetra_glofish_moonrise-pink.png?v=8325540060fc"
-    },
-    {
-      "key": "tetra_glofish_starfire-red.png",
-      "path": "assets/fish/tetra_glofish_starfire-red.png?v=8325540060fc"
-    },
-    {
-      "key": "tetra_glofish_sunburst-orange.png",
-      "path": "assets/fish/tetra_glofish_sunburst-orange.png?v=8325540060fc"
-    },
-    {
       "key": "tetra_gold-neon.png",
       "path": "assets/fish/tetra_gold-neon.png?v=4fe17e4e9e22"
     },
@@ -2623,6 +2615,30 @@
     {
       "key": "tetra_lemon.png",
       "path": "assets/fish/tetra_lemon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_neon-blue.png",
+      "path": "assets/fish/tetra_neon-blue.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-green.png",
+      "path": "assets/fish/tetra_neon-green.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-orange.png",
+      "path": "assets/fish/tetra_neon-orange.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-pink.png",
+      "path": "assets/fish/tetra_neon-pink.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-purple.png",
+      "path": "assets/fish/tetra_neon-purple.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-red.png",
+      "path": "assets/fish/tetra_neon-red.png?v=8325540060fc"
     },
     {
       "key": "tetra_neon.png",

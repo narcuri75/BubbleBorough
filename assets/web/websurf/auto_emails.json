@@ -130,7 +130,7 @@
     "milestone_reward": {
       "sender": "rewards@bubbleboroughbank.swim",
       "subject": "Milestone Unlocked: {{milestoneName}}",
-      "preview": "You earned {{coin:reward}}.",
+      "preview": "{{milestonePreview}}",
       "body": [
         {
           "type": "text",
@@ -138,7 +138,11 @@
         },
         {
           "type": "text",
-          "text": "{{coin:reward}} have been deposited into your account."
+          "text": "{{milestoneOutcome}}"
+        },
+        {
+          "type": "text",
+          "text": "{{milestoneUnlockSummary}}"
         },
         {
           "type": "summary",
@@ -218,11 +222,11 @@
     "bubblebodega_rescue_offer": {
       "sender": "offers@bubblebodega.swim",
       "subject": "A Fresh Start, On Us",
-      "preview": "A Goldfish and one bottle of Basic Fish Food are waiting for you—free.",
+      "preview": "A Goldfish and one bottle of Basic Fish Food are waiting for you\u2014free.",
       "body": [
         {
           "type": "heading",
-          "text": "Let’s get your aquarium swimming again"
+          "text": "Let\u2019s get your aquarium swimming again"
         },
         {
           "type": "text",
@@ -246,7 +250,7 @@
     "weekly_bank_statement": {
       "sender": "statements@bubbleboroughbank.swim",
       "subject": "Weekly Statement: {{dateRange}}",
-      "preview": "{{transactionCount}} transactions • Balance: {{coin:balance}}",
+      "preview": "{{transactionCount}} transactions \u2022 Balance: {{coin:balance}}",
       "body": [
         {
           "type": "transaction_list",

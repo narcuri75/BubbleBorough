@@ -246,11 +246,24 @@ function getDavyMutationDailyOffer(now = Date.now()) {
 }
 
 function getBubbleBodegaFishStoreVariants(species) {
-  if (!isDavyMutationSpecies(species)) {
-    return getFishStoreVariants(species);
+  if (isDavyMutationSpecies(species)) {
+    const offer = getDavyMutationDailyOffer();
+    return offer?.species?.id === species?.id && offer.variant ? [offer.variant] : [];
   }
-  const offer = getDavyMutationDailyOffer();
-  return offer?.species?.id === species?.id && offer.variant ? [offer.variant] : [];
+
+  const variants = getFishStoreVariants(species);
+  // BubbleBodega is a collection view, not a spoiler list. Normal play shows
+  // only appearances the player has actually discovered. Debug Mode keeps the
+  // complete CURRENT variant set selectable for testing, while obsolete assets
+  // have already been filtered out by getFishStoreVariants().
+  if (typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return variants;
+  }
+  if (typeof isFishSpeciesCareProgressionEligible === "function"
+      && isFishSpeciesCareProgressionEligible(species)) {
+    return variants.filter((variant) => variant?.unlocked === true);
+  }
+  return variants;
 }
 
 function getOwnedFishCount() {
@@ -673,6 +686,9 @@ function sortCatalogEntries(entries, sortKey) {
   });
 }
 
+// Species availability is intentionally separate from appearance progression.
+// This helper answers only whether the fish TYPE has been unlocked by the
+// existing milestone/species system. Variant mastery must never unlock a species.
 function isFishSpeciesProgressUnlocked(speciesOrId) {
   const species = typeof speciesOrId === "string"
     ? runtime.fishMap.get(speciesOrId)
@@ -1046,14 +1062,19 @@ function getOtherAquariumCreatureShopCatalog() {
 }
 
 function getStarterFishSpecies() {
-  const shopCatalog = getFishShopCatalog();
-  const unlockedCatalog = shopCatalog.filter((species) => isFishSpeciesUnlocked(species));
-  const goldfish = unlockedCatalog.find((species) => species.id === "goldfish");
-  if (goldfish) {
-    return goldfish;
+  const activeWaterType = getActiveStoreWaterType();
+  const preferredStarterId = activeWaterType === "saltwater" ? "firefish" : "goldfish";
+  const starterCatalog = getFishShopCatalog().filter((species) => (
+    species?.starterFish === true
+    && isFishCompatibleWithWaterType(species, activeWaterType)
+  ));
+  const unlockedStarters = starterCatalog.filter((species) => isFishSpeciesUnlocked(species));
+  const candidates = unlockedStarters.length ? unlockedStarters : starterCatalog;
+  const preferredStarter = candidates.find((species) => species.id === preferredStarterId);
+  if (preferredStarter) {
+    return preferredStarter;
   }
-  return [...(unlockedCatalog.length ? unlockedCatalog : shopCatalog)]
-    .sort(compareFishCatalogBySize)[0] || null;
+  return [...candidates].sort(compareFishCatalogBySize)[0] || null;
 }
 
 function getFishPurchaseCost(speciesId) {
@@ -1078,6 +1099,11 @@ function unlockFishSpecies(speciesId, now = Date.now(), reasonText = "") {
     ...(state.unlockedFishSpecies || []),
     speciesId
   ]);
+  // Unlocking a species only makes the fish type available. Creating its mastery
+  // record seeds the authored base appearance, but never grants alternates.
+  if (typeof getFishSpeciesMasteryRecord === "function") {
+    getFishSpeciesMasteryRecord(speciesId, { species });
+  }
 
   pushEvent(reasonText || `${species.name} is now available in the shop.`, now);
   return true;

@@ -68,7 +68,7 @@ function getFishDisplaySourceSpecies(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishDisplayScaleForSpecies(species = null) {
-  return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish");
+  return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish") * GLOBAL_FISH_VISUAL_SCALE;
 }
 
 function getFishVisualCatalogWidth(species = null) {
@@ -256,6 +256,36 @@ function hashStringToUint32(key = "") {
     hash = ((hash * 33) + character.charCodeAt(0)) >>> 0;
   }
   return hash >>> 0;
+}
+
+function resolveCanonicalFishAppearanceSelection(fish, species) {
+  const variants = getFishAssetVariants(species);
+  if (!variants.length) {
+    return {
+      appearanceVariant: 0,
+      appearanceVariantKey: typeof fish?.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
+      appearanceAssetPath: typeof fish?.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null
+    };
+  }
+
+  const storedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
+  const storedVariantKey = getFishAppearanceVariantKey(fish?.appearanceVariantKey);
+  let index = storedAssetKey
+    ? variants.findIndex((path) => getFishAppearanceVariantKey(path) === storedAssetKey)
+    : -1;
+  if (index < 0 && storedVariantKey) {
+    index = variants.findIndex((path) => getFishAppearanceVariantKey(path) === storedVariantKey);
+  }
+  if (index < 0) {
+    index = normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish);
+  }
+
+  const appearanceAssetPath = variants[index] || variants[0] || species?.asset || null;
+  return {
+    appearanceVariant: Math.max(0, variants.indexOf(appearanceAssetPath)),
+    appearanceVariantKey: getFishAppearanceVariantKey(appearanceAssetPath) || null,
+    appearanceAssetPath
+  };
 }
 
 function normalizeFishAppearanceVariantIndex(value, species, fallbackFish = null) {

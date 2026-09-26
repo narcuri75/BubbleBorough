@@ -346,15 +346,50 @@ function markScrubStamp(x, y, options = {}) {
 }
 
 
+function getBoroughCleaningIncomeStatus(now = Date.now()) {
+  const dayKey = getLocalDayKey(now);
+  if (!state || typeof state !== "object") {
+    return {
+      dayKey,
+      coinsEarned: 0,
+      cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+      remainingCoins: BOROUGH_DAILY_CLEANING_COIN_CAP
+    };
+  }
+
+  if (state.boroughCleaningIncomeDayKey !== dayKey) {
+    state.boroughCleaningIncomeDayKey = dayKey;
+    state.boroughCleaningCoinsEarned = 0;
+  }
+
+  const coinsEarned = clamp(
+    Math.floor(Number(state.boroughCleaningCoinsEarned) || 0),
+    0,
+    BOROUGH_DAILY_CLEANING_COIN_CAP
+  );
+  state.boroughCleaningCoinsEarned = coinsEarned;
+
+  return {
+    dayKey,
+    coinsEarned,
+    cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+    remainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - coinsEarned)
+  };
+}
+
 function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) {
   const dayKey = getLocalDayKey(now);
+  const boroughStatus = getBoroughCleaningIncomeStatus(now);
   if (!tank) {
     return {
       dayKey,
       credit: 0,
       coinsEarned: 0,
       cap: CLEANING_DAILY_COIN_CAP,
-      remainingCredit: CLEANING_DAILY_COIN_CAP
+      remainingCredit: CLEANING_DAILY_COIN_CAP,
+      boroughCoinsEarned: boroughStatus.coinsEarned,
+      boroughCap: boroughStatus.cap,
+      boroughRemainingCoins: boroughStatus.remainingCoins
     };
   }
 
@@ -378,7 +413,10 @@ function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) 
     credit,
     coinsEarned,
     cap: CLEANING_DAILY_COIN_CAP,
-    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit)
+    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit),
+    boroughCoinsEarned: boroughStatus.coinsEarned,
+    boroughCap: boroughStatus.cap,
+    boroughRemainingCoins: boroughStatus.remainingCoins
   };
 }
 
@@ -398,11 +436,15 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
   const creditAdded = Math.min(status.remainingCredit, rawCredit);
   const nextCredit = clamp(status.credit + creditAdded, 0, CLEANING_DAILY_COIN_CAP);
   const nextWholeCoins = Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(nextCredit + 1e-9));
-  const coinsAwarded = Math.max(0, nextWholeCoins - status.coinsEarned);
+  const newlyEarnedTankCoins = Math.max(0, nextWholeCoins - status.coinsEarned);
+  const coinsAwarded = Math.min(newlyEarnedTankCoins, status.boroughRemainingCoins);
+  const nextBoroughCoinsEarned = status.boroughCoinsEarned + coinsAwarded;
 
   tank.cleaningIncomeDayKey = status.dayKey;
   tank.cleaningIncomeCredit = nextCredit;
-  tank.cleaningIncomeCoinsEarned = status.coinsEarned + coinsAwarded;
+  tank.cleaningIncomeCoinsEarned = nextWholeCoins;
+  state.boroughCleaningIncomeDayKey = status.dayKey;
+  state.boroughCleaningCoinsEarned = nextBoroughCoinsEarned;
 
   return {
     dayKey: status.dayKey,
@@ -410,6 +452,9 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
     coinsEarned: tank.cleaningIncomeCoinsEarned,
     cap: CLEANING_DAILY_COIN_CAP,
     remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - nextCredit),
+    boroughCoinsEarned: nextBoroughCoinsEarned,
+    boroughCap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+    boroughRemainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - nextBoroughCoinsEarned),
     creditAdded,
     coinsAwarded,
     dirtinessRemoved: cleanedAmount
@@ -445,7 +490,8 @@ function completeCleaning(options = {}) {
   invalidateBoroughOverviewSnapshot(getCurrentTank());
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
   if (cleanReward > 0) {
-    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Tank cleaning", place: getTankLabel() });
+    recordDailyIncomeCategory("cleaning", cleanReward, now);
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", category: "cleaning", now, label: "Tank cleaning", place: getTankLabel() });
   }
 
   if (!hasExposedDeadTankFish(now)) {
@@ -470,7 +516,7 @@ function completeCleaning(options = {}) {
   renderToolCursor();
 
   const cleaningEarningsSummary = manualCleaning
-    ? ` Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins.`
+    ? ` Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
     : "";
   pushEvent(
     cleanReward > 0
@@ -490,12 +536,14 @@ function completeCleaning(options = {}) {
   renderUi(now);
   showToast(
     cleanReward > 0
-      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today.`
-      : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
-        ? `Tank cleaned. Cleaning credit saved toward your next coin. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} today.`
-        : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
-          ? `Tank cleaned. Daily cleaning income cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}.`
-          : "Tank cleaned. The haze is gone."
+      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+      : manualCleaning && cleaningIncome.boroughCoinsEarned >= BOROUGH_DAILY_CLEANING_COIN_CAP
+        ? `Tank cleaned. Borough cleaning income cap reached: ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}.`
+        : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
+          ? `Tank cleaned. Cleaning credit saved toward your next coin. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+          : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
+            ? `Tank cleaned. Tank cleaning credit cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+            : "Tank cleaned. The haze is gone."
   );
   return {
     ok: true,
@@ -503,6 +551,7 @@ function completeCleaning(options = {}) {
     cleaningCreditAdded: manualCleaning ? cleaningIncome.creditAdded : 0,
     cleaningCredit: cleaningIncome.credit,
     cleaningCoinsEarnedToday: cleaningIncome.coinsEarned,
+    boroughCleaningCoinsEarnedToday: cleaningIncome.boroughCoinsEarned,
     tutorialChanged,
     source
   };

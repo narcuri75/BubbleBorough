@@ -1604,6 +1604,43 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/lookdown__genetics-natural.webp",
+      "version": "82c4babaf29f",
+      "width": 1024,
+      "height": 1024,
+      "frames": {
+        "lookdown-fish_barred.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "lookdown-fish_blue.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "lookdown-fish_classic-silver.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "lookdown-fish_golden.png": [
+          512,
+          512,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/lookdown__genetics-natural",
+        "version": "a901177b1ec8-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/molly__genetics-natural.webp",
       "version": "6b8acf189ef3",
       "width": 1536,
@@ -2807,37 +2844,37 @@ function getSpriteSheetDefinitions() {
       "width": 1536,
       "height": 1024,
       "frames": {
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-blue.png": [
           0,
           0,
           512,
           512
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-green.png": [
           512,
           0,
           512,
           512
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-purple.png": [
           1024,
           0,
           512,
           512
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-pink.png": [
           0,
           512,
           512,
           512
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-red.png": [
           512,
           512,
           512,
           512
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-orange.png": [
           1024,
           512,
           512,
@@ -2846,7 +2883,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/tetra-neon__genetics-enhanced",
-        "version": "8d488dd6d523-v1",
+        "version": "4b8ca143e67e-v1",
         "standalone": false
       }
     },
@@ -4562,6 +4599,43 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/small_fish/lookdown__genetics-natural.webp",
+      "version": "d0895034de28",
+      "width": 128,
+      "height": 128,
+      "frames": {
+        "lookdown-fish_barred.png": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "lookdown-fish_blue.png": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "lookdown-fish_classic-silver.png": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "lookdown-fish_golden.png": [
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural",
+        "version": "132c23f1c4a7-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/small_fish/molly__genetics-natural.webp",
       "version": "08e359754a57",
       "width": 192,
@@ -5759,37 +5833,37 @@ function getSpriteSheetDefinitions() {
       "width": 192,
       "height": 128,
       "frames": {
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-blue.png": [
           0,
           0,
           64,
           64
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-green.png": [
           64,
           0,
           64,
           64
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-purple.png": [
           128,
           0,
           64,
           64
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-pink.png": [
           0,
           64,
           64,
           64
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-red.png": [
           64,
           64,
           64,
           64
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-orange.png": [
           128,
           64,
           64,
@@ -5798,7 +5872,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced",
-        "version": "0c98d744730b-v1",
+        "version": "be583b7ed4d1-v1",
         "standalone": false
       }
     },
@@ -7002,6 +7076,93 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/misc/wounds",
         "version": "3fd4d1637805-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/corners.webp",
+      "version": "e28c578e1e89",
+      "width": 58,
+      "height": 158,
+      "frames": {
+        "tank_frame_top-left.png": [
+          0,
+          0,
+          29,
+          79
+        ],
+        "tank_frame_top-right.png": [
+          29,
+          0,
+          29,
+          79
+        ],
+        "tank_frame_bottom-left.png": [
+          0,
+          79,
+          29,
+          79
+        ],
+        "tank_frame_bottom-right.png": [
+          29,
+          79,
+          29,
+          79
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/corners",
+        "version": "898aa4647c91-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/left-right.webp",
+      "version": "5d1beaea6cad",
+      "width": 42,
+      "height": 673,
+      "frames": {
+        "tank_frame_right.png": [
+          0,
+          0,
+          21,
+          673
+        ],
+        "tank_frame_left.png": [
+          21,
+          0,
+          21,
+          673
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/left-right",
+        "version": "ccce82f29862-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/top-bottom.webp",
+      "version": "57fd28e2c8b4",
+      "width": 1484,
+      "height": 156,
+      "frames": {
+        "tank_frame_top.png": [
+          0,
+          0,
+          1484,
+          78
+        ],
+        "tank_frame_bottom.png": [
+          0,
+          78,
+          1484,
+          78
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/top-bottom",
+        "version": "4ada107e8ec6-v1",
         "standalone": false
       }
     },

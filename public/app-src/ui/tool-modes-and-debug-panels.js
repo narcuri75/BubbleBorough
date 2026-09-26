@@ -1040,6 +1040,8 @@ async function init() {
   const rawState = earlyRawState || loadState();
   const needsReconcileSave = shouldPersistReconciledState(rawState);
   state = reconcileState(rawState);
+  const masteryBaseVariantsChanged = normalizeFishSpeciesMasteryBaseVariants();
+  const ownedFishVariantsChanged = normalizeOwnedFishAppearanceUnlocks();
   const customImagesChanged = await hydrateCustomImagesFromStorage(state);
   const wallpaperEnginePropertyChanged = applyPendingWallpaperEngineUserProperties({
     save: false,
@@ -1122,7 +1124,7 @@ async function init() {
   const now = Date.now();
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);
-  if (needsReconcileSave || customImagesChanged || wallpaperEnginePropertyChanged || tutorialResumeChanged || decorPlacementChanged || stateChanged) {
+  if (needsReconcileSave || masteryBaseVariantsChanged || ownedFishVariantsChanged || customImagesChanged || wallpaperEnginePropertyChanged || tutorialResumeChanged || decorPlacementChanged || stateChanged) {
     saveState();
   }
   renderUi(now);

@@ -265,6 +265,28 @@ function getPelletPose(pellet, now) {
     0.18,
     0.96
   );
+  if (hasCustomDropStart && dropProgress < 1 && (pellet.surfaceFloating || pellet.foodKey === "fishFlakes")) {
+    const targetXNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
+    const targetYNorm = pellet.surfaceFloating || pellet.foodKey === "fishFlakes"
+      ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
+      : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);
+    const startXNorm = clamp(Number(pellet.dropStartXNorm), 0.08, 0.92);
+    const startYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm);
+    const airFall = clamp(dropProgress / 0.68, 0, 1);
+    const waterSettle = clamp((dropProgress - 0.68) / 0.32, 0, 1);
+    const easedAir = 1 - Math.pow(1 - airFall, 2.35);
+    const easedWater = 1 - Math.pow(1 - waterSettle, 3.2);
+    const entryProgress = dropProgress <= 0.68
+      ? easedAir * 0.9
+      : 0.9 + easedWater * 0.1;
+    return {
+      // Hand-fed surface food falls vertically from directly above the click
+      // position. Do not interpolate from another X or add lateral entry sway.
+      // Normal surface bobbing can resume after the entry completes.
+      xNorm: startXNorm,
+      yNorm: startYNorm + (targetYNorm - startYNorm) * entryProgress
+    };
+  }
   if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
     pellet.surfaceFloating = true;
     const phase = (Number(pellet.sway) || 0) * Math.PI * 2;

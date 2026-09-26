@@ -109,7 +109,7 @@
       "id": "goldfish",
       "name": "Goldfish",
       "genetics": "natural",
-      "cost": 5,
+      "cost": 4,
       "mealCoins": 1,
       "asset": "/assets/fish/goldfish_common.png",
       "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
@@ -206,7 +206,8 @@
         "waterNote": "Freshwater required."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "guppy",
@@ -295,7 +296,8 @@
         "waterNote": "Freshwater required."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "betta",
@@ -1186,7 +1188,7 @@
       "width": 170,
       "bobSpeed": 0.2,
       "swimStyle": "peaceful",
-      "speedMin": 0.00009,
+      "speedMin": 9e-05,
       "speedMax": 0.00016,
       "targetMinMs": 26000,
       "targetMaxMs": 52000,
@@ -1385,7 +1387,7 @@
       "id": "tetra",
       "name": "Tetra",
       "genetics": "natural",
-      "cost": 5,
+      "cost": 4,
       "mealCoins": 1,
       "asset": "/assets/fish/tetra_neon.png",
       "assetVariants": [
@@ -1395,13 +1397,6 @@
         "/assets/fish/tetra_cave.png",
         "/assets/fish/tetra_black-phantom.png",
         "/assets/fish/tetra_emperor.png",
-        "/assets/fish/tetra_pink-blush-black-skirt.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-purple.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-blue.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-green.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-pink.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-red.png",
-        "/assets/fish/tetra_neon-black-skirt-neon-orange.png",
         "/assets/fish/tetra_white-skirt.png",
         "/assets/fish/tetra_cochus-blue.png",
         "/assets/fish/tetra_penguin.png",
@@ -1421,13 +1416,6 @@
         "Tetra Cave",
         "Tetra Black Phantom",
         "Tetra Emperor",
-        "Pink Blush Black Skirt Tetra",
-        "Neon Black Skirt Tetra - Neon Purple",
-        "Neon Black Skirt Tetra - Neon Blue",
-        "Neon Black Skirt Tetra - Neon Green",
-        "Neon Black Skirt Tetra - Neon Pink",
-        "Neon Black Skirt Tetra - Neon Red",
-        "Neon Black Skirt Tetra - Neon Orange",
         "Tetra White Skirt",
         "Tetra Cochus Blue",
         "Tetra Penguin",
@@ -1506,7 +1494,8 @@
         "waterNote": "Freshwater required."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "molly",
@@ -1633,7 +1622,7 @@
         "Swordtail Golden",
         "Swordtail Red"
       ],
-      "description": "A sleek, active fish best known for the long, sword-like extension on the male’s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
+      "description": "A sleek, active fish best known for the long, sword-like extension on the male\u2019s tail. Swordtails are livebearers, giving birth to free-swimming young instead of laying eggs, and spend much of their time confidently cruising the tank.",
       "width": 220,
       "bobSpeed": 1.3,
       "swimStyle": "steady",
@@ -2751,7 +2740,7 @@
       "displayWidth": 104,
       "bobSpeed": 0.1,
       "swimStyle": "peaceful",
-      "speedMin": 0.00004,
+      "speedMin": 4e-05,
       "speedMax": 0.00014,
       "targetMinMs": 9000,
       "targetMaxMs": 18000,
@@ -2830,7 +2819,7 @@
       "name": "Firefish",
       "genetics": "natural",
       "type": "Fish",
-      "cost": 8,
+      "cost": 4,
       "mealCoins": 1,
       "asset": "/assets/fish/firefish_1.png",
       "description": "A tiny reef dartfish with a glowing magenta tail. Firefish hover above a favorite crevice, then flash back to safety when nervous.",
@@ -2902,7 +2891,8 @@
         "waterNote": "Saltwater required; brackish specialists use this system."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "six-line-wrasse",
@@ -3232,7 +3222,7 @@
       "displayWidth": 112,
       "bobSpeed": 0.1,
       "swimStyle": "peaceful",
-      "speedMin": 0.00005,
+      "speedMin": 5e-05,
       "speedMax": 0.00016,
       "targetMinMs": 8500,
       "targetMaxMs": 17000,
@@ -3540,7 +3530,7 @@
       "id": "cardinal",
       "name": "Cardinal",
       "genetics": "natural",
-      "cost": 10,
+      "cost": 4,
       "mealCoins": 1,
       "asset": "/assets/fish/cardinalfish_red.png",
       "description": "A natural cardinal with selectable appearances.",
@@ -3625,13 +3615,14 @@
         "waterNote": "Saltwater required; brackish specialists use this system."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "chromis",
       "name": "Chromis",
       "genetics": "natural",
-      "cost": 10,
+      "cost": 4,
       "mealCoins": 1,
       "asset": "/assets/fish/chromis_blue.png",
       "description": "A natural chromis with selectable appearances.",
@@ -3714,7 +3705,8 @@
         "waterNote": "Saltwater required; brackish specialists use this system."
       },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-      "Fish_enabled": true
+      "Fish_enabled": true,
+      "starterFish": true
     },
     {
       "id": "cichlid",
@@ -4409,7 +4401,14 @@
         "/assets/fish/angelfish_neon-purple.png",
         "/assets/fish/angelfish_neon-red.png"
       ],
-      "variantLabels": ["Neon Blue", "Neon Green", "Neon Orange", "Neon Pink", "Neon Purple", "Neon Red"],
+      "variantLabels": [
+        "Neon Blue",
+        "Neon Green",
+        "Neon Orange",
+        "Neon Pink",
+        "Neon Purple",
+        "Neon Red"
+      ],
       "description": "A compact, bioluminescent angelfish engineered for bright freshwater displays.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4421,9 +4420,22 @@
       "speedMax": 0.024,
       "targetMinMs": 3200,
       "targetMaxMs": 5800,
-      "defaultNames": ["Aura", "Prism", "Lumen", "Glimmer", "Nova", "Pulse"],
+      "defaultNames": [
+        "Aura",
+        "Prism",
+        "Lumen",
+        "Glimmer",
+        "Nova",
+        "Pulse"
+      ],
       "caveEnabled": true,
-      "needs": { "decor": [], "friends": { "min": 0, "alike": false } },
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
       "dislikedTypes": [],
       "turnAnimation": "simple",
       "liveBirth": false,
@@ -4433,9 +4445,23 @@
       "cleanupAnimal": false,
       "canBreed": true,
       "dietProfile": "omnivore",
-      "acceptedFoods": ["basic", "brineShrimp"],
-      "juvenileFoods": ["basic", "brineShrimp"],
-      "careRequirements": { "waterType": "freshwater", "acceptedFoods": ["basic", "brineShrimp"], "dietaryMode": "omnivore", "waterNote": "Freshwater required." },
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true
     },
@@ -4456,7 +4482,14 @@
         "/assets/fish/barb_neon-purple.png",
         "/assets/fish/barb_neon-red.png"
       ],
-      "variantLabels": ["Neon Blue", "Neon Green", "Neon Orange", "Neon Pink", "Neon Purple", "Neon Red"],
+      "variantLabels": [
+        "Neon Blue",
+        "Neon Green",
+        "Neon Orange",
+        "Neon Pink",
+        "Neon Purple",
+        "Neon Red"
+      ],
       "description": "A small, quick-moving barb with a vivid engineered glow.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4468,9 +4501,22 @@
       "speedMax": 0.04,
       "targetMinMs": 1400,
       "targetMaxMs": 3400,
-      "defaultNames": ["Flash", "Zing", "Spark", "Vivid", "Flicker", "Volt"],
+      "defaultNames": [
+        "Flash",
+        "Zing",
+        "Spark",
+        "Vivid",
+        "Flicker",
+        "Volt"
+      ],
       "caveEnabled": true,
-      "needs": { "decor": [], "friends": { "min": 0, "alike": false } },
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
       "dislikedTypes": [],
       "turnAnimation": "simple",
       "liveBirth": true,
@@ -4480,9 +4526,23 @@
       "cleanupAnimal": false,
       "canBreed": true,
       "dietProfile": "omnivore",
-      "acceptedFoods": ["basic", "brineShrimp"],
-      "juvenileFoods": ["basic", "brineShrimp"],
-      "careRequirements": { "waterType": "freshwater", "acceptedFoods": ["basic", "brineShrimp"], "dietaryMode": "omnivore", "waterNote": "Freshwater required." },
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true
     },
@@ -4503,7 +4563,14 @@
         "/assets/fish/rainbow-shark_neon-5.png",
         "/assets/fish/rainbow-shark_neon-6.png"
       ],
-      "variantLabels": ["Neon Variant 1", "Neon Variant 2", "Neon Variant 3", "Neon Variant 4", "Neon Variant 5", "Neon Variant 6"],
+      "variantLabels": [
+        "Neon Variant 1",
+        "Neon Variant 2",
+        "Neon Variant 3",
+        "Neon Variant 4",
+        "Neon Variant 5",
+        "Neon Variant 6"
+      ],
       "description": "A compact rainbow shark with a luminous engineered coloration.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4515,9 +4582,22 @@
       "speedMax": 0.036,
       "targetMinMs": 2200,
       "targetMaxMs": 4600,
-      "defaultNames": ["Ray", "Comet", "Sable", "Glow", "Rift", "Echo"],
+      "defaultNames": [
+        "Ray",
+        "Comet",
+        "Sable",
+        "Glow",
+        "Rift",
+        "Echo"
+      ],
       "caveEnabled": true,
-      "needs": { "decor": [], "friends": { "min": 0, "alike": false } },
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
       "dislikedTypes": [],
       "turnAnimation": "simple",
       "liveBirth": false,
@@ -4527,9 +4607,23 @@
       "cleanupAnimal": false,
       "canBreed": true,
       "dietProfile": "omnivore",
-      "acceptedFoods": ["basic", "brineShrimp"],
-      "juvenileFoods": ["basic", "brineShrimp"],
-      "careRequirements": { "waterType": "freshwater", "acceptedFoods": ["basic", "brineShrimp"], "dietaryMode": "omnivore", "waterNote": "Freshwater required." },
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true
     },
@@ -4541,16 +4635,23 @@
       "type": "Fish",
       "cost": 9,
       "mealCoins": 1,
-      "asset": "/assets/fish/tetra_glofish_cosmic-blue.png",
+      "asset": "/assets/fish/tetra_neon-blue.png",
       "assetVariants": [
-        "/assets/fish/tetra_glofish_cosmic-blue.png",
-        "/assets/fish/tetra_glofish_electric-green.png",
-        "/assets/fish/tetra_glofish_galactic-purple.png",
-        "/assets/fish/tetra_glofish_moonrise-pink.png",
-        "/assets/fish/tetra_glofish_starfire-red.png",
-        "/assets/fish/tetra_glofish_sunburst-orange.png"
+        "/assets/fish/tetra_neon-blue.png",
+        "/assets/fish/tetra_neon-green.png",
+        "/assets/fish/tetra_neon-purple.png",
+        "/assets/fish/tetra_neon-pink.png",
+        "/assets/fish/tetra_neon-red.png",
+        "/assets/fish/tetra_neon-orange.png"
       ],
-      "variantLabels": ["Cosmic Blue", "Electric Green", "Galactic Purple", "Moonrise Pink", "Starfire Red", "Sunburst Orange"],
+      "variantLabels": [
+        "Neon Blue",
+        "Neon Green",
+        "Neon Purple",
+        "Neon Pink",
+        "Neon Red",
+        "Neon Orange"
+      ],
       "description": "A tiny tetra with stable, high-intensity bioluminescent color.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4562,9 +4663,22 @@
       "speedMax": 0.042,
       "targetMinMs": 1800,
       "targetMaxMs": 3600,
-      "defaultNames": ["Nova", "Pixel", "Laser", "Pulse", "Glow", "Lux"],
+      "defaultNames": [
+        "Nova",
+        "Pixel",
+        "Laser",
+        "Pulse",
+        "Glow",
+        "Lux"
+      ],
       "caveEnabled": true,
-      "needs": { "decor": [], "friends": { "min": 0, "alike": false } },
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
       "dislikedTypes": [],
       "turnAnimation": "simple",
       "liveBirth": false,
@@ -4574,9 +4688,23 @@
       "cleanupAnimal": false,
       "canBreed": true,
       "dietProfile": "omnivore",
-      "acceptedFoods": ["basic", "brineShrimp"],
-      "juvenileFoods": ["basic", "brineShrimp"],
-      "careRequirements": { "waterType": "freshwater", "acceptedFoods": ["basic", "brineShrimp"], "dietaryMode": "omnivore", "waterNote": "Freshwater required." },
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true
     },
@@ -4597,7 +4725,14 @@
         "/assets/fish/zebra-danio_neon-purple.png",
         "/assets/fish/zebra-danio_neon-red.png"
       ],
-      "variantLabels": ["Neon Blue", "Neon Green", "Neon Orange", "Neon Pink", "Neon Purple", "Neon Red"],
+      "variantLabels": [
+        "Neon Blue",
+        "Neon Green",
+        "Neon Orange",
+        "Neon Pink",
+        "Neon Purple",
+        "Neon Red"
+      ],
       "description": "A tiny, energetic zebra danio with a bright engineered glow.",
       "aboutAttribution": "PROTEUS BIODYNE",
       "aboutTagline": "Adaptive Biology. Engineered.",
@@ -4609,9 +4744,22 @@
       "speedMax": 0.044,
       "targetMinMs": 1300,
       "targetMaxMs": 3200,
-      "defaultNames": ["Zip", "Stripe", "Fizz", "Dash", "Blink", "Spark"],
+      "defaultNames": [
+        "Zip",
+        "Stripe",
+        "Fizz",
+        "Dash",
+        "Blink",
+        "Spark"
+      ],
       "caveEnabled": true,
-      "needs": { "decor": [], "friends": { "min": 0, "alike": false } },
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
       "dislikedTypes": [],
       "turnAnimation": "simple",
       "liveBirth": true,
@@ -4621,9 +4769,23 @@
       "cleanupAnimal": false,
       "canBreed": true,
       "dietProfile": "omnivore",
-      "acceptedFoods": ["basic", "brineShrimp"],
-      "juvenileFoods": ["basic", "brineShrimp"],
-      "careRequirements": { "waterType": "freshwater", "acceptedFoods": ["basic", "brineShrimp"], "dietaryMode": "omnivore", "waterNote": "Freshwater required." },
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp"
+      ],
+      "careRequirements": {
+        "waterType": "freshwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp"
+        ],
+        "dietaryMode": "omnivore",
+        "waterNote": "Freshwater required."
+      },
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true
     }

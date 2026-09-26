@@ -1,0 +1,15 @@
+Bubble Borough cumulative update
+Delete these obsolete files from the existing project after extracting this ZIP:
+
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_cosmic-blue.png.thumb.webp
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_electric-green.png.thumb.webp
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_galactic-purple.png.thumb.webp
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_moonrise-pink.png.thumb.webp
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_starfire-red.png.thumb.webp
+assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_sunburst-orange.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_cosmic-blue.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_electric-green.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_galactic-purple.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_moonrise-pink.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_starfire-red.png.thumb.webp
+assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_sunburst-orange.png.thumb.webp

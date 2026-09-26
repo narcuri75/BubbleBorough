@@ -14,8 +14,20 @@
     .filter(key => button.dataset[key] !== undefined)
     .map(key => `${key}:${button.dataset[key]}`).join("");
 
+  function isLockedFishVariant(entry, variant) {
+    return entry?.isFishVariants === true && variant?.locked === true && variant?.debugBypassed !== true;
+  }
+
+  function getSelectableVariant(entry, key) {
+    const requested = entry.variants.find(variant => variant.key === key);
+    if (requested && !isLockedFishVariant(entry, requested)) return requested;
+    return entry.isFishVariants
+      ? entry.variants.find(variant => !isLockedFishVariant(entry, variant))
+      : entry.variants[0];
+  }
+
   function select(entry, key) {
-    const variant = entry.variants.find(variant => variant.key === key) || entry.variants[0];
+    const variant = getSelectableVariant(entry, key);
     if (!variant) return;
     selections.set(entry.id, variant.key);
     entry.button.dataset.shopVariantKey = variant.key;
@@ -49,22 +61,40 @@
       }
       let variants;
       try { variants = JSON.parse(raw); } catch { continue; }
-      if (!Array.isArray(variants) || variants.length < 2) continue;
+      if (!Array.isArray(variants)) continue;
+      if (variants.length < 2) {
+        if (entry) {
+          resize.unobserve(entry.image);
+          entry.dots.remove();
+          cards.delete(card);
+        }
+        continue;
+      }
       if (entry) { resize.unobserve(entry.image); entry.dots.remove(); }
+      const isFishVariants = Boolean(button.dataset.fishVariants);
       const dots = document.createElement("div");
-      dots.className = "shop-variant-dots";
+      dots.className = `shop-variant-dots${isFishVariants ? " is-fish-variants" : ""}`;
       dots.setAttribute("role", "group");
       dots.setAttribute("aria-label", `${image.alt || "Product"} appearance`);
       for (const variant of variants) {
         const dot = document.createElement("button");
         dot.type = "button";
         dot.dataset.shopVariant = variant.key;
-        dot.setAttribute("aria-label", `Show ${variant.label}`);
-        dot.title = variant.label;
+        const locked = isFishVariants && variant.locked === true && variant.debugBypassed !== true;
+        if (locked) {
+          // Normal BubbleBodega data never includes locked fish variants. Keep the
+          // guard for stale markup/programmatic calls, but do not render lock UI.
+          dot.disabled = true;
+          dot.hidden = true;
+          dot.setAttribute("aria-disabled", "true");
+        } else {
+          dot.setAttribute("aria-label", `Show ${variant.label}`);
+          dot.title = variant.label;
+        }
         dots.append(dot);
       }
       image.after(dots);
-      entry = { id: productKey(button), button, image, dots, variants, raw };
+      entry = { id: productKey(button), button, image, dots, variants, raw, isFishVariants };
       cards.set(card, entry);
       select(entry, selections.get(entry.id));
       position(entry);
@@ -78,7 +108,8 @@
     event.preventDefault();
     event.stopPropagation();
     const entry = cards.get(dot.closest(".shop-card"));
-    if (entry) select(entry, dot.dataset.shopVariant);
+    const variant = entry?.variants.find(item => item.key === dot.dataset.shopVariant);
+    if (entry && !isLockedFishVariant(entry, variant)) select(entry, dot.dataset.shopVariant);
   });
   new MutationObserver(() => {
     if (scheduled) return;

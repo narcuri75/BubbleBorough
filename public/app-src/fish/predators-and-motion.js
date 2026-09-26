@@ -3545,6 +3545,8 @@ function updateFishMotion(now, deltaSeconds) {
         }
         fish.activity = "roam";
         fish.feedingPelletId = null;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
         fish.targetAt = now;
         fish.hangoutDecorId = null;
         fish.hangoutZoneType = null;
@@ -3577,12 +3579,30 @@ function updateFishMotion(now, deltaSeconds) {
               maxYNorm: pellet.settled ? 0.9 : 0.82
             }
           );
+          const surfaceFoodTarget = Boolean(pellet.surfaceFloating || pellet.foodKey === "fishFlakes");
           if (mouthChaseTarget) {
             fish.targetXNorm = mouthChaseTarget.xNorm;
-            fish.targetYNorm = mouthChaseTarget.yNorm;
+            fish.targetYNorm = surfaceFoodTarget
+              ? clampFishYNormToLayer(
+                mouthChaseTarget.yNorm,
+                fish,
+                species,
+                getFishTankLayer(fish),
+                { minYNorm: 0.14, maxYNorm: 0.82 }
+              )
+              : mouthChaseTarget.yNorm;
           } else {
             fish.targetXNorm = pelletPose.xNorm;
-            fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+            const rawFeedingTargetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+            fish.targetYNorm = surfaceFoodTarget
+              ? clampFishYNormToLayer(
+                rawFeedingTargetYNorm,
+                fish,
+                species,
+                getFishTankLayer(fish),
+                { minYNorm: 0.14, maxYNorm: 0.82 }
+              )
+              : rawFeedingTargetYNorm;
           }
           fish.targetAt = now + 1000;
         }
@@ -3590,13 +3610,15 @@ function updateFishMotion(now, deltaSeconds) {
           fish,
           effectiveBehavior === "sucker"
             ? getSuckerFishGlassLayer(fish)
-            : (pellet.settled ? TANK_DEPTH_LAYERS : clampTankLayer(Math.min(getFishTankLayer(fish), 2)))
+            : getFishTankLayer(fish)
         );
         fish.hangoutDecorId = null;
       } else if (fish.activity === "feeding" && !pellet) {
         fish.activity = "roam";
         fish.feedingPelletId = null;
-        fish.targetAt = now + 800 + Math.random() * 1200;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
+        fish.targetAt = now;
         fish.swimSpeed = normalizeFishSpeed(species);
         setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
         fish.hangoutDecorId = null;
@@ -3699,8 +3721,55 @@ function updateFishMotion(now, deltaSeconds) {
       applyFishCollisionAvoidanceSteering(fish, species, now);
     }
 
-    const moveDx = fish.targetXNorm - fish.xNorm;
-    const moveDy = fish.targetYNorm - fish.yNorm;
+    let moveDx = fish.targetXNorm - fish.xNorm;
+    let moveDy = fish.targetYNorm - fish.yNorm;
+
+    // Never let a normal swimming fish translate backward. Following targets
+    // move often enough that they can cross behind a follower between steering
+    // refreshes. Start the turn first and hold translation until the rendered
+    // facing agrees with the requested horizontal travel direction.
+    const freeSwimmingOtocinclusForFacing = species.id === "otocinclus"
+      && isSuckerFishFreeSwimming(fish, species, now);
+    const canUseHorizontalFacing = effectiveBehavior !== "sucker" || freeSwimmingOtocinclusForFacing;
+    const requestedHorizontalDirection = Math.abs(moveDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM
+      ? (moveDx >= 0 ? 1 : -1)
+      : 0;
+    const renderedFacingDirection = canUseHorizontalFacing ? getFishFacingDirection(fish) : 0;
+    if (
+      canUseHorizontalFacing
+      && requestedHorizontalDirection !== 0
+      && requestedHorizontalDirection !== renderedFacingDirection
+      && !pufferInflatedOwnsMovement
+    ) {
+      setFishDirection(fish, requestedHorizontalDirection, species, now);
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+      moveDx = 0;
+      moveDy = 0;
+    }
+
+    if (canUseHorizontalFacing && (Math.abs(moveDx) > 0.000001 || Math.abs(moveDy) > 0.000001) && !pufferInflatedOwnsMovement) {
+      const gradualSteering = getFishGradualSteeringVector(
+        fish,
+        moveDx,
+        moveDy,
+        deltaSeconds,
+        {
+          urgency: Number.isFinite(fish.panicUntil) && now < fish.panicUntil
+            ? 1.75
+            : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+              ? 1.2
+              : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+                ? 1.12
+                : fish.activity === "feeding"
+                  ? 1.1
+                  : 1
+        }
+      );
+      moveDx = gradualSteering.xNorm;
+      moveDy = gradualSteering.yNorm;
+    }
+
     const moveDistance = Math.hypot(moveDx, moveDy);
     const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
     const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
@@ -3874,17 +3943,13 @@ function updateFishMotion(now, deltaSeconds) {
         if (isFishEligibleSchoolLeader(leader, fish, species, now)) {
           const leaderSpeed = Math.max(0.00001, Number(leader.swimSpeed) || fish.swimSpeed);
           const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
-          const leaderTargetDistance = Math.hypot(
-            (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
-            (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
-          );
           const formationDistance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
-          const matchFactor = formationDistance > 0.11
-            ? 1.18
-            : formationDistance > 0.052
-              ? 0.92
-              : (leaderTargetDistance > 0.018 ? 0.76 : 0.34);
-          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.16, 1.3);
+          // Match the school's cruise speed first, then apply only a bounded
+          // correction for slot error. This avoids the old accelerate/catch/
+          // brake cycle that compressed followers into the leader.
+          const slotError = clamp((formationDistance - 0.045) / 0.12, -1, 1);
+          const correction = 1 + slotError * 0.24;
+          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * correction, 0.58, 1.24);
         }
       }
       if (activeDebugSteering?.type === "follow") {
@@ -4212,12 +4277,32 @@ function updateFishMotion(now, deltaSeconds) {
           Math.max(pelletBounds.right - pelletBounds.left, pelletBounds.bottom - pelletBounds.top) * 0.55
         )
         : 14 * getViewportStableAssetScale();
-      const mouthReachedPellet = mouthPoint
+      const normalMouthReachedPellet = mouthPoint
         ? Math.hypot(
           mouthPoint.x - pelletPose.xNorm * TANK_WIDTH,
           mouthPoint.y - pelletPose.yNorm * TANK_HEIGHT
         ) <= pelletReachPx
         : Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024;
+      const surfaceFood = Boolean(pellet.surfaceFloating || pellet.foodKey === "fishFlakes");
+      const surfaceSwimRange = surfaceFood
+        ? getLayerSwimYRange(getFishTankLayer(fish), fish, species, { minYNorm: 0.14, maxYNorm: 0.82 })
+        : null;
+      const fishAtHighestLegalSurfaceReach = Boolean(
+        surfaceSwimRange
+        && Number(fish.yNorm) <= surfaceSwimRange.min + 0.012
+      );
+      const surfaceHorizontalReachPx = Math.max(
+        pelletReachPx * 1.75,
+        24 * getViewportStableAssetScale()
+      );
+      const surfaceMouthReachedPellet = Boolean(
+        surfaceFood
+        && fishAtHighestLegalSurfaceReach
+        && (mouthPoint
+          ? Math.abs(mouthPoint.x - pelletPose.xNorm * TANK_WIDTH) <= surfaceHorizontalReachPx
+          : Math.abs((fish.xNorm - pelletPose.xNorm) * TANK_WIDTH) <= surfaceHorizontalReachPx)
+      );
+      const mouthReachedPellet = normalMouthReachedPellet || surfaceMouthReachedPellet;
       if (mouthReachedPellet) {
         const diseaseForcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
         const refusalReason = diseaseForcedRefusal
@@ -4303,13 +4388,28 @@ function getFishProfileRoamX(fish, species, profile) {
   const sharkCruiser = species?.id === "bull-shark"
     || species?.id === "great-white-shark"
     || species?.id === "hammerhead-shark";
-  let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
+  const now = Date.now();
+  const leadingActiveSchool = typeof hasActiveFishSchoolFollowers === "function"
+    && hasActiveFishSchoolFollowers(fish, now);
+  let direction = leadingActiveSchool
     ? facingDirection
-    : (Math.random() < 0.5 ? -1 : 1);
-  if (currentX <= 0.13) {
+    : (Math.random() < clamp(profile.headingPersistence, 0, 1)
+      ? facingDirection
+      : (Math.random() < 0.5 ? -1 : 1));
+  const atLeftEdge = currentX <= 0.13;
+  const atRightEdge = currentX >= 0.87;
+  if (atLeftEdge) {
     direction = 1;
-  } else if (currentX >= 0.87) {
+  } else if (atRightEdge) {
     direction = -1;
+  } else if (species?.swimStyle === "sporadic" && direction !== facingDirection) {
+    // Sporadic means lively course changes, not repeated 180-degree indecision.
+    // Keep true reversals occasional unless the tank edge requires one.
+    if (now < Number(fish.nextSpontaneousReverseAt || 0)) {
+      direction = facingDirection;
+    } else {
+      fish.nextSpontaneousReverseAt = now + randomBetween(12000, 30000);
+    }
   }
   let targetX = currentX + direction * distance;
   if (targetX < 0.08 || targetX > 0.92) {
@@ -4348,6 +4448,9 @@ function getFishProfileHomeRoamTarget(fish, species, layer, profile) {
 }
 
 function getFishProfileHoverTarget(fish, species, layer, profile) {
+  if (typeof hasActiveFishSchoolFollowers === "function" && hasActiveFishSchoolFollowers(fish, Date.now())) {
+    return null;
+  }
   if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
     return null;
   }

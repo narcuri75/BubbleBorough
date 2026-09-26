@@ -186,6 +186,38 @@ function getBubbleBodegaAccountData() {
   };
 }
 
+function recordDailyIncomeCategory(category, amount, now = Date.now()) {
+  const normalizedCategory = ["feeding", "cleaning", "random-finds", "awards", "sales", "milestones"].includes(String(category || ""))
+    ? String(category)
+    : "other";
+  const normalizedAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!state || normalizedAmount <= 0) return false;
+  const dayKey = getLocalDayKey(now);
+  if (!state.incomeHistoryByDay || typeof state.incomeHistoryByDay !== "object" || Array.isArray(state.incomeHistoryByDay)) {
+    state.incomeHistoryByDay = {};
+  }
+  const existing = state.incomeHistoryByDay[dayKey] && typeof state.incomeHistoryByDay[dayKey] === "object"
+    ? state.incomeHistoryByDay[dayKey]
+    : {};
+  state.incomeHistoryByDay[dayKey] = {
+    feeding: Math.max(0, Math.floor(Number(existing.feeding) || 0)),
+    cleaning: Math.max(0, Math.floor(Number(existing.cleaning) || 0)),
+    randomFinds: Math.max(0, Math.floor(Number(existing.randomFinds) || 0)),
+    awards: Math.max(0, Math.floor(Number(existing.awards) || 0)),
+    sales: Math.max(0, Math.floor(Number(existing.sales) || 0)),
+    milestones: Math.max(0, Math.floor(Number(existing.milestones) || 0))
+  };
+  const field = normalizedCategory === "random-finds" ? "randomFinds" : normalizedCategory;
+  if (Object.prototype.hasOwnProperty.call(state.incomeHistoryByDay[dayKey], field)) {
+    state.incomeHistoryByDay[dayKey][field] += normalizedAmount;
+  }
+  const dayKeys = Object.keys(state.incomeHistoryByDay).sort().reverse();
+  for (const staleDayKey of dayKeys.slice(INCOME_HISTORY_DAY_LIMIT)) {
+    delete state.incomeHistoryByDay[staleDayKey];
+  }
+  return true;
+}
+
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
   const allowZero = options.allowZero === true || options.direction === "neutral";
@@ -201,6 +233,7 @@ function recordWalletTransaction(options = {}) {
     direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
     place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
+    category: typeof options.category === "string" ? options.category.slice(0, 40) : "",
     time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
     orderId: typeof options.orderId === "string" ? options.orderId.slice(0, 80) : ""
   });
@@ -465,14 +498,6 @@ async function buyFish(speciesId, options = {}) {
     return { ok: false, reason: "species-locked" };
   }
 
-  const purchaseCost = getFishPurchaseCost(speciesId);
-  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
-  if (state.coins < purchaseCost) {
-    const errorMessage = getInsufficientFundsMessage();
-    showToast(errorMessage, { force: true, tone: "error" });
-    return { ok: false, reason: "insufficient-coins", errorMessage };
-  }
-
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH);
   const variants = getFishAssetVariants(species);
@@ -482,12 +507,28 @@ async function buyFish(speciesId, options = {}) {
   if (selectedVariant < 0) {
     return { ok: false, reason: "variant-unavailable", errorMessage: "That fish variant is no longer available." };
   }
+  const selectedVariantKey = getFishAppearanceVariantKey(variants[selectedVariant]);
+  if (typeof isFishAppearanceVariantUnlocked === "function"
+    && !isFishAppearanceVariantUnlocked(species, selectedVariantKey, { allowDebugBypass: true })) {
+    const errorMessage = `${species.name} ${String(species?.variantLabels?.[selectedVariant] || "variant").trim() || "variant"} is locked. Level up another ${species.name} to discover it.`;
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "variant-locked", errorMessage };
+  }
+
+  const purchaseCost = getFishPurchaseCost(speciesId);
+  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
+  if (state.coins < purchaseCost) {
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
+  }
+
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
   const fish = createFishRecord(speciesId, {
     appearanceVariant: selectedVariant,
-    appearanceVariantKey: getFishAppearanceVariantKey(variants[selectedVariant]),
+    appearanceVariantKey: selectedVariantKey,
     // Persist the resolved selected asset as well as its filename key. This
     // prevents a later catalog refresh or cache query from changing a fish
     // that has already been purchased.

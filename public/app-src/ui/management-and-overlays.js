@@ -549,8 +549,9 @@ function buildTankManagementMilestonesBrowser(now = Date.now()) {
             ${progress.details.map((detail) => `<span>${escapeHtml(detail)}</span>`).join("")}
           </div>
           <div class="management-milestone-rewards">
-            <span>${escapeHtml(`${milestone.reward} coin reward`)}</span>
+            ${milestone.reward > 0 ? `<span>${escapeHtml(`${milestone.reward} coin reward`)}</span>` : ""}
             ${unlockLabels.length ? `<span>${escapeHtml(`Unlocks: ${unlockLabels.join(", ")}`)}</span>` : ""}
+            ${milestone.reward <= 0 && !unlockLabels.length ? "<span>Achievement milestone</span>" : ""}
           </div>
         </div>
       </article>
@@ -2795,12 +2796,26 @@ function getBubbleBankRewardForTransaction(entry) {
   return history.find((summary) => Math.abs((Number(summary.generatedAt) || 0) - time) < 2000) || null;
 }
 
+function getBubbleBankWeeklyReportForTransaction(entry) {
+  if (String(entry?.label || "") !== "Weekly Care Award") return null;
+  const time = Number(entry?.time) || 0;
+  const reports = Array.isArray(state?.dailyBonus?.weeklyReports) ? state.dailyBonus.weeklyReports : [];
+  return reports.find((report) => Math.abs((Number(report.generatedAt) || 0) - time) < 2000) || null;
+}
+
 function getBubbleBankTransactionCategory(entry) {
-  const text = `${String(entry?.label || "")} ${String(entry?.place || "")}`.toLowerCase();
+  const explicit = String(entry?.category || "");
+  const label = String(entry?.label || "");
+  if (explicit === "random-finds") return "random-finds";
+  if (explicit === "awards" && label === "Weekly Care Award") return "weekly-awards";
+  if (["feeding", "cleaning", "awards", "milestones", "sales", "fish", "decor", "equipment", "food-medication"].includes(explicit)) return explicit;
+  const text = `${label} ${String(entry?.place || "")}`.toLowerCase();
+  if (/weekly care award/.test(text)) return "weekly-awards";
+  if (/found a coin|coin find|gravel coin|otocinclus coin/.test(text)) return "random-finds";
   if (/milestone/.test(text)) return "milestones";
   if (/feed|fed|feeding/.test(text)) return "feeding";
   if (/clean|cleaning|scrub/.test(text)) return "cleaning";
-  if (/sold|sale|sell/.test(text)) return "sales";
+  if (/sold|sale|sell|rehome/.test(text)) return "sales";
   if (/daily|award|bonus|reward|coin/.test(text)) return "awards";
   if (/fish|shark|catfish|custom fish|species/.test(text)) return "fish";
   if (/decor|seaweed|cave|anemone|mound|plant|background/.test(text)) return "decor";
@@ -2817,9 +2832,10 @@ function getBubbleBankTransactionFilterMarkup() {
       <option value="earned" ${active === "earned" ? "selected" : ""}>All earned money</option>
       <option value="feeding" ${active === "feeding" ? "selected" : ""}>Feeding</option>
       <option value="cleaning" ${active === "cleaning" ? "selected" : ""}>Cleaning</option>
-      <option value="awards" ${active === "awards" ? "selected" : ""}>Awards</option>
-      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestones</option>
+      <option value="random-finds" ${active === "random-finds" ? "selected" : ""}>Random finds</option>
+      <option value="weekly-awards" ${active === "weekly-awards" ? "selected" : ""}>Weekly Care Award</option>
       <option value="sales" ${active === "sales" ? "selected" : ""}>Sales</option>
+      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestone rewards</option>
     </optgroup>
     <optgroup label="All Spent Money">
       <option value="spent" ${active === "spent" ? "selected" : ""}>All spent money</option>
@@ -2836,7 +2852,7 @@ function bubbleBankTransactionMatchesFilter(entry, filter) {
   const earned = entry.direction === "credit";
   if (filter === "earned") return earned;
   if (filter === "spent") return !earned && entry.direction === "debit";
-  if (["feeding", "cleaning", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
+  if (["feeding", "cleaning", "random-finds", "weekly-awards", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
   return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
 }
 
@@ -3703,15 +3719,64 @@ function getWebSurfInboxMessages() {
   }
 
   const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
-  const seenMilestones = new Set();
-  transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
-    const milestone = getBubbleBankMilestoneForTransaction(entry);
-    if (!milestone || seenMilestones.has(milestone.id)) return;
-    seenMilestones.add(milestone.id);
+  const milestoneEvents = [];
+  const seenMilestoneEvents = new Set();
+  const milestoneCompletions = Array.isArray(state?.dailyBonus?.milestoneCompletions)
+    ? state.dailyBonus.milestoneCompletions
+    : [];
+  milestoneCompletions
+    .filter((entry) => (Number(entry?.time) || 0) <= now)
+    .forEach((entry) => {
+      const milestoneId = String(entry?.milestoneId || "");
+      const milestone = PROGRESSION_MILESTONES.find((candidate) => candidate.id === milestoneId);
+      if (!milestone || seenMilestoneEvents.has(milestone.id)) return;
+      seenMilestoneEvents.add(milestone.id);
+      milestoneEvents.push({ milestone, time: Number(entry.time) || 0 });
+    });
+  transactions
+    .filter((entry) => (Number(entry.time) || 0) <= now)
+    .forEach((entry) => {
+      const milestone = getBubbleBankMilestoneForTransaction(entry);
+      if (!milestone || seenMilestoneEvents.has(milestone.id)) return;
+      seenMilestoneEvents.add(milestone.id);
+      milestoneEvents.push({ milestone, time: Number(entry.time) || 0 });
+    });
+  milestoneEvents.forEach(({ milestone, time }) => {
     const milestoneId = `milestone-${milestone.id}`;
-    const data = { milestoneId, milestoneName: milestone.label, milestoneRequirement: milestone.requirement, reward: milestone.reward, balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0) };
+    const unlockLabels = getMilestoneUnlockLabels(milestone);
+    const milestonePreview = milestone.reward > 0
+      ? `${milestone.reward} Fish Coins awarded.`
+      : unlockLabels.length
+        ? "New milestone unlocks are available."
+        : "Achievement completed.";
+    const milestoneOutcome = milestone.reward > 0
+      ? `${milestone.reward} Fish Coins have been deposited into your account.`
+      : "Achievement recorded.";
+    const milestoneUnlockSummary = unlockLabels.length
+      ? `Unlocked: ${unlockLabels.join(", ")}.`
+      : "Milestone complete.";
+    const data = {
+      milestoneId,
+      milestoneName: milestone.label,
+      milestoneRequirement: milestone.requirement,
+      reward: milestone.reward,
+      milestonePreview,
+      milestoneOutcome,
+      milestoneUnlockSummary,
+      balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0)
+    };
     const template = getWebSurfAutoEmailTemplate("milestone_reward");
-    messages.push({ id: `auto-milestone_reward-${milestone.id}`, templateId: "milestone_reward", data, sender: template?.sender || "rewards@bubbleboroughbank.swim", subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`, preview: template ? interpolateWebSurfEmailValue(template.preview, data) : `${milestone.reward} Fish Coins earned.`, destination: "bank", icon: "assets/misc/coin_unicode.png", time: Number(entry.time) || 0 });
+    messages.push({
+      id: `auto-milestone_reward-${milestone.id}`,
+      templateId: "milestone_reward",
+      data,
+      sender: template?.sender || "rewards@bubbleboroughbank.swim",
+      subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`,
+      preview: template ? interpolateWebSurfEmailValue(template.preview, data) : milestonePreview,
+      destination: "bank",
+      icon: "assets/misc/coin_unicode.png",
+      time
+    });
   });
 
   const statementData = getWebSurfStatementData();
@@ -4167,7 +4232,7 @@ function getBubbleBankOrderForTransaction(entry) {
 function renderBubbleBankTabs(activeTab) {
   const tabs = [
     ["account", "Account", `<img class="bubble-bank-tab-icon" ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" />`],
-    ["rewards", "Rewards", "✚"],
+    ["rewards", "Progress", "✚"],
     ["milestones", "Milestones", "★"]
   ];
   return `<nav class="bubble-bank-tabs" aria-label="Bank sections">${tabs.map(([id, label, icon]) => `
@@ -4189,12 +4254,15 @@ function renderBubbleBankAccount() {
     const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
     const milestone = getBubbleBankMilestoneForTransaction(entry);
     const reward = getBubbleBankRewardForTransaction(entry);
+    const weeklyReport = getBubbleBankWeeklyReportForTransaction(entry);
     const order = getBubbleBankOrderForTransaction(entry);
     const target = milestone
       ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="milestones" data-bank-target-id="milestone-${escapeHtml(milestone.id)}">View Milestone <span aria-hidden="true">→</span></button>`
-      : reward
-        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Reward <span aria-hidden="true">→</span></button>`
-        : order
+      : weeklyReport
+        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="weekly-report-${escapeHtml(weeklyReport.id)}">View Weekly Report <span aria-hidden="true">→</span></button>`
+        : reward
+          ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Recap <span aria-hidden="true">→</span></button>`
+          : order
           ? `<button type="button" class="bubble-bank-row-link" data-bank-order-id="${escapeHtml(order.id)}">View Purchase <span aria-hidden="true">→</span></button>`
           : "";
     const signedAmount = neutral ? "•" : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)}`;
@@ -4212,12 +4280,166 @@ function renderBubbleBankAccount() {
   </section>`;
 }
 
+function getBubbleBankProgressSnapshot() {
+  const allFish = [
+    ...(typeof getAllTankFish === "function" ? getAllTankFish(state) : (Array.isArray(state?.fish) ? state.fish : [])),
+    ...(Array.isArray(state?.storedFish) ? state.storedFish : [])
+  ];
+  const levelCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const fishRows = allFish
+    .map((fish) => {
+      const species = runtime?.fishMap?.get?.(fish?.speciesId);
+      if (!fish || !species || (typeof isFishCareProgressionEligible === "function" && !isFishCareProgressionEligible(fish, species))) return null;
+      const careLevel = clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+      const careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+      levelCounts[careLevel] = (levelCounts[careLevel] || 0) + 1;
+      return {
+        id: String(fish.id || ""),
+        name: String(fish.name || species.name || "Fish"),
+        speciesName: String(species.name || species.id || "Fish"),
+        careLevel,
+        careXp,
+        dead: typeof isFishDead === "function" ? isFishDead(fish) : false,
+        stored: Array.isArray(state?.storedFish) && state.storedFish.includes(fish)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.careLevel - left.careLevel || right.careXp - left.careXp || left.name.localeCompare(right.name));
+
+  const masteryRows = Object.entries(state?.fishSpeciesMastery || {})
+    .map(([speciesId, rawRecord]) => {
+      const species = runtime?.fishMap?.get?.(speciesId);
+      if (!species || (typeof isFishSpeciesCareProgressionEligible === "function" && !isFishSpeciesCareProgressionEligible(species))) return null;
+      const record = typeof getFishSpeciesMasteryRecord === "function"
+        ? getFishSpeciesMasteryRecord(speciesId, { species, create: false })
+        : rawRecord;
+      if (!record) return null;
+      const variants = typeof getFishProgressionAppearanceVariants === "function"
+        ? getFishProgressionAppearanceVariants(species)
+        : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : []);
+      const variantKeys = [...new Set(variants
+        .map((path) => typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : String(path || ""))
+        .filter(Boolean))];
+      const unlockedKeys = new Set(Array.isArray(record.unlockedVariantKeys) ? record.unlockedVariantKeys : []);
+      const baseKey = typeof getFishBaseAppearanceVariantKey === "function" ? getFishBaseAppearanceVariantKey(species) : "";
+      if (baseKey) unlockedKeys.add(baseKey);
+      const unlockedVariantCount = variantKeys.filter((key) => unlockedKeys.has(key)).length;
+      return {
+        speciesId,
+        speciesName: String(species.name || species.id || speciesId),
+        highestLevel: clamp(Math.floor(Number(record.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        unlockedVariantCount,
+        totalVariantCount: variantKeys.length,
+        collectionCompletedAt: Math.max(0, Number(record.collectionCompletedAt) || 0),
+        masteredAt: Math.max(0, Number(record.masteredAt) || 0)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.highestLevel - left.highestLevel || right.unlockedVariantCount - left.unlockedVariantCount || left.speciesName.localeCompare(right.speciesName));
+
+  const unlockedVariantCount = masteryRows.reduce((total, row) => total + row.unlockedVariantCount, 0);
+  const totalVariantCount = masteryRows.reduce((total, row) => total + row.totalVariantCount, 0);
+  const collectionCompletedCount = masteryRows.filter((row) => row.collectionCompletedAt > 0).length;
+  const milestoneMap = state?.dailyBonus?.milestones || {};
+  const completedMilestones = PROGRESSION_MILESTONES.filter((milestone) => milestoneMap[milestone.id]);
+  const completionById = new Map((Array.isArray(state?.dailyBonus?.milestoneCompletions) ? state.dailyBonus.milestoneCompletions : [])
+    .map((entry) => [String(entry?.milestoneId || ""), Math.max(0, Number(entry?.time) || 0)]));
+  const milestoneRows = completedMilestones
+    .map((milestone) => ({
+      id: milestone.id,
+      label: milestone.label,
+      completedAt: completionById.get(milestone.id) || 0
+    }))
+    .sort((left, right) => right.completedAt - left.completedAt);
+  const stats = typeof getMilestoneStats === "function" ? getMilestoneStats() : null;
+  const highestFishCareLevel = Math.max(
+    FISH_CARE_LEVEL_MIN,
+    Math.floor(Number(stats?.highestFishCareLevel) || 0),
+    ...fishRows.map((row) => row.careLevel),
+    ...masteryRows.map((row) => row.highestLevel)
+  );
+  const masteredSpeciesCount = Math.max(
+    Math.floor(Number(stats?.masteredSpeciesCount) || 0),
+    masteryRows.filter((row) => row.highestLevel >= FISH_CARE_LEVEL_MAX).length
+  );
+  const progressionEvents = (Array.isArray(state?.progressionHistory) ? state.progressionHistory : [])
+    .filter((entry) => ["variant_unlocked", "variant_collection_completed"].includes(String(entry?.type || "")))
+    .sort((left, right) => (Number(right?.timestamp) || 0) - (Number(left?.timestamp) || 0));
+
+  return {
+    fishRows,
+    levelCounts,
+    masteryRows,
+    highestFishCareLevel,
+    masteredSpeciesCount,
+    unlockedVariantCount,
+    totalVariantCount,
+    collectionCompletedCount,
+    milestoneRows,
+    completedMilestoneCount: completedMilestones.length,
+    totalMilestoneCount: PROGRESSION_MILESTONES.length,
+    progressionEvents
+  };
+}
+
+function renderBubbleBankProgressOverview(snapshot = getBubbleBankProgressSnapshot()) {
+  const levelChips = [1, 2, 3, 4, 5]
+    .map((level) => `<span class="bubble-bank-level-chip"><b>Lv. ${level}</b>${Math.max(0, Number(snapshot.levelCounts?.[level]) || 0)} fish</span>`)
+    .join("");
+  const masteryRows = snapshot.masteryRows.slice(0, 12).map((row) => `<div class="bubble-bank-progress-row"><div><strong>${escapeHtml(row.speciesName)}</strong><span>Species Mastery: Lv. ${row.highestLevel}</span></div><span>Variants: ${row.unlockedVariantCount}/${row.totalVariantCount}${row.collectionCompletedAt > 0 ? " · Complete" : ""}</span></div>`).join("");
+  const recentMilestones = snapshot.milestoneRows.slice(0, 4).map((row) => `<span><b>★</b>${escapeHtml(row.label)}${row.completedAt ? ` · ${escapeHtml(formatBubbleBankTime(row.completedAt, { dateOnly: true }))}` : ""}</span>`).join("");
+  return `<section class="bubble-bank-card-list bubble-bank-progress-section">
+    <header class="bubble-bank-list-heading"><div><span>Account Progress</span><h3>Care &amp; Collection</h3></div><small>Progress is earned through care. Fish Coins are tracked separately in Account.</small></header>
+    <div class="bubble-bank-progress-overview">
+      <div><span>Highest Care Level</span><strong>Lv. ${snapshot.highestFishCareLevel}</strong></div>
+      <div><span>Species Mastered</span><strong>${snapshot.masteredSpeciesCount}</strong></div>
+      <div><span>Variants Discovered</span><strong>${snapshot.unlockedVariantCount}/${snapshot.totalVariantCount}</strong></div>
+      <div><span>Collections Complete</span><strong>${snapshot.collectionCompletedCount}</strong></div>
+      <div><span>Milestones</span><strong>${snapshot.completedMilestoneCount}/${snapshot.totalMilestoneCount}</strong></div>
+    </div>
+    <div class="bubble-bank-progress-panel"><h4>Fish Care Levels</h4><div class="bubble-bank-level-grid">${levelChips}</div></div>
+    ${masteryRows ? `<div class="bubble-bank-progress-panel"><h4>Species Mastery &amp; Variants</h4><div class="bubble-bank-progress-rows">${masteryRows}</div></div>` : ""}
+    ${recentMilestones ? `<div class="bubble-bank-progress-panel"><h4>Recent Milestones</h4><div class="bubble-bank-progress-inline-list">${recentMilestones}</div></div>` : ""}
+  </section>`;
+}
+
+function renderBubbleBankVariantProgressHistory(snapshot = getBubbleBankProgressSnapshot()) {
+  const events = snapshot.progressionEvents.slice(0, 30);
+  if (!events.length) return "";
+  return `<section class="bubble-bank-card-list bubble-bank-variant-history"><header class="bubble-bank-list-heading"><div><span>Discovery History</span><h3>Variant Progress</h3></div><small>Unlocked appearances stay available permanently.</small></header>${events.map((entry) => {
+    const isCompletion = String(entry.type) === "variant_collection_completed";
+    const speciesName = String(entry.speciesName || runtime?.fishMap?.get?.(entry.speciesId)?.name || entry.speciesId || "Fish");
+    const variantLabel = String(entry.variantLabel || "New Variant");
+    return `<article class="bubble-bank-progression-event ${isCompletion ? "is-complete" : ""}"><span class="bubble-bank-progression-symbol" aria-hidden="true">${isCompletion ? "★" : "✦"}</span><div><strong>${escapeHtml(speciesName)}</strong><span>${isCompletion ? "Variant Collection Complete" : escapeHtml(variantLabel)}</span>${!isCompletion && entry.fishName ? `<small>Discovered when ${escapeHtml(entry.fishName)} reached Lv. ${Math.max(1, Math.floor(Number(entry.careLevel) || 1))}</small>` : ""}</div><time>${escapeHtml(formatBubbleBankTime(entry.timestamp))}</time></article>`;
+  }).join("")}</section>`;
+}
+
 function renderBubbleBankRewards() {
   const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
-  if (!history.length) {
-    return `<div class="bubble-bank-empty"><strong>No daily rewards yet.</strong><span>Your completed daily recaps and their exact score math will appear here.</span></div>`;
-  }
-  return `<section class="bubble-bank-card-list">${history.map((summary) => {
+  const weeklyReports = Array.isArray(state?.dailyBonus?.weeklyReports) ? state.dailyBonus.weeklyReports : [];
+  const progressSnapshot = getBubbleBankProgressSnapshot();
+  const progressOverview = renderBubbleBankProgressOverview(progressSnapshot);
+  const variantHistory = renderBubbleBankVariantProgressHistory(progressSnapshot);
+  const weeklyMarkup = weeklyReports.length ? `<section class="bubble-bank-card-list bubble-bank-weekly-reports"><header class="bubble-bank-list-heading"><div><span>7-Day Care Summary</span><h3>Weekly Reports</h3></div><small>Daily Recaps track care. Weekly Reports can pay a Weekly Care Award.</small></header>${weeklyReports.map((report) => {
+    const reportId = `weekly-report-${report.id}`;
+    const sortedDays = [...(report.dayKeys || [])].sort();
+    const firstDay = sortedDays[0] || "";
+    const lastDay = sortedDays.at(-1) || "";
+    const period = firstDay && lastDay
+      ? `${formatBubbleBankTime(getLocalDayStartTimestamp(firstDay), { dateOnly: true })} to ${formatBubbleBankTime(getLocalDayStartTimestamp(lastDay), { dateOnly: true })}`
+      : "7 completed recaps";
+    const awardText = report.rewardPaid > 0
+      ? renderBubbleBankCoinAmount(`+${report.rewardPaid}`, { credit: true })
+      : `<strong class="bubble-bank-recap-score">${report.rewardSuppressedByPeacefulMode ? "Award paused" : "No coin award"}</strong>`;
+    return `<details class="bubble-bank-reward-card bubble-bank-weekly-card" id="${escapeHtml(reportId)}" ${runtime.bubbleBankTargetId === reportId ? "open" : ""}>
+      <summary><div><strong>${escapeHtml(period)}</strong><span>7 completed Daily Recaps · Best day ${escapeHtml(report.bestDayKey || "n/a")} (${Number(report.bestDayScore) > 0 ? "+" : ""}${Math.round(Number(report.bestDayScore) || 0)})</span></div><strong class="bubble-bank-recap-score">Avg ${Number(report.averageRecapScore) > 0 ? "+" : ""}${escapeHtml(String(report.averageRecapScore ?? 0))}</strong><span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>Weekly Reports summarize the seven Daily Recaps shown for this period. ${report.rewardSuppressedByPeacefulMode ? "Peaceful Mode prevented the coin award." : "The Weekly Care Award is the only recap-based coin payout."}</p>
+        <div class="bubble-bank-math-columns"><div><h4>Care & Progress</h4><span><b>${Math.max(0, Number(report.fishLevelUps) || 0)}</b>Fish level-ups</span><span><b>${Math.max(0, Number(report.variantsUnlocked) || 0)}</b>Variants unlocked</span><span><b>${Math.max(0, Number(report.milestonesCompleted) || 0)}</b>Milestones completed</span><span><b>${Math.max(0, Number(report.births) || 0)}</b>Births</span><span><b>${Math.max(0, Number(report.deaths) || 0)}</b>Deaths</span></div>
+        <div><h4>Money Earned</h4><span><b>${Math.max(0, Number(report.feedingIncome) || 0)}</b>Feeding coins</span><span><b>${Math.max(0, Number(report.cleaningIncome) || 0)}</b>Cleaning coins</span><span><b>${Math.max(0, Number(report.randomCoinFinds) || 0)}</b>Random-find coins</span><div class="bubble-bank-weekly-award-row"><span>Weekly Care Award</span>${awardText}</div></div></div>
+      </div>
+    </details>`;
+  }).join("")}</section>` : "";
+  const dailyMarkup = history.length ? `<section class="bubble-bank-card-list"><header class="bubble-bank-list-heading"><div><span>Care History</span><h3>Daily Recaps</h3></div><small>Scores drive care progression. Daily Recaps do not directly pay Fish Coins.</small></header>${history.map((summary) => {
     const rewardId = `reward-${summary.dayKey || String(summary.generatedAt)}`;
     const positiveRows = (summary.rows || []).filter((row) => Number(row.score) > 0);
     const negativeRows = (summary.rows || []).filter((row) => Number(row.score) < 0);
@@ -4225,28 +4447,34 @@ function renderBubbleBankRewards() {
       ? `${Number(summary.rawScore) || 0} raw points normalized across ${Math.max(1, Number(summary.fishCount) || Number(summary.tankCount) || 1)} fish/tanks.`
       : "Each listed item contributes directly to the recap score.";
     return `<details class="bubble-bank-reward-card" id="${escapeHtml(rewardId)}" ${runtime.bubbleBankTargetId === rewardId ? "open" : ""}>
-      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily reward")}</span></div>${renderBubbleBankCoinAmount(`+${Math.max(0, Number(summary.reward) || 0)}`, { credit: true })}<span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Reward = max(0, score), capped at ${DAILY_RECAP_REWARD_CAP} coins.</p>
+      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily Recap")}</span></div><strong class="bubble-bank-recap-score">Score ${Number(summary.score) > 0 ? "+" : ""}${Math.round(Number(summary.score) || 0)}</strong><span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Daily Recap scores measure care and progression. They do not pay Fish Coins.</p>
         <div class="bubble-bank-math-columns"><div><h4>Added</h4>${positiveRows.length ? positiveRows.map((row) => `<span><b>+${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>Nothing added that day.</span>"}</div>
         <div><h4>Subtracted</h4>${negativeRows.length ? negativeRows.map((row) => `<span><b>−${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>No negative events.</span>"}</div></div>
       </div>
     </details>`;
-  }).join("")}</section>`;
+  }).join("")}</section>` : "";
+  return `${progressOverview}${weeklyMarkup}${variantHistory}${dailyMarkup}`;
 }
 
 function renderBubbleBankMilestones() {
   const unlocked = state?.dailyBonus?.milestones || {};
   const milestones = PROGRESSION_MILESTONES.filter((milestone) => unlocked[milestone.id]);
   if (!milestones.length) {
-    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and Fish Coin payouts will appear here.</span></div>`;
+    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and milestone unlocks will appear here.</span></div>`;
   }
   return `<section class="bubble-bank-card-list">${milestones.map((milestone) => {
     const milestoneId = `milestone-${milestone.id}`;
     const receipt = (state.walletTransactions || []).find((entry) => getBubbleBankMilestoneForTransaction(entry)?.id === milestone.id);
+    const completion = (Array.isArray(state?.dailyBonus?.milestoneCompletions) ? state.dailyBonus.milestoneCompletions : [])
+      .find((entry) => String(entry?.milestoneId || "") === milestone.id);
+    const completedAt = Number(receipt?.time) || Number(completion?.time) || 0;
     const unlockedFish = (milestone.unlocks || []).map((id) => runtime.fishMap.get(id)?.name || titleFromFile(id));
+    const unlockedDecor = (milestone.decorUnlocks || []).map((key) => getMilestoneDecorUnlockName(key));
+    const unlockLabels = [...unlockedFish, ...unlockedDecor].filter(Boolean);
     return `<article class="bubble-bank-milestone-card ${runtime.bubbleBankTargetId === milestoneId ? "is-target" : ""}" id="${escapeHtml(milestoneId)}">
-      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockedFish.length ? `<small>Unlocked fish: ${escapeHtml(unlockedFish.join(", "))}</small>` : ""}</div>
-      <div>${renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true })}${receipt ? `<time>${escapeHtml(formatBubbleBankTime(receipt.time))}</time>` : ""}</div>
+      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockLabels.length ? `<small>Unlocked: ${escapeHtml(unlockLabels.join(", "))}</small>` : `<small>Achievement completed.</small>`}</div>
+      <div>${milestone.reward > 0 ? renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true }) : "<strong>Achievement</strong>"}${completedAt ? `<time>${escapeHtml(formatBubbleBankTime(completedAt))}</time>` : ""}</div>
     </article>`;
   }).join("")}</section>`;
 }
@@ -4261,7 +4489,7 @@ function renderBubbleBankPage() {
     ${renderBubbleBankTabs(activeTab)}
     <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
   </div>
-  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins are earned through feeding, caring for your neighborhood, and completing milestones.</footer></div></div>`;
+  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins come from care income, Weekly Care Awards, sales, and milestone rewards when applicable.</footer></div></div>`;
 }
 
 function handleBubbleBankPageClick(event) {

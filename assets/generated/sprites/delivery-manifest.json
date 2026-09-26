@@ -354,6 +354,15 @@
         "assets/generated/sprites/fish/lionfish__genetics-natural/Lionfish_5.png.thumb.webp": "ffdbeac7b6745c9fd45804f0f3f672bea6ba5a38939bca29cdff0f7f72a7c300"
       }
     },
+    "assets/fish/lookdown__genetics-natural.webp": {
+      "version": "a901177b1ec8-v1",
+      "files": {
+        "assets/generated/sprites/fish/lookdown__genetics-natural/lookdown-fish_barred.png.thumb.webp": "9eca52a57481752c328bd059a69619e2a8947045088af5c1e390656efbab6717",
+        "assets/generated/sprites/fish/lookdown__genetics-natural/lookdown-fish_blue.png.thumb.webp": "c0a737640f74bdf00c7f9817033ebdd4358a6de1bb04a5a964671da4bdbeaeba",
+        "assets/generated/sprites/fish/lookdown__genetics-natural/lookdown-fish_classic-silver.png.thumb.webp": "a7005b7f44ff583bfb910241b569fdbf7ff4da0f811ffb5fcfd2c0938f0e2611",
+        "assets/generated/sprites/fish/lookdown__genetics-natural/lookdown-fish_golden.png.thumb.webp": "2ece64285f9c033f37847610d8b813e6e69e8c63b0de10f9dbf50e45609bc50a"
+      }
+    },
     "assets/fish/molly__genetics-natural.webp": {
       "version": "5b3f7373f20a-v1",
       "files": {
@@ -616,14 +625,14 @@
       }
     },
     "assets/fish/tetra-neon__genetics-enhanced.webp": {
-      "version": "8d488dd6d523-v1",
+      "version": "4b8ca143e67e-v1",
       "files": {
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_cosmic-blue.png.thumb.webp": "4d6a1236fc98f029fbfed661c517609f1846c13c489c99a94da2d876c487fbd0",
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_electric-green.png.thumb.webp": "da24175ebbe004298df902d50459d904ce0733573914a45943ffde64dfc806f7",
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_galactic-purple.png.thumb.webp": "32f6e879869e509034d26740a6b74403067fcf8909e87e6edb8e1dc9ad84137d",
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_moonrise-pink.png.thumb.webp": "40f9c495839829b45d97790090031b6e7c348c0d3530bd28efa87fa1844cc13c",
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_starfire-red.png.thumb.webp": "87976c29c923ba3025a90ae90734c87604d5f8cbdd4c24a21eeaec1a5e7272be",
-        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_glofish_sunburst-orange.png.thumb.webp": "230d92d3a70738d056a773940ca49b224b13b6ca4dc5e8bca1d288a0e6435156"
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-blue.png.thumb.webp": "8b9de6e8815f4a0088dcd054322c84b15e96b9786c7794ea18c1370a562387b4",
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-green.png.thumb.webp": "58cf45fd91a30407844ee35f2bca2baa83be7287485c1d2b03fb6272fb2fd857",
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-purple.png.thumb.webp": "b518460378235fd50097af859fdd2b3516f41507615b6f86a3efb198a0ca3ef3",
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-pink.png.thumb.webp": "41f9e7432f95edb62989806a4e2d350cdf2a368d805d0b427330eb81846f4cb5",
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-red.png.thumb.webp": "ee6e670ce74682d7407aca5cdbea0d5b7c164458821a483e38fb1b39f2cbaaad",
+        "assets/generated/sprites/fish/tetra-neon__genetics-enhanced/tetra_neon-orange.png.thumb.webp": "03b86eb90d6256b61b0fee58b141b021520008fc8083f60b015dd3c6104d1f21"
       }
     },
     "assets/fish/tetra__genetics-natural.webp": {
@@ -999,6 +1008,15 @@
         "assets/generated/sprites/fish/small_fish/lionfish__genetics-natural/Lionfish_5.png.thumb.webp": "5b92ba34bee3ae1b76d51404fec15c23ff82c69c4efd2587848ad523db986ad7"
       }
     },
+    "assets/fish/small_fish/lookdown__genetics-natural.webp": {
+      "version": "132c23f1c4a7-v1",
+      "files": {
+        "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural/lookdown-fish_barred.png.thumb.webp": "d88b08599a40ad023f1e92c0dfd91acf60fa4937760e1056eed4cf9c2863f38d",
+        "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural/lookdown-fish_blue.png.thumb.webp": "2d50a86adc626884152c1393c02d52be7fadc7574effce002ffa53d6d56b9567",
+        "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural/lookdown-fish_classic-silver.png.thumb.webp": "159d53d20efdfcbf31ef409755b0d0243e7e9fe443156cb082fdf5fa286724f0",
+        "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural/lookdown-fish_golden.png.thumb.webp": "28e43b06ce5e1845ca52c68b10d5e59c7dea8c20ac18a464589fcc86ee1c7ea5"
+      }
+    },
     "assets/fish/small_fish/molly__genetics-natural.webp": {
       "version": "eb824aff6a2b-v1",
       "files": {
@@ -1261,14 +1279,14 @@
       }
     },
     "assets/fish/small_fish/tetra-neon__genetics-enhanced.webp": {
-      "version": "0c98d744730b-v1",
+      "version": "be583b7ed4d1-v1",
       "files": {
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_cosmic-blue.png.thumb.webp": "2d5f959a9add7189ab6ae3a5f87c676cf8df39c7edfe5de054b9373d51091e35",
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_electric-green.png.thumb.webp": "21b4cef9c418ab8eecb2a35a9bab8b9af7fdb8bb3ccbbdf7be4c26294f685531",
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_galactic-purple.png.thumb.webp": "dda48f96af724048fa7edcbf8fee1e5416f7ce7e50cea88fec937792d80f49cc",
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_moonrise-pink.png.thumb.webp": "cab2e649bcace0882342b03826ba82a628e5d3f6357a0b0e4580bd59e81278ed",
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_starfire-red.png.thumb.webp": "bae1ee8d2b58cf1ecae7c43db2f5946f5541d2dbfaed058675211fff694e50e4",
-        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_glofish_sunburst-orange.png.thumb.webp": "a4d6a6e39c4c040e2ed472851531cb1d2afad4133f66d288ade755a776c0ea56"
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-blue.png.thumb.webp": "2d5f959a9add7189ab6ae3a5f87c676cf8df39c7edfe5de054b9373d51091e35",
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-green.png.thumb.webp": "21b4cef9c418ab8eecb2a35a9bab8b9af7fdb8bb3ccbbdf7be4c26294f685531",
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-purple.png.thumb.webp": "dda48f96af724048fa7edcbf8fee1e5416f7ce7e50cea88fec937792d80f49cc",
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-pink.png.thumb.webp": "cab2e649bcace0882342b03826ba82a628e5d3f6357a0b0e4580bd59e81278ed",
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-red.png.thumb.webp": "bae1ee8d2b58cf1ecae7c43db2f5946f5541d2dbfaed058675211fff694e50e4",
+        "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced/tetra_neon-orange.png.thumb.webp": "a4d6a6e39c4c040e2ed472851531cb1d2afad4133f66d288ade755a776c0ea56"
       }
     },
     "assets/fish/small_fish/tetra__genetics-natural.webp": {
@@ -1529,6 +1547,29 @@
         "assets/generated/sprites/misc/wounds/wound_6.png.thumb.webp": "8218854691dd1717793a3459d8e0c1b42c581f5dac6bb01fa6ecf0d255c21261",
         "assets/generated/sprites/misc/wounds/wound_7.png.thumb.webp": "5862e5e2325f594764d3bc44f490ac0fa13bdb880cfeffd6a22abff3b1bb5782",
         "assets/generated/sprites/misc/wounds/wound_8.png.thumb.webp": "309575faf55fa0ec4a11700698eea0c00fcf89b6fb3c1e3b1aeddbe3154937b7"
+      }
+    },
+    "assets/tank-frame/corners.webp": {
+      "version": "898aa4647c91-v1",
+      "files": {
+        "assets/generated/sprites/tank-frame/corners/tank_frame_top-left.png.thumb.webp": "9ef3f75f8cd543f6239a914a23807aef00c9c49df2c8ed63ff98885ace431b21",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_top-right.png.thumb.webp": "72798485e2be75218fbb1d48c3b9473dcfe8d71f7ba0917e683be6a5d936ce4c",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-left.png.thumb.webp": "e8aec5e43ada6143e128bfe3ab95f2c2b0f96385425b94555046253b26cd6e27",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-right.png.thumb.webp": "db1644f812c777cb8c71937928520e71403f09bd8a90015d3a93717a9b862627"
+      }
+    },
+    "assets/tank-frame/left-right.webp": {
+      "version": "ccce82f29862-v1",
+      "files": {
+        "assets/generated/sprites/tank-frame/left-right/tank_frame_right.png.thumb.webp": "5b1434910e4cbb49d7ed0e77c01e17b188a4e1ae3f68e84dbc249f14df10d5e2",
+        "assets/generated/sprites/tank-frame/left-right/tank_frame_left.png.thumb.webp": "e830c275fbc982a45cd495683f4919ac57a0ba786d8c784886abc20dfce81fa7"
+      }
+    },
+    "assets/tank-frame/top-bottom.webp": {
+      "version": "4ada107e8ec6-v1",
+      "files": {
+        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_top.png.thumb.webp": "2043720feb3bccd8b150b723c8529e65bf9af29c7114bd411421ef294437dad4",
+        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_bottom.png.thumb.webp": "1547af4a56161cd2ab3b88c99c48ee836056acbfa5e2f249f8ebd58499c8c989"
       }
     },
     "assets/web/davy/fish/bioluminescent-angler-pike__genetics-enhanced.webp": {

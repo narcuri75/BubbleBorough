@@ -16,7 +16,7 @@
   <link rel="manifest" href="./public/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
-  <link rel="stylesheet" href="./public/styles.css?v=20260925-toolbar-food-art-fit" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260925-variant-dots-hidden-locks" />
 </head>
 
 <body>
@@ -827,7 +827,7 @@
 
                 <section id="webSurfSubsidiaryPage" class="websurf-subsidiary-page" aria-label="Proteus subsidiary website" hidden>
                   <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="arcadia" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/arcadia_logo.png" alt="Arcadia Home Aquatics" /><code>arcadiahomeaquatics.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquarium habitats, made intentional.</p><h1>Make the habitat feel alive.</h1><p>Arcadia Home Aquatics supplies plants, hides, stonework, ornaments, and habitat pieces available through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/decor/anchored_sway/amazon-sword__plant__theme-natural.png" alt="Amazon sword aquarium plant" /><img src="assets/decor/anchored_sway/anubias-rock__plant-rock__theme-natural.png" alt="Anubias aquarium plant on rock" /><img src="assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__front.png" alt="Terracotta aquarium hide" /><img src="assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural.png" alt="Marimo moss ball" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
-                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="clearwell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/clearwell_logo.png" alt="Clearwell Laboratories" /><code>clearwelllaboratories.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquatic health products for everyday care.</p><h1>Care, measured by the drop.</h1><p>Clearwell Laboratories develops the aquarium medications and treatment products distributed through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/Medicine/first-aid.png.thumb.webp" alt="First Aid medication" /><img src="assets/generated/sprites/foodandmeds/Medicine/calming-serum.png.thumb.webp" alt="Calming Serum medication" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="clearwell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/clearwell_logo.png" alt="Clearwell Laboratories" /><code>clearwelllaboratories.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquatic health products for everyday care.</p><h1>Care, measured by the drop.</h1><p>Clearwell Laboratories develops the aquarium medications and treatment products distributed through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/medicine/first-aid.png.thumb.webp" alt="First Aid medication" /><img src="assets/generated/sprites/foodandmeds/medicine/calming-serum.png.thumb.webp" alt="Calming Serum medication" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                   <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="commoncurrent" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/common-current_logo.png" alt="Common Current" /><code>commoncurrent.swim</code></header><div class="websurf-subsidiary-copy"><p>Healthy aquarium fish for ordinary homes.</p><h1>Familiar fish. Dependable stock.</h1><p>Common Current supplies BubbleBodega with conventional freshwater and marine aquarium species.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/generated/sprites/fish/goldfish__genetics-natural/goldfish_bubble_eye.png.thumb.webp" alt="Goldfish" /><img src="assets/generated/sprites/fish/guppy__genetics-natural/guppy_cobra.png.thumb.webp" alt="Guppy" /><img src="assets/generated/sprites/fish/clownfish__genetics-natural/clownfish_1.png.thumb.webp" alt="Clownfish" /><img src="assets/generated/sprites/fish/discus__genetics-natural/discus_blue_diamond.png.thumb.webp" alt="Discus" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                   <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="tidewell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/tidewell_logo.png" alt="Tidewell" /><code>tidewell.swim</code></header><div class="websurf-subsidiary-copy"><p>Prepared nutrition for every kind of appetite.</p><h1>Feed the whole tank.</h1><p>Tidewell produces the prepared foods, specialty formulas, and predator feeds sold through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/food_1/basic-food_small.png.thumb.webp" alt="Basic Fish Food" /><img src="assets/foodandmeds/frisky-food.png" alt="Frisky Food" /><img src="assets/generated/sprites/foodandmeds/food_1/chum_small.png.thumb.webp" alt="Chum" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                 </section>
@@ -1644,7 +1644,14 @@
                       <span class="debug-menu-icon">&#128150;</span>
                       <span>Revive All Fish</span>
                     </button>
+                    <button id="debugInspectFishProgressionButton" class="debug-menu-button wide" type="button"
+                      data-preserve-fish-selection title="Debug: Inspect selected fish progression"
+                      aria-label="Debug: Inspect selected fish progression">
+                      <span class="debug-menu-icon">&#128202;</span>
+                      <span>Inspect Progression</span>
+                    </button>
                   </div>
+                  <pre id="debugFishProgressionReadout" class="debug-progression-readout" aria-live="polite">Select a fish to inspect progression.</pre>
                 </div>
 
                 <div class="debug-menu-section">
@@ -1685,6 +1692,21 @@
                       <span class="debug-menu-icon">&#9201;&#65039;</span>
                       <span>Profiler</span>
                     </button>
+                  </div>
+                </div>
+                <div class="debug-menu-section debug-depth-tuner-section">
+                  <h3>Animation Tuner</h3>
+                  <div id="debugAnimationTuner" class="debug-depth-tuner">
+                    <p class="debug-depth-tuner-note">Visual animation only. This never changes fish travel speed.</p>
+                    <label class="debug-depth-slider">
+                      <span>Swim animation speed <output id="debugSwimAnimationSpeedOutput">90%</output></span>
+                      <input id="debugSwimAnimationSpeedSlider" type="range" min="50" max="150" step="1" value="90" />
+                    </label>
+                    <div class="debug-depth-tuner-actions">
+                      <button id="debugSwimAnimationSpeedResetButton" class="debug-menu-button" type="button">
+                        <span class="debug-menu-icon">&#8634;</span><span>Reset to 90%</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
                 <div class="debug-menu-section debug-depth-tuner-section">
@@ -2129,7 +2151,7 @@
     })();
   </script>
   <script src="public/store-facets.js?v=20260924-cart-search-ram"></script>
-  <script src="public/store-variants.js?v=20260909"></script>
+  <script src="public/store-variants.js?v=20260925c"></script>
 </body>
 
 </html>

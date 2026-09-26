@@ -315,6 +315,7 @@ function sanitizeFish(fish, options = {}) {
   const breedingAvailable = !spawnUsed && species?.canBreed !== false && fish.breedingAvailable !== false;
   const storageState = options.storageState === "stored" || fish.storageState === "stored" ? "stored" : "tank";
   const lifeStage = getFishLifeStage({ ...fish, id: foundationFishId, birthAt, lifespanMultiplier, storageState }, now);
+  const canonicalAppearance = resolveCanonicalFishAppearanceSelection(fish, species);
 
   return {
     id: foundationFishId,
@@ -325,6 +326,14 @@ function sanitizeFish(fish, options = {}) {
       : "",
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     purchasePrice: Math.max(0, Math.floor(Number.isFinite(Number(fish.purchasePrice)) ? Number(fish.purchasePrice) : (Number(species?.cost) || 0))),
+    careXp: Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    variantUnlockCareLevel: clamp(
+      Math.floor(Number(fish.variantUnlockCareLevel) || Number(fish.careLevel) || FISH_CARE_LEVEL_MIN),
+      FISH_CARE_LEVEL_MIN,
+      FISH_CARE_LEVEL_MAX
+    ),
+    lastCareXpDayKey: typeof fish.lastCareXpDayKey === "string" ? fish.lastCareXpDayKey : "",
     birthAt,
     lifespanMultiplier,
     lifeStage,
@@ -494,9 +503,9 @@ function sanitizeFish(fish, options = {}) {
     phase: clamp(Number(fish.phase) || Math.random(), 0, 1),
     motionLevel: clamp(Number.isFinite(Number(fish.motionLevel)) ? Number(fish.motionLevel) : 0.18, dead ? 0.02 : 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
-    appearanceVariant: normalizeFishAppearanceVariantIndex(fish.appearanceVariant, species, fish),
-    appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
-    appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
+    appearanceVariant: canonicalAppearance.appearanceVariant,
+    appearanceVariantKey: canonicalAppearance.appearanceVariantKey,
+    appearanceAssetPath: canonicalAppearance.appearanceAssetPath,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(
       fish.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
@@ -710,16 +719,27 @@ function sanitizeFishEgg(egg) {
   const parentIds = Array.isArray(egg.parentIds)
     ? egg.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
+  const parentVariantKeys = Array.isArray(egg.parentVariantKeys)
+    ? egg.parentVariantKeys.map((value) => String(value || "")).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(egg.fishColor ?? egg.colorSetting ?? "");
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(egg.clutchSize) || 1)));
   const offspringGeneration = Math.max(0, Math.min(999, Math.floor(Number(egg.offspringGeneration) || (parentIds.length ? 1 : 0))));
-  const offspringVariants = Array.isArray(egg.offspringVariants)
+  let offspringVariants = Array.isArray(egg.offspringVariants)
     ? egg.offspringVariants.slice(0, clutchSize).map((value) => Math.max(0, Math.floor(Number(value) || 0)))
     : [];
-  const offspringVariantKeys = Array.isArray(egg.offspringVariantKeys)
+  let offspringVariantKeys = Array.isArray(egg.offspringVariantKeys)
     ? egg.offspringVariantKeys.slice(0, clutchSize).map((value) => String(value || ""))
     : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(runtime.fishMap.get(speciesId), offspringVariants, offspringVariantKeys, clutchSize, {
+      parentVariantKeys,
+      includeUnlocked: parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
   const capacityCost = clamp(Number(runtime.fishMap.get(speciesId)?.capacityCost) || 1, 0.1, 8);
   const reservedCapacity = hatchedAt ? 0 : Math.max(0, Number(egg.reservedCapacity) || clutchSize * capacityCost);
 
@@ -728,6 +748,7 @@ function sanitizeFishEgg(egg) {
     speciesId,
     parentNames,
     parentIds,
+    parentVariantKeys,
     clutchSize,
     offspringGeneration,
     offspringVariants,
@@ -777,15 +798,23 @@ function sanitizePendingBreedingEvent(event) {
   const capacityCost = clamp(Number(species?.capacityCost) || 1, 0.1, 8);
   const inferredClutch = Math.max(1, Math.round((Number(event.reservedCapacity) || capacityCost) / capacityCost));
   const plannedClutchSize = Math.max(1, Math.min(3, Math.floor(Number(event.plannedClutchSize) || inferredClutch)));
-  const offspringVariants = Array.isArray(event.offspringVariants)
+  let offspringVariants = Array.isArray(event.offspringVariants)
     ? event.offspringVariants.slice(0, plannedClutchSize).map((value) => clamp(Math.floor(Number(value) || 0), 0, variantCount - 1))
     : Array.from({ length: plannedClutchSize }, (_, index) => parentVariants.length ? parentVariants[index % parentVariants.length] : 0);
-  const offspringVariantKeys = Array.isArray(event.offspringVariantKeys)
+  let offspringVariantKeys = Array.isArray(event.offspringVariantKeys)
     ? event.offspringVariantKeys.slice(0, plannedClutchSize).map((value) => String(value || ""))
     : offspringVariants.map((variantIndex) => {
         const path = speciesVariants[variantIndex] || speciesVariants[0] || species?.asset || "";
         return typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : "";
       });
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, offspringVariants, offspringVariantKeys, plannedClutchSize, {
+      parentVariantKeys,
+      includeUnlocked: parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
   const createdAt = Number.isFinite(Number(event.createdAt)) ? Math.max(0, Number(event.createdAt)) : Date.now();
   const deliveryMethod = event.deliveryMethod === "live" || species?.liveBirth === true ? "live" : "egg";
   const resolutionAt = Number.isFinite(Number(event.resolutionAt))

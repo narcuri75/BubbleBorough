@@ -2,17 +2,17 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getResaleValue(cost) {
-  const price = Math.max(1, Math.floor(Number(cost) || 0));
+  const price = Math.max(0, Math.floor(Number(cost) || 0));
 
-  if (price <= 1) {
+  if (price <= 0) {
+    return 0;
+  }
+
+  if (price === 1) {
     return 1;
   }
 
-  if (price <= 3) {
-    return price - 1;
-  }
-
-  return Math.max(1, Math.floor(price * 0.75));
+  return Math.max(1, Math.floor(price * 0.5));
 }
 
 function getFishOriginalPurchasePrice(fish, species = getSpeciesForFish(fish)) {
@@ -28,12 +28,7 @@ function getFishRehomeValue(fish, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   const originalPrice = getFishOriginalPurchasePrice(fish, species);
   if (originalPrice <= 0) return 0;
-  const standardResale = getResaleValue(originalPrice);
-  const lifeProgress = getFishLifeProgress(fish, now);
-  const adultStartProgress = 0.2;
-  const adultAgeProgress = clamp((lifeProgress - adultStartProgress) / Math.max(0.01, 1 - adultStartProgress), 0, 1);
-  const ageMultiplier = 1 - 0.75 * adultAgeProgress;
-  return Math.max(1, Math.floor(standardResale * ageMultiplier));
+  return getResaleValue(originalPrice);
 }
 
 function recordCreatureRemovalHistory(fish, reason = "Unknown", now = Date.now(), options = {}) {
@@ -179,6 +174,10 @@ function createFishRecord(speciesId, options = {}) {
       : buildFishName(speciesId, takenNames),
     acquiredAt: now,
     purchasePrice: Math.max(0, Math.floor(Number.isFinite(Number(options.purchasePrice)) ? Number(options.purchasePrice) : (Number(species.cost) || 0))),
+    careXp: Math.max(0, Math.floor(Number(options.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(options.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    variantUnlockCareLevel: clamp(Math.floor(Number(options.variantUnlockCareLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    lastCareXpDayKey: typeof options.lastCareXpDayKey === "string" ? options.lastCareXpDayKey : "",
     birthAt,
     lifespanMultiplier,
     lifeStage: options.juvenile ? "juvenile" : "adult",
@@ -587,6 +586,116 @@ function getInheritedAppearanceVariant(parentVariants, species, index = 0) {
   return valid[Math.abs(Math.floor(Number(index) || 0)) % valid.length];
 }
 
+function getBreedingParentAppearanceKeys(parents, species) {
+  if (!species) return [];
+  const variants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  const keys = [];
+  for (const fish of (Array.isArray(parents) ? parents : []).filter(Boolean).slice(0, 2)) {
+    let path = "";
+    if (typeof getFishAssetPath === "function") {
+      path = getFishAssetPath(fish, species) || "";
+    }
+    let key = typeof getFishAppearanceVariantKey === "function"
+      ? getFishAppearanceVariantKey(path || fish.appearanceAssetPath || fish.appearanceVariantKey || "")
+      : String(path || fish.appearanceAssetPath || fish.appearanceVariantKey || "").split(/[?#]/)[0].split("/").pop();
+    if (!key && variants.length) {
+      const index = clamp(
+        Math.floor(Number(fish.appearanceVariant ?? fish.visualVariant) || 0),
+        0,
+        Math.max(0, variants.length - 1)
+      );
+      key = typeof getFishAppearanceVariantKey === "function"
+        ? getFishAppearanceVariantKey(variants[index] || variants[0] || species.asset || "")
+        : String(variants[index] || variants[0] || species.asset || "").split(/[?#]/)[0].split("/").pop();
+    }
+    keys.push(key || "");
+  }
+  return keys;
+}
+
+function getBreedingAllowedAppearanceEntries(species, options = {}) {
+  if (!species) return [];
+  const allVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  if (!allVariants.length && typeof species.asset === "string" && species.asset) allVariants.push(species.asset);
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const cosmeticVariants = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : allVariants;
+  const keyFor = (path) => typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(path)
+    : String(path || "").split(/[?#]/)[0].split("/").pop();
+  const authoredByKey = new Map();
+  cosmeticVariants.forEach((path) => {
+    const key = keyFor(path);
+    if (key && !authoredByKey.has(key)) authoredByKey.set(key, path);
+  });
+
+  if (!progressionEnabled) {
+    return [...authoredByKey.entries()].map(([key, path]) => ({
+      key, path, index: Math.max(0, allVariants.indexOf(path))
+    }));
+  }
+
+  const allowedKeys = new Set();
+  const parentKeys = Array.isArray(options.parentVariantKeys) ? options.parentVariantKeys : [];
+  for (const rawKey of parentKeys) {
+    const key = keyFor(rawKey);
+    if (key && authoredByKey.has(key)) allowedKeys.add(key);
+  }
+
+  if (options.includeUnlocked !== false) {
+    for (const key of authoredByKey.keys()) {
+      const unlocked = typeof isFishAppearanceVariantUnlocked === "function"
+        ? isFishAppearanceVariantUnlocked(species, key, { allowDebugBypass: false })
+        : key === keyFor(species.asset);
+      if (unlocked) allowedKeys.add(key);
+    }
+  }
+
+  if (!allowedKeys.size) {
+    const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+      ? getFishBaseAppearanceVariantKey(species)
+      : keyFor(species.asset);
+    if (baseKey && authoredByKey.has(baseKey)) allowedKeys.add(baseKey);
+  }
+
+  return cosmeticVariants
+    .map((path) => ({ key: keyFor(path), path, index: Math.max(0, allVariants.indexOf(path)) }))
+    .filter((entry) => entry.key && allowedKeys.has(entry.key));
+}
+
+function normalizeBreedingOffspringAppearances(species, variants, variantKeys, count = 1, options = {}) {
+  const safeCount = Math.max(1, Math.min(3, Math.floor(Number(count) || 1)));
+  const allVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  const allowed = getBreedingAllowedAppearanceEntries(species, options);
+  const keyFor = (path) => typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(path)
+    : String(path || "").split(/[?#]/)[0].split("/").pop();
+  const allowedByKey = new Map(allowed.map((entry) => [entry.key, entry]));
+  const fallback = allowed.find((entry) => entry.key === keyFor(species?.asset)) || allowed[0] || {
+    key: keyFor(species?.asset || allVariants[0] || ""),
+    path: species?.asset || allVariants[0] || "",
+    index: Math.max(0, allVariants.indexOf(species?.asset || allVariants[0]))
+  };
+  const safeVariants = [];
+  const safeKeys = [];
+  for (let index = 0; index < safeCount; index += 1) {
+    const requestedKey = keyFor(Array.isArray(variantKeys) ? variantKeys[index] : "");
+    const requestedIndex = clamp(
+      Math.floor(Number(Array.isArray(variants) ? variants[index] : 0) || 0),
+      0,
+      Math.max(0, allVariants.length - 1)
+    );
+    const indexKey = keyFor(allVariants[requestedIndex] || "");
+    const selected = allowedByKey.get(requestedKey) || allowedByKey.get(indexKey) || fallback;
+    safeVariants.push(Math.max(0, Number.isFinite(Number(selected?.index)) ? Math.floor(Number(selected.index)) : 0));
+    safeKeys.push(String(selected?.key || ""));
+  }
+  return { variants: safeVariants, variantKeys: safeKeys };
+}
+
 function isFishBreedingEligible(fish, now = Date.now(), tank = null, options = {}) {
   tank = getBreedingTankContext(tank);
   if (!fish || isFishDead(fish) || fish.storageState === "stored") return false;
@@ -642,12 +751,17 @@ function createPendingBreedingEvent(parents, now = Date.now(), options = {}) {
   if (maximumByCapacity < 1) return null;
   const desiredClutchSize = rollBreedingClutchSize(species);
   const plannedClutchSize = Math.max(1, Math.min(desiredClutchSize, maximumByCapacity));
-  const parentVariants = pair.map((fish) => Math.max(0, Math.floor(Number(fish.visualVariant) || 0)));
   const speciesVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
-  const parentVariantKeys = pair.map((fish, index) => {
-    if (typeof fish.appearanceVariantKey === "string" && fish.appearanceVariantKey) return fish.appearanceVariantKey;
-    const path = speciesVariants[parentVariants[index]] || speciesVariants[0] || species.asset || "";
-    return typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : "";
+  const parentVariantKeys = typeof getBreedingParentAppearanceKeys === "function"
+    ? getBreedingParentAppearanceKeys(pair, species)
+    : pair.map((fish) => typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : "");
+  const parentVariants = pair.map((fish, index) => {
+    const key = parentVariantKeys[index] || "";
+    const keyedIndex = key && typeof getFishAppearanceVariantKey === "function"
+      ? speciesVariants.findIndex((path) => getFishAppearanceVariantKey(path) === getFishAppearanceVariantKey(key))
+      : -1;
+    if (keyedIndex >= 0) return keyedIndex;
+    return clamp(Math.floor(Number(fish.appearanceVariant ?? fish.visualVariant) || 0), 0, Math.max(0, speciesVariants.length - 1));
   });
   const parentGenerations = pair.map((fish) => Math.max(0, Math.floor(Number(fish.generation) || 0)));
   const offspringGeneration = getBreedingOffspringGeneration(parentGenerations);
@@ -757,13 +871,25 @@ function spawnBreedingOffspring(speciesId, now = Date.now(), options = {}) {
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
 
   if (species.liveBirth === true) {
-    const variants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
-    const appearanceVariant = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
+    const allFish = typeof getAllTankFish === "function"
+      ? getAllTankFish(state)
+      : (Array.isArray(state?.fish) ? state.fish : []);
+    const parents = parentIds.map((id) => allFish.find((fish) => fish?.id === id)).filter(Boolean);
+    const parentVariantKeys = typeof getBreedingParentAppearanceKeys === "function"
+      ? getBreedingParentAppearanceKeys(parents, species)
+      : [];
+    const allowedVariants = typeof getBreedingAllowedAppearanceEntries === "function"
+      ? getBreedingAllowedAppearanceEntries(species, { parentVariantKeys, includeUnlocked: true })
+      : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species).map((path, index) => ({ path, index, key: getFishAppearanceVariantKey(path) })) : []);
+    const selected = allowedVariants.length
+      ? allowedVariants[Math.floor(Math.random() * allowedVariants.length)]
+      : { index: 0, key: typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(species.asset || "") : "" };
     const baby = createBabyFishFromSpecies(speciesId, now, {
       anchorXNorm: options.xNorm,
       anchorYNorm: options.yNorm,
       tankLayer,
-      appearanceVariant,
+      appearanceVariant: selected.index,
+      appearanceVariantKey: selected.key || null,
       parentNames,
       parentIds,
       fishColor: options.fishColor,
@@ -934,6 +1060,9 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
   const parentIds = Array.isArray(options.parentIds)
     ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
+  const parentVariantKeys = Array.isArray(options.parentVariantKeys)
+    ? options.parentVariantKeys.map((value) => String(value || "")).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(options.fishColor ?? "");
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(options.clutchSize) || 1)));
@@ -951,6 +1080,7 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     speciesId,
     parentNames,
     parentIds,
+    parentVariantKeys,
     clutchSize,
     offspringGeneration,
     offspringVariants,
@@ -992,10 +1122,18 @@ function resolvePendingBreedingEvent(event, now = Date.now(), tank = getBreeding
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(event.plannedClutchSize) || 1)));
   const generation = Math.max(0, Math.min(999, Math.floor(Number(event.offspringGeneration) || getBreedingOffspringGeneration(event.parentGenerations))));
-  const offspringVariants = Array.isArray(event.offspringVariants)
+  let offspringVariants = Array.isArray(event.offspringVariants)
     ? event.offspringVariants.slice(0, clutchSize)
     : Array.from({ length: clutchSize }, (_, index) => getInheritedAppearanceVariant(event.parentVariants, species, index));
-  const offspringVariantKeys = Array.isArray(event.offspringVariantKeys) ? event.offspringVariantKeys.slice(0, clutchSize) : [];
+  let offspringVariantKeys = Array.isArray(event.offspringVariantKeys) ? event.offspringVariantKeys.slice(0, clutchSize) : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, offspringVariants, offspringVariantKeys, clutchSize, {
+      parentVariantKeys: event.parentVariantKeys,
+      includeUnlocked: !Array.isArray(event.parentVariantKeys) || event.parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
 
   event.status = "resolving";
   if (event.deliveryMethod !== "live" && species.liveBirth !== true) {
@@ -1004,6 +1142,7 @@ function resolvePendingBreedingEvent(event, now = Date.now(), tank = getBreeding
       yNorm: event.yNorm,
       parentNames: event.parentNames,
       parentIds: event.parentIds,
+      parentVariantKeys: event.parentVariantKeys,
       tankLayer: getBreedingEggTankLayer(species, event.tankLayer),
       clutchSize,
       offspringGeneration: generation,
@@ -1079,8 +1218,16 @@ function hatchFishEgg(egg, now = Date.now()) {
 
   const hatchAt = Number.isFinite(Number(egg.hatchAt)) ? Number(egg.hatchAt) : now;
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(egg.clutchSize) || 1)));
-  const variants = Array.isArray(egg.offspringVariants) ? egg.offspringVariants : [];
-  const variantKeys = Array.isArray(egg.offspringVariantKeys) ? egg.offspringVariantKeys : [];
+  let variants = Array.isArray(egg.offspringVariants) ? egg.offspringVariants : [];
+  let variantKeys = Array.isArray(egg.offspringVariantKeys) ? egg.offspringVariantKeys : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, variants, variantKeys, clutchSize, {
+      parentVariantKeys: egg.parentVariantKeys,
+      includeUnlocked: !Array.isArray(egg.parentVariantKeys) || egg.parentVariantKeys.length === 0
+    });
+    variants = safe.variants;
+    variantKeys = safe.variantKeys;
+  }
   const generation = Math.max(0, Math.min(999, Math.floor(Number(egg.offspringGeneration) || (egg.parentIds?.length ? 1 : 0))));
   const originalReservedCapacity = Math.max(0, Number(egg.reservedCapacity) || clutchSize * getBreedingOffspringCapacityCost(egg.speciesId));
   egg.reservedCapacity = 0;

@@ -845,6 +845,7 @@ function renderControls(now) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
   }
   if (debugMode && runtime.debugSidebarOpen) {
+    syncDebugSwimAnimationSpeedControls();
     syncDebugDepthTunerControls();
   }
   if (dom.debugNotificationUiButton) {
@@ -912,6 +913,7 @@ function renderControls(now) {
     dom.debugFishBehaviorLogButton.hidden = !debugMode;
   }
   syncDebugBehaviorLabButtons(debugMode, selectedActiveFish, now);
+  syncDebugFishProgressionInspection(debugMode, selectedActiveFish);
 
   dom.resetMealsButton.disabled = !debugMode;
   if (dom.completeMealsButton) {
@@ -1269,7 +1271,7 @@ function renderScrubProgress() {
     const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
       ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
       : 0;
-    const earningsText = `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today`;
+    const earningsText = `Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`;
     dom.scrubProgressLabel.textContent = autoCompleteSeconds
       ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
       : `${scrubPercent}% - ${earningsText}`;

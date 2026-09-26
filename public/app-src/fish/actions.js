@@ -649,10 +649,11 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   if (steering.type === "waitfood") {
     const focusXNorm = clamp(Number(steering.xNorm) || 0.5, 0.08, 0.92);
     const focusYNorm = clamp(Number(steering.yNorm) || 0.22, 0.1, 0.5);
+    const currentLayer = getFishTankLayer(fish);
     fish.targetXNorm = focusXNorm;
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + 0.08, fish, species, clampTankLayer(Math.min(getFishTankLayer(fish), 2)), { minYNorm: 0.14, maxYNorm: 0.62 });
+    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + 0.08, fish, species, currentLayer, { minYNorm: 0.14, maxYNorm: 0.62 });
     fish.targetAt = now + 840;
-    setFishDesiredTankLayer(fish, clampTankLayer(Math.min(getFishTankLayer(fish), 2)));
+    setFishDesiredTankLayer(fish, currentLayer);
     if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
       setFishDirection(fish, focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1, species, now);
     }
@@ -667,21 +668,77 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   if (steering.type === "inspect") {
     const focusXNorm = clamp(Number(steering.xNorm) || fish.xNorm || 0.5, 0.08, 0.92);
     const focusYNorm = clamp(Number(steering.yNorm) || fish.yNorm || 0.5, 0.12, 0.84);
-    const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
-    fish.targetXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
-    // Keep the inspect/hangout anchor fixed. The old code sampled a sine wave
-    // only when steering refreshed (every 260 ms), so a fish resting by decor
-    // was given a new vertical target in visible steps. Any idle bob belongs in
-    // the render pose, which updates every animation frame.
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
-    fish.targetAt = now + 720;
+    const targetLayer = steering.targetLayer || getFishTankLayer(fish);
+
+    if (!steering.inspectPhase) {
+      const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
+      steering.inspectPhase = "approach";
+      steering.approachXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
+      steering.approachYNorm = clampFishYNormToLayer(
+        focusYNorm,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+    }
+
+    const approachXNorm = clamp(Number(steering.approachXNorm) || focusXNorm, 0.08, 0.92);
+    const approachYNorm = clamp(Number(steering.approachYNorm) || focusYNorm, 0.14, 0.82);
+    const approachDistance = Math.hypot(
+      approachXNorm - (Number(fish.xNorm) || 0.5),
+      approachYNorm - (Number(fish.yNorm) || 0.5)
+    );
+
+    if (steering.inspectPhase === "approach" && approachDistance <= 0.026) {
+      steering.inspectPhase = "orient";
+      steering.inspectPhaseUntil = now + 520;
+      steering.holdXNorm = Number(fish.xNorm) || approachXNorm;
+      steering.holdYNorm = Number(fish.yNorm) || approachYNorm;
+    }
+
+    if (steering.inspectPhase === "orient") {
+      fish.targetXNorm = clamp(Number(steering.holdXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+      fish.targetYNorm = clampFishYNormToLayer(
+        Number(steering.holdYNorm) || fish.yNorm || 0.5,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+      const desiredFacing = focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1;
+      setFishDirection(fish, desiredFacing, species, now);
+      if (now >= Number(steering.inspectPhaseUntil || 0) && !(fish.turnStartedAt && fish.turnDurationMs > 0)) {
+        steering.inspectPhase = "inspect";
+      }
+    } else if (steering.inspectPhase === "inspect") {
+      // Stay at the settled observation point. Render-time idle motion supplies
+      // life here; steering does not keep sampling a new destination.
+      fish.targetXNorm = clamp(Number(steering.holdXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+      fish.targetYNorm = clampFishYNormToLayer(
+        Number(steering.holdYNorm) || fish.yNorm || 0.5,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+      if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+        setFishDirection(fish, focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1, species, now);
+      }
+    } else {
+      fish.targetXNorm = approachXNorm;
+      fish.targetYNorm = approachYNorm;
+    }
+
+    fish.targetAt = now + (steering.inspectPhase === "approach" ? 720 : 900);
     fish.hangoutDecorId = steering.decorId || null;
     fish.hangoutZoneType = steering.zoneType || "inspect";
-    setFishDesiredTankLayer(fish, steering.targetLayer || getFishTankLayer(fish));
+    setFishDesiredTankLayer(fish, targetLayer);
     if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * 0.55);
+      const speedBlend = steering.inspectPhase === "approach" ? 0.5 : 0.18;
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * speedBlend);
     }
-    steering.nextRefreshAt = now + FISH_ACTION_STEER_REFRESH_MS;
+    steering.nextRefreshAt = now + (steering.inspectPhase === "approach" ? FISH_ACTION_STEER_REFRESH_MS : 420);
     setFishBehaviorIntent(fish, "inspect", steering.zoneType || "decor", now, { targetId: steering.decorId || "", durationMs: FISH_ACTION_STEER_REFRESH_MS * 5 });
     return true;
   }

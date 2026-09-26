@@ -84,6 +84,39 @@ function toggleDebugFrameProfiler() {
   return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
 }
 
+function formatDebugSwimAnimationSpeed(multiplier) {
+  const percent = Math.round((Number(multiplier) || FISH_SWIM_ANIMATION.defaultSpeedMultiplier) * 100);
+  const offset = percent - 100;
+  const offsetText = offset === 0 ? "0%" : `${offset > 0 ? "+" : ""}${offset}%`;
+  return `${percent}% (${offsetText})`;
+}
+
+function syncDebugSwimAnimationSpeedControls() {
+  if (!dom.debugSwimAnimationSpeedSlider) return;
+  const multiplier = getFishSwimAnimationSpeedMultiplier();
+  const percent = Math.round(multiplier * 100);
+  if (Number(dom.debugSwimAnimationSpeedSlider.value) !== percent) {
+    dom.debugSwimAnimationSpeedSlider.value = String(percent);
+  }
+  if (dom.debugSwimAnimationSpeedOutput) {
+    dom.debugSwimAnimationSpeedOutput.textContent = formatDebugSwimAnimationSpeed(multiplier);
+  }
+}
+
+function handleDebugSwimAnimationSpeedInput(input) {
+  if (!input) return FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  const multiplier = setDebugFishSwimAnimationSpeedMultiplier((Number(input.value) || 90) / 100);
+  syncDebugSwimAnimationSpeedControls();
+  return multiplier;
+}
+
+function resetDebugSwimAnimationSpeedTuner() {
+  const multiplier = resetDebugFishSwimAnimationSpeedMultiplier();
+  syncDebugSwimAnimationSpeedControls();
+  showToast(`Swim animation speed reset to ${Math.round(multiplier * 100)}%.`);
+  return multiplier;
+}
+
 function formatDebugDepthTuningPercent(value) {
   return `${Math.round((Number(value) || 0) * 100)}%`;
 }
@@ -290,6 +323,7 @@ function updateDebugFrameProfilerOverlay(force = false) {
     `work ${avgWork.toFixed(2)} ms avg | ${maxWork.toFixed(2)} max`,
     `motion ${sectionAverage("fishMotion").toFixed(2)} | actions ${sectionAverage("fishActions").toFixed(2)}`,
     `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
+    `swim ${counterAverage("fishSwimSliceDraws").toFixed(0)} slices | ${counterAverage("fishSwimWarpPasses").toFixed(1)} passes/frame | highlight ${counterAverage("fishSwimHighlightSliceDraws").toFixed(0)}`,
     `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
     `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
     `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
@@ -485,11 +519,202 @@ function forceAllWhalesToBreatheDebug(now = Date.now()) {
   return started;
 }
 
+
+function getDebugFishProgressionInspection(fishOrId = null) {
+  const fish = fishOrId && typeof fishOrId === "object"
+    ? fishOrId
+    : getManagedFishById(String(fishOrId || runtime.selectedFishId || runtime.selectedFishStatusFishId || ""))?.fish || null;
+  const species = getSpeciesForFish(fish);
+  if (!fish || !species) return null;
+
+  const progressionEligible = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const mastery = progressionEligible && typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
+    : null;
+  const baseKey = progressionEligible && typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : "";
+  const unlockedVariantKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  if (baseKey) unlockedVariantKeys.add(baseKey);
+  const readOnlyMastery = {
+    ...(mastery || {}),
+    unlockedVariantKeys: [...unlockedVariantKeys]
+  };
+  const lockedPool = progressionEligible && typeof getFishLockedAppearanceVariantPool === "function"
+    ? getFishLockedAppearanceVariantPool(species, readOnlyMastery)
+    : [];
+  const lockedVariantCount = Array.isArray(lockedPool) ? lockedPool.length : 0;
+  const nextUnlockProbability = lockedVariantCount > 0 ? 1 / lockedVariantCount : 0;
+  const nextUnlockProbabilityPercent = nextUnlockProbability * 100;
+  const nextUnlockProbabilityLabel = lockedVariantCount <= 0
+    ? "Complete"
+    : lockedVariantCount === 1
+      ? "100%"
+      : (typeof formatFishVariantUnlockChancePercent === "function"
+        ? formatFishVariantUnlockChancePercent(nextUnlockProbabilityPercent)
+        : `${nextUnlockProbabilityPercent.toFixed(1).replace(/\.0$/, "")}%`);
+
+  return {
+    fishId: String(fish.id || ""),
+    fishName: String(fish.name || species.name || fish.id || "Fish"),
+    speciesId: String(species.id || fish.speciesId || ""),
+    speciesName: String(species.name || species.id || "Fish"),
+    progressionEligible,
+    careXp: Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    speciesHighestLevel: progressionEligible
+      ? clamp(Math.floor(Number(mastery?.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX)
+      : 0,
+    unlockedVariantKeys: [...unlockedVariantKeys],
+    lockedVariantCount,
+    nextUnlockProbability,
+    nextUnlockProbabilityPercent,
+    nextUnlockProbabilityLabel
+  };
+}
+
+function formatDebugFishProgressionInspection(inspection) {
+  if (!inspection) return "Select a fish to inspect progression.";
+  if (!inspection.progressionEligible) {
+    return `${inspection.fishName} · ${inspection.speciesName}\nCare progression: Not eligible`;
+  }
+  const keys = inspection.unlockedVariantKeys.length
+    ? inspection.unlockedVariantKeys.join(", ")
+    : "(none)";
+  return [
+    `${inspection.fishName} · ${inspection.speciesName}`,
+    `careXp: ${inspection.careXp}`,
+    `careLevel: ${inspection.careLevel}`,
+    `species highestLevel: ${inspection.speciesHighestLevel}`,
+    `unlockedVariantKeys: ${keys}`,
+    `locked variants: ${inspection.lockedVariantCount}`,
+    `next unlock probability: ${inspection.nextUnlockProbabilityLabel}`
+  ].join("\n");
+}
+
+function syncDebugFishProgressionInspection(debugMode = isDebugModeEnabled(), selectedFish = null) {
+  if (!dom.debugFishProgressionReadout && !dom.debugInspectFishProgressionButton) return null;
+  const fish = selectedFish || getManagedFishById(runtime.selectedFishId || runtime.selectedFishStatusFishId)?.fish || null;
+  const inspection = debugMode && fish ? getDebugFishProgressionInspection(fish) : null;
+  if (dom.debugFishProgressionReadout) {
+    dom.debugFishProgressionReadout.textContent = debugMode
+      ? formatDebugFishProgressionInspection(inspection)
+      : "Select a fish to inspect progression.";
+  }
+  if (dom.debugInspectFishProgressionButton) {
+    dom.debugInspectFishProgressionButton.hidden = !debugMode;
+    dom.debugInspectFishProgressionButton.disabled = !debugMode || !fish;
+  }
+  return inspection;
+}
+
+function inspectFishProgressionDebug(fishOrId = null, options = {}) {
+  if (!isDebugModeEnabled()) {
+    if (options.toast !== false) showToast("Debug tools are not enabled.");
+    return null;
+  }
+  const inspection = getDebugFishProgressionInspection(fishOrId);
+  if (!inspection) {
+    if (options.toast !== false) showToast("Select a fish to inspect progression.");
+    syncDebugFishProgressionInspection(true, null);
+    return null;
+  }
+  if (dom.debugFishProgressionReadout) {
+    dom.debugFishProgressionReadout.textContent = formatDebugFishProgressionInspection(inspection);
+  }
+  if (typeof console !== "undefined" && typeof console.table === "function") {
+    console.table({
+      fishId: inspection.fishId,
+      fishName: inspection.fishName,
+      speciesId: inspection.speciesId,
+      careXp: inspection.careXp,
+      careLevel: inspection.careLevel,
+      speciesHighestLevel: inspection.speciesHighestLevel,
+      unlockedVariantKeys: inspection.unlockedVariantKeys.join(", "),
+      lockedVariantCount: inspection.lockedVariantCount,
+      nextUnlockProbability: inspection.nextUnlockProbabilityLabel
+    });
+  }
+  if (options.toast !== false) showToast(`${inspection.fishName} progression logged to console.`);
+  return inspection;
+}
+
+function getDebugFishSwimAnimationMetrics(fishOrId = null) {
+  const fish = fishOrId && typeof fishOrId === "object"
+    ? fishOrId
+    : getManagedFishById(String(fishOrId || runtime.selectedFishId || runtime.selectedFishStatusFishId || ""))?.fish || null;
+  if (!fish?.id || !(runtime?.fishSwimAnimationDebugMetrics instanceof Map)) return null;
+  const metrics = runtime.fishSwimAnimationDebugMetrics.get(String(fish.id));
+  return metrics ? { ...metrics } : null;
+}
+
+function inspectFishSwimAnimationDebug(fishOrId = null, options = {}) {
+  if (!isDebugModeEnabled()) {
+    if (options.toast !== false) showToast("Debug tools are not enabled.");
+    return null;
+  }
+  const metrics = getDebugFishSwimAnimationMetrics(fishOrId);
+  if (!metrics) {
+    if (options.toast !== false) showToast("Select a visible fish, then let it render once.");
+    return null;
+  }
+  const rounded = {
+    fishId: metrics.fishId,
+    fishName: metrics.fishName,
+    preset: metrics.presetId,
+    tailIntensity: Number(metrics.tailIntensity.toFixed(4)),
+    animationSpeed: Number(metrics.animationSpeed.toFixed(4)),
+    depthWarp: Number(metrics.depthWarp.toFixed(4)),
+    perspective: Number(metrics.perspective.toFixed(4)),
+    frontWiggle: Number(metrics.frontWiggle.toFixed(4)),
+    phase: Number(metrics.phase.toFixed(4)),
+    effectiveCyclesPerSecond: Number(metrics.effectiveCyclesPerSecond.toFixed(4)),
+    rawDepthWarpPx: Number(metrics.rawDepthWarpPx.toFixed(4)),
+    maximumRearDepthWarpPx: Number(metrics.maximumRearDepthWarpPx.toFixed(4)),
+    fishDisplayHeight: Number(metrics.fishDisplayHeight.toFixed(4)),
+    rawDepthWarpRatio: Number(metrics.rawDepthWarpRatio.toFixed(6)),
+    rearDepthWarpRatio: Number(metrics.rearDepthWarpRatio.toFixed(6)),
+    panicActive: Boolean(metrics.panicActive),
+    activePanicDash: Boolean(metrics.activePanicDash),
+    panicSpeedBoost: Number(metrics.panicSpeedBoost.toFixed(4))
+  };
+  if (typeof console !== "undefined" && typeof console.table === "function") {
+    console.table(rounded);
+  }
+  if (options.toast !== false) showToast(`${metrics.fishName} swim math logged to console.`);
+  return rounded;
+}
+
 function exposeDebugConsoleCommands() {
   if (typeof window === "undefined") {
     return false;
   }
   window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
+  window.debugInspectFishProgression = (fishId = "") => inspectFishProgressionDebug(fishId || null, { toast: false });
+  window.debugInspectSwimAnimation = (fishId = "") => inspectFishSwimAnimationDebug(fishId || null, { toast: false });
+  window.debugSetSwimAnimationPreset = (presetId = "regular") => {
+    if (!isDebugModeEnabled()) {
+      return { ok: false, reason: "debug-disabled", presetId: "" };
+    }
+    const normalized = String(presetId || "").trim().toLowerCase();
+    if (!normalized || normalized === "auto" || normalized === "clear") {
+      runtime.debugSwimAnimationPresetOverride = "";
+      return { ok: true, presetId: "", mode: "automatic" };
+    }
+    const allowed = new Set(["regular", "chill", "zoomies", "panicked"]);
+    if (!allowed.has(normalized)) {
+      return { ok: false, reason: "unsupported-preset", presetId: normalized };
+    }
+    runtime.debugSwimAnimationPresetOverride = normalized;
+    return { ok: true, presetId: normalized, mode: "forced-rendering-only" };
+  };
+  window.debugClearSwimAnimationPreset = () => window.debugSetSwimAnimationPreset("auto");
+  window.debugForceRegularSwimAnimation = () => window.debugSetSwimAnimationPreset("regular");
+  window.debugForceChillSwimAnimation = () => window.debugSetSwimAnimationPreset("chill");
+  window.debugForceZoomiesSwimAnimation = () => window.debugSetSwimAnimationPreset("zoomies");
+  window.debugForcePanickedSwimAnimation = () => window.debugSetSwimAnimationPreset("panicked");
   window.debugSetProteusDonationsTo99 = () => {
     state.proteusCorpseDonationCount = 99;
     state.proteusZombieFishUnlockedAt = 0;
@@ -1622,11 +1847,12 @@ function updateDebugAnticipateFoodSteering(fish, species, steering, now = Date.n
   }
   const focusXNorm = clamp(Number(steering.foodXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
   const focusYNorm = clamp(Number(steering.foodYNorm) || 0.28, 0.08, 0.7);
+  const currentLayer = getFishTankLayer(fish);
   const targetYNorm = clampFishYNormToLayer(
     focusYNorm + 0.075,
     fish,
     species,
-    clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    currentLayer,
     { minYNorm: 0.14, maxYNorm: 0.62 }
   );
   fish.targetXNorm = focusXNorm;
@@ -1634,7 +1860,7 @@ function updateDebugAnticipateFoodSteering(fish, species, steering, now = Date.n
   fish.targetAt = now + 920;
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
-  setFishDesiredTankLayer(fish, clampTankLayer(Math.min(getFishTankLayer(fish), 2)));
+  setFishDesiredTankLayer(fish, currentLayer);
   if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
     steering.faceDirection = focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1;
   } else if (!Number.isFinite(Number(steering.faceDirection))) {
@@ -2310,6 +2536,27 @@ function triggerDebugBehaviorScenario(action) {
   }
 }
 
+function getDebugFishSwimPresetForPreviewBehavior(behaviorId) {
+  const mapping = {
+    "swim-preset-sleepy": "sleepy",
+    "swim-preset-chill": "chill",
+    "swim-preset-regular": "regular",
+    "swim-preset-active": "active",
+    "swim-preset-feeding": "feeding",
+    "swim-preset-zoomies": "zoomies",
+    "swim-preset-scared": "scared",
+    "swim-preset-panicked": "panicked",
+    swim: "regular",
+    "feeding-swim": "feeding",
+    panic: "panicked",
+    rest: "sleepy",
+    sleep: "sleepy",
+    zoomies: "zoomies",
+    avoid: "scared"
+  };
+  return mapping[String(behaviorId || "")] || "";
+}
+
 function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehaviorPreviewBehaviorId) {
   return DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS.find((entry) => entry.id === behaviorId)
     || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
@@ -2705,6 +2952,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   let phase = clamp(cycleElapsed / cycleMs, 0, 1);
   const renderNow = Date.now();
   const pose = getDebugFishBehaviorPreviewPose(behaviorId, phase);
+  const previewSwimPreset = getDebugFishSwimPresetForPreviewBehavior(behaviorId);
 
   fish.deadAt = null;
   fish.healthUnits = getSpeciesMaxHealthUnits(species);
@@ -2714,6 +2962,21 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   fish.turnStartedAt = 0;
   fish.turnDurationMs = 0;
   fish.direction = 1;
+  fish.wiggleClock = elapsed / 1000 * 2.6;
+  if (previewSwimPreset) {
+    fish.debugSwimAnimationPreset = previewSwimPreset;
+    fish.motionLevel = 0.9;
+    fish.targetXNorm = 0.76;
+    fish.targetYNorm = 0.5;
+    pose.tilt = 0;
+    pose.wiggle = 0;
+    pose.bodyScaleX = 1;
+    pose.bodyScaleY = 1;
+    pose.swayX = 0;
+    pose.swayY = 0;
+  } else {
+    delete fish.debugSwimAnimationPreset;
+  }
   if (behaviorId === "sick") {
     fish.healthUnits = 1;
   } else if (behaviorId === "death-animation") {
@@ -2778,7 +3041,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   const maxHeight = viewport.height * 0.62;
   const drawWidth = Math.max(70, Math.min(maxWidth, maxHeight / Math.max(0.08, aspect)));
   const drawHeight = drawWidth * aspect;
-  const drawX = -drawWidth / 2 + pose.wiggle * drawWidth * 0.018;
+  const drawX = -drawWidth / 2 + (previewSwimPreset ? 0 : pose.wiggle * drawWidth * 0.018);
   const healthRatio = getFishHealthRatio(fish, species);
   const fishFilter = getFishCanvasFilter(fish, healthRatio, renderNow, behaviorId === "sick" ? 0.25 : 1);
 
@@ -2810,7 +3073,29 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
     drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
   } else {
-    context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+    const warped = typeof drawFishSwimDepthWarpImage === "function"
+      && drawFishSwimDepthWarpImage(
+        context,
+        renderImage,
+        drawX,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight,
+        fish,
+        species,
+        renderNow,
+        {
+          imagePath,
+          presetId: previewSwimPreset || undefined,
+          movementFactor: previewSwimPreset ? 1 : undefined,
+          immediate: Boolean(previewSwimPreset),
+          effectiveBehavior: typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species.behavior,
+          suckerFreeSwimming: behaviorId === "sucker-free-swim" || (typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, renderNow))
+        }
+      );
+    if (!warped) {
+      context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+    }
   }
   context.restore();
 

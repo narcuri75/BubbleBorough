@@ -160,6 +160,7 @@ function sanitizeMemorialRecord(entry) {
     name: String(entry.name).trim().slice(0, 40),
     speciesId: String(entry.speciesId || ""),
     speciesName: String(entry.speciesName || "Fish").slice(0, 60),
+    careLevel: clamp(Math.floor(Number(entry.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
     acquiredAt: Number.isFinite(Number(entry.acquiredAt)) ? Number(entry.acquiredAt) : null,
     deathAt: Number.isFinite(Number(entry.deathAt)) ? Number(entry.deathAt) : Date.now(),
     cause: String(entry.cause || "Unknown").slice(0, 180),
@@ -287,6 +288,7 @@ function recordFishMemorial(fish, tank = getCurrentTank(), cause = "Unknown", no
     name: fish.name,
     speciesId: fish.speciesId,
     speciesName: species?.name || "Fish",
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
     acquiredAt: fish.acquiredAt,
     deathAt: Number(fish.deadAt) || now,
     cause: String(cause || "Unknown").replace(/^.*?died\s*/i, "").trim() || "Unknown",
@@ -1021,6 +1023,7 @@ function buildMemorialHistoryMarkup() {
     const livedDays = record.acquiredAt ? Math.max(0, Math.floor((record.deathAt - record.acquiredAt) / DAY_MS)) : null;
     const detail = [
       record.speciesName,
+      `Lv. ${record.careLevel}`,
       record.neighborhoodName,
       livedDays === null ? "" : `${livedDays} ${pluralize("day", livedDays)}`
     ].filter(Boolean).join(" · ");

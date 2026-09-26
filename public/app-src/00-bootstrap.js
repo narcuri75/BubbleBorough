@@ -10,7 +10,7 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 62;
+const STATE_VERSION = 65;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -121,11 +121,26 @@ const DETRITUS_SNACK_FOOD_KEYS = Object.freeze(["algaeWafers"]);
 const COMFORT_MEAL_WINDOW_MS = 12 * HOUR_MS;
 const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
 const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
-const DAILY_RECAP_REWARD_CAP = 30;
+const DAILY_RECAP_REWARD_CAP = 0;
 const DAILY_RECAP_HISTORY_LIMIT = 45;
+const FISH_DAILY_CARE_XP_CAP = 5;
+const FISH_CARE_LEVEL_MIN = 1;
+const FISH_CARE_LEVEL_MAX = 5;
+const FISH_CARE_LEVEL_LIFESPAN_RATIOS = Object.freeze({
+  2: 0.10,
+  3: 0.25,
+  4: 0.45,
+  5: 0.65
+});
+const WEEKLY_REPORT_RECAP_COUNT = 7;
+const WEEKLY_REPORT_HISTORY_LIMIT = 52;
+const WEEKLY_REPORT_REWARD_MULTIPLIER = 1.5;
+const WEEKLY_REPORT_REWARD_CAP = 12;
+const INCOME_HISTORY_DAY_LIMIT = 60;
 const BOROUGH_DAILY_RECAP_ID = "borough";
 const BOROUGH_RECAP_SCORE_MODEL = "borough-normalized-v1";
 const MAX_BOROUGH_EVENT_HISTORY = 400;
+const PROGRESSION_HISTORY_LIMIT = 240;
 const COMFORT_VERY_LOW_EVENT_MS = 2 * HOUR_MS;
 const TANK_SPACE_FULL_LOAD = 10;
 const TANK_SPACE_MAX_LOAD = 14;
@@ -184,6 +199,17 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
+  // Slice-based living swim animation presets. These exercise the same
+  // centralized depth-sweep renderer used by live fish.
+  { id: "swim-preset-sleepy", group: "Swim animation presets", label: "Sleepy / Rest", description: "Barely moving, with a small gentle tail depth sweep and almost no head motion." },
+  { id: "swim-preset-chill", group: "Swim animation presets", label: "Chill", description: "Lazy cruising with a gentle curved rear-body sweep." },
+  { id: "swim-preset-regular", group: "Swim animation presets", label: "Regular", description: "The standard side-view traveling-wave swim animation." },
+  { id: "swim-preset-active", group: "Swim animation presets", label: "Slightly Increased", description: "More purposeful travel with a stronger tail beat and modest front counter-sweep." },
+  { id: "swim-preset-feeding", group: "Swim animation presets", label: "Feeding Chase", description: "Fast food-pursuit propulsion using the same live depth-sweep renderer." },
+  { id: "swim-preset-zoomies", group: "Swim animation presets", label: "Zoomies", description: "Playful high-energy body wave with a strong tail sweep." },
+  { id: "swim-preset-scared", group: "Swim animation presets", label: "Scared / Flee", description: "Strong escape propulsion without turning the fish into a rubbery whole-sprite wobble." },
+  { id: "swim-preset-panicked", group: "Swim animation presets", label: "Panicked", description: "The strongest safe slice-warp preset for an actively fleeing fish." },
+
   // Core renderer states. These are wired to the same pose/state fields used by
   // the live tank renderer so the viewer can inspect the real animation paths.
   { id: "swim", group: "Core renderer", label: "Normal Swim", description: "The standard live-tank swim pose, body flex, bob, and tail rhythm." },
@@ -443,10 +469,10 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   verticalSpread: 0.82,
   targetDistanceMin: 0.16,
   targetDistanceMax: 0.52,
-  headingPersistence: 0.5,
-  hoverChance: 0.05,
-  hoverMinMs: 700,
-  hoverMaxMs: 1700,
+  headingPersistence: 0.68,
+  hoverChance: 0.11,
+  hoverMinMs: 1400,
+  hoverMaxMs: 3600,
   schoolStrength: 0.2,
   schoolSpacingScale: 1,
   schoolDurationScale: 1,
@@ -1141,7 +1167,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "stable-tank",
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
-    reward: 8,
+    reward: 5,
     unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
     decorUnlocks: ["driftwood-root__wood__theme-natural.png", "driftwood__wood__theme-natural.png", "moss-bridge__wood-plant__theme-natural.png", "slate__cave-rock__theme-natural__front.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
@@ -1153,13 +1179,13 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "happy-habitat",
     label: "Happy Habitat",
-    requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
-    reward: 12,
+    requirement: "Raise at least one fish to Care Level 3 and keep recent average comfort at 80%+.",
+    reward: 5,
     unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
     decorUnlocks: ["large-mushroom-coral__coral__theme-reef.png", "wizard-castle__cave__theme-fantasy__front.png", "blue-castle__cave__theme-fantasy__front.png", "meteor__cave-rock__theme-space__front.png", "volcano__bubbler__theme-natural__front.png", "volcano__bubbler__theme-natural__v2__front.png", "__custom-decor-shop__", "__custom-hide-shop__"],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
+    isMet: (stats) => stats.hasLevel3Fish && stats.recentAverageComfort >= 80,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
+      { value: (Number(stats.highestFishCareLevel) || 0) / 3, label: `Highest fish Care Level ${Math.min(Number(stats.highestFishCareLevel) || 0, 3)}/3` },
       { value: (Number(stats.recentAverageComfort) || 0) / 80, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 80)}%/80%` }
     ]
   },
@@ -1167,7 +1193,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "master-keeper",
     label: "Master Keeper",
     requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
-    reward: 18,
+    reward: 8,
     unlocks: ["discus", "angelfish", "yellow-tang", "blue-tang", "sunfish", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
@@ -1179,26 +1205,26 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Keep any fish alive for 21 days and finish 10 good recaps.",
-    reward: 20,
+    requirement: "Raise at least one fish to Care Level 4 and finish 10 good recaps.",
+    reward: 8,
     unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.goodRecaps >= 10,
+    isMet: (stats) => stats.hasLevel4Fish && stats.goodRecaps >= 10,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
+      { value: (Number(stats.highestFishCareLevel) || 0) / 4, label: `Highest fish Care Level ${Math.min(Number(stats.highestFishCareLevel) || 0, 4)}/4` },
       { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
     ]
   },
   {
     id: "borough-legends",
     label: "Borough Legends",
-    requirement: "Keep any fish alive for 30 days, finish 15 good recaps, and have one fish at Sparkling comfort.",
-    reward: 30,
+    requirement: "Master at least one species at Care Level 5, finish 15 good recaps, and have one fish at Sparkling comfort.",
+    reward: 10,
     unlocks: ["great-white-shark", "orca", "__custom-fish-shop__"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 30 * DAY_MS && stats.goodRecaps >= 15 && stats.hasSparklingFish,
+    isMet: (stats) => stats.hasMasteredSpecies && stats.goodRecaps >= 15 && stats.hasSparklingFish,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (30 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 30 * DAY_MS))}/30d` },
+      { value: stats.hasMasteredSpecies ? 1 : 0, label: stats.hasMasteredSpecies ? "Species Mastery Lv. 5 reached" : "Needs one Species Mastery Lv. 5" },
       { value: (Number(stats.goodRecaps) || 0) / 15, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 15)}/15` },
       { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
     ]
@@ -1207,7 +1233,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "clean-start",
     label: "Clean Start",
     requirement: "Keep cleanliness at 90%+ for 3 daily recaps in a row.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.cleanRecapStreak90 >= 3,
@@ -1217,7 +1243,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "crystal-keeper",
     label: "Crystal Keeper",
     requirement: "Keep cleanliness at 95%+ for 7 daily recaps in a row.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.cleanRecapStreak95 >= 7,
@@ -1227,7 +1253,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "full-bellies",
     label: "Full Bellies",
     requirement: "Keep fish from reaching Starving for 3 daily recaps in a row.",
-    reward: 6,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.allMealsSatisfiedStreak >= 3,
@@ -1237,7 +1263,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "reliable-feeder",
     label: "Reliable Feeder",
     requirement: "Keep fish from reaching Starving for 7 daily recaps in a row.",
-    reward: 14,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.allMealsSatisfiedStreak >= 7,
@@ -1247,7 +1273,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "cozy-corner",
     label: "Cozy Corner",
     requirement: "Average 80%+ comfort for 3 daily recaps in a row.",
-    reward: 6,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.comfort80Streak >= 3,
@@ -1257,7 +1283,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "little-paradise",
     label: "Little Paradise",
     requirement: "Average 90%+ comfort for 3 daily recaps in a row.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.comfort90Streak >= 3,
@@ -1267,7 +1293,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "perfect-hour",
     label: "Perfect Hour",
     requirement: "Have any fish reach Sparkling comfort.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1,
@@ -1280,7 +1306,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "perfect-day",
     label: "Perfect Day",
     requirement: "Have Sparkling comfort during a daily recap with score 8+.",
-    reward: 15,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasPerfectDay,
@@ -1290,7 +1316,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "no-drama-day",
     label: "No Drama Day",
     requirement: "Finish a daily recap with no negative events.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.latestNoDramaDay,
@@ -1300,7 +1326,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "peaceful-week",
     label: "Peaceful Week",
     requirement: "Finish 5 recaps in a row with no attacks or deaths.",
-    reward: 16,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noAttackDeathRecapStreak >= 5,
@@ -1310,7 +1336,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "gentle-keeper",
     label: "Gentle Keeper",
     requirement: "Finish 3 recaps in a row without stress-tapping fish.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noGlassTapStressStreak >= 3,
@@ -1320,7 +1346,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "calm-glass",
     label: "Calm Glass",
     requirement: "Finish 7 recaps in a row without stress-tapping fish.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noGlassTapStressStreak >= 7,
@@ -1330,7 +1356,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "decorator",
     label: "Decorator",
     requirement: "Place 5 decor items across your aquariums.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.decorPlacedCount >= 5,
@@ -1340,7 +1366,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "habitat-builder",
     label: "Habitat Builder",
     requirement: "Satisfy 10 total fish comfort needs at once.",
-    reward: 10,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.metNeedsCount >= 10,
@@ -1350,7 +1376,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "need-expert",
     label: "Need Expert",
     requirement: "Have every living fish's comfort needs satisfied at once.",
-    reward: 15,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasAllLivingNeedsMet,
@@ -1360,7 +1386,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "community-tank",
     label: "Community Tank",
     requirement: "Keep 5 community-safe fish in one aquarium, without overcrowding, with 70%+ recent comfort and 3 good recaps.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3,
@@ -1373,7 +1399,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "big-family",
     label: "Big Family",
     requirement: "Own 10 living fish across your aquariums.",
-    reward: 10,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.livingFishCount >= 10,
@@ -1383,7 +1409,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "careful-curator",
     label: "Careful Curator",
     requirement: "Own 15 living fish without overcrowding any aquarium.",
-    reward: 18,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks,
@@ -1396,7 +1422,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "first-generation",
     label: "First Generation",
     requirement: "Hatch one egg.",
-    reward: 8,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hatchedFishEvents >= 1,
@@ -1406,7 +1432,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "nursery-keeper",
     label: "Nursery Keeper",
     requirement: "Raise 3 baby fish past juvenile stage.",
-    reward: 16,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.grownBabyFishCount >= 3,
@@ -1416,7 +1442,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "gravel-luck",
     label: "Gravel Luck",
     requirement: "Find 5 gravel coins.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.gravelCoinFinds >= 5,
@@ -1426,7 +1452,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "treasure-hunter",
     label: "Treasure Hunter",
     requirement: "Find 25 gravel coins.",
-    reward: 18,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.gravelCoinFinds >= 25,
@@ -1436,7 +1462,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "medicine-cabinet",
     label: "Medicine Cabinet",
     requirement: "Heal fish or use medicine 3 times.",
-    reward: 8,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.healingEvents >= 3,
@@ -1446,7 +1472,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "rescue-keeper",
     label: "Rescue Keeper",
     requirement: "Heal a fish and go 3 days without a death afterward.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasRescueKeeper,
@@ -1456,7 +1482,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "tank-network",
     label: "Tank Network",
     requirement: "Own 3 aquariums and connect them with Bubble Borough tubes.",
-    reward: 20,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.connectedTubeTankCount >= 3,
@@ -1521,8 +1547,9 @@ const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
-const CLEANING_DAILY_COIN_CAP = 6;
-const CLEANING_FULL_TANK_COIN_CREDIT = 6;
+const CLEANING_DAILY_COIN_CAP = 4;
+const CLEANING_FULL_TANK_COIN_CREDIT = 4;
+const BOROUGH_DAILY_CLEANING_COIN_CAP = 8;
 const GRIME_CACHE_PRECISION = 240;
 const GRIME_CANVAS_RENDER_SCALE = 0.5;
 const GRIME_VISUAL_START_DIRTINESS = 0;
@@ -1599,6 +1626,7 @@ const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_MAX_ALPHA = 0.18;
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_RGB = Object.freeze({ r: 58, g: 46, b: 33 });
 const DEBUG_DEPTH_TUNING_STORAGE_KEY = "bubble-borough-debug-depth-tuning-v1";
+const DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY = "bubble-borough-debug-swim-animation-speed-v1";
 const DEPTH_EFFECT_LEVEL_MIN = 0;
 const DEPTH_EFFECT_LEVEL_MAX = 4;
 const DEPTH_EFFECT_LEVEL_DEFAULT = 1;
@@ -1673,7 +1701,7 @@ const CUSTOM_FISH_KEY_PREFIX = "__custom-fish-";
 const CUSTOM_DECOR_COST = 10;
 const CUSTOM_HIDE_COST = 10;
 const CUSTOM_BUBBLER_COST = 8;
-const CUSTOM_FISH_COST = 75;
+const CUSTOM_FISH_COST = 125;
 const CUSTOM_BACKGROUND_COST = 20;
 const CUSTOM_CONTENT_STORAGE_LIMIT_BYTES = 25 * 1024 * 1024;
 const CUSTOM_CONTENT_FISH_MAX_BYTES = 2 * 1024 * 1024;
@@ -2111,7 +2139,7 @@ const FISH_ENERGY_CRITICAL_THRESHOLD = 15;
 const FISH_AUTO_FEEDER_COOLDOWN_MS = 8 * MINUTE_MS;
 const FISH_AUTO_FEEDER_TANK_COOLDOWN_MS = 55 * 1000;
 const FISH_NEEDS_MAX_OFFLINE_MS = 6 * HOUR_MS;
-const FISH_DAILY_FEEDING_CARE_COIN_CAP = 8;
+const FISH_DAILY_FEEDING_CARE_COIN_CAP = 5;
 const MOBILE_VIEWPORT_OBJECT_SCALE_MIN = 0.22;
 const SUBSTRATE_CONTOUR_POINTS = 26;
 const ALPHA_HIT_THRESHOLD = 26;
@@ -2229,6 +2257,80 @@ const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
 const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
 const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
 const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+
+// Living side-view fish are rendered as narrow vertical slices that bend along
+// a smooth depth-sweep centerline. World movement remains authoritative; these
+// values only control how the existing sprite visually flexes while swimming.
+const FISH_SWIM_ANIMATION = Object.freeze({
+  sourceOrientation: "right-facing",
+  // Phase 16 performance pass: the approved deformation math is unchanged,
+  // but the renderer no longer spends 100+ draw calls on every fish at every
+  // display size. Large hero fish still use tuner-level detail; smaller and
+  // crowded tanks scale cosmetic slice density down because each slice is a
+  // separate canvas draw call.
+  slices: Object.freeze({ full: 100, medium: 70, small: 44, tiny: 28, highlight: 16, borough: 14 }),
+  crowdedFishThreshold: 12,
+  denseFishThreshold: 22,
+  crowdedSliceScale: 0.75,
+  denseSliceScale: 0.60,
+  minimumGameplaySlices: 24,
+  tailRegionEnd: 0.40,
+  rearRegionEnd: 0.65,
+  middleRegionEnd: 0.80,
+  frontRegionStart: 0.72,
+  cyclesPerSecond: 1.55,
+  // Visual-only cadence multiplier. Fish travel speed remains authoritative in
+  // simulation code and is not affected by this value.
+  defaultSpeedMultiplier: 0.90,
+  debugSpeedMultiplierMin: 0.50,
+  debugSpeedMultiplierMax: 1.50,
+  maximumPhaseAdvanceSeconds: 1 / 30,
+  depthWarpBaseRatio: 0.018,
+  depthWarpDepthRatio: 0.105,
+  depthWarpTailWeight: 0.88,
+  depthWarpBodyWeight: 0.12,
+  frontCounterPhasePi: 0.94,
+  frontDepthWarpBaseRatio: 0.004,
+  frontDepthWarpDepthRatio: 0.018,
+  rearHorizontalShiftBaseRatio: 0.0015,
+  rearHorizontalShiftDepthRatio: 0.0045,
+  frontHorizontalShiftStrength: 0.0025,
+  perspectiveScaleStrength: 0.11,
+  perspectiveTailWeight: 0.85,
+  perspectiveRearWeight: 0.15,
+  perspectiveTailCompressionWeight: 0.075,
+  perspectiveRearCompressionWeight: 0.018,
+  minimumPerspectiveScaleY: 0.88,
+  minimumSliceWidthScale: 0.91,
+  sliceOverlapPx: 0.7,
+  // Slightly longer visual blends keep behavior changes from popping between
+  // animation strengths while leaving simulation movement untouched.
+  transitionMs: 520,
+  settleTransitionMs: 700,
+  emergencyTransitionMs: 240,
+  stationaryIntensityFloor: 0.04,
+  stationaryFrequencyFloor: 0.08,
+  debugGuides: false,
+  presets: Object.freeze({
+    sleepy: Object.freeze({ tailIntensity: 0.16, animationSpeed: 0.38, depthWarp: 0.18, perspective: 0.05, frontWiggle: 0.03 }),
+    chill: Object.freeze({ tailIntensity: 0.32, animationSpeed: 0.62, depthWarp: 0.32, perspective: 0.07, frontWiggle: 0.07 }),
+    regular: Object.freeze({ tailIntensity: 0.55, animationSpeed: 1.00, depthWarp: 0.55, perspective: 0.12, frontWiggle: 0.15 }),
+    active: Object.freeze({ tailIntensity: 0.66, animationSpeed: 1.24, depthWarp: 0.64, perspective: 0.14, frontWiggle: 0.18 }),
+    feeding: Object.freeze({ tailIntensity: 0.76, animationSpeed: 1.50, depthWarp: 0.72, perspective: 0.16, frontWiggle: 0.22 }),
+    zoomies: Object.freeze({ tailIntensity: 0.88, animationSpeed: 1.90, depthWarp: 0.84, perspective: 0.19, frontWiggle: 0.28 }),
+    scared: Object.freeze({ tailIntensity: 0.92, animationSpeed: 2.05, depthWarp: 0.90, perspective: 0.21, frontWiggle: 0.32 }),
+    panicked: Object.freeze({ tailIntensity: 1.00, animationSpeed: 2.35, depthWarp: 1.00, perspective: 0.24, frontWiggle: 0.40 })
+  })
+});
+
+const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
+  resetAfterMs: 260,
+  tiltResponsePerSecond: 11.0,
+  scaleResponsePerSecond: 13.0,
+  wiggleResponsePerSecond: 15.0,
+  swayResponsePerSecond: 13.0
+});
+
 const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
@@ -2365,9 +2467,9 @@ const OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS = 2;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS = 5;
 const OTOCINCLUS_GRAVEL_SCAN_MIN_DURATION_MS = 5600;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_DURATION_MS = 10800;
-const OTOCINCLUS_COIN_FIND_CHANCE = 0.12;
-const OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 5 * MINUTE_MS;
-const OTOCINCLUS_DAILY_COIN_FIND_CAP = 5;
+const OTOCINCLUS_COIN_FIND_CHANCE = 0.08;
+const OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 15 * MINUTE_MS;
+const OTOCINCLUS_DAILY_COIN_FIND_CAP = 2;
 const OTOCINCLUS_GLASS_SWITCH_CHANCE_AFTER_SCAN = 0.34;
 const OTOCINCLUS_GRAVEL_SPIT_MIN_MS = 420;
 const OTOCINCLUS_GRAVEL_SPIT_MAX_MS = 720;
@@ -2398,15 +2500,23 @@ const FISH_ENTRY_NOSE_DIVE_TILT = Math.PI * 0.5;
 const FEED_CHASE_MULTIPLIER = 2.5;
 const DECOR_HANGOUT_DEFAULT_OCCUPANCY_LIMIT = 2;
 const DECOR_HANGOUT_SICK_OCCUPANCY_LIMIT = 1;
-const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.16;
-const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.006;
-const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.003;
-const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.035;
-const SAME_SPECIES_FOLLOW_MIN_MS = 650;
-const SAME_SPECIES_FOLLOW_MAX_MS = 1250;
-const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.04;
-const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.095;
-const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.05;
+const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.24;
+const GLOBAL_FISH_VISUAL_SCALE = 0.85;
+const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.018;
+const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.012;
+const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.16;
+const SAME_SPECIES_FOLLOW_MIN_MS = 8000;
+const SAME_SPECIES_FOLLOW_MAX_MS = 22000;
+const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.05;
+const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.115;
+const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.034;
+const SAME_SPECIES_SCHOOL_SLOT_MIN_MS = 9000;
+const SAME_SPECIES_SCHOOL_SLOT_MAX_MS = 18000;
+const SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC = 4.6;
+const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
+const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
+const SAME_SPECIES_SCHOOL_SEPARATION_RADIUS_NORM = 0.09;
+const SAME_SPECIES_SCHOOL_COHESION_BLEND = 0.08;
 const BABY_FISH_SCALE_MULTIPLIER = 0.45;
 const BABY_FISH_GROWTH_DURATION_MS = 3 * DAY_MS;
 const FISH_ELDERLY_LIFE_FRACTION = 0.85;
@@ -2429,8 +2539,9 @@ const FISH_EGG_INITIAL_SCALE = 0.5;
 const FISH_EGG_CRACKED_SCALE = 0.75;
 const FISH_EGG_HATCH_SCALE = 0.9;
 const FISH_EGG_CRACKED_START_PROGRESS = 0.5;
-const GRAVEL_COIN_FIND_CHANCE = 0.08;
-const GRAVEL_COIN_FIND_COOLDOWN_MS = 15 * MINUTE_MS;
+const GRAVEL_COIN_FIND_CHANCE = 0.05;
+const GRAVEL_COIN_FIND_COOLDOWN_MS = 30 * MINUTE_MS;
+const GRAVEL_DAILY_COIN_FIND_CAP = 2;
 const GRAVEL_COIN_GLINT_DURATION_MS = 1900;
 const SEDIMENT_CLOUD_DURATION_MIN_MS = 2500;
 const SEDIMENT_CLOUD_DURATION_MAX_MS = 4000;
@@ -3198,7 +3309,7 @@ const FISH_TYPES = [
     "id": "goldfish",
     "name": "Goldfish",
     "genetics": "natural",
-    "cost": 5,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/goldfish_common.png",
     "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
@@ -3295,7 +3406,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "guppy",
@@ -3384,7 +3496,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "betta",
@@ -4474,7 +4587,7 @@ const FISH_TYPES = [
     "id": "tetra",
     "name": "Tetra",
     "genetics": "natural",
-    "cost": 5,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/tetra_neon.png",
     "assetVariants": [
@@ -4484,13 +4597,6 @@ const FISH_TYPES = [
       "/assets/fish/tetra_cave.png",
       "/assets/fish/tetra_black-phantom.png",
       "/assets/fish/tetra_emperor.png",
-      "/assets/fish/tetra_pink-blush-black-skirt.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-purple.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-blue.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-green.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-pink.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-red.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-orange.png",
       "/assets/fish/tetra_white-skirt.png",
       "/assets/fish/tetra_cochus-blue.png",
       "/assets/fish/tetra_penguin.png",
@@ -4510,13 +4616,6 @@ const FISH_TYPES = [
       "Tetra Cave",
       "Tetra Black Phantom",
       "Tetra Emperor",
-      "Pink Blush Black Skirt Tetra",
-      "Neon Black Skirt Tetra - Neon Purple",
-      "Neon Black Skirt Tetra - Neon Blue",
-      "Neon Black Skirt Tetra - Neon Green",
-      "Neon Black Skirt Tetra - Neon Pink",
-      "Neon Black Skirt Tetra - Neon Red",
-      "Neon Black Skirt Tetra - Neon Orange",
       "Tetra White Skirt",
       "Tetra Cochus Blue",
       "Tetra Penguin",
@@ -4595,7 +4694,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "molly",
@@ -5919,7 +6019,7 @@ const FISH_TYPES = [
     "name": "Firefish",
     "genetics": "natural",
     "type": "Fish",
-    "cost": 8,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/firefish_1.png",
     "description": "A tiny reef dartfish with a glowing magenta tail. Firefish hover above a favorite crevice, then flash back to safety when nervous.",
@@ -5991,7 +6091,8 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "six-line-wrasse",
@@ -6629,7 +6730,7 @@ const FISH_TYPES = [
     "id": "cardinal",
     "name": "Cardinal",
     "genetics": "natural",
-    "cost": 10,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/cardinalfish_red.png",
     "description": "A natural cardinal with selectable appearances.",
@@ -6714,13 +6815,14 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "chromis",
     "name": "Chromis",
     "genetics": "natural",
-    "cost": 10,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/chromis_blue.png",
     "description": "A natural chromis with selectable appearances.",
@@ -6803,7 +6905,8 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "cichlid",
@@ -7732,22 +7835,22 @@ const FISH_TYPES = [
     "type": "Fish",
     "cost": 9,
     "mealCoins": 1,
-    "asset": "/assets/fish/tetra_glofish_cosmic-blue.png",
+    "asset": "/assets/fish/tetra_neon-blue.png",
     "assetVariants": [
-      "/assets/fish/tetra_glofish_cosmic-blue.png",
-      "/assets/fish/tetra_glofish_electric-green.png",
-      "/assets/fish/tetra_glofish_galactic-purple.png",
-      "/assets/fish/tetra_glofish_moonrise-pink.png",
-      "/assets/fish/tetra_glofish_starfire-red.png",
-      "/assets/fish/tetra_glofish_sunburst-orange.png"
+      "/assets/fish/tetra_neon-blue.png",
+      "/assets/fish/tetra_neon-green.png",
+      "/assets/fish/tetra_neon-purple.png",
+      "/assets/fish/tetra_neon-pink.png",
+      "/assets/fish/tetra_neon-red.png",
+      "/assets/fish/tetra_neon-orange.png"
     ],
     "variantLabels": [
-      "Cosmic Blue",
-      "Electric Green",
-      "Galactic Purple",
-      "Moonrise Pink",
-      "Starfire Red",
-      "Sunburst Orange"
+      "Neon Blue",
+      "Neon Green",
+      "Neon Purple",
+      "Neon Pink",
+      "Neon Red",
+      "Neon Orange"
     ],
     "description": "A tiny tetra with stable, high-intensity bioluminescent color.",
     "aboutAttribution": "PROTEUS BIODYNE",
@@ -7924,7 +8027,7 @@ const TANK_TYPE_META = Object.freeze({
     name: "Aquarium",
     shortName: "Aquarium",
     description: "A full-size aquarium with room for fish and decor.",
-    cost: 65,
+    cost: 125,
     waterTypes: ["freshwater", "saltwater"],
     defaultWaterType: "freshwater",
     baseCleanDays: DEFAULT_TANK_DIRTY_DAYS,
@@ -11952,6 +12055,8 @@ const dom = {
   debugSidebar: document.querySelector("#debugSidebar"),
   debugMenuGameState: document.querySelector("#debugMenuGameState"),
   debugMenuFish: document.querySelector("#debugMenuFish"),
+  debugInspectFishProgressionButton: document.querySelector("#debugInspectFishProgressionButton"),
+  debugFishProgressionReadout: document.querySelector("#debugFishProgressionReadout"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
   debugFishBehaviorPreviewButton: document.querySelector("#debugFishBehaviorPreviewButton"),
@@ -11988,6 +12093,10 @@ const dom = {
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
+  debugAnimationTuner: document.querySelector("#debugAnimationTuner"),
+  debugSwimAnimationSpeedSlider: document.querySelector("#debugSwimAnimationSpeedSlider"),
+  debugSwimAnimationSpeedOutput: document.querySelector("#debugSwimAnimationSpeedOutput"),
+  debugSwimAnimationSpeedResetButton: document.querySelector("#debugSwimAnimationSpeedResetButton"),
   debugDepthTuner: document.querySelector("#debugDepthTuner"),
   debugDepthTunerReadout: document.querySelector("#debugDepthTunerReadout"),
   debugDepthTunerResetButton: document.querySelector("#debugDepthTunerResetButton"),
@@ -12451,6 +12560,8 @@ const runtime = {
   debugNotificationUiEnabled: false,
   debugFishActionIndicatorsEnabled: false,
   debugFrameProfilerEnabled: false,
+  debugSwimAnimationSpeedMultiplier: null,
+  debugSwimAnimationSpeedLoaded: false,
   debugDepthTuning: null,
   debugDepthTuningLoaded: false,
   debugDepthTuningApplyTimer: 0,
@@ -12470,6 +12581,13 @@ const runtime = {
   fishRenderRecordPool: [],
   fishRenderLayerBuckets: null,
   fishRenderPassBuckets: null,
+  fishSwimAnimationStates: new Map(),
+  fishVisualPoseSmoothingStates: new Map(),
+  fishSwimSliceProfileCache: new Map(),
+  fishSwimAnimationDebugMetrics: new Map(),
+  // Temporary rendering-only tuner validation override. Empty means automatic
+  // behavior-driven swim preset selection remains authoritative.
+  debugSwimAnimationPresetOverride: "",
   fishSpeciesMergeCache: new Map(),
   deferredStateSaveDirty: false,
   deferredStateSaveRequestedAt: 0,

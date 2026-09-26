@@ -38,6 +38,44 @@ function getFishAppearanceVariantKey(path) {
   return typeof path === "string" ? path.split(/[?#]/)[0].split("/").pop() : "";
 }
 
+function isFishProgressionAppearanceAsset(species, path) {
+  const key = getFishAppearanceVariantKey(path);
+  if (!species || !key) return false;
+
+  const baseKey = getFishAppearanceVariantKey(species.asset);
+  if (key === baseKey) return true;
+
+  // Layered/state art is part of rendering or behavior, not a cosmetic skin.
+  // Keep these files out of the Care Level unlock pool even if a catalog entry
+  // accidentally includes them in assetVariants.
+  const authoredStateAssets = [
+    species.overlayAsset,
+    species.antennaAsset,
+    species.legAsset
+  ]
+    .map(getFishAppearanceVariantKey)
+    .filter(Boolean);
+  if (authoredStateAssets.includes(key)) return false;
+
+  const stem = key.replace(/\.[^./]+$/, "");
+  return !/(?:^|[_-])(?:side|bottom|top|front|back|left|right|antenna|feelers?|legs?|inflated|deflated|puffed|puff)(?:$|[_-])/i.test(stem);
+}
+
+function isFishCurrentProgressionAppearanceAsset(species, path) {
+  if (!isFishProgressionAppearanceAsset(species, path)) return false;
+  if (!path || /^(data:|blob:)/i.test(path)) return true;
+  // Normal fish artwork is delivered from the generated sprite atlases. If a
+  // catalog entry outlives the sprite frame it used to reference, do not let
+  // BubbleBodega or progression surface a broken/removed appearance. Tests and
+  // pre-atlas tooling can omit the sprite helper and retain authored data.
+  if (typeof getSpriteAssetFrame !== "function") return true;
+  return Boolean(getSpriteAssetFrame(path));
+}
+
+function getFishProgressionAppearanceVariants(species) {
+  return getFishAssetVariants(species).filter((path) => isFishCurrentProgressionAppearanceAsset(species, path));
+}
+
 function getFishVariantLabelFromTileName(path, index = 0) {
   let filename = getFishAppearanceVariantKey(path).replace(/\.[^./]+$/, "");
   try {
@@ -46,9 +84,8 @@ function getFishVariantLabelFromTileName(path, index = 0) {
     // Keep the raw filename if an authored asset contains malformed escaping.
   }
   const descriptiveName = filename.match(/^[^_]+_(.+)$/)?.[1] || "";
-  if (!descriptiveName || /^\d+$/.test(descriptiveName)) {
-    return index === 0 ? "Main" : `Variant ${index}`;
-  }
+  if (!descriptiveName) return index === 0 ? "Main" : `Variant ${index}`;
+  if (/^\d+$/.test(descriptiveName)) return `Variant ${Number(descriptiveName)}`;
   return descriptiveName
     .split(/[-_]+/)
     .filter(Boolean)
@@ -56,14 +93,125 @@ function getFishVariantLabelFromTileName(path, index = 0) {
     .join(" ");
 }
 
+function formatFishVariantUnlockChancePercent(percent) {
+  const value = Math.max(0, Number(percent) || 0);
+  if (value <= 0) return "0%";
+  if (Math.abs(value - Math.round(value)) < 0.05) return `${Math.round(value)}%`;
+  return `${value.toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+// Appearance progression is deliberately species-availability agnostic.
+// Purchase/store callers must check isFishSpeciesShopUnlocked() separately first.
+// Keeping the two gates independent prevents variant mastery from unlocking a fish
+// type and prevents a species milestone from granting every authored appearance.
+function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
+  if (!species) return false;
+  const key = typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(variantKey)
+    : String(variantKey || "").split(/[?#]/)[0].split("/").pop();
+  if (!key) return false;
+
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  if (!progressionEnabled) return true;
+
+  const allowDebugBypass = options.allowDebugBypass !== false;
+  if (allowDebugBypass && typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return true;
+  }
+
+  const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : getFishAppearanceVariantKey(species?.asset);
+  if (baseKey && key === baseKey) return true;
+
+  const mastery = typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species?.id, { species, create: false })
+    : null;
+  const unlockedKeys = Array.isArray(mastery?.unlockedVariantKeys)
+    ? mastery.unlockedVariantKeys
+    : [];
+  return unlockedKeys.some((unlockedKey) => getFishAppearanceVariantKey(unlockedKey) === key);
+}
+
 function getFishStoreVariants(species) {
-  return getFishAssetVariants(species).map((path, index) => ({
-    key: getFishAppearanceVariantKey(path),
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const allPaths = getFishAssetVariants(species);
+  const paths = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : allPaths;
+  const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : getFishAppearanceVariantKey(species?.asset);
+  // Store rendering is read-only progression inspection. In particular, Debug
+  // Mode may preview/purchase-bypass locked appearances, but simply opening the
+  // store must never create or mutate a real Species Mastery record.
+  const mastery = progressionEnabled && typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species?.id, { species, create: false })
+    : null;
+  const unlockedKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  if (baseKey) unlockedKeys.add(baseKey);
+  const readOnlyMastery = progressionEnabled
+    ? { ...(mastery || {}), unlockedVariantKeys: [...unlockedKeys] }
+    : null;
+
+  const actualLockedPool = progressionEnabled && typeof getFishLockedAppearanceVariantPool === "function"
+    ? getFishLockedAppearanceVariantPool(species, readOnlyMastery)
+    : null;
+  const actualLockedKeys = Array.isArray(actualLockedPool)
+    ? new Set(actualLockedPool.map((entry) => getFishAppearanceVariantKey(entry?.key || entry?.path)).filter(Boolean))
+    : null;
+
+  const authored = paths.map((path) => {
+    const index = Math.max(0, allPaths.indexOf(path));
+    const key = getFishAppearanceVariantKey(path);
+    const isBase = Boolean(baseKey && key === baseKey);
+    const unlocked = !progressionEnabled
+      || isBase
+      || (actualLockedKeys ? !actualLockedKeys.has(key) : unlockedKeys.has(key));
+    return { path, index, key, isBase, unlocked };
+  });
+  const lockedCount = Array.isArray(actualLockedPool)
+    ? actualLockedPool.length
+    : authored.filter((entry) => !entry.unlocked).length;
+  const unlockChance = lockedCount > 0 ? 1 / lockedCount : 0;
+  const unlockChanceLabel = lockedCount > 0
+    ? formatFishVariantUnlockChancePercent(unlockChance * 100)
+    : "";
+
+  const debugBypassActive = progressionEnabled
+    && typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled();
+
+  return authored.map(({ path, index, key, isBase, unlocked }) => ({
+    key,
     image: species?.behavior === "sucker" ? (getFishDirectionalSpritePath(path, "side") || path) : path,
     label: String(species?.variantLabels?.[index] || "").trim()
       || getFishVariantLabelFromTileName(path, index),
-    requirements: species?.variantRequirements?.[getFishAppearanceVariantKey(path)] || species?.careRequirements || null
+    requirements: species?.variantRequirements?.[key] || species?.careRequirements || null,
+    isBase,
+    // `unlocked` / `locked` always describe real saved progression.
+    // `debugBypassed` is temporary presentation/purchase access only.
+    unlocked,
+    locked: !unlocked,
+    debugBypassed: debugBypassActive && !unlocked,
+    unlockChance: unlocked ? 0 : unlockChance,
+    unlockChanceLabel: unlocked ? "" : unlockChanceLabel
   }));
+}
+
+function getFishStoreVariantProgressMessage(species, variants = getFishStoreVariants(species)) {
+  if (!species || typeof isFishSpeciesCareProgressionEligible !== "function" || !isFishSpeciesCareProgressionEligible(species)) return "";
+  const entries = Array.isArray(variants) ? variants : [];
+  if (entries.length <= 1) return "";
+  const locked = entries.filter((variant) => variant?.locked === true);
+  if (!locked.length) return "All variants discovered.";
+  if (locked.length === 1) return "1 variant remains. Guaranteed on the next level-up.";
+  const chanceLabel = locked[0]?.unlockChanceLabel || formatFishVariantUnlockChancePercent(100 / locked.length);
+  return `${locked.length} variants remain. ${chanceLabel} chance each on the next level-up.`;
 }
 
 async function discoverFishAppearanceVariants(catalog, availableAssets = null) {

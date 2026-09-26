@@ -1200,7 +1200,128 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v63 adds account-wide species mastery for Care Level progression. The
+  // detailed record shape is normalized by sanitizeFishSpeciesMastery; this
+  // migration only guarantees the new top-level object exists so older saves
+  // are persisted in the current schema after reconciliation.
+  if (incomingVersion < 63) {
+    migrated = {
+      ...migrated,
+      fishSpeciesMastery: migrated.fishSpeciesMastery && typeof migrated.fishSpeciesMastery === "object" && !Array.isArray(migrated.fishSpeciesMastery)
+        ? migrated.fishSpeciesMastery
+        : {}
+    };
+  }
+
+  // v64 adds a capped structured progression history. Phase 18 initially
+  // records fish appearance discoveries here; later progression phases can
+  // extend the same history without scraping human-readable tank messages.
+  if (incomingVersion < 64) {
+    migrated = {
+      ...migrated,
+      progressionHistory: Array.isArray(migrated.progressionHistory) ? migrated.progressionHistory : []
+    };
+  }
+
+  // v65 formalizes save compatibility for Care Level and appearance
+  // progression. Fish themselves are canonicalized by sanitizeFish after the
+  // current catalog is loaded; startup/import reconciliation then
+  // grandfathers every currently owned normal appearance into permanent
+  // species mastery before store locks are enforced.
+  if (incomingVersion < 65) {
+    migrated = {
+      ...migrated,
+      fishSpeciesMastery: migrated.fishSpeciesMastery && typeof migrated.fishSpeciesMastery === "object" && !Array.isArray(migrated.fishSpeciesMastery)
+        ? migrated.fishSpeciesMastery
+        : {}
+    };
+  }
+
   return migrated;
+}
+
+
+function sanitizeFishSpeciesMastery(rawMastery) {
+  if (!rawMastery || typeof rawMastery !== "object" || Array.isArray(rawMastery)) return {};
+  const normalized = {};
+  for (const [rawSpeciesId, rawRecord] of Object.entries(rawMastery)) {
+    const speciesId = String(rawSpeciesId || "").trim().slice(0, 120);
+    if (!speciesId || !rawRecord || typeof rawRecord !== "object" || Array.isArray(rawRecord)) continue;
+    const normalizeVariantKey = (key) => {
+      if (typeof key !== "string" || !key.trim()) return "";
+      return typeof getFishAppearanceVariantKey === "function"
+        ? getFishAppearanceVariantKey(key)
+        : key.trim().split(/[?#]/)[0].split("/").pop();
+    };
+    const unlockedVariantKeys = [...new Set((Array.isArray(rawRecord.unlockedVariantKeys) ? rawRecord.unlockedVariantKeys : [])
+      .map(normalizeVariantKey)
+      .filter(Boolean))];
+    const species = typeof runtime !== "undefined" && runtime?.fishMap?.get
+      ? runtime.fishMap.get(speciesId)
+      : null;
+    if (
+      species
+      && typeof isFishSpeciesCareProgressionEligible === "function"
+      && isFishSpeciesCareProgressionEligible(species)
+    ) {
+      const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+        ? getFishBaseAppearanceVariantKey(species)
+        : normalizeVariantKey(species.asset);
+      if (baseKey && !unlockedVariantKeys.includes(baseKey)) unlockedVariantKeys.unshift(baseKey);
+    }
+    normalized[speciesId] = {
+      highestLevel: clamp(Math.floor(Number(rawRecord.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+      unlockedVariantKeys: unlockedVariantKeys.slice(0, 200),
+      masteredAt: Math.max(0, Number(rawRecord.masteredAt) || 0),
+      totalCareLevelUps: Math.max(0, Math.floor(Number(rawRecord.totalCareLevelUps) || 0)),
+      lastVariantUnlockedAt: Math.max(0, Number(rawRecord.lastVariantUnlockedAt) || 0),
+      collectionCompletedAt: Math.max(0, Number(rawRecord.collectionCompletedAt) || 0)
+    };
+  }
+  return normalized;
+}
+
+
+function sanitizeProgressionHistory(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+      const type = String(entry.type || "").trim().slice(0, 60);
+      const timestamp = Math.max(0, Number(entry.timestamp ?? entry.createdAt) || 0);
+      if (!type || timestamp <= 0) return null;
+      return {
+        id: String(entry.id || `progression-${type}-${timestamp}`).trim().slice(0, 160),
+        type,
+        timestamp,
+        dayKey: String(entry.dayKey || "").trim().slice(0, 32),
+        fishId: String(entry.fishId || "").trim().slice(0, 120),
+        fishName: String(entry.fishName || "").trim().slice(0, 100),
+        speciesId: String(entry.speciesId || "").trim().slice(0, 120),
+        speciesName: String(entry.speciesName || "").trim().slice(0, 120),
+        previousCareLevel: clamp(Math.floor(Number(entry.previousCareLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        careLevel: clamp(Math.floor(Number(entry.careLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        levelsGained: Math.max(0, Math.floor(Number(entry.levelsGained) || 0)),
+        previousMasteryLevel: clamp(Math.floor(Number(entry.previousMasteryLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        masteryLevel: clamp(Math.floor(Number(entry.masteryLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        masteredNow: entry.masteredNow === true,
+        masteredAt: Math.max(0, Number(entry.masteredAt) || 0),
+        variantKey: String(entry.variantKey || "").trim().slice(0, 180),
+        variantLabel: String(entry.variantLabel || "").trim().slice(0, 140),
+        appearanceAssetPath: String(entry.appearanceAssetPath || "").trim().slice(0, 320),
+        lockedPoolSizeBeforeUnlock: Math.max(0, Math.floor(Number(entry.lockedPoolSizeBeforeUnlock) || 0)),
+        remainingLockedVariantCount: Math.max(0, Math.floor(Number(entry.remainingLockedVariantCount) || 0)),
+        unlockChanceBeforeUnlock: clamp(Number(entry.unlockChanceBeforeUnlock) || 0, 0, 1),
+        unlockChancePercentBeforeUnlock: clamp(Number(entry.unlockChancePercentBeforeUnlock) || 0, 0, 100),
+        collectionCompleted: entry.collectionCompleted === true,
+        collectionCompletedAt: Math.max(0, Number(entry.collectionCompletedAt) || 0),
+        title: String(entry.title || "").trim().slice(0, 180),
+        detail: String(entry.detail || "").trim().slice(0, 360)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.timestamp - left.timestamp)
+    .slice(0, PROGRESSION_HISTORY_LIMIT);
 }
 
 
@@ -1256,6 +1377,8 @@ function buildDefaultDailyBonusState() {
     lastEvaluatedByTankId: {},
     claimedByTankDay: {},
     recapHistory: [],
+    weeklyReports: [],
+    milestoneCompletions: [],
     milestones: {}
   };
 }
@@ -1270,7 +1393,31 @@ function sanitizeDailyBonusState(rawState) {
       scoreModel: typeof summary.scoreModel === "string" ? summary.scoreModel : "",
       rawScore: Math.round(Number(summary.rawScore ?? summary.score) || 0),
       score: Math.round(Number(summary.score) || 0),
-      reward: clamp(Math.floor(Number(summary.reward) || 0), 0, DAILY_RECAP_REWARD_CAP),
+      reward: 0,
+      careXpEarned: Math.max(0, Math.floor(Number(summary.careXpEarned) || 0)),
+      tankCareSnapshots: Array.isArray(summary.tankCareSnapshots) ? summary.tankCareSnapshots.map((entry) => ({
+        tankId: typeof entry?.tankId === "string" ? entry.tankId : "",
+        cleanPercent: clamp(Math.round(Number(entry?.cleanPercent) || 0), 0, 100)
+      })).filter((entry) => entry.tankId) : [],
+      careXpAwards: Array.isArray(summary.careXpAwards) ? summary.careXpAwards.map((entry) => ({
+        fishId: typeof entry?.fishId === "string" ? entry.fishId : "",
+        fishName: typeof entry?.fishName === "string" ? entry.fishName.slice(0, 80) : "Fish",
+        speciesId: typeof entry?.speciesId === "string" ? entry.speciesId : "",
+        previousCareLevel: clamp(Math.floor(Number(entry?.previousCareLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        careLevel: clamp(Math.floor(Number(entry?.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        levelsGained: clamp(Math.floor(Number(entry?.levelsGained) || 0), 0, FISH_CARE_LEVEL_MAX - FISH_CARE_LEVEL_MIN),
+        speciesMasteryLevel: clamp(Math.floor(Number(entry?.speciesMasteryLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        speciesMasteryIncreased: entry?.speciesMasteryIncreased === true,
+        speciesMasteredNow: entry?.speciesMasteredNow === true,
+        awardedXp: clamp(Math.floor(Number(entry?.awardedXp) || 0), 0, FISH_DAILY_CARE_XP_CAP),
+        conditions: {
+          properlyFed: entry?.conditions?.properlyFed === true,
+          healthy: entry?.conditions?.healthy === true,
+          cleanEnvironment: entry?.conditions?.cleanEnvironment === true,
+          speciesNeedsSatisfied: entry?.conditions?.speciesNeedsSatisfied === true,
+          comfortable: entry?.conditions?.comfortable === true
+        }
+      })).filter((entry) => entry.fishId) : [],
       narrative: typeof summary.narrative === "string" ? summary.narrative.slice(0, 600) : "",
       rows: Array.isArray(summary.rows) ? summary.rows.map((row) => ({
         text: typeof row?.text === "string" ? row.text : "",
@@ -1307,7 +1454,7 @@ function sanitizeDailyBonusState(rawState) {
         scoreModel: BOROUGH_RECAP_SCORE_MODEL,
         rawScore,
         score,
-        reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+        reward: 0,
         overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
       };
     }
@@ -1329,7 +1476,7 @@ function sanitizeDailyBonusState(rawState) {
       scoreModel: BOROUGH_RECAP_SCORE_MODEL,
       rawScore,
       score,
-      reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+      reward: 0,
       mealsFed: unique.reduce((total, summary) => total + (Number(summary.mealsFed) || 0), 0),
       averageComfort: fishCount
         ? Math.round(unique.reduce((total, summary) => total + ((Number(summary.averageComfort) || 0) * (Number(summary.fishCount) || 0)), 0) / fishCount)
@@ -1373,6 +1520,40 @@ function sanitizeDailyBonusState(rawState) {
   const milestones = source.milestones && typeof source.milestones === "object"
     ? Object.fromEntries(Object.entries(source.milestones).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
+  const weeklyReports = Array.isArray(source.weeklyReports)
+    ? source.weeklyReports.map((report) => {
+      if (!report || typeof report !== "object") return null;
+      const dayKeys = [...new Set((Array.isArray(report.dayKeys) ? report.dayKeys : []).filter((dayKey) => typeof dayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dayKey)))].slice(0, WEEKLY_REPORT_RECAP_COUNT);
+      if (dayKeys.length !== WEEKLY_REPORT_RECAP_COUNT) return null;
+      return {
+        id: typeof report.id === "string" ? report.id.slice(0, 80) : `weekly-${dayKeys.join("-")}`,
+        generatedAt: Math.max(0, Number(report.generatedAt) || 0),
+        dayKeys,
+        averageRecapScore: Number.isFinite(Number(report.averageRecapScore)) ? Number(report.averageRecapScore) : 0,
+        feedingIncome: Math.max(0, Math.floor(Number(report.feedingIncome) || 0)),
+        cleaningIncome: Math.max(0, Math.floor(Number(report.cleaningIncome) || 0)),
+        randomCoinFinds: Math.max(0, Math.floor(Number(report.randomCoinFinds) || 0)),
+        fishLevelUps: Math.max(0, Math.floor(Number(report.fishLevelUps) || 0)),
+        variantsUnlocked: Math.max(0, Math.floor(Number(report.variantsUnlocked) || 0)),
+        milestonesCompleted: Math.max(0, Math.floor(Number(report.milestonesCompleted) || 0)),
+        births: Math.max(0, Math.floor(Number(report.births) || 0)),
+        deaths: Math.max(0, Math.floor(Number(report.deaths) || 0)),
+        bestDayKey: typeof report.bestDayKey === "string" ? report.bestDayKey : "",
+        bestDayScore: Math.round(Number(report.bestDayScore) || 0),
+        weeklyReward: clamp(Math.floor(Number(report.weeklyReward) || 0), 0, WEEKLY_REPORT_REWARD_CAP),
+        rewardPaid: clamp(Math.floor(Number(report.rewardPaid) || 0), 0, WEEKLY_REPORT_REWARD_CAP),
+        rewardSuppressedByPeacefulMode: report.rewardSuppressedByPeacefulMode === true
+      };
+    }).filter(Boolean).sort((left, right) => Number(right.generatedAt) - Number(left.generatedAt)).slice(0, WEEKLY_REPORT_HISTORY_LIMIT)
+    : [];
+  const milestoneCompletions = Array.isArray(source.milestoneCompletions)
+    ? source.milestoneCompletions.map((entry) => entry && typeof entry === "object" ? {
+      milestoneId: typeof entry.milestoneId === "string" ? entry.milestoneId.slice(0, 80) : "",
+      label: typeof entry.label === "string" ? entry.label.slice(0, 120) : "",
+      dayKey: typeof entry.dayKey === "string" ? entry.dayKey : "",
+      time: Math.max(0, Number(entry.time) || 0)
+    } : null).filter((entry) => entry?.milestoneId && entry.dayKey).slice(0, 200)
+    : [];
   const legacySummary = sanitizeSummary(source.summary);
   const pendingCandidates = [...Object.values(summariesByTankId), legacySummary].filter(Boolean);
   const latestPendingDayKey = pendingCandidates.map((summary) => summary.dayKey).filter(Boolean).sort().at(-1) || "";
@@ -1388,6 +1569,8 @@ function sanitizeDailyBonusState(rawState) {
     lastEvaluatedByTankId,
     claimedByTankDay,
     recapHistory,
+    weeklyReports,
+    milestoneCompletions,
     milestones
   };
 }
@@ -1696,6 +1879,7 @@ function reconcileState(rawState) {
     proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
     walletTransactions: [],
+    incomeHistoryByDay: {},
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
     purchaseHistory: [],
@@ -1716,7 +1900,16 @@ function reconcileState(rawState) {
     davyJonesLockerUnlocked: false,
     davyJonesLockerUnlockedAt: 0,
     mealHistory: {},
+    boroughCleaningIncomeDayKey: "",
+    boroughCleaningCoinsEarned: 0,
+    gravelCoinFindDayKey: "",
+    gravelCoinsFoundToday: 0,
     lastGravelCoinFoundAt: 0,
+    boroughOtocinclusCoinFindDayKey: "",
+    boroughOtocinclusCoinsFoundToday: 0,
+    boroughOtocinclusCoinFindLastAttemptAt: 0,
+    fishSpeciesMastery: {},
+    progressionHistory: [],
     unlockedFishSpecies: [],
     unlockedDecorKeys: [],
     storedFish: [],
@@ -1781,6 +1974,34 @@ function reconcileState(rawState) {
   ).map((item) => sanitizeStoredBoatState(item, now)).filter(Boolean);
   const storedSubmarine = storedSubmarines[0] || null;
   const storedBoat = storedBoats[0] || null;
+  const currentDayKey = getLocalDayKey(now);
+  const migratedLastGravelCoinFoundAt = Math.max(
+    Number(incoming.lastGravelCoinFoundAt) || 0,
+    ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
+  );
+  const incomingGravelDayKey = typeof incoming.gravelCoinFindDayKey === "string"
+    ? incoming.gravelCoinFindDayKey
+    : "";
+  const inferredGravelDayKey = incomingGravelDayKey
+    || (migratedLastGravelCoinFoundAt > 0 ? getLocalDayKey(migratedLastGravelCoinFoundAt) : "");
+  const migratedGravelCoinsFoundToday = incomingGravelDayKey
+    ? clamp(Math.floor(Number(incoming.gravelCoinsFoundToday) || 0), 0, GRAVEL_DAILY_COIN_FIND_CAP)
+    : (inferredGravelDayKey === currentDayKey && migratedLastGravelCoinFoundAt > 0 ? 1 : 0);
+  const legacyOtocinclusTanksToday = tanks.filter((tank) => tank.otocinclusCoinFindDayKey === currentDayKey);
+  const incomingOtocinclusDayKey = typeof incoming.boroughOtocinclusCoinFindDayKey === "string"
+    ? incoming.boroughOtocinclusCoinFindDayKey
+    : "";
+  const migratedOtocinclusCoinsFoundToday = incomingOtocinclusDayKey
+    ? clamp(Math.floor(Number(incoming.boroughOtocinclusCoinsFoundToday) || 0), 0, OTOCINCLUS_DAILY_COIN_FIND_CAP)
+    : clamp(
+      legacyOtocinclusTanksToday.reduce((sum, tank) => sum + (Math.floor(Number(tank.otocinclusCoinsFoundToday) || 0)), 0),
+      0,
+      OTOCINCLUS_DAILY_COIN_FIND_CAP
+    );
+  const migratedOtocinclusLastAttemptAt = Math.max(
+    Number(incoming.boroughOtocinclusCoinFindLastAttemptAt) || 0,
+    ...tanks.map((tank) => Number(tank.otocinclusCoinFindLastAttemptAt) || 0)
+  );
 
   const nextState = {
     ...base,
@@ -1805,10 +2026,23 @@ function reconcileState(rawState) {
         direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
         place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
+        category: typeof entry?.category === "string" ? entry.category.slice(0, 40) : "",
         time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now,
         orderId: typeof entry?.orderId === "string" ? entry.orderId.slice(0, 80) : ""
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
+    incomeHistoryByDay: Object.fromEntries(Object.entries(incoming.incomeHistoryByDay && typeof incoming.incomeHistoryByDay === "object" && !Array.isArray(incoming.incomeHistoryByDay) ? incoming.incomeHistoryByDay : {})
+      .filter(([dayKey]) => /^\d{4}-\d{2}-\d{2}$/.test(dayKey))
+      .sort(([left], [right]) => right.localeCompare(left))
+      .slice(0, INCOME_HISTORY_DAY_LIMIT)
+      .map(([dayKey, entry]) => [dayKey, {
+        feeding: Math.max(0, Math.floor(Number(entry?.feeding) || 0)),
+        cleaning: Math.max(0, Math.floor(Number(entry?.cleaning) || 0)),
+        randomFinds: Math.max(0, Math.floor(Number(entry?.randomFinds) || 0)),
+        awards: Math.max(0, Math.floor(Number(entry?.awards) || 0)),
+        sales: Math.max(0, Math.floor(Number(entry?.sales) || 0)),
+        milestones: Math.max(0, Math.floor(Number(entry?.milestones) || 0))
+      }])),
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
@@ -1850,10 +2084,16 @@ function reconcileState(rawState) {
     davyJonesLockerUnlocked: incoming.davyJonesLockerUnlocked === true,
     davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
-    lastGravelCoinFoundAt: Math.max(
-      Number(incoming.lastGravelCoinFoundAt) || 0,
-      ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
-    ),
+    boroughCleaningIncomeDayKey: typeof incoming.boroughCleaningIncomeDayKey === "string" ? incoming.boroughCleaningIncomeDayKey : "",
+    boroughCleaningCoinsEarned: clamp(Math.floor(Number(incoming.boroughCleaningCoinsEarned) || 0), 0, BOROUGH_DAILY_CLEANING_COIN_CAP),
+    gravelCoinFindDayKey: inferredGravelDayKey,
+    gravelCoinsFoundToday: migratedGravelCoinsFoundToday,
+    lastGravelCoinFoundAt: migratedLastGravelCoinFoundAt,
+    boroughOtocinclusCoinFindDayKey: incomingOtocinclusDayKey || (legacyOtocinclusTanksToday.length > 0 ? currentDayKey : ""),
+    boroughOtocinclusCoinsFoundToday: migratedOtocinclusCoinsFoundToday,
+    boroughOtocinclusCoinFindLastAttemptAt: migratedOtocinclusLastAttemptAt,
+    fishSpeciesMastery: sanitizeFishSpeciesMastery(incoming.fishSpeciesMastery),
+    progressionHistory: sanitizeProgressionHistory(incoming.progressionHistory),
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish)
@@ -2532,6 +2772,12 @@ async function applyImportedSaveData(rawState) {
   resetTransientAquariumUiState();
   const now = Date.now();
   state = reconcileState(rawState);
+  const masteryBaseVariantsChanged = typeof normalizeFishSpeciesMasteryBaseVariants === "function"
+    ? normalizeFishSpeciesMasteryBaseVariants()
+    : false;
+  const ownedFishVariantsChanged = typeof normalizeOwnedFishAppearanceUnlocks === "function"
+    ? normalizeOwnedFishAppearanceUnlocks()
+    : false;
   const customImagesChanged = await hydrateCustomImagesFromStorage(state);
   applyPendingWallpaperEngineUserProperties({
     save: false,
@@ -2551,7 +2797,7 @@ async function applyImportedSaveData(rawState) {
   applyContentSettingsEffects(now);
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);
-  if (customImagesChanged || decorPlacementChanged || stateChanged) {
+  if (masteryBaseVariantsChanged || ownedFishVariantsChanged || customImagesChanged || decorPlacementChanged || stateChanged) {
     runtime.gravelStateDirty = true;
   }
   saveState();

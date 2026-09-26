@@ -13,7 +13,7 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 62;
+const STATE_VERSION = 65;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -124,11 +124,26 @@ const DETRITUS_SNACK_FOOD_KEYS = Object.freeze(["algaeWafers"]);
 const COMFORT_MEAL_WINDOW_MS = 12 * HOUR_MS;
 const COMFORT_MEALTIME_BOOST_MS = HOUR_MS;
 const BREEDING_FOOD_BOOST_MS = MINUTE_MS;
-const DAILY_RECAP_REWARD_CAP = 30;
+const DAILY_RECAP_REWARD_CAP = 0;
 const DAILY_RECAP_HISTORY_LIMIT = 45;
+const FISH_DAILY_CARE_XP_CAP = 5;
+const FISH_CARE_LEVEL_MIN = 1;
+const FISH_CARE_LEVEL_MAX = 5;
+const FISH_CARE_LEVEL_LIFESPAN_RATIOS = Object.freeze({
+  2: 0.10,
+  3: 0.25,
+  4: 0.45,
+  5: 0.65
+});
+const WEEKLY_REPORT_RECAP_COUNT = 7;
+const WEEKLY_REPORT_HISTORY_LIMIT = 52;
+const WEEKLY_REPORT_REWARD_MULTIPLIER = 1.5;
+const WEEKLY_REPORT_REWARD_CAP = 12;
+const INCOME_HISTORY_DAY_LIMIT = 60;
 const BOROUGH_DAILY_RECAP_ID = "borough";
 const BOROUGH_RECAP_SCORE_MODEL = "borough-normalized-v1";
 const MAX_BOROUGH_EVENT_HISTORY = 400;
+const PROGRESSION_HISTORY_LIMIT = 240;
 const COMFORT_VERY_LOW_EVENT_MS = 2 * HOUR_MS;
 const TANK_SPACE_FULL_LOAD = 10;
 const TANK_SPACE_MAX_LOAD = 14;
@@ -187,6 +202,17 @@ const DEBUG_BEHAVIOR_BUTTON_CONFIGS = Object.freeze([
   { id: "debugBehaviorClearButton", domKey: "debugBehaviorClearButton", action: "clear", icon: "&#8634;", label: "Clear Behavior", title: "Debug: Clear Forced Behavior", extraClass: "wide" }
 ]);
 const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
+  // Slice-based living swim animation presets. These exercise the same
+  // centralized depth-sweep renderer used by live fish.
+  { id: "swim-preset-sleepy", group: "Swim animation presets", label: "Sleepy / Rest", description: "Barely moving, with a small gentle tail depth sweep and almost no head motion." },
+  { id: "swim-preset-chill", group: "Swim animation presets", label: "Chill", description: "Lazy cruising with a gentle curved rear-body sweep." },
+  { id: "swim-preset-regular", group: "Swim animation presets", label: "Regular", description: "The standard side-view traveling-wave swim animation." },
+  { id: "swim-preset-active", group: "Swim animation presets", label: "Slightly Increased", description: "More purposeful travel with a stronger tail beat and modest front counter-sweep." },
+  { id: "swim-preset-feeding", group: "Swim animation presets", label: "Feeding Chase", description: "Fast food-pursuit propulsion using the same live depth-sweep renderer." },
+  { id: "swim-preset-zoomies", group: "Swim animation presets", label: "Zoomies", description: "Playful high-energy body wave with a strong tail sweep." },
+  { id: "swim-preset-scared", group: "Swim animation presets", label: "Scared / Flee", description: "Strong escape propulsion without turning the fish into a rubbery whole-sprite wobble." },
+  { id: "swim-preset-panicked", group: "Swim animation presets", label: "Panicked", description: "The strongest safe slice-warp preset for an actively fleeing fish." },
+
   // Core renderer states. These are wired to the same pose/state fields used by
   // the live tank renderer so the viewer can inspect the real animation paths.
   { id: "swim", group: "Core renderer", label: "Normal Swim", description: "The standard live-tank swim pose, body flex, bob, and tail rhythm." },
@@ -446,10 +472,10 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   verticalSpread: 0.82,
   targetDistanceMin: 0.16,
   targetDistanceMax: 0.52,
-  headingPersistence: 0.5,
-  hoverChance: 0.05,
-  hoverMinMs: 700,
-  hoverMaxMs: 1700,
+  headingPersistence: 0.68,
+  hoverChance: 0.11,
+  hoverMinMs: 1400,
+  hoverMaxMs: 3600,
   schoolStrength: 0.2,
   schoolSpacingScale: 1,
   schoolDurationScale: 1,
@@ -1144,7 +1170,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "stable-tank",
     label: "Stable Tank",
     requirement: "Finish 3 good recaps and keep recent average comfort at 70%+.",
-    reward: 8,
+    reward: 5,
     unlocks: ["harlequin-rasbora", "pencilfish", "rummy-nose-tetra", "otocinclus", "molly", "livebearer", "swordtail"],
     decorUnlocks: ["driftwood-root__wood__theme-natural.png", "driftwood__wood__theme-natural.png", "moss-bridge__wood-plant__theme-natural.png", "slate__cave-rock__theme-natural__front.png"],
     isMet: (stats) => stats.goodRecaps >= 3 && stats.recentAverageComfort >= 70,
@@ -1156,13 +1182,13 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "happy-habitat",
     label: "Happy Habitat",
-    requirement: "Keep any fish alive for 7 days and recent average comfort at 80%+.",
-    reward: 12,
+    requirement: "Raise at least one fish to Care Level 3 and keep recent average comfort at 80%+.",
+    reward: 5,
     unlocks: ["betta", "blue-ram", "piranha", "wonder-killifish", "rainbowfish", "gourami", "clownfish", "royal-gramma", "seahorse"],
     decorUnlocks: ["large-mushroom-coral__coral__theme-reef.png", "wizard-castle__cave__theme-fantasy__front.png", "blue-castle__cave__theme-fantasy__front.png", "meteor__cave-rock__theme-space__front.png", "volcano__bubbler__theme-natural__front.png", "volcano__bubbler__theme-natural__v2__front.png", "__custom-decor-shop__", "__custom-hide-shop__"],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= WEEK_MS && stats.recentAverageComfort >= 80,
+    isMet: (stats) => stats.hasLevel3Fish && stats.recentAverageComfort >= 80,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / WEEK_MS, label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, WEEK_MS))}/7d` },
+      { value: (Number(stats.highestFishCareLevel) || 0) / 3, label: `Highest fish Care Level ${Math.min(Number(stats.highestFishCareLevel) || 0, 3)}/3` },
       { value: (Number(stats.recentAverageComfort) || 0) / 80, label: `Recent comfort ${Math.min(Number(stats.recentAverageComfort) || 0, 80)}%/80%` }
     ]
   },
@@ -1170,7 +1196,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "master-keeper",
     label: "Master Keeper",
     requirement: "Go 14 days without a death and have one fish at Sparkling comfort.",
-    reward: 18,
+    reward: 8,
     unlocks: ["discus", "angelfish", "yellow-tang", "blue-tang", "sunfish", "pilot-fish"],
     decorUnlocks: [],
     isMet: (stats) => stats.daysSinceLastDeath >= 14 && stats.hasSparklingFish,
@@ -1182,26 +1208,26 @@ const PROGRESSION_MILESTONES = Object.freeze([
   {
     id: "marine-curator",
     label: "Marine Curator",
-    requirement: "Keep any fish alive for 21 days and finish 10 good recaps.",
-    reward: 20,
+    requirement: "Raise at least one fish to Care Level 4 and finish 10 good recaps.",
+    reward: 8,
     unlocks: ["pufferfish", "bull-shark", "hammerhead-shark"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 21 * DAY_MS && stats.goodRecaps >= 10,
+    isMet: (stats) => stats.hasLevel4Fish && stats.goodRecaps >= 10,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (21 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 21 * DAY_MS))}/21d` },
+      { value: (Number(stats.highestFishCareLevel) || 0) / 4, label: `Highest fish Care Level ${Math.min(Number(stats.highestFishCareLevel) || 0, 4)}/4` },
       { value: (Number(stats.goodRecaps) || 0) / 10, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 10)}/10` }
     ]
   },
   {
     id: "borough-legends",
     label: "Borough Legends",
-    requirement: "Keep any fish alive for 30 days, finish 15 good recaps, and have one fish at Sparkling comfort.",
-    reward: 30,
+    requirement: "Master at least one species at Care Level 5, finish 15 good recaps, and have one fish at Sparkling comfort.",
+    reward: 10,
     unlocks: ["great-white-shark", "orca", "__custom-fish-shop__"],
     decorUnlocks: [],
-    isMet: (stats) => stats.oldestLivingFishAgeMs >= 30 * DAY_MS && stats.goodRecaps >= 15 && stats.hasSparklingFish,
+    isMet: (stats) => stats.hasMasteredSpecies && stats.goodRecaps >= 15 && stats.hasSparklingFish,
     progress: (stats) => [
-      { value: (Number(stats.oldestLivingFishAgeMs) || 0) / (30 * DAY_MS), label: `Oldest fish ${formatDuration(Math.min(Number(stats.oldestLivingFishAgeMs) || 0, 30 * DAY_MS))}/30d` },
+      { value: stats.hasMasteredSpecies ? 1 : 0, label: stats.hasMasteredSpecies ? "Species Mastery Lv. 5 reached" : "Needs one Species Mastery Lv. 5" },
       { value: (Number(stats.goodRecaps) || 0) / 15, label: `Good recaps ${Math.min(Number(stats.goodRecaps) || 0, 15)}/15` },
       { value: stats.hasSparklingFish ? 1 : 0, label: stats.hasSparklingFish ? "Sparkling fish found" : "Needs one Sparkling fish" }
     ]
@@ -1210,7 +1236,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "clean-start",
     label: "Clean Start",
     requirement: "Keep cleanliness at 90%+ for 3 daily recaps in a row.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.cleanRecapStreak90 >= 3,
@@ -1220,7 +1246,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "crystal-keeper",
     label: "Crystal Keeper",
     requirement: "Keep cleanliness at 95%+ for 7 daily recaps in a row.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.cleanRecapStreak95 >= 7,
@@ -1230,7 +1256,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "full-bellies",
     label: "Full Bellies",
     requirement: "Keep fish from reaching Starving for 3 daily recaps in a row.",
-    reward: 6,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.allMealsSatisfiedStreak >= 3,
@@ -1240,7 +1266,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "reliable-feeder",
     label: "Reliable Feeder",
     requirement: "Keep fish from reaching Starving for 7 daily recaps in a row.",
-    reward: 14,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.allMealsSatisfiedStreak >= 7,
@@ -1250,7 +1276,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "cozy-corner",
     label: "Cozy Corner",
     requirement: "Average 80%+ comfort for 3 daily recaps in a row.",
-    reward: 6,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.comfort80Streak >= 3,
@@ -1260,7 +1286,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "little-paradise",
     label: "Little Paradise",
     requirement: "Average 90%+ comfort for 3 daily recaps in a row.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.comfort90Streak >= 3,
@@ -1270,7 +1296,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "perfect-hour",
     label: "Perfect Hour",
     requirement: "Have any fish reach Sparkling comfort.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasSparklingFish || stats.sparklingComfortEvents >= 1,
@@ -1283,7 +1309,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "perfect-day",
     label: "Perfect Day",
     requirement: "Have Sparkling comfort during a daily recap with score 8+.",
-    reward: 15,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasPerfectDay,
@@ -1293,7 +1319,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "no-drama-day",
     label: "No Drama Day",
     requirement: "Finish a daily recap with no negative events.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.latestNoDramaDay,
@@ -1303,7 +1329,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "peaceful-week",
     label: "Peaceful Week",
     requirement: "Finish 5 recaps in a row with no attacks or deaths.",
-    reward: 16,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noAttackDeathRecapStreak >= 5,
@@ -1313,7 +1339,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "gentle-keeper",
     label: "Gentle Keeper",
     requirement: "Finish 3 recaps in a row without stress-tapping fish.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noGlassTapStressStreak >= 3,
@@ -1323,7 +1349,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "calm-glass",
     label: "Calm Glass",
     requirement: "Finish 7 recaps in a row without stress-tapping fish.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.noGlassTapStressStreak >= 7,
@@ -1333,7 +1359,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "decorator",
     label: "Decorator",
     requirement: "Place 5 decor items across your aquariums.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.decorPlacedCount >= 5,
@@ -1343,7 +1369,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "habitat-builder",
     label: "Habitat Builder",
     requirement: "Satisfy 10 total fish comfort needs at once.",
-    reward: 10,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.metNeedsCount >= 10,
@@ -1353,7 +1379,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "need-expert",
     label: "Need Expert",
     requirement: "Have every living fish's comfort needs satisfied at once.",
-    reward: 15,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasAllLivingNeedsMet,
@@ -1363,7 +1389,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "community-tank",
     label: "Community Tank",
     requirement: "Keep 5 community-safe fish in one aquarium, without overcrowding, with 70%+ recent comfort and 3 good recaps.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasCommunityTank && stats.goodRecaps >= 3,
@@ -1376,7 +1402,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "big-family",
     label: "Big Family",
     requirement: "Own 10 living fish across your aquariums.",
-    reward: 10,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.livingFishCount >= 10,
@@ -1386,7 +1412,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "careful-curator",
     label: "Careful Curator",
     requirement: "Own 15 living fish without overcrowding any aquarium.",
-    reward: 18,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.livingFishCount >= 15 && stats.noOvercrowdedTanks,
@@ -1399,7 +1425,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "first-generation",
     label: "First Generation",
     requirement: "Hatch one egg.",
-    reward: 8,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hatchedFishEvents >= 1,
@@ -1409,7 +1435,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "nursery-keeper",
     label: "Nursery Keeper",
     requirement: "Raise 3 baby fish past juvenile stage.",
-    reward: 16,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.grownBabyFishCount >= 3,
@@ -1419,7 +1445,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "gravel-luck",
     label: "Gravel Luck",
     requirement: "Find 5 gravel coins.",
-    reward: 5,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.gravelCoinFinds >= 5,
@@ -1429,7 +1455,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "treasure-hunter",
     label: "Treasure Hunter",
     requirement: "Find 25 gravel coins.",
-    reward: 18,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.gravelCoinFinds >= 25,
@@ -1439,7 +1465,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "medicine-cabinet",
     label: "Medicine Cabinet",
     requirement: "Heal fish or use medicine 3 times.",
-    reward: 8,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.healingEvents >= 3,
@@ -1449,7 +1475,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "rescue-keeper",
     label: "Rescue Keeper",
     requirement: "Heal a fish and go 3 days without a death afterward.",
-    reward: 12,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.hasRescueKeeper,
@@ -1459,7 +1485,7 @@ const PROGRESSION_MILESTONES = Object.freeze([
     id: "tank-network",
     label: "Tank Network",
     requirement: "Own 3 aquariums and connect them with Bubble Borough tubes.",
-    reward: 20,
+    reward: 0,
     unlocks: [],
     decorUnlocks: [],
     isMet: (stats) => stats.connectedTubeTankCount >= 3,
@@ -1524,8 +1550,9 @@ const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
-const CLEANING_DAILY_COIN_CAP = 6;
-const CLEANING_FULL_TANK_COIN_CREDIT = 6;
+const CLEANING_DAILY_COIN_CAP = 4;
+const CLEANING_FULL_TANK_COIN_CREDIT = 4;
+const BOROUGH_DAILY_CLEANING_COIN_CAP = 8;
 const GRIME_CACHE_PRECISION = 240;
 const GRIME_CANVAS_RENDER_SCALE = 0.5;
 const GRIME_VISUAL_START_DIRTINESS = 0;
@@ -1602,6 +1629,7 @@ const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_START_RATIO = 0.5;
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_MAX_ALPHA = 0.18;
 const DEPTH_VISUAL_SUBSTRATE_BASE_SHADOW_RGB = Object.freeze({ r: 58, g: 46, b: 33 });
 const DEBUG_DEPTH_TUNING_STORAGE_KEY = "bubble-borough-debug-depth-tuning-v1";
+const DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY = "bubble-borough-debug-swim-animation-speed-v1";
 const DEPTH_EFFECT_LEVEL_MIN = 0;
 const DEPTH_EFFECT_LEVEL_MAX = 4;
 const DEPTH_EFFECT_LEVEL_DEFAULT = 1;
@@ -1676,7 +1704,7 @@ const CUSTOM_FISH_KEY_PREFIX = "__custom-fish-";
 const CUSTOM_DECOR_COST = 10;
 const CUSTOM_HIDE_COST = 10;
 const CUSTOM_BUBBLER_COST = 8;
-const CUSTOM_FISH_COST = 75;
+const CUSTOM_FISH_COST = 125;
 const CUSTOM_BACKGROUND_COST = 20;
 const CUSTOM_CONTENT_STORAGE_LIMIT_BYTES = 25 * 1024 * 1024;
 const CUSTOM_CONTENT_FISH_MAX_BYTES = 2 * 1024 * 1024;
@@ -2114,7 +2142,7 @@ const FISH_ENERGY_CRITICAL_THRESHOLD = 15;
 const FISH_AUTO_FEEDER_COOLDOWN_MS = 8 * MINUTE_MS;
 const FISH_AUTO_FEEDER_TANK_COOLDOWN_MS = 55 * 1000;
 const FISH_NEEDS_MAX_OFFLINE_MS = 6 * HOUR_MS;
-const FISH_DAILY_FEEDING_CARE_COIN_CAP = 8;
+const FISH_DAILY_FEEDING_CARE_COIN_CAP = 5;
 const MOBILE_VIEWPORT_OBJECT_SCALE_MIN = 0.22;
 const SUBSTRATE_CONTOUR_POINTS = 26;
 const ALPHA_HIT_THRESHOLD = 26;
@@ -2232,6 +2260,80 @@ const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
 const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
 const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
 const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+
+// Living side-view fish are rendered as narrow vertical slices that bend along
+// a smooth depth-sweep centerline. World movement remains authoritative; these
+// values only control how the existing sprite visually flexes while swimming.
+const FISH_SWIM_ANIMATION = Object.freeze({
+  sourceOrientation: "right-facing",
+  // Phase 16 performance pass: the approved deformation math is unchanged,
+  // but the renderer no longer spends 100+ draw calls on every fish at every
+  // display size. Large hero fish still use tuner-level detail; smaller and
+  // crowded tanks scale cosmetic slice density down because each slice is a
+  // separate canvas draw call.
+  slices: Object.freeze({ full: 100, medium: 70, small: 44, tiny: 28, highlight: 16, borough: 14 }),
+  crowdedFishThreshold: 12,
+  denseFishThreshold: 22,
+  crowdedSliceScale: 0.75,
+  denseSliceScale: 0.60,
+  minimumGameplaySlices: 24,
+  tailRegionEnd: 0.40,
+  rearRegionEnd: 0.65,
+  middleRegionEnd: 0.80,
+  frontRegionStart: 0.72,
+  cyclesPerSecond: 1.55,
+  // Visual-only cadence multiplier. Fish travel speed remains authoritative in
+  // simulation code and is not affected by this value.
+  defaultSpeedMultiplier: 0.90,
+  debugSpeedMultiplierMin: 0.50,
+  debugSpeedMultiplierMax: 1.50,
+  maximumPhaseAdvanceSeconds: 1 / 30,
+  depthWarpBaseRatio: 0.018,
+  depthWarpDepthRatio: 0.105,
+  depthWarpTailWeight: 0.88,
+  depthWarpBodyWeight: 0.12,
+  frontCounterPhasePi: 0.94,
+  frontDepthWarpBaseRatio: 0.004,
+  frontDepthWarpDepthRatio: 0.018,
+  rearHorizontalShiftBaseRatio: 0.0015,
+  rearHorizontalShiftDepthRatio: 0.0045,
+  frontHorizontalShiftStrength: 0.0025,
+  perspectiveScaleStrength: 0.11,
+  perspectiveTailWeight: 0.85,
+  perspectiveRearWeight: 0.15,
+  perspectiveTailCompressionWeight: 0.075,
+  perspectiveRearCompressionWeight: 0.018,
+  minimumPerspectiveScaleY: 0.88,
+  minimumSliceWidthScale: 0.91,
+  sliceOverlapPx: 0.7,
+  // Slightly longer visual blends keep behavior changes from popping between
+  // animation strengths while leaving simulation movement untouched.
+  transitionMs: 520,
+  settleTransitionMs: 700,
+  emergencyTransitionMs: 240,
+  stationaryIntensityFloor: 0.04,
+  stationaryFrequencyFloor: 0.08,
+  debugGuides: false,
+  presets: Object.freeze({
+    sleepy: Object.freeze({ tailIntensity: 0.16, animationSpeed: 0.38, depthWarp: 0.18, perspective: 0.05, frontWiggle: 0.03 }),
+    chill: Object.freeze({ tailIntensity: 0.32, animationSpeed: 0.62, depthWarp: 0.32, perspective: 0.07, frontWiggle: 0.07 }),
+    regular: Object.freeze({ tailIntensity: 0.55, animationSpeed: 1.00, depthWarp: 0.55, perspective: 0.12, frontWiggle: 0.15 }),
+    active: Object.freeze({ tailIntensity: 0.66, animationSpeed: 1.24, depthWarp: 0.64, perspective: 0.14, frontWiggle: 0.18 }),
+    feeding: Object.freeze({ tailIntensity: 0.76, animationSpeed: 1.50, depthWarp: 0.72, perspective: 0.16, frontWiggle: 0.22 }),
+    zoomies: Object.freeze({ tailIntensity: 0.88, animationSpeed: 1.90, depthWarp: 0.84, perspective: 0.19, frontWiggle: 0.28 }),
+    scared: Object.freeze({ tailIntensity: 0.92, animationSpeed: 2.05, depthWarp: 0.90, perspective: 0.21, frontWiggle: 0.32 }),
+    panicked: Object.freeze({ tailIntensity: 1.00, animationSpeed: 2.35, depthWarp: 1.00, perspective: 0.24, frontWiggle: 0.40 })
+  })
+});
+
+const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
+  resetAfterMs: 260,
+  tiltResponsePerSecond: 11.0,
+  scaleResponsePerSecond: 13.0,
+  wiggleResponsePerSecond: 15.0,
+  swayResponsePerSecond: 13.0
+});
+
 const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
@@ -2368,9 +2470,9 @@ const OTOCINCLUS_GRAVEL_SCAN_MIN_PICKS = 2;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_PICKS = 5;
 const OTOCINCLUS_GRAVEL_SCAN_MIN_DURATION_MS = 5600;
 const OTOCINCLUS_GRAVEL_SCAN_MAX_DURATION_MS = 10800;
-const OTOCINCLUS_COIN_FIND_CHANCE = 0.12;
-const OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 5 * MINUTE_MS;
-const OTOCINCLUS_DAILY_COIN_FIND_CAP = 5;
+const OTOCINCLUS_COIN_FIND_CHANCE = 0.08;
+const OTOCINCLUS_COIN_FIND_ATTEMPT_COOLDOWN_MS = 15 * MINUTE_MS;
+const OTOCINCLUS_DAILY_COIN_FIND_CAP = 2;
 const OTOCINCLUS_GLASS_SWITCH_CHANCE_AFTER_SCAN = 0.34;
 const OTOCINCLUS_GRAVEL_SPIT_MIN_MS = 420;
 const OTOCINCLUS_GRAVEL_SPIT_MAX_MS = 720;
@@ -2401,15 +2503,23 @@ const FISH_ENTRY_NOSE_DIVE_TILT = Math.PI * 0.5;
 const FEED_CHASE_MULTIPLIER = 2.5;
 const DECOR_HANGOUT_DEFAULT_OCCUPANCY_LIMIT = 2;
 const DECOR_HANGOUT_SICK_OCCUPANCY_LIMIT = 1;
-const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.16;
-const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.006;
-const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.003;
-const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.035;
-const SAME_SPECIES_FOLLOW_MIN_MS = 650;
-const SAME_SPECIES_FOLLOW_MAX_MS = 1250;
-const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.04;
-const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.095;
-const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.05;
+const SAME_SPECIES_FOLLOW_RADIUS_NORM = 0.24;
+const GLOBAL_FISH_VISUAL_SCALE = 0.85;
+const SAME_SPECIES_FOLLOW_BASE_CHANCE = 0.018;
+const SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS = 0.012;
+const SAME_SPECIES_FOLLOW_MAX_CHANCE = 0.16;
+const SAME_SPECIES_FOLLOW_MIN_MS = 8000;
+const SAME_SPECIES_FOLLOW_MAX_MS = 22000;
+const SAME_SPECIES_FOLLOW_SPACING_MIN_NORM = 0.05;
+const SAME_SPECIES_FOLLOW_SPACING_MAX_NORM = 0.115;
+const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.034;
+const SAME_SPECIES_SCHOOL_SLOT_MIN_MS = 9000;
+const SAME_SPECIES_SCHOOL_SLOT_MAX_MS = 18000;
+const SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC = 4.6;
+const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
+const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
+const SAME_SPECIES_SCHOOL_SEPARATION_RADIUS_NORM = 0.09;
+const SAME_SPECIES_SCHOOL_COHESION_BLEND = 0.08;
 const BABY_FISH_SCALE_MULTIPLIER = 0.45;
 const BABY_FISH_GROWTH_DURATION_MS = 3 * DAY_MS;
 const FISH_ELDERLY_LIFE_FRACTION = 0.85;
@@ -2432,8 +2542,9 @@ const FISH_EGG_INITIAL_SCALE = 0.5;
 const FISH_EGG_CRACKED_SCALE = 0.75;
 const FISH_EGG_HATCH_SCALE = 0.9;
 const FISH_EGG_CRACKED_START_PROGRESS = 0.5;
-const GRAVEL_COIN_FIND_CHANCE = 0.08;
-const GRAVEL_COIN_FIND_COOLDOWN_MS = 15 * MINUTE_MS;
+const GRAVEL_COIN_FIND_CHANCE = 0.05;
+const GRAVEL_COIN_FIND_COOLDOWN_MS = 30 * MINUTE_MS;
+const GRAVEL_DAILY_COIN_FIND_CAP = 2;
 const GRAVEL_COIN_GLINT_DURATION_MS = 1900;
 const SEDIMENT_CLOUD_DURATION_MIN_MS = 2500;
 const SEDIMENT_CLOUD_DURATION_MAX_MS = 4000;
@@ -3201,7 +3312,7 @@ const FISH_TYPES = [
     "id": "goldfish",
     "name": "Goldfish",
     "genetics": "natural",
-    "cost": 5,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/goldfish_common.png",
     "description": "A familiar favorite with a round body, flowing fins, and an easygoing personality. Goldfish spend their days calmly exploring the tank and checking out just about everything. Fun fact: Not actual gold. Who knew?",
@@ -3298,7 +3409,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "guppy",
@@ -3387,7 +3499,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "betta",
@@ -4477,7 +4590,7 @@ const FISH_TYPES = [
     "id": "tetra",
     "name": "Tetra",
     "genetics": "natural",
-    "cost": 5,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/tetra_neon.png",
     "assetVariants": [
@@ -4487,13 +4600,6 @@ const FISH_TYPES = [
       "/assets/fish/tetra_cave.png",
       "/assets/fish/tetra_black-phantom.png",
       "/assets/fish/tetra_emperor.png",
-      "/assets/fish/tetra_pink-blush-black-skirt.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-purple.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-blue.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-green.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-pink.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-red.png",
-      "/assets/fish/tetra_neon-black-skirt-neon-orange.png",
       "/assets/fish/tetra_white-skirt.png",
       "/assets/fish/tetra_cochus-blue.png",
       "/assets/fish/tetra_penguin.png",
@@ -4513,13 +4619,6 @@ const FISH_TYPES = [
       "Tetra Cave",
       "Tetra Black Phantom",
       "Tetra Emperor",
-      "Pink Blush Black Skirt Tetra",
-      "Neon Black Skirt Tetra - Neon Purple",
-      "Neon Black Skirt Tetra - Neon Blue",
-      "Neon Black Skirt Tetra - Neon Green",
-      "Neon Black Skirt Tetra - Neon Pink",
-      "Neon Black Skirt Tetra - Neon Red",
-      "Neon Black Skirt Tetra - Neon Orange",
       "Tetra White Skirt",
       "Tetra Cochus Blue",
       "Tetra Penguin",
@@ -4598,7 +4697,8 @@ const FISH_TYPES = [
       "waterNote": "Freshwater required."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "molly",
@@ -5922,7 +6022,7 @@ const FISH_TYPES = [
     "name": "Firefish",
     "genetics": "natural",
     "type": "Fish",
-    "cost": 8,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/firefish_1.png",
     "description": "A tiny reef dartfish with a glowing magenta tail. Firefish hover above a favorite crevice, then flash back to safety when nervous.",
@@ -5994,7 +6094,8 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "six-line-wrasse",
@@ -6632,7 +6733,7 @@ const FISH_TYPES = [
     "id": "cardinal",
     "name": "Cardinal",
     "genetics": "natural",
-    "cost": 10,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/cardinalfish_red.png",
     "description": "A natural cardinal with selectable appearances.",
@@ -6717,13 +6818,14 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "chromis",
     "name": "Chromis",
     "genetics": "natural",
-    "cost": 10,
+    "cost": 4,
     "mealCoins": 1,
     "asset": "/assets/fish/chromis_blue.png",
     "description": "A natural chromis with selectable appearances.",
@@ -6806,7 +6908,8 @@ const FISH_TYPES = [
       "waterNote": "Saltwater required; brackish specialists use this system."
     },
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
-    "Fish_enabled": true
+    "Fish_enabled": true,
+    "starterFish": true
   },
   {
     "id": "cichlid",
@@ -7735,22 +7838,22 @@ const FISH_TYPES = [
     "type": "Fish",
     "cost": 9,
     "mealCoins": 1,
-    "asset": "/assets/fish/tetra_glofish_cosmic-blue.png",
+    "asset": "/assets/fish/tetra_neon-blue.png",
     "assetVariants": [
-      "/assets/fish/tetra_glofish_cosmic-blue.png",
-      "/assets/fish/tetra_glofish_electric-green.png",
-      "/assets/fish/tetra_glofish_galactic-purple.png",
-      "/assets/fish/tetra_glofish_moonrise-pink.png",
-      "/assets/fish/tetra_glofish_starfire-red.png",
-      "/assets/fish/tetra_glofish_sunburst-orange.png"
+      "/assets/fish/tetra_neon-blue.png",
+      "/assets/fish/tetra_neon-green.png",
+      "/assets/fish/tetra_neon-purple.png",
+      "/assets/fish/tetra_neon-pink.png",
+      "/assets/fish/tetra_neon-red.png",
+      "/assets/fish/tetra_neon-orange.png"
     ],
     "variantLabels": [
-      "Cosmic Blue",
-      "Electric Green",
-      "Galactic Purple",
-      "Moonrise Pink",
-      "Starfire Red",
-      "Sunburst Orange"
+      "Neon Blue",
+      "Neon Green",
+      "Neon Purple",
+      "Neon Pink",
+      "Neon Red",
+      "Neon Orange"
     ],
     "description": "A tiny tetra with stable, high-intensity bioluminescent color.",
     "aboutAttribution": "PROTEUS BIODYNE",
@@ -7927,7 +8030,7 @@ const TANK_TYPE_META = Object.freeze({
     name: "Aquarium",
     shortName: "Aquarium",
     description: "A full-size aquarium with room for fish and decor.",
-    cost: 65,
+    cost: 125,
     waterTypes: ["freshwater", "saltwater"],
     defaultWaterType: "freshwater",
     baseCleanDays: DEFAULT_TANK_DIRTY_DAYS,
@@ -11955,6 +12058,8 @@ const dom = {
   debugSidebar: document.querySelector("#debugSidebar"),
   debugMenuGameState: document.querySelector("#debugMenuGameState"),
   debugMenuFish: document.querySelector("#debugMenuFish"),
+  debugInspectFishProgressionButton: document.querySelector("#debugInspectFishProgressionButton"),
+  debugFishProgressionReadout: document.querySelector("#debugFishProgressionReadout"),
   debugMenuDirtiness: document.querySelector("#debugMenuDirtiness"),
   debugMenuBehaviors: document.querySelector("#debugMenuBehaviors"),
   debugFishBehaviorPreviewButton: document.querySelector("#debugFishBehaviorPreviewButton"),
@@ -11991,6 +12096,10 @@ const dom = {
   debugNotificationUiButton: document.querySelector("#debugNotificationUiButton"),
   debugFishActionIndicatorsButton: document.querySelector("#debugFishActionIndicatorsButton"),
   debugFrameProfilerButton: document.querySelector("#debugFrameProfilerButton"),
+  debugAnimationTuner: document.querySelector("#debugAnimationTuner"),
+  debugSwimAnimationSpeedSlider: document.querySelector("#debugSwimAnimationSpeedSlider"),
+  debugSwimAnimationSpeedOutput: document.querySelector("#debugSwimAnimationSpeedOutput"),
+  debugSwimAnimationSpeedResetButton: document.querySelector("#debugSwimAnimationSpeedResetButton"),
   debugDepthTuner: document.querySelector("#debugDepthTuner"),
   debugDepthTunerReadout: document.querySelector("#debugDepthTunerReadout"),
   debugDepthTunerResetButton: document.querySelector("#debugDepthTunerResetButton"),
@@ -12454,6 +12563,8 @@ const runtime = {
   debugNotificationUiEnabled: false,
   debugFishActionIndicatorsEnabled: false,
   debugFrameProfilerEnabled: false,
+  debugSwimAnimationSpeedMultiplier: null,
+  debugSwimAnimationSpeedLoaded: false,
   debugDepthTuning: null,
   debugDepthTuningLoaded: false,
   debugDepthTuningApplyTimer: 0,
@@ -12473,6 +12584,13 @@ const runtime = {
   fishRenderRecordPool: [],
   fishRenderLayerBuckets: null,
   fishRenderPassBuckets: null,
+  fishSwimAnimationStates: new Map(),
+  fishVisualPoseSmoothingStates: new Map(),
+  fishSwimSliceProfileCache: new Map(),
+  fishSwimAnimationDebugMetrics: new Map(),
+  // Temporary rendering-only tuner validation override. Empty means automatic
+  // behavior-driven swim preset selection remains authoritative.
+  debugSwimAnimationPresetOverride: "",
   fishSpeciesMergeCache: new Map(),
   deferredStateSaveDirty: false,
   deferredStateSaveRequestedAt: 0,
@@ -14357,6 +14475,7 @@ function sanitizeMemorialRecord(entry) {
     name: String(entry.name).trim().slice(0, 40),
     speciesId: String(entry.speciesId || ""),
     speciesName: String(entry.speciesName || "Fish").slice(0, 60),
+    careLevel: clamp(Math.floor(Number(entry.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
     acquiredAt: Number.isFinite(Number(entry.acquiredAt)) ? Number(entry.acquiredAt) : null,
     deathAt: Number.isFinite(Number(entry.deathAt)) ? Number(entry.deathAt) : Date.now(),
     cause: String(entry.cause || "Unknown").slice(0, 180),
@@ -14484,6 +14603,7 @@ function recordFishMemorial(fish, tank = getCurrentTank(), cause = "Unknown", no
     name: fish.name,
     speciesId: fish.speciesId,
     speciesName: species?.name || "Fish",
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
     acquiredAt: fish.acquiredAt,
     deathAt: Number(fish.deadAt) || now,
     cause: String(cause || "Unknown").replace(/^.*?died\s*/i, "").trim() || "Unknown",
@@ -15218,6 +15338,7 @@ function buildMemorialHistoryMarkup() {
     const livedDays = record.acquiredAt ? Math.max(0, Math.floor((record.deathAt - record.acquiredAt) / DAY_MS)) : null;
     const detail = [
       record.speciesName,
+      `Lv. ${record.careLevel}`,
       record.neighborhoodName,
       livedDays === null ? "" : `${livedDays} ${pluralize("day", livedDays)}`
     ].filter(Boolean).join(" · ");
@@ -24703,6 +24824,8 @@ async function init() {
   const rawState = earlyRawState || loadState();
   const needsReconcileSave = shouldPersistReconciledState(rawState);
   state = reconcileState(rawState);
+  const masteryBaseVariantsChanged = normalizeFishSpeciesMasteryBaseVariants();
+  const ownedFishVariantsChanged = normalizeOwnedFishAppearanceUnlocks();
   const customImagesChanged = await hydrateCustomImagesFromStorage(state);
   const wallpaperEnginePropertyChanged = applyPendingWallpaperEngineUserProperties({
     save: false,
@@ -24785,7 +24908,7 @@ async function init() {
   const now = Date.now();
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);
-  if (needsReconcileSave || customImagesChanged || wallpaperEnginePropertyChanged || tutorialResumeChanged || decorPlacementChanged || stateChanged) {
+  if (needsReconcileSave || masteryBaseVariantsChanged || ownedFishVariantsChanged || customImagesChanged || wallpaperEnginePropertyChanged || tutorialResumeChanged || decorPlacementChanged || stateChanged) {
     saveState();
   }
   renderUi(now);
@@ -25700,10 +25823,16 @@ function getBrowserViewportSize() {
     return { width: TANK_WIDTH, height: TANK_HEIGHT };
   }
   const root = document.documentElement;
+  // The visual viewport can briefly report the transformed composition's
+  // dimensions while an editor is rebuilding.  Ratio Lock must use the
+  // browser layout viewport instead, otherwise a transient editor resize can
+  // make the whole aquarium look permanently zoomed out.
+  const layoutWidth = window.innerWidth || root?.clientWidth;
+  const layoutHeight = window.innerHeight || root?.clientHeight;
   const visualViewport = window.visualViewport;
   return {
-    width: Math.max(1, Math.round(visualViewport?.width || window.innerWidth || root?.clientWidth || TANK_WIDTH)),
-    height: Math.max(1, Math.round(visualViewport?.height || window.innerHeight || root?.clientHeight || TANK_HEIGHT))
+    width: Math.max(1, Math.round(layoutWidth || visualViewport?.width || TANK_WIDTH)),
+    height: Math.max(1, Math.round(layoutHeight || visualViewport?.height || TANK_HEIGHT))
   };
 }
 
@@ -26818,6 +26947,10 @@ function bindEvents() {
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
   dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
+  dom.debugSwimAnimationSpeedSlider?.addEventListener("input", (event) => {
+    handleDebugSwimAnimationSpeedInput(event.currentTarget);
+  });
+  dom.debugSwimAnimationSpeedResetButton?.addEventListener("click", () => resetDebugSwimAnimationSpeedTuner());
   dom.debugDepthTuner?.addEventListener("input", (event) => {
     const input = event.target?.closest?.("[data-depth-tuning-key]");
     if (input) {
@@ -26869,6 +27002,7 @@ function bindEvents() {
   dom.debugInfectFishButton?.addEventListener("click", () => infectSelectedFishDebug());
   dom.debugCureFishButton?.addEventListener("click", () => cureSelectedFishDebug());
   dom.debugReviveAllFishButton?.addEventListener("click", () => restoreAllFishHealthDebug());
+  dom.debugInspectFishProgressionButton?.addEventListener("click", () => inspectFishProgressionDebug());
   dom.addCoinsButton.addEventListener("click", () => addDebugCoins(10));
   dom.addHundredCoinsButton?.addEventListener("click", () => addDebugCoins(100));
   dom.maxDirtButton.addEventListener("click", () => increaseTankDirtinessDebug());
@@ -29683,7 +29817,20 @@ function isStageEditTrayActuallyVisible(tray) {
   }
 
   const rect = tray.getBoundingClientRect();
-  return rect.width > 1 && rect.height > 1;
+  if (rect.width <= 1 || rect.height <= 1) {
+    return false;
+  }
+
+  // A closing or rebuilt tray can retain dimensions while sitting outside the
+  // tank stage.  It must not keep the edit camera in its zoomed-out framing.
+  const stageRect = dom.tankStage?.getBoundingClientRect?.();
+  if (!stageRect || stageRect.width <= 1 || stageRect.height <= 1) {
+    return true;
+  }
+  return rect.right > stageRect.left
+    && rect.left < stageRect.right
+    && rect.bottom > stageRect.top
+    && rect.top < stageRect.bottom;
 }
 
 function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
@@ -29810,14 +29957,32 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 }
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
-  const viewKey = runtime.editTankMode
-    ? `decor:${isStageEditTrayActuallyVisible(dom.editDecorTray)}`
+  const activeEditTray = runtime.editTankMode
+    ? dom.editDecorTray
     : runtime.fishEditMode
-      ? `fish:${isStageEditTrayActuallyVisible(dom.editFishTray)}`
+      ? dom.editFishTray
       : runtime.equipmentEditMode
-        ? `equipment:${isStageEditTrayActuallyVisible(dom.editEquipmentTray)}`
+        ? dom.editEquipmentTray
         : runtime.tankEditMode
-          ? `tank:${isStageEditTrayActuallyVisible(dom.editTankTray)}`
+          ? dom.editTankTray
+          : null;
+  const trayRect = isStageEditTrayActuallyVisible(activeEditTray)
+    ? getElementRectInTankStageLayout(activeEditTray)
+    : null;
+  // The gravel editor can change tray height without changing its hidden
+  // state. Include its geometry in the cache key so a stale edit-camera
+  // target is never retained after the controls reflow or close.
+  const trayGeometryKey = trayRect
+    ? [trayRect.left, trayRect.top, trayRect.width, trayRect.height].map((value) => Math.round(value)).join(",")
+    : "hidden";
+  const viewKey = runtime.editTankMode
+    ? `decor:${trayGeometryKey}`
+    : runtime.fishEditMode
+      ? `fish:${trayGeometryKey}`
+      : runtime.equipmentEditMode
+        ? `equipment:${trayGeometryKey}`
+        : runtime.tankEditMode
+          ? `tank:${trayGeometryKey}`
           : "view";
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;
@@ -32658,10 +32823,12 @@ function normalizeFishDefinition(entry, index, options = {}) {
   const speedMinFloor = behavior === "snail" ? 0.00001 : (slowSurfaceBehavior ? 0.00005 : 0.012);
   const speedMaxCeiling = behavior === "snail" ? 0.001 : (slowSurfaceBehavior ? 0.006 : 0.095);
   const needs = normalizeFishNeeds(entry);
+  const starterFish = entry.starterFish === true;
 
   const normalized = {
     id,
     Fish_enabled: entry.Fish_enabled !== false && entry.fish_enabled !== false,
+    starterFish,
     seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
     genetics: String(entry.genetics || "natural").trim().toLowerCase() === "enhanced" ? "enhanced" : "natural",
@@ -32722,11 +32889,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
       : (diet === "detritus" ? 1 : 0),
     shadowScale: clamp(Number(entry.shadowScale) || 0.28, 0.14, 0.5),
     defaultScale: clamp(Number(entry.defaultScale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX),
-    unlockRequirement: getSpeciesUnlockRequirement(id) || (
-      typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
-        ? entry.unlockRequirement.trim().toLowerCase()
-        : null
-    ),
+    unlockRequirement: starterFish
+      ? null
+      : getSpeciesUnlockRequirement(id) || (
+        typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
+          ? entry.unlockRequirement.trim().toLowerCase()
+          : null
+      ),
     heartCount: Number.isFinite(explicitHeartCount)
       ? clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS)
       : null,
@@ -32734,6 +32903,8 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    customAsset: entry.customAsset === true,
+    customUploadProduct: entry.customUploadProduct === true,
     davyMutation: entry.davyMutation === true,
     proteusZombie: entry.proteusZombie === true,
     proteusExclusive: entry.proteusExclusive === true,
@@ -32801,6 +32972,44 @@ function getFishAppearanceVariantKey(path) {
   return typeof path === "string" ? path.split(/[?#]/)[0].split("/").pop() : "";
 }
 
+function isFishProgressionAppearanceAsset(species, path) {
+  const key = getFishAppearanceVariantKey(path);
+  if (!species || !key) return false;
+
+  const baseKey = getFishAppearanceVariantKey(species.asset);
+  if (key === baseKey) return true;
+
+  // Layered/state art is part of rendering or behavior, not a cosmetic skin.
+  // Keep these files out of the Care Level unlock pool even if a catalog entry
+  // accidentally includes them in assetVariants.
+  const authoredStateAssets = [
+    species.overlayAsset,
+    species.antennaAsset,
+    species.legAsset
+  ]
+    .map(getFishAppearanceVariantKey)
+    .filter(Boolean);
+  if (authoredStateAssets.includes(key)) return false;
+
+  const stem = key.replace(/\.[^./]+$/, "");
+  return !/(?:^|[_-])(?:side|bottom|top|front|back|left|right|antenna|feelers?|legs?|inflated|deflated|puffed|puff)(?:$|[_-])/i.test(stem);
+}
+
+function isFishCurrentProgressionAppearanceAsset(species, path) {
+  if (!isFishProgressionAppearanceAsset(species, path)) return false;
+  if (!path || /^(data:|blob:)/i.test(path)) return true;
+  // Normal fish artwork is delivered from the generated sprite atlases. If a
+  // catalog entry outlives the sprite frame it used to reference, do not let
+  // BubbleBodega or progression surface a broken/removed appearance. Tests and
+  // pre-atlas tooling can omit the sprite helper and retain authored data.
+  if (typeof getSpriteAssetFrame !== "function") return true;
+  return Boolean(getSpriteAssetFrame(path));
+}
+
+function getFishProgressionAppearanceVariants(species) {
+  return getFishAssetVariants(species).filter((path) => isFishCurrentProgressionAppearanceAsset(species, path));
+}
+
 function getFishVariantLabelFromTileName(path, index = 0) {
   let filename = getFishAppearanceVariantKey(path).replace(/\.[^./]+$/, "");
   try {
@@ -32809,9 +33018,8 @@ function getFishVariantLabelFromTileName(path, index = 0) {
     // Keep the raw filename if an authored asset contains malformed escaping.
   }
   const descriptiveName = filename.match(/^[^_]+_(.+)$/)?.[1] || "";
-  if (!descriptiveName || /^\d+$/.test(descriptiveName)) {
-    return index === 0 ? "Main" : `Variant ${index}`;
-  }
+  if (!descriptiveName) return index === 0 ? "Main" : `Variant ${index}`;
+  if (/^\d+$/.test(descriptiveName)) return `Variant ${Number(descriptiveName)}`;
   return descriptiveName
     .split(/[-_]+/)
     .filter(Boolean)
@@ -32819,14 +33027,125 @@ function getFishVariantLabelFromTileName(path, index = 0) {
     .join(" ");
 }
 
+function formatFishVariantUnlockChancePercent(percent) {
+  const value = Math.max(0, Number(percent) || 0);
+  if (value <= 0) return "0%";
+  if (Math.abs(value - Math.round(value)) < 0.05) return `${Math.round(value)}%`;
+  return `${value.toFixed(1).replace(/\.0$/, "")}%`;
+}
+
+// Appearance progression is deliberately species-availability agnostic.
+// Purchase/store callers must check isFishSpeciesShopUnlocked() separately first.
+// Keeping the two gates independent prevents variant mastery from unlocking a fish
+// type and prevents a species milestone from granting every authored appearance.
+function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
+  if (!species) return false;
+  const key = typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(variantKey)
+    : String(variantKey || "").split(/[?#]/)[0].split("/").pop();
+  if (!key) return false;
+
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  if (!progressionEnabled) return true;
+
+  const allowDebugBypass = options.allowDebugBypass !== false;
+  if (allowDebugBypass && typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return true;
+  }
+
+  const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : getFishAppearanceVariantKey(species?.asset);
+  if (baseKey && key === baseKey) return true;
+
+  const mastery = typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species?.id, { species, create: false })
+    : null;
+  const unlockedKeys = Array.isArray(mastery?.unlockedVariantKeys)
+    ? mastery.unlockedVariantKeys
+    : [];
+  return unlockedKeys.some((unlockedKey) => getFishAppearanceVariantKey(unlockedKey) === key);
+}
+
 function getFishStoreVariants(species) {
-  return getFishAssetVariants(species).map((path, index) => ({
-    key: getFishAppearanceVariantKey(path),
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const allPaths = getFishAssetVariants(species);
+  const paths = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : allPaths;
+  const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : getFishAppearanceVariantKey(species?.asset);
+  // Store rendering is read-only progression inspection. In particular, Debug
+  // Mode may preview/purchase-bypass locked appearances, but simply opening the
+  // store must never create or mutate a real Species Mastery record.
+  const mastery = progressionEnabled && typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species?.id, { species, create: false })
+    : null;
+  const unlockedKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  if (baseKey) unlockedKeys.add(baseKey);
+  const readOnlyMastery = progressionEnabled
+    ? { ...(mastery || {}), unlockedVariantKeys: [...unlockedKeys] }
+    : null;
+
+  const actualLockedPool = progressionEnabled && typeof getFishLockedAppearanceVariantPool === "function"
+    ? getFishLockedAppearanceVariantPool(species, readOnlyMastery)
+    : null;
+  const actualLockedKeys = Array.isArray(actualLockedPool)
+    ? new Set(actualLockedPool.map((entry) => getFishAppearanceVariantKey(entry?.key || entry?.path)).filter(Boolean))
+    : null;
+
+  const authored = paths.map((path) => {
+    const index = Math.max(0, allPaths.indexOf(path));
+    const key = getFishAppearanceVariantKey(path);
+    const isBase = Boolean(baseKey && key === baseKey);
+    const unlocked = !progressionEnabled
+      || isBase
+      || (actualLockedKeys ? !actualLockedKeys.has(key) : unlockedKeys.has(key));
+    return { path, index, key, isBase, unlocked };
+  });
+  const lockedCount = Array.isArray(actualLockedPool)
+    ? actualLockedPool.length
+    : authored.filter((entry) => !entry.unlocked).length;
+  const unlockChance = lockedCount > 0 ? 1 / lockedCount : 0;
+  const unlockChanceLabel = lockedCount > 0
+    ? formatFishVariantUnlockChancePercent(unlockChance * 100)
+    : "";
+
+  const debugBypassActive = progressionEnabled
+    && typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled();
+
+  return authored.map(({ path, index, key, isBase, unlocked }) => ({
+    key,
     image: species?.behavior === "sucker" ? (getFishDirectionalSpritePath(path, "side") || path) : path,
     label: String(species?.variantLabels?.[index] || "").trim()
       || getFishVariantLabelFromTileName(path, index),
-    requirements: species?.variantRequirements?.[getFishAppearanceVariantKey(path)] || species?.careRequirements || null
+    requirements: species?.variantRequirements?.[key] || species?.careRequirements || null,
+    isBase,
+    // `unlocked` / `locked` always describe real saved progression.
+    // `debugBypassed` is temporary presentation/purchase access only.
+    unlocked,
+    locked: !unlocked,
+    debugBypassed: debugBypassActive && !unlocked,
+    unlockChance: unlocked ? 0 : unlockChance,
+    unlockChanceLabel: unlocked ? "" : unlockChanceLabel
   }));
+}
+
+function getFishStoreVariantProgressMessage(species, variants = getFishStoreVariants(species)) {
+  if (!species || typeof isFishSpeciesCareProgressionEligible !== "function" || !isFishSpeciesCareProgressionEligible(species)) return "";
+  const entries = Array.isArray(variants) ? variants : [];
+  if (entries.length <= 1) return "";
+  const locked = entries.filter((variant) => variant?.locked === true);
+  if (!locked.length) return "All variants discovered.";
+  if (locked.length === 1) return "1 variant remains. Guaranteed on the next level-up.";
+  const chanceLabel = locked[0]?.unlockChanceLabel || formatFishVariantUnlockChancePercent(100 / locked.length);
+  return `${locked.length} variants remain. ${chanceLabel} chance each on the next level-up.`;
 }
 
 async function discoverFishAppearanceVariants(catalog, availableAssets = null) {
@@ -37165,7 +37484,7 @@ function getFishDisplaySourceSpecies(fish, species = getSpeciesForFish(fish)) {
 }
 
 function getFishDisplayScaleForSpecies(species = null) {
-  return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish");
+  return getViewportStableObjectScale("fish") * getAquariumPhysicalAssetScale("fish") * GLOBAL_FISH_VISUAL_SCALE;
 }
 
 function getFishVisualCatalogWidth(species = null) {
@@ -37353,6 +37672,36 @@ function hashStringToUint32(key = "") {
     hash = ((hash * 33) + character.charCodeAt(0)) >>> 0;
   }
   return hash >>> 0;
+}
+
+function resolveCanonicalFishAppearanceSelection(fish, species) {
+  const variants = getFishAssetVariants(species);
+  if (!variants.length) {
+    return {
+      appearanceVariant: 0,
+      appearanceVariantKey: typeof fish?.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
+      appearanceAssetPath: typeof fish?.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null
+    };
+  }
+
+  const storedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
+  const storedVariantKey = getFishAppearanceVariantKey(fish?.appearanceVariantKey);
+  let index = storedAssetKey
+    ? variants.findIndex((path) => getFishAppearanceVariantKey(path) === storedAssetKey)
+    : -1;
+  if (index < 0 && storedVariantKey) {
+    index = variants.findIndex((path) => getFishAppearanceVariantKey(path) === storedVariantKey);
+  }
+  if (index < 0) {
+    index = normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish);
+  }
+
+  const appearanceAssetPath = variants[index] || variants[0] || species?.asset || null;
+  return {
+    appearanceVariant: Math.max(0, variants.indexOf(appearanceAssetPath)),
+    appearanceVariantKey: getFishAppearanceVariantKey(appearanceAssetPath) || null,
+    appearanceAssetPath
+  };
 }
 
 function normalizeFishAppearanceVariantIndex(value, species, fallbackFish = null) {
@@ -39309,7 +39658,128 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v63 adds account-wide species mastery for Care Level progression. The
+  // detailed record shape is normalized by sanitizeFishSpeciesMastery; this
+  // migration only guarantees the new top-level object exists so older saves
+  // are persisted in the current schema after reconciliation.
+  if (incomingVersion < 63) {
+    migrated = {
+      ...migrated,
+      fishSpeciesMastery: migrated.fishSpeciesMastery && typeof migrated.fishSpeciesMastery === "object" && !Array.isArray(migrated.fishSpeciesMastery)
+        ? migrated.fishSpeciesMastery
+        : {}
+    };
+  }
+
+  // v64 adds a capped structured progression history. Phase 18 initially
+  // records fish appearance discoveries here; later progression phases can
+  // extend the same history without scraping human-readable tank messages.
+  if (incomingVersion < 64) {
+    migrated = {
+      ...migrated,
+      progressionHistory: Array.isArray(migrated.progressionHistory) ? migrated.progressionHistory : []
+    };
+  }
+
+  // v65 formalizes save compatibility for Care Level and appearance
+  // progression. Fish themselves are canonicalized by sanitizeFish after the
+  // current catalog is loaded; startup/import reconciliation then
+  // grandfathers every currently owned normal appearance into permanent
+  // species mastery before store locks are enforced.
+  if (incomingVersion < 65) {
+    migrated = {
+      ...migrated,
+      fishSpeciesMastery: migrated.fishSpeciesMastery && typeof migrated.fishSpeciesMastery === "object" && !Array.isArray(migrated.fishSpeciesMastery)
+        ? migrated.fishSpeciesMastery
+        : {}
+    };
+  }
+
   return migrated;
+}
+
+
+function sanitizeFishSpeciesMastery(rawMastery) {
+  if (!rawMastery || typeof rawMastery !== "object" || Array.isArray(rawMastery)) return {};
+  const normalized = {};
+  for (const [rawSpeciesId, rawRecord] of Object.entries(rawMastery)) {
+    const speciesId = String(rawSpeciesId || "").trim().slice(0, 120);
+    if (!speciesId || !rawRecord || typeof rawRecord !== "object" || Array.isArray(rawRecord)) continue;
+    const normalizeVariantKey = (key) => {
+      if (typeof key !== "string" || !key.trim()) return "";
+      return typeof getFishAppearanceVariantKey === "function"
+        ? getFishAppearanceVariantKey(key)
+        : key.trim().split(/[?#]/)[0].split("/").pop();
+    };
+    const unlockedVariantKeys = [...new Set((Array.isArray(rawRecord.unlockedVariantKeys) ? rawRecord.unlockedVariantKeys : [])
+      .map(normalizeVariantKey)
+      .filter(Boolean))];
+    const species = typeof runtime !== "undefined" && runtime?.fishMap?.get
+      ? runtime.fishMap.get(speciesId)
+      : null;
+    if (
+      species
+      && typeof isFishSpeciesCareProgressionEligible === "function"
+      && isFishSpeciesCareProgressionEligible(species)
+    ) {
+      const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+        ? getFishBaseAppearanceVariantKey(species)
+        : normalizeVariantKey(species.asset);
+      if (baseKey && !unlockedVariantKeys.includes(baseKey)) unlockedVariantKeys.unshift(baseKey);
+    }
+    normalized[speciesId] = {
+      highestLevel: clamp(Math.floor(Number(rawRecord.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+      unlockedVariantKeys: unlockedVariantKeys.slice(0, 200),
+      masteredAt: Math.max(0, Number(rawRecord.masteredAt) || 0),
+      totalCareLevelUps: Math.max(0, Math.floor(Number(rawRecord.totalCareLevelUps) || 0)),
+      lastVariantUnlockedAt: Math.max(0, Number(rawRecord.lastVariantUnlockedAt) || 0),
+      collectionCompletedAt: Math.max(0, Number(rawRecord.collectionCompletedAt) || 0)
+    };
+  }
+  return normalized;
+}
+
+
+function sanitizeProgressionHistory(entries) {
+  if (!Array.isArray(entries)) return [];
+  return entries
+    .map((entry) => {
+      if (!entry || typeof entry !== "object" || Array.isArray(entry)) return null;
+      const type = String(entry.type || "").trim().slice(0, 60);
+      const timestamp = Math.max(0, Number(entry.timestamp ?? entry.createdAt) || 0);
+      if (!type || timestamp <= 0) return null;
+      return {
+        id: String(entry.id || `progression-${type}-${timestamp}`).trim().slice(0, 160),
+        type,
+        timestamp,
+        dayKey: String(entry.dayKey || "").trim().slice(0, 32),
+        fishId: String(entry.fishId || "").trim().slice(0, 120),
+        fishName: String(entry.fishName || "").trim().slice(0, 100),
+        speciesId: String(entry.speciesId || "").trim().slice(0, 120),
+        speciesName: String(entry.speciesName || "").trim().slice(0, 120),
+        previousCareLevel: clamp(Math.floor(Number(entry.previousCareLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        careLevel: clamp(Math.floor(Number(entry.careLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        levelsGained: Math.max(0, Math.floor(Number(entry.levelsGained) || 0)),
+        previousMasteryLevel: clamp(Math.floor(Number(entry.previousMasteryLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        masteryLevel: clamp(Math.floor(Number(entry.masteryLevel) || 0), 0, FISH_CARE_LEVEL_MAX),
+        masteredNow: entry.masteredNow === true,
+        masteredAt: Math.max(0, Number(entry.masteredAt) || 0),
+        variantKey: String(entry.variantKey || "").trim().slice(0, 180),
+        variantLabel: String(entry.variantLabel || "").trim().slice(0, 140),
+        appearanceAssetPath: String(entry.appearanceAssetPath || "").trim().slice(0, 320),
+        lockedPoolSizeBeforeUnlock: Math.max(0, Math.floor(Number(entry.lockedPoolSizeBeforeUnlock) || 0)),
+        remainingLockedVariantCount: Math.max(0, Math.floor(Number(entry.remainingLockedVariantCount) || 0)),
+        unlockChanceBeforeUnlock: clamp(Number(entry.unlockChanceBeforeUnlock) || 0, 0, 1),
+        unlockChancePercentBeforeUnlock: clamp(Number(entry.unlockChancePercentBeforeUnlock) || 0, 0, 100),
+        collectionCompleted: entry.collectionCompleted === true,
+        collectionCompletedAt: Math.max(0, Number(entry.collectionCompletedAt) || 0),
+        title: String(entry.title || "").trim().slice(0, 180),
+        detail: String(entry.detail || "").trim().slice(0, 360)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.timestamp - left.timestamp)
+    .slice(0, PROGRESSION_HISTORY_LIMIT);
 }
 
 
@@ -39365,6 +39835,8 @@ function buildDefaultDailyBonusState() {
     lastEvaluatedByTankId: {},
     claimedByTankDay: {},
     recapHistory: [],
+    weeklyReports: [],
+    milestoneCompletions: [],
     milestones: {}
   };
 }
@@ -39379,7 +39851,31 @@ function sanitizeDailyBonusState(rawState) {
       scoreModel: typeof summary.scoreModel === "string" ? summary.scoreModel : "",
       rawScore: Math.round(Number(summary.rawScore ?? summary.score) || 0),
       score: Math.round(Number(summary.score) || 0),
-      reward: clamp(Math.floor(Number(summary.reward) || 0), 0, DAILY_RECAP_REWARD_CAP),
+      reward: 0,
+      careXpEarned: Math.max(0, Math.floor(Number(summary.careXpEarned) || 0)),
+      tankCareSnapshots: Array.isArray(summary.tankCareSnapshots) ? summary.tankCareSnapshots.map((entry) => ({
+        tankId: typeof entry?.tankId === "string" ? entry.tankId : "",
+        cleanPercent: clamp(Math.round(Number(entry?.cleanPercent) || 0), 0, 100)
+      })).filter((entry) => entry.tankId) : [],
+      careXpAwards: Array.isArray(summary.careXpAwards) ? summary.careXpAwards.map((entry) => ({
+        fishId: typeof entry?.fishId === "string" ? entry.fishId : "",
+        fishName: typeof entry?.fishName === "string" ? entry.fishName.slice(0, 80) : "Fish",
+        speciesId: typeof entry?.speciesId === "string" ? entry.speciesId : "",
+        previousCareLevel: clamp(Math.floor(Number(entry?.previousCareLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        careLevel: clamp(Math.floor(Number(entry?.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        levelsGained: clamp(Math.floor(Number(entry?.levelsGained) || 0), 0, FISH_CARE_LEVEL_MAX - FISH_CARE_LEVEL_MIN),
+        speciesMasteryLevel: clamp(Math.floor(Number(entry?.speciesMasteryLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        speciesMasteryIncreased: entry?.speciesMasteryIncreased === true,
+        speciesMasteredNow: entry?.speciesMasteredNow === true,
+        awardedXp: clamp(Math.floor(Number(entry?.awardedXp) || 0), 0, FISH_DAILY_CARE_XP_CAP),
+        conditions: {
+          properlyFed: entry?.conditions?.properlyFed === true,
+          healthy: entry?.conditions?.healthy === true,
+          cleanEnvironment: entry?.conditions?.cleanEnvironment === true,
+          speciesNeedsSatisfied: entry?.conditions?.speciesNeedsSatisfied === true,
+          comfortable: entry?.conditions?.comfortable === true
+        }
+      })).filter((entry) => entry.fishId) : [],
       narrative: typeof summary.narrative === "string" ? summary.narrative.slice(0, 600) : "",
       rows: Array.isArray(summary.rows) ? summary.rows.map((row) => ({
         text: typeof row?.text === "string" ? row.text : "",
@@ -39416,7 +39912,7 @@ function sanitizeDailyBonusState(rawState) {
         scoreModel: BOROUGH_RECAP_SCORE_MODEL,
         rawScore,
         score,
-        reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+        reward: 0,
         overall: score >= 8 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
       };
     }
@@ -39438,7 +39934,7 @@ function sanitizeDailyBonusState(rawState) {
       scoreModel: BOROUGH_RECAP_SCORE_MODEL,
       rawScore,
       score,
-      reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+      reward: 0,
       mealsFed: unique.reduce((total, summary) => total + (Number(summary.mealsFed) || 0), 0),
       averageComfort: fishCount
         ? Math.round(unique.reduce((total, summary) => total + ((Number(summary.averageComfort) || 0) * (Number(summary.fishCount) || 0)), 0) / fishCount)
@@ -39482,6 +39978,40 @@ function sanitizeDailyBonusState(rawState) {
   const milestones = source.milestones && typeof source.milestones === "object"
     ? Object.fromEntries(Object.entries(source.milestones).map(([key, value]) => [String(key), Boolean(value)]))
     : {};
+  const weeklyReports = Array.isArray(source.weeklyReports)
+    ? source.weeklyReports.map((report) => {
+      if (!report || typeof report !== "object") return null;
+      const dayKeys = [...new Set((Array.isArray(report.dayKeys) ? report.dayKeys : []).filter((dayKey) => typeof dayKey === "string" && /^\d{4}-\d{2}-\d{2}$/.test(dayKey)))].slice(0, WEEKLY_REPORT_RECAP_COUNT);
+      if (dayKeys.length !== WEEKLY_REPORT_RECAP_COUNT) return null;
+      return {
+        id: typeof report.id === "string" ? report.id.slice(0, 80) : `weekly-${dayKeys.join("-")}`,
+        generatedAt: Math.max(0, Number(report.generatedAt) || 0),
+        dayKeys,
+        averageRecapScore: Number.isFinite(Number(report.averageRecapScore)) ? Number(report.averageRecapScore) : 0,
+        feedingIncome: Math.max(0, Math.floor(Number(report.feedingIncome) || 0)),
+        cleaningIncome: Math.max(0, Math.floor(Number(report.cleaningIncome) || 0)),
+        randomCoinFinds: Math.max(0, Math.floor(Number(report.randomCoinFinds) || 0)),
+        fishLevelUps: Math.max(0, Math.floor(Number(report.fishLevelUps) || 0)),
+        variantsUnlocked: Math.max(0, Math.floor(Number(report.variantsUnlocked) || 0)),
+        milestonesCompleted: Math.max(0, Math.floor(Number(report.milestonesCompleted) || 0)),
+        births: Math.max(0, Math.floor(Number(report.births) || 0)),
+        deaths: Math.max(0, Math.floor(Number(report.deaths) || 0)),
+        bestDayKey: typeof report.bestDayKey === "string" ? report.bestDayKey : "",
+        bestDayScore: Math.round(Number(report.bestDayScore) || 0),
+        weeklyReward: clamp(Math.floor(Number(report.weeklyReward) || 0), 0, WEEKLY_REPORT_REWARD_CAP),
+        rewardPaid: clamp(Math.floor(Number(report.rewardPaid) || 0), 0, WEEKLY_REPORT_REWARD_CAP),
+        rewardSuppressedByPeacefulMode: report.rewardSuppressedByPeacefulMode === true
+      };
+    }).filter(Boolean).sort((left, right) => Number(right.generatedAt) - Number(left.generatedAt)).slice(0, WEEKLY_REPORT_HISTORY_LIMIT)
+    : [];
+  const milestoneCompletions = Array.isArray(source.milestoneCompletions)
+    ? source.milestoneCompletions.map((entry) => entry && typeof entry === "object" ? {
+      milestoneId: typeof entry.milestoneId === "string" ? entry.milestoneId.slice(0, 80) : "",
+      label: typeof entry.label === "string" ? entry.label.slice(0, 120) : "",
+      dayKey: typeof entry.dayKey === "string" ? entry.dayKey : "",
+      time: Math.max(0, Number(entry.time) || 0)
+    } : null).filter((entry) => entry?.milestoneId && entry.dayKey).slice(0, 200)
+    : [];
   const legacySummary = sanitizeSummary(source.summary);
   const pendingCandidates = [...Object.values(summariesByTankId), legacySummary].filter(Boolean);
   const latestPendingDayKey = pendingCandidates.map((summary) => summary.dayKey).filter(Boolean).sort().at(-1) || "";
@@ -39497,6 +40027,8 @@ function sanitizeDailyBonusState(rawState) {
     lastEvaluatedByTankId,
     claimedByTankDay,
     recapHistory,
+    weeklyReports,
+    milestoneCompletions,
     milestones
   };
 }
@@ -39805,6 +40337,7 @@ function reconcileState(rawState) {
     proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
     walletTransactions: [],
+    incomeHistoryByDay: {},
     lifetimeDeaths: 0,
     accountProfile: sanitizeAccountProfile(null),
     purchaseHistory: [],
@@ -39825,7 +40358,16 @@ function reconcileState(rawState) {
     davyJonesLockerUnlocked: false,
     davyJonesLockerUnlockedAt: 0,
     mealHistory: {},
+    boroughCleaningIncomeDayKey: "",
+    boroughCleaningCoinsEarned: 0,
+    gravelCoinFindDayKey: "",
+    gravelCoinsFoundToday: 0,
     lastGravelCoinFoundAt: 0,
+    boroughOtocinclusCoinFindDayKey: "",
+    boroughOtocinclusCoinsFoundToday: 0,
+    boroughOtocinclusCoinFindLastAttemptAt: 0,
+    fishSpeciesMastery: {},
+    progressionHistory: [],
     unlockedFishSpecies: [],
     unlockedDecorKeys: [],
     storedFish: [],
@@ -39890,6 +40432,34 @@ function reconcileState(rawState) {
   ).map((item) => sanitizeStoredBoatState(item, now)).filter(Boolean);
   const storedSubmarine = storedSubmarines[0] || null;
   const storedBoat = storedBoats[0] || null;
+  const currentDayKey = getLocalDayKey(now);
+  const migratedLastGravelCoinFoundAt = Math.max(
+    Number(incoming.lastGravelCoinFoundAt) || 0,
+    ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
+  );
+  const incomingGravelDayKey = typeof incoming.gravelCoinFindDayKey === "string"
+    ? incoming.gravelCoinFindDayKey
+    : "";
+  const inferredGravelDayKey = incomingGravelDayKey
+    || (migratedLastGravelCoinFoundAt > 0 ? getLocalDayKey(migratedLastGravelCoinFoundAt) : "");
+  const migratedGravelCoinsFoundToday = incomingGravelDayKey
+    ? clamp(Math.floor(Number(incoming.gravelCoinsFoundToday) || 0), 0, GRAVEL_DAILY_COIN_FIND_CAP)
+    : (inferredGravelDayKey === currentDayKey && migratedLastGravelCoinFoundAt > 0 ? 1 : 0);
+  const legacyOtocinclusTanksToday = tanks.filter((tank) => tank.otocinclusCoinFindDayKey === currentDayKey);
+  const incomingOtocinclusDayKey = typeof incoming.boroughOtocinclusCoinFindDayKey === "string"
+    ? incoming.boroughOtocinclusCoinFindDayKey
+    : "";
+  const migratedOtocinclusCoinsFoundToday = incomingOtocinclusDayKey
+    ? clamp(Math.floor(Number(incoming.boroughOtocinclusCoinsFoundToday) || 0), 0, OTOCINCLUS_DAILY_COIN_FIND_CAP)
+    : clamp(
+      legacyOtocinclusTanksToday.reduce((sum, tank) => sum + (Math.floor(Number(tank.otocinclusCoinsFoundToday) || 0)), 0),
+      0,
+      OTOCINCLUS_DAILY_COIN_FIND_CAP
+    );
+  const migratedOtocinclusLastAttemptAt = Math.max(
+    Number(incoming.boroughOtocinclusCoinFindLastAttemptAt) || 0,
+    ...tanks.map((tank) => Number(tank.otocinclusCoinFindLastAttemptAt) || 0)
+  );
 
   const nextState = {
     ...base,
@@ -39914,10 +40484,23 @@ function reconcileState(rawState) {
         direction: entry?.direction === "debit" ? "debit" : entry?.direction === "neutral" ? "neutral" : "credit",
         label: typeof entry?.label === "string" ? entry.label.slice(0, 180) : "Aquarium activity",
         place: typeof entry?.place === "string" ? entry.place.replace(/tankazon/ig, "BubbleBodega").slice(0, 80) : "Aquarium",
+        category: typeof entry?.category === "string" ? entry.category.slice(0, 40) : "",
         time: Number.isFinite(Number(entry?.time)) ? Number(entry.time) : now,
         orderId: typeof entry?.orderId === "string" ? entry.orderId.slice(0, 80) : ""
       })).filter((entry) => entry.amount > 0 || entry.direction === "neutral").sort((left, right) => right.time - left.time).slice(0, 60)
       : base.walletTransactions,
+    incomeHistoryByDay: Object.fromEntries(Object.entries(incoming.incomeHistoryByDay && typeof incoming.incomeHistoryByDay === "object" && !Array.isArray(incoming.incomeHistoryByDay) ? incoming.incomeHistoryByDay : {})
+      .filter(([dayKey]) => /^\d{4}-\d{2}-\d{2}$/.test(dayKey))
+      .sort(([left], [right]) => right.localeCompare(left))
+      .slice(0, INCOME_HISTORY_DAY_LIMIT)
+      .map(([dayKey, entry]) => [dayKey, {
+        feeding: Math.max(0, Math.floor(Number(entry?.feeding) || 0)),
+        cleaning: Math.max(0, Math.floor(Number(entry?.cleaning) || 0)),
+        randomFinds: Math.max(0, Math.floor(Number(entry?.randomFinds) || 0)),
+        awards: Math.max(0, Math.floor(Number(entry?.awards) || 0)),
+        sales: Math.max(0, Math.floor(Number(entry?.sales) || 0)),
+        milestones: Math.max(0, Math.floor(Number(entry?.milestones) || 0))
+      }])),
     lifetimeDeaths: Number.isFinite(incoming.lifetimeDeaths) ? Math.max(0, Math.floor(incoming.lifetimeDeaths)) : base.lifetimeDeaths,
     accountProfile: sanitizeAccountProfile(incoming.accountProfile),
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
@@ -39959,10 +40542,16 @@ function reconcileState(rawState) {
     davyJonesLockerUnlocked: incoming.davyJonesLockerUnlocked === true,
     davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
-    lastGravelCoinFoundAt: Math.max(
-      Number(incoming.lastGravelCoinFoundAt) || 0,
-      ...tanks.map((tank) => Number(tank.lastGravelCoinFoundAt) || 0)
-    ),
+    boroughCleaningIncomeDayKey: typeof incoming.boroughCleaningIncomeDayKey === "string" ? incoming.boroughCleaningIncomeDayKey : "",
+    boroughCleaningCoinsEarned: clamp(Math.floor(Number(incoming.boroughCleaningCoinsEarned) || 0), 0, BOROUGH_DAILY_CLEANING_COIN_CAP),
+    gravelCoinFindDayKey: inferredGravelDayKey,
+    gravelCoinsFoundToday: migratedGravelCoinsFoundToday,
+    lastGravelCoinFoundAt: migratedLastGravelCoinFoundAt,
+    boroughOtocinclusCoinFindDayKey: incomingOtocinclusDayKey || (legacyOtocinclusTanksToday.length > 0 ? currentDayKey : ""),
+    boroughOtocinclusCoinsFoundToday: migratedOtocinclusCoinsFoundToday,
+    boroughOtocinclusCoinFindLastAttemptAt: migratedOtocinclusLastAttemptAt,
+    fishSpeciesMastery: sanitizeFishSpeciesMastery(incoming.fishSpeciesMastery),
+    progressionHistory: sanitizeProgressionHistory(incoming.progressionHistory),
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish)
@@ -40641,6 +41230,12 @@ async function applyImportedSaveData(rawState) {
   resetTransientAquariumUiState();
   const now = Date.now();
   state = reconcileState(rawState);
+  const masteryBaseVariantsChanged = typeof normalizeFishSpeciesMasteryBaseVariants === "function"
+    ? normalizeFishSpeciesMasteryBaseVariants()
+    : false;
+  const ownedFishVariantsChanged = typeof normalizeOwnedFishAppearanceUnlocks === "function"
+    ? normalizeOwnedFishAppearanceUnlocks()
+    : false;
   const customImagesChanged = await hydrateCustomImagesFromStorage(state);
   applyPendingWallpaperEngineUserProperties({
     save: false,
@@ -40660,7 +41255,7 @@ async function applyImportedSaveData(rawState) {
   applyContentSettingsEffects(now);
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);
-  if (customImagesChanged || decorPlacementChanged || stateChanged) {
+  if (masteryBaseVariantsChanged || ownedFishVariantsChanged || customImagesChanged || decorPlacementChanged || stateChanged) {
     runtime.gravelStateDirty = true;
   }
   saveState();
@@ -41068,6 +41663,7 @@ function sanitizeFish(fish, options = {}) {
   const breedingAvailable = !spawnUsed && species?.canBreed !== false && fish.breedingAvailable !== false;
   const storageState = options.storageState === "stored" || fish.storageState === "stored" ? "stored" : "tank";
   const lifeStage = getFishLifeStage({ ...fish, id: foundationFishId, birthAt, lifespanMultiplier, storageState }, now);
+  const canonicalAppearance = resolveCanonicalFishAppearanceSelection(fish, species);
 
   return {
     id: foundationFishId,
@@ -41078,6 +41674,14 @@ function sanitizeFish(fish, options = {}) {
       : "",
     acquiredAt: Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now,
     purchasePrice: Math.max(0, Math.floor(Number.isFinite(Number(fish.purchasePrice)) ? Number(fish.purchasePrice) : (Number(species?.cost) || 0))),
+    careXp: Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    variantUnlockCareLevel: clamp(
+      Math.floor(Number(fish.variantUnlockCareLevel) || Number(fish.careLevel) || FISH_CARE_LEVEL_MIN),
+      FISH_CARE_LEVEL_MIN,
+      FISH_CARE_LEVEL_MAX
+    ),
+    lastCareXpDayKey: typeof fish.lastCareXpDayKey === "string" ? fish.lastCareXpDayKey : "",
     birthAt,
     lifespanMultiplier,
     lifeStage,
@@ -41247,9 +41851,9 @@ function sanitizeFish(fish, options = {}) {
     phase: clamp(Number(fish.phase) || Math.random(), 0, 1),
     motionLevel: clamp(Number.isFinite(Number(fish.motionLevel)) ? Number(fish.motionLevel) : 0.18, dead ? 0.02 : 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
-    appearanceVariant: normalizeFishAppearanceVariantIndex(fish.appearanceVariant, species, fish),
-    appearanceVariantKey: typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : null,
-    appearanceAssetPath: typeof fish.appearanceAssetPath === "string" ? fish.appearanceAssetPath : null,
+    appearanceVariant: canonicalAppearance.appearanceVariant,
+    appearanceVariantKey: canonicalAppearance.appearanceVariantKey,
+    appearanceAssetPath: canonicalAppearance.appearanceAssetPath,
     scale: clamp(Number(fish.scale) || resolveFishBaseScale(fish.speciesId), FISH_SCALE_MIN, FISH_SCALE_MAX),
     behaviorSpeciesId: sanitizeFishBehaviorSpeciesId(
       fish.behaviorSpeciesId || (species.customAsset ? (species.behaviorSpeciesId || species.behaviorProfileId) : ""),
@@ -41463,16 +42067,27 @@ function sanitizeFishEgg(egg) {
   const parentIds = Array.isArray(egg.parentIds)
     ? egg.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
+  const parentVariantKeys = Array.isArray(egg.parentVariantKeys)
+    ? egg.parentVariantKeys.map((value) => String(value || "")).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(egg.fishColor ?? egg.colorSetting ?? "");
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(egg.clutchSize) || 1)));
   const offspringGeneration = Math.max(0, Math.min(999, Math.floor(Number(egg.offspringGeneration) || (parentIds.length ? 1 : 0))));
-  const offspringVariants = Array.isArray(egg.offspringVariants)
+  let offspringVariants = Array.isArray(egg.offspringVariants)
     ? egg.offspringVariants.slice(0, clutchSize).map((value) => Math.max(0, Math.floor(Number(value) || 0)))
     : [];
-  const offspringVariantKeys = Array.isArray(egg.offspringVariantKeys)
+  let offspringVariantKeys = Array.isArray(egg.offspringVariantKeys)
     ? egg.offspringVariantKeys.slice(0, clutchSize).map((value) => String(value || ""))
     : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(runtime.fishMap.get(speciesId), offspringVariants, offspringVariantKeys, clutchSize, {
+      parentVariantKeys,
+      includeUnlocked: parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
   const capacityCost = clamp(Number(runtime.fishMap.get(speciesId)?.capacityCost) || 1, 0.1, 8);
   const reservedCapacity = hatchedAt ? 0 : Math.max(0, Number(egg.reservedCapacity) || clutchSize * capacityCost);
 
@@ -41481,6 +42096,7 @@ function sanitizeFishEgg(egg) {
     speciesId,
     parentNames,
     parentIds,
+    parentVariantKeys,
     clutchSize,
     offspringGeneration,
     offspringVariants,
@@ -41530,15 +42146,23 @@ function sanitizePendingBreedingEvent(event) {
   const capacityCost = clamp(Number(species?.capacityCost) || 1, 0.1, 8);
   const inferredClutch = Math.max(1, Math.round((Number(event.reservedCapacity) || capacityCost) / capacityCost));
   const plannedClutchSize = Math.max(1, Math.min(3, Math.floor(Number(event.plannedClutchSize) || inferredClutch)));
-  const offspringVariants = Array.isArray(event.offspringVariants)
+  let offspringVariants = Array.isArray(event.offspringVariants)
     ? event.offspringVariants.slice(0, plannedClutchSize).map((value) => clamp(Math.floor(Number(value) || 0), 0, variantCount - 1))
     : Array.from({ length: plannedClutchSize }, (_, index) => parentVariants.length ? parentVariants[index % parentVariants.length] : 0);
-  const offspringVariantKeys = Array.isArray(event.offspringVariantKeys)
+  let offspringVariantKeys = Array.isArray(event.offspringVariantKeys)
     ? event.offspringVariantKeys.slice(0, plannedClutchSize).map((value) => String(value || ""))
     : offspringVariants.map((variantIndex) => {
         const path = speciesVariants[variantIndex] || speciesVariants[0] || species?.asset || "";
         return typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : "";
       });
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, offspringVariants, offspringVariantKeys, plannedClutchSize, {
+      parentVariantKeys,
+      includeUnlocked: parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
   const createdAt = Number.isFinite(Number(event.createdAt)) ? Math.max(0, Number(event.createdAt)) : Date.now();
   const deliveryMethod = event.deliveryMethod === "live" || species?.liveBirth === true ? "live" : "egg";
   const resolutionAt = Number.isFinite(Number(event.resolutionAt))
@@ -48126,7 +48750,9 @@ function syncCurrentTankState(now, options = {}) {
       fish.feedingPelletId = null;
       if (!isFishDead(fish)) {
         fish.activity = "roam";
-        fish.targetAt = now + 1200 + Math.random() * 1800;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
+        fish.targetAt = now;
       }
     }
   }
@@ -51889,11 +52515,13 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
+  recordDailyIncomeCategory("feeding", mealCoins, now);
   const fishLabel = String(fish.name || getSpeciesForFish(fish)?.name || "Fish");
   recordWalletTransaction({
     amount: mealCoins,
     allowZero: true,
     direction: mealCoins > 0 ? "credit" : "neutral",
+    category: "feeding",
     now,
     place: getTankLabel(tank),
     label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
@@ -51901,19 +52529,22 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   return mealCoins;
 }
 
-function getDailyMealIndicatorSlots(timestamp = Date.now()) {
-  const date = new Date(timestamp);
-  const dayKey = getLocalDayKey(timestamp);
-  const midnight = new Date(date);
-  midnight.setHours(0, 0, 0, 0);
-  const noon = new Date(date);
+function getDailyMealIndicatorSlotsForDayKey(dayKey) {
+  const normalizedDayKey = String(dayKey || "").trim();
+  const dayStart = getLocalDayStartTimestamp(normalizedDayKey);
+  const midnight = new Date(dayStart);
+  const noon = new Date(midnight);
   noon.setHours(12, 0, 0, 0);
   const nextMidnight = new Date(midnight);
   nextMidnight.setDate(nextMidnight.getDate() + 1);
   return [
-    { key: `daily-feeding-${dayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
-    { key: `daily-feeding-${dayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
+    { key: `daily-feeding-${normalizedDayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
+    { key: `daily-feeding-${normalizedDayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
   ];
+}
+
+function getDailyMealIndicatorSlots(timestamp = Date.now()) {
+  return getDailyMealIndicatorSlotsForDayKey(getLocalDayKey(timestamp));
 }
 
 function getDailyMealIndicatorSlot(timestamp = Date.now()) {
@@ -52057,7 +52688,9 @@ function assignFloatingPelletsToHungryFish(now = Date.now()) {
       currentTarget.feedingPelletId = null;
       if (!isFishDead(currentTarget)) {
         currentTarget.activity = "roam";
-        currentTarget.targetAt = now + 1200 + Math.random() * 1800;
+        currentTarget.targetXNorm = currentTarget.xNorm;
+        currentTarget.targetYNorm = currentTarget.yNorm;
+        currentTarget.targetAt = now;
       }
     }
     pellet.targetFishId = "";
@@ -52087,6 +52720,15 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
     pellet.surfaceFloating = true;
     const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24);
+    const hasDropEntry = Number.isFinite(Number(pellet.dropStartXNorm))
+      && Number.isFinite(Number(pellet.dropStartYNorm));
+    const dropDurationMs = hasDropEntry
+      ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
+      : 0;
+    const entryActive = hasDropEntry && now < Number(pellet.createdAt) + dropDurationMs;
+    if (entryActive) {
+      return false;
+    }
     if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
       pellet.yNorm = surfaceYNorm;
       return true;
@@ -52162,13 +52804,20 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     && Number.isFinite(Number(options.dropStartXNorm))
     && Number.isFinite(Number(options.dropStartYNorm));
   const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
-  // A hand-fed click chooses the horizontal spot, not an underwater launch
-  // point. Food enters at the surface and then follows its own sink/float
-  // behavior; only equipment drops provide an explicit start position.
   const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.012 : 0.055);
+  const handSurfaceDrop = Boolean(food.surfaceFloating || food.id === "fishFlakes") && !hasCustomDropStart;
   const dropYNorm = hasCustomDropStart
     ? clamp(Number(yNorm), 0.09, 0.9)
     : clamp(surfaceYNorm, 0.09, 0.24);
+  const entryStartXNorm = handSurfaceDrop
+    ? dropXNorm
+    : (hasCustomDropStart ? Number(options.dropStartXNorm) : null);
+  const entryStartYNorm = handSurfaceDrop
+    ? clamp((WATER_SURFACE_Y - randomBetween(40, 90)) / TANK_HEIGHT, 0.02, 0.22)
+    : (hasCustomDropStart ? Number(options.dropStartYNorm) : null);
+  const entryDurationMs = handSurfaceDrop
+    ? randomBetween(450, 850)
+    : (hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null);
   return sanitizePellet({
     id: createId("pellet"),
     foodKey,
@@ -52184,9 +52833,9 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     sinkDurationMs: food.id === "algaeWafers"
       ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
       : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
-    dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
-    dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
-    dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
+    dropStartXNorm: entryStartXNorm,
+    dropStartYNorm: entryStartYNorm,
+    dropDurationMs: entryDurationMs,
     createdAt: now,
     expiresAt: now + (food.surfaceFloating ? SURFACE_FOOD_LIFETIME_MS : FOOD_PELLET_SETTLED_LIFETIME_MS)
   });
@@ -53068,17 +53717,17 @@ function processTankMedicineEffects(now = Date.now()) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function getResaleValue(cost) {
-  const price = Math.max(1, Math.floor(Number(cost) || 0));
+  const price = Math.max(0, Math.floor(Number(cost) || 0));
 
-  if (price <= 1) {
+  if (price <= 0) {
+    return 0;
+  }
+
+  if (price === 1) {
     return 1;
   }
 
-  if (price <= 3) {
-    return price - 1;
-  }
-
-  return Math.max(1, Math.floor(price * 0.75));
+  return Math.max(1, Math.floor(price * 0.5));
 }
 
 function getFishOriginalPurchasePrice(fish, species = getSpeciesForFish(fish)) {
@@ -53094,12 +53743,7 @@ function getFishRehomeValue(fish, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   const originalPrice = getFishOriginalPurchasePrice(fish, species);
   if (originalPrice <= 0) return 0;
-  const standardResale = getResaleValue(originalPrice);
-  const lifeProgress = getFishLifeProgress(fish, now);
-  const adultStartProgress = 0.2;
-  const adultAgeProgress = clamp((lifeProgress - adultStartProgress) / Math.max(0.01, 1 - adultStartProgress), 0, 1);
-  const ageMultiplier = 1 - 0.75 * adultAgeProgress;
-  return Math.max(1, Math.floor(standardResale * ageMultiplier));
+  return getResaleValue(originalPrice);
 }
 
 function recordCreatureRemovalHistory(fish, reason = "Unknown", now = Date.now(), options = {}) {
@@ -53245,6 +53889,10 @@ function createFishRecord(speciesId, options = {}) {
       : buildFishName(speciesId, takenNames),
     acquiredAt: now,
     purchasePrice: Math.max(0, Math.floor(Number.isFinite(Number(options.purchasePrice)) ? Number(options.purchasePrice) : (Number(species.cost) || 0))),
+    careXp: Math.max(0, Math.floor(Number(options.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(options.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    variantUnlockCareLevel: clamp(Math.floor(Number(options.variantUnlockCareLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    lastCareXpDayKey: typeof options.lastCareXpDayKey === "string" ? options.lastCareXpDayKey : "",
     birthAt,
     lifespanMultiplier,
     lifeStage: options.juvenile ? "juvenile" : "adult",
@@ -53653,6 +54301,116 @@ function getInheritedAppearanceVariant(parentVariants, species, index = 0) {
   return valid[Math.abs(Math.floor(Number(index) || 0)) % valid.length];
 }
 
+function getBreedingParentAppearanceKeys(parents, species) {
+  if (!species) return [];
+  const variants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  const keys = [];
+  for (const fish of (Array.isArray(parents) ? parents : []).filter(Boolean).slice(0, 2)) {
+    let path = "";
+    if (typeof getFishAssetPath === "function") {
+      path = getFishAssetPath(fish, species) || "";
+    }
+    let key = typeof getFishAppearanceVariantKey === "function"
+      ? getFishAppearanceVariantKey(path || fish.appearanceAssetPath || fish.appearanceVariantKey || "")
+      : String(path || fish.appearanceAssetPath || fish.appearanceVariantKey || "").split(/[?#]/)[0].split("/").pop();
+    if (!key && variants.length) {
+      const index = clamp(
+        Math.floor(Number(fish.appearanceVariant ?? fish.visualVariant) || 0),
+        0,
+        Math.max(0, variants.length - 1)
+      );
+      key = typeof getFishAppearanceVariantKey === "function"
+        ? getFishAppearanceVariantKey(variants[index] || variants[0] || species.asset || "")
+        : String(variants[index] || variants[0] || species.asset || "").split(/[?#]/)[0].split("/").pop();
+    }
+    keys.push(key || "");
+  }
+  return keys;
+}
+
+function getBreedingAllowedAppearanceEntries(species, options = {}) {
+  if (!species) return [];
+  const allVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  if (!allVariants.length && typeof species.asset === "string" && species.asset) allVariants.push(species.asset);
+  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const cosmeticVariants = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : allVariants;
+  const keyFor = (path) => typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(path)
+    : String(path || "").split(/[?#]/)[0].split("/").pop();
+  const authoredByKey = new Map();
+  cosmeticVariants.forEach((path) => {
+    const key = keyFor(path);
+    if (key && !authoredByKey.has(key)) authoredByKey.set(key, path);
+  });
+
+  if (!progressionEnabled) {
+    return [...authoredByKey.entries()].map(([key, path]) => ({
+      key, path, index: Math.max(0, allVariants.indexOf(path))
+    }));
+  }
+
+  const allowedKeys = new Set();
+  const parentKeys = Array.isArray(options.parentVariantKeys) ? options.parentVariantKeys : [];
+  for (const rawKey of parentKeys) {
+    const key = keyFor(rawKey);
+    if (key && authoredByKey.has(key)) allowedKeys.add(key);
+  }
+
+  if (options.includeUnlocked !== false) {
+    for (const key of authoredByKey.keys()) {
+      const unlocked = typeof isFishAppearanceVariantUnlocked === "function"
+        ? isFishAppearanceVariantUnlocked(species, key, { allowDebugBypass: false })
+        : key === keyFor(species.asset);
+      if (unlocked) allowedKeys.add(key);
+    }
+  }
+
+  if (!allowedKeys.size) {
+    const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
+      ? getFishBaseAppearanceVariantKey(species)
+      : keyFor(species.asset);
+    if (baseKey && authoredByKey.has(baseKey)) allowedKeys.add(baseKey);
+  }
+
+  return cosmeticVariants
+    .map((path) => ({ key: keyFor(path), path, index: Math.max(0, allVariants.indexOf(path)) }))
+    .filter((entry) => entry.key && allowedKeys.has(entry.key));
+}
+
+function normalizeBreedingOffspringAppearances(species, variants, variantKeys, count = 1, options = {}) {
+  const safeCount = Math.max(1, Math.min(3, Math.floor(Number(count) || 1)));
+  const allVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  const allowed = getBreedingAllowedAppearanceEntries(species, options);
+  const keyFor = (path) => typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(path)
+    : String(path || "").split(/[?#]/)[0].split("/").pop();
+  const allowedByKey = new Map(allowed.map((entry) => [entry.key, entry]));
+  const fallback = allowed.find((entry) => entry.key === keyFor(species?.asset)) || allowed[0] || {
+    key: keyFor(species?.asset || allVariants[0] || ""),
+    path: species?.asset || allVariants[0] || "",
+    index: Math.max(0, allVariants.indexOf(species?.asset || allVariants[0]))
+  };
+  const safeVariants = [];
+  const safeKeys = [];
+  for (let index = 0; index < safeCount; index += 1) {
+    const requestedKey = keyFor(Array.isArray(variantKeys) ? variantKeys[index] : "");
+    const requestedIndex = clamp(
+      Math.floor(Number(Array.isArray(variants) ? variants[index] : 0) || 0),
+      0,
+      Math.max(0, allVariants.length - 1)
+    );
+    const indexKey = keyFor(allVariants[requestedIndex] || "");
+    const selected = allowedByKey.get(requestedKey) || allowedByKey.get(indexKey) || fallback;
+    safeVariants.push(Math.max(0, Number.isFinite(Number(selected?.index)) ? Math.floor(Number(selected.index)) : 0));
+    safeKeys.push(String(selected?.key || ""));
+  }
+  return { variants: safeVariants, variantKeys: safeKeys };
+}
+
 function isFishBreedingEligible(fish, now = Date.now(), tank = null, options = {}) {
   tank = getBreedingTankContext(tank);
   if (!fish || isFishDead(fish) || fish.storageState === "stored") return false;
@@ -53708,12 +54466,17 @@ function createPendingBreedingEvent(parents, now = Date.now(), options = {}) {
   if (maximumByCapacity < 1) return null;
   const desiredClutchSize = rollBreedingClutchSize(species);
   const plannedClutchSize = Math.max(1, Math.min(desiredClutchSize, maximumByCapacity));
-  const parentVariants = pair.map((fish) => Math.max(0, Math.floor(Number(fish.visualVariant) || 0)));
   const speciesVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
-  const parentVariantKeys = pair.map((fish, index) => {
-    if (typeof fish.appearanceVariantKey === "string" && fish.appearanceVariantKey) return fish.appearanceVariantKey;
-    const path = speciesVariants[parentVariants[index]] || speciesVariants[0] || species.asset || "";
-    return typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : "";
+  const parentVariantKeys = typeof getBreedingParentAppearanceKeys === "function"
+    ? getBreedingParentAppearanceKeys(pair, species)
+    : pair.map((fish) => typeof fish.appearanceVariantKey === "string" ? fish.appearanceVariantKey : "");
+  const parentVariants = pair.map((fish, index) => {
+    const key = parentVariantKeys[index] || "";
+    const keyedIndex = key && typeof getFishAppearanceVariantKey === "function"
+      ? speciesVariants.findIndex((path) => getFishAppearanceVariantKey(path) === getFishAppearanceVariantKey(key))
+      : -1;
+    if (keyedIndex >= 0) return keyedIndex;
+    return clamp(Math.floor(Number(fish.appearanceVariant ?? fish.visualVariant) || 0), 0, Math.max(0, speciesVariants.length - 1));
   });
   const parentGenerations = pair.map((fish) => Math.max(0, Math.floor(Number(fish.generation) || 0)));
   const offspringGeneration = getBreedingOffspringGeneration(parentGenerations);
@@ -53823,13 +54586,25 @@ function spawnBreedingOffspring(speciesId, now = Date.now(), options = {}) {
     : clampTankLayer(Number.isFinite(Number(options.tankLayer)) ? Number(options.tankLayer) : DEFAULT_TANK_LAYER);
 
   if (species.liveBirth === true) {
-    const variants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
-    const appearanceVariant = variants.length > 1 ? Math.floor(Math.random() * variants.length) : 0;
+    const allFish = typeof getAllTankFish === "function"
+      ? getAllTankFish(state)
+      : (Array.isArray(state?.fish) ? state.fish : []);
+    const parents = parentIds.map((id) => allFish.find((fish) => fish?.id === id)).filter(Boolean);
+    const parentVariantKeys = typeof getBreedingParentAppearanceKeys === "function"
+      ? getBreedingParentAppearanceKeys(parents, species)
+      : [];
+    const allowedVariants = typeof getBreedingAllowedAppearanceEntries === "function"
+      ? getBreedingAllowedAppearanceEntries(species, { parentVariantKeys, includeUnlocked: true })
+      : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species).map((path, index) => ({ path, index, key: getFishAppearanceVariantKey(path) })) : []);
+    const selected = allowedVariants.length
+      ? allowedVariants[Math.floor(Math.random() * allowedVariants.length)]
+      : { index: 0, key: typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(species.asset || "") : "" };
     const baby = createBabyFishFromSpecies(speciesId, now, {
       anchorXNorm: options.xNorm,
       anchorYNorm: options.yNorm,
       tankLayer,
-      appearanceVariant,
+      appearanceVariant: selected.index,
+      appearanceVariantKey: selected.key || null,
       parentNames,
       parentIds,
       fishColor: options.fishColor,
@@ -54000,6 +54775,9 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
   const parentIds = Array.isArray(options.parentIds)
     ? options.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2)
     : [];
+  const parentVariantKeys = Array.isArray(options.parentVariantKeys)
+    ? options.parentVariantKeys.map((value) => String(value || "")).filter(Boolean).slice(0, 2)
+    : [];
   const fishColor = snapFishInheritanceColorToAvailable(options.fishColor ?? "");
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(options.clutchSize) || 1)));
@@ -54017,6 +54795,7 @@ function createFishEggRecord(speciesId, now = Date.now(), options = {}) {
     speciesId,
     parentNames,
     parentIds,
+    parentVariantKeys,
     clutchSize,
     offspringGeneration,
     offspringVariants,
@@ -54058,10 +54837,18 @@ function resolvePendingBreedingEvent(event, now = Date.now(), tank = getBreeding
 
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(event.plannedClutchSize) || 1)));
   const generation = Math.max(0, Math.min(999, Math.floor(Number(event.offspringGeneration) || getBreedingOffspringGeneration(event.parentGenerations))));
-  const offspringVariants = Array.isArray(event.offspringVariants)
+  let offspringVariants = Array.isArray(event.offspringVariants)
     ? event.offspringVariants.slice(0, clutchSize)
     : Array.from({ length: clutchSize }, (_, index) => getInheritedAppearanceVariant(event.parentVariants, species, index));
-  const offspringVariantKeys = Array.isArray(event.offspringVariantKeys) ? event.offspringVariantKeys.slice(0, clutchSize) : [];
+  let offspringVariantKeys = Array.isArray(event.offspringVariantKeys) ? event.offspringVariantKeys.slice(0, clutchSize) : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, offspringVariants, offspringVariantKeys, clutchSize, {
+      parentVariantKeys: event.parentVariantKeys,
+      includeUnlocked: !Array.isArray(event.parentVariantKeys) || event.parentVariantKeys.length === 0
+    });
+    offspringVariants = safe.variants;
+    offspringVariantKeys = safe.variantKeys;
+  }
 
   event.status = "resolving";
   if (event.deliveryMethod !== "live" && species.liveBirth !== true) {
@@ -54070,6 +54857,7 @@ function resolvePendingBreedingEvent(event, now = Date.now(), tank = getBreeding
       yNorm: event.yNorm,
       parentNames: event.parentNames,
       parentIds: event.parentIds,
+      parentVariantKeys: event.parentVariantKeys,
       tankLayer: getBreedingEggTankLayer(species, event.tankLayer),
       clutchSize,
       offspringGeneration: generation,
@@ -54145,8 +54933,16 @@ function hatchFishEgg(egg, now = Date.now()) {
 
   const hatchAt = Number.isFinite(Number(egg.hatchAt)) ? Number(egg.hatchAt) : now;
   const clutchSize = Math.max(1, Math.min(3, Math.floor(Number(egg.clutchSize) || 1)));
-  const variants = Array.isArray(egg.offspringVariants) ? egg.offspringVariants : [];
-  const variantKeys = Array.isArray(egg.offspringVariantKeys) ? egg.offspringVariantKeys : [];
+  let variants = Array.isArray(egg.offspringVariants) ? egg.offspringVariants : [];
+  let variantKeys = Array.isArray(egg.offspringVariantKeys) ? egg.offspringVariantKeys : [];
+  if (typeof normalizeBreedingOffspringAppearances === "function") {
+    const safe = normalizeBreedingOffspringAppearances(species, variants, variantKeys, clutchSize, {
+      parentVariantKeys: egg.parentVariantKeys,
+      includeUnlocked: !Array.isArray(egg.parentVariantKeys) || egg.parentVariantKeys.length === 0
+    });
+    variants = safe.variants;
+    variantKeys = safe.variantKeys;
+  }
   const generation = Math.max(0, Math.min(999, Math.floor(Number(egg.offspringGeneration) || (egg.parentIds?.length ? 1 : 0))));
   const originalReservedCapacity = Math.max(0, Number(egg.reservedCapacity) || clutchSize * getBreedingOffspringCapacityCost(egg.speciesId));
   egg.reservedCapacity = 0;
@@ -55115,10 +55911,11 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   if (steering.type === "waitfood") {
     const focusXNorm = clamp(Number(steering.xNorm) || 0.5, 0.08, 0.92);
     const focusYNorm = clamp(Number(steering.yNorm) || 0.22, 0.1, 0.5);
+    const currentLayer = getFishTankLayer(fish);
     fish.targetXNorm = focusXNorm;
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + 0.08, fish, species, clampTankLayer(Math.min(getFishTankLayer(fish), 2)), { minYNorm: 0.14, maxYNorm: 0.62 });
+    fish.targetYNorm = clampFishYNormToLayer(focusYNorm + 0.08, fish, species, currentLayer, { minYNorm: 0.14, maxYNorm: 0.62 });
     fish.targetAt = now + 840;
-    setFishDesiredTankLayer(fish, clampTankLayer(Math.min(getFishTankLayer(fish), 2)));
+    setFishDesiredTankLayer(fish, currentLayer);
     if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
       setFishDirection(fish, focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1, species, now);
     }
@@ -55133,21 +55930,77 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   if (steering.type === "inspect") {
     const focusXNorm = clamp(Number(steering.xNorm) || fish.xNorm || 0.5, 0.08, 0.92);
     const focusYNorm = clamp(Number(steering.yNorm) || fish.yNorm || 0.5, 0.12, 0.84);
-    const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
-    fish.targetXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
-    // Keep the inspect/hangout anchor fixed. The old code sampled a sine wave
-    // only when steering refreshed (every 260 ms), so a fish resting by decor
-    // was given a new vertical target in visible steps. Any idle bob belongs in
-    // the render pose, which updates every animation frame.
-    fish.targetYNorm = clampFishYNormToLayer(focusYNorm, fish, species, steering.targetLayer || getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.82 });
-    fish.targetAt = now + 720;
+    const targetLayer = steering.targetLayer || getFishTankLayer(fish);
+
+    if (!steering.inspectPhase) {
+      const side = (fish.xNorm || 0.5) <= focusXNorm ? -1 : 1;
+      steering.inspectPhase = "approach";
+      steering.approachXNorm = clamp(focusXNorm + side * 0.06, 0.08, 0.92);
+      steering.approachYNorm = clampFishYNormToLayer(
+        focusYNorm,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+    }
+
+    const approachXNorm = clamp(Number(steering.approachXNorm) || focusXNorm, 0.08, 0.92);
+    const approachYNorm = clamp(Number(steering.approachYNorm) || focusYNorm, 0.14, 0.82);
+    const approachDistance = Math.hypot(
+      approachXNorm - (Number(fish.xNorm) || 0.5),
+      approachYNorm - (Number(fish.yNorm) || 0.5)
+    );
+
+    if (steering.inspectPhase === "approach" && approachDistance <= 0.026) {
+      steering.inspectPhase = "orient";
+      steering.inspectPhaseUntil = now + 520;
+      steering.holdXNorm = Number(fish.xNorm) || approachXNorm;
+      steering.holdYNorm = Number(fish.yNorm) || approachYNorm;
+    }
+
+    if (steering.inspectPhase === "orient") {
+      fish.targetXNorm = clamp(Number(steering.holdXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+      fish.targetYNorm = clampFishYNormToLayer(
+        Number(steering.holdYNorm) || fish.yNorm || 0.5,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+      const desiredFacing = focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1;
+      setFishDirection(fish, desiredFacing, species, now);
+      if (now >= Number(steering.inspectPhaseUntil || 0) && !(fish.turnStartedAt && fish.turnDurationMs > 0)) {
+        steering.inspectPhase = "inspect";
+      }
+    } else if (steering.inspectPhase === "inspect") {
+      // Stay at the settled observation point. Render-time idle motion supplies
+      // life here; steering does not keep sampling a new destination.
+      fish.targetXNorm = clamp(Number(steering.holdXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
+      fish.targetYNorm = clampFishYNormToLayer(
+        Number(steering.holdYNorm) || fish.yNorm || 0.5,
+        fish,
+        species,
+        targetLayer,
+        { minYNorm: 0.14, maxYNorm: 0.82 }
+      );
+      if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
+        setFishDirection(fish, focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1, species, now);
+      }
+    } else {
+      fish.targetXNorm = approachXNorm;
+      fish.targetYNorm = approachYNorm;
+    }
+
+    fish.targetAt = now + (steering.inspectPhase === "approach" ? 720 : 900);
     fish.hangoutDecorId = steering.decorId || null;
     fish.hangoutZoneType = steering.zoneType || "inspect";
-    setFishDesiredTankLayer(fish, steering.targetLayer || getFishTankLayer(fish));
+    setFishDesiredTankLayer(fish, targetLayer);
     if (species.speedMode === "dynamic") {
-      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * 0.55);
+      const speedBlend = steering.inspectPhase === "approach" ? 0.5 : 0.18;
+      fish.swimSpeed = normalizeFishSpeed(species, species.speedMin + (species.speedMax - species.speedMin) * speedBlend);
     }
-    steering.nextRefreshAt = now + FISH_ACTION_STEER_REFRESH_MS;
+    steering.nextRefreshAt = now + (steering.inspectPhase === "approach" ? FISH_ACTION_STEER_REFRESH_MS : 420);
     setFishBehaviorIntent(fish, "inspect", steering.zoneType || "decor", now, { targetId: steering.decorId || "", durationMs: FISH_ACTION_STEER_REFRESH_MS * 5 });
     return true;
   }
@@ -56586,6 +57439,38 @@ function getBubbleBodegaAccountData() {
   };
 }
 
+function recordDailyIncomeCategory(category, amount, now = Date.now()) {
+  const normalizedCategory = ["feeding", "cleaning", "random-finds", "awards", "sales", "milestones"].includes(String(category || ""))
+    ? String(category)
+    : "other";
+  const normalizedAmount = Math.max(0, Math.floor(Number(amount) || 0));
+  if (!state || normalizedAmount <= 0) return false;
+  const dayKey = getLocalDayKey(now);
+  if (!state.incomeHistoryByDay || typeof state.incomeHistoryByDay !== "object" || Array.isArray(state.incomeHistoryByDay)) {
+    state.incomeHistoryByDay = {};
+  }
+  const existing = state.incomeHistoryByDay[dayKey] && typeof state.incomeHistoryByDay[dayKey] === "object"
+    ? state.incomeHistoryByDay[dayKey]
+    : {};
+  state.incomeHistoryByDay[dayKey] = {
+    feeding: Math.max(0, Math.floor(Number(existing.feeding) || 0)),
+    cleaning: Math.max(0, Math.floor(Number(existing.cleaning) || 0)),
+    randomFinds: Math.max(0, Math.floor(Number(existing.randomFinds) || 0)),
+    awards: Math.max(0, Math.floor(Number(existing.awards) || 0)),
+    sales: Math.max(0, Math.floor(Number(existing.sales) || 0)),
+    milestones: Math.max(0, Math.floor(Number(existing.milestones) || 0))
+  };
+  const field = normalizedCategory === "random-finds" ? "randomFinds" : normalizedCategory;
+  if (Object.prototype.hasOwnProperty.call(state.incomeHistoryByDay[dayKey], field)) {
+    state.incomeHistoryByDay[dayKey][field] += normalizedAmount;
+  }
+  const dayKeys = Object.keys(state.incomeHistoryByDay).sort().reverse();
+  for (const staleDayKey of dayKeys.slice(INCOME_HISTORY_DAY_LIMIT)) {
+    delete state.incomeHistoryByDay[staleDayKey];
+  }
+  return true;
+}
+
 function recordWalletTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Math.abs(Number(options.amount) || 0)));
   const allowZero = options.allowZero === true || options.direction === "neutral";
@@ -56601,6 +57486,7 @@ function recordWalletTransaction(options = {}) {
     direction,
     label: String(options.label || "Aquarium activity").slice(0, 180),
     place: String(options.place || "Aquarium").replace(/tankazon/ig, "BubbleBodega").slice(0, 80),
+    category: typeof options.category === "string" ? options.category.slice(0, 40) : "",
     time: Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now(),
     orderId: typeof options.orderId === "string" ? options.orderId.slice(0, 80) : ""
   });
@@ -56865,14 +57751,6 @@ async function buyFish(speciesId, options = {}) {
     return { ok: false, reason: "species-locked" };
   }
 
-  const purchaseCost = getFishPurchaseCost(speciesId);
-  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
-  if (state.coins < purchaseCost) {
-    const errorMessage = getInsufficientFundsMessage();
-    showToast(errorMessage, { force: true, tone: "error" });
-    return { ok: false, reason: "insufficient-coins", errorMessage };
-  }
-
   const now = Date.now();
   const tutorialPurchase = isGuidedTutorialActive() && isTutorialStage(TUTORIAL_STAGE_ADOPT_FISH);
   const variants = getFishAssetVariants(species);
@@ -56882,12 +57760,28 @@ async function buyFish(speciesId, options = {}) {
   if (selectedVariant < 0) {
     return { ok: false, reason: "variant-unavailable", errorMessage: "That fish variant is no longer available." };
   }
+  const selectedVariantKey = getFishAppearanceVariantKey(variants[selectedVariant]);
+  if (typeof isFishAppearanceVariantUnlocked === "function"
+    && !isFishAppearanceVariantUnlocked(species, selectedVariantKey, { allowDebugBypass: true })) {
+    const errorMessage = `${species.name} ${String(species?.variantLabels?.[selectedVariant] || "variant").trim() || "variant"} is locked. Level up another ${species.name} to discover it.`;
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "variant-locked", errorMessage };
+  }
+
+  const purchaseCost = getFishPurchaseCost(speciesId);
+  const davyMutationPurchase = species?.davyMutation === true || String(species?.id || "").startsWith("davy-");
+  if (state.coins < purchaseCost) {
+    const errorMessage = getInsufficientFundsMessage();
+    showToast(errorMessage, { force: true, tone: "error" });
+    return { ok: false, reason: "insufficient-coins", errorMessage };
+  }
+
   const entryStartedAt = options.closeOverlayFirst === true
     ? now + TUTORIAL_STORE_CLOSE_DELAY_MS
     : now;
   const fish = createFishRecord(speciesId, {
     appearanceVariant: selectedVariant,
-    appearanceVariantKey: getFishAppearanceVariantKey(variants[selectedVariant]),
+    appearanceVariantKey: selectedVariantKey,
     // Persist the resolved selected asset as well as its filename key. This
     // prevents a later catalog refresh or cache query from changing a fish
     // that has already been purchased.
@@ -60922,6 +61816,11 @@ function clearFishSchoolFollowState(fish) {
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
   fish.followDepthSlot = null;
+  fish.followFormationSlot = null;
+  fish.followSlotUntil = null;
+  fish.schoolNextTargetRefreshAt = null;
+  fish.schoolTargetXNorm = null;
+  fish.schoolTargetYNorm = null;
 }
 
 function pruneFishGravelPebbleRuntimeState(now = Date.now()) {
@@ -61892,6 +62791,28 @@ function spawnCoinGlint(x, y, now = Date.now()) {
   }
 }
 
+function getBoroughGravelCoinFindStatus(now = Date.now()) {
+  const dayKey = getLocalDayKey(now);
+  if (state.gravelCoinFindDayKey !== dayKey) {
+    state.gravelCoinFindDayKey = dayKey;
+    state.gravelCoinsFoundToday = 0;
+  }
+
+  state.gravelCoinsFoundToday = clamp(
+    Math.floor(Number(state.gravelCoinsFoundToday) || 0),
+    0,
+    GRAVEL_DAILY_COIN_FIND_CAP
+  );
+  state.lastGravelCoinFoundAt = Math.max(0, Number(state.lastGravelCoinFoundAt) || 0);
+
+  return {
+    dayKey,
+    coinsFound: state.gravelCoinsFoundToday,
+    cap: GRAVEL_DAILY_COIN_FIND_CAP,
+    lastFoundAt: state.lastGravelCoinFoundAt
+  };
+}
+
 function attemptGravelCoinFind(fish, action, now = Date.now(), options = {}) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     return false;
@@ -61901,15 +62822,21 @@ function attemptGravelCoinFind(fish, action, now = Date.now(), options = {}) {
   }
 
   action.coinFindRolled = true;
-  const lastFoundAt = Number(state.lastGravelCoinFoundAt) || 0;
-  const chanceMultiplier = Math.max(0, Number(options.chanceMultiplier) || 1);
-  const coinChance = clamp(GRAVEL_COIN_FIND_CHANCE * chanceMultiplier, 0, 1);
-  if (now - lastFoundAt < GRAVEL_COIN_FIND_COOLDOWN_MS || Math.random() >= coinChance) {
+  const status = getBoroughGravelCoinFindStatus(now);
+  if (status.coinsFound >= status.cap) {
     return false;
   }
 
+  const chanceMultiplier = Math.max(0, Number(options.chanceMultiplier) || 1);
+  const coinChance = clamp(GRAVEL_COIN_FIND_CHANCE * chanceMultiplier, 0, 1);
+  if (now - status.lastFoundAt < GRAVEL_COIN_FIND_COOLDOWN_MS || Math.random() >= coinChance) {
+    return false;
+  }
+
+  state.gravelCoinsFoundToday = Math.min(GRAVEL_DAILY_COIN_FIND_CAP, status.coinsFound + 1);
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
-  recordWalletTransaction({ amount: 1, direction: "credit", now, place: getTankLabel(), label: `${fish.name || "A fish"} found a coin` });
+  recordDailyIncomeCategory("random-finds", 1, now);
+  recordWalletTransaction({ amount: 1, direction: "credit", category: "random-finds", now, place: getTankLabel(), label: `${fish.name || "A fish"} found a coin` });
   state.lastGravelCoinFoundAt = now;
   pushEvent(`${fish.name || "A fish"} found a coin in the gravel.`, now);
   spawnCoinGlint(action.pickupXNorm * TANK_WIDTH, action.pickupYNorm * TANK_HEIGHT - 8, now);
@@ -61918,37 +62845,34 @@ function attemptGravelCoinFind(fish, action, now = Date.now(), options = {}) {
   return true;
 }
 
-function getTankOtocinclusCoinFindStatus(tank = getCurrentTank(), now = Date.now()) {
-  if (!tank) {
-    return {
-      dayKey: getLocalDayKey(now),
-      coinsFound: 0,
-      cap: OTOCINCLUS_DAILY_COIN_FIND_CAP,
-      lastAttemptAt: 0
-    };
-  }
-
+function getBoroughOtocinclusCoinFindStatus(now = Date.now()) {
   const dayKey = getLocalDayKey(now);
-  if (tank.otocinclusCoinFindDayKey !== dayKey) {
-    tank.otocinclusCoinFindDayKey = dayKey;
-    tank.otocinclusCoinsFoundToday = 0;
-    tank.otocinclusCoinFindLastAttemptAt = 0;
-    runtime.tankStateDirty = true;
+  if (state.boroughOtocinclusCoinFindDayKey !== dayKey) {
+    state.boroughOtocinclusCoinFindDayKey = dayKey;
+    state.boroughOtocinclusCoinsFoundToday = 0;
   }
 
-  tank.otocinclusCoinsFoundToday = clamp(
-    Math.floor(Number(tank.otocinclusCoinsFoundToday) || 0),
+  state.boroughOtocinclusCoinsFoundToday = clamp(
+    Math.floor(Number(state.boroughOtocinclusCoinsFoundToday) || 0),
     0,
     OTOCINCLUS_DAILY_COIN_FIND_CAP
   );
-  tank.otocinclusCoinFindLastAttemptAt = Math.max(0, Number(tank.otocinclusCoinFindLastAttemptAt) || 0);
+  state.boroughOtocinclusCoinFindLastAttemptAt = Math.max(
+    0,
+    Number(state.boroughOtocinclusCoinFindLastAttemptAt) || 0
+  );
 
   return {
     dayKey,
-    coinsFound: tank.otocinclusCoinsFoundToday,
+    coinsFound: state.boroughOtocinclusCoinsFoundToday,
     cap: OTOCINCLUS_DAILY_COIN_FIND_CAP,
-    lastAttemptAt: tank.otocinclusCoinFindLastAttemptAt
+    lastAttemptAt: state.boroughOtocinclusCoinFindLastAttemptAt
   };
+}
+
+// Compatibility wrapper for older callers/debug helpers. Economy state is borough-wide.
+function getTankOtocinclusCoinFindStatus(tank = getCurrentTank(), now = Date.now()) {
+  return getBoroughOtocinclusCoinFindStatus(now);
 }
 
 function attemptOtocinclusCoinFind(fish, point = {}, now = Date.now(), options = {}) {
@@ -61962,7 +62886,7 @@ function attemptOtocinclusCoinFind(fish, point = {}, now = Date.now(), options =
   }
 
   const tank = getCurrentTank();
-  const status = getTankOtocinclusCoinFindStatus(tank, now);
+  const status = getBoroughOtocinclusCoinFindStatus(now);
   if (!tank || status.coinsFound >= status.cap) {
     return false;
   }
@@ -61971,8 +62895,7 @@ function attemptOtocinclusCoinFind(fish, point = {}, now = Date.now(), options =
     return false;
   }
 
-  tank.otocinclusCoinFindLastAttemptAt = now;
-  runtime.tankStateDirty = true;
+  state.boroughOtocinclusCoinFindLastAttemptAt = now;
 
   if (Math.random() >= OTOCINCLUS_COIN_FIND_CHANCE) {
     if (typeof requestDeferredStateSave === "function") {
@@ -61981,16 +62904,18 @@ function attemptOtocinclusCoinFind(fish, point = {}, now = Date.now(), options =
     return false;
   }
 
-  tank.otocinclusCoinsFoundToday = Math.min(
+  state.boroughOtocinclusCoinsFoundToday = Math.min(
     OTOCINCLUS_DAILY_COIN_FIND_CAP,
     status.coinsFound + 1
   );
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + 1);
+  recordDailyIncomeCategory("random-finds", 1, now);
 
   const context = options.context === "glass" ? "cleaning the glass" : "grazing through the gravel";
   recordWalletTransaction({
     amount: 1,
     direction: "credit",
+    category: "random-finds",
     now,
     place: getTankLabel(),
     label: `${fish.name || "Dwarf Sucker Catfish"} found a coin`
@@ -62417,52 +63342,121 @@ function getFishSchoolFormationSubLayer(fish, leader, now = Date.now()) {
   return clampTankSubLayer(pattern[slot % pattern.length]);
 }
 
+function getFishSchoolActiveFollowers(leader, now = Date.now()) {
+  if (!leader?.id) {
+    return [];
+  }
+  return state.fish.filter((fish) => (
+    fish
+    && fish.id !== leader.id
+    && fish.followFishId === leader.id
+    && Number.isFinite(Number(fish.followUntil))
+    && Number(fish.followUntil) > now
+    && !isFishDead(fish)
+  ));
+}
+
+function hasActiveFishSchoolFollowers(leader, now = Date.now()) {
+  return getFishSchoolActiveFollowers(leader, now).length > 0;
+}
+
+function getFishSchoolStableRank(fish) {
+  const key = String(fish?.id || fish?.name || fish?.speciesId || "fish");
+  if (typeof hashStringToUint32 === "function") {
+    return hashStringToUint32(key);
+  }
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = ((hash << 5) - hash + key.charCodeAt(index)) | 0;
+  }
+  return hash >>> 0;
+}
+
+function assignFishSchoolFormationSlot(fish, leader, now = Date.now()) {
+  const existing = Number(fish?.followFormationSlot);
+  if (Number.isInteger(existing) && existing >= 0) {
+    return existing;
+  }
+
+  const used = new Set();
+  for (const follower of getFishSchoolActiveFollowers(leader, now)) {
+    if (follower.id === fish.id) continue;
+    const slot = Number(follower.followFormationSlot);
+    if (Number.isInteger(slot) && slot >= 0) {
+      used.add(slot);
+    }
+  }
+  let slot = 0;
+  while (used.has(slot)) slot += 1;
+  fish.followFormationSlot = slot;
+  return slot;
+}
+
+function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  const locomotionProfile = getFishLocomotionProfile(fish || species);
+  const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.68, 1.55);
+  const bodySpacingNorm = clamp(
+    (Math.max(60, getFishVisualSize(fish)) + Math.max(60, getFishVisualSize(leader))) / TANK_WIDTH * 0.32 * spacingScale,
+    SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
+    SAME_SPECIES_FOLLOW_SPACING_MAX_NORM
+  );
+  const slot = assignFishSchoolFormationSlot(fish, leader, now);
+  const row = Math.floor(slot / 3) + 1;
+  const lane = slot % 3;
+  const trailingDistance = clamp(
+    bodySpacingNorm * (0.9 + row * 0.72),
+    SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
+    SAME_SPECIES_FOLLOW_SPACING_MAX_NORM * 1.9
+  );
+  const verticalStep = clamp(
+    SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM
+      * clamp(locomotionProfile.schoolVerticalJitterScale, 0.35, 1.5),
+    0.018,
+    0.055
+  );
+  const laneOffset = lane === 0 ? 0 : (lane === 1 ? -verticalStep : verticalStep);
+  const rowOffset = row > 1 ? ((row % 2 === 0 ? 1 : -1) * verticalStep * 0.35) : 0;
+  return {
+    trailingDistance,
+    yOffsetNorm: clamp(laneOffset + rowOffset, -0.085, 0.085)
+  };
+}
+
 function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
   if (!fish || !leader) {
     return null;
   }
 
   const leaderDirection = getFishFacingDirection(leader);
-  const species = getSpeciesForFish(fish);
-  const locomotionProfile = getFishLocomotionProfile(fish || species);
-  const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.55, 1.7);
-  const spacingMinNorm = SAME_SPECIES_FOLLOW_SPACING_MIN_NORM * spacingScale;
-  const spacingMaxNorm = SAME_SPECIES_FOLLOW_SPACING_MAX_NORM * spacingScale;
-  const spacingNorm = clamp(
-    (Math.max(80, getFishVisualSize(fish)) + Math.max(80, getFishVisualSize(leader))) / TANK_WIDTH * 0.2 * spacingScale,
-    spacingMinNorm,
-    spacingMaxNorm
+  const formation = getFishSchoolFormationOffset(fish, leader, now);
+  const leaderTargetX = Number.isFinite(Number(leader.targetXNorm)) ? Number(leader.targetXNorm) : leader.xNorm;
+  const leaderTargetY = Number.isFinite(Number(leader.targetYNorm)) ? Number(leader.targetYNorm) : leader.yNorm;
+  const leaderTargetDistance = Math.hypot(leaderTargetX - leader.xNorm, leaderTargetY - leader.yNorm);
+  const lookAheadBlend = clamp(leaderTargetDistance * 0.7, 0, 0.14);
+  const travelAnchorX = leader.xNorm + (leaderTargetX - leader.xNorm) * lookAheadBlend;
+  const travelAnchorY = leader.yNorm + (leaderTargetY - leader.yNorm) * lookAheadBlend;
+  const desiredXNorm = clamp(
+    travelAnchorX - leaderDirection * formation.trailingDistance,
+    0.08,
+    0.92
   );
-  const leadBlend = clamp(
-    Math.hypot(
-      (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
-      (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
-    ) * 2.8,
-    0.12,
-    0.42
+  const desiredYNorm = clamp(
+    travelAnchorY + formation.yOffsetNorm,
+    0.14,
+    0.8
   );
-  const anchorXNorm = leader.xNorm + ((Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm) * leadBlend;
-  const anchorYNorm = leader.yNorm + ((Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm) * leadBlend;
-  const offsetXNorm = Number.isFinite(fish.followOffsetXNorm)
-    ? Number(fish.followOffsetXNorm)
-    : clamp(
-      -leaderDirection * spacingNorm + randomBetween(-0.012, 0.012) * spacingScale,
-      -spacingMaxNorm,
-      spacingMaxNorm
-    );
-  const verticalJitter = SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM
-    * clamp(locomotionProfile.schoolVerticalJitterScale, 0.25, 1.8);
-  const offsetYNorm = Number.isFinite(fish.followOffsetYNorm)
-    ? Number(fish.followOffsetYNorm)
-    : randomBetween(-verticalJitter, verticalJitter);
 
+  // Followers use a stable slot behind one leader. Do not steer from a live
+  // centroid or from every nearby fish. Those continuously moving forces were
+  // causing the school to collapse into a blob and oscillate vertically.
   return {
-    xNorm: clamp(anchorXNorm + offsetXNorm, 0.08, 0.92),
-    yNorm: clamp(anchorYNorm + offsetYNorm, 0.14, 0.8),
-    targetLayer: clampTankLayer(getFishTankLayer(leader)),
+    xNorm: desiredXNorm,
+    yNorm: desiredYNorm,
+    targetLayer: clampTankLayer(getFishTankLayer(fish)),
     targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
-    offsetXNorm,
-    offsetYNorm
+    offsetXNorm: -leaderDirection * formation.trailingDistance,
+    offsetYNorm: formation.yOffsetNorm
   };
 }
 
@@ -62531,8 +63525,36 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     return false;
   }
 
-  fish.targetXNorm = anchor.xNorm;
-  fish.targetYNorm = anchor.yNorm;
+  const previousTargetX = Number.isFinite(Number(fish.schoolTargetXNorm))
+    ? Number(fish.schoolTargetXNorm)
+    : (Number.isFinite(Number(fish.targetXNorm)) ? Number(fish.targetXNorm) : anchor.xNorm);
+  const previousTargetY = Number.isFinite(Number(fish.schoolTargetYNorm))
+    ? Number(fish.schoolTargetYNorm)
+    : (Number.isFinite(Number(fish.targetYNorm)) ? Number(fish.targetYNorm) : anchor.yNorm);
+  const previousUpdatedAt = Number.isFinite(Number(fish.schoolTargetUpdatedAt))
+    ? Number(fish.schoolTargetUpdatedAt)
+    : now;
+  const elapsedSeconds = clamp((now - previousUpdatedAt) / 1000, 0, 0.1);
+  const response = 1 - Math.exp(-SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC * elapsedSeconds);
+  const desiredStepX = (anchor.xNorm - previousTargetX) * response;
+  const desiredStepY = (anchor.yNorm - previousTargetY) * response;
+  const nextTargetX = previousTargetX + clamp(
+    desiredStepX,
+    -SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM,
+    SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM
+  );
+  const nextTargetY = previousTargetY + clamp(
+    desiredStepY,
+    -SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM,
+    SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM
+  );
+
+  fish.schoolTargetXNorm = nextTargetX;
+  fish.schoolTargetYNorm = nextTargetY;
+  fish.schoolTargetUpdatedAt = now;
+  fish.schoolNextTargetRefreshAt = null;
+  fish.targetXNorm = nextTargetX;
+  fish.targetYNorm = nextTargetY;
   fish.targetAt = Math.max(now + 500, fish.followUntil);
   setFishDesiredTankLayer(fish, anchor.targetLayer);
   setFishDesiredTankSubLayer(fish, anchor.targetSubLayer);
@@ -62561,58 +63583,81 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
   const locomotionProfile = getFishLocomotionProfile(fish || species);
-  const followRadiusNorm = SAME_SPECIES_FOLLOW_RADIUS_NORM * (0.76 + schoolingStrength * 0.48);
+  const followRadiusNorm = SAME_SPECIES_FOLLOW_RADIUS_NORM * (0.82 + schoolingStrength * 0.4);
+  const compatibilityId = getFishSchoolingCompatibilityId(fish);
 
-  const nearbySchoolmates = state.fish
-    .filter((otherFish) => isFishEligibleSchoolLeader(otherFish, fish, species, now))
-    .map((otherFish) => ({
-      fish: otherFish,
-      distanceNorm: Math.hypot(otherFish.xNorm - fish.xNorm, otherFish.yNorm - fish.yNorm)
-    }))
-    .filter((entry) => entry.distanceNorm <= followRadiusNorm)
-    .sort((left, right) => left.distanceNorm - right.distanceNorm);
+  const localCandidates = state.fish
+    .filter((otherFish) => (
+      otherFish
+      && getFishSchoolingCompatibilityId(otherFish) === compatibilityId
+      && !isFishDead(otherFish)
+      && otherFish.activity === "roam"
+      && !otherFish.caveState
+      && !otherFish.entryStartedAt
+      && !isFishDiseaseAvoidanceSource(otherFish)
+      && !isFishSickOrDying(otherFish)
+      && otherFish.speciesId === fish.speciesId
+      && Math.hypot(otherFish.xNorm - fish.xNorm, otherFish.yNorm - fish.yNorm) <= followRadiusNorm
+    ))
+    .map((candidate) => ({
+      fish: candidate,
+      distanceNorm: Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm),
+      followerCount: getFishSchoolActiveFollowers(candidate, now).length,
+      rank: getFishSchoolStableRank(candidate)
+    }));
 
-  if (!nearbySchoolmates.length) {
+  if (localCandidates.length < 2) {
     return null;
   }
 
   const baseFollowChance = SAME_SPECIES_FOLLOW_BASE_CHANCE
-    + Math.max(0, nearbySchoolmates.length - 1) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS;
+    + Math.max(0, localCandidates.length - 2) * SAME_SPECIES_FOLLOW_NEIGHBOR_BONUS;
   const followChance = clamp(
-    baseFollowChance * (0.3 + schoolingStrength * 2.25),
+    baseFollowChance * (0.24 + schoolingStrength * 1.65),
     0,
-    SAME_SPECIES_FOLLOW_MAX_CHANCE
+    Math.min(0.11, SAME_SPECIES_FOLLOW_MAX_CHANCE)
   );
   if (Math.random() > followChance) {
     return null;
   }
 
-  const leaderPool = nearbySchoolmates.slice(0, Math.min(4, nearbySchoolmates.length));
-  const leaderIndex = Math.min(
-    leaderPool.length - 1,
-    Math.floor(Math.pow(Math.random(), 1.35) * leaderPool.length)
-  );
-  const leader = leaderPool[leaderIndex]?.fish || null;
-  if (!leader) {
+  // Prefer a fish that is already leading this local school. If no leader has
+  // formed yet, elect one deterministically. The elected fish stays independent
+  // and everyone else follows it, so the group has a real direction instead of
+  // several simultaneous mini-leaders pulling the school into a knot.
+  localCandidates.sort((left, right) => {
+    if (right.followerCount !== left.followerCount) return right.followerCount - left.followerCount;
+    if (left.rank !== right.rank) return left.rank - right.rank;
+    return left.distanceNorm - right.distanceNorm;
+  });
+  const leader = localCandidates[0]?.fish || null;
+  if (!leader || leader.id === fish.id || !isFishEligibleSchoolLeader(leader, fish, species, now)) {
     return null;
   }
 
   if (typeof reinforceFishFriendshipPair === "function") {
-    reinforceFishFriendshipPair(fish, leader, 0.8, now, { source: "schooling" });
+    reinforceFishFriendshipPair(fish, leader, 0.55, now, { source: "schooling" });
   }
 
-  const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.55, 2.4);
+  const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.7, 2.1);
   const followUntil = now + randomBetween(
     SAME_SPECIES_FOLLOW_MIN_MS * followDurationScale,
     SAME_SPECIES_FOLLOW_MAX_MS * followDurationScale
   );
   fish.followFishId = leader.id;
   fish.followUntil = followUntil;
-  fish.followCooldownUntil = followUntil + randomBetween(2200, 5200);
+  fish.followCooldownUntil = followUntil + randomBetween(3500, 7000);
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
   fish.followDepthSlot = null;
+  fish.followFormationSlot = null;
+  fish.followSlotUntil = followUntil;
+  fish.schoolNextTargetRefreshAt = 0;
+  fish.schoolTargetXNorm = null;
+  fish.schoolTargetYNorm = null;
+  fish.schoolTargetUpdatedAt = null;
   assignFishSchoolFormationDepthSlot(fish, leader, now);
+  assignFishSchoolFormationSlot(fish, leader, now);
   const anchor = getFishSchoolFollowAnchor(fish, leader, now);
   if (!anchor) {
     clearFishSchoolFollowState(fish);
@@ -62621,6 +63666,9 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
 
   fish.followOffsetXNorm = anchor.offsetXNorm;
   fish.followOffsetYNorm = anchor.offsetYNorm;
+  fish.schoolTargetXNorm = anchor.xNorm;
+  fish.schoolTargetYNorm = anchor.yNorm;
+  fish.schoolNextTargetRefreshAt = now + SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS;
 
   return {
     leaderId: leader.id,
@@ -62882,11 +63930,24 @@ function getDavyMutationDailyOffer(now = Date.now()) {
 }
 
 function getBubbleBodegaFishStoreVariants(species) {
-  if (!isDavyMutationSpecies(species)) {
-    return getFishStoreVariants(species);
+  if (isDavyMutationSpecies(species)) {
+    const offer = getDavyMutationDailyOffer();
+    return offer?.species?.id === species?.id && offer.variant ? [offer.variant] : [];
   }
-  const offer = getDavyMutationDailyOffer();
-  return offer?.species?.id === species?.id && offer.variant ? [offer.variant] : [];
+
+  const variants = getFishStoreVariants(species);
+  // BubbleBodega is a collection view, not a spoiler list. Normal play shows
+  // only appearances the player has actually discovered. Debug Mode keeps the
+  // complete CURRENT variant set selectable for testing, while obsolete assets
+  // have already been filtered out by getFishStoreVariants().
+  if (typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return variants;
+  }
+  if (typeof isFishSpeciesCareProgressionEligible === "function"
+      && isFishSpeciesCareProgressionEligible(species)) {
+    return variants.filter((variant) => variant?.unlocked === true);
+  }
+  return variants;
 }
 
 function getOwnedFishCount() {
@@ -63309,6 +64370,9 @@ function sortCatalogEntries(entries, sortKey) {
   });
 }
 
+// Species availability is intentionally separate from appearance progression.
+// This helper answers only whether the fish TYPE has been unlocked by the
+// existing milestone/species system. Variant mastery must never unlock a species.
 function isFishSpeciesProgressUnlocked(speciesOrId) {
   const species = typeof speciesOrId === "string"
     ? runtime.fishMap.get(speciesOrId)
@@ -63682,14 +64746,19 @@ function getOtherAquariumCreatureShopCatalog() {
 }
 
 function getStarterFishSpecies() {
-  const shopCatalog = getFishShopCatalog();
-  const unlockedCatalog = shopCatalog.filter((species) => isFishSpeciesUnlocked(species));
-  const goldfish = unlockedCatalog.find((species) => species.id === "goldfish");
-  if (goldfish) {
-    return goldfish;
+  const activeWaterType = getActiveStoreWaterType();
+  const preferredStarterId = activeWaterType === "saltwater" ? "firefish" : "goldfish";
+  const starterCatalog = getFishShopCatalog().filter((species) => (
+    species?.starterFish === true
+    && isFishCompatibleWithWaterType(species, activeWaterType)
+  ));
+  const unlockedStarters = starterCatalog.filter((species) => isFishSpeciesUnlocked(species));
+  const candidates = unlockedStarters.length ? unlockedStarters : starterCatalog;
+  const preferredStarter = candidates.find((species) => species.id === preferredStarterId);
+  if (preferredStarter) {
+    return preferredStarter;
   }
-  return [...(unlockedCatalog.length ? unlockedCatalog : shopCatalog)]
-    .sort(compareFishCatalogBySize)[0] || null;
+  return [...candidates].sort(compareFishCatalogBySize)[0] || null;
 }
 
 function getFishPurchaseCost(speciesId) {
@@ -63714,6 +64783,11 @@ function unlockFishSpecies(speciesId, now = Date.now(), reasonText = "") {
     ...(state.unlockedFishSpecies || []),
     speciesId
   ]);
+  // Unlocking a species only makes the fish type available. Creating its mastery
+  // record seeds the authored base appearance, but never grants alternates.
+  if (typeof getFishSpeciesMasteryRecord === "function") {
+    getFishSpeciesMasteryRecord(speciesId, { species });
+  }
 
   pushEvent(reasonText || `${species.name} is now available in the shop.`, now);
   return true;
@@ -64770,6 +65844,39 @@ function toggleDebugFrameProfiler() {
   return setDebugFrameProfilerEnabled(!runtime.debugFrameProfilerEnabled);
 }
 
+function formatDebugSwimAnimationSpeed(multiplier) {
+  const percent = Math.round((Number(multiplier) || FISH_SWIM_ANIMATION.defaultSpeedMultiplier) * 100);
+  const offset = percent - 100;
+  const offsetText = offset === 0 ? "0%" : `${offset > 0 ? "+" : ""}${offset}%`;
+  return `${percent}% (${offsetText})`;
+}
+
+function syncDebugSwimAnimationSpeedControls() {
+  if (!dom.debugSwimAnimationSpeedSlider) return;
+  const multiplier = getFishSwimAnimationSpeedMultiplier();
+  const percent = Math.round(multiplier * 100);
+  if (Number(dom.debugSwimAnimationSpeedSlider.value) !== percent) {
+    dom.debugSwimAnimationSpeedSlider.value = String(percent);
+  }
+  if (dom.debugSwimAnimationSpeedOutput) {
+    dom.debugSwimAnimationSpeedOutput.textContent = formatDebugSwimAnimationSpeed(multiplier);
+  }
+}
+
+function handleDebugSwimAnimationSpeedInput(input) {
+  if (!input) return FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  const multiplier = setDebugFishSwimAnimationSpeedMultiplier((Number(input.value) || 90) / 100);
+  syncDebugSwimAnimationSpeedControls();
+  return multiplier;
+}
+
+function resetDebugSwimAnimationSpeedTuner() {
+  const multiplier = resetDebugFishSwimAnimationSpeedMultiplier();
+  syncDebugSwimAnimationSpeedControls();
+  showToast(`Swim animation speed reset to ${Math.round(multiplier * 100)}%.`);
+  return multiplier;
+}
+
 function formatDebugDepthTuningPercent(value) {
   return `${Math.round((Number(value) || 0) * 100)}%`;
 }
@@ -64976,6 +66083,7 @@ function updateDebugFrameProfilerOverlay(force = false) {
     `work ${avgWork.toFixed(2)} ms avg | ${maxWork.toFixed(2)} max`,
     `motion ${sectionAverage("fishMotion").toFixed(2)} | actions ${sectionAverage("fishActions").toFixed(2)}`,
     `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
+    `swim ${counterAverage("fishSwimSliceDraws").toFixed(0)} slices | ${counterAverage("fishSwimWarpPasses").toFixed(1)} passes/frame | highlight ${counterAverage("fishSwimHighlightSliceDraws").toFixed(0)}`,
     `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
     `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
     `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
@@ -65171,11 +66279,202 @@ function forceAllWhalesToBreatheDebug(now = Date.now()) {
   return started;
 }
 
+
+function getDebugFishProgressionInspection(fishOrId = null) {
+  const fish = fishOrId && typeof fishOrId === "object"
+    ? fishOrId
+    : getManagedFishById(String(fishOrId || runtime.selectedFishId || runtime.selectedFishStatusFishId || ""))?.fish || null;
+  const species = getSpeciesForFish(fish);
+  if (!fish || !species) return null;
+
+  const progressionEligible = typeof isFishSpeciesCareProgressionEligible === "function"
+    ? isFishSpeciesCareProgressionEligible(species)
+    : false;
+  const mastery = progressionEligible && typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
+    : null;
+  const baseKey = progressionEligible && typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : "";
+  const unlockedVariantKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  if (baseKey) unlockedVariantKeys.add(baseKey);
+  const readOnlyMastery = {
+    ...(mastery || {}),
+    unlockedVariantKeys: [...unlockedVariantKeys]
+  };
+  const lockedPool = progressionEligible && typeof getFishLockedAppearanceVariantPool === "function"
+    ? getFishLockedAppearanceVariantPool(species, readOnlyMastery)
+    : [];
+  const lockedVariantCount = Array.isArray(lockedPool) ? lockedPool.length : 0;
+  const nextUnlockProbability = lockedVariantCount > 0 ? 1 / lockedVariantCount : 0;
+  const nextUnlockProbabilityPercent = nextUnlockProbability * 100;
+  const nextUnlockProbabilityLabel = lockedVariantCount <= 0
+    ? "Complete"
+    : lockedVariantCount === 1
+      ? "100%"
+      : (typeof formatFishVariantUnlockChancePercent === "function"
+        ? formatFishVariantUnlockChancePercent(nextUnlockProbabilityPercent)
+        : `${nextUnlockProbabilityPercent.toFixed(1).replace(/\.0$/, "")}%`);
+
+  return {
+    fishId: String(fish.id || ""),
+    fishName: String(fish.name || species.name || fish.id || "Fish"),
+    speciesId: String(species.id || fish.speciesId || ""),
+    speciesName: String(species.name || species.id || "Fish"),
+    progressionEligible,
+    careXp: Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+    careLevel: clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+    speciesHighestLevel: progressionEligible
+      ? clamp(Math.floor(Number(mastery?.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX)
+      : 0,
+    unlockedVariantKeys: [...unlockedVariantKeys],
+    lockedVariantCount,
+    nextUnlockProbability,
+    nextUnlockProbabilityPercent,
+    nextUnlockProbabilityLabel
+  };
+}
+
+function formatDebugFishProgressionInspection(inspection) {
+  if (!inspection) return "Select a fish to inspect progression.";
+  if (!inspection.progressionEligible) {
+    return `${inspection.fishName} · ${inspection.speciesName}\nCare progression: Not eligible`;
+  }
+  const keys = inspection.unlockedVariantKeys.length
+    ? inspection.unlockedVariantKeys.join(", ")
+    : "(none)";
+  return [
+    `${inspection.fishName} · ${inspection.speciesName}`,
+    `careXp: ${inspection.careXp}`,
+    `careLevel: ${inspection.careLevel}`,
+    `species highestLevel: ${inspection.speciesHighestLevel}`,
+    `unlockedVariantKeys: ${keys}`,
+    `locked variants: ${inspection.lockedVariantCount}`,
+    `next unlock probability: ${inspection.nextUnlockProbabilityLabel}`
+  ].join("\n");
+}
+
+function syncDebugFishProgressionInspection(debugMode = isDebugModeEnabled(), selectedFish = null) {
+  if (!dom.debugFishProgressionReadout && !dom.debugInspectFishProgressionButton) return null;
+  const fish = selectedFish || getManagedFishById(runtime.selectedFishId || runtime.selectedFishStatusFishId)?.fish || null;
+  const inspection = debugMode && fish ? getDebugFishProgressionInspection(fish) : null;
+  if (dom.debugFishProgressionReadout) {
+    dom.debugFishProgressionReadout.textContent = debugMode
+      ? formatDebugFishProgressionInspection(inspection)
+      : "Select a fish to inspect progression.";
+  }
+  if (dom.debugInspectFishProgressionButton) {
+    dom.debugInspectFishProgressionButton.hidden = !debugMode;
+    dom.debugInspectFishProgressionButton.disabled = !debugMode || !fish;
+  }
+  return inspection;
+}
+
+function inspectFishProgressionDebug(fishOrId = null, options = {}) {
+  if (!isDebugModeEnabled()) {
+    if (options.toast !== false) showToast("Debug tools are not enabled.");
+    return null;
+  }
+  const inspection = getDebugFishProgressionInspection(fishOrId);
+  if (!inspection) {
+    if (options.toast !== false) showToast("Select a fish to inspect progression.");
+    syncDebugFishProgressionInspection(true, null);
+    return null;
+  }
+  if (dom.debugFishProgressionReadout) {
+    dom.debugFishProgressionReadout.textContent = formatDebugFishProgressionInspection(inspection);
+  }
+  if (typeof console !== "undefined" && typeof console.table === "function") {
+    console.table({
+      fishId: inspection.fishId,
+      fishName: inspection.fishName,
+      speciesId: inspection.speciesId,
+      careXp: inspection.careXp,
+      careLevel: inspection.careLevel,
+      speciesHighestLevel: inspection.speciesHighestLevel,
+      unlockedVariantKeys: inspection.unlockedVariantKeys.join(", "),
+      lockedVariantCount: inspection.lockedVariantCount,
+      nextUnlockProbability: inspection.nextUnlockProbabilityLabel
+    });
+  }
+  if (options.toast !== false) showToast(`${inspection.fishName} progression logged to console.`);
+  return inspection;
+}
+
+function getDebugFishSwimAnimationMetrics(fishOrId = null) {
+  const fish = fishOrId && typeof fishOrId === "object"
+    ? fishOrId
+    : getManagedFishById(String(fishOrId || runtime.selectedFishId || runtime.selectedFishStatusFishId || ""))?.fish || null;
+  if (!fish?.id || !(runtime?.fishSwimAnimationDebugMetrics instanceof Map)) return null;
+  const metrics = runtime.fishSwimAnimationDebugMetrics.get(String(fish.id));
+  return metrics ? { ...metrics } : null;
+}
+
+function inspectFishSwimAnimationDebug(fishOrId = null, options = {}) {
+  if (!isDebugModeEnabled()) {
+    if (options.toast !== false) showToast("Debug tools are not enabled.");
+    return null;
+  }
+  const metrics = getDebugFishSwimAnimationMetrics(fishOrId);
+  if (!metrics) {
+    if (options.toast !== false) showToast("Select a visible fish, then let it render once.");
+    return null;
+  }
+  const rounded = {
+    fishId: metrics.fishId,
+    fishName: metrics.fishName,
+    preset: metrics.presetId,
+    tailIntensity: Number(metrics.tailIntensity.toFixed(4)),
+    animationSpeed: Number(metrics.animationSpeed.toFixed(4)),
+    depthWarp: Number(metrics.depthWarp.toFixed(4)),
+    perspective: Number(metrics.perspective.toFixed(4)),
+    frontWiggle: Number(metrics.frontWiggle.toFixed(4)),
+    phase: Number(metrics.phase.toFixed(4)),
+    effectiveCyclesPerSecond: Number(metrics.effectiveCyclesPerSecond.toFixed(4)),
+    rawDepthWarpPx: Number(metrics.rawDepthWarpPx.toFixed(4)),
+    maximumRearDepthWarpPx: Number(metrics.maximumRearDepthWarpPx.toFixed(4)),
+    fishDisplayHeight: Number(metrics.fishDisplayHeight.toFixed(4)),
+    rawDepthWarpRatio: Number(metrics.rawDepthWarpRatio.toFixed(6)),
+    rearDepthWarpRatio: Number(metrics.rearDepthWarpRatio.toFixed(6)),
+    panicActive: Boolean(metrics.panicActive),
+    activePanicDash: Boolean(metrics.activePanicDash),
+    panicSpeedBoost: Number(metrics.panicSpeedBoost.toFixed(4))
+  };
+  if (typeof console !== "undefined" && typeof console.table === "function") {
+    console.table(rounded);
+  }
+  if (options.toast !== false) showToast(`${metrics.fishName} swim math logged to console.`);
+  return rounded;
+}
+
 function exposeDebugConsoleCommands() {
   if (typeof window === "undefined") {
     return false;
   }
   window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
+  window.debugInspectFishProgression = (fishId = "") => inspectFishProgressionDebug(fishId || null, { toast: false });
+  window.debugInspectSwimAnimation = (fishId = "") => inspectFishSwimAnimationDebug(fishId || null, { toast: false });
+  window.debugSetSwimAnimationPreset = (presetId = "regular") => {
+    if (!isDebugModeEnabled()) {
+      return { ok: false, reason: "debug-disabled", presetId: "" };
+    }
+    const normalized = String(presetId || "").trim().toLowerCase();
+    if (!normalized || normalized === "auto" || normalized === "clear") {
+      runtime.debugSwimAnimationPresetOverride = "";
+      return { ok: true, presetId: "", mode: "automatic" };
+    }
+    const allowed = new Set(["regular", "chill", "zoomies", "panicked"]);
+    if (!allowed.has(normalized)) {
+      return { ok: false, reason: "unsupported-preset", presetId: normalized };
+    }
+    runtime.debugSwimAnimationPresetOverride = normalized;
+    return { ok: true, presetId: normalized, mode: "forced-rendering-only" };
+  };
+  window.debugClearSwimAnimationPreset = () => window.debugSetSwimAnimationPreset("auto");
+  window.debugForceRegularSwimAnimation = () => window.debugSetSwimAnimationPreset("regular");
+  window.debugForceChillSwimAnimation = () => window.debugSetSwimAnimationPreset("chill");
+  window.debugForceZoomiesSwimAnimation = () => window.debugSetSwimAnimationPreset("zoomies");
+  window.debugForcePanickedSwimAnimation = () => window.debugSetSwimAnimationPreset("panicked");
   window.debugSetProteusDonationsTo99 = () => {
     state.proteusCorpseDonationCount = 99;
     state.proteusZombieFishUnlockedAt = 0;
@@ -66308,11 +67607,12 @@ function updateDebugAnticipateFoodSteering(fish, species, steering, now = Date.n
   }
   const focusXNorm = clamp(Number(steering.foodXNorm) || fish.xNorm || 0.5, 0.08, 0.92);
   const focusYNorm = clamp(Number(steering.foodYNorm) || 0.28, 0.08, 0.7);
+  const currentLayer = getFishTankLayer(fish);
   const targetYNorm = clampFishYNormToLayer(
     focusYNorm + 0.075,
     fish,
     species,
-    clampTankLayer(Math.min(getFishTankLayer(fish), 2)),
+    currentLayer,
     { minYNorm: 0.14, maxYNorm: 0.62 }
   );
   fish.targetXNorm = focusXNorm;
@@ -66320,7 +67620,7 @@ function updateDebugAnticipateFoodSteering(fish, species, steering, now = Date.n
   fish.targetAt = now + 920;
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
-  setFishDesiredTankLayer(fish, clampTankLayer(Math.min(getFishTankLayer(fish), 2)));
+  setFishDesiredTankLayer(fish, currentLayer);
   if (Math.abs(focusXNorm - (fish.xNorm || 0.5)) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
     steering.faceDirection = focusXNorm >= (fish.xNorm || 0.5) ? 1 : -1;
   } else if (!Number.isFinite(Number(steering.faceDirection))) {
@@ -66996,6 +68296,27 @@ function triggerDebugBehaviorScenario(action) {
   }
 }
 
+function getDebugFishSwimPresetForPreviewBehavior(behaviorId) {
+  const mapping = {
+    "swim-preset-sleepy": "sleepy",
+    "swim-preset-chill": "chill",
+    "swim-preset-regular": "regular",
+    "swim-preset-active": "active",
+    "swim-preset-feeding": "feeding",
+    "swim-preset-zoomies": "zoomies",
+    "swim-preset-scared": "scared",
+    "swim-preset-panicked": "panicked",
+    swim: "regular",
+    "feeding-swim": "feeding",
+    panic: "panicked",
+    rest: "sleepy",
+    sleep: "sleepy",
+    zoomies: "zoomies",
+    avoid: "scared"
+  };
+  return mapping[String(behaviorId || "")] || "";
+}
+
 function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehaviorPreviewBehaviorId) {
   return DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS.find((entry) => entry.id === behaviorId)
     || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
@@ -67391,6 +68712,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   let phase = clamp(cycleElapsed / cycleMs, 0, 1);
   const renderNow = Date.now();
   const pose = getDebugFishBehaviorPreviewPose(behaviorId, phase);
+  const previewSwimPreset = getDebugFishSwimPresetForPreviewBehavior(behaviorId);
 
   fish.deadAt = null;
   fish.healthUnits = getSpeciesMaxHealthUnits(species);
@@ -67400,6 +68722,21 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   fish.turnStartedAt = 0;
   fish.turnDurationMs = 0;
   fish.direction = 1;
+  fish.wiggleClock = elapsed / 1000 * 2.6;
+  if (previewSwimPreset) {
+    fish.debugSwimAnimationPreset = previewSwimPreset;
+    fish.motionLevel = 0.9;
+    fish.targetXNorm = 0.76;
+    fish.targetYNorm = 0.5;
+    pose.tilt = 0;
+    pose.wiggle = 0;
+    pose.bodyScaleX = 1;
+    pose.bodyScaleY = 1;
+    pose.swayX = 0;
+    pose.swayY = 0;
+  } else {
+    delete fish.debugSwimAnimationPreset;
+  }
   if (behaviorId === "sick") {
     fish.healthUnits = 1;
   } else if (behaviorId === "death-animation") {
@@ -67464,7 +68801,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   const maxHeight = viewport.height * 0.62;
   const drawWidth = Math.max(70, Math.min(maxWidth, maxHeight / Math.max(0.08, aspect)));
   const drawHeight = drawWidth * aspect;
-  const drawX = -drawWidth / 2 + pose.wiggle * drawWidth * 0.018;
+  const drawX = -drawWidth / 2 + (previewSwimPreset ? 0 : pose.wiggle * drawWidth * 0.018);
   const healthRatio = getFishHealthRatio(fish, species);
   const fishFilter = getFishCanvasFilter(fish, healthRatio, renderNow, behaviorId === "sick" ? 0.25 : 1);
 
@@ -67496,7 +68833,29 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
     drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
   } else {
-    context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+    const warped = typeof drawFishSwimDepthWarpImage === "function"
+      && drawFishSwimDepthWarpImage(
+        context,
+        renderImage,
+        drawX,
+        -drawHeight / 2,
+        drawWidth,
+        drawHeight,
+        fish,
+        species,
+        renderNow,
+        {
+          imagePath,
+          presetId: previewSwimPreset || undefined,
+          movementFactor: previewSwimPreset ? 1 : undefined,
+          immediate: Boolean(previewSwimPreset),
+          effectiveBehavior: typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species.behavior,
+          suckerFreeSwimming: behaviorId === "sucker-free-swim" || (typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, renderNow))
+        }
+      );
+    if (!warped) {
+      context.drawImage(renderImage, drawX, -drawHeight / 2, drawWidth, drawHeight);
+    }
   }
   context.restore();
 
@@ -68641,15 +70000,50 @@ function markScrubStamp(x, y, options = {}) {
 }
 
 
+function getBoroughCleaningIncomeStatus(now = Date.now()) {
+  const dayKey = getLocalDayKey(now);
+  if (!state || typeof state !== "object") {
+    return {
+      dayKey,
+      coinsEarned: 0,
+      cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+      remainingCoins: BOROUGH_DAILY_CLEANING_COIN_CAP
+    };
+  }
+
+  if (state.boroughCleaningIncomeDayKey !== dayKey) {
+    state.boroughCleaningIncomeDayKey = dayKey;
+    state.boroughCleaningCoinsEarned = 0;
+  }
+
+  const coinsEarned = clamp(
+    Math.floor(Number(state.boroughCleaningCoinsEarned) || 0),
+    0,
+    BOROUGH_DAILY_CLEANING_COIN_CAP
+  );
+  state.boroughCleaningCoinsEarned = coinsEarned;
+
+  return {
+    dayKey,
+    coinsEarned,
+    cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+    remainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - coinsEarned)
+  };
+}
+
 function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) {
   const dayKey = getLocalDayKey(now);
+  const boroughStatus = getBoroughCleaningIncomeStatus(now);
   if (!tank) {
     return {
       dayKey,
       credit: 0,
       coinsEarned: 0,
       cap: CLEANING_DAILY_COIN_CAP,
-      remainingCredit: CLEANING_DAILY_COIN_CAP
+      remainingCredit: CLEANING_DAILY_COIN_CAP,
+      boroughCoinsEarned: boroughStatus.coinsEarned,
+      boroughCap: boroughStatus.cap,
+      boroughRemainingCoins: boroughStatus.remainingCoins
     };
   }
 
@@ -68673,7 +70067,10 @@ function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) 
     credit,
     coinsEarned,
     cap: CLEANING_DAILY_COIN_CAP,
-    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit)
+    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit),
+    boroughCoinsEarned: boroughStatus.coinsEarned,
+    boroughCap: boroughStatus.cap,
+    boroughRemainingCoins: boroughStatus.remainingCoins
   };
 }
 
@@ -68693,11 +70090,15 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
   const creditAdded = Math.min(status.remainingCredit, rawCredit);
   const nextCredit = clamp(status.credit + creditAdded, 0, CLEANING_DAILY_COIN_CAP);
   const nextWholeCoins = Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(nextCredit + 1e-9));
-  const coinsAwarded = Math.max(0, nextWholeCoins - status.coinsEarned);
+  const newlyEarnedTankCoins = Math.max(0, nextWholeCoins - status.coinsEarned);
+  const coinsAwarded = Math.min(newlyEarnedTankCoins, status.boroughRemainingCoins);
+  const nextBoroughCoinsEarned = status.boroughCoinsEarned + coinsAwarded;
 
   tank.cleaningIncomeDayKey = status.dayKey;
   tank.cleaningIncomeCredit = nextCredit;
-  tank.cleaningIncomeCoinsEarned = status.coinsEarned + coinsAwarded;
+  tank.cleaningIncomeCoinsEarned = nextWholeCoins;
+  state.boroughCleaningIncomeDayKey = status.dayKey;
+  state.boroughCleaningCoinsEarned = nextBoroughCoinsEarned;
 
   return {
     dayKey: status.dayKey,
@@ -68705,6 +70106,9 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
     coinsEarned: tank.cleaningIncomeCoinsEarned,
     cap: CLEANING_DAILY_COIN_CAP,
     remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - nextCredit),
+    boroughCoinsEarned: nextBoroughCoinsEarned,
+    boroughCap: BOROUGH_DAILY_CLEANING_COIN_CAP,
+    boroughRemainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - nextBoroughCoinsEarned),
     creditAdded,
     coinsAwarded,
     dirtinessRemoved: cleanedAmount
@@ -68740,7 +70144,8 @@ function completeCleaning(options = {}) {
   invalidateBoroughOverviewSnapshot(getCurrentTank());
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + cleanReward);
   if (cleanReward > 0) {
-    recordWalletTransaction({ amount: cleanReward, direction: "credit", now, label: "Tank cleaning", place: getTankLabel() });
+    recordDailyIncomeCategory("cleaning", cleanReward, now);
+    recordWalletTransaction({ amount: cleanReward, direction: "credit", category: "cleaning", now, label: "Tank cleaning", place: getTankLabel() });
   }
 
   if (!hasExposedDeadTankFish(now)) {
@@ -68765,7 +70170,7 @@ function completeCleaning(options = {}) {
   renderToolCursor();
 
   const cleaningEarningsSummary = manualCleaning
-    ? ` Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins.`
+    ? ` Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
     : "";
   pushEvent(
     cleanReward > 0
@@ -68785,12 +70190,14 @@ function completeCleaning(options = {}) {
   renderUi(now);
   showToast(
     cleanReward > 0
-      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today.`
-      : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
-        ? `Tank cleaned. Cleaning credit saved toward your next coin. ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} today.`
-        : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
-          ? `Tank cleaned. Daily cleaning income cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}.`
-          : "Tank cleaned. The haze is gone."
+      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+      : manualCleaning && cleaningIncome.boroughCoinsEarned >= BOROUGH_DAILY_CLEANING_COIN_CAP
+        ? `Tank cleaned. Borough cleaning income cap reached: ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}.`
+        : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
+          ? `Tank cleaned. Cleaning credit saved toward your next coin. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+          : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
+            ? `Tank cleaned. Tank cleaning credit cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+            : "Tank cleaned. The haze is gone."
   );
   return {
     ok: true,
@@ -68798,6 +70205,7 @@ function completeCleaning(options = {}) {
     cleaningCreditAdded: manualCleaning ? cleaningIncome.creditAdded : 0,
     cleaningCredit: cleaningIncome.credit,
     cleaningCoinsEarnedToday: cleaningIncome.coinsEarned,
+    boroughCleaningCoinsEarnedToday: cleaningIncome.boroughCoinsEarned,
     tutorialChanged,
     source
   };
@@ -69558,11 +70966,9 @@ function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
     return false;
   }
 
-  const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
-  if (reward > 0) {
-    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
-    recordWalletTransaction({ amount: reward, direction: "credit", now, label: "Daily Award", place: "Bubble Borough" });
-  }
+  // Daily Recaps are care/progression records, not a currency payout.
+  // Keep the historical `reward` field normalized to zero for save compatibility.
+  summary.reward = 0;
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
   }
@@ -69571,12 +70977,10 @@ function grantDailyRecapRewardAutomatically(summary, now = Date.now()) {
   }
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
 
-  const eventText = reward > 0
-    ? `Daily recap completed. +${reward} ${pluralize("coin", reward)} added automatically.`
-    : "Daily recap completed. No coin bonus today.";
-  pushEvent(eventText, now, getCurrentTank(), {
+  const score = Math.round(Number(summary.score) || 0);
+  pushEvent(`Daily recap completed. Score ${score > 0 ? "+" : ""}${score} recorded.`, now, getCurrentTank(), {
     type: "daily_recap",
-    tone: reward > 0 ? "positive" : "neutral",
+    tone: score > 0 ? "positive" : score < 0 ? "negative" : "neutral",
     recapEligible: false
   });
   return true;
@@ -69690,7 +71094,7 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
   }
 
   const score = rows.reduce((total, row) => total + row.score, 0);
-  const reward = clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP);
+  const reward = 0;
   const noStarvingFish = livingFish.length > 0 && !rows.some((row) => /starving|starvation/i.test(row.text || ""));
   const hasNegativeEvents = rows.some((row) => row.score < 0);
   const hasAttackOrDeath = rows.some((row) => /attack|bit|bite|died|death|devoured/i.test(row.text || ""));
@@ -69718,6 +71122,786 @@ function buildDailyRecapSummary(tank, dayKey, now = Date.now(), options = {}) {
     narrative,
     overall: score >= 12 ? "Great day!" : score >= 5 ? "Good day!" : score >= 1 ? "Pretty good day!" : score === 0 ? "Quiet day." : "Rough day."
   };
+}
+
+function isFishSpeciesCareProgressionEligible(species) {
+  if (!species) return false;
+
+  const speciesId = String(species.id || "").trim();
+  const type = String(species.type || "").trim().toLowerCase();
+  const behavior = String(species.behavior || "").trim().toLowerCase();
+
+  // Care Levels / mastery belong to ordinary BubbleBodega fish, including
+  // authored natural and genetics-enhanced species. Products with their own
+  // specimen, mutation, upload, cleanup, or pose/layer mechanics keep those
+  // existing systems instead of being folded into cosmetic progression.
+  if (
+    species.cleanupAnimal === true
+    || species.customAsset === true
+    || species.customUploadProduct === true
+    || species.davyMutation === true
+    || species.proteusExclusive === true
+    || species.proteusZombie === true
+  ) return false;
+
+  if (["shrimp", "snail"].includes(type) || ["shrimp", "snail", "sucker"].includes(behavior)) return false;
+  if (typeof isCustomFishShopKey === "function" && isCustomFishShopKey(speciesId)) return false;
+  if (typeof isCustomFishAssetKey === "function" && isCustomFishAssetKey(speciesId)) return false;
+  if (typeof isDavyMutationSpecies === "function" && isDavyMutationSpecies(species)) return false;
+  if (typeof isProteusZombieFish === "function" && isProteusZombieFish(species)) return false;
+
+  return true;
+}
+
+function isFishCareProgressionEligible(fish, species = getSpeciesForFish(fish)) {
+  if (!fish || !species) return false;
+  if (
+    fish.cleanupAnimal === true
+    || fish.customAsset === true
+    || fish.customUploadProduct === true
+    || fish.davyMutation === true
+    || fish.proteusExclusive === true
+    || fish.proteusZombie === true
+  ) return false;
+  return isFishSpeciesCareProgressionEligible(species);
+}
+
+function getFishBaseAppearanceVariantKey(species) {
+  if (!species || typeof species.asset !== "string" || !species.asset.trim()) return "";
+  return typeof getFishAppearanceVariantKey === "function"
+    ? getFishAppearanceVariantKey(species.asset)
+    : species.asset.split(/[?#]/)[0].split("/").pop();
+}
+
+function ensureFishSpeciesBaseVariantUnlocked(species, record) {
+  if (!record || !isFishSpeciesCareProgressionEligible(species)) return record;
+  const baseKey = getFishBaseAppearanceVariantKey(species);
+  if (!baseKey) return record;
+  const existing = Array.isArray(record.unlockedVariantKeys) ? record.unlockedVariantKeys : [];
+  if (!existing.includes(baseKey)) {
+    record.unlockedVariantKeys = [baseKey, ...existing];
+  }
+  return record;
+}
+
+function normalizeFishSpeciesMasteryBaseVariants() {
+  if (!state || typeof runtime === "undefined" || !runtime?.fishMap?.values) return false;
+  let changed = false;
+  for (const species of runtime.fishMap.values()) {
+    if (!isFishSpeciesCareProgressionEligible(species)) continue;
+    const speciesAvailable = typeof isFishSpeciesProgressUnlocked === "function"
+      ? isFishSpeciesProgressUnlocked(species)
+      : (!species.unlockRequirement || (state?.unlockedFishSpecies || []).includes(species.id));
+    if (!speciesAvailable) continue;
+    const speciesId = String(species.id || "").trim();
+    if (!speciesId) continue;
+    const existed = Boolean(state?.fishSpeciesMastery?.[speciesId]);
+    const before = existed
+      ? JSON.stringify(state.fishSpeciesMastery[speciesId]?.unlockedVariantKeys || [])
+      : "";
+    const record = getFishSpeciesMasteryRecord(speciesId, { species });
+    const after = JSON.stringify(record?.unlockedVariantKeys || []);
+    if (!existed || before !== after) changed = true;
+  }
+  return changed;
+}
+
+function normalizeOwnedFishAppearanceUnlocks() {
+  if (!state || typeof runtime === "undefined" || !runtime?.fishMap?.get) return false;
+  const tankFish = typeof getAllTankFish === "function" ? getAllTankFish(state) : [];
+  const storedFish = Array.isArray(state.storedFish) ? state.storedFish : [];
+  const ownedFish = [...tankFish, ...storedFish];
+  let changed = false;
+
+  for (const fish of ownedFish) {
+    const species = typeof getSpeciesForFish === "function"
+      ? getSpeciesForFish(fish)
+      : runtime.fishMap.get(String(fish?.speciesId || ""));
+    if (!species || !isFishCareProgressionEligible(fish, species)) continue;
+
+    const canonical = typeof resolveCanonicalFishAppearanceSelection === "function"
+      ? resolveCanonicalFishAppearanceSelection(fish, species)
+      : null;
+    if (!canonical?.appearanceVariantKey) continue;
+
+    if (fish.appearanceVariant !== canonical.appearanceVariant) {
+      fish.appearanceVariant = canonical.appearanceVariant;
+      changed = true;
+    }
+    if (fish.appearanceVariantKey !== canonical.appearanceVariantKey) {
+      fish.appearanceVariantKey = canonical.appearanceVariantKey;
+      changed = true;
+    }
+    if (fish.appearanceAssetPath !== canonical.appearanceAssetPath) {
+      fish.appearanceAssetPath = canonical.appearanceAssetPath;
+      changed = true;
+    }
+
+    const record = getFishSpeciesMasteryRecord(species.id, { species });
+    if (!record) continue;
+    const canonicalKey = typeof getFishAppearanceVariantKey === "function"
+      ? getFishAppearanceVariantKey(canonical.appearanceVariantKey)
+      : canonical.appearanceVariantKey;
+    if (!canonicalKey) continue;
+    if (!record.unlockedVariantKeys.includes(canonicalKey)) {
+      record.unlockedVariantKeys.push(canonicalKey);
+      changed = true;
+    }
+  }
+
+  return changed;
+}
+
+function getFishSpeciesMasteryRecord(speciesId, options = {}) {
+  const key = String(speciesId || "").trim();
+  if (!key || !state) return null;
+  if (!state.fishSpeciesMastery || typeof state.fishSpeciesMastery !== "object" || Array.isArray(state.fishSpeciesMastery)) {
+    if (options.create === false) return null;
+    state.fishSpeciesMastery = {};
+  }
+  let record = state.fishSpeciesMastery[key];
+  if (!record || typeof record !== "object" || Array.isArray(record)) {
+    if (options.create === false) return null;
+    record = {
+      highestLevel: FISH_CARE_LEVEL_MIN,
+      unlockedVariantKeys: [],
+      masteredAt: 0,
+      totalCareLevelUps: 0,
+      lastVariantUnlockedAt: 0,
+      collectionCompletedAt: 0
+    };
+    state.fishSpeciesMastery[key] = record;
+  } else {
+    record.highestLevel = clamp(Math.floor(Number(record.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+    record.unlockedVariantKeys = [...new Set((Array.isArray(record.unlockedVariantKeys) ? record.unlockedVariantKeys : [])
+      .map((keyValue) => {
+        if (typeof keyValue !== "string" || !keyValue.trim()) return "";
+        return typeof getFishAppearanceVariantKey === "function"
+          ? getFishAppearanceVariantKey(keyValue)
+          : keyValue.trim();
+      })
+      .filter(Boolean))];
+    record.masteredAt = Math.max(0, Number(record.masteredAt) || 0);
+    record.totalCareLevelUps = Math.max(0, Math.floor(Number(record.totalCareLevelUps) || 0));
+    record.lastVariantUnlockedAt = Math.max(0, Number(record.lastVariantUnlockedAt) || 0);
+    record.collectionCompletedAt = Math.max(0, Number(record.collectionCompletedAt) || 0);
+  }
+  const species = options.species
+    || (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(key) : null);
+  if (typeof ensureFishSpeciesBaseVariantUnlocked === "function") {
+    ensureFishSpeciesBaseVariantUnlocked(species, record);
+  }
+  return record;
+}
+
+function getFishLockedAppearanceVariantPool(species, record = null) {
+  if (!species || !isFishSpeciesCareProgressionEligible(species)) return [];
+  const mastery = record || getFishSpeciesMasteryRecord(species.id, { species });
+  if (!mastery) return [];
+  const baseKey = getFishBaseAppearanceVariantKey(species);
+  const unlocked = new Set(Array.isArray(mastery.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  const seen = new Set();
+  const allVariants = typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : [];
+  const variants = typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : allVariants;
+  const pool = [];
+
+  variants.forEach((path) => {
+    const index = Math.max(0, allVariants.indexOf(path));
+    const key = typeof getFishAppearanceVariantKey === "function"
+      ? getFishAppearanceVariantKey(path)
+      : String(path || "").split(/[?#]/)[0].split("/").pop();
+    if (!key || key === baseKey || unlocked.has(key) || seen.has(key)) return;
+    seen.add(key);
+    const label = String(species?.variantLabels?.[index] || "").trim()
+      || (typeof getFishVariantLabelFromTileName === "function" ? getFishVariantLabelFromTileName(path, index) : "")
+      || `Variant ${index + 1}`;
+    pool.push({ key, path, index, label });
+  });
+
+  return pool;
+}
+
+function getFishVariantUnlockPoolStats(species, record = null) {
+  const pool = getFishLockedAppearanceVariantPool(species, record);
+  const lockedCount = pool.length;
+  const chancePerVariant = lockedCount > 0 ? 1 / lockedCount : 0;
+  return {
+    lockedCount,
+    chancePerVariant,
+    percentPerVariant: chancePerVariant * 100
+  };
+}
+
+function selectUniformFishAppearanceVariantFromLockedPool(pool, randomValue = Math.random()) {
+  if (!Array.isArray(pool) || !pool.length) return null;
+  const roll = Number(randomValue);
+  const normalizedRoll = Number.isFinite(roll) ? clamp(roll, 0, 0.999999999999) : 0;
+  return pool[Math.floor(normalizedRoll * pool.length)] || null;
+}
+
+function recordProgressionEvent(entry) {
+  if (!state || !entry || typeof entry !== "object") return null;
+  if (!Array.isArray(state.progressionHistory)) state.progressionHistory = [];
+  const timestamp = Math.max(1, Number(entry.timestamp ?? entry.createdAt) || Date.now());
+  const type = String(entry.type || "progression").trim().slice(0, 60) || "progression";
+  const id = String(entry.id || (typeof createId === "function" ? createId("progression") : `progression-${type}-${timestamp}`));
+  const stored = {
+    ...entry,
+    id,
+    type,
+    timestamp
+  };
+  state.progressionHistory.unshift(stored);
+  state.progressionHistory = state.progressionHistory.slice(0, typeof PROGRESSION_HISTORY_LIMIT === "number" ? PROGRESSION_HISTORY_LIMIT : 240);
+  return stored;
+}
+
+function getFishVariantUnlockNotificationCopy(unlockEvent) {
+  const speciesName = String(unlockEvent?.speciesName || "Fish").trim() || "Fish";
+  const variantLabel = String(unlockEvent?.variantLabel || "New Variant").trim() || "New Variant";
+  return {
+    title: `New ${speciesName} Variant Unlocked!`,
+    detail: `${variantLabel} is now available in BubbleBodega.`
+  };
+}
+
+function getFishVariantCollectionCompletionNotificationCopy(completionEvent) {
+  const speciesName = String(completionEvent?.speciesName || "Fish").trim() || "Fish";
+  return {
+    title: `${speciesName} Variant Collection Complete!`,
+    detail: `All ${speciesName} appearance variants have been discovered.`
+  };
+}
+
+function recordFishLevelUpProgressionEvents(fish, species, previousLevel, newLevel, now = Date.now(), dayKey = "") {
+  const crossedLevels = getFishCrossedCareLevels(previousLevel, newLevel);
+  if (!fish || !species || !crossedLevels.length) return [];
+  return crossedLevels.map((careLevel) => recordProgressionEvent({
+    id: `fish-level-up-${fish.id || "fish"}-${careLevel}-${Math.max(1, Number(now) || Date.now())}`,
+    type: "fish_level_up",
+    timestamp: Math.max(1, Number(now) || Date.now()),
+    dayKey: String(dayKey || (typeof getLocalDayKey === "function" ? getLocalDayKey(now) : "")),
+    fishId: fish.id || "",
+    fishName: fish.name || "Fish",
+    speciesId: species.id || fish.speciesId || "",
+    speciesName: species.name || species.id || "Fish",
+    previousCareLevel: Math.max(FISH_CARE_LEVEL_MIN, careLevel - 1),
+    careLevel,
+    levelsGained: 1,
+    title: `${fish.name || "Fish"} reached Level ${careLevel}!`,
+    detail: `${species.name || species.id || "Fish"} care progression advanced to Lv. ${careLevel}.`
+  })).filter(Boolean);
+}
+
+function recordFishSpeciesMasteryProgressionEvents(fish, species, masteryResult, now = Date.now(), dayKey = "") {
+  const previousLevel = Math.max(FISH_CARE_LEVEL_MIN, Math.floor(Number(masteryResult?.previousHighestLevel) || FISH_CARE_LEVEL_MIN));
+  const currentLevel = Math.max(previousLevel, Math.floor(Number(masteryResult?.record?.highestLevel) || previousLevel));
+  if (!fish || !species || currentLevel <= previousLevel) return [];
+  const events = [];
+  for (let masteryLevel = previousLevel + 1; masteryLevel <= currentLevel; masteryLevel += 1) {
+    const masteredNow = masteryLevel >= FISH_CARE_LEVEL_MAX && masteryResult?.record?.masteredAt > 0;
+    const event = recordProgressionEvent({
+      id: `species-mastery-${species.id || fish.speciesId || "species"}-${masteryLevel}-${Math.max(1, Number(now) || Date.now())}`,
+      type: "species_mastery_increased",
+      timestamp: Math.max(1, Number(now) || Date.now()),
+      dayKey: String(dayKey || (typeof getLocalDayKey === "function" ? getLocalDayKey(now) : "")),
+      fishId: fish.id || "",
+      fishName: fish.name || "Fish",
+      speciesId: species.id || fish.speciesId || "",
+      speciesName: species.name || species.id || "Fish",
+      previousMasteryLevel: masteryLevel - 1,
+      masteryLevel,
+      careLevel: Math.max(FISH_CARE_LEVEL_MIN, Math.floor(Number(fish.careLevel) || masteryLevel)),
+      masteredNow,
+      masteredAt: masteredNow ? Math.max(0, Number(masteryResult.record.masteredAt) || 0) : 0,
+      title: `${species.name || species.id || "Fish"} Mastery reached Lv. ${masteryLevel}`,
+      detail: masteredNow ? "Species Mastery complete." : `Species Mastery advanced to Lv. ${masteryLevel}.`
+    });
+    if (event) events.push(event);
+  }
+  return events;
+}
+
+function surfaceStandaloneFishProgressionNotification(title, detail, options = {}) {
+  const tank = options.tank || (typeof getCurrentTank === "function" ? getCurrentTank() : null);
+  const surfaced = typeof queueBoroughActivityNotification === "function"
+    ? queueBoroughActivityNotification(title, detail, {
+        force: true,
+        time: Number.isFinite(Number(options.time)) ? Number(options.time) : Date.now(),
+        signature: String(options.signature || `${title}|${detail}`),
+        type: options.type || "fish_progression",
+        tankId: tank?.id || "",
+        fishId: options.fishId || "",
+        durationMs: options.durationMs
+      })
+    : false;
+  if (!surfaced && typeof showToast === "function") {
+    showToast(`${title}${detail ? ` ${detail}` : ""}`, {
+      force: true,
+      durationMs: Math.max(2200, Number(options.durationMs) || 5200)
+    });
+  }
+  return surfaced;
+}
+
+function recordFishVariantUnlockProgressionEvent(unlockEvent, tank = null, options = {}) {
+  if (!unlockEvent || typeof unlockEvent !== "object") return null;
+  const copy = getFishVariantUnlockNotificationCopy(unlockEvent);
+  const stored = recordProgressionEvent({
+    ...unlockEvent,
+    type: "variant_unlocked",
+    title: copy.title,
+    detail: copy.detail
+  });
+  if (!stored) return null;
+
+  if (typeof pushEvent === "function") {
+    pushEvent(`${copy.title} ${copy.detail}`, stored.timestamp, tank || (typeof getCurrentTank === "function" ? getCurrentTank() : null), {
+      type: "fish_variant_unlocked",
+      tone: "positive",
+      fishId: stored.fishId,
+      recapEligible: false,
+      detail: `${stored.speciesId}|${stored.variantKey}|level-${stored.careLevel}`
+    });
+  }
+  if (options.notify !== false) {
+    if (typeof surfaceStandaloneFishProgressionNotification === "function") {
+      surfaceStandaloneFishProgressionNotification(copy.title, copy.detail, {
+        tank,
+        time: stored.timestamp,
+        signature: `fish-variant:${stored.fishId}:${stored.speciesId}:${stored.variantKey}`,
+        type: "fish_variant_unlocked",
+        fishId: stored.fishId,
+        durationMs: 5200
+      });
+    } else if (typeof showToast === "function") {
+      showToast(`${copy.title} ${copy.detail}`, { force: true, durationMs: 5200 });
+    }
+  }
+  return stored;
+}
+
+function recordFishVariantCollectionCompletionProgressionEvent(completionEvent, tank = null, options = {}) {
+  if (!completionEvent || typeof completionEvent !== "object") return null;
+  const copy = getFishVariantCollectionCompletionNotificationCopy(completionEvent);
+  const stored = recordProgressionEvent({
+    ...completionEvent,
+    type: "variant_collection_completed",
+    title: copy.title,
+    detail: copy.detail
+  });
+  if (!stored) return null;
+
+  if (typeof pushEvent === "function") {
+    pushEvent(`${copy.title} ${copy.detail}`, stored.timestamp, tank || (typeof getCurrentTank === "function" ? getCurrentTank() : null), {
+      type: "fish_variant_collection_completed",
+      tone: "positive",
+      fishId: stored.fishId,
+      recapEligible: false,
+      detail: `${stored.speciesId}|collection-complete`
+    });
+  }
+  if (options.notify !== false) {
+    if (typeof surfaceStandaloneFishProgressionNotification === "function") {
+      surfaceStandaloneFishProgressionNotification(copy.title, copy.detail, {
+        tank,
+        time: stored.timestamp,
+        signature: `fish-variant-collection:${stored.speciesId}`,
+        type: "fish_variant_collection_completed",
+        fishId: stored.fishId,
+        durationMs: 6200
+      });
+    } else if (typeof showToast === "function") {
+      showToast(`${copy.title} ${copy.detail}`, { force: true, durationMs: 6200 });
+    }
+  }
+  return stored;
+}
+
+function surfaceFishCareLevelProgressionNotification(fish, species, levelResult, masteryResult, variantUnlocks = [], now = Date.now(), tank = null, dayKey = "") {
+  const levelsGained = Math.max(0, Math.floor(Number(levelResult?.levelsGained) || 0));
+  if (!fish || !species || levelsGained <= 0) return null;
+
+  const previousLevel = Math.max(FISH_CARE_LEVEL_MIN, Math.floor(Number(levelResult?.oldLevel) || FISH_CARE_LEVEL_MIN));
+  const newLevel = Math.max(previousLevel, Math.floor(Number(levelResult?.newLevel) || previousLevel));
+  const fishName = String(fish.name || "Fish").trim() || "Fish";
+  const speciesName = String(species.name || species.id || "Fish").trim() || "Fish";
+  const unlocks = Array.isArray(variantUnlocks) ? variantUnlocks.filter(Boolean) : [];
+  const variantLabels = unlocks.map((entry) => String(entry.variantLabel || "New Variant").trim()).filter(Boolean);
+  const detailParts = [];
+
+  if (levelsGained > 1) {
+    detailParts.push(`Levels ${previousLevel + 1}-${newLevel} reached`);
+  }
+  if (variantLabels.length === 1) {
+    detailParts.push(`New ${speciesName} Variant: ${variantLabels[0]}`);
+  } else if (variantLabels.length > 1) {
+    detailParts.push(`New ${speciesName} Variants: ${variantLabels.join(", ")}`);
+  }
+  if (masteryResult?.highestLevelIncreased === true) {
+    const masteryLevel = Math.max(FISH_CARE_LEVEL_MIN, Math.floor(Number(masteryResult?.record?.highestLevel) || newLevel));
+    detailParts.push(`${speciesName} Mastery reached Lv. ${masteryLevel}`);
+  }
+  if (unlocks.some((entry) => entry?.collectionCompleted === true)) {
+    detailParts.push(`${speciesName} Variant Collection Complete!`);
+  }
+  if (!detailParts.length) {
+    detailParts.push(`${speciesName} care progression advanced`);
+  }
+
+  const title = `${fishName} reached Level ${newLevel}!`;
+  const detail = detailParts.join(" • ");
+  const eventTime = Math.max(1, Number(now) || Date.now());
+  const targetTank = tank || (typeof getCurrentTank === "function" ? getCurrentTank() : null);
+  if (typeof pushEvent === "function") {
+    pushEvent(`${title} ${detail}`, eventTime, targetTank, {
+      type: "fish_care_level_up",
+      tone: "positive",
+      fishId: fish.id || "",
+      recapEligible: false,
+      detail: `${species.id || fish.speciesId || ""}|level-${newLevel}`
+    });
+  }
+  surfaceStandaloneFishProgressionNotification(title, detail, {
+    tank: targetTank,
+    time: eventTime,
+    signature: `fish-care-level:${fish.id || "fish"}:${newLevel}:${dayKey || ""}`,
+    type: "fish_care_level_up",
+    fishId: fish.id || "",
+    durationMs: unlocks.some((entry) => entry?.collectionCompleted === true) ? 6200 : 5400
+  });
+  return { title, detail };
+}
+
+function unlockRandomFishAppearanceVariantForLevel(fish, species, careLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return null;
+  if (!fish || !species || !isFishCareProgressionEligible(fish, species) || !isFishSpeciesCareProgressionEligible(species)) return null;
+  const level = clamp(Math.floor(Number(careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  if (level <= FISH_CARE_LEVEL_MIN) return null;
+
+  const record = getFishSpeciesMasteryRecord(species.id, { species });
+  const pool = getFishLockedAppearanceVariantPool(species, record);
+  if (!pool.length) return null;
+
+  const selected = selectUniformFishAppearanceVariantFromLockedPool(pool);
+  if (!selected) return null;
+  const chancePerVariant = 1 / pool.length;
+
+  record.unlockedVariantKeys = [...new Set([...(Array.isArray(record.unlockedVariantKeys) ? record.unlockedVariantKeys : []), selected.key])];
+  record.lastVariantUnlockedAt = Math.max(1, Number(now) || Date.now());
+  const remainingLockedPool = getFishLockedAppearanceVariantPool(species, record);
+  const collectionCompletedNow = remainingLockedPool.length === 0 && pool.length === 1 && record.collectionCompletedAt <= 0;
+  if (collectionCompletedNow) record.collectionCompletedAt = record.lastVariantUnlockedAt;
+
+  const unlockEvent = {
+    timestamp: record.lastVariantUnlockedAt,
+    dayKey: String(options?.dayKey || (typeof getLocalDayKey === "function" ? getLocalDayKey(record.lastVariantUnlockedAt) : "")),
+    fishId: fish.id || "",
+    fishName: fish.name || "Fish",
+    speciesId: species.id || fish.speciesId || "",
+    speciesName: species.name || species.id || "Fish",
+    careLevel: level,
+    variantKey: selected.key,
+    variantLabel: selected.label,
+    appearanceAssetPath: selected.path,
+    lockedPoolSizeBeforeUnlock: pool.length,
+    remainingLockedVariantCount: remainingLockedPool.length,
+    unlockChanceBeforeUnlock: chancePerVariant,
+    unlockChancePercentBeforeUnlock: chancePerVariant * 100,
+    collectionCompleted: collectionCompletedNow,
+    collectionCompletedAt: record.collectionCompletedAt
+  };
+
+  const progressionEvent = typeof recordFishVariantUnlockProgressionEvent === "function"
+    ? recordFishVariantUnlockProgressionEvent(unlockEvent, tank, { notify: options.notify !== false })
+    : null;
+  let collectionCompletionEvent = null;
+  if (collectionCompletedNow && typeof recordFishVariantCollectionCompletionProgressionEvent === "function") {
+    collectionCompletionEvent = recordFishVariantCollectionCompletionProgressionEvent({
+      timestamp: record.collectionCompletedAt,
+      dayKey: unlockEvent.dayKey,
+      fishId: unlockEvent.fishId,
+      fishName: unlockEvent.fishName,
+      speciesId: unlockEvent.speciesId,
+      speciesName: unlockEvent.speciesName,
+      careLevel: unlockEvent.careLevel,
+      variantKey: unlockEvent.variantKey,
+      variantLabel: unlockEvent.variantLabel,
+      collectionCompletedAt: record.collectionCompletedAt
+    }, tank, { notify: options.notify !== false });
+  }
+
+  return {
+    ...(progressionEvent || unlockEvent),
+    collectionCompleted: collectionCompletedNow,
+    collectionCompletedAt: record.collectionCompletedAt,
+    collectionCompletionEvent
+  };
+}
+
+function getFishCrossedCareLevels(previousLevel, newLevel) {
+  const fromLevel = clamp(Math.floor(Number(previousLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  const toLevel = clamp(Math.floor(Number(newLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  if (toLevel <= fromLevel) return [];
+
+  // A multi-level jump is processed as the exact persisted transitions it crossed.
+  // Keeping this list explicit prevents skipped or duplicate care levels and gives
+  // variant discovery a fresh locked pool for every individual transition.
+  return Array.from({ length: toLevel - fromLevel }, (_, index) => fromLevel + index + 1);
+}
+
+function unlockFishAppearanceVariantsForLevelIncrease(fish, species, previousLevel, newLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return [];
+  if (!fish || !species || !isFishCareProgressionEligible(fish, species)) return [];
+  const fromLevel = clamp(Math.floor(Number(previousLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  const processedThroughLevel = clamp(
+    Math.floor(Number(fish.variantUnlockCareLevel) || fromLevel),
+    FISH_CARE_LEVEL_MIN,
+    FISH_CARE_LEVEL_MAX
+  );
+  const crossedLevels = getFishCrossedCareLevels(Math.max(fromLevel, processedThroughLevel), newLevel);
+  if (!crossedLevels.length) return [];
+
+  const unlocks = [];
+  for (const reachedLevel of crossedLevels) {
+    // unlockRandomFishAppearanceVariantForLevel() rebuilds the locked pool on
+    // every call, so a 2 -> 4 jump resolves 2 -> 3 first, then 3 -> 4 against
+    // the already-updated permanent unlock set. Mark every reached level as
+    // consumed even when the species has no locked variants left.
+    const unlocked = unlockRandomFishAppearanceVariantForLevel(fish, species, reachedLevel, now, tank, options);
+    fish.variantUnlockCareLevel = reachedLevel;
+    if (unlocked) unlocks.push(unlocked);
+  }
+  return unlocks;
+}
+
+function updateFishSpeciesMasteryForLevelIncrease(fish, previousLevel, newLevel, now = Date.now()) {
+  const speciesId = String(fish?.speciesId || "").trim();
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
+    return { record: getFishSpeciesMasteryRecord(speciesId, { create: false }), highestLevelIncreased: false, masteredNow: false, levelsGained: 0 };
+  }
+  const crossedLevels = getFishCrossedCareLevels(previousLevel, newLevel);
+  const toLevel = crossedLevels.length ? crossedLevels[crossedLevels.length - 1] : clamp(Math.floor(Number(newLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  if (!speciesId || !crossedLevels.length) {
+    return { record: getFishSpeciesMasteryRecord(speciesId, { create: false }), highestLevelIncreased: false, masteredNow: false, levelsGained: 0 };
+  }
+
+  const record = getFishSpeciesMasteryRecord(speciesId);
+  if (!record) return { record: null, highestLevelIncreased: false, masteredNow: false, levelsGained: 0 };
+  const previousHighestLevel = record.highestLevel;
+  const levelsGained = crossedLevels.length;
+  record.totalCareLevelUps += levelsGained;
+  if (toLevel > record.highestLevel) record.highestLevel = toLevel;
+  const masteredNow = record.highestLevel >= FISH_CARE_LEVEL_MAX && record.masteredAt <= 0;
+  if (masteredNow) record.masteredAt = Math.max(1, Number(now) || Date.now());
+  return {
+    record,
+    previousHighestLevel,
+    highestLevelIncreased: record.highestLevel > previousHighestLevel,
+    masteredNow,
+    levelsGained
+  };
+}
+
+function getFishCareLevelThresholds(fishOrSpecies) {
+  const lifespanDays = getFishFoundationLifespanDays(fishOrSpecies);
+  const thresholds = { 1: 0 };
+  let previousThreshold = 0;
+  for (let level = FISH_CARE_LEVEL_MIN + 1; level <= FISH_CARE_LEVEL_MAX; level += 1) {
+    const lifespanRatio = Number(FISH_CARE_LEVEL_LIFESPAN_RATIOS?.[level]) || 0;
+    const lifespanBasedXp = Math.round(lifespanDays * lifespanRatio * FISH_DAILY_CARE_XP_CAP);
+    const threshold = Math.max(previousThreshold + FISH_DAILY_CARE_XP_CAP, lifespanBasedXp);
+    thresholds[level] = threshold;
+    previousThreshold = threshold;
+  }
+  return thresholds;
+}
+
+function getFishCareLevelForXp(fishOrSpecies, careXp = 0) {
+  const xp = Math.max(0, Math.floor(Number(careXp) || 0));
+  const thresholds = getFishCareLevelThresholds(fishOrSpecies);
+  let level = FISH_CARE_LEVEL_MIN;
+  for (let candidate = FISH_CARE_LEVEL_MIN + 1; candidate <= FISH_CARE_LEVEL_MAX; candidate += 1) {
+    if (xp < thresholds[candidate]) break;
+    level = candidate;
+  }
+  return level;
+}
+
+function updateFishCareLevelFromXp(fish, species = getSpeciesForFish(fish)) {
+  if (!fish || !species) {
+    return { oldLevel: FISH_CARE_LEVEL_MIN, newLevel: FISH_CARE_LEVEL_MIN, levelsGained: 0, thresholds: null };
+  }
+  fish.careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+  const oldLevel = clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  const calculatedLevel = getFishCareLevelForXp(species, fish.careXp);
+  const newLevel = Math.max(oldLevel, calculatedLevel);
+  fish.careLevel = newLevel;
+  return {
+    oldLevel,
+    newLevel,
+    levelsGained: Math.max(0, newLevel - oldLevel),
+    thresholds: getFishCareLevelThresholds(species)
+  };
+}
+
+function getFishCareXpConditionsForRecapDay(fish, tank, dayKey, now = Date.now(), tankSummary = null) {
+  const dayStart = getLocalDayStartTimestamp(dayKey);
+  const mealSlots = typeof getDailyMealIndicatorSlotsForDayKey === "function"
+    ? getDailyMealIndicatorSlotsForDayKey(dayKey)
+    : (typeof getDailyMealIndicatorSlots === "function" ? getDailyMealIndicatorSlots(dayStart + 1) : []);
+  const dayEnd = mealSlots.length
+    ? Math.max(...mealSlots.map((slot) => Number(slot?.end) || dayStart))
+    : dayStart + DAY_MS;
+  const acquiredAt = Number.isFinite(Number(fish?.acquiredAt)) ? Number(fish.acquiredAt) : dayStart;
+  const mealFree = typeof isMealFreeFish === "function" ? isMealFreeFish(fish) : false;
+  let properlyFed = mealFree;
+
+  if (!mealFree) {
+    // A fish only owes meals for windows in which it actually existed. A fish
+    // acquired after the AM window ends therefore owes PM only, while a fish
+    // present before noon must have both AM and PM recorded for this recap day.
+    const requiredSlots = mealSlots.filter((slot) => acquiredAt < Number(slot.end));
+    properlyFed = requiredSlots.length > 0 && requiredSlots.every((slot) => (
+      typeof hasFishEatenInSlot === "function" && hasFishEatenInSlot(fish, slot, tank)
+    ));
+  }
+
+  const healthy = typeof getFishHealthRatio === "function" && getFishHealthRatio(fish) >= 1;
+  // Individual fish use their own tank's recap cleanliness, never the borough average.
+  const cleanPercent = Number.isFinite(Number(tankSummary?.cleanPercent))
+    ? clamp(Math.round(Number(tankSummary.cleanPercent)), 0, 100)
+    : getTankCleanlinessPercentForMilestones(tank, now);
+  const cleanEnvironment = cleanPercent >= 80;
+  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, tank, now) : [];
+  const speciesNeedsSatisfied = Array.isArray(needsStatus) && needsStatus.every((need) => need?.met === true);
+  const comfort = typeof getFishComfort === "function" ? Number(getFishComfort(fish, now, tank)?.value) : 0;
+  const comfortable = Number.isFinite(comfort) && comfort >= 0.8;
+
+  return {
+    properlyFed,
+    healthy,
+    cleanEnvironment,
+    speciesNeedsSatisfied,
+    comfortable,
+    cleanPercent,
+    points: Math.min(FISH_DAILY_CARE_XP_CAP, [
+      properlyFed,
+      healthy,
+      cleanEnvironment,
+      speciesNeedsSatisfied,
+      comfortable
+    ].filter(Boolean).length)
+  };
+}
+
+function processFishCareLevelIncreaseProgression(fish, species, levelResult, now = Date.now(), tank = null, dayKey = "") {
+  const oldLevel = clamp(Math.floor(Number(levelResult?.oldLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  const newLevel = clamp(Math.floor(Number(levelResult?.newLevel) || oldLevel), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+  const levelsGained = Math.max(0, Math.floor(Number(levelResult?.levelsGained) || (newLevel - oldLevel)));
+  const persistedLevel = clamp(Math.floor(Number(fish?.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+
+  // Variant discovery is a consequence of a real, already-persisted Care Level
+  // increase. No purchase, sale, storage move, hatch, birthday, UI render, load,
+  // or recap pass with an unchanged Care Level should be able to enter this path.
+  if (!fish || !species || levelsGained <= 0 || newLevel <= oldLevel || persistedLevel !== newLevel) {
+    return { masteryResult: null, levelUpEvents: [], masteryEvents: [], variantUnlocks: [] };
+  }
+
+  const masteryResult = typeof updateFishSpeciesMasteryForLevelIncrease === "function"
+    ? updateFishSpeciesMasteryForLevelIncrease(fish, oldLevel, newLevel, now)
+    : null;
+  const levelUpEvents = typeof recordFishLevelUpProgressionEvents === "function"
+    ? recordFishLevelUpProgressionEvents(fish, species, oldLevel, newLevel, now, dayKey)
+    : [];
+  const masteryEvents = masteryResult?.highestLevelIncreased === true && typeof recordFishSpeciesMasteryProgressionEvents === "function"
+    ? recordFishSpeciesMasteryProgressionEvents(fish, species, masteryResult, now, dayKey)
+    : [];
+  const variantUnlocks = typeof unlockFishAppearanceVariantsForLevelIncrease === "function"
+    ? unlockFishAppearanceVariantsForLevelIncrease(fish, species, oldLevel, newLevel, now, tank, { dayKey, notify: false })
+    : [];
+
+  if (typeof surfaceFishCareLevelProgressionNotification === "function") {
+    surfaceFishCareLevelProgressionNotification(fish, species, { ...levelResult, oldLevel, newLevel, levelsGained }, masteryResult, variantUnlocks, now, tank, dayKey);
+  }
+
+  return { masteryResult, levelUpEvents, masteryEvents, variantUnlocks };
+}
+
+function awardFishCareXpForCompletedDailyRecap(summary, now = Date.now()) {
+  if (!summary?.dayKey) return [];
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return [];
+
+  const dayKey = summary.dayKey;
+  const dayStart = getLocalDayStartTimestamp(dayKey);
+  const recapMealSlots = typeof getDailyMealIndicatorSlotsForDayKey === "function"
+    ? getDailyMealIndicatorSlotsForDayKey(dayKey)
+    : [];
+  const dayEnd = recapMealSlots.length
+    ? Math.max(...recapMealSlots.map((slot) => Number(slot?.end) || dayStart))
+    : dayStart + DAY_MS;
+  const tankSnapshots = new Map((Array.isArray(summary.tankCareSnapshots) ? summary.tankCareSnapshots : [])
+    .filter((entry) => entry?.tankId)
+    .map((entry) => [entry.tankId, entry]));
+  const awards = [];
+
+  for (const tank of getAllTanks(state)) {
+    const tankSummary = tankSnapshots.get(tank?.id) || null;
+    for (const fish of Array.isArray(tank?.fish) ? tank.fish : []) {
+      if (!fish || isFishDead(fish)) continue;
+      if (fish.storageState === "stored") continue;
+      const species = getSpeciesForFish(fish);
+      if (!isFishCareProgressionEligible(fish, species)) continue;
+      const acquiredAt = Number.isFinite(Number(fish.acquiredAt)) ? Number(fish.acquiredAt) : 0;
+      if (acquiredAt >= dayEnd) continue;
+      if (fish.lastCareXpDayKey === dayKey) continue;
+
+      fish.careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+      fish.careLevel = clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+      const conditions = getFishCareXpConditionsForRecapDay(fish, tank, dayKey, now, tankSummary);
+      const awardedXp = Math.min(FISH_DAILY_CARE_XP_CAP, Math.max(0, Math.floor(Number(conditions.points) || 0)));
+      fish.careXp += awardedXp;
+      const levelResult = updateFishCareLevelFromXp(fish, species);
+      const progression = processFishCareLevelIncreaseProgression(fish, species, levelResult, now, tank, dayKey);
+      const masteryResult = progression.masteryResult;
+      const levelUpEvents = progression.levelUpEvents;
+      const masteryEvents = progression.masteryEvents;
+      const variantUnlocks = progression.variantUnlocks;
+      fish.lastCareXpDayKey = dayKey;
+      awards.push({
+        fishId: fish.id || "",
+        fishName: fish.name || "Fish",
+        speciesId: fish.speciesId || "",
+        previousCareLevel: levelResult.oldLevel,
+        careLevel: fish.careLevel,
+        levelsGained: levelResult.levelsGained,
+        speciesMasteryLevel: masteryResult?.record?.highestLevel || (typeof getFishSpeciesMasteryRecord === "function"
+          ? getFishSpeciesMasteryRecord(fish.speciesId, { create: false })?.highestLevel
+          : FISH_CARE_LEVEL_MIN) || FISH_CARE_LEVEL_MIN,
+        speciesMasteryIncreased: masteryResult?.highestLevelIncreased === true,
+        speciesMasteredNow: masteryResult?.masteredNow === true,
+        levelUpEvents,
+        masteryEvents,
+        variantUnlocks,
+        awardedXp,
+        conditions: {
+          properlyFed: conditions.properlyFed === true,
+          healthy: conditions.healthy === true,
+          cleanEnvironment: conditions.cleanEnvironment === true,
+          speciesNeedsSatisfied: conditions.speciesNeedsSatisfied === true,
+          comfortable: conditions.comfortable === true
+        }
+      });
+    }
+  }
+
+  summary.careXpAwards = awards;
+  summary.careXpEarned = awards.reduce((total, entry) => total + entry.awardedXp, 0);
+  summary.variantUnlocks = awards.flatMap((entry) => Array.isArray(entry.variantUnlocks) ? entry.variantUnlocks : []);
+  summary.variantsUnlocked = summary.variantUnlocks.length;
+  return awards;
 }
 
 function normalizeBoroughRecapScore(rawScore, fishCount = 0, tankCount = 0) {
@@ -69764,13 +71948,17 @@ function buildBoroughDailyRecapSummary(dayKey, now = Date.now(), options = {}) {
     tankId: BOROUGH_DAILY_RECAP_ID,
     tankName: "Bubble Borough",
     tankCount: tankSummaries.length,
+    tankCareSnapshots: tankSummaries.map((summary) => ({
+      tankId: summary.tankId || "",
+      cleanPercent: clamp(Math.round(Number(summary.cleanPercent) || 0), 0, 100)
+    })),
     dayKey,
     generatedAt: now,
     rows,
     scoreModel: BOROUGH_RECAP_SCORE_MODEL,
     rawScore,
     score,
-    reward: clamp(Math.max(0, score), 0, DAILY_RECAP_REWARD_CAP),
+    reward: 0,
     mealsFed: tankSummaries.reduce((total, summary) => total + (summary.mealsFed || 0), 0),
     averageComfort,
     cleanPercent,
@@ -69786,10 +71974,211 @@ function buildBoroughDailyRecapSummary(dayKey, now = Date.now(), options = {}) {
   };
 }
 
+function getWeeklyReportConsumedDayKeys() {
+  const consumed = new Set();
+  for (const report of Array.isArray(state?.dailyBonus?.weeklyReports) ? state.dailyBonus.weeklyReports : []) {
+    for (const dayKey of Array.isArray(report?.dayKeys) ? report.dayKeys : []) {
+      if (dayKey) consumed.add(dayKey);
+    }
+  }
+  return consumed;
+}
+
+function getWeeklyReportIncomeTotals(dayKeys = []) {
+  const selected = new Set(dayKeys);
+  const totals = { feeding: 0, cleaning: 0, randomFinds: 0 };
+  for (const dayKey of selected) {
+    const entry = state?.incomeHistoryByDay?.[dayKey];
+    if (!entry || typeof entry !== "object") continue;
+    totals.feeding += Math.max(0, Math.floor(Number(entry.feeding) || 0));
+    totals.cleaning += Math.max(0, Math.floor(Number(entry.cleaning) || 0));
+    totals.randomFinds += Math.max(0, Math.floor(Number(entry.randomFinds) || 0));
+  }
+
+  // Compatibility fallback for days that predate the structured daily income ledger.
+  // Only fill a category when the ledger has no value for the selected report days.
+  if (totals.feeding <= 0 || totals.cleaning <= 0 || totals.randomFinds <= 0) {
+    const fallback = { feeding: 0, cleaning: 0, randomFinds: 0 };
+    for (const entry of Array.isArray(state?.walletTransactions) ? state.walletTransactions : []) {
+      if (entry?.direction !== "credit" || !selected.has(getLocalDayKey(Number(entry.time) || 0))) continue;
+      const amount = Math.max(0, Math.floor(Number(entry.amount) || 0));
+      const category = String(entry.category || "");
+      const label = String(entry.label || "");
+      if (category === "feeding" || /^Fed /i.test(label)) fallback.feeding += amount;
+      else if (category === "cleaning" || /Tank cleaning/i.test(label)) fallback.cleaning += amount;
+      else if (category === "random-finds" || /found a coin/i.test(label)) fallback.randomFinds += amount;
+    }
+    if (totals.feeding <= 0) totals.feeding = fallback.feeding;
+    if (totals.cleaning <= 0) totals.cleaning = fallback.cleaning;
+    if (totals.randomFinds <= 0) totals.randomFinds = fallback.randomFinds;
+  }
+  return totals;
+}
+
+function getWeeklyReportProgressionCounts(dayKeys = [], summaries = []) {
+  const selected = new Set(dayKeys);
+  let fishLevelUps = 0;
+  let variantsUnlocked = 0;
+  let hasStructuredFishLevelEvents = false;
+  let hasStructuredVariantEvents = false;
+  const history = Array.isArray(state?.progressionHistory) ? state.progressionHistory : [];
+  for (const entry of history) {
+    if (!entry || typeof entry !== "object") continue;
+    const dayKey = typeof entry.dayKey === "string" && entry.dayKey
+      ? entry.dayKey
+      : getLocalDayKey(Number(entry.timestamp ?? entry.time ?? entry.createdAt) || 0);
+    if (!selected.has(dayKey)) continue;
+    const type = String(entry.type || entry.eventType || "").toLowerCase().replace(/_/g, "-");
+    if (type === "fish-level-up" || type === "level-up") {
+      hasStructuredFishLevelEvents = true;
+      fishLevelUps += Math.max(1, Math.floor(Number(entry.levelsGained) || 1));
+    }
+    if (type === "variant-unlocked" || type === "fish-variant-unlocked") {
+      hasStructuredVariantEvents = true;
+      variantsUnlocked += 1;
+    }
+  }
+
+  // Older recap windows can predate one or both structured event types. Fall
+  // back independently so a legacy variant event never suppresses fish-level
+  // counts, and vice versa. New windows use progressionHistory exclusively.
+  for (const summary of Array.isArray(summaries) ? summaries : []) {
+    if (!summary?.dayKey || !selected.has(summary.dayKey)) continue;
+    if (!hasStructuredFishLevelEvents) {
+      const awards = Array.isArray(summary.careXpAwards) ? summary.careXpAwards : [];
+      fishLevelUps += awards.reduce((total, award) => total + Math.max(0, Math.floor(Number(award?.levelsGained) || 0)), 0);
+    }
+    if (!hasStructuredVariantEvents) {
+      variantsUnlocked += Array.isArray(summary.variantUnlocks)
+        ? summary.variantUnlocks.length
+        : Math.max(0, Math.floor(Number(summary.variantsUnlocked) || 0));
+    }
+  }
+  return { fishLevelUps, variantsUnlocked };
+}
+
+function getWeeklyReportBirthDeathCounts(summaries = []) {
+  let births = 0;
+  let deaths = 0;
+  for (const summary of summaries) {
+    for (const row of Array.isArray(summary?.rows) ? summary.rows : []) {
+      const type = String(row?.type || "").toLowerCase();
+      const text = String(row?.text || "");
+      if (type === "birth" || /\bwas born\b|\bwere born\b|\bhas just hatched\b|\bhave hatched\b/i.test(text)) {
+        const explicitCount = Number((text.match(/(?:^|:\s*)(\d+)\s+(?:juvenile|baby|fish)/i) || [])[1]);
+        births += Number.isFinite(explicitCount) && explicitCount > 0 ? Math.floor(explicitCount) : 1;
+      }
+      if (type === "death" || /\bdied\b|dead fish|could not survive/i.test(text)) deaths += 1;
+    }
+  }
+  return { births, deaths };
+}
+
+function buildWeeklyReport(summaries = [], now = Date.now()) {
+  const uniqueByDay = new Map();
+  for (const summary of summaries) {
+    if (!summary?.dayKey || uniqueByDay.has(summary.dayKey)) continue;
+    uniqueByDay.set(summary.dayKey, summary);
+  }
+  const selected = [...uniqueByDay.values()]
+    .sort((left, right) => String(right.dayKey).localeCompare(String(left.dayKey)))
+    .slice(0, WEEKLY_REPORT_RECAP_COUNT);
+  if (selected.length !== WEEKLY_REPORT_RECAP_COUNT) return null;
+
+  const dayKeys = selected.map((summary) => summary.dayKey);
+  const averageRecapScore = selected.reduce((total, summary) => total + (Number(summary.score) || 0), 0) / WEEKLY_REPORT_RECAP_COUNT;
+  const bestDay = selected.reduce((best, summary) => {
+    if (!best || Number(summary.score) > Number(best.score)) return summary;
+    if (Number(summary.score) === Number(best.score) && String(summary.dayKey) > String(best.dayKey)) return summary;
+    return best;
+  }, null);
+  const income = getWeeklyReportIncomeTotals(dayKeys);
+  const progression = getWeeklyReportProgressionCounts(dayKeys, selected);
+  const lifeEvents = getWeeklyReportBirthDeathCounts(selected);
+  const milestonesCompleted = (Array.isArray(state?.dailyBonus?.milestoneCompletions) ? state.dailyBonus.milestoneCompletions : [])
+    .filter((entry) => dayKeys.includes(entry?.dayKey)).length;
+  const weeklyReward = clamp(Math.round(averageRecapScore * WEEKLY_REPORT_REWARD_MULTIPLIER), 0, WEEKLY_REPORT_REWARD_CAP);
+  const peaceful = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled();
+  return {
+    id: `weekly-${[...dayKeys].sort().join("-")}`,
+    generatedAt: now,
+    dayKeys,
+    averageRecapScore: Math.round(averageRecapScore * 10) / 10,
+    feedingIncome: income.feeding,
+    cleaningIncome: income.cleaning,
+    randomCoinFinds: income.randomFinds,
+    fishLevelUps: progression.fishLevelUps,
+    variantsUnlocked: progression.variantsUnlocked,
+    milestonesCompleted,
+    births: lifeEvents.births,
+    deaths: lifeEvents.deaths,
+    bestDayKey: bestDay?.dayKey || "",
+    bestDayScore: Math.round(Number(bestDay?.score) || 0),
+    weeklyReward,
+    rewardPaid: peaceful ? 0 : weeklyReward,
+    rewardSuppressedByPeacefulMode: peaceful && weeklyReward > 0
+  };
+}
+
+function maybeGenerateWeeklyReports(now = Date.now()) {
+  if (!state?.dailyBonus) return [];
+  if (!Array.isArray(state.dailyBonus.weeklyReports)) state.dailyBonus.weeklyReports = [];
+  const generated = [];
+  let consumed = getWeeklyReportConsumedDayKeys();
+  const history = Array.isArray(state.dailyBonus.recapHistory) ? state.dailyBonus.recapHistory : [];
+
+  while (true) {
+    const unused = [];
+    const seen = new Set();
+    for (const summary of history) {
+      const dayKey = String(summary?.dayKey || "");
+      if (!dayKey || consumed.has(dayKey) || seen.has(dayKey)) continue;
+      seen.add(dayKey);
+      unused.push(summary);
+    }
+    unused.sort((left, right) => String(right.dayKey).localeCompare(String(left.dayKey)));
+    if (unused.length < WEEKLY_REPORT_RECAP_COUNT) break;
+    const report = buildWeeklyReport(unused.slice(0, WEEKLY_REPORT_RECAP_COUNT), now);
+    if (!report) break;
+
+    state.dailyBonus.weeklyReports.unshift(report);
+    state.dailyBonus.weeklyReports = state.dailyBonus.weeklyReports.slice(0, WEEKLY_REPORT_HISTORY_LIMIT);
+    for (const dayKey of report.dayKeys) consumed.add(dayKey);
+    if (report.rewardPaid > 0) {
+      state.coins = Math.min(MAX_WALLET_COINS, state.coins + report.rewardPaid);
+      recordDailyIncomeCategory("awards", report.rewardPaid, now);
+      recordWalletTransaction({
+        amount: report.rewardPaid,
+        direction: "credit",
+        category: "awards",
+        now,
+        label: "Weekly Care Award",
+        place: "Bubble Borough"
+      });
+    }
+    pushEvent(report.rewardPaid > 0
+      ? `Weekly Report completed. Earned ${report.rewardPaid} ${pluralize("coin", report.rewardPaid)}.`
+      : "Weekly Report completed.", now, getCurrentTank(), { type: "weekly_report", tone: "positive", recapEligible: false });
+    enqueueNotificationCenterEntry({
+      type: "weekly-report",
+      title: "Weekly Report ready",
+      detail: report.rewardPaid > 0
+        ? `Average score ${report.averageRecapScore}. Weekly Care Award: ${report.rewardPaid} coins.`
+        : `Average score ${report.averageRecapScore}.`,
+      createdAt: now,
+      signature: report.id,
+      coinReward: report.rewardPaid
+    }, { surface: true, durationMs: 4800 });
+    generated.push(report);
+  }
+  return generated;
+}
+
 function storeDailyRecapSummary(summary) {
   if (!summary?.dayKey || !state?.dailyBonus) {
     return false;
   }
+  awardFishCareXpForCompletedDailyRecap(summary, summary.generatedAt || Date.now());
   summary.scope = BOROUGH_DAILY_RECAP_ID;
   summary.tankId = BOROUGH_DAILY_RECAP_ID;
   summary.tankName = "Bubble Borough";
@@ -69807,6 +72196,7 @@ function storeDailyRecapSummary(summary) {
   state.dailyBonus.recapHistory = state.dailyBonus.recapHistory.slice(0, DAILY_RECAP_HISTORY_LIMIT);
   syncActiveDailyBonusState();
   applyProgressMilestones(summary, summary.generatedAt || Date.now());
+  maybeGenerateWeeklyReports(summary.generatedAt || Date.now());
   return true;
 }
 
@@ -70026,6 +72416,29 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     : (Number(referenceSummary?.averageComfort) || 0);
   const livingFish = getAllTankFish(state).filter((fish) => fish && !isFishDead(fish));
   const oldestLivingFishAgeMs = livingFish.reduce((oldest, fish) => Math.max(oldest, now - (Number(fish.acquiredAt) || now)), 0);
+  const currentAndStoredFish = [
+    ...getAllTankFish(state),
+    ...(Array.isArray(state?.storedFish) ? state.storedFish : [])
+  ].filter(Boolean);
+  const memorialCareLevels = Array.isArray(state?.memorialHistory)
+    ? state.memorialHistory.map((entry) => Number(entry?.careLevel) || 0)
+    : [];
+  const masteryRecords = state?.fishSpeciesMastery && typeof state.fishSpeciesMastery === "object"
+    ? Object.values(state.fishSpeciesMastery).filter((entry) => entry && typeof entry === "object")
+    : [];
+  const highestFishCareLevel = Math.max(
+    FISH_CARE_LEVEL_MIN,
+    ...currentAndStoredFish.map((fish) => Number(fish?.careLevel) || FISH_CARE_LEVEL_MIN),
+    ...memorialCareLevels,
+    ...masteryRecords.map((entry) => Number(entry?.highestLevel) || FISH_CARE_LEVEL_MIN)
+  );
+  const masteredSpeciesCount = masteryRecords.filter((entry) => (
+    (Number(entry?.highestLevel) || FISH_CARE_LEVEL_MIN) >= FISH_CARE_LEVEL_MAX
+    || Number(entry?.masteredAt) > 0
+  )).length;
+  const hasLevel3Fish = highestFishCareLevel >= 3;
+  const hasLevel4Fish = highestFishCareLevel >= 4;
+  const hasMasteredSpecies = masteredSpeciesCount > 0;
   const allEvents = getAllTanks(state)
     .flatMap((tank) => Array.isArray(tank.events) ? tank.events : [])
     .filter((event) => event?.progressionEligible !== false);
@@ -70074,6 +72487,11 @@ function getMilestoneStats(latestSummary = null, now = Date.now()) {
     goodRecaps,
     recentAverageComfort,
     oldestLivingFishAgeMs,
+    highestFishCareLevel,
+    masteredSpeciesCount,
+    hasLevel3Fish,
+    hasLevel4Fish,
+    hasMasteredSpecies,
     daysSinceLastDeath,
     hasSparklingFish: livingFish.some((fish) => getFishComfort(fish, now).value >= 0.95),
     cleanRecapStreak90,
@@ -70118,8 +72536,19 @@ function applyProgressMilestones(latestSummary = null, now = Date.now()) {
         continue;
       }
       state.dailyBonus.milestones[milestone.id] = true;
-      state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
-      recordWalletTransaction({ amount: milestone.reward, direction: "credit", now, label: `${milestone.label} milestone`, place: "Bubble Borough" });
+      if (!Array.isArray(state.dailyBonus.milestoneCompletions)) state.dailyBonus.milestoneCompletions = [];
+      state.dailyBonus.milestoneCompletions.unshift({
+        milestoneId: milestone.id,
+        label: milestone.label,
+        dayKey: latestSummary?.dayKey || getLocalDayKey(now),
+        time: now
+      });
+      state.dailyBonus.milestoneCompletions = state.dailyBonus.milestoneCompletions.slice(0, 200);
+      if (milestone.reward > 0) {
+        state.coins = Math.min(MAX_WALLET_COINS, state.coins + milestone.reward);
+        recordDailyIncomeCategory("milestones", milestone.reward, now);
+        recordWalletTransaction({ amount: milestone.reward, direction: "credit", category: "milestones", now, label: `${milestone.label} milestone`, place: "Bubble Borough" });
+      }
       const speciesUnlocked = [];
       for (const speciesId of milestone.unlocks) {
         if (unlockFishSpecies(speciesId, now, `${runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)} unlocked from ${milestone.label}.`)) {
@@ -70136,11 +72565,18 @@ function applyProgressMilestones(latestSummary = null, now = Date.now()) {
         ...speciesUnlocked.map((speciesId) => runtime.fishMap.get(speciesId)?.name || titleFromFile(speciesId)),
         ...decorUnlocked.map((decorKey) => runtime.decorMap.get(decorKey)?.name || titleFromFile(decorKey))
       ].filter(Boolean);
-      pushEvent(`${milestone.label} milestone reached. Earned ${milestone.reward} ${pluralize("coin", milestone.reward)}.`, now);
+      const milestoneCoinCopy = milestone.reward > 0
+        ? `${milestone.reward} ${pluralize("coin", milestone.reward)} awarded.`
+        : "";
+      const milestoneUnlockCopy = unlockedItems.length
+        ? `Unlocked: ${unlockedItems.join(", ")}.`
+        : "";
+      const milestoneDetail = [milestoneUnlockCopy, milestoneCoinCopy].filter(Boolean).join(" ") || "Achievement recorded.";
+      pushEvent(`${milestone.label} milestone reached.${milestoneCoinCopy ? ` ${milestoneCoinCopy}` : ""}`, now);
       enqueueNotificationCenterEntry({
         type: "achievement",
         title: `${milestone.label} unlocked!`,
-        detail: unlockedItems.length ? `New rewards: ${unlockedItems.join(", ")}` : "Achievement reward granted immediately.",
+        detail: milestoneDetail,
         createdAt: now,
         signature: `achievement:${milestone.id}`,
         achievementId: milestone.id,
@@ -72236,7 +74672,15 @@ function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWat
     ? null
     : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
   const bubbleBodegaVariants = getBubbleBodegaFishStoreVariants(fish);
-  const fishAsset = bubbleBodegaVariants[0]?.image || getFishCatalogAssetPath(fish) || fish.asset;
+  const fishVariantProgressMessage = typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled()
+    && typeof getFishStoreVariantProgressMessage === "function"
+      ? getFishStoreVariantProgressMessage(fish, getFishStoreVariants(fish))
+      : "";
+  const fishAsset = bubbleBodegaVariants.find((variant) => variant?.unlocked !== false)?.image
+    || bubbleBodegaVariants[0]?.image
+    || getFishCatalogAssetPath(fish)
+    || fish.asset;
   const isDavyMutation = isDavyMutationSpecies(fish);
   const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
   const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
@@ -72265,6 +74709,7 @@ function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWat
           ${fish.aboutTagline ? `<div class="shop-about-tagline">${escapeHtml(fish.aboutTagline)}</div>` : ""}
           ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
           ${waterRequirement ? `<div class="shop-water-requirement">${escapeHtml(waterRequirement)}</div>` : ""}
+          ${fishVariantProgressMessage ? `<div class="shop-variant-progress-message">${escapeHtml(fishVariantProgressMessage)}</div>` : ""}
         </div>
         <div class="shop-stat-list">
           <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>
@@ -72293,8 +74738,11 @@ function renderFishShop() {
   const searchQuery = tutorialRestriction ? "" : getStoreSearchQuery("fish");
   const fishFilter = tutorialRestriction ? "all" : normalizeFishStoreFilterKey(runtime.storeFilters?.fish);
   const activeWaterType = typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater";
-  const sourceCatalog = getFishShopCatalog();
-  const otherSourceCatalog = getOtherAquariumCreatureShopCatalog();
+  // Species that have not been progression-unlocked do not appear in
+  // BubbleBodega at all. They are future discoveries, not out-of-stock stock.
+  // Debug Mode intentionally keeps its temporary catalog bypass.
+  const sourceCatalog = getFishShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
+  const otherSourceCatalog = getOtherAquariumCreatureShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
   const filterEntry = (fish) => {
     if (!matchesFishStoreFilter(fish, fishFilter)) return false;
     if (!tutorialRestriction) return true;
@@ -73281,7 +75729,28 @@ function renderBoroughOverviewFish(now = Date.now(), options = {}) {
         const fishDrawX = -fishSize * aspect;
         const drawWidth = fishSize * aspect * 2;
         const drawHeight = fishSize * 2;
-        context.drawImage(depthImage, fishDrawX, -fishSize, drawWidth, drawHeight);
+        const warped = !dead
+          && typeof drawFishSwimDepthWarpImage === "function"
+          && drawFishSwimDepthWarpImage(
+            context,
+            depthImage,
+            fishDrawX,
+            -fishSize,
+            drawWidth,
+            drawHeight,
+            fish,
+            species,
+            now,
+            {
+              quality: "borough",
+              imagePath: renderAsset.imagePath,
+              effectiveBehavior: typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species?.behavior,
+              suckerFreeSwimming: typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, now)
+            }
+          );
+        if (!warped) {
+          context.drawImage(depthImage, fishDrawX, -fishSize, drawWidth, drawHeight);
+        }
         context.filter = "none";
         if (dead && typeof drawDeadFishEyeTreatment === "function") {
           // The optional eye detector uses normalized coordinates from the
@@ -74060,8 +76529,9 @@ function buildTankManagementMilestonesBrowser(now = Date.now()) {
             ${progress.details.map((detail) => `<span>${escapeHtml(detail)}</span>`).join("")}
           </div>
           <div class="management-milestone-rewards">
-            <span>${escapeHtml(`${milestone.reward} coin reward`)}</span>
+            ${milestone.reward > 0 ? `<span>${escapeHtml(`${milestone.reward} coin reward`)}</span>` : ""}
             ${unlockLabels.length ? `<span>${escapeHtml(`Unlocks: ${unlockLabels.join(", ")}`)}</span>` : ""}
+            ${milestone.reward <= 0 && !unlockLabels.length ? "<span>Achievement milestone</span>" : ""}
           </div>
         </div>
       </article>
@@ -76306,12 +78776,26 @@ function getBubbleBankRewardForTransaction(entry) {
   return history.find((summary) => Math.abs((Number(summary.generatedAt) || 0) - time) < 2000) || null;
 }
 
+function getBubbleBankWeeklyReportForTransaction(entry) {
+  if (String(entry?.label || "") !== "Weekly Care Award") return null;
+  const time = Number(entry?.time) || 0;
+  const reports = Array.isArray(state?.dailyBonus?.weeklyReports) ? state.dailyBonus.weeklyReports : [];
+  return reports.find((report) => Math.abs((Number(report.generatedAt) || 0) - time) < 2000) || null;
+}
+
 function getBubbleBankTransactionCategory(entry) {
-  const text = `${String(entry?.label || "")} ${String(entry?.place || "")}`.toLowerCase();
+  const explicit = String(entry?.category || "");
+  const label = String(entry?.label || "");
+  if (explicit === "random-finds") return "random-finds";
+  if (explicit === "awards" && label === "Weekly Care Award") return "weekly-awards";
+  if (["feeding", "cleaning", "awards", "milestones", "sales", "fish", "decor", "equipment", "food-medication"].includes(explicit)) return explicit;
+  const text = `${label} ${String(entry?.place || "")}`.toLowerCase();
+  if (/weekly care award/.test(text)) return "weekly-awards";
+  if (/found a coin|coin find|gravel coin|otocinclus coin/.test(text)) return "random-finds";
   if (/milestone/.test(text)) return "milestones";
   if (/feed|fed|feeding/.test(text)) return "feeding";
   if (/clean|cleaning|scrub/.test(text)) return "cleaning";
-  if (/sold|sale|sell/.test(text)) return "sales";
+  if (/sold|sale|sell|rehome/.test(text)) return "sales";
   if (/daily|award|bonus|reward|coin/.test(text)) return "awards";
   if (/fish|shark|catfish|custom fish|species/.test(text)) return "fish";
   if (/decor|seaweed|cave|anemone|mound|plant|background/.test(text)) return "decor";
@@ -76328,9 +78812,10 @@ function getBubbleBankTransactionFilterMarkup() {
       <option value="earned" ${active === "earned" ? "selected" : ""}>All earned money</option>
       <option value="feeding" ${active === "feeding" ? "selected" : ""}>Feeding</option>
       <option value="cleaning" ${active === "cleaning" ? "selected" : ""}>Cleaning</option>
-      <option value="awards" ${active === "awards" ? "selected" : ""}>Awards</option>
-      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestones</option>
+      <option value="random-finds" ${active === "random-finds" ? "selected" : ""}>Random finds</option>
+      <option value="weekly-awards" ${active === "weekly-awards" ? "selected" : ""}>Weekly Care Award</option>
       <option value="sales" ${active === "sales" ? "selected" : ""}>Sales</option>
+      <option value="milestones" ${active === "milestones" ? "selected" : ""}>Milestone rewards</option>
     </optgroup>
     <optgroup label="All Spent Money">
       <option value="spent" ${active === "spent" ? "selected" : ""}>All spent money</option>
@@ -76347,7 +78832,7 @@ function bubbleBankTransactionMatchesFilter(entry, filter) {
   const earned = entry.direction === "credit";
   if (filter === "earned") return earned;
   if (filter === "spent") return !earned && entry.direction === "debit";
-  if (["feeding", "cleaning", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
+  if (["feeding", "cleaning", "random-finds", "weekly-awards", "awards", "milestones", "sales"].includes(filter)) return earned && getBubbleBankTransactionCategory(entry) === filter;
   return !earned && entry.direction === "debit" && getBubbleBankTransactionCategory(entry) === filter;
 }
 
@@ -77214,15 +79699,64 @@ function getWebSurfInboxMessages() {
   }
 
   const transactions = Array.isArray(state?.walletTransactions) ? state.walletTransactions : [];
-  const seenMilestones = new Set();
-  transactions.filter((entry) => (Number(entry.time) || 0) <= now).forEach((entry) => {
-    const milestone = getBubbleBankMilestoneForTransaction(entry);
-    if (!milestone || seenMilestones.has(milestone.id)) return;
-    seenMilestones.add(milestone.id);
+  const milestoneEvents = [];
+  const seenMilestoneEvents = new Set();
+  const milestoneCompletions = Array.isArray(state?.dailyBonus?.milestoneCompletions)
+    ? state.dailyBonus.milestoneCompletions
+    : [];
+  milestoneCompletions
+    .filter((entry) => (Number(entry?.time) || 0) <= now)
+    .forEach((entry) => {
+      const milestoneId = String(entry?.milestoneId || "");
+      const milestone = PROGRESSION_MILESTONES.find((candidate) => candidate.id === milestoneId);
+      if (!milestone || seenMilestoneEvents.has(milestone.id)) return;
+      seenMilestoneEvents.add(milestone.id);
+      milestoneEvents.push({ milestone, time: Number(entry.time) || 0 });
+    });
+  transactions
+    .filter((entry) => (Number(entry.time) || 0) <= now)
+    .forEach((entry) => {
+      const milestone = getBubbleBankMilestoneForTransaction(entry);
+      if (!milestone || seenMilestoneEvents.has(milestone.id)) return;
+      seenMilestoneEvents.add(milestone.id);
+      milestoneEvents.push({ milestone, time: Number(entry.time) || 0 });
+    });
+  milestoneEvents.forEach(({ milestone, time }) => {
     const milestoneId = `milestone-${milestone.id}`;
-    const data = { milestoneId, milestoneName: milestone.label, milestoneRequirement: milestone.requirement, reward: milestone.reward, balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0) };
+    const unlockLabels = getMilestoneUnlockLabels(milestone);
+    const milestonePreview = milestone.reward > 0
+      ? `${milestone.reward} Fish Coins awarded.`
+      : unlockLabels.length
+        ? "New milestone unlocks are available."
+        : "Achievement completed.";
+    const milestoneOutcome = milestone.reward > 0
+      ? `${milestone.reward} Fish Coins have been deposited into your account.`
+      : "Achievement recorded.";
+    const milestoneUnlockSummary = unlockLabels.length
+      ? `Unlocked: ${unlockLabels.join(", ")}.`
+      : "Milestone complete.";
+    const data = {
+      milestoneId,
+      milestoneName: milestone.label,
+      milestoneRequirement: milestone.requirement,
+      reward: milestone.reward,
+      milestonePreview,
+      milestoneOutcome,
+      milestoneUnlockSummary,
+      balance: getWebSurfMilestoneBalance(milestoneId, state?.coins || 0)
+    };
     const template = getWebSurfAutoEmailTemplate("milestone_reward");
-    messages.push({ id: `auto-milestone_reward-${milestone.id}`, templateId: "milestone_reward", data, sender: template?.sender || "rewards@bubbleboroughbank.swim", subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`, preview: template ? interpolateWebSurfEmailValue(template.preview, data) : `${milestone.reward} Fish Coins earned.`, destination: "bank", icon: "assets/misc/coin_unicode.png", time: Number(entry.time) || 0 });
+    messages.push({
+      id: `auto-milestone_reward-${milestone.id}`,
+      templateId: "milestone_reward",
+      data,
+      sender: template?.sender || "rewards@bubbleboroughbank.swim",
+      subject: template ? interpolateWebSurfEmailValue(template.subject, data) : `Milestone Unlocked: ${milestone.label}`,
+      preview: template ? interpolateWebSurfEmailValue(template.preview, data) : milestonePreview,
+      destination: "bank",
+      icon: "assets/misc/coin_unicode.png",
+      time
+    });
   });
 
   const statementData = getWebSurfStatementData();
@@ -77678,7 +80212,7 @@ function getBubbleBankOrderForTransaction(entry) {
 function renderBubbleBankTabs(activeTab) {
   const tabs = [
     ["account", "Account", `<img class="bubble-bank-tab-icon" ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" />`],
-    ["rewards", "Rewards", "✚"],
+    ["rewards", "Progress", "✚"],
     ["milestones", "Milestones", "★"]
   ];
   return `<nav class="bubble-bank-tabs" aria-label="Bank sections">${tabs.map(([id, label, icon]) => `
@@ -77700,12 +80234,15 @@ function renderBubbleBankAccount() {
     const neutral = entry.direction === "neutral" || Number(entry.amount) <= 0;
     const milestone = getBubbleBankMilestoneForTransaction(entry);
     const reward = getBubbleBankRewardForTransaction(entry);
+    const weeklyReport = getBubbleBankWeeklyReportForTransaction(entry);
     const order = getBubbleBankOrderForTransaction(entry);
     const target = milestone
       ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="milestones" data-bank-target-id="milestone-${escapeHtml(milestone.id)}">View Milestone <span aria-hidden="true">→</span></button>`
-      : reward
-        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Reward <span aria-hidden="true">→</span></button>`
-        : order
+      : weeklyReport
+        ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="weekly-report-${escapeHtml(weeklyReport.id)}">View Weekly Report <span aria-hidden="true">→</span></button>`
+        : reward
+          ? `<button type="button" class="bubble-bank-row-link" data-bank-tab="rewards" data-bank-target-id="reward-${escapeHtml(reward.dayKey || String(reward.generatedAt))}">View Recap <span aria-hidden="true">→</span></button>`
+          : order
           ? `<button type="button" class="bubble-bank-row-link" data-bank-order-id="${escapeHtml(order.id)}">View Purchase <span aria-hidden="true">→</span></button>`
           : "";
     const signedAmount = neutral ? "•" : `${debit ? "−" : "+"}${Math.max(0, Number(entry.amount) || 0)}`;
@@ -77723,12 +80260,166 @@ function renderBubbleBankAccount() {
   </section>`;
 }
 
+function getBubbleBankProgressSnapshot() {
+  const allFish = [
+    ...(typeof getAllTankFish === "function" ? getAllTankFish(state) : (Array.isArray(state?.fish) ? state.fish : [])),
+    ...(Array.isArray(state?.storedFish) ? state.storedFish : [])
+  ];
+  const levelCounts = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 };
+  const fishRows = allFish
+    .map((fish) => {
+      const species = runtime?.fishMap?.get?.(fish?.speciesId);
+      if (!fish || !species || (typeof isFishCareProgressionEligible === "function" && !isFishCareProgressionEligible(fish, species))) return null;
+      const careLevel = clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
+      const careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+      levelCounts[careLevel] = (levelCounts[careLevel] || 0) + 1;
+      return {
+        id: String(fish.id || ""),
+        name: String(fish.name || species.name || "Fish"),
+        speciesName: String(species.name || species.id || "Fish"),
+        careLevel,
+        careXp,
+        dead: typeof isFishDead === "function" ? isFishDead(fish) : false,
+        stored: Array.isArray(state?.storedFish) && state.storedFish.includes(fish)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.careLevel - left.careLevel || right.careXp - left.careXp || left.name.localeCompare(right.name));
+
+  const masteryRows = Object.entries(state?.fishSpeciesMastery || {})
+    .map(([speciesId, rawRecord]) => {
+      const species = runtime?.fishMap?.get?.(speciesId);
+      if (!species || (typeof isFishSpeciesCareProgressionEligible === "function" && !isFishSpeciesCareProgressionEligible(species))) return null;
+      const record = typeof getFishSpeciesMasteryRecord === "function"
+        ? getFishSpeciesMasteryRecord(speciesId, { species, create: false })
+        : rawRecord;
+      if (!record) return null;
+      const variants = typeof getFishProgressionAppearanceVariants === "function"
+        ? getFishProgressionAppearanceVariants(species)
+        : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : []);
+      const variantKeys = [...new Set(variants
+        .map((path) => typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : String(path || ""))
+        .filter(Boolean))];
+      const unlockedKeys = new Set(Array.isArray(record.unlockedVariantKeys) ? record.unlockedVariantKeys : []);
+      const baseKey = typeof getFishBaseAppearanceVariantKey === "function" ? getFishBaseAppearanceVariantKey(species) : "";
+      if (baseKey) unlockedKeys.add(baseKey);
+      const unlockedVariantCount = variantKeys.filter((key) => unlockedKeys.has(key)).length;
+      return {
+        speciesId,
+        speciesName: String(species.name || species.id || speciesId),
+        highestLevel: clamp(Math.floor(Number(record.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        unlockedVariantCount,
+        totalVariantCount: variantKeys.length,
+        collectionCompletedAt: Math.max(0, Number(record.collectionCompletedAt) || 0),
+        masteredAt: Math.max(0, Number(record.masteredAt) || 0)
+      };
+    })
+    .filter(Boolean)
+    .sort((left, right) => right.highestLevel - left.highestLevel || right.unlockedVariantCount - left.unlockedVariantCount || left.speciesName.localeCompare(right.speciesName));
+
+  const unlockedVariantCount = masteryRows.reduce((total, row) => total + row.unlockedVariantCount, 0);
+  const totalVariantCount = masteryRows.reduce((total, row) => total + row.totalVariantCount, 0);
+  const collectionCompletedCount = masteryRows.filter((row) => row.collectionCompletedAt > 0).length;
+  const milestoneMap = state?.dailyBonus?.milestones || {};
+  const completedMilestones = PROGRESSION_MILESTONES.filter((milestone) => milestoneMap[milestone.id]);
+  const completionById = new Map((Array.isArray(state?.dailyBonus?.milestoneCompletions) ? state.dailyBonus.milestoneCompletions : [])
+    .map((entry) => [String(entry?.milestoneId || ""), Math.max(0, Number(entry?.time) || 0)]));
+  const milestoneRows = completedMilestones
+    .map((milestone) => ({
+      id: milestone.id,
+      label: milestone.label,
+      completedAt: completionById.get(milestone.id) || 0
+    }))
+    .sort((left, right) => right.completedAt - left.completedAt);
+  const stats = typeof getMilestoneStats === "function" ? getMilestoneStats() : null;
+  const highestFishCareLevel = Math.max(
+    FISH_CARE_LEVEL_MIN,
+    Math.floor(Number(stats?.highestFishCareLevel) || 0),
+    ...fishRows.map((row) => row.careLevel),
+    ...masteryRows.map((row) => row.highestLevel)
+  );
+  const masteredSpeciesCount = Math.max(
+    Math.floor(Number(stats?.masteredSpeciesCount) || 0),
+    masteryRows.filter((row) => row.highestLevel >= FISH_CARE_LEVEL_MAX).length
+  );
+  const progressionEvents = (Array.isArray(state?.progressionHistory) ? state.progressionHistory : [])
+    .filter((entry) => ["variant_unlocked", "variant_collection_completed"].includes(String(entry?.type || "")))
+    .sort((left, right) => (Number(right?.timestamp) || 0) - (Number(left?.timestamp) || 0));
+
+  return {
+    fishRows,
+    levelCounts,
+    masteryRows,
+    highestFishCareLevel,
+    masteredSpeciesCount,
+    unlockedVariantCount,
+    totalVariantCount,
+    collectionCompletedCount,
+    milestoneRows,
+    completedMilestoneCount: completedMilestones.length,
+    totalMilestoneCount: PROGRESSION_MILESTONES.length,
+    progressionEvents
+  };
+}
+
+function renderBubbleBankProgressOverview(snapshot = getBubbleBankProgressSnapshot()) {
+  const levelChips = [1, 2, 3, 4, 5]
+    .map((level) => `<span class="bubble-bank-level-chip"><b>Lv. ${level}</b>${Math.max(0, Number(snapshot.levelCounts?.[level]) || 0)} fish</span>`)
+    .join("");
+  const masteryRows = snapshot.masteryRows.slice(0, 12).map((row) => `<div class="bubble-bank-progress-row"><div><strong>${escapeHtml(row.speciesName)}</strong><span>Species Mastery: Lv. ${row.highestLevel}</span></div><span>Variants: ${row.unlockedVariantCount}/${row.totalVariantCount}${row.collectionCompletedAt > 0 ? " · Complete" : ""}</span></div>`).join("");
+  const recentMilestones = snapshot.milestoneRows.slice(0, 4).map((row) => `<span><b>★</b>${escapeHtml(row.label)}${row.completedAt ? ` · ${escapeHtml(formatBubbleBankTime(row.completedAt, { dateOnly: true }))}` : ""}</span>`).join("");
+  return `<section class="bubble-bank-card-list bubble-bank-progress-section">
+    <header class="bubble-bank-list-heading"><div><span>Account Progress</span><h3>Care &amp; Collection</h3></div><small>Progress is earned through care. Fish Coins are tracked separately in Account.</small></header>
+    <div class="bubble-bank-progress-overview">
+      <div><span>Highest Care Level</span><strong>Lv. ${snapshot.highestFishCareLevel}</strong></div>
+      <div><span>Species Mastered</span><strong>${snapshot.masteredSpeciesCount}</strong></div>
+      <div><span>Variants Discovered</span><strong>${snapshot.unlockedVariantCount}/${snapshot.totalVariantCount}</strong></div>
+      <div><span>Collections Complete</span><strong>${snapshot.collectionCompletedCount}</strong></div>
+      <div><span>Milestones</span><strong>${snapshot.completedMilestoneCount}/${snapshot.totalMilestoneCount}</strong></div>
+    </div>
+    <div class="bubble-bank-progress-panel"><h4>Fish Care Levels</h4><div class="bubble-bank-level-grid">${levelChips}</div></div>
+    ${masteryRows ? `<div class="bubble-bank-progress-panel"><h4>Species Mastery &amp; Variants</h4><div class="bubble-bank-progress-rows">${masteryRows}</div></div>` : ""}
+    ${recentMilestones ? `<div class="bubble-bank-progress-panel"><h4>Recent Milestones</h4><div class="bubble-bank-progress-inline-list">${recentMilestones}</div></div>` : ""}
+  </section>`;
+}
+
+function renderBubbleBankVariantProgressHistory(snapshot = getBubbleBankProgressSnapshot()) {
+  const events = snapshot.progressionEvents.slice(0, 30);
+  if (!events.length) return "";
+  return `<section class="bubble-bank-card-list bubble-bank-variant-history"><header class="bubble-bank-list-heading"><div><span>Discovery History</span><h3>Variant Progress</h3></div><small>Unlocked appearances stay available permanently.</small></header>${events.map((entry) => {
+    const isCompletion = String(entry.type) === "variant_collection_completed";
+    const speciesName = String(entry.speciesName || runtime?.fishMap?.get?.(entry.speciesId)?.name || entry.speciesId || "Fish");
+    const variantLabel = String(entry.variantLabel || "New Variant");
+    return `<article class="bubble-bank-progression-event ${isCompletion ? "is-complete" : ""}"><span class="bubble-bank-progression-symbol" aria-hidden="true">${isCompletion ? "★" : "✦"}</span><div><strong>${escapeHtml(speciesName)}</strong><span>${isCompletion ? "Variant Collection Complete" : escapeHtml(variantLabel)}</span>${!isCompletion && entry.fishName ? `<small>Discovered when ${escapeHtml(entry.fishName)} reached Lv. ${Math.max(1, Math.floor(Number(entry.careLevel) || 1))}</small>` : ""}</div><time>${escapeHtml(formatBubbleBankTime(entry.timestamp))}</time></article>`;
+  }).join("")}</section>`;
+}
+
 function renderBubbleBankRewards() {
   const history = Array.isArray(state?.dailyBonus?.recapHistory) ? state.dailyBonus.recapHistory : [];
-  if (!history.length) {
-    return `<div class="bubble-bank-empty"><strong>No daily rewards yet.</strong><span>Your completed daily recaps and their exact score math will appear here.</span></div>`;
-  }
-  return `<section class="bubble-bank-card-list">${history.map((summary) => {
+  const weeklyReports = Array.isArray(state?.dailyBonus?.weeklyReports) ? state.dailyBonus.weeklyReports : [];
+  const progressSnapshot = getBubbleBankProgressSnapshot();
+  const progressOverview = renderBubbleBankProgressOverview(progressSnapshot);
+  const variantHistory = renderBubbleBankVariantProgressHistory(progressSnapshot);
+  const weeklyMarkup = weeklyReports.length ? `<section class="bubble-bank-card-list bubble-bank-weekly-reports"><header class="bubble-bank-list-heading"><div><span>7-Day Care Summary</span><h3>Weekly Reports</h3></div><small>Daily Recaps track care. Weekly Reports can pay a Weekly Care Award.</small></header>${weeklyReports.map((report) => {
+    const reportId = `weekly-report-${report.id}`;
+    const sortedDays = [...(report.dayKeys || [])].sort();
+    const firstDay = sortedDays[0] || "";
+    const lastDay = sortedDays.at(-1) || "";
+    const period = firstDay && lastDay
+      ? `${formatBubbleBankTime(getLocalDayStartTimestamp(firstDay), { dateOnly: true })} to ${formatBubbleBankTime(getLocalDayStartTimestamp(lastDay), { dateOnly: true })}`
+      : "7 completed recaps";
+    const awardText = report.rewardPaid > 0
+      ? renderBubbleBankCoinAmount(`+${report.rewardPaid}`, { credit: true })
+      : `<strong class="bubble-bank-recap-score">${report.rewardSuppressedByPeacefulMode ? "Award paused" : "No coin award"}</strong>`;
+    return `<details class="bubble-bank-reward-card bubble-bank-weekly-card" id="${escapeHtml(reportId)}" ${runtime.bubbleBankTargetId === reportId ? "open" : ""}>
+      <summary><div><strong>${escapeHtml(period)}</strong><span>7 completed Daily Recaps · Best day ${escapeHtml(report.bestDayKey || "n/a")} (${Number(report.bestDayScore) > 0 ? "+" : ""}${Math.round(Number(report.bestDayScore) || 0)})</span></div><strong class="bubble-bank-recap-score">Avg ${Number(report.averageRecapScore) > 0 ? "+" : ""}${escapeHtml(String(report.averageRecapScore ?? 0))}</strong><span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>Weekly Reports summarize the seven Daily Recaps shown for this period. ${report.rewardSuppressedByPeacefulMode ? "Peaceful Mode prevented the coin award." : "The Weekly Care Award is the only recap-based coin payout."}</p>
+        <div class="bubble-bank-math-columns"><div><h4>Care & Progress</h4><span><b>${Math.max(0, Number(report.fishLevelUps) || 0)}</b>Fish level-ups</span><span><b>${Math.max(0, Number(report.variantsUnlocked) || 0)}</b>Variants unlocked</span><span><b>${Math.max(0, Number(report.milestonesCompleted) || 0)}</b>Milestones completed</span><span><b>${Math.max(0, Number(report.births) || 0)}</b>Births</span><span><b>${Math.max(0, Number(report.deaths) || 0)}</b>Deaths</span></div>
+        <div><h4>Money Earned</h4><span><b>${Math.max(0, Number(report.feedingIncome) || 0)}</b>Feeding coins</span><span><b>${Math.max(0, Number(report.cleaningIncome) || 0)}</b>Cleaning coins</span><span><b>${Math.max(0, Number(report.randomCoinFinds) || 0)}</b>Random-find coins</span><div class="bubble-bank-weekly-award-row"><span>Weekly Care Award</span>${awardText}</div></div></div>
+      </div>
+    </details>`;
+  }).join("")}</section>` : "";
+  const dailyMarkup = history.length ? `<section class="bubble-bank-card-list"><header class="bubble-bank-list-heading"><div><span>Care History</span><h3>Daily Recaps</h3></div><small>Scores drive care progression. Daily Recaps do not directly pay Fish Coins.</small></header>${history.map((summary) => {
     const rewardId = `reward-${summary.dayKey || String(summary.generatedAt)}`;
     const positiveRows = (summary.rows || []).filter((row) => Number(row.score) > 0);
     const negativeRows = (summary.rows || []).filter((row) => Number(row.score) < 0);
@@ -77736,28 +80427,34 @@ function renderBubbleBankRewards() {
       ? `${Number(summary.rawScore) || 0} raw points normalized across ${Math.max(1, Number(summary.fishCount) || Number(summary.tankCount) || 1)} fish/tanks.`
       : "Each listed item contributes directly to the recap score.";
     return `<details class="bubble-bank-reward-card" id="${escapeHtml(rewardId)}" ${runtime.bubbleBankTargetId === rewardId ? "open" : ""}>
-      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily reward")}</span></div>${renderBubbleBankCoinAmount(`+${Math.max(0, Number(summary.reward) || 0)}`, { credit: true })}<span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
-      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Reward = max(0, score), capped at ${DAILY_RECAP_REWARD_CAP} coins.</p>
+      <summary><div><strong>${escapeHtml(formatBubbleBankTime(summary.generatedAt, { dateOnly: true }))}</strong><span>${escapeHtml(formatBubbleBankTime(summary.generatedAt))} · ${escapeHtml(summary.overall || "Daily Recap")}</span></div><strong class="bubble-bank-recap-score">Score ${Number(summary.score) > 0 ? "+" : ""}${Math.round(Number(summary.score) || 0)}</strong><span class="bubble-bank-chevron" aria-hidden="true">⌄</span></summary>
+      <div class="bubble-bank-reward-math"><p>${escapeHtml(scoreModelNote)} Daily Recap scores measure care and progression. They do not pay Fish Coins.</p>
         <div class="bubble-bank-math-columns"><div><h4>Added</h4>${positiveRows.length ? positiveRows.map((row) => `<span><b>+${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>Nothing added that day.</span>"}</div>
         <div><h4>Subtracted</h4>${negativeRows.length ? negativeRows.map((row) => `<span><b>−${Math.abs(Number(row.score) || 0)}</b>${escapeHtml(row.text)}</span>`).join("") : "<span>No negative events.</span>"}</div></div>
       </div>
     </details>`;
-  }).join("")}</section>`;
+  }).join("")}</section>` : "";
+  return `${progressOverview}${weeklyMarkup}${variantHistory}${dailyMarkup}`;
 }
 
 function renderBubbleBankMilestones() {
   const unlocked = state?.dailyBonus?.milestones || {};
   const milestones = PROGRESSION_MILESTONES.filter((milestone) => unlocked[milestone.id]);
   if (!milestones.length) {
-    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and Fish Coin payouts will appear here.</span></div>`;
+    return `<div class="bubble-bank-empty"><strong>No milestones unlocked yet.</strong><span>Your completed achievements and milestone unlocks will appear here.</span></div>`;
   }
   return `<section class="bubble-bank-card-list">${milestones.map((milestone) => {
     const milestoneId = `milestone-${milestone.id}`;
     const receipt = (state.walletTransactions || []).find((entry) => getBubbleBankMilestoneForTransaction(entry)?.id === milestone.id);
+    const completion = (Array.isArray(state?.dailyBonus?.milestoneCompletions) ? state.dailyBonus.milestoneCompletions : [])
+      .find((entry) => String(entry?.milestoneId || "") === milestone.id);
+    const completedAt = Number(receipt?.time) || Number(completion?.time) || 0;
     const unlockedFish = (milestone.unlocks || []).map((id) => runtime.fishMap.get(id)?.name || titleFromFile(id));
+    const unlockedDecor = (milestone.decorUnlocks || []).map((key) => getMilestoneDecorUnlockName(key));
+    const unlockLabels = [...unlockedFish, ...unlockedDecor].filter(Boolean);
     return `<article class="bubble-bank-milestone-card ${runtime.bubbleBankTargetId === milestoneId ? "is-target" : ""}" id="${escapeHtml(milestoneId)}">
-      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockedFish.length ? `<small>Unlocked fish: ${escapeHtml(unlockedFish.join(", "))}</small>` : ""}</div>
-      <div>${renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true })}${receipt ? `<time>${escapeHtml(formatBubbleBankTime(receipt.time))}</time>` : ""}</div>
+      <span class="bubble-bank-milestone-star" aria-hidden="true">★</span><div><span>Milestone unlocked</span><h3>${escapeHtml(milestone.label)}</h3><p>${escapeHtml(milestone.requirement)}</p>${unlockLabels.length ? `<small>Unlocked: ${escapeHtml(unlockLabels.join(", "))}</small>` : `<small>Achievement completed.</small>`}</div>
+      <div>${milestone.reward > 0 ? renderBubbleBankCoinAmount(`+${milestone.reward}`, { credit: true }) : "<strong>Achievement</strong>"}${completedAt ? `<time>${escapeHtml(formatBubbleBankTime(completedAt))}</time>` : ""}</div>
     </article>`;
   }).join("")}</section>`;
 }
@@ -77772,7 +80469,7 @@ function renderBubbleBankPage() {
     ${renderBubbleBankTabs(activeTab)}
     <div class="bubble-bank-window-actions">${renderBubbleBankCoinAmount(state.coins)}</div>
   </div>
-  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins are earned through feeding, caring for your neighborhood, and completing milestones.</footer></div></div>`;
+  <div class="bubble-bank-scroll"><div class="bubble-bank-shell"><header class="bubble-bank-welcome"><div><span>Hello,</span><h2>${escapeHtml(username)}.</h2><p>Manage your Fish Coins and review your account activity.</p></div><strong>Save small. Swim big.</strong></header>${content}<footer>Fish Coins come from care income, Weekly Care Awards, sales, and milestone rewards when applicable.</footer></div></div>`;
 }
 
 function handleBubbleBankPageClick(event) {
@@ -79246,9 +81943,8 @@ function renderDailyBonusOverlay() {
     <div class="summary-grid bonus-summary-grid">
       <div class="summary-row"><span>Overall</span><strong>${escapeHtml(summary.overall || "Quiet day.")}</strong></div>
       <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort || 0}%</strong></div>
-      <div class="summary-row"><span>Normalized Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Daily Recap Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
       <div class="summary-row"><span>Activity Score</span><strong>${summary.rawScore > 0 ? "+" : ""}${summary.rawScore || 0}</strong></div>
-      <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
 }
@@ -79279,11 +81975,8 @@ function claimDailyBonus() {
     return;
   }
 
-  const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
-  if (reward > 0) {
-    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
-    recordWalletTransaction({ amount: reward, direction: "credit", now, place: "Bubble Borough", label: "Daily recap claimed" });
-  }
+  // Manual completion is retained for compatibility, but Daily Recaps no longer pay coins.
+  summary.reward = 0;
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
   }
@@ -79295,13 +81988,13 @@ function claimDailyBonus() {
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
   syncActiveDailyBonusState();
-  pushEvent(`Claimed a daily recap worth ${reward} ${pluralize("coin", reward)}.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
+  const score = Math.round(Number(summary.score) || 0);
+  pushEvent(`Daily recap completed. Score ${score > 0 ? "+" : ""}${score} recorded.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
   playToolbarButtonSoundEffect("press");
-  playCoinSoundEffect();
   closeUtilityOverlay();
   saveState();
   renderUi(now);
-  showToast(`Daily recap claimed. +${reward} coins.`);
+  showToast(`Daily recap recorded. Score ${score > 0 ? "+" : ""}${score}.`);
 }
 
 function renderSettingsOverlay() {
@@ -80759,7 +83452,7 @@ function renderEditFishTrayContextMenu() {
   const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
   const targetWaterType = normalizeWaterType(getCurrentTank()?.waterType, "freshwater");
   const waterCompatible = !species || isFishCompatibleWithWaterType(species, targetWaterType);
-  const resaleValue = getResaleValue(species?.cost || 0);
+  const resaleValue = getFishRehomeValue(fish);
   const canSell = Boolean(species) && !isFishJuvenile(fish);
   const markup = `
     <div class="edit-fish-tray-context-card">
@@ -81180,7 +83873,7 @@ function renderMedicineTray() {
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
     cleaningIncome.dayKey,
-    `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}`,
+    `T ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · B ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`,
     ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
@@ -81281,7 +83974,7 @@ function renderMedicineTray() {
         <div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-tools" aria-label="Care tools">
-          <div class="care-tray-heading" title="Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
+          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}; Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
               <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
@@ -81330,6 +84023,8 @@ function renderFishList(now) {
       fish.growthEndsAt || "",
       fish.deadAt || "",
       fish.fedStreak || 0,
+      Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+      clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
       FISH_NEED_KEYS.map((needKey) => Math.round(Number(fish.needs?.[needKey]) || 0)).join(":")
     ].join(",")).join(";"),
     state.storedFish.map((fish) => [
@@ -81342,8 +84037,20 @@ function renderFishList(now) {
       fish.growthEndsAt || "",
       fish.deadAt || "",
       fish.fedStreak || 0,
+      Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+      clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
       FISH_NEED_KEYS.map((needKey) => Math.round(Number(fish.needs?.[needKey]) || 0)).join(":")
-    ].join(",")).join(";")
+    ].join(",")).join(";"),
+    Object.entries(state.fishSpeciesMastery || {})
+      .sort(([leftId], [rightId]) => leftId.localeCompare(rightId))
+      .map(([speciesId, record]) => [
+        speciesId,
+        clamp(Math.floor(Number(record?.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        (Array.isArray(record?.unlockedVariantKeys) ? record.unlockedVariantKeys : []).slice().sort().join(":"),
+        Number(record?.masteredAt) || 0,
+        Number(record?.collectionCompletedAt) || 0
+      ].join(","))
+      .join(";")
   ].join("|");
   if (!shouldRebuildRenderSection("fish-list-data", fishListDataKey)) {
     return;
@@ -81449,6 +84156,67 @@ function renderFishList(now) {
   `);
 }
 
+function getFishManagementProgressionPresentation(fish, species) {
+  if (!fish || !species || typeof isFishCareProgressionEligible !== "function" || !isFishCareProgressionEligible(fish, species)) {
+    return null;
+  }
+
+  const careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+  const careLevel = clamp(
+    Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN),
+    FISH_CARE_LEVEL_MIN,
+    FISH_CARE_LEVEL_MAX
+  );
+  const thresholds = typeof getFishCareLevelThresholds === "function"
+    ? getFishCareLevelThresholds(species)
+    : { 1: 0 };
+  const isMaxLevel = careLevel >= FISH_CARE_LEVEL_MAX;
+  const nextLevelThreshold = isMaxLevel
+    ? null
+    : Math.max(careXp, Math.floor(Number(thresholds?.[careLevel + 1]) || careXp));
+  const levelLabel = isMaxLevel ? `Lv. ${FISH_CARE_LEVEL_MAX} MAX` : `Lv. ${careLevel}`;
+  const xpLabel = isMaxLevel ? "" : `${careXp} / ${nextLevelThreshold} Care XP`;
+  const xpProgress = isMaxLevel || !nextLevelThreshold
+    ? 1
+    : clamp(careXp / nextLevelThreshold, 0, 1);
+
+  const mastery = typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
+    : null;
+  const masteryLevel = clamp(
+    Math.floor(Number(mastery?.highestLevel) || FISH_CARE_LEVEL_MIN),
+    FISH_CARE_LEVEL_MIN,
+    FISH_CARE_LEVEL_MAX
+  );
+  const progressionVariants = typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : []);
+  const currentVariantKeys = [...new Set(progressionVariants
+    .map((path) => (typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : String(path || "")))
+    .filter(Boolean))];
+  const unlockedVariantKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  const baseVariantKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : "";
+  if (baseVariantKey) unlockedVariantKeys.add(baseVariantKey);
+  const unlockedVariantCount = currentVariantKeys.filter((key) => unlockedVariantKeys.has(key)).length;
+
+  return {
+    careXp,
+    careLevel,
+    isMaxLevel,
+    nextLevelThreshold,
+    levelLabel,
+    xpLabel,
+    xpProgress,
+    masteryLevel,
+    masteryLabel: `Species Mastery: Lv. ${masteryLevel}`,
+    unlockedVariantCount,
+    totalVariantCount: currentVariantKeys.length,
+    variantsLabel: `Variants: ${unlockedVariantCount}/${currentVariantKeys.length}`
+  };
+}
+
 function renderManagedFishCard(fish, now, options = {}) {
   const species = runtime.fishMap.get(fish.speciesId);
   if (!species) {
@@ -81526,6 +84294,7 @@ function renderManagedFishCard(fish, now, options = {}) {
         ? "No feeding care coins"
         : `+${species.mealCoins} first feed/day · shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap`;
   const dirtinessLoadPercent = Math.round(getFishDirtinessBonus(fish, species) * 100);
+  const progression = getFishManagementProgressionPresentation(fish, species);
 
   return `
     <article class="fish-card">
@@ -81535,6 +84304,19 @@ function renderManagedFishCard(fish, now, options = {}) {
           <div class="fish-card-title">
             <strong>${escapeHtml(fish.name)}</strong>
             <div class="fish-species">${escapeHtml(displaySpeciesName)}</div>
+            ${progression ? `
+              <div class="fish-progression-summary" aria-label="${escapeHtml(`${progression.levelLabel}. ${progression.xpLabel || "Maximum Care Level"}. ${progression.masteryLabel}. ${progression.variantsLabel}.`)}">
+                <span class="fish-care-level-badge">${escapeHtml(progression.levelLabel)}</span>
+                ${progression.xpLabel ? `<span class="fish-care-xp-label">${escapeHtml(progression.xpLabel)}</span>` : ""}
+                <span class="fish-species-progress">${escapeHtml(progression.masteryLabel)}</span>
+                <span class="fish-species-progress">${escapeHtml(progression.variantsLabel)}</span>
+              </div>
+              ${progression.isMaxLevel ? "" : `
+                <div class="fish-care-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.nextLevelThreshold}" aria-valuenow="${progression.careXp}">
+                  <span style="width:${Math.round(progression.xpProgress * 100)}%"></span>
+                </div>
+              `}
+            ` : ""}
           </div>
           ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${escapeHtml(fish.id)}" title="Dispose of ${escapeHtml(fish.name)}" aria-label="Dispose of ${escapeHtml(fish.name)}">&#128701;</button>` : ""}
         </div>
@@ -83622,6 +86404,7 @@ function renderControls(now) {
     dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
   }
   if (debugMode && runtime.debugSidebarOpen) {
+    syncDebugSwimAnimationSpeedControls();
     syncDebugDepthTunerControls();
   }
   if (dom.debugNotificationUiButton) {
@@ -83689,6 +86472,7 @@ function renderControls(now) {
     dom.debugFishBehaviorLogButton.hidden = !debugMode;
   }
   syncDebugBehaviorLabButtons(debugMode, selectedActiveFish, now);
+  syncDebugFishProgressionInspection(debugMode, selectedActiveFish);
 
   dom.resetMealsButton.disabled = !debugMode;
   if (dom.completeMealsButton) {
@@ -84046,7 +86830,7 @@ function renderScrubProgress() {
     const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
       ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
       : 0;
-    const earningsText = `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} cleaning coins today`;
+    const earningsText = `Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`;
     dom.scrubProgressLabel.textContent = autoCompleteSeconds
       ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
       : `${scrubPercent}% - ${earningsText}`;
@@ -88625,6 +91409,8 @@ function updateFishMotion(now, deltaSeconds) {
         }
         fish.activity = "roam";
         fish.feedingPelletId = null;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
         fish.targetAt = now;
         fish.hangoutDecorId = null;
         fish.hangoutZoneType = null;
@@ -88657,12 +91443,30 @@ function updateFishMotion(now, deltaSeconds) {
               maxYNorm: pellet.settled ? 0.9 : 0.82
             }
           );
+          const surfaceFoodTarget = Boolean(pellet.surfaceFloating || pellet.foodKey === "fishFlakes");
           if (mouthChaseTarget) {
             fish.targetXNorm = mouthChaseTarget.xNorm;
-            fish.targetYNorm = mouthChaseTarget.yNorm;
+            fish.targetYNorm = surfaceFoodTarget
+              ? clampFishYNormToLayer(
+                mouthChaseTarget.yNorm,
+                fish,
+                species,
+                getFishTankLayer(fish),
+                { minYNorm: 0.14, maxYNorm: 0.82 }
+              )
+              : mouthChaseTarget.yNorm;
           } else {
             fish.targetXNorm = pelletPose.xNorm;
-            fish.targetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+            const rawFeedingTargetYNorm = clamp(pelletPose.yNorm + (pellet.settled ? -0.012 : 0.014), 0.14, pellet.settled ? 0.9 : 0.82);
+            fish.targetYNorm = surfaceFoodTarget
+              ? clampFishYNormToLayer(
+                rawFeedingTargetYNorm,
+                fish,
+                species,
+                getFishTankLayer(fish),
+                { minYNorm: 0.14, maxYNorm: 0.82 }
+              )
+              : rawFeedingTargetYNorm;
           }
           fish.targetAt = now + 1000;
         }
@@ -88670,13 +91474,15 @@ function updateFishMotion(now, deltaSeconds) {
           fish,
           effectiveBehavior === "sucker"
             ? getSuckerFishGlassLayer(fish)
-            : (pellet.settled ? TANK_DEPTH_LAYERS : clampTankLayer(Math.min(getFishTankLayer(fish), 2)))
+            : getFishTankLayer(fish)
         );
         fish.hangoutDecorId = null;
       } else if (fish.activity === "feeding" && !pellet) {
         fish.activity = "roam";
         fish.feedingPelletId = null;
-        fish.targetAt = now + 800 + Math.random() * 1200;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
+        fish.targetAt = now;
         fish.swimSpeed = normalizeFishSpeed(species);
         setFishDesiredTankLayer(fish, effectiveBehavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
         fish.hangoutDecorId = null;
@@ -88779,8 +91585,55 @@ function updateFishMotion(now, deltaSeconds) {
       applyFishCollisionAvoidanceSteering(fish, species, now);
     }
 
-    const moveDx = fish.targetXNorm - fish.xNorm;
-    const moveDy = fish.targetYNorm - fish.yNorm;
+    let moveDx = fish.targetXNorm - fish.xNorm;
+    let moveDy = fish.targetYNorm - fish.yNorm;
+
+    // Never let a normal swimming fish translate backward. Following targets
+    // move often enough that they can cross behind a follower between steering
+    // refreshes. Start the turn first and hold translation until the rendered
+    // facing agrees with the requested horizontal travel direction.
+    const freeSwimmingOtocinclusForFacing = species.id === "otocinclus"
+      && isSuckerFishFreeSwimming(fish, species, now);
+    const canUseHorizontalFacing = effectiveBehavior !== "sucker" || freeSwimmingOtocinclusForFacing;
+    const requestedHorizontalDirection = Math.abs(moveDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM
+      ? (moveDx >= 0 ? 1 : -1)
+      : 0;
+    const renderedFacingDirection = canUseHorizontalFacing ? getFishFacingDirection(fish) : 0;
+    if (
+      canUseHorizontalFacing
+      && requestedHorizontalDirection !== 0
+      && requestedHorizontalDirection !== renderedFacingDirection
+      && !pufferInflatedOwnsMovement
+    ) {
+      setFishDirection(fish, requestedHorizontalDirection, species, now);
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+      moveDx = 0;
+      moveDy = 0;
+    }
+
+    if (canUseHorizontalFacing && (Math.abs(moveDx) > 0.000001 || Math.abs(moveDy) > 0.000001) && !pufferInflatedOwnsMovement) {
+      const gradualSteering = getFishGradualSteeringVector(
+        fish,
+        moveDx,
+        moveDy,
+        deltaSeconds,
+        {
+          urgency: Number.isFinite(fish.panicUntil) && now < fish.panicUntil
+            ? 1.75
+            : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+              ? 1.2
+              : fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+                ? 1.12
+                : fish.activity === "feeding"
+                  ? 1.1
+                  : 1
+        }
+      );
+      moveDx = gradualSteering.xNorm;
+      moveDy = gradualSteering.yNorm;
+    }
+
     const moveDistance = Math.hypot(moveDx, moveDy);
     const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
     const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
@@ -88954,17 +91807,13 @@ function updateFishMotion(now, deltaSeconds) {
         if (isFishEligibleSchoolLeader(leader, fish, species, now)) {
           const leaderSpeed = Math.max(0.00001, Number(leader.swimSpeed) || fish.swimSpeed);
           const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
-          const leaderTargetDistance = Math.hypot(
-            (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
-            (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
-          );
           const formationDistance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
-          const matchFactor = formationDistance > 0.11
-            ? 1.18
-            : formationDistance > 0.052
-              ? 0.92
-              : (leaderTargetDistance > 0.018 ? 0.76 : 0.34);
-          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * matchFactor, 0.16, 1.3);
+          // Match the school's cruise speed first, then apply only a bounded
+          // correction for slot error. This avoids the old accelerate/catch/
+          // brake cycle that compressed followers into the leader.
+          const slotError = clamp((formationDistance - 0.045) / 0.12, -1, 1);
+          const correction = 1 + slotError * 0.24;
+          speedMultiplier *= clamp((leaderSpeed / currentSpeed) * correction, 0.58, 1.24);
         }
       }
       if (activeDebugSteering?.type === "follow") {
@@ -89292,12 +92141,32 @@ function updateFishMotion(now, deltaSeconds) {
           Math.max(pelletBounds.right - pelletBounds.left, pelletBounds.bottom - pelletBounds.top) * 0.55
         )
         : 14 * getViewportStableAssetScale();
-      const mouthReachedPellet = mouthPoint
+      const normalMouthReachedPellet = mouthPoint
         ? Math.hypot(
           mouthPoint.x - pelletPose.xNorm * TANK_WIDTH,
           mouthPoint.y - pelletPose.yNorm * TANK_HEIGHT
         ) <= pelletReachPx
         : Math.hypot(fish.xNorm - pelletPose.xNorm, fish.yNorm - pelletPose.yNorm) < 0.024;
+      const surfaceFood = Boolean(pellet.surfaceFloating || pellet.foodKey === "fishFlakes");
+      const surfaceSwimRange = surfaceFood
+        ? getLayerSwimYRange(getFishTankLayer(fish), fish, species, { minYNorm: 0.14, maxYNorm: 0.82 })
+        : null;
+      const fishAtHighestLegalSurfaceReach = Boolean(
+        surfaceSwimRange
+        && Number(fish.yNorm) <= surfaceSwimRange.min + 0.012
+      );
+      const surfaceHorizontalReachPx = Math.max(
+        pelletReachPx * 1.75,
+        24 * getViewportStableAssetScale()
+      );
+      const surfaceMouthReachedPellet = Boolean(
+        surfaceFood
+        && fishAtHighestLegalSurfaceReach
+        && (mouthPoint
+          ? Math.abs(mouthPoint.x - pelletPose.xNorm * TANK_WIDTH) <= surfaceHorizontalReachPx
+          : Math.abs((fish.xNorm - pelletPose.xNorm) * TANK_WIDTH) <= surfaceHorizontalReachPx)
+      );
+      const mouthReachedPellet = normalMouthReachedPellet || surfaceMouthReachedPellet;
       if (mouthReachedPellet) {
         const diseaseForcedRefusal = typeof pellet.diseaseRefusalFishId === "string" && pellet.diseaseRefusalFishId === fish.id;
         const refusalReason = diseaseForcedRefusal
@@ -89383,13 +92252,28 @@ function getFishProfileRoamX(fish, species, profile) {
   const sharkCruiser = species?.id === "bull-shark"
     || species?.id === "great-white-shark"
     || species?.id === "hammerhead-shark";
-  let direction = Math.random() < clamp(profile.headingPersistence, 0, 1)
+  const now = Date.now();
+  const leadingActiveSchool = typeof hasActiveFishSchoolFollowers === "function"
+    && hasActiveFishSchoolFollowers(fish, now);
+  let direction = leadingActiveSchool
     ? facingDirection
-    : (Math.random() < 0.5 ? -1 : 1);
-  if (currentX <= 0.13) {
+    : (Math.random() < clamp(profile.headingPersistence, 0, 1)
+      ? facingDirection
+      : (Math.random() < 0.5 ? -1 : 1));
+  const atLeftEdge = currentX <= 0.13;
+  const atRightEdge = currentX >= 0.87;
+  if (atLeftEdge) {
     direction = 1;
-  } else if (currentX >= 0.87) {
+  } else if (atRightEdge) {
     direction = -1;
+  } else if (species?.swimStyle === "sporadic" && direction !== facingDirection) {
+    // Sporadic means lively course changes, not repeated 180-degree indecision.
+    // Keep true reversals occasional unless the tank edge requires one.
+    if (now < Number(fish.nextSpontaneousReverseAt || 0)) {
+      direction = facingDirection;
+    } else {
+      fish.nextSpontaneousReverseAt = now + randomBetween(12000, 30000);
+    }
   }
   let targetX = currentX + direction * distance;
   if (targetX < 0.08 || targetX > 0.92) {
@@ -89428,6 +92312,9 @@ function getFishProfileHomeRoamTarget(fish, species, layer, profile) {
 }
 
 function getFishProfileHoverTarget(fish, species, layer, profile) {
+  if (typeof hasActiveFishSchoolFollowers === "function" && hasActiveFishSchoolFollowers(fish, Date.now())) {
+    return null;
+  }
   if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
     return null;
   }
@@ -97829,7 +100716,536 @@ function getFishTopLightOverlay(image) {
   return canvas;
 }
 
-function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null) {
+function smoothFishSwimStep(edge0, edge1, value) {
+  if (edge0 === edge1) return value >= edge1 ? 1 : 0;
+  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function getFishSwimSliceProfile(sliceCount) {
+  const resolvedCount = Math.max(8, Math.round(Number(sliceCount) || 8));
+  const cache = runtime?.fishSwimSliceProfileCache instanceof Map
+    ? runtime.fishSwimSliceProfileCache
+    : null;
+  const cached = cache?.get(resolvedCount);
+  if (cached) return cached;
+
+  const profile = new Array(resolvedCount);
+  for (let index = 0; index < resolvedCount; index += 1) {
+    const u = (index + 0.5) / resolvedCount;
+    const tailCurveEnvelope = Math.pow(
+      Math.max(0, 1 - smoothFishSwimStep(0.05, 0.68, u)),
+      1.35
+    );
+    const bodyCurveEnvelope = Math.pow(
+      Math.max(0, 1 - smoothFishSwimStep(0.32, 0.82, u)),
+      1.7
+    );
+    const rearEnvelope = tailCurveEnvelope * 0.85 + bodyCurveEnvelope * 0.15;
+    const frontEnvelope = Math.pow(
+      smoothFishSwimStep(FISH_SWIM_ANIMATION.frontRegionStart, 1, u),
+      1.25
+    );
+    profile[index] = Object.freeze({
+      u,
+      distanceTowardTail: 1 - u,
+      tailCurveEnvelope,
+      bodyCurveEnvelope,
+      rearEnvelope,
+      frontEnvelope,
+      perspectiveEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.perspectiveTailWeight
+        + rearEnvelope * FISH_SWIM_ANIMATION.perspectiveRearWeight,
+      compressionEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.perspectiveTailCompressionWeight
+        + rearEnvelope * FISH_SWIM_ANIMATION.perspectiveRearCompressionWeight,
+      depthEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.depthWarpTailWeight
+        + bodyCurveEnvelope * FISH_SWIM_ANIMATION.depthWarpBodyWeight
+    });
+  }
+  const frozen = Object.freeze(profile);
+  cache?.set(resolvedCount, frozen);
+  return frozen;
+}
+
+function shouldUseFishSwimDepthWarp(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || isFishDead(fish)) return false;
+  const effectiveBehavior = options.effectiveBehavior
+    || (typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species.behavior);
+  if (["snail", "shrimp", "crab"].includes(String(effectiveBehavior || species.behavior || "").toLowerCase())) return false;
+  if (effectiveBehavior === "sucker") {
+    const freeSwimming = options.suckerFreeSwimming === true
+      || (typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, now));
+    if (!freeSwimming) return false;
+  }
+  return true;
+}
+
+function loadDebugFishSwimAnimationSpeedMultiplier() {
+  if (runtime?.debugSwimAnimationSpeedLoaded) {
+    const cached = Number(runtime.debugSwimAnimationSpeedMultiplier);
+    return Number.isFinite(cached)
+      ? clamp(cached, FISH_SWIM_ANIMATION.debugSpeedMultiplierMin, FISH_SWIM_ANIMATION.debugSpeedMultiplierMax)
+      : FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  }
+
+  let multiplier = FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  try {
+    const stored = Number(localStorage.getItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY));
+    if (Number.isFinite(stored) && stored > 0) {
+      multiplier = clamp(
+        stored,
+        FISH_SWIM_ANIMATION.debugSpeedMultiplierMin,
+        FISH_SWIM_ANIMATION.debugSpeedMultiplierMax
+      );
+    }
+  } catch {
+    // Local storage can be unavailable in private/sandboxed runtimes.
+  }
+
+  runtime.debugSwimAnimationSpeedMultiplier = multiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  return multiplier;
+}
+
+function getFishSwimAnimationSpeedMultiplier() {
+  if (typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return loadDebugFishSwimAnimationSpeedMultiplier();
+  }
+  return FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+}
+
+function setDebugFishSwimAnimationSpeedMultiplier(value) {
+  const multiplier = clamp(
+    Number(value) || FISH_SWIM_ANIMATION.defaultSpeedMultiplier,
+    FISH_SWIM_ANIMATION.debugSpeedMultiplierMin,
+    FISH_SWIM_ANIMATION.debugSpeedMultiplierMax
+  );
+  runtime.debugSwimAnimationSpeedMultiplier = multiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  try {
+    localStorage.setItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY, String(multiplier));
+  } catch {
+    // Keep the in-memory value even if persistence is unavailable.
+  }
+  return multiplier;
+}
+
+function resetDebugFishSwimAnimationSpeedMultiplier() {
+  runtime.debugSwimAnimationSpeedMultiplier = FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  try {
+    localStorage.removeItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures; the runtime value has already been reset.
+  }
+  return runtime.debugSwimAnimationSpeedMultiplier;
+}
+
+function getFishSwimAnimationDebugPresetOverride() {
+  const presetId = String(runtime?.debugSwimAnimationPresetOverride || "").trim().toLowerCase();
+  if (!presetId || !FISH_SWIM_ANIMATION.presets[presetId]) return "";
+  if (typeof isDebugModeEnabled === "function" && !isDebugModeEnabled()) return "";
+  return presetId;
+}
+
+function getFishSwimAnimationPresetId(fish, species, now = Date.now()) {
+  const fishForcedPreset = String(fish?.debugSwimAnimationPreset || "").trim().toLowerCase();
+  if (fishForcedPreset && FISH_SWIM_ANIMATION.presets[fishForcedPreset]) return fishForcedPreset;
+  const globalDebugPreset = getFishSwimAnimationDebugPresetOverride();
+  if (globalDebugPreset) return globalDebugPreset;
+
+  const targetDistance = Math.hypot(
+    (Number(fish?.targetXNorm) || Number(fish?.xNorm) || 0) - (Number(fish?.xNorm) || 0),
+    (Number(fish?.targetYNorm) || Number(fish?.yNorm) || 0) - (Number(fish?.yNorm) || 0)
+  );
+  const physicallyMoving = targetDistance > 0.008 || (Number(fish?.motionLevel) || 0) > 0.14;
+  const panicActive = (Number(fish?.panicUntil) || 0) > now;
+  const panicSpeedBoost = panicActive ? Math.max(1, Number(fish?.panicSpeedBoost) || 2) : 1;
+  const activePanicDash = panicActive && targetDistance > 0.008 && panicSpeedBoost > 1;
+  const queued = typeof getActiveFishActionQueueItem === "function" ? getActiveFishActionQueueItem(fish, now) : null;
+  const steering = typeof getActiveFishActionSteering === "function" ? getActiveFishActionSteering(fish, now) : null;
+  const debugSteering = typeof getActiveDebugBehaviorSteering === "function" ? getActiveDebugBehaviorSteering(fish, now) : null;
+  const intent = typeof getFishBehaviorIntent === "function" ? getFishBehaviorIntent(fish, now) : fish?.behaviorIntent;
+  const intentText = `${fish?.activity || ""} ${queued?.action || ""} ${steering?.type || ""} ${debugSteering?.type || ""} ${intent?.type || ""} ${intent?.cause || ""}`.toLowerCase();
+  const mood = typeof getFishDisposition === "function" ? String(getFishDisposition(fish, now)?.mood || "") : "";
+
+  // Reserve the strongest visual preset for a real active panic dash. Those
+  // dashes are speed-boosted by movement code, so full-bore animation always
+  // corresponds to genuinely faster travel instead of stationary thrashing.
+  if (physicallyMoving && activePanicDash) return "panicked";
+  if (physicallyMoving && (panicActive || mood === "Panicked")) return "scared";
+  if (physicallyMoving && /zoomies/.test(intentText)) return "zoomies";
+  if (physicallyMoving && /(?:avoid|flee|escape|retreat|scurry)/.test(intentText)) return "scared";
+  if (fish?.activity === "feeding" && physicallyMoving) return "feeding";
+  if (/(?:sleep|rest)/.test(intentText) || fish?.activity === "sleep" || fish?.activity === "rest") return "sleepy";
+  if (physicallyMoving && /(?:inspect|follow|greet|hangout|travel|approach)/.test(intentText)) return "active";
+  if (!physicallyMoving || ["Cozy", "Sleepy", "Sad", "Sick"].includes(mood)) return "chill";
+  return "regular";
+}
+
+function getFishSwimMovementFactor(fish) {
+  if (!fish) return 0;
+  const targetDistance = Math.hypot(
+    (Number(fish.targetXNorm) || Number(fish.xNorm) || 0) - (Number(fish.xNorm) || 0),
+    (Number(fish.targetYNorm) || Number(fish.yNorm) || 0) - (Number(fish.yNorm) || 0)
+  );
+  const motionFactor = clamp(((Number(fish.motionLevel) || 0.04) - 0.03) / 0.75, 0, 1);
+  const distanceFactor = clamp(targetDistance / 0.07, 0, 1);
+  return Math.max(motionFactor, distanceFactor);
+}
+
+function normalizeFishSwimAnimationPhase(value) {
+  const tau = Math.PI * 2;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return ((numeric % tau) + tau) % tau;
+}
+
+function getFishSwimAnimationSeedPhase(fish) {
+  const authoredPhase = Number(fish?.phase);
+  return normalizeFishSwimAnimationPhase((Number.isFinite(authoredPhase) ? authoredPhase : 0) * Math.PI * 2);
+}
+
+function advanceFishSwimAnimationPhase(previous, fish, now, nextAnimationSpeed) {
+  const tau = Math.PI * 2;
+  const previousPhase = Number(previous?.swimAnimationPhase);
+  const fallbackSeed = getFishSwimAnimationSeedPhase(fish);
+  const phase = Number.isFinite(previousPhase) ? previousPhase : fallbackSeed;
+  const previousAt = Number(previous?.swimAnimationPhaseUpdatedAt ?? previous?.updatedAt);
+  const elapsedSeconds = Number.isFinite(previousAt)
+    ? clamp(
+      Math.max(0, (Number(now) - previousAt) / 1000),
+      0,
+      FISH_SWIM_ANIMATION.maximumPhaseAdvanceSeconds
+    )
+    : 0;
+  const previousSpeed = Number(previous?.animationSpeed);
+  const resolvedNextSpeed = Math.max(0, Number(nextAnimationSpeed) || 0);
+  const averageSpeed = Number.isFinite(previousSpeed)
+    ? Math.max(0, (previousSpeed + resolvedNextSpeed) * 0.5)
+    : resolvedNextSpeed;
+  const visualSpeedMultiplier = getFishSwimAnimationSpeedMultiplier();
+  return normalizeFishSwimAnimationPhase(
+    phase + elapsedSeconds * tau * FISH_SWIM_ANIMATION.cyclesPerSecond * averageSpeed * visualSpeedMultiplier
+  );
+}
+
+function getFishSwimAnimationState(fish, species, now = Date.now(), options = {}) {
+  const cacheKey = String(fish?.id || fish?.speciesId || "fish");
+  const debugOverridePresetId = getFishSwimAnimationDebugPresetOverride();
+  const forceExactDebugPreset = options.forceExactPreset === true
+    || (options.presetId == null && Boolean(debugOverridePresetId));
+  const cachedState = runtime?.fishSwimAnimationStates?.get(cacheKey);
+  if (options.immediate !== true
+    && options.presetId == null
+    && options.movementFactor == null
+    && !forceExactDebugPreset
+    && cachedState
+    && Number(cachedState.updatedAt) === Number(now)) {
+    return cachedState;
+  }
+
+  const presetId = options.presetId || debugOverridePresetId || getFishSwimAnimationPresetId(fish, species, now);
+  const preset = FISH_SWIM_ANIMATION.presets[presetId] || FISH_SWIM_ANIMATION.presets.regular;
+  const movementFactor = forceExactDebugPreset
+    ? 1
+    : (options.movementFactor == null ? getFishSwimMovementFactor(fish) : clamp(Number(options.movementFactor) || 0, 0, 1));
+  const intensityScale = FISH_SWIM_ANIMATION.stationaryIntensityFloor
+    + (1 - FISH_SWIM_ANIMATION.stationaryIntensityFloor) * movementFactor;
+  const frequencyScale = FISH_SWIM_ANIMATION.stationaryFrequencyFloor
+    + (1 - FISH_SWIM_ANIMATION.stationaryFrequencyFloor) * movementFactor;
+  const target = forceExactDebugPreset
+    ? {
+        tailIntensity: preset.tailIntensity,
+        animationSpeed: preset.animationSpeed,
+        depthWarp: preset.depthWarp,
+        perspective: preset.perspective,
+        frontWiggle: preset.frontWiggle
+      }
+    : {
+        tailIntensity: preset.tailIntensity * intensityScale,
+        animationSpeed: preset.animationSpeed * frequencyScale,
+        depthWarp: preset.depthWarp * intensityScale,
+        perspective: preset.perspective * (0.6 + movementFactor * 0.4),
+        frontWiggle: preset.frontWiggle * intensityScale
+      };
+
+  if (forceExactDebugPreset && runtime?.fishSwimAnimationStates) {
+    const previous = runtime.fishSwimAnimationStates.get(cacheKey);
+    const swimAnimationPhase = previous
+      ? advanceFishSwimAnimationPhase(previous, fish, now, target.animationSpeed)
+      : normalizeFishSwimAnimationPhase(
+        getFishSwimAnimationSeedPhase(fish)
+          + (Number(now) / 1000)
+            * Math.PI * 2
+            * FISH_SWIM_ANIMATION.cyclesPerSecond
+            * Math.max(0, target.animationSpeed)
+            * getFishSwimAnimationSpeedMultiplier()
+      );
+    const exactState = {
+      ...target,
+      presetId,
+      movementFactor: 1,
+      swimAnimationPhase,
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now,
+      debugOverride: true
+    };
+    runtime.fishSwimAnimationStates.set(cacheKey, exactState);
+    return exactState;
+  }
+
+  if (options.immediate === true || !runtime?.fishSwimAnimationStates) {
+    const previous = runtime?.fishSwimAnimationStates?.get(cacheKey);
+    const swimAnimationPhase = previous
+      ? advanceFishSwimAnimationPhase(previous, fish, now, target.animationSpeed)
+      : normalizeFishSwimAnimationPhase(
+        getFishSwimAnimationSeedPhase(fish)
+          + (Number(now) / 1000)
+            * Math.PI * 2
+            * FISH_SWIM_ANIMATION.cyclesPerSecond
+            * Math.max(0, target.animationSpeed)
+            * getFishSwimAnimationSpeedMultiplier()
+      );
+    return {
+      ...target,
+      presetId,
+      movementFactor,
+      swimAnimationPhase,
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now
+    };
+  }
+
+  const key = cacheKey;
+  const previous = runtime.fishSwimAnimationStates.get(key);
+  if (!previous) {
+    const initial = {
+      ...target,
+      presetId,
+      movementFactor,
+      swimAnimationPhase: getFishSwimAnimationSeedPhase(fish),
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now
+    };
+    runtime.fishSwimAnimationStates.set(key, initial);
+    return initial;
+  }
+
+  const dt = clamp(now - (Number(previous.updatedAt) || now), 0, 1200);
+  let transitionMs = FISH_SWIM_ANIMATION.transitionMs;
+  if (["panicked", "scared", "zoomies"].includes(presetId) && presetId !== previous.presetId) {
+    transitionMs = FISH_SWIM_ANIMATION.emergencyTransitionMs;
+  } else if (["panicked", "scared", "zoomies"].includes(previous.presetId) && ["chill", "sleepy", "regular"].includes(presetId)) {
+    transitionMs = FISH_SWIM_ANIMATION.settleTransitionMs;
+  }
+  const blend = clamp(dt / Math.max(1, transitionMs), 0, 1);
+  const nextAnimationSpeed = previous.animationSpeed + (target.animationSpeed - previous.animationSpeed) * blend;
+  const next = {
+    tailIntensity: previous.tailIntensity + (target.tailIntensity - previous.tailIntensity) * blend,
+    animationSpeed: nextAnimationSpeed,
+    depthWarp: previous.depthWarp + (target.depthWarp - previous.depthWarp) * blend,
+    perspective: previous.perspective + (target.perspective - previous.perspective) * blend,
+    frontWiggle: previous.frontWiggle + (target.frontWiggle - previous.frontWiggle) * blend,
+    presetId,
+    movementFactor,
+    swimAnimationPhase: advanceFishSwimAnimationPhase(previous, fish, now, nextAnimationSpeed),
+    swimAnimationPhaseUpdatedAt: now,
+    updatedAt: now
+  };
+  runtime.fishSwimAnimationStates.set(key, next);
+  return next;
+}
+
+function getFishSwimSliceCount(width, options = {}) {
+  if (options.quality === "borough") return FISH_SWIM_ANIMATION.slices.borough;
+  if (options.quality === "highlight") return FISH_SWIM_ANIMATION.slices.highlight;
+  const size = Math.max(1, Number(width) || 1);
+  let sliceCount = size >= 170
+    ? FISH_SWIM_ANIMATION.slices.full
+    : (size >= 95
+        ? FISH_SWIM_ANIMATION.slices.medium
+        : (size >= 52 ? FISH_SWIM_ANIMATION.slices.small : FISH_SWIM_ANIMATION.slices.tiny));
+
+  // Crowded tanks are where the slice renderer becomes expensive. Scale only
+  // cosmetic tessellation density, never fish simulation or approved warp math.
+  const fishCount = Math.max(
+    1,
+    Number(options.fishCount)
+      || (Array.isArray(state?.fish) ? state.fish.length : 1)
+  );
+  if (fishCount >= FISH_SWIM_ANIMATION.denseFishThreshold) {
+    sliceCount *= FISH_SWIM_ANIMATION.denseSliceScale;
+  } else if (fishCount >= FISH_SWIM_ANIMATION.crowdedFishThreshold) {
+    sliceCount *= FISH_SWIM_ANIMATION.crowdedSliceScale;
+  }
+  return Math.max(FISH_SWIM_ANIMATION.minimumGameplaySlices, Math.round(sliceCount));
+}
+
+function getFishSwimOpaqueHorizontalBounds(imagePath, image) {
+  const sourceWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
+  const mask = imagePath && typeof getImageAlphaMask === "function" ? getImageAlphaMask(imagePath) : null;
+  if (!mask?.bounds || !mask.width) return { minX: 0, maxX: sourceWidth - 1 };
+  const minRatio = clamp(mask.bounds.minX / Math.max(1, mask.width), 0, 1);
+  const maxRatio = clamp((mask.bounds.maxX + 1) / Math.max(1, mask.width), minRatio, 1);
+  const minX = minRatio * sourceWidth;
+  const maxX = Math.max(minX + 1, maxRatio * sourceWidth);
+  return { minX, maxX };
+}
+
+function drawFishSwimDepthWarpImage(context, image, drawX, drawY, width, height, fish, species, now = Date.now(), options = {}) {
+  if (!context || !image || width <= 0 || height <= 0) return false;
+  if (!shouldUseFishSwimDepthWarp(fish, species, now, options)) return false;
+
+  const sourceWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const sourceHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const bounds = getFishSwimOpaqueHorizontalBounds(options.imagePath || "", image);
+  const visibleSpan = Math.max(1, bounds.maxX - bounds.minX);
+  const sliceCount = Math.max(8, getFishSwimSliceCount(width, options));
+  const sourceSliceWidth = visibleSpan / sliceCount;
+  const sliceProfile = getFishSwimSliceProfile(sliceCount);
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishSwimWarpPasses", 1);
+    incrementDebugFrameProfilerCounter("fishSwimSliceDraws", sliceCount);
+    if (options.quality === "highlight") incrementDebugFrameProfilerCounter("fishSwimHighlightSliceDraws", sliceCount);
+    if (options.quality === "borough") incrementDebugFrameProfilerCounter("fishSwimBoroughSliceDraws", sliceCount);
+  }
+  const overlapPx = Math.max(0.25, Math.min(1.25, FISH_SWIM_ANIMATION.sliceOverlapPx * (options.quality === "borough" ? 0.55 : 1)));
+  const state = getFishSwimAnimationState(fish, species, now, {
+    presetId: options.presetId,
+    movementFactor: options.movementFactor,
+    immediate: options.immediate
+  });
+  const globalPhase = normalizeFishSwimAnimationPhase(state.swimAnimationPhase);
+  const depthWarpPx = height
+    * (FISH_SWIM_ANIMATION.depthWarpBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.depthWarpDepthRatio)
+    * state.tailIntensity;
+  const phaseLag = 0.58 + state.depthWarp * 1.05;
+  const frontWave = Math.sin(globalPhase + Math.PI * FISH_SWIM_ANIMATION.frontCounterPhasePi);
+  const frontDepthStrength = height
+    * (FISH_SWIM_ANIMATION.frontDepthWarpBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.frontDepthWarpDepthRatio)
+    * state.frontWiggle;
+  const rearHorizontalStrength = width
+    * (FISH_SWIM_ANIMATION.rearHorizontalShiftBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.rearHorizontalShiftDepthRatio)
+    * state.tailIntensity;
+  const frontHorizontalStrength = width
+    * FISH_SWIM_ANIMATION.frontHorizontalShiftStrength
+    * state.frontWiggle;
+  const perspectiveStrength = state.perspective * state.tailIntensity;
+  const collectDebugMetrics = Boolean(
+    fish?.id
+    && runtime?.fishSwimAnimationDebugMetrics instanceof Map
+    && typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled()
+  );
+  let maximumRearDepthWarpPx = 0;
+
+  for (let index = 0; index < sliceCount; index += 1) {
+    const template = sliceProfile[index];
+    const nominalSourceX = bounds.minX + index * sourceSliceWidth;
+    const sourceCenter = Math.min(bounds.maxX, nominalSourceX + sourceSliceWidth * 0.5);
+    const sourceX = Math.max(0, nominalSourceX - 0.35);
+    const sourceRight = Math.min(sourceWidth, nominalSourceX + sourceSliceWidth + 0.35);
+    const sourceW = Math.max(0.5, sourceRight - sourceX);
+    const localPhase = globalPhase - template.distanceTowardTail * phaseLag;
+    const depthWave = Math.sin(localPhase);
+
+    const rearDepthWarp = depthWave
+      * depthWarpPx
+      * template.depthEnvelope;
+    const frontDepthWarp = frontWave
+      * frontDepthStrength
+      * template.frontEnvelope;
+    if (collectDebugMetrics) {
+      maximumRearDepthWarpPx = Math.max(maximumRearDepthWarpPx, Math.abs(rearDepthWarp));
+    }
+    const depthOffsetY = rearDepthWarp + frontDepthWarp;
+
+    const rearShift = depthWave
+      * rearHorizontalStrength
+      * template.rearEnvelope;
+    const frontShift = frontWave
+      * frontHorizontalStrength
+      * template.frontEnvelope;
+    const horizontalShift = rearShift + frontShift;
+
+    const signedDepth = depthWave
+      * perspectiveStrength
+      * template.perspectiveEnvelope;
+    const scaleY = Math.max(
+      FISH_SWIM_ANIMATION.minimumPerspectiveScaleY,
+      1 + signedDepth * FISH_SWIM_ANIMATION.perspectiveScaleStrength
+    );
+    const widthForeshorten = 1
+      - Math.abs(depthWave)
+        * perspectiveStrength
+        * template.compressionEnvelope;
+    const widthScale = Math.max(
+      FISH_SWIM_ANIMATION.minimumSliceWidthScale,
+      widthForeshorten
+    );
+
+    const sourceCenterRatio = sourceCenter / sourceWidth;
+    const destinationCenterX = drawX + sourceCenterRatio * width + horizontalShift;
+    const destinationCenterY = drawY + height * 0.5 + depthOffsetY;
+    const normalDestinationWidth = sourceW / sourceWidth * width;
+    const destinationWidth = Math.max(0.5, normalDestinationWidth * widthScale + overlapPx);
+    const destinationHeight = Math.max(0.5, height * scaleY);
+
+    context.drawImage(
+      image,
+      sourceX,
+      0,
+      sourceW,
+      sourceHeight,
+      destinationCenterX - destinationWidth * 0.5,
+      destinationCenterY - destinationHeight * 0.5,
+      destinationWidth,
+      destinationHeight
+    );
+  }
+
+  if (collectDebugMetrics) {
+    const fishHeight = Math.max(1, Number(height) || 1);
+    runtime.fishSwimAnimationDebugMetrics.set(String(fish.id), {
+      fishId: String(fish.id),
+      fishName: String(fish.name || species?.name || fish.id || "Fish"),
+      speciesId: String(species?.id || fish.speciesId || ""),
+      presetId: String(state.presetId || "regular"),
+      tailIntensity: state.tailIntensity,
+      animationSpeed: state.animationSpeed,
+      depthWarp: state.depthWarp,
+      perspective: state.perspective,
+      frontWiggle: state.frontWiggle,
+      phase: globalPhase,
+      effectiveCyclesPerSecond: FISH_SWIM_ANIMATION.cyclesPerSecond * state.animationSpeed * getFishSwimAnimationSpeedMultiplier(),
+      rawDepthWarpPx: depthWarpPx,
+      maximumRearDepthWarpPx,
+      fishDisplayHeight: fishHeight,
+      rawDepthWarpRatio: depthWarpPx / fishHeight,
+      rearDepthWarpRatio: maximumRearDepthWarpPx / fishHeight,
+      panicActive: (Number(fish.panicUntil) || 0) > now,
+      activePanicDash: (Number(fish.panicUntil) || 0) > now
+        && Math.hypot(
+          (Number(fish.targetXNorm) || Number(fish.xNorm) || 0) - (Number(fish.xNorm) || 0),
+          (Number(fish.targetYNorm) || Number(fish.yNorm) || 0) - (Number(fish.yNorm) || 0)
+        ) > 0.008
+        && Math.max(1, Number(fish.panicSpeedBoost) || 2) > 1,
+      panicSpeedBoost: (Number(fish.panicUntil) || 0) > now
+        ? Math.max(1, Number(fish.panicSpeedBoost) || 2)
+        : 1,
+      updatedAt: now
+    });
+  }
+  return true;
+}
+
+function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null, swimOptions = null) {
   const overlay = getFishTopLightOverlay(image);
   if (!overlay) {
     return;
@@ -97839,8 +101255,28 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.save();
   context.globalCompositeOperation = "screen";
   context.globalAlpha = lighting.highlightAlpha;
-  context.filter = "blur(0.22px)";
-  context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  // A top-light highlight is intentionally soft and low-alpha. Re-warping it
+  // at the full body slice density nearly doubled per-fish draw calls and the
+  // per-slice blur was especially expensive on the GPU. Keep it attached to
+  // the same deformation at a lightweight 16-slice quality with no live blur.
+  context.filter = swimOptions?.fish ? "none" : "blur(0.22px)";
+  const usedDepthWarp = swimOptions?.fish && swimOptions?.species
+    ? drawFishSwimDepthWarpImage(
+      context,
+      overlay,
+      fishDrawX,
+      -height / 2,
+      width,
+      height,
+      swimOptions.fish,
+      swimOptions.species,
+      now,
+      { ...swimOptions, quality: "highlight" }
+    )
+    : false;
+  if (!usedDepthWarp) {
+    context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  }
   context.restore();
 }
 
@@ -97901,7 +101337,11 @@ function prepareFishRenderRecord(record, now) {
   const height = width * (image.height / image.width);
   const healthRatio = getFishHealthRatio(fish, species);
   const visualWiggle = pose.wiggle * getTankDepthMovementMultiplier(depthLayer);
-  const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior,
+    suckerFreeSwimming
+  });
+  const fishDrawX = -width / 2 + (useDepthSwimWarp ? 0 : visualWiggle * width * 0.018);
   const useSuckerFacePivot = SUCKER_FISH_FACE_PIVOT_ENABLED
     && !pose.isDead
     && effectiveBehavior === "sucker"
@@ -97913,7 +101353,7 @@ function prepareFishRenderRecord(record, now) {
     transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
     imagePath, image, renderImage, pose, depthLayer, width, height,
     healthRatio, visualSwayX: pose.swayX * getTankDepthMovementMultiplier(depthLayer),
-    fishDrawX, useSuckerFacePivot,
+    fishDrawX, useDepthSwimWarp, useSuckerFacePivot,
     suckerFacePivotX: useSuckerFacePivot ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X : 0,
     suckerFacePivotY: useSuckerFacePivot ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y : 0
   };
@@ -99576,7 +103016,7 @@ function drawFish(now, layer = null, options = {}) {
       suckerFreeSwimming, suckerViewTransition, displaySpecies,
       transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
       imagePath, image, renderImage, pose, depthLayer, width, height,
-      healthRatio, visualSwayX, fishDrawX, useSuckerFacePivot,
+      healthRatio, visualSwayX, fishDrawX, useDepthSwimWarp, useSuckerFacePivot,
       suckerFacePivotX, suckerFacePivotY
     } = prepared;
 
@@ -99697,12 +103137,36 @@ function drawFish(now, layer = null, options = {}) {
         }
         markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
-        tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        const warped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
+          tankContext,
+          depthRenderImage,
+          fishDrawX,
+          -spriteHeight / 2,
+          width,
+          spriteHeight,
+          fish,
+          species,
+          now,
+          { imagePath, effectiveBehavior, suckerFreeSwimming }
+        );
+        if (!warped) {
+          tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        }
         markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !genericTurnRigActive) {
-        drawFishTopLightOverlay(tankContext, sprite.sourceImage, fishDrawX, spriteHeight, width, pose.y, now, fishLighting);
+      if (!pose.isDead && !genericTurnRigActive && layerMotion?.preserveColor !== true) {
+        drawFishTopLightOverlay(
+          tankContext,
+          sprite.sourceImage,
+          fishDrawX,
+          spriteHeight,
+          width,
+          pose.y,
+          now,
+          fishLighting,
+          useDepthSwimWarp ? { fish, species, imagePath, effectiveBehavior, suckerFreeSwimming } : null
+        );
       }
       tankContext.restore();
     };
@@ -100309,6 +103773,60 @@ function drawCleaningSparkles(now) {
   tankContext.restore();
 }
 
+function smoothLivingFishVisualPose(fish, pose, now = Date.now()) {
+  if (!fish || !pose || pose.isDead || pose.isBeingConsumed) return pose;
+  if (!(runtime?.fishVisualPoseSmoothingStates instanceof Map)) return pose;
+
+  const key = String(fish.id || fish.speciesId || "fish");
+  const previous = runtime.fishVisualPoseSmoothingStates.get(key);
+  const currentAt = Number(now) || Date.now();
+  const target = {
+    tilt: Number(pose.tilt) || 0,
+    wiggle: Number(pose.wiggle) || 0,
+    bodyScaleX: Number.isFinite(Number(pose.bodyScaleX)) ? Number(pose.bodyScaleX) : 1,
+    bodyScaleY: Number.isFinite(Number(pose.bodyScaleY)) ? Number(pose.bodyScaleY) : 1,
+    swayX: Number(pose.swayX) || 0,
+    updatedAt: currentAt
+  };
+
+  if (!previous) {
+    runtime.fishVisualPoseSmoothingStates.set(key, target);
+    return pose;
+  }
+
+  const elapsedMs = Math.max(0, currentAt - (Number(previous.updatedAt) || currentAt));
+  if (elapsedMs > FISH_VISUAL_POSE_SMOOTHING.resetAfterMs) {
+    runtime.fishVisualPoseSmoothingStates.set(key, target);
+    return pose;
+  }
+
+  const elapsedSeconds = clamp(elapsedMs / 1000, 0, 0.08);
+  const approach = (from, to, responsePerSecond) => {
+    if (elapsedSeconds <= 0) return Number(from);
+    const blend = 1 - Math.exp(-Math.max(0.01, responsePerSecond) * elapsedSeconds);
+    return Number(from) + (Number(to) - Number(from)) * blend;
+  };
+
+  const smoothed = {
+    tilt: approach(previous.tilt, target.tilt, FISH_VISUAL_POSE_SMOOTHING.tiltResponsePerSecond),
+    wiggle: approach(previous.wiggle, target.wiggle, FISH_VISUAL_POSE_SMOOTHING.wiggleResponsePerSecond),
+    bodyScaleX: approach(previous.bodyScaleX, target.bodyScaleX, FISH_VISUAL_POSE_SMOOTHING.scaleResponsePerSecond),
+    bodyScaleY: approach(previous.bodyScaleY, target.bodyScaleY, FISH_VISUAL_POSE_SMOOTHING.scaleResponsePerSecond),
+    swayX: approach(previous.swayX, target.swayX, FISH_VISUAL_POSE_SMOOTHING.swayResponsePerSecond),
+    updatedAt: currentAt
+  };
+  runtime.fishVisualPoseSmoothingStates.set(key, smoothed);
+
+  return {
+    ...pose,
+    tilt: smoothed.tilt,
+    wiggle: smoothed.wiggle,
+    bodyScaleX: smoothed.bodyScaleX,
+    bodyScaleY: smoothed.bodyScaleY,
+    swayX: smoothed.swayX
+  };
+}
+
 function getFishPose(fish, species, now) {
   if (isFishBeingConsumedByPiranhas(fish, now)) {
     const churnClock = now / 1000;
@@ -100384,9 +103902,9 @@ function getFishPose(fish, species, now) {
       direction: 1,
       facingScaleX: 1,
       tilt: tubeTilt,
-      wiggle,
-      bodyScaleX: 1 - Math.abs(wiggle) * .025,
-      bodyScaleY: 1 + Math.abs(wiggle) * .02,
+      wiggle: 0,
+      bodyScaleX: 1,
+      bodyScaleY: 1,
       swayX: 0,
       isDead: false
     };
@@ -100463,24 +103981,31 @@ function getFishPose(fish, species, now) {
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
-      : clamp(steeringTilt + baseWiggle * 0.018, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
+      : clamp(steeringTilt, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
     const x = fish.xNorm * TANK_WIDTH;
-    const subtleBob = scanningGravel
-      ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
-      : Math.sin(now / 920 + fish.phase * Math.PI * 2) * 1.2;
+    const useOtocinclusDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+      effectiveBehavior: "sucker",
+      suckerFreeSwimming: true
+    });
+    const subtleBob = useOtocinclusDepthSwimWarp
+      ? 0
+      : (scanningGravel
+        ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
+        : Math.sin(now / 920 + fish.phase * Math.PI * 2) * 1.2);
     const y = fish.yNorm * TANK_HEIGHT + subtleBob;
-    return {
+    const freeSwimPose = {
       x,
       y,
       direction: fish.direction || 1,
       facingScaleX: renderDirection,
       tilt: noseDownTilt,
-      wiggle: baseWiggle * (scanningGravel ? 0.32 : 0.58),
-      bodyScaleX: (1 - Math.abs(baseWiggle) * 0.012) * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X))),
-      bodyScaleY: (1 + Math.abs(baseWiggle) * 0.008) * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1))),
-      swayX: baseWiggle * (scanningGravel ? 0.42 : 0.78),
+      wiggle: 0,
+      bodyScaleX: useOtocinclusDepthSwimWarp || useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)),
+      bodyScaleY: useOtocinclusDepthSwimWarp || useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)),
+      swayX: 0,
       isDead: false
     };
+    return smoothLivingFishVisualPose(fish, freeSwimPose, now);
   }
 
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
@@ -100548,6 +104073,10 @@ function getFishPose(fish, species, now) {
     ? 1
     : 0.18 + entryRightingEase * 0.82;
   const wiggle = baseWiggle * entryWiggleFactor;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior: getEffectiveFishBehavior(fish, species)
+  });
+  const wholeBodyWiggle = useDepthSwimWarp ? 0 : wiggle;
   const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
   const renderYNorm = easedEntry === null || fish.entryFromYNorm === null
     ? fish.yNorm
@@ -100564,9 +104093,10 @@ function getFishPose(fish, species, now) {
   const bobClock = now / 1000;
   const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
   const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
-  const verticalBob =
-    Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
-    + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18;
+  const verticalBob = useDepthSwimWarp
+    ? 0
+    : (Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
+      + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18);
   const y = renderYNorm * TANK_HEIGHT
     + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);
@@ -100581,7 +104111,7 @@ function getFishPose(fish, species, now) {
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
     : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
-  const turnLean = turnProgress === null || useComplexTurn
+  const turnLean = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
   const steeringTilt = Number.isFinite(Number(fish.swimTilt))
@@ -100589,7 +104119,7 @@ function getFishPose(fish, species, now) {
     : 0;
   const baseTilt = clamp(
     steeringTilt
-    + wiggle * (0.008 + motionLevel * 0.04)
+    + wholeBodyWiggle * (0.008 + motionLevel * 0.04)
     + turnLean,
     -FISH_SWIM_TILT_MAX,
     FISH_SWIM_TILT_MAX
@@ -100603,7 +104133,9 @@ function getFishPose(fish, species, now) {
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
   if (species.renderMotionProfile === "seahorse") {
     const verticalDrift = clamp(steeringTilt * 0.48, -0.28, 0.28);
-    const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
+    const tailSway = useDepthSwimWarp
+      ? 0
+      : Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }
   const behaviorIntentType = String(fish.behaviorIntent?.type || "");
@@ -100643,32 +104175,32 @@ function getFishPose(fish, species, now) {
       0.42
     );
   }
-  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
-    * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
+  const bodyScaleX = (1 - Math.abs(wholeBodyWiggle) * wiggleStretch)
+    * (useDepthSwimWarp || useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
     * (forcedDigPrompt ? 0.97 : 1)
     * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 1040 + fish.phase * Math.PI) * 0.008) : 1)
     * (bettaDisplaying ? 0.97 : 1)
     * (pencilSparring ? 0.985 : 1);
-  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
-    * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
+  const bodyScaleY = (1 + Math.abs(wholeBodyWiggle) * (wiggleStretch * 0.78))
+    * (useDepthSwimWarp || useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
     * (forcedDigPrompt ? 1.04 : 1)
     * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 980 + fish.phase * Math.PI * 1.2)) * 0.008) : 1)
     * (bettaDisplaying ? 1.06 : 1)
     * (pencilSparring ? 1.018 : 1)
     * (seahorsePerched ? 0.99 : 1);
-  const turnSway = turnProgress === null || useComplexTurn
+  const turnSway = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
-  return {
+  const visualPose = {
     x,
     y,
     direction: fish.direction || 1,
     facingScaleX: renderDirection,
     tilt,
-    wiggle: seahorsePerched ? wiggle * 0.24 : wiggle,
+    wiggle: seahorsePerched ? wholeBodyWiggle * 0.24 : wholeBodyWiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: (seahorsePerched ? wiggle * 0.12 : wiggle * (0.7 + motionLevel * 1.55))
+    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (0.7 + motionLevel * 1.55))
       + turnSway * (entryProgress === null ? 1 : entryRightingEase)
       + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
       + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
@@ -100676,6 +104208,7 @@ function getFishPose(fish, species, now) {
       + (pufferInflated ? Math.sin(now / 840 + fish.phase * Math.PI * 2.3) * (0.5 + pufferWobbleAmount * 0.8) : 0),
     isDead: false
   };
+  return smoothLivingFishVisualPose(fish, visualPose, now);
 }
 // </bundle-source>
 
@@ -100947,6 +104480,28 @@ function getPelletPose(pellet, now) {
     0.18,
     0.96
   );
+  if (hasCustomDropStart && dropProgress < 1 && (pellet.surfaceFloating || pellet.foodKey === "fishFlakes")) {
+    const targetXNorm = clamp(Number(pellet.xNorm) || 0.5, 0.08, 0.92);
+    const targetYNorm = pellet.surfaceFloating || pellet.foodKey === "fishFlakes"
+      ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
+      : clamp(Number(pellet.yNorm) || 0.2, 0.09, floorYNorm);
+    const startXNorm = clamp(Number(pellet.dropStartXNorm), 0.08, 0.92);
+    const startYNorm = clamp(Number(pellet.dropStartYNorm), 0.02, floorYNorm);
+    const airFall = clamp(dropProgress / 0.68, 0, 1);
+    const waterSettle = clamp((dropProgress - 0.68) / 0.32, 0, 1);
+    const easedAir = 1 - Math.pow(1 - airFall, 2.35);
+    const easedWater = 1 - Math.pow(1 - waterSettle, 3.2);
+    const entryProgress = dropProgress <= 0.68
+      ? easedAir * 0.9
+      : 0.9 + easedWater * 0.1;
+    return {
+      // Hand-fed surface food falls vertically from directly above the click
+      // position. Do not interpolate from another X or add lateral entry sway.
+      // Normal surface bobbing can resume after the entry completes.
+      xNorm: startXNorm,
+      yNorm: startYNorm + (targetYNorm - startYNorm) * entryProgress
+    };
+  }
   if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
     pellet.surfaceFloating = true;
     const phase = (Number(pellet.sway) || 0) * Math.PI * 2;
@@ -107477,6 +111032,58 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
   return fish.swimTilt;
 }
 
+function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
+  const dx = Number(deltaXNorm) || 0;
+  const dy = Number(deltaYNorm) || 0;
+  const distanceNorm = Math.hypot(dx, dy);
+  if (!fish || distanceNorm <= 0.000001) {
+    if (fish) fish.steeringVerticalRatio = 0;
+    return { xNorm: dx, yNorm: dy };
+  }
+
+  const dxPx = dx * TANK_WIDTH;
+  const dyPx = dy * TANK_HEIGHT;
+  const distancePx = Math.hypot(dxPx, dyPx);
+  if (distancePx <= 0.001) {
+    return { xNorm: dx, yNorm: dy };
+  }
+
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -1, 1);
+  const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
+    ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
+    : 0;
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
+  const response = 1 - Math.exp(-2.8 * urgency * elapsedSeconds);
+  const responsiveStep = (desiredVerticalRatio - currentVerticalRatio) * response;
+  const maximumStep = 1.45 * urgency * elapsedSeconds;
+  const nextVerticalRatio = clamp(
+    currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
+    -0.96,
+    0.96
+  );
+  fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
+    ? desiredVerticalRatio
+    : nextVerticalRatio;
+
+  const horizontalSign = Math.abs(dxPx) > 0.5
+    ? (dxPx >= 0 ? 1 : -1)
+    : getFishFacingDirection(fish);
+  const verticalRatio = fish.steeringVerticalRatio;
+  const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
+
+  // Convert the smoothed screen-space heading back into normalized tank-space
+  // while preserving the remaining target distance. This bends the path into
+  // climbs and dives instead of instantly snapping to a new diagonal vector.
+  const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
+  const unitYNorm = verticalRatio / TANK_HEIGHT;
+  const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
+  return {
+    xNorm: unitXNorm / unitNormLength * distanceNorm,
+    yNorm: unitYNorm / unitNormLength * distanceNorm
+  };
+}
+
 function updateFishTurnState(fish, species, now) {
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {
@@ -108271,7 +111878,7 @@ function ensurePendingRecapNotifications() {
     changed = Boolean(enqueueNotificationCenterEntry({
       type: "daily_recap",
       title: "Daily Recap ready",
-      detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+      detail: `Bubble Borough · Score ${Number(summary.score) > 0 ? "+" : ""}${Math.round(Number(summary.score) || 0)}`,
       createdAt: summary.generatedAt || Date.now(),
       signature,
       tankId: "",
@@ -111942,6 +115549,43 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/lookdown__genetics-natural.webp",
+      "version": "82c4babaf29f",
+      "width": 1024,
+      "height": 1024,
+      "frames": {
+        "lookdown-fish_barred.png": [
+          0,
+          0,
+          512,
+          512
+        ],
+        "lookdown-fish_blue.png": [
+          512,
+          0,
+          512,
+          512
+        ],
+        "lookdown-fish_classic-silver.png": [
+          0,
+          512,
+          512,
+          512
+        ],
+        "lookdown-fish_golden.png": [
+          512,
+          512,
+          512,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/lookdown__genetics-natural",
+        "version": "a901177b1ec8-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/molly__genetics-natural.webp",
       "version": "6b8acf189ef3",
       "width": 1536,
@@ -113145,37 +116789,37 @@ function getSpriteSheetDefinitions() {
       "width": 1536,
       "height": 1024,
       "frames": {
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-blue.png": [
           0,
           0,
           512,
           512
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-green.png": [
           512,
           0,
           512,
           512
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-purple.png": [
           1024,
           0,
           512,
           512
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-pink.png": [
           0,
           512,
           512,
           512
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-red.png": [
           512,
           512,
           512,
           512
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-orange.png": [
           1024,
           512,
           512,
@@ -113184,7 +116828,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/tetra-neon__genetics-enhanced",
-        "version": "8d488dd6d523-v1",
+        "version": "4b8ca143e67e-v1",
         "standalone": false
       }
     },
@@ -114900,6 +118544,43 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/fish/small_fish/lookdown__genetics-natural.webp",
+      "version": "d0895034de28",
+      "width": 128,
+      "height": 128,
+      "frames": {
+        "lookdown-fish_barred.png": [
+          0,
+          0,
+          64,
+          64
+        ],
+        "lookdown-fish_blue.png": [
+          64,
+          0,
+          64,
+          64
+        ],
+        "lookdown-fish_classic-silver.png": [
+          0,
+          64,
+          64,
+          64
+        ],
+        "lookdown-fish_golden.png": [
+          64,
+          64,
+          64,
+          64
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural",
+        "version": "132c23f1c4a7-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/fish/small_fish/molly__genetics-natural.webp",
       "version": "08e359754a57",
       "width": 192,
@@ -116097,37 +119778,37 @@ function getSpriteSheetDefinitions() {
       "width": 192,
       "height": 128,
       "frames": {
-        "tetra_glofish_cosmic-blue.png": [
+        "tetra_neon-blue.png": [
           0,
           0,
           64,
           64
         ],
-        "tetra_glofish_electric-green.png": [
+        "tetra_neon-green.png": [
           64,
           0,
           64,
           64
         ],
-        "tetra_glofish_galactic-purple.png": [
+        "tetra_neon-purple.png": [
           128,
           0,
           64,
           64
         ],
-        "tetra_glofish_moonrise-pink.png": [
+        "tetra_neon-pink.png": [
           0,
           64,
           64,
           64
         ],
-        "tetra_glofish_starfire-red.png": [
+        "tetra_neon-red.png": [
           64,
           64,
           64,
           64
         ],
-        "tetra_glofish_sunburst-orange.png": [
+        "tetra_neon-orange.png": [
           128,
           64,
           64,
@@ -116136,7 +119817,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra-neon__genetics-enhanced",
-        "version": "0c98d744730b-v1",
+        "version": "be583b7ed4d1-v1",
         "standalone": false
       }
     },
@@ -117340,6 +121021,93 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/misc/wounds",
         "version": "3fd4d1637805-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/corners.webp",
+      "version": "e28c578e1e89",
+      "width": 58,
+      "height": 158,
+      "frames": {
+        "tank_frame_top-left.png": [
+          0,
+          0,
+          29,
+          79
+        ],
+        "tank_frame_top-right.png": [
+          29,
+          0,
+          29,
+          79
+        ],
+        "tank_frame_bottom-left.png": [
+          0,
+          79,
+          29,
+          79
+        ],
+        "tank_frame_bottom-right.png": [
+          29,
+          79,
+          29,
+          79
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/corners",
+        "version": "898aa4647c91-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/left-right.webp",
+      "version": "5d1beaea6cad",
+      "width": 42,
+      "height": 673,
+      "frames": {
+        "tank_frame_right.png": [
+          0,
+          0,
+          21,
+          673
+        ],
+        "tank_frame_left.png": [
+          21,
+          0,
+          21,
+          673
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/left-right",
+        "version": "ccce82f29862-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/tank-frame/top-bottom.webp",
+      "version": "57fd28e2c8b4",
+      "width": 1484,
+      "height": 156,
+      "frames": {
+        "tank_frame_top.png": [
+          0,
+          0,
+          1484,
+          78
+        ],
+        "tank_frame_bottom.png": [
+          0,
+          78,
+          1484,
+          78
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/tank-frame/top-bottom",
+        "version": "4ada107e8ec6-v1",
         "standalone": false
       }
     },

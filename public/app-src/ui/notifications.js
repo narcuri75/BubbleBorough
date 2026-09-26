@@ -139,7 +139,7 @@ function ensurePendingRecapNotifications() {
     changed = Boolean(enqueueNotificationCenterEntry({
       type: "daily_recap",
       title: "Daily Recap ready",
-      detail: `Bubble Borough · ${summary.reward || 0} coin bonus`,
+      detail: `Bubble Borough · Score ${Number(summary.score) > 0 ? "+" : ""}${Math.round(Number(summary.score) || 0)}`,
       createdAt: summary.generatedAt || Date.now(),
       signature,
       tankId: "",

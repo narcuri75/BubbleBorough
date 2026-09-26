@@ -485,7 +485,536 @@ function getFishTopLightOverlay(image) {
   return canvas;
 }
 
-function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null) {
+function smoothFishSwimStep(edge0, edge1, value) {
+  if (edge0 === edge1) return value >= edge1 ? 1 : 0;
+  const t = clamp((value - edge0) / (edge1 - edge0), 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function getFishSwimSliceProfile(sliceCount) {
+  const resolvedCount = Math.max(8, Math.round(Number(sliceCount) || 8));
+  const cache = runtime?.fishSwimSliceProfileCache instanceof Map
+    ? runtime.fishSwimSliceProfileCache
+    : null;
+  const cached = cache?.get(resolvedCount);
+  if (cached) return cached;
+
+  const profile = new Array(resolvedCount);
+  for (let index = 0; index < resolvedCount; index += 1) {
+    const u = (index + 0.5) / resolvedCount;
+    const tailCurveEnvelope = Math.pow(
+      Math.max(0, 1 - smoothFishSwimStep(0.05, 0.68, u)),
+      1.35
+    );
+    const bodyCurveEnvelope = Math.pow(
+      Math.max(0, 1 - smoothFishSwimStep(0.32, 0.82, u)),
+      1.7
+    );
+    const rearEnvelope = tailCurveEnvelope * 0.85 + bodyCurveEnvelope * 0.15;
+    const frontEnvelope = Math.pow(
+      smoothFishSwimStep(FISH_SWIM_ANIMATION.frontRegionStart, 1, u),
+      1.25
+    );
+    profile[index] = Object.freeze({
+      u,
+      distanceTowardTail: 1 - u,
+      tailCurveEnvelope,
+      bodyCurveEnvelope,
+      rearEnvelope,
+      frontEnvelope,
+      perspectiveEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.perspectiveTailWeight
+        + rearEnvelope * FISH_SWIM_ANIMATION.perspectiveRearWeight,
+      compressionEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.perspectiveTailCompressionWeight
+        + rearEnvelope * FISH_SWIM_ANIMATION.perspectiveRearCompressionWeight,
+      depthEnvelope:
+        tailCurveEnvelope * FISH_SWIM_ANIMATION.depthWarpTailWeight
+        + bodyCurveEnvelope * FISH_SWIM_ANIMATION.depthWarpBodyWeight
+    });
+  }
+  const frozen = Object.freeze(profile);
+  cache?.set(resolvedCount, frozen);
+  return frozen;
+}
+
+function shouldUseFishSwimDepthWarp(fish, species, now = Date.now(), options = {}) {
+  if (!fish || !species || isFishDead(fish)) return false;
+  const effectiveBehavior = options.effectiveBehavior
+    || (typeof getEffectiveFishBehavior === "function" ? getEffectiveFishBehavior(fish, species) : species.behavior);
+  if (["snail", "shrimp", "crab"].includes(String(effectiveBehavior || species.behavior || "").toLowerCase())) return false;
+  if (effectiveBehavior === "sucker") {
+    const freeSwimming = options.suckerFreeSwimming === true
+      || (typeof isSuckerFishFreeSwimming === "function" && isSuckerFishFreeSwimming(fish, species, now));
+    if (!freeSwimming) return false;
+  }
+  return true;
+}
+
+function loadDebugFishSwimAnimationSpeedMultiplier() {
+  if (runtime?.debugSwimAnimationSpeedLoaded) {
+    const cached = Number(runtime.debugSwimAnimationSpeedMultiplier);
+    return Number.isFinite(cached)
+      ? clamp(cached, FISH_SWIM_ANIMATION.debugSpeedMultiplierMin, FISH_SWIM_ANIMATION.debugSpeedMultiplierMax)
+      : FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  }
+
+  let multiplier = FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  try {
+    const stored = Number(localStorage.getItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY));
+    if (Number.isFinite(stored) && stored > 0) {
+      multiplier = clamp(
+        stored,
+        FISH_SWIM_ANIMATION.debugSpeedMultiplierMin,
+        FISH_SWIM_ANIMATION.debugSpeedMultiplierMax
+      );
+    }
+  } catch {
+    // Local storage can be unavailable in private/sandboxed runtimes.
+  }
+
+  runtime.debugSwimAnimationSpeedMultiplier = multiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  return multiplier;
+}
+
+function getFishSwimAnimationSpeedMultiplier() {
+  if (typeof isDebugModeEnabled === "function" && isDebugModeEnabled()) {
+    return loadDebugFishSwimAnimationSpeedMultiplier();
+  }
+  return FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+}
+
+function setDebugFishSwimAnimationSpeedMultiplier(value) {
+  const multiplier = clamp(
+    Number(value) || FISH_SWIM_ANIMATION.defaultSpeedMultiplier,
+    FISH_SWIM_ANIMATION.debugSpeedMultiplierMin,
+    FISH_SWIM_ANIMATION.debugSpeedMultiplierMax
+  );
+  runtime.debugSwimAnimationSpeedMultiplier = multiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  try {
+    localStorage.setItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY, String(multiplier));
+  } catch {
+    // Keep the in-memory value even if persistence is unavailable.
+  }
+  return multiplier;
+}
+
+function resetDebugFishSwimAnimationSpeedMultiplier() {
+  runtime.debugSwimAnimationSpeedMultiplier = FISH_SWIM_ANIMATION.defaultSpeedMultiplier;
+  runtime.debugSwimAnimationSpeedLoaded = true;
+  try {
+    localStorage.removeItem(DEBUG_SWIM_ANIMATION_SPEED_STORAGE_KEY);
+  } catch {
+    // Ignore storage failures; the runtime value has already been reset.
+  }
+  return runtime.debugSwimAnimationSpeedMultiplier;
+}
+
+function getFishSwimAnimationDebugPresetOverride() {
+  const presetId = String(runtime?.debugSwimAnimationPresetOverride || "").trim().toLowerCase();
+  if (!presetId || !FISH_SWIM_ANIMATION.presets[presetId]) return "";
+  if (typeof isDebugModeEnabled === "function" && !isDebugModeEnabled()) return "";
+  return presetId;
+}
+
+function getFishSwimAnimationPresetId(fish, species, now = Date.now()) {
+  const fishForcedPreset = String(fish?.debugSwimAnimationPreset || "").trim().toLowerCase();
+  if (fishForcedPreset && FISH_SWIM_ANIMATION.presets[fishForcedPreset]) return fishForcedPreset;
+  const globalDebugPreset = getFishSwimAnimationDebugPresetOverride();
+  if (globalDebugPreset) return globalDebugPreset;
+
+  const targetDistance = Math.hypot(
+    (Number(fish?.targetXNorm) || Number(fish?.xNorm) || 0) - (Number(fish?.xNorm) || 0),
+    (Number(fish?.targetYNorm) || Number(fish?.yNorm) || 0) - (Number(fish?.yNorm) || 0)
+  );
+  const physicallyMoving = targetDistance > 0.008 || (Number(fish?.motionLevel) || 0) > 0.14;
+  const panicActive = (Number(fish?.panicUntil) || 0) > now;
+  const panicSpeedBoost = panicActive ? Math.max(1, Number(fish?.panicSpeedBoost) || 2) : 1;
+  const activePanicDash = panicActive && targetDistance > 0.008 && panicSpeedBoost > 1;
+  const queued = typeof getActiveFishActionQueueItem === "function" ? getActiveFishActionQueueItem(fish, now) : null;
+  const steering = typeof getActiveFishActionSteering === "function" ? getActiveFishActionSteering(fish, now) : null;
+  const debugSteering = typeof getActiveDebugBehaviorSteering === "function" ? getActiveDebugBehaviorSteering(fish, now) : null;
+  const intent = typeof getFishBehaviorIntent === "function" ? getFishBehaviorIntent(fish, now) : fish?.behaviorIntent;
+  const intentText = `${fish?.activity || ""} ${queued?.action || ""} ${steering?.type || ""} ${debugSteering?.type || ""} ${intent?.type || ""} ${intent?.cause || ""}`.toLowerCase();
+  const mood = typeof getFishDisposition === "function" ? String(getFishDisposition(fish, now)?.mood || "") : "";
+
+  // Reserve the strongest visual preset for a real active panic dash. Those
+  // dashes are speed-boosted by movement code, so full-bore animation always
+  // corresponds to genuinely faster travel instead of stationary thrashing.
+  if (physicallyMoving && activePanicDash) return "panicked";
+  if (physicallyMoving && (panicActive || mood === "Panicked")) return "scared";
+  if (physicallyMoving && /zoomies/.test(intentText)) return "zoomies";
+  if (physicallyMoving && /(?:avoid|flee|escape|retreat|scurry)/.test(intentText)) return "scared";
+  if (fish?.activity === "feeding" && physicallyMoving) return "feeding";
+  if (/(?:sleep|rest)/.test(intentText) || fish?.activity === "sleep" || fish?.activity === "rest") return "sleepy";
+  if (physicallyMoving && /(?:inspect|follow|greet|hangout|travel|approach)/.test(intentText)) return "active";
+  if (!physicallyMoving || ["Cozy", "Sleepy", "Sad", "Sick"].includes(mood)) return "chill";
+  return "regular";
+}
+
+function getFishSwimMovementFactor(fish) {
+  if (!fish) return 0;
+  const targetDistance = Math.hypot(
+    (Number(fish.targetXNorm) || Number(fish.xNorm) || 0) - (Number(fish.xNorm) || 0),
+    (Number(fish.targetYNorm) || Number(fish.yNorm) || 0) - (Number(fish.yNorm) || 0)
+  );
+  const motionFactor = clamp(((Number(fish.motionLevel) || 0.04) - 0.03) / 0.75, 0, 1);
+  const distanceFactor = clamp(targetDistance / 0.07, 0, 1);
+  return Math.max(motionFactor, distanceFactor);
+}
+
+function normalizeFishSwimAnimationPhase(value) {
+  const tau = Math.PI * 2;
+  const numeric = Number(value);
+  if (!Number.isFinite(numeric)) return 0;
+  return ((numeric % tau) + tau) % tau;
+}
+
+function getFishSwimAnimationSeedPhase(fish) {
+  const authoredPhase = Number(fish?.phase);
+  return normalizeFishSwimAnimationPhase((Number.isFinite(authoredPhase) ? authoredPhase : 0) * Math.PI * 2);
+}
+
+function advanceFishSwimAnimationPhase(previous, fish, now, nextAnimationSpeed) {
+  const tau = Math.PI * 2;
+  const previousPhase = Number(previous?.swimAnimationPhase);
+  const fallbackSeed = getFishSwimAnimationSeedPhase(fish);
+  const phase = Number.isFinite(previousPhase) ? previousPhase : fallbackSeed;
+  const previousAt = Number(previous?.swimAnimationPhaseUpdatedAt ?? previous?.updatedAt);
+  const elapsedSeconds = Number.isFinite(previousAt)
+    ? clamp(
+      Math.max(0, (Number(now) - previousAt) / 1000),
+      0,
+      FISH_SWIM_ANIMATION.maximumPhaseAdvanceSeconds
+    )
+    : 0;
+  const previousSpeed = Number(previous?.animationSpeed);
+  const resolvedNextSpeed = Math.max(0, Number(nextAnimationSpeed) || 0);
+  const averageSpeed = Number.isFinite(previousSpeed)
+    ? Math.max(0, (previousSpeed + resolvedNextSpeed) * 0.5)
+    : resolvedNextSpeed;
+  const visualSpeedMultiplier = getFishSwimAnimationSpeedMultiplier();
+  return normalizeFishSwimAnimationPhase(
+    phase + elapsedSeconds * tau * FISH_SWIM_ANIMATION.cyclesPerSecond * averageSpeed * visualSpeedMultiplier
+  );
+}
+
+function getFishSwimAnimationState(fish, species, now = Date.now(), options = {}) {
+  const cacheKey = String(fish?.id || fish?.speciesId || "fish");
+  const debugOverridePresetId = getFishSwimAnimationDebugPresetOverride();
+  const forceExactDebugPreset = options.forceExactPreset === true
+    || (options.presetId == null && Boolean(debugOverridePresetId));
+  const cachedState = runtime?.fishSwimAnimationStates?.get(cacheKey);
+  if (options.immediate !== true
+    && options.presetId == null
+    && options.movementFactor == null
+    && !forceExactDebugPreset
+    && cachedState
+    && Number(cachedState.updatedAt) === Number(now)) {
+    return cachedState;
+  }
+
+  const presetId = options.presetId || debugOverridePresetId || getFishSwimAnimationPresetId(fish, species, now);
+  const preset = FISH_SWIM_ANIMATION.presets[presetId] || FISH_SWIM_ANIMATION.presets.regular;
+  const movementFactor = forceExactDebugPreset
+    ? 1
+    : (options.movementFactor == null ? getFishSwimMovementFactor(fish) : clamp(Number(options.movementFactor) || 0, 0, 1));
+  const intensityScale = FISH_SWIM_ANIMATION.stationaryIntensityFloor
+    + (1 - FISH_SWIM_ANIMATION.stationaryIntensityFloor) * movementFactor;
+  const frequencyScale = FISH_SWIM_ANIMATION.stationaryFrequencyFloor
+    + (1 - FISH_SWIM_ANIMATION.stationaryFrequencyFloor) * movementFactor;
+  const target = forceExactDebugPreset
+    ? {
+        tailIntensity: preset.tailIntensity,
+        animationSpeed: preset.animationSpeed,
+        depthWarp: preset.depthWarp,
+        perspective: preset.perspective,
+        frontWiggle: preset.frontWiggle
+      }
+    : {
+        tailIntensity: preset.tailIntensity * intensityScale,
+        animationSpeed: preset.animationSpeed * frequencyScale,
+        depthWarp: preset.depthWarp * intensityScale,
+        perspective: preset.perspective * (0.6 + movementFactor * 0.4),
+        frontWiggle: preset.frontWiggle * intensityScale
+      };
+
+  if (forceExactDebugPreset && runtime?.fishSwimAnimationStates) {
+    const previous = runtime.fishSwimAnimationStates.get(cacheKey);
+    const swimAnimationPhase = previous
+      ? advanceFishSwimAnimationPhase(previous, fish, now, target.animationSpeed)
+      : normalizeFishSwimAnimationPhase(
+        getFishSwimAnimationSeedPhase(fish)
+          + (Number(now) / 1000)
+            * Math.PI * 2
+            * FISH_SWIM_ANIMATION.cyclesPerSecond
+            * Math.max(0, target.animationSpeed)
+            * getFishSwimAnimationSpeedMultiplier()
+      );
+    const exactState = {
+      ...target,
+      presetId,
+      movementFactor: 1,
+      swimAnimationPhase,
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now,
+      debugOverride: true
+    };
+    runtime.fishSwimAnimationStates.set(cacheKey, exactState);
+    return exactState;
+  }
+
+  if (options.immediate === true || !runtime?.fishSwimAnimationStates) {
+    const previous = runtime?.fishSwimAnimationStates?.get(cacheKey);
+    const swimAnimationPhase = previous
+      ? advanceFishSwimAnimationPhase(previous, fish, now, target.animationSpeed)
+      : normalizeFishSwimAnimationPhase(
+        getFishSwimAnimationSeedPhase(fish)
+          + (Number(now) / 1000)
+            * Math.PI * 2
+            * FISH_SWIM_ANIMATION.cyclesPerSecond
+            * Math.max(0, target.animationSpeed)
+            * getFishSwimAnimationSpeedMultiplier()
+      );
+    return {
+      ...target,
+      presetId,
+      movementFactor,
+      swimAnimationPhase,
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now
+    };
+  }
+
+  const key = cacheKey;
+  const previous = runtime.fishSwimAnimationStates.get(key);
+  if (!previous) {
+    const initial = {
+      ...target,
+      presetId,
+      movementFactor,
+      swimAnimationPhase: getFishSwimAnimationSeedPhase(fish),
+      swimAnimationPhaseUpdatedAt: now,
+      updatedAt: now
+    };
+    runtime.fishSwimAnimationStates.set(key, initial);
+    return initial;
+  }
+
+  const dt = clamp(now - (Number(previous.updatedAt) || now), 0, 1200);
+  let transitionMs = FISH_SWIM_ANIMATION.transitionMs;
+  if (["panicked", "scared", "zoomies"].includes(presetId) && presetId !== previous.presetId) {
+    transitionMs = FISH_SWIM_ANIMATION.emergencyTransitionMs;
+  } else if (["panicked", "scared", "zoomies"].includes(previous.presetId) && ["chill", "sleepy", "regular"].includes(presetId)) {
+    transitionMs = FISH_SWIM_ANIMATION.settleTransitionMs;
+  }
+  const blend = clamp(dt / Math.max(1, transitionMs), 0, 1);
+  const nextAnimationSpeed = previous.animationSpeed + (target.animationSpeed - previous.animationSpeed) * blend;
+  const next = {
+    tailIntensity: previous.tailIntensity + (target.tailIntensity - previous.tailIntensity) * blend,
+    animationSpeed: nextAnimationSpeed,
+    depthWarp: previous.depthWarp + (target.depthWarp - previous.depthWarp) * blend,
+    perspective: previous.perspective + (target.perspective - previous.perspective) * blend,
+    frontWiggle: previous.frontWiggle + (target.frontWiggle - previous.frontWiggle) * blend,
+    presetId,
+    movementFactor,
+    swimAnimationPhase: advanceFishSwimAnimationPhase(previous, fish, now, nextAnimationSpeed),
+    swimAnimationPhaseUpdatedAt: now,
+    updatedAt: now
+  };
+  runtime.fishSwimAnimationStates.set(key, next);
+  return next;
+}
+
+function getFishSwimSliceCount(width, options = {}) {
+  if (options.quality === "borough") return FISH_SWIM_ANIMATION.slices.borough;
+  if (options.quality === "highlight") return FISH_SWIM_ANIMATION.slices.highlight;
+  const size = Math.max(1, Number(width) || 1);
+  let sliceCount = size >= 170
+    ? FISH_SWIM_ANIMATION.slices.full
+    : (size >= 95
+        ? FISH_SWIM_ANIMATION.slices.medium
+        : (size >= 52 ? FISH_SWIM_ANIMATION.slices.small : FISH_SWIM_ANIMATION.slices.tiny));
+
+  // Crowded tanks are where the slice renderer becomes expensive. Scale only
+  // cosmetic tessellation density, never fish simulation or approved warp math.
+  const fishCount = Math.max(
+    1,
+    Number(options.fishCount)
+      || (Array.isArray(state?.fish) ? state.fish.length : 1)
+  );
+  if (fishCount >= FISH_SWIM_ANIMATION.denseFishThreshold) {
+    sliceCount *= FISH_SWIM_ANIMATION.denseSliceScale;
+  } else if (fishCount >= FISH_SWIM_ANIMATION.crowdedFishThreshold) {
+    sliceCount *= FISH_SWIM_ANIMATION.crowdedSliceScale;
+  }
+  return Math.max(FISH_SWIM_ANIMATION.minimumGameplaySlices, Math.round(sliceCount));
+}
+
+function getFishSwimOpaqueHorizontalBounds(imagePath, image) {
+  const sourceWidth = Math.max(1, Number(image?.naturalWidth || image?.width) || 1);
+  const mask = imagePath && typeof getImageAlphaMask === "function" ? getImageAlphaMask(imagePath) : null;
+  if (!mask?.bounds || !mask.width) return { minX: 0, maxX: sourceWidth - 1 };
+  const minRatio = clamp(mask.bounds.minX / Math.max(1, mask.width), 0, 1);
+  const maxRatio = clamp((mask.bounds.maxX + 1) / Math.max(1, mask.width), minRatio, 1);
+  const minX = minRatio * sourceWidth;
+  const maxX = Math.max(minX + 1, maxRatio * sourceWidth);
+  return { minX, maxX };
+}
+
+function drawFishSwimDepthWarpImage(context, image, drawX, drawY, width, height, fish, species, now = Date.now(), options = {}) {
+  if (!context || !image || width <= 0 || height <= 0) return false;
+  if (!shouldUseFishSwimDepthWarp(fish, species, now, options)) return false;
+
+  const sourceWidth = Math.max(1, Number(image.naturalWidth || image.width) || 1);
+  const sourceHeight = Math.max(1, Number(image.naturalHeight || image.height) || 1);
+  const bounds = getFishSwimOpaqueHorizontalBounds(options.imagePath || "", image);
+  const visibleSpan = Math.max(1, bounds.maxX - bounds.minX);
+  const sliceCount = Math.max(8, getFishSwimSliceCount(width, options));
+  const sourceSliceWidth = visibleSpan / sliceCount;
+  const sliceProfile = getFishSwimSliceProfile(sliceCount);
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishSwimWarpPasses", 1);
+    incrementDebugFrameProfilerCounter("fishSwimSliceDraws", sliceCount);
+    if (options.quality === "highlight") incrementDebugFrameProfilerCounter("fishSwimHighlightSliceDraws", sliceCount);
+    if (options.quality === "borough") incrementDebugFrameProfilerCounter("fishSwimBoroughSliceDraws", sliceCount);
+  }
+  const overlapPx = Math.max(0.25, Math.min(1.25, FISH_SWIM_ANIMATION.sliceOverlapPx * (options.quality === "borough" ? 0.55 : 1)));
+  const state = getFishSwimAnimationState(fish, species, now, {
+    presetId: options.presetId,
+    movementFactor: options.movementFactor,
+    immediate: options.immediate
+  });
+  const globalPhase = normalizeFishSwimAnimationPhase(state.swimAnimationPhase);
+  const depthWarpPx = height
+    * (FISH_SWIM_ANIMATION.depthWarpBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.depthWarpDepthRatio)
+    * state.tailIntensity;
+  const phaseLag = 0.58 + state.depthWarp * 1.05;
+  const frontWave = Math.sin(globalPhase + Math.PI * FISH_SWIM_ANIMATION.frontCounterPhasePi);
+  const frontDepthStrength = height
+    * (FISH_SWIM_ANIMATION.frontDepthWarpBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.frontDepthWarpDepthRatio)
+    * state.frontWiggle;
+  const rearHorizontalStrength = width
+    * (FISH_SWIM_ANIMATION.rearHorizontalShiftBaseRatio
+      + state.depthWarp * FISH_SWIM_ANIMATION.rearHorizontalShiftDepthRatio)
+    * state.tailIntensity;
+  const frontHorizontalStrength = width
+    * FISH_SWIM_ANIMATION.frontHorizontalShiftStrength
+    * state.frontWiggle;
+  const perspectiveStrength = state.perspective * state.tailIntensity;
+  const collectDebugMetrics = Boolean(
+    fish?.id
+    && runtime?.fishSwimAnimationDebugMetrics instanceof Map
+    && typeof isDebugModeEnabled === "function"
+    && isDebugModeEnabled()
+  );
+  let maximumRearDepthWarpPx = 0;
+
+  for (let index = 0; index < sliceCount; index += 1) {
+    const template = sliceProfile[index];
+    const nominalSourceX = bounds.minX + index * sourceSliceWidth;
+    const sourceCenter = Math.min(bounds.maxX, nominalSourceX + sourceSliceWidth * 0.5);
+    const sourceX = Math.max(0, nominalSourceX - 0.35);
+    const sourceRight = Math.min(sourceWidth, nominalSourceX + sourceSliceWidth + 0.35);
+    const sourceW = Math.max(0.5, sourceRight - sourceX);
+    const localPhase = globalPhase - template.distanceTowardTail * phaseLag;
+    const depthWave = Math.sin(localPhase);
+
+    const rearDepthWarp = depthWave
+      * depthWarpPx
+      * template.depthEnvelope;
+    const frontDepthWarp = frontWave
+      * frontDepthStrength
+      * template.frontEnvelope;
+    if (collectDebugMetrics) {
+      maximumRearDepthWarpPx = Math.max(maximumRearDepthWarpPx, Math.abs(rearDepthWarp));
+    }
+    const depthOffsetY = rearDepthWarp + frontDepthWarp;
+
+    const rearShift = depthWave
+      * rearHorizontalStrength
+      * template.rearEnvelope;
+    const frontShift = frontWave
+      * frontHorizontalStrength
+      * template.frontEnvelope;
+    const horizontalShift = rearShift + frontShift;
+
+    const signedDepth = depthWave
+      * perspectiveStrength
+      * template.perspectiveEnvelope;
+    const scaleY = Math.max(
+      FISH_SWIM_ANIMATION.minimumPerspectiveScaleY,
+      1 + signedDepth * FISH_SWIM_ANIMATION.perspectiveScaleStrength
+    );
+    const widthForeshorten = 1
+      - Math.abs(depthWave)
+        * perspectiveStrength
+        * template.compressionEnvelope;
+    const widthScale = Math.max(
+      FISH_SWIM_ANIMATION.minimumSliceWidthScale,
+      widthForeshorten
+    );
+
+    const sourceCenterRatio = sourceCenter / sourceWidth;
+    const destinationCenterX = drawX + sourceCenterRatio * width + horizontalShift;
+    const destinationCenterY = drawY + height * 0.5 + depthOffsetY;
+    const normalDestinationWidth = sourceW / sourceWidth * width;
+    const destinationWidth = Math.max(0.5, normalDestinationWidth * widthScale + overlapPx);
+    const destinationHeight = Math.max(0.5, height * scaleY);
+
+    context.drawImage(
+      image,
+      sourceX,
+      0,
+      sourceW,
+      sourceHeight,
+      destinationCenterX - destinationWidth * 0.5,
+      destinationCenterY - destinationHeight * 0.5,
+      destinationWidth,
+      destinationHeight
+    );
+  }
+
+  if (collectDebugMetrics) {
+    const fishHeight = Math.max(1, Number(height) || 1);
+    runtime.fishSwimAnimationDebugMetrics.set(String(fish.id), {
+      fishId: String(fish.id),
+      fishName: String(fish.name || species?.name || fish.id || "Fish"),
+      speciesId: String(species?.id || fish.speciesId || ""),
+      presetId: String(state.presetId || "regular"),
+      tailIntensity: state.tailIntensity,
+      animationSpeed: state.animationSpeed,
+      depthWarp: state.depthWarp,
+      perspective: state.perspective,
+      frontWiggle: state.frontWiggle,
+      phase: globalPhase,
+      effectiveCyclesPerSecond: FISH_SWIM_ANIMATION.cyclesPerSecond * state.animationSpeed * getFishSwimAnimationSpeedMultiplier(),
+      rawDepthWarpPx: depthWarpPx,
+      maximumRearDepthWarpPx,
+      fishDisplayHeight: fishHeight,
+      rawDepthWarpRatio: depthWarpPx / fishHeight,
+      rearDepthWarpRatio: maximumRearDepthWarpPx / fishHeight,
+      panicActive: (Number(fish.panicUntil) || 0) > now,
+      activePanicDash: (Number(fish.panicUntil) || 0) > now
+        && Math.hypot(
+          (Number(fish.targetXNorm) || Number(fish.xNorm) || 0) - (Number(fish.xNorm) || 0),
+          (Number(fish.targetYNorm) || Number(fish.yNorm) || 0) - (Number(fish.yNorm) || 0)
+        ) > 0.008
+        && Math.max(1, Number(fish.panicSpeedBoost) || 2) > 1,
+      panicSpeedBoost: (Number(fish.panicUntil) || 0) > now
+        ? Math.max(1, Number(fish.panicSpeedBoost) || 2)
+        : 1,
+      updatedAt: now
+    });
+  }
+  return true;
+}
+
+function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY, now = Date.now(), lightingOverride = null, swimOptions = null) {
   const overlay = getFishTopLightOverlay(image);
   if (!overlay) {
     return;
@@ -495,8 +1024,28 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
   context.save();
   context.globalCompositeOperation = "screen";
   context.globalAlpha = lighting.highlightAlpha;
-  context.filter = "blur(0.22px)";
-  context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  // A top-light highlight is intentionally soft and low-alpha. Re-warping it
+  // at the full body slice density nearly doubled per-fish draw calls and the
+  // per-slice blur was especially expensive on the GPU. Keep it attached to
+  // the same deformation at a lightweight 16-slice quality with no live blur.
+  context.filter = swimOptions?.fish ? "none" : "blur(0.22px)";
+  const usedDepthWarp = swimOptions?.fish && swimOptions?.species
+    ? drawFishSwimDepthWarpImage(
+      context,
+      overlay,
+      fishDrawX,
+      -height / 2,
+      width,
+      height,
+      swimOptions.fish,
+      swimOptions.species,
+      now,
+      { ...swimOptions, quality: "highlight" }
+    )
+    : false;
+  if (!usedDepthWarp) {
+    context.drawImage(overlay, fishDrawX, -height / 2, width, height);
+  }
   context.restore();
 }
 
@@ -557,7 +1106,11 @@ function prepareFishRenderRecord(record, now) {
   const height = width * (image.height / image.width);
   const healthRatio = getFishHealthRatio(fish, species);
   const visualWiggle = pose.wiggle * getTankDepthMovementMultiplier(depthLayer);
-  const fishDrawX = -width / 2 + visualWiggle * width * 0.018;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior,
+    suckerFreeSwimming
+  });
+  const fishDrawX = -width / 2 + (useDepthSwimWarp ? 0 : visualWiggle * width * 0.018);
   const useSuckerFacePivot = SUCKER_FISH_FACE_PIVOT_ENABLED
     && !pose.isDead
     && effectiveBehavior === "sucker"
@@ -569,7 +1122,7 @@ function prepareFishRenderRecord(record, now) {
     transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
     imagePath, image, renderImage, pose, depthLayer, width, height,
     healthRatio, visualSwayX: pose.swayX * getTankDepthMovementMultiplier(depthLayer),
-    fishDrawX, useSuckerFacePivot,
+    fishDrawX, useDepthSwimWarp, useSuckerFacePivot,
     suckerFacePivotX: useSuckerFacePivot ? fishDrawX + width * SUCKER_FISH_FACE_PIVOT_X : 0,
     suckerFacePivotY: useSuckerFacePivot ? -height / 2 + height * SUCKER_FISH_FACE_PIVOT_Y : 0
   };
@@ -2232,7 +2785,7 @@ function drawFish(now, layer = null, options = {}) {
       suckerFreeSwimming, suckerViewTransition, displaySpecies,
       transitionFromSprite, transitionToSprite, hasSuckerCrossFlip,
       imagePath, image, renderImage, pose, depthLayer, width, height,
-      healthRatio, visualSwayX, fishDrawX, useSuckerFacePivot,
+      healthRatio, visualSwayX, fishDrawX, useDepthSwimWarp, useSuckerFacePivot,
       suckerFacePivotX, suckerFacePivotY
     } = prepared;
 
@@ -2353,12 +2906,36 @@ function drawFish(now, layer = null, options = {}) {
         }
         markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
-        tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        const warped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
+          tankContext,
+          depthRenderImage,
+          fishDrawX,
+          -spriteHeight / 2,
+          width,
+          spriteHeight,
+          fish,
+          species,
+          now,
+          { imagePath, effectiveBehavior, suckerFreeSwimming }
+        );
+        if (!warped) {
+          tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        }
         markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !genericTurnRigActive) {
-        drawFishTopLightOverlay(tankContext, sprite.sourceImage, fishDrawX, spriteHeight, width, pose.y, now, fishLighting);
+      if (!pose.isDead && !genericTurnRigActive && layerMotion?.preserveColor !== true) {
+        drawFishTopLightOverlay(
+          tankContext,
+          sprite.sourceImage,
+          fishDrawX,
+          spriteHeight,
+          width,
+          pose.y,
+          now,
+          fishLighting,
+          useDepthSwimWarp ? { fish, species, imagePath, effectiveBehavior, suckerFreeSwimming } : null
+        );
       }
       tankContext.restore();
     };
@@ -2965,6 +3542,60 @@ function drawCleaningSparkles(now) {
   tankContext.restore();
 }
 
+function smoothLivingFishVisualPose(fish, pose, now = Date.now()) {
+  if (!fish || !pose || pose.isDead || pose.isBeingConsumed) return pose;
+  if (!(runtime?.fishVisualPoseSmoothingStates instanceof Map)) return pose;
+
+  const key = String(fish.id || fish.speciesId || "fish");
+  const previous = runtime.fishVisualPoseSmoothingStates.get(key);
+  const currentAt = Number(now) || Date.now();
+  const target = {
+    tilt: Number(pose.tilt) || 0,
+    wiggle: Number(pose.wiggle) || 0,
+    bodyScaleX: Number.isFinite(Number(pose.bodyScaleX)) ? Number(pose.bodyScaleX) : 1,
+    bodyScaleY: Number.isFinite(Number(pose.bodyScaleY)) ? Number(pose.bodyScaleY) : 1,
+    swayX: Number(pose.swayX) || 0,
+    updatedAt: currentAt
+  };
+
+  if (!previous) {
+    runtime.fishVisualPoseSmoothingStates.set(key, target);
+    return pose;
+  }
+
+  const elapsedMs = Math.max(0, currentAt - (Number(previous.updatedAt) || currentAt));
+  if (elapsedMs > FISH_VISUAL_POSE_SMOOTHING.resetAfterMs) {
+    runtime.fishVisualPoseSmoothingStates.set(key, target);
+    return pose;
+  }
+
+  const elapsedSeconds = clamp(elapsedMs / 1000, 0, 0.08);
+  const approach = (from, to, responsePerSecond) => {
+    if (elapsedSeconds <= 0) return Number(from);
+    const blend = 1 - Math.exp(-Math.max(0.01, responsePerSecond) * elapsedSeconds);
+    return Number(from) + (Number(to) - Number(from)) * blend;
+  };
+
+  const smoothed = {
+    tilt: approach(previous.tilt, target.tilt, FISH_VISUAL_POSE_SMOOTHING.tiltResponsePerSecond),
+    wiggle: approach(previous.wiggle, target.wiggle, FISH_VISUAL_POSE_SMOOTHING.wiggleResponsePerSecond),
+    bodyScaleX: approach(previous.bodyScaleX, target.bodyScaleX, FISH_VISUAL_POSE_SMOOTHING.scaleResponsePerSecond),
+    bodyScaleY: approach(previous.bodyScaleY, target.bodyScaleY, FISH_VISUAL_POSE_SMOOTHING.scaleResponsePerSecond),
+    swayX: approach(previous.swayX, target.swayX, FISH_VISUAL_POSE_SMOOTHING.swayResponsePerSecond),
+    updatedAt: currentAt
+  };
+  runtime.fishVisualPoseSmoothingStates.set(key, smoothed);
+
+  return {
+    ...pose,
+    tilt: smoothed.tilt,
+    wiggle: smoothed.wiggle,
+    bodyScaleX: smoothed.bodyScaleX,
+    bodyScaleY: smoothed.bodyScaleY,
+    swayX: smoothed.swayX
+  };
+}
+
 function getFishPose(fish, species, now) {
   if (isFishBeingConsumedByPiranhas(fish, now)) {
     const churnClock = now / 1000;
@@ -3040,9 +3671,9 @@ function getFishPose(fish, species, now) {
       direction: 1,
       facingScaleX: 1,
       tilt: tubeTilt,
-      wiggle,
-      bodyScaleX: 1 - Math.abs(wiggle) * .025,
-      bodyScaleY: 1 + Math.abs(wiggle) * .02,
+      wiggle: 0,
+      bodyScaleX: 1,
+      bodyScaleY: 1,
       swayX: 0,
       isDead: false
     };
@@ -3119,24 +3750,31 @@ function getFishPose(fish, species, now) {
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
-      : clamp(steeringTilt + baseWiggle * 0.018, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
+      : clamp(steeringTilt, -FISH_SWIM_TILT_MAX, FISH_SWIM_TILT_MAX);
     const x = fish.xNorm * TANK_WIDTH;
-    const subtleBob = scanningGravel
-      ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
-      : Math.sin(now / 920 + fish.phase * Math.PI * 2) * 1.2;
+    const useOtocinclusDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+      effectiveBehavior: "sucker",
+      suckerFreeSwimming: true
+    });
+    const subtleBob = useOtocinclusDepthSwimWarp
+      ? 0
+      : (scanningGravel
+        ? Math.sin(now / 780 + fish.phase * Math.PI * 2) * 0.65
+        : Math.sin(now / 920 + fish.phase * Math.PI * 2) * 1.2);
     const y = fish.yNorm * TANK_HEIGHT + subtleBob;
-    return {
+    const freeSwimPose = {
       x,
       y,
       direction: fish.direction || 1,
       facingScaleX: renderDirection,
       tilt: noseDownTilt,
-      wiggle: baseWiggle * (scanningGravel ? 0.32 : 0.58),
-      bodyScaleX: (1 - Math.abs(baseWiggle) * 0.012) * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X))),
-      bodyScaleY: (1 + Math.abs(baseWiggle) * 0.008) * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1))),
-      swayX: baseWiggle * (scanningGravel ? 0.42 : 0.78),
+      wiggle: 0,
+      bodyScaleX: useOtocinclusDepthSwimWarp || useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)),
+      bodyScaleY: useOtocinclusDepthSwimWarp || useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)),
+      swayX: 0,
       isDead: false
     };
+    return smoothLivingFishVisualPose(fish, freeSwimPose, now);
   }
 
   if (getEffectiveFishBehavior(fish, species) === "sucker") {
@@ -3204,6 +3842,10 @@ function getFishPose(fish, species, now) {
     ? 1
     : 0.18 + entryRightingEase * 0.82;
   const wiggle = baseWiggle * entryWiggleFactor;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior: getEffectiveFishBehavior(fish, species)
+  });
+  const wholeBodyWiggle = useDepthSwimWarp ? 0 : wiggle;
   const easedEntry = entryProgress === null ? null : 1 - Math.pow(1 - entryProgress, 3);
   const renderYNorm = easedEntry === null || fish.entryFromYNorm === null
     ? fish.yNorm
@@ -3220,9 +3862,10 @@ function getFishPose(fish, species, now) {
   const bobClock = now / 1000;
   const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
   const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
-  const verticalBob =
-    Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
-    + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18;
+  const verticalBob = useDepthSwimWarp
+    ? 0
+    : (Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
+      + Math.sin(bobClock * 0.42 + fish.phase * Math.PI * 1.4) * bobAmplitude * 0.18);
   const y = renderYNorm * TANK_HEIGHT
     + verticalBob
     + (entryProgress === null ? 0 : Math.sin(entryProgress * Math.PI * 2.4 + fish.phase * Math.PI) * (1 - entryProgress) * 9);
@@ -3237,7 +3880,7 @@ function getFishPose(fish, species, now) {
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
     : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
-  const turnLean = turnProgress === null || useComplexTurn
+  const turnLean = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
   const steeringTilt = Number.isFinite(Number(fish.swimTilt))
@@ -3245,7 +3888,7 @@ function getFishPose(fish, species, now) {
     : 0;
   const baseTilt = clamp(
     steeringTilt
-    + wiggle * (0.008 + motionLevel * 0.04)
+    + wholeBodyWiggle * (0.008 + motionLevel * 0.04)
     + turnLean,
     -FISH_SWIM_TILT_MAX,
     FISH_SWIM_TILT_MAX
@@ -3259,7 +3902,9 @@ function getFishPose(fish, species, now) {
     : FISH_ENTRY_NOSE_DIVE_TILT + (baseTilt - FISH_ENTRY_NOSE_DIVE_TILT) * entryRightingEase;
   if (species.renderMotionProfile === "seahorse") {
     const verticalDrift = clamp(steeringTilt * 0.48, -0.28, 0.28);
-    const tailSway = Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
+    const tailSway = useDepthSwimWarp
+      ? 0
+      : Math.sin(wiggleClock * 0.68 + fish.phase * Math.PI) * 0.035;
     tilt = clamp(tilt * 0.28 + verticalDrift + tailSway, -0.38, 0.38);
   }
   const behaviorIntentType = String(fish.behaviorIntent?.type || "");
@@ -3299,32 +3944,32 @@ function getFishPose(fish, species, now) {
       0.42
     );
   }
-  const bodyScaleX = (1 - Math.abs(wiggle) * wiggleStretch)
-    * (useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
+  const bodyScaleX = (1 - Math.abs(wholeBodyWiggle) * wiggleStretch)
+    * (useDepthSwimWarp || useComplexTurn ? 1 : (1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X)))
     * (forcedDigPrompt ? 0.97 : 1)
     * (pufferInflated ? (0.98 - pufferWobbleAmount * 0.025 + Math.sin(now / 1040 + fish.phase * Math.PI) * 0.008) : 1)
     * (bettaDisplaying ? 0.97 : 1)
     * (pencilSparring ? 0.985 : 1);
-  const bodyScaleY = (1 + Math.abs(wiggle) * (wiggleStretch * 0.78))
-    * (useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
+  const bodyScaleY = (1 + Math.abs(wholeBodyWiggle) * (wiggleStretch * 0.78))
+    * (useDepthSwimWarp || useComplexTurn ? 1 : (1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)))
     * (forcedDigPrompt ? 1.04 : 1)
     * (pufferInflated ? (1.03 + pufferWobbleAmount * 0.038 + Math.abs(Math.sin(now / 980 + fish.phase * Math.PI * 1.2)) * 0.008) : 1)
     * (bettaDisplaying ? 1.06 : 1)
     * (pencilSparring ? 1.018 : 1)
     * (seahorsePerched ? 0.99 : 1);
-  const turnSway = turnProgress === null || useComplexTurn
+  const turnSway = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * (0.35 + motionLevel * 0.95);
-  return {
+  const visualPose = {
     x,
     y,
     direction: fish.direction || 1,
     facingScaleX: renderDirection,
     tilt,
-    wiggle: seahorsePerched ? wiggle * 0.24 : wiggle,
+    wiggle: seahorsePerched ? wholeBodyWiggle * 0.24 : wholeBodyWiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: (seahorsePerched ? wiggle * 0.12 : wiggle * (0.7 + motionLevel * 1.55))
+    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (0.7 + motionLevel * 1.55))
       + turnSway * (entryProgress === null ? 1 : entryRightingEase)
       + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
       + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
@@ -3332,4 +3977,5 @@ function getFishPose(fish, species, now) {
       + (pufferInflated ? Math.sin(now / 840 + fish.phase * Math.PI * 2.3) * (0.5 + pufferWobbleAmount * 0.8) : 0),
     isDead: false
   };
+  return smoothLivingFishVisualPose(fish, visualPose, now);
 }

@@ -541,9 +541,8 @@ function renderDailyBonusOverlay() {
     <div class="summary-grid bonus-summary-grid">
       <div class="summary-row"><span>Overall</span><strong>${escapeHtml(summary.overall || "Quiet day.")}</strong></div>
       <div class="summary-row"><span>Average Comfort</span><strong>${summary.averageComfort || 0}%</strong></div>
-      <div class="summary-row"><span>Normalized Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
+      <div class="summary-row"><span>Daily Recap Score</span><strong>${summary.score > 0 ? "+" : ""}${summary.score || 0}</strong></div>
       <div class="summary-row"><span>Activity Score</span><strong>${summary.rawScore > 0 ? "+" : ""}${summary.rawScore || 0}</strong></div>
-      <div class="summary-row"><span>Total Bonus</span><strong>${summary.reward || 0} coins</strong></div>
     </div>
   `;
 }
@@ -574,11 +573,8 @@ function claimDailyBonus() {
     return;
   }
 
-  const reward = Math.max(0, Math.floor(Number(summary.reward) || 0));
-  if (reward > 0) {
-    state.coins = Math.min(MAX_WALLET_COINS, state.coins + reward);
-    recordWalletTransaction({ amount: reward, direction: "credit", now, place: "Bubble Borough", label: "Daily recap claimed" });
-  }
+  // Manual completion is retained for compatibility, but Daily Recaps no longer pay coins.
+  summary.reward = 0;
   if (!state.dailyBonus.claimedByTankDay || typeof state.dailyBonus.claimedByTankDay !== "object") {
     state.dailyBonus.claimedByTankDay = {};
   }
@@ -590,13 +586,13 @@ function claimDailyBonus() {
   state.dailyBonus.available = false;
   state.dailyBonus.lastClaimedDayKey = summary.dayKey || state.dailyBonus.lastQualifiedDayKey || null;
   syncActiveDailyBonusState();
-  pushEvent(`Claimed a daily recap worth ${reward} ${pluralize("coin", reward)}.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
+  const score = Math.round(Number(summary.score) || 0);
+  pushEvent(`Daily recap completed. Score ${score > 0 ? "+" : ""}${score} recorded.`, now, tank, { score: 1, type: "daily_recap", recapEligible: false });
   playToolbarButtonSoundEffect("press");
-  playCoinSoundEffect();
   closeUtilityOverlay();
   saveState();
   renderUi(now);
-  showToast(`Daily recap claimed. +${reward} coins.`);
+  showToast(`Daily recap recorded. Score ${score > 0 ? "+" : ""}${score}.`);
 }
 
 function renderSettingsOverlay() {
@@ -2054,7 +2050,7 @@ function renderEditFishTrayContextMenu() {
   const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
   const targetWaterType = normalizeWaterType(getCurrentTank()?.waterType, "freshwater");
   const waterCompatible = !species || isFishCompatibleWithWaterType(species, targetWaterType);
-  const resaleValue = getResaleValue(species?.cost || 0);
+  const resaleValue = getFishRehomeValue(fish);
   const canSell = Boolean(species) && !isFishJuvenile(fish);
   const markup = `
     <div class="edit-fish-tray-context-card">
@@ -2475,7 +2471,7 @@ function renderMedicineTray() {
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
     cleaningIncome.dayKey,
-    `${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}`,
+    `T ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · B ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`,
     ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
@@ -2576,7 +2572,7 @@ function renderMedicineTray() {
         <div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-tools" aria-label="Care tools">
-          <div class="care-tray-heading" title="Cleaning earnings today: ${cleaningIncome.coinsEarned} / ${CLEANING_DAILY_COIN_CAP} coins">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
+          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}; Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
               <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
@@ -2625,6 +2621,8 @@ function renderFishList(now) {
       fish.growthEndsAt || "",
       fish.deadAt || "",
       fish.fedStreak || 0,
+      Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+      clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
       FISH_NEED_KEYS.map((needKey) => Math.round(Number(fish.needs?.[needKey]) || 0)).join(":")
     ].join(",")).join(";"),
     state.storedFish.map((fish) => [
@@ -2637,8 +2635,20 @@ function renderFishList(now) {
       fish.growthEndsAt || "",
       fish.deadAt || "",
       fish.fedStreak || 0,
+      Math.max(0, Math.floor(Number(fish.careXp) || 0)),
+      clamp(Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
       FISH_NEED_KEYS.map((needKey) => Math.round(Number(fish.needs?.[needKey]) || 0)).join(":")
-    ].join(",")).join(";")
+    ].join(",")).join(";"),
+    Object.entries(state.fishSpeciesMastery || {})
+      .sort(([leftId], [rightId]) => leftId.localeCompare(rightId))
+      .map(([speciesId, record]) => [
+        speciesId,
+        clamp(Math.floor(Number(record?.highestLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX),
+        (Array.isArray(record?.unlockedVariantKeys) ? record.unlockedVariantKeys : []).slice().sort().join(":"),
+        Number(record?.masteredAt) || 0,
+        Number(record?.collectionCompletedAt) || 0
+      ].join(","))
+      .join(";")
   ].join("|");
   if (!shouldRebuildRenderSection("fish-list-data", fishListDataKey)) {
     return;
@@ -2744,6 +2754,67 @@ function renderFishList(now) {
   `);
 }
 
+function getFishManagementProgressionPresentation(fish, species) {
+  if (!fish || !species || typeof isFishCareProgressionEligible !== "function" || !isFishCareProgressionEligible(fish, species)) {
+    return null;
+  }
+
+  const careXp = Math.max(0, Math.floor(Number(fish.careXp) || 0));
+  const careLevel = clamp(
+    Math.floor(Number(fish.careLevel) || FISH_CARE_LEVEL_MIN),
+    FISH_CARE_LEVEL_MIN,
+    FISH_CARE_LEVEL_MAX
+  );
+  const thresholds = typeof getFishCareLevelThresholds === "function"
+    ? getFishCareLevelThresholds(species)
+    : { 1: 0 };
+  const isMaxLevel = careLevel >= FISH_CARE_LEVEL_MAX;
+  const nextLevelThreshold = isMaxLevel
+    ? null
+    : Math.max(careXp, Math.floor(Number(thresholds?.[careLevel + 1]) || careXp));
+  const levelLabel = isMaxLevel ? `Lv. ${FISH_CARE_LEVEL_MAX} MAX` : `Lv. ${careLevel}`;
+  const xpLabel = isMaxLevel ? "" : `${careXp} / ${nextLevelThreshold} Care XP`;
+  const xpProgress = isMaxLevel || !nextLevelThreshold
+    ? 1
+    : clamp(careXp / nextLevelThreshold, 0, 1);
+
+  const mastery = typeof getFishSpeciesMasteryRecord === "function"
+    ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
+    : null;
+  const masteryLevel = clamp(
+    Math.floor(Number(mastery?.highestLevel) || FISH_CARE_LEVEL_MIN),
+    FISH_CARE_LEVEL_MIN,
+    FISH_CARE_LEVEL_MAX
+  );
+  const progressionVariants = typeof getFishProgressionAppearanceVariants === "function"
+    ? getFishProgressionAppearanceVariants(species)
+    : (typeof getFishAssetVariants === "function" ? getFishAssetVariants(species) : []);
+  const currentVariantKeys = [...new Set(progressionVariants
+    .map((path) => (typeof getFishAppearanceVariantKey === "function" ? getFishAppearanceVariantKey(path) : String(path || "")))
+    .filter(Boolean))];
+  const unlockedVariantKeys = new Set(Array.isArray(mastery?.unlockedVariantKeys) ? mastery.unlockedVariantKeys : []);
+  const baseVariantKey = typeof getFishBaseAppearanceVariantKey === "function"
+    ? getFishBaseAppearanceVariantKey(species)
+    : "";
+  if (baseVariantKey) unlockedVariantKeys.add(baseVariantKey);
+  const unlockedVariantCount = currentVariantKeys.filter((key) => unlockedVariantKeys.has(key)).length;
+
+  return {
+    careXp,
+    careLevel,
+    isMaxLevel,
+    nextLevelThreshold,
+    levelLabel,
+    xpLabel,
+    xpProgress,
+    masteryLevel,
+    masteryLabel: `Species Mastery: Lv. ${masteryLevel}`,
+    unlockedVariantCount,
+    totalVariantCount: currentVariantKeys.length,
+    variantsLabel: `Variants: ${unlockedVariantCount}/${currentVariantKeys.length}`
+  };
+}
+
 function renderManagedFishCard(fish, now, options = {}) {
   const species = runtime.fishMap.get(fish.speciesId);
   if (!species) {
@@ -2821,6 +2892,7 @@ function renderManagedFishCard(fish, now, options = {}) {
         ? "No feeding care coins"
         : `+${species.mealCoins} first feed/day · shared ${FISH_DAILY_FEEDING_CARE_COIN_CAP} cap`;
   const dirtinessLoadPercent = Math.round(getFishDirtinessBonus(fish, species) * 100);
+  const progression = getFishManagementProgressionPresentation(fish, species);
 
   return `
     <article class="fish-card">
@@ -2830,6 +2902,19 @@ function renderManagedFishCard(fish, now, options = {}) {
           <div class="fish-card-title">
             <strong>${escapeHtml(fish.name)}</strong>
             <div class="fish-species">${escapeHtml(displaySpeciesName)}</div>
+            ${progression ? `
+              <div class="fish-progression-summary" aria-label="${escapeHtml(`${progression.levelLabel}. ${progression.xpLabel || "Maximum Care Level"}. ${progression.masteryLabel}. ${progression.variantsLabel}.`)}">
+                <span class="fish-care-level-badge">${escapeHtml(progression.levelLabel)}</span>
+                ${progression.xpLabel ? `<span class="fish-care-xp-label">${escapeHtml(progression.xpLabel)}</span>` : ""}
+                <span class="fish-species-progress">${escapeHtml(progression.masteryLabel)}</span>
+                <span class="fish-species-progress">${escapeHtml(progression.variantsLabel)}</span>
+              </div>
+              ${progression.isMaxLevel ? "" : `
+                <div class="fish-care-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.nextLevelThreshold}" aria-valuenow="${progression.careXp}">
+                  <span style="width:${Math.round(progression.xpProgress * 100)}%"></span>
+                </div>
+              `}
+            ` : ""}
           </div>
           ${showDisposeButton ? `<button class="small-button warn" data-dispose-fish="${escapeHtml(fish.id)}" title="Dispose of ${escapeHtml(fish.name)}" aria-label="Dispose of ${escapeHtml(fish.name)}">&#128701;</button>` : ""}
         </div>

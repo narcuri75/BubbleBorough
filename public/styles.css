@@ -4151,6 +4151,7 @@ html[data-layout-ratio-lock="true"] body {
 .bubble-bank-reward-card summary::-webkit-details-marker { display: none; }
 .bubble-bank-reward-card summary > div { display: flex; flex-direction: column; }
 .bubble-bank-reward-card summary span { color: #527099; font-size: .8rem; }
+.bubble-bank-recap-score { display: inline-flex; align-items: center; justify-content: center; min-width: 82px; padding: 7px 10px; border: 1px solid #b8d2df; border-radius: 999px; background: #eef8fb; color: #174f68; font-size: .78rem; font-weight: 800; white-space: nowrap; }
 .bubble-bank-reward-card[open] .bubble-bank-chevron { transform: rotate(180deg); }
 .bubble-bank-reward-math { padding: 0 20px 20px; border-top: 1px solid #e0edf3; }
 .bubble-bank-reward-math > p { color: #527099; font-size: .78rem; }
@@ -4159,6 +4160,57 @@ html[data-layout-ratio-lock="true"] body {
 .bubble-bank-math-columns > div:last-child { background: #fff2f2; }
 .bubble-bank-math-columns h4 { margin: 0 0 2px; }
 .bubble-bank-math-columns span { display: grid; grid-template-columns: 30px 1fr; gap: 7px; font-size: .78rem; }
+
+.bubble-bank-progress-section { gap: 14px; }
+.bubble-bank-progress-overview {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+.bubble-bank-progress-overview > div,
+.bubble-bank-progress-panel,
+.bubble-bank-progression-event {
+  border: 1px solid #d5e0e6;
+  border-radius: 11px;
+  background: #fff;
+}
+.bubble-bank-progress-overview > div {
+  display: grid;
+  gap: 5px;
+  min-height: 82px;
+  padding: 13px 14px;
+  align-content: center;
+}
+.bubble-bank-progress-overview span,
+.bubble-bank-progress-panel span,
+.bubble-bank-progression-event span,
+.bubble-bank-progression-event small,
+.bubble-bank-progression-event time { color: #607181; }
+.bubble-bank-progress-overview > div > span { font-size: .72rem; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; }
+.bubble-bank-progress-overview > div > strong { font-size: 1.35rem; }
+.bubble-bank-progress-panel { padding: 14px 16px; }
+.bubble-bank-progress-panel h4 { margin: 0 0 10px; }
+.bubble-bank-level-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; }
+.bubble-bank-level-chip { display: flex; justify-content: space-between; gap: 8px; padding: 9px 10px; border-radius: 8px; background: #eef4f7; font-size: .78rem; }
+.bubble-bank-progress-rows { display: grid; gap: 7px; }
+.bubble-bank-progress-row { display: flex; align-items: center; justify-content: space-between; gap: 14px; padding: 9px 0; border-top: 1px solid #e4eaee; }
+.bubble-bank-progress-row:first-child { border-top: 0; padding-top: 0; }
+.bubble-bank-progress-row > div { display: grid; gap: 2px; }
+.bubble-bank-progress-row > span { white-space: nowrap; font-size: .78rem; }
+.bubble-bank-progress-inline-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.bubble-bank-progress-inline-list > span { padding: 7px 9px; border-radius: 999px; background: #eef4f7; font-size: .76rem; }
+.bubble-bank-progression-event { display: grid; grid-template-columns: 34px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px 15px; }
+.bubble-bank-progression-symbol { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: #eef4f7; font-weight: 900; }
+.bubble-bank-progression-event.is-complete .bubble-bank-progression-symbol { background: #fff2bc; }
+.bubble-bank-progression-event > div { display: grid; gap: 2px; }
+.bubble-bank-progression-event time { font-size: .74rem; white-space: nowrap; }
+.bubble-bank-weekly-award-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 5px; padding-top: 9px; border-top: 1px solid rgba(0,0,0,.08); }
+.bubble-bank-weekly-award-row > span { display: block; font-weight: 800; }
+.bubble-bank-weekly-award-row .bubble-bank-coin-amount { margin-left: auto; }
+@media (max-width: 900px) {
+  .bubble-bank-progress-overview { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .bubble-bank-level-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
 .bubble-bank-milestone-card { display: grid; grid-template-columns: 56px 1fr auto; align-items: center; gap: 18px; padding: 20px; }
 .bubble-bank-milestone-card.is-target { outline: 3px solid #ffd228; box-shadow: 0 0 0 6px rgba(255, 210, 40, .22); }
 .bubble-bank-milestone-star { display: grid; place-items: center; width: 50px; height: 50px; padding: 0; border-radius: 50%; color: #fff; background: linear-gradient(145deg, #36a8e2, #0b5cb4); font-size: 0; line-height: 1; text-align: center; }
@@ -5008,6 +5060,21 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
   cursor: not-allowed;
   transform: none;
   box-shadow: none;
+}
+
+.debug-progression-readout {
+  width: var(--debug-menu-content-width);
+  max-height: 150px;
+  margin: 0;
+  padding: 8px;
+  overflow: auto;
+  border: 1px solid rgba(125, 224, 248, 0.18);
+  border-radius: 8px;
+  background: rgba(4, 16, 25, 0.28);
+  color: rgba(238, 249, 255, 0.88);
+  font: 0.68rem/1.45 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
 }
 
 .debug-menu-icon {
@@ -9037,6 +9104,52 @@ button.management-task-row {
 .fish-species {
   color: var(--muted);
   font-size: 0.98rem;
+}
+
+.fish-progression-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px 8px;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.2;
+}
+
+.fish-care-level-badge {
+  display: inline-flex;
+  align-items: center;
+  min-height: 22px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(125, 224, 248, 0.24);
+  background: rgba(125, 224, 248, 0.1);
+  color: var(--ink);
+  font-weight: 900;
+  white-space: nowrap;
+}
+
+.fish-care-xp-label,
+.fish-species-progress {
+  white-space: nowrap;
+}
+
+.fish-care-xp-track {
+  width: min(250px, 100%);
+  height: 4px;
+  overflow: hidden;
+  margin-top: 2px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.fish-care-xp-track > span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: currentColor;
+  color: rgba(125, 224, 248, 0.8);
 }
 
 .fish-status-line {
@@ -18765,6 +18878,9 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-item-variants[hidden], .tankazon-item-variant-label[hidden] { display: none; }
 .tankazon-store .tankazon-item-variants button { display: grid; place-items: center; width: 64px; height: 64px; padding: 4px; overflow: hidden; border: 1px solid #888c8c; border-radius: 7px; background: #fff; cursor: pointer; }
 .tankazon-store .tankazon-item-variants button[aria-pressed="true"] { border: 2px solid #c45500; background: #fff8eb; box-shadow: 0 0 0 2px #fbd8b4; }
+.tankazon-store .tankazon-item-variants button.is-locked { cursor: not-allowed; opacity: .52; filter: grayscale(.85); }
+.tankazon-store .tankazon-item-variants button.is-locked[aria-pressed="true"] { border: 1px solid #888c8c; background: #fff; box-shadow: none; }
+.tankazon-store .tankazon-item-variants button.is-debug-bypassed { border-color: #007185; box-shadow: inset 0 0 0 1px rgba(0, 113, 133, .18); }
 .tankazon-item-variants img { width: 48px !important; height: 48px !important; max-width: 48px !important; max-height: 48px !important; object-fit: contain !important; object-position: center !important; }
 .tankazon-store .tankazon-item-art { display: block; width: 100%; height: 340px; object-fit: contain; border: 0; border-radius: 8px; }
 .tankazon-store .shop-card[data-store-seller="Arcadia Home Aquatics" i]::after {
@@ -24589,6 +24705,24 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
 .tankazon-store[data-websurf-theme="dark"] .bubble-bank-math-columns > div { background: #18241e; }
 .tankazon-store[data-websurf-theme="dark"] .bubble-bank-math-columns > div:last-child { background: #271b1c; }
 
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-overview > div,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-panel,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-event {
+  border-color: #353e44;
+  background: #171d21;
+}
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-level-chip,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-inline-list > span,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-symbol { background: #202a30; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-event.is-complete .bubble-bank-progression-symbol { background: #4a3d18; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-row { border-top-color: #303940; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-overview span,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progress-panel span,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-event span,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-event small,
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-progression-event time { color: #aeb9c1; }
+.tankazon-store[data-websurf-theme="dark"] .bubble-bank-weekly-award-row { border-top-color: rgba(255,255,255,.1); }
+
 .tankazon-store[data-websurf-theme="dark"] .bubble-bank-shell > footer {
   color: #8e9aa3;
   background: #1b2227;
@@ -26854,4 +26988,49 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .sett
   #settingsOverlay.websurf-settings-page .settings-volume-control {
     width: 100%;
   }
+}
+
+/* Fish appearance progression in BubbleBodega. Locked variants are hidden in
+   normal play, so the selector stays a clean classic dot strip containing only
+   appearances the player has actually discovered. */
+#storeOverlay .shop-variant-progress-message {
+  margin-top: 8px;
+  padding: 7px 9px;
+  border: 1px solid rgba(149, 214, 232, .28);
+  border-radius: 7px;
+  background: rgba(6, 38, 53, .38);
+  color: rgba(225, 247, 252, .9);
+  font-size: 11px;
+  line-height: 1.35;
+}
+#storeOverlay .shop-variant-dots.is-fish-variants {
+  gap: 0;
+  min-height: 28px;
+  padding: 0;
+  transform: translateY(calc(28px - 100%));
+}
+#storeOverlay .shop-variant-dots.is-fish-variants button {
+  display: grid;
+  place-items: center;
+  flex: 0 0 16px;
+  width: 16px;
+  min-width: 16px;
+  height: 20px;
+  min-height: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 4px;
+  background: transparent;
+  box-shadow: none;
+}
+#storeOverlay .shop-variant-dots.is-fish-variants button::before {
+  display: block;
+}
+#storeOverlay .shop-variant-dots.is-fish-variants button[aria-pressed="true"] {
+  border: 0;
+  box-shadow: none;
+}
+#storeOverlay .shop-variant-dots.is-fish-variants button[hidden] {
+  display: none !important;
 }

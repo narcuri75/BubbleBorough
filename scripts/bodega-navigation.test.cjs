@@ -368,7 +368,7 @@ function cardFixture() {
   loadFunctions(c, rendering, ["renderFishStoreCard", "renderFishStoreThumbnail", "renderFoodStoreCard", "renderPharmacyStoreCard"]);
   loadFunctions(c, decorRendering, ["renderDecorStoreCard"]);
   loadFunctions(c, management, ["renderBubbleBodegaHomePage"]);
-  loadFunctions(c, shell, ["getButtonDescriptor", "selectTankazonFishVariant", "getTankazonCardCategory"]);
+  loadFunctions(c, shell, ["getButtonDescriptor", "selectTankazonFishVariant", "isTankazonLockedFishVariant", "getTankazonSelectableVariant", "getTankazonCardCategory"]);
   return { c, fish, food, pack, medicine, decor };
 }
 
@@ -440,7 +440,7 @@ test("clicking a Home fish preview opens its selected variant and Back restores 
     isProteusBiodyneSeller: seller => seller === "Proteus Biodyne", isCommonCurrentSeller: () => false,
     isArcadiaHomeAquaticsSeller: () => false
   });
-  loadFunctions(c, shell, ["openTankazonItem", "getTankazonCardPurchaseButton", "getButtonDescriptor", "selectTankazonFishVariant"]);
+  loadFunctions(c, shell, ["openTankazonItem", "getTankazonCardPurchaseButton", "getButtonDescriptor", "selectTankazonFishVariant", "isTankazonLockedFishVariant", "getTankazonSelectableVariant"]);
   card.querySelectorAll = selector => selector === "button" ? [button] : [];
   f.extras.tankazonCatalogArea.scrollTop = 175;
   f.click(preview);

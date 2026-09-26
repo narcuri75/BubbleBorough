@@ -224,7 +224,9 @@ function syncCurrentTankState(now, options = {}) {
       fish.feedingPelletId = null;
       if (!isFishDead(fish)) {
         fish.activity = "roam";
-        fish.targetAt = now + 1200 + Math.random() * 1800;
+        fish.targetXNorm = fish.xNorm;
+        fish.targetYNorm = fish.yNorm;
+        fish.targetAt = now;
       }
     }
   }

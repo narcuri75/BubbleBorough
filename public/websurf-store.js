@@ -1613,9 +1613,7 @@
         if (["buyFish", "buyDecor", "buyAutoDispenser", "buySubmarine", "buyBoat"].includes(fnName) && variants.length) {
           descriptor.variants = variants;
           descriptor.baseName = name;
-          const selectedKey = variants.some(variant => variant.key === button.dataset.shopVariantKey)
-            ? button.dataset.shopVariantKey : variants[0].key;
-          return selectTankazonFishVariant(descriptor, selectedKey);
+          return selectTankazonFishVariant(descriptor, button.dataset.shopVariantKey || "");
         }
         return descriptor;
       }
@@ -1623,8 +1621,19 @@
     return null;
   }
 
+  function isTankazonLockedFishVariant(item, variant) {
+    return item?.fnName === "buyFish" && variant?.locked === true && variant?.debugBypassed !== true;
+  }
+
+  function getTankazonSelectableVariant(item, variantKey = "") {
+    const variants = Array.isArray(item?.variants) ? item.variants : [];
+    const requested = variants.find((entry) => entry.key === variantKey);
+    if (requested && !isTankazonLockedFishVariant(item, requested)) return requested;
+    return variants.find((entry) => !isTankazonLockedFishVariant(item, entry)) || null;
+  }
+
   function selectTankazonFishVariant(item, variantKey) {
-    const variant = item.variants?.find((entry) => entry.key === variantKey);
+    const variant = getTankazonSelectableVariant(item, variantKey);
     if (!variant) return item;
     return {
       ...item,
@@ -1634,6 +1643,7 @@
       image: variant.image,
       backgroundImage: variant.backgroundImage || item.backgroundImage || "",
       lightImage: variant.lightImage || item.lightImage || "",
+      locked: false,
       name: item.variants.length > 1 ? `${item.baseName} (${variant.label})` : item.baseName
     };
   }
@@ -1651,8 +1661,21 @@
       const button = document.createElement("button");
       button.type = "button";
       button.dataset.tankazonVariant = variant.key;
-      button.setAttribute("aria-label", `Select ${variant.label}`);
-      button.setAttribute("aria-pressed", String(variant.key === item.variantKey));
+      const locked = isTankazonLockedFishVariant(item, variant);
+      if (locked) {
+        button.disabled = true;
+        button.classList.add("is-locked");
+        button.setAttribute("aria-disabled", "true");
+        button.setAttribute("aria-label", `${variant.label} locked`);
+        button.title = `${variant.label} • Locked • Level up another fish of this species to discover a variant.`;
+      } else if (item?.fnName === "buyFish" && variant?.debugBypassed === true) {
+        button.classList.add("is-debug-bypassed");
+        button.setAttribute("aria-label", `Select ${variant.label} with Debug bypass`);
+        button.title = `${variant.label} • Debug bypass (still progression-locked)`;
+      } else {
+        button.setAttribute("aria-label", `Select ${variant.label}`);
+      }
+      button.setAttribute("aria-pressed", String(!locked && variant.key === item.variantKey));
       if (variant.backgroundImage) {
         button.append(createTankazonLayeredArt(variant.image, variant.backgroundImage, variant.label));
       } else {
@@ -1774,6 +1797,11 @@
       beginTankazonCustomization(descriptor);
       return;
     }
+    if (descriptor?.fnName === "buyFish" && Array.isArray(descriptor.variants) && descriptor.variants.length) {
+      if (!getTankazonSelectableVariant(descriptor, descriptor.variantKey || "")) return;
+      descriptor = selectTankazonFishVariant(descriptor, descriptor.variantKey || "");
+    }
+    if (descriptor?.fnName === "buyFish" && descriptor.locked === true) return;
     purchaseErrorMessage = "";
     const current = cart.get(descriptor.key);
     const maxQuantity = descriptor.maxQuantity != null && Number.isFinite(Number(descriptor.maxQuantity))
@@ -2041,6 +2069,15 @@
   }
 
   async function executeTankazonNativePurchase(item) {
+    if (item?.fnName === "buyFish" && Array.isArray(item.variants) && item.variants.length) {
+      if (!getTankazonSelectableVariant(item, item.variantKey || "")) {
+        throw new Error("That fish appearance is locked.");
+      }
+      item = selectTankazonFishVariant(item, item.variantKey || "");
+    }
+    if (item?.fnName === "buyFish" && item.locked === true) {
+      throw new Error("That fish appearance is locked.");
+    }
     if (item.fnName === "buyFish" && item.id === "__custom-fish-shop__") {
       const result = await window.buyEngineeredAquaticSpecimen?.();
       if (!result?.ok) {
@@ -2387,6 +2424,8 @@
     }
     const variantButton = event.target.closest?.("[data-tankazon-variant]");
     if (variantButton && selectedItem && !completingPurchase) {
+      const requestedVariant = selectedItem.variants?.find((entry) => entry.key === variantButton.dataset.tankazonVariant);
+      if (variantButton.disabled || isTankazonLockedFishVariant(selectedItem, requestedVariant)) return;
       const purchaseMode = selectedItem.purchaseMode || "single";
       selectedItem = selectTankazonFishVariant(selectedItem, variantButton.dataset.tankazonVariant);
       selectedItem.purchaseMode = purchaseMode;

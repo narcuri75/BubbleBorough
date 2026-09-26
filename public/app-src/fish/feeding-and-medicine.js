@@ -136,11 +136,13 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   const mealCoins = Math.min(remainingMealCoins, Math.max(0, Number(getSpeciesForFish(fish)?.mealCoins) || 0));
   entry.coinsEarned = Math.max(0, Number(entry.coinsEarned) || 0) + mealCoins;
   state.coins = Math.min(MAX_WALLET_COINS, state.coins + mealCoins);
+  recordDailyIncomeCategory("feeding", mealCoins, now);
   const fishLabel = String(fish.name || getSpeciesForFish(fish)?.name || "Fish");
   recordWalletTransaction({
     amount: mealCoins,
     allowZero: true,
     direction: mealCoins > 0 ? "credit" : "neutral",
+    category: "feeding",
     now,
     place: getTankLabel(tank),
     label: mealCoins > 0 ? `Fed ${fishLabel}` : `Fed ${fishLabel} (no coin reward)`
@@ -148,19 +150,22 @@ function recordFishMealCredit(fish, now = Date.now(), tank = getCurrentTank()) {
   return mealCoins;
 }
 
-function getDailyMealIndicatorSlots(timestamp = Date.now()) {
-  const date = new Date(timestamp);
-  const dayKey = getLocalDayKey(timestamp);
-  const midnight = new Date(date);
-  midnight.setHours(0, 0, 0, 0);
-  const noon = new Date(date);
+function getDailyMealIndicatorSlotsForDayKey(dayKey) {
+  const normalizedDayKey = String(dayKey || "").trim();
+  const dayStart = getLocalDayStartTimestamp(normalizedDayKey);
+  const midnight = new Date(dayStart);
+  const noon = new Date(midnight);
   noon.setHours(12, 0, 0, 0);
   const nextMidnight = new Date(midnight);
   nextMidnight.setDate(nextMidnight.getDate() + 1);
   return [
-    { key: `daily-feeding-${dayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
-    { key: `daily-feeding-${dayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
+    { key: `daily-feeding-${normalizedDayKey}-am`, label: "AM", start: midnight.getTime(), end: noon.getTime() },
+    { key: `daily-feeding-${normalizedDayKey}-pm`, label: "PM", start: noon.getTime(), end: nextMidnight.getTime() }
   ];
+}
+
+function getDailyMealIndicatorSlots(timestamp = Date.now()) {
+  return getDailyMealIndicatorSlotsForDayKey(getLocalDayKey(timestamp));
 }
 
 function getDailyMealIndicatorSlot(timestamp = Date.now()) {
@@ -304,7 +309,9 @@ function assignFloatingPelletsToHungryFish(now = Date.now()) {
       currentTarget.feedingPelletId = null;
       if (!isFishDead(currentTarget)) {
         currentTarget.activity = "roam";
-        currentTarget.targetAt = now + 1200 + Math.random() * 1800;
+        currentTarget.targetXNorm = currentTarget.xNorm;
+        currentTarget.targetYNorm = currentTarget.yNorm;
+        currentTarget.targetAt = now;
       }
     }
     pellet.targetFishId = "";
@@ -334,6 +341,15 @@ function updatePelletSettledState(pellet, now = Date.now()) {
   if (pellet.surfaceFloating || pellet.foodKey === "fishFlakes") {
     pellet.surfaceFloating = true;
     const surfaceYNorm = clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24);
+    const hasDropEntry = Number.isFinite(Number(pellet.dropStartXNorm))
+      && Number.isFinite(Number(pellet.dropStartYNorm));
+    const dropDurationMs = hasDropEntry
+      ? clamp(Number(pellet.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS, 120, 3000)
+      : 0;
+    const entryActive = hasDropEntry && now < Number(pellet.createdAt) + dropDurationMs;
+    if (entryActive) {
+      return false;
+    }
     if (Math.abs((Number(pellet.yNorm) || surfaceYNorm) - surfaceYNorm) > 0.0004) {
       pellet.yNorm = surfaceYNorm;
       return true;
@@ -409,13 +425,20 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     && Number.isFinite(Number(options.dropStartXNorm))
     && Number.isFinite(Number(options.dropStartYNorm));
   const dropXNorm = clamp(Number(xNorm) + randomBetween(-spread, spread), 0.08, 0.92);
-  // A hand-fed click chooses the horizontal spot, not an underwater launch
-  // point. Food enters at the surface and then follows its own sink/float
-  // behavior; only equipment drops provide an explicit start position.
   const surfaceYNorm = WATER_SURFACE_Y / TANK_HEIGHT + (food.surfaceFloating ? 0.012 : 0.055);
+  const handSurfaceDrop = Boolean(food.surfaceFloating || food.id === "fishFlakes") && !hasCustomDropStart;
   const dropYNorm = hasCustomDropStart
     ? clamp(Number(yNorm), 0.09, 0.9)
     : clamp(surfaceYNorm, 0.09, 0.24);
+  const entryStartXNorm = handSurfaceDrop
+    ? dropXNorm
+    : (hasCustomDropStart ? Number(options.dropStartXNorm) : null);
+  const entryStartYNorm = handSurfaceDrop
+    ? clamp((WATER_SURFACE_Y - randomBetween(40, 90)) / TANK_HEIGHT, 0.02, 0.22)
+    : (hasCustomDropStart ? Number(options.dropStartYNorm) : null);
+  const entryDurationMs = handSurfaceDrop
+    ? randomBetween(450, 850)
+    : (hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null);
   return sanitizePellet({
     id: createId("pellet"),
     foodKey,
@@ -431,9 +454,9 @@ function createDroppedFoodPellet(foodKey, xNorm, yNorm, now = Date.now(), option
     sinkDurationMs: food.id === "algaeWafers"
       ? ALGAE_WAFER_SINK_DURATION_MS * randomBetween(0.92, 1.08)
       : FOOD_PELLET_SINK_DURATION_MS * randomBetween(0.85, 1.2),
-    dropStartXNorm: hasCustomDropStart ? Number(options.dropStartXNorm) : null,
-    dropStartYNorm: hasCustomDropStart ? Number(options.dropStartYNorm) : null,
-    dropDurationMs: hasCustomDropStart ? Number(options.dropDurationMs) || AUTO_DISPENSER_DROP_DURATION_MS : null,
+    dropStartXNorm: entryStartXNorm,
+    dropStartYNorm: entryStartYNorm,
+    dropDurationMs: entryDurationMs,
     createdAt: now,
     expiresAt: now + (food.surfaceFloating ? SURFACE_FOOD_LIFETIME_MS : FOOD_PELLET_SETTLED_LIFETIME_MS)
   });

@@ -6,10 +6,16 @@ function getBrowserViewportSize() {
     return { width: TANK_WIDTH, height: TANK_HEIGHT };
   }
   const root = document.documentElement;
+  // The visual viewport can briefly report the transformed composition's
+  // dimensions while an editor is rebuilding.  Ratio Lock must use the
+  // browser layout viewport instead, otherwise a transient editor resize can
+  // make the whole aquarium look permanently zoomed out.
+  const layoutWidth = window.innerWidth || root?.clientWidth;
+  const layoutHeight = window.innerHeight || root?.clientHeight;
   const visualViewport = window.visualViewport;
   return {
-    width: Math.max(1, Math.round(visualViewport?.width || window.innerWidth || root?.clientWidth || TANK_WIDTH)),
-    height: Math.max(1, Math.round(visualViewport?.height || window.innerHeight || root?.clientHeight || TANK_HEIGHT))
+    width: Math.max(1, Math.round(layoutWidth || visualViewport?.width || TANK_WIDTH)),
+    height: Math.max(1, Math.round(layoutHeight || visualViewport?.height || TANK_HEIGHT))
   };
 }
 
@@ -1124,6 +1130,10 @@ function bindEvents() {
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
   dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
+  dom.debugSwimAnimationSpeedSlider?.addEventListener("input", (event) => {
+    handleDebugSwimAnimationSpeedInput(event.currentTarget);
+  });
+  dom.debugSwimAnimationSpeedResetButton?.addEventListener("click", () => resetDebugSwimAnimationSpeedTuner());
   dom.debugDepthTuner?.addEventListener("input", (event) => {
     const input = event.target?.closest?.("[data-depth-tuning-key]");
     if (input) {
@@ -1175,6 +1185,7 @@ function bindEvents() {
   dom.debugInfectFishButton?.addEventListener("click", () => infectSelectedFishDebug());
   dom.debugCureFishButton?.addEventListener("click", () => cureSelectedFishDebug());
   dom.debugReviveAllFishButton?.addEventListener("click", () => restoreAllFishHealthDebug());
+  dom.debugInspectFishProgressionButton?.addEventListener("click", () => inspectFishProgressionDebug());
   dom.addCoinsButton.addEventListener("click", () => addDebugCoins(10));
   dom.addHundredCoinsButton?.addEventListener("click", () => addDebugCoins(100));
   dom.maxDirtButton.addEventListener("click", () => increaseTankDirtinessDebug());
@@ -3989,7 +4000,20 @@ function isStageEditTrayActuallyVisible(tray) {
   }
 
   const rect = tray.getBoundingClientRect();
-  return rect.width > 1 && rect.height > 1;
+  if (rect.width <= 1 || rect.height <= 1) {
+    return false;
+  }
+
+  // A closing or rebuilt tray can retain dimensions while sitting outside the
+  // tank stage.  It must not keep the edit camera in its zoomed-out framing.
+  const stageRect = dom.tankStage?.getBoundingClientRect?.();
+  if (!stageRect || stageRect.width <= 1 || stageRect.height <= 1) {
+    return true;
+  }
+  return rect.right > stageRect.left
+    && rect.left < stageRect.right
+    && rect.bottom > stageRect.top
+    && rect.top < stageRect.bottom;
 }
 
 function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
@@ -4116,14 +4140,32 @@ function applyStageRenderViewTransform(scale, offsetX, offsetY) {
 }
 
 function updateStageRenderView(frameTime = performance.now(), options = {}) {
-  const viewKey = runtime.editTankMode
-    ? `decor:${isStageEditTrayActuallyVisible(dom.editDecorTray)}`
+  const activeEditTray = runtime.editTankMode
+    ? dom.editDecorTray
     : runtime.fishEditMode
-      ? `fish:${isStageEditTrayActuallyVisible(dom.editFishTray)}`
+      ? dom.editFishTray
       : runtime.equipmentEditMode
-        ? `equipment:${isStageEditTrayActuallyVisible(dom.editEquipmentTray)}`
+        ? dom.editEquipmentTray
         : runtime.tankEditMode
-          ? `tank:${isStageEditTrayActuallyVisible(dom.editTankTray)}`
+          ? dom.editTankTray
+          : null;
+  const trayRect = isStageEditTrayActuallyVisible(activeEditTray)
+    ? getElementRectInTankStageLayout(activeEditTray)
+    : null;
+  // The gravel editor can change tray height without changing its hidden
+  // state. Include its geometry in the cache key so a stale edit-camera
+  // target is never retained after the controls reflow or close.
+  const trayGeometryKey = trayRect
+    ? [trayRect.left, trayRect.top, trayRect.width, trayRect.height].map((value) => Math.round(value)).join(",")
+    : "hidden";
+  const viewKey = runtime.editTankMode
+    ? `decor:${trayGeometryKey}`
+    : runtime.fishEditMode
+      ? `fish:${trayGeometryKey}`
+      : runtime.equipmentEditMode
+        ? `equipment:${trayGeometryKey}`
+        : runtime.tankEditMode
+          ? `tank:${trayGeometryKey}`
           : "view";
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;
@@ -6964,10 +7006,12 @@ function normalizeFishDefinition(entry, index, options = {}) {
   const speedMinFloor = behavior === "snail" ? 0.00001 : (slowSurfaceBehavior ? 0.00005 : 0.012);
   const speedMaxCeiling = behavior === "snail" ? 0.001 : (slowSurfaceBehavior ? 0.006 : 0.095);
   const needs = normalizeFishNeeds(entry);
+  const starterFish = entry.starterFish === true;
 
   const normalized = {
     id,
     Fish_enabled: entry.Fish_enabled !== false && entry.fish_enabled !== false,
+    starterFish,
     seller: typeof entry.seller === "string" ? entry.seller.trim() : "",
     name: typeof entry.name === "string" && entry.name.trim() ? entry.name.trim() : titleFromFile(id),
     genetics: String(entry.genetics || "natural").trim().toLowerCase() === "enhanced" ? "enhanced" : "natural",
@@ -7028,11 +7072,13 @@ function normalizeFishDefinition(entry, index, options = {}) {
       : (diet === "detritus" ? 1 : 0),
     shadowScale: clamp(Number(entry.shadowScale) || 0.28, 0.14, 0.5),
     defaultScale: clamp(Number(entry.defaultScale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX),
-    unlockRequirement: getSpeciesUnlockRequirement(id) || (
-      typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
-        ? entry.unlockRequirement.trim().toLowerCase()
-        : null
-    ),
+    unlockRequirement: starterFish
+      ? null
+      : getSpeciesUnlockRequirement(id) || (
+        typeof entry.unlockRequirement === "string" && entry.unlockRequirement.trim()
+          ? entry.unlockRequirement.trim().toLowerCase()
+          : null
+      ),
     heartCount: Number.isFinite(explicitHeartCount)
       ? clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS)
       : null,
@@ -7040,6 +7086,8 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    customAsset: entry.customAsset === true,
+    customUploadProduct: entry.customUploadProduct === true,
     davyMutation: entry.davyMutation === true,
     proteusZombie: entry.proteusZombie === true,
     proteusExclusive: entry.proteusExclusive === true,

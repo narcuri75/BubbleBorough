@@ -120,6 +120,58 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
   return fish.swimTilt;
 }
 
+function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
+  const dx = Number(deltaXNorm) || 0;
+  const dy = Number(deltaYNorm) || 0;
+  const distanceNorm = Math.hypot(dx, dy);
+  if (!fish || distanceNorm <= 0.000001) {
+    if (fish) fish.steeringVerticalRatio = 0;
+    return { xNorm: dx, yNorm: dy };
+  }
+
+  const dxPx = dx * TANK_WIDTH;
+  const dyPx = dy * TANK_HEIGHT;
+  const distancePx = Math.hypot(dxPx, dyPx);
+  if (distancePx <= 0.001) {
+    return { xNorm: dx, yNorm: dy };
+  }
+
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -1, 1);
+  const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
+    ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
+    : 0;
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
+  const response = 1 - Math.exp(-2.8 * urgency * elapsedSeconds);
+  const responsiveStep = (desiredVerticalRatio - currentVerticalRatio) * response;
+  const maximumStep = 1.45 * urgency * elapsedSeconds;
+  const nextVerticalRatio = clamp(
+    currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
+    -0.96,
+    0.96
+  );
+  fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
+    ? desiredVerticalRatio
+    : nextVerticalRatio;
+
+  const horizontalSign = Math.abs(dxPx) > 0.5
+    ? (dxPx >= 0 ? 1 : -1)
+    : getFishFacingDirection(fish);
+  const verticalRatio = fish.steeringVerticalRatio;
+  const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
+
+  // Convert the smoothed screen-space heading back into normalized tank-space
+  // while preserving the remaining target distance. This bends the path into
+  // climbs and dives instead of instantly snapping to a new diagonal vector.
+  const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
+  const unitYNorm = verticalRatio / TANK_HEIGHT;
+  const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
+  return {
+    xNorm: unitXNorm / unitNormLength * distanceNorm,
+    yNorm: unitYNorm / unitNormLength * distanceNorm
+  };
+}
+
 function updateFishTurnState(fish, species, now) {
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {

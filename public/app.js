@@ -52680,7 +52680,19 @@ function assignFloatingPelletsToHungryFish(now = Date.now()) {
     const currentTarget = pellet.targetFishId
       ? state.fish.find((fish) => fish.id === pellet.targetFishId)
       : null;
-    if (currentTarget && canFishTargetFoodPellet(currentTarget, pellet, now)) {
+    // A pellet reservation is valid only while BOTH sides still point at each
+    // other and the fish is actively pursuing that pellet. Several unrelated
+    // fish behaviors can interrupt feeding by clearing feedingPelletId. Without
+    // this reciprocal check, the old pellet can stay reserved forever by a fish
+    // that is no longer chasing it, so hungry fish ignore visible leftover food
+    // until a brand-new drop creates unreserved pellets.
+    const currentTargetStillPursuing = Boolean(
+      currentTarget
+      && currentTarget.activity === "feeding"
+      && currentTarget.feedingPelletId === pellet.id
+      && canFishTargetFoodPellet(currentTarget, pellet, now)
+    );
+    if (currentTargetStillPursuing) {
       continue;
     }
 
@@ -62386,6 +62398,7 @@ function createFishGravelPebbleAction(fish, species, now = Date.now()) {
 
   return {
     stage: "dive",
+    pickupLayer: clampTankLayer(getFishTankLayer(fish)),
     assetPath: pebbleAsset.path,
     color,
     colorize: colorizeSettings[colorIndex] === true,
@@ -62426,7 +62439,7 @@ function startFishGravelPebbleAction(fish, species, now = Date.now(), options = 
     species,
     randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax)
   );
-  setFishDesiredTankLayer(fish, getFishTankLayer(fish));
+  setFishDesiredTankLayer(fish, action.pickupLayer);
   if (Math.abs(fish.targetXNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
     setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
   }
@@ -62527,14 +62540,9 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
   const normalizedLayer = clampTankLayer(layer);
   const stableScale = getViewportStableAssetScale();
   const size = (Number.isFinite(Number(holdSizePx)) ? Number(holdSizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * stableScale;
-  if (typeof tossOrLayer === "object" && Number.isFinite(Number(tossOrLayer.endX))) {
-    return clamp(
-      getTankFloorSurfaceYAtX(Number(tossOrLayer.endX)) - size * 0.46 + offsetPx,
-      WATER_SURFACE_Y + 24,
-      TANK_HEIGHT - GLASS_MARGIN_BOTTOM - size * 0.5
-    );
-  }
-
+  // Fish-play pebbles belong to the depth layer where they were picked up.
+  // Their drop finishes on that layer's authored gravel/floor line, not on the
+  // front-most physical substrate surface at the pebble's screen X position.
   return clamp(
     getTankLayerBottomBoundaryY(normalizedLayer) - size * 0.5 + offsetPx,
     WATER_SURFACE_Y + 24,
@@ -62544,7 +62552,7 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
 
 function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
   if (!fish || !species || !action?.assetPath || !action?.color) {
-    return;
+    return false;
   }
 
   if (runtime.fishPebbleTosses.length >= MAX_ACTIVE_FISH_GRAVEL_PEBBLE_TOSSES) {
@@ -62562,11 +62570,13 @@ function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
     drawWidth * (0.5 - FISH_GRAVEL_PEBBLE_MOUTH_OVERLAP_RATIO)
   );
   if (!mouthPoint) {
-    return;
+    return false;
   }
 
   const landingX = clamp(mouthPoint.x + randomBetween(-56, 56), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10);
-  const landingLayer = getFishTankLayer(fish);
+  const landingLayer = clampTankLayer(
+    Number.isFinite(Number(action.pickupLayer)) ? Number(action.pickupLayer) : getFishTankLayer(fish)
+  );
   const landingYOffsetPx = randomBetween(-2, 3);
   const landingY = getFishPebbleTossLayerLandingY({
     endLayer: landingLayer,
@@ -62594,6 +62604,7 @@ function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
     startedAt: now,
     durationMs: 2800 + Math.hypot(landingX - mouthPoint.x, landingY - mouthPoint.y) * 2.2
   });
+  return true;
 }
 
 function getSedimentStrength(now = Date.now(), multiplier = 1) {
@@ -63056,6 +63067,10 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
   fish.activity = FISH_GRAVEL_PEBBLE_ACTIVITY;
   fish.feedingPelletId = null;
   fish.hangoutDecorId = null;
+  setFishDesiredTankLayer(
+    fish,
+    Number.isFinite(Number(action.pickupLayer)) ? Number(action.pickupLayer) : getFishTankLayer(fish)
+  );
 
   if (action.stage === "dive") {
     fish.targetXNorm = action.pickupXNorm;
@@ -63091,9 +63106,13 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
     fish.targetYNorm = action.carryTargetYNorm;
     fish.targetAt = now + 2400;
     if (Math.hypot(fish.xNorm - action.carryTargetXNorm, fish.yNorm - action.carryTargetYNorm) <= FISH_GRAVEL_PEBBLE_SPIT_REACHED_DISTANCE_NORM) {
-      spawnFishGravelPebbleToss(fish, species, action, now);
-      clearFishGravelPebbleAction(fish, species, now);
-      return false;
+      if (spawnFishGravelPebbleToss(fish, species, action, now)) {
+        clearFishGravelPebbleAction(fish, species, now);
+        return false;
+      }
+      // Keep the pebble visibly held if the release pose cannot be resolved on
+      // this frame. Retry instead of clearing the action and popping the rock.
+      fish.targetAt = now + 250;
     }
   } else {
     clearFishGravelPebbleAction(fish, species, now);
@@ -117041,7 +117060,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/angelfish-neon__genetics-enhanced.webp",
-      "version": "685bb9490b6c",
+      "version": "87820810955d",
       "width": 192,
       "height": 128,
       "frames": {
@@ -117084,13 +117103,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/angelfish-neon__genetics-enhanced",
-        "version": "9757afc29651-v1",
+        "version": "916edbfec9a5-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/angelfish__genetics-natural.webp",
-      "version": "ee4e4ef94898",
+      "version": "faf2c31b0f86",
       "width": 192,
       "height": 256,
       "frames": {
@@ -117157,7 +117176,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/angelfish__genetics-natural",
-        "version": "7567eff8f9e5-v1",
+        "version": "98e04ccd97f8-v1",
         "standalone": false
       }
     },
@@ -117329,7 +117348,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/betta__genetics-natural.webp",
-      "version": "1c974b426f15",
+      "version": "3ac2cc8f6eb7",
       "width": 192,
       "height": 256,
       "frames": {
@@ -117396,7 +117415,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/betta__genetics-natural",
-        "version": "761aa7061921-v1",
+        "version": "2a3ef2ba2c2f-v1",
         "standalone": false
       }
     },
@@ -117445,7 +117464,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/cardinal__genetics-natural.webp",
-      "version": "0224b3dca39f",
+      "version": "affee3941e0a",
       "width": 192,
       "height": 256,
       "frames": {
@@ -117512,7 +117531,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/cardinal__genetics-natural",
-        "version": "d34b3b1dff1b-v1",
+        "version": "c42100a743db-v1",
         "standalone": false
       }
     },
@@ -117585,7 +117604,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/cichlid__genetics-natural.webp",
-      "version": "f4890a79a2ae",
+      "version": "59e140e3ebd8",
       "width": 192,
       "height": 192,
       "frames": {
@@ -117652,7 +117671,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/cichlid__genetics-natural",
-        "version": "23b5c9771f37-v1",
+        "version": "86bf2c242680-v1",
         "standalone": false
       }
     },
@@ -117848,7 +117867,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/discus__genetics-natural.webp",
-      "version": "23418581d4d8",
+      "version": "131b57f4f60d",
       "width": 192,
       "height": 144,
       "frames": {
@@ -117909,13 +117928,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/discus__genetics-natural",
-        "version": "a70ddd09c14c-v1",
+        "version": "402fa3470a4f-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/dottyback__genetics-natural.webp",
-      "version": "52683cdfb6ba",
+      "version": "8145a50e7c65",
       "width": 128,
       "height": 96,
       "frames": {
@@ -117946,7 +117965,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/dottyback__genetics-natural",
-        "version": "b67de2d8c721-v1",
+        "version": "c1dacda32327-v1",
         "standalone": false
       }
     },
@@ -118038,7 +118057,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/goldfish__genetics-natural.webp",
-      "version": "1135171ca98d",
+      "version": "f3214770936f",
       "width": 192,
       "height": 192,
       "frames": {
@@ -118105,7 +118124,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/goldfish__genetics-natural",
-        "version": "1a99d265d89f-v1",
+        "version": "d889dad272df-v1",
         "standalone": false
       }
     },
@@ -118313,7 +118332,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/hammerhead-shark__genetics-enhanced.webp",
-      "version": "d999cf59397a",
+      "version": "b33a60eeebc2",
       "width": 128,
       "height": 102,
       "frames": {
@@ -118356,7 +118375,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/hammerhead-shark__genetics-enhanced",
-        "version": "878c924c2635-v1",
+        "version": "98ac2932ae0f-v1",
         "standalone": false
       }
     },
@@ -118502,7 +118521,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/lionfish__genetics-natural.webp",
-      "version": "ff27e3ebac08",
+      "version": "f80c1b105fac",
       "width": 128,
       "height": 192,
       "frames": {
@@ -118539,13 +118558,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/lionfish__genetics-natural",
-        "version": "a09c6dc142c8-v1",
+        "version": "8a10d694f2b8-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/lookdown__genetics-natural.webp",
-      "version": "d0895034de28",
+      "version": "9490e0a45750",
       "width": 128,
       "height": 128,
       "frames": {
@@ -118576,13 +118595,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/lookdown__genetics-natural",
-        "version": "132c23f1c4a7-v1",
+        "version": "48f8f0b7fc4d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/molly__genetics-natural.webp",
-      "version": "08e359754a57",
+      "version": "40cabdaf4a1e",
       "width": 192,
       "height": 96,
       "frames": {
@@ -118619,13 +118638,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/molly__genetics-natural",
-        "version": "eb824aff6a2b-v1",
+        "version": "a8ab4457e0bb-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/moor-goldfish__genetics-natural.webp",
-      "version": "1539c0c15803",
+      "version": "58267ffd797e",
       "width": 192,
       "height": 192,
       "frames": {
@@ -118680,7 +118699,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/moor-goldfish__genetics-natural",
-        "version": "cd6b99c4ac30-v1",
+        "version": "ee1e4dda0c6d-v1",
         "standalone": false
       }
     },
@@ -118986,7 +119005,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/pilot-fish__genetics-natural.webp",
-      "version": "1ab3d7fde387",
+      "version": "6d89fe389668",
       "width": 128,
       "height": 99,
       "frames": {
@@ -119023,13 +119042,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/pilot-fish__genetics-natural",
-        "version": "096515cc2535-v1",
+        "version": "aeb4862d5f1d-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/piranha__genetics-natural.webp",
-      "version": "f4bdc3f07b2e",
+      "version": "bb92df8a674f",
       "width": 192,
       "height": 192,
       "frames": {
@@ -119096,7 +119115,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/piranha__genetics-natural",
-        "version": "aa6ada885203-v1",
+        "version": "1cac9d30d419-v1",
         "standalone": false
       }
     },
@@ -119218,7 +119237,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/pufferfish__genetics-natural__state-inflated.webp",
-      "version": "f89f9946c850",
+      "version": "f480ed2f6767",
       "width": 192,
       "height": 192,
       "frames": {
@@ -119285,7 +119304,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/pufferfish__genetics-natural__state-inflated",
-        "version": "a69c68b5d355-v1",
+        "version": "2b300e2c2d6d-v1",
         "standalone": false
       }
     },
@@ -119450,7 +119469,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/seahorse__genetics-natural.webp",
-      "version": "6f40ebdd2c2d",
+      "version": "517c9b188329",
       "width": 78,
       "height": 192,
       "frames": {
@@ -119487,7 +119506,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/seahorse__genetics-natural",
-        "version": "8d145f5f5072-v1",
+        "version": "049d69b4a010-v1",
         "standalone": false
       }
     },
@@ -119567,7 +119586,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/sunfish__genetics-enhanced.webp",
-      "version": "b2768157b9b3",
+      "version": "3303c34a798d",
       "width": 192,
       "height": 128,
       "frames": {
@@ -119610,7 +119629,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/sunfish__genetics-enhanced",
-        "version": "082f45e7b364-v1",
+        "version": "c44ecb732212-v1",
         "standalone": false
       }
     },
@@ -119695,7 +119714,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/tang__genetics-natural.webp",
-      "version": "1aba2451136e",
+      "version": "e24bb2920758",
       "width": 192,
       "height": 256,
       "frames": {
@@ -119768,7 +119787,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tang__genetics-natural",
-        "version": "8c773f281dc8-v1",
+        "version": "83f153b1c23c-v1",
         "standalone": false
       }
     },
@@ -119823,7 +119842,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/tetra__genetics-natural.webp",
-      "version": "5c5dabdfae98",
+      "version": "84195a428553",
       "width": 192,
       "height": 384,
       "frames": {
@@ -119932,13 +119951,13 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/tetra__genetics-natural",
-        "version": "640657ad8fa9-v1",
+        "version": "a56389e2cc79-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/fish/small_fish/turbo_snail.webp",
-      "version": "ea4daecbb6de",
+      "version": "1f0cd5e479d1",
       "width": 192,
       "height": 128,
       "frames": {
@@ -119975,7 +119994,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/turbo_snail",
-        "version": "273bebcf8d73-v1",
+        "version": "7c72bc30fb7b-v1",
         "standalone": false
       }
     },

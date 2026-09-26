@@ -301,7 +301,19 @@ function assignFloatingPelletsToHungryFish(now = Date.now()) {
     const currentTarget = pellet.targetFishId
       ? state.fish.find((fish) => fish.id === pellet.targetFishId)
       : null;
-    if (currentTarget && canFishTargetFoodPellet(currentTarget, pellet, now)) {
+    // A pellet reservation is valid only while BOTH sides still point at each
+    // other and the fish is actively pursuing that pellet. Several unrelated
+    // fish behaviors can interrupt feeding by clearing feedingPelletId. Without
+    // this reciprocal check, the old pellet can stay reserved forever by a fish
+    // that is no longer chasing it, so hungry fish ignore visible leftover food
+    // until a brand-new drop creates unreserved pellets.
+    const currentTargetStillPursuing = Boolean(
+      currentTarget
+      && currentTarget.activity === "feeding"
+      && currentTarget.feedingPelletId === pellet.id
+      && canFishTargetFoodPellet(currentTarget, pellet, now)
+    );
+    if (currentTargetStillPursuing) {
       continue;
     }
 

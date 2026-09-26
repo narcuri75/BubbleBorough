@@ -3111,7 +3111,7 @@
       "sourceLine": 2,
       "originalLine": null,
       "characters": 148063,
-      "sourceHash": "8e0e930e794b142d5d8d150827cc4328171b3f08a3668ec3a79fc276b1888710",
+      "sourceHash": "4b695049b180245a1696346351034d329f7fe2dda294530a99817b25b3d7166c",
       "calls": []
     },
     {
@@ -21480,8 +21480,8 @@
       "module": "fish/feeding-and-medicine.js",
       "sourceLine": 296,
       "originalLine": 27280,
-      "characters": 1357,
-      "sourceHash": "ea5306995ee96b91920c0be9af6036db57feb5649cac4903090ab8ac1609dfb6",
+      "characters": 2008,
+      "sourceHash": "803df5a3661dd43fbe2bc97fdad4fda2a792bf8946439de2b0ca2d7308ea6ba5",
       "calls": [
         "assignPelletToFish",
         "canFishTargetFoodPellet",
@@ -21493,7 +21493,7 @@
     {
       "name": "updatePelletSettledState",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 335,
+      "sourceLine": 347,
       "originalLine": 27317,
       "characters": 2264,
       "sourceHash": "a36d3e401d7165d8a1b66e4aa2a78ec7e83ac3b17af0cbfa4dfdd862f1d5c448",
@@ -21505,7 +21505,7 @@
     {
       "name": "releasePelletsTargetingFishIds",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 398,
+      "sourceLine": 410,
       "originalLine": 27361,
       "characters": 452,
       "sourceHash": "5d1ea868934e16e49fb65c675630e0219b9f40b3cc3e1d33d700df75c46ed930",
@@ -21514,7 +21514,7 @@
     {
       "name": "createDroppedFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 416,
+      "sourceLine": 428,
       "originalLine": 27379,
       "characters": 2378,
       "sourceHash": "65d9806abb3feddb871057b497f76e4005cbd8fa90bee97d2bb22f9bef6f5e82",
@@ -21532,7 +21532,7 @@
     {
       "name": "createAutoDispenserStoredPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 465,
+      "sourceLine": 477,
       "originalLine": 27404,
       "characters": 347,
       "sourceHash": "6deecf6d2880850c5bc4ca32d8a40560f894a8392ba13e113162b7ad89ab2f11",
@@ -21547,7 +21547,7 @@
     {
       "name": "createAutoDispenserDroppedPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 478,
+      "sourceLine": 490,
       "originalLine": 27417,
       "characters": 1951,
       "sourceHash": "2ac273711a40b8f71f2848595cc7fd1b6f430efbf7929aa80cf4cf156935450e",
@@ -21567,7 +21567,7 @@
     {
       "name": "setAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 526,
+      "sourceLine": 538,
       "originalLine": 27462,
       "characters": 684,
       "sourceHash": "64120d56c20df38487696562673cb1b4c2605d7d7fb86774f66dc8b9ced359bc",
@@ -21582,7 +21582,7 @@
     {
       "name": "adjustAutoDispenserMealPortion",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 554,
+      "sourceLine": 566,
       "originalLine": 27490,
       "characters": 239,
       "sourceHash": "dac1af68a4ad2c0970f683b2012f1902d62e5e6145e86d58982d39f01852a5a9",
@@ -21594,7 +21594,7 @@
     {
       "name": "getFoodCompatibleFishInTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 562,
+      "sourceLine": 574,
       "originalLine": null,
       "characters": 237,
       "sourceHash": "d763b3b1cf60be9233dbd0208bf910c24ee2b9f40b20d54ba6aa76051cc9a078",
@@ -21607,7 +21607,7 @@
     {
       "name": "getFoodCompatibleFishAcrossTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 567,
+      "sourceLine": 579,
       "originalLine": null,
       "characters": 216,
       "sourceHash": "b7fb5fe2193a76ee12ff8c5ce6cda4c43cb315b47fd39e1961a0f0562711d997",
@@ -21619,7 +21619,7 @@
     {
       "name": "getFoodIncompatibilityMessage",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 573,
+      "sourceLine": 585,
       "originalLine": null,
       "characters": 244,
       "sourceHash": "23ee8cdfb1800f859ec594b2f97e97c310360da77b910cabd1bb21f33d7c54df",
@@ -21628,7 +21628,7 @@
     {
       "name": "loadSelectedFoodIntoAutoDispenser",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 579,
+      "sourceLine": 591,
       "originalLine": 27498,
       "characters": 2423,
       "sourceHash": "437e24c9cea869a8b1d6b9d069f69334774ace46222b72d4495c9511dc6c36b6",
@@ -21651,7 +21651,7 @@
     {
       "name": "returnAutoDispenserPelletsToInventory",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 653,
+      "sourceLine": 665,
       "originalLine": 27564,
       "characters": 1374,
       "sourceHash": "860a3730d615d5c6c5d7302de9ea89c3e7543c017a7287c3f0fab1311346c1f7",
@@ -21668,7 +21668,7 @@
     {
       "name": "applyFoodBuff",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 692,
+      "sourceLine": 704,
       "originalLine": 27604,
       "characters": 313,
       "sourceHash": "dab8bdd9d200b7c6665250ab33768f4eedb20b6654cbe46c8bc27d0d27a853b5",
@@ -21679,7 +21679,7 @@
     {
       "name": "applyFishMealWindowFoodIntake",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 707,
+      "sourceLine": 719,
       "originalLine": 27621,
       "characters": 1536,
       "sourceHash": "5ec9fb9160533bacb37f272c0cd3d9ebd5773125139d34b19310395eae965f22",
@@ -21692,7 +21692,7 @@
     {
       "name": "applyFoodPelletToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 751,
+      "sourceLine": 763,
       "originalLine": 27662,
       "characters": 4920,
       "sourceHash": "6b005f97908b766f65281ea2d0fbb8611c7a22feae978a6dc64363a632de31f8",
@@ -21722,7 +21722,7 @@
     {
       "name": "handleFishEatFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 873,
+      "sourceLine": 885,
       "originalLine": 27723,
       "characters": 139,
       "sourceHash": "ad26382e04b17f15dbdff10e68ceeac7d553cc27a859a78a0aa334bb066cc4bb",
@@ -21733,7 +21733,7 @@
     {
       "name": "consumeOffscreenFishFoodPellet",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 877,
+      "sourceLine": 889,
       "originalLine": null,
       "characters": 1105,
       "sourceHash": "aecd42140531804b413a5d209585ccc33c4dfea8c88be19af12bc105501d1aa9",
@@ -21748,7 +21748,7 @@
     {
       "name": "getConnectedFoodTanks",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 902,
+      "sourceLine": 914,
       "originalLine": null,
       "characters": 341,
       "sourceHash": "b7f8df2991c401f6c469a9375129a606aff3acd5c76b5d45dad029b1c0c7b24c",
@@ -21761,7 +21761,7 @@
     {
       "name": "allocateAutoDispenserPellets",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 913,
+      "sourceLine": 925,
       "originalLine": null,
       "characters": 871,
       "sourceHash": "46b1ed630bbefd48841b45c11dbc094122b6199f3c48591a719119f09547121c",
@@ -21772,7 +21772,7 @@
     {
       "name": "processSmartAutoFeeder",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 935,
+      "sourceLine": 947,
       "originalLine": 27731,
       "characters": 6226,
       "sourceHash": "03457ad92f8b62c2ca6bce69f992128a2109042757a9cfda510f820a48100421",
@@ -21797,7 +21797,7 @@
     {
       "name": "dropSelectedFoodAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1071,
+      "sourceLine": 1083,
       "originalLine": 27788,
       "characters": 2359,
       "sourceHash": "75a391341e9d92199a960f23bbf9bec076ca47f72aaa81f78b5ac65ea250cfbc",
@@ -21822,7 +21822,7 @@
     {
       "name": "stageHungryFishTravelToFoodTank",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1142,
+      "sourceLine": 1154,
       "originalLine": null,
       "characters": 838,
       "sourceHash": "022e86409f0d3fc670451f27a60416a79963527495efa040f0719b40cdafeff1",
@@ -21838,7 +21838,7 @@
     {
       "name": "getNextDayStartTimestamp",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1168,
+      "sourceLine": 1180,
       "originalLine": 27853,
       "characters": 187,
       "sourceHash": "cb1fae1cfe22dc2c0b3469cff9ecd8c41e90c6183f85565b80a168911aa15921",
@@ -21847,7 +21847,7 @@
     {
       "name": "hasActiveTankMedicineEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1175,
+      "sourceLine": 1187,
       "originalLine": 27860,
       "characters": 411,
       "sourceHash": "9bcc4edfb8db89dba9e1abf76b3bbef6ea75cea38ef477bd6c17577469b551f0",
@@ -21858,7 +21858,7 @@
     {
       "name": "addMedicineVisualEffect",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1182,
+      "sourceLine": 1194,
       "originalLine": null,
       "characters": 523,
       "sourceHash": "da361ace7bd7910b5f6392bf30d1674ebe443b3e854549c144da0e9efe9e1bf8",
@@ -21870,7 +21870,7 @@
     {
       "name": "consumeSelectedMedicineDose",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1199,
+      "sourceLine": 1211,
       "originalLine": null,
       "characters": 319,
       "sourceHash": "e631b121a535fc0ae8d9192efab90f17e994babcd400330fca34150658fbd61c",
@@ -21879,7 +21879,7 @@
     {
       "name": "applyTargetedMedicineToFish",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1207,
+      "sourceLine": 1219,
       "originalLine": null,
       "characters": 2869,
       "sourceHash": "4f948e34949195945eeb7876caedf253472ad93c70e377978a52967bec2a0318",
@@ -21893,7 +21893,7 @@
     {
       "name": "applySelectedMedicineAtPoint",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1260,
+      "sourceLine": 1272,
       "originalLine": 27864,
       "characters": 2473,
       "sourceHash": "d32052caab3458505db95b2c215b5b71da8e061fd69d4d79ca764604e94b8403",
@@ -21918,7 +21918,7 @@
     {
       "name": "processTankMedicineEffects",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1328,
+      "sourceLine": 1340,
       "originalLine": 27920,
       "characters": 328,
       "sourceHash": "0321333db4a71ed5727d0024ee79794b37cf407c620c89811643a95e81e2d588",
@@ -22147,12 +22147,14 @@
       "module": "fish/gravel-and-schooling.js",
       "sourceLine": 358,
       "originalLine": 33849,
-      "characters": 1527,
-      "sourceHash": "d5d08019e5d2b5491d6c9f58d290119f00ab275ab4f917684590bf80d780ee43",
+      "characters": 1584,
+      "sourceHash": "9c1560d383e9ef6c0bab0fdcfe79f04018709fd1dd7d7409b5f9fcf436f4ebb0",
       "calls": [
         "clamp",
+        "clampTankLayer",
         "getActiveCustomGravelLayerColorizeSettings",
         "getCustomGravelLoosePebbleAssets",
+        "getFishTankLayer",
         "getResolvedCustomGravelLayerColors",
         "getTankFloorMaskSurfaceYAtX",
         "randomBetween"
@@ -22161,15 +22163,14 @@
     {
       "name": "startFishGravelPebbleAction",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 398,
+      "sourceLine": 399,
       "originalLine": 33889,
-      "characters": 1222,
-      "sourceHash": "e6c7f76969e56d9db1212df90edf84f3c18480723666fe1324279007e1ecbcfa",
+      "characters": 1218,
+      "sourceHash": "48d9dcbec7abb590ab21b930d949baa52f6d1d03a1082b260c56658e4066fe05",
       "calls": [
         "clearFishSchoolFollowState",
         "countActiveFishGravelPebbleActions",
         "createFishGravelPebbleAction",
-        "getFishTankLayer",
         "isFishEligibleForGravelPebbleAction",
         "normalizeFishSpeed",
         "randomBetween",
@@ -22180,7 +22181,7 @@
     {
       "name": "maybeStartFishGravelPebbleAction",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 433,
+      "sourceLine": 434,
       "originalLine": 33924,
       "characters": 590,
       "sourceHash": "444b953ae16a99a8c6eed968288bb7eabfe910a9270f4b5b3c2cbac6c6c28b06",
@@ -22193,7 +22194,7 @@
     {
       "name": "startFishGravelDigAction",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 451,
+      "sourceLine": 452,
       "originalLine": 33942,
       "characters": 2463,
       "sourceHash": "7dc21662afbba229cfb96bc8370c0250d5298a1a26688debd5e9094b46cb29c9",
@@ -22217,14 +22218,13 @@
     {
       "name": "getFishPebbleTossLayerLandingY",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 517,
+      "sourceLine": 518,
       "originalLine": 34008,
-      "characters": 1032,
-      "sourceHash": "ecb0baf79c61d3da376d2b69dc773040c9c431ed83c7887b82879a860b7f4ee5",
+      "characters": 987,
+      "sourceHash": "5de7f08a3c65b304bbab1b26ca2019b6639dbfa03a10f2647c2425cda5736d3b",
       "calls": [
         "clamp",
         "clampTankLayer",
-        "getTankFloorSurfaceYAtX",
         "getTankLayerBottomBoundaryY",
         "getViewportStableAssetScale"
       ]
@@ -22232,12 +22232,13 @@
     {
       "name": "spawnFishGravelPebbleToss",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 542,
+      "sourceLine": 538,
       "originalLine": 34033,
-      "characters": 1955,
-      "sourceHash": "40294f8de3eb7f74612efb2560c1a1561e67eac573671fb92aa0aa31ea42e424",
+      "characters": 2081,
+      "sourceHash": "5a1c6d4b7a154ed7d2cb5d104df7b2ab5e8030e3536b53accceb9175efa47979",
       "calls": [
         "clamp",
+        "clampTankLayer",
         "createId",
         "getCustomGravelPebbleSpriteByPath",
         "getFishGravelPebbleMouthPoint",
@@ -22250,7 +22251,7 @@
     {
       "name": "getSedimentStrength",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 596,
+      "sourceLine": 595,
       "originalLine": 34087,
       "characters": 177,
       "sourceHash": "18c146b3d10a7dc8d7d9e98460bc122d26756c4fd8f2b74aa8d24c73c16df704",
@@ -22262,7 +22263,7 @@
     {
       "name": "spawnSedimentCloud",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 601,
+      "sourceLine": 600,
       "originalLine": 34092,
       "characters": 1238,
       "sourceHash": "1570c095df8172b862ead1798277777a8b8cc1c51f394765796dd46fc7c08ebf",
@@ -22276,7 +22277,7 @@
     {
       "name": "spawnGravelCloudEffectAtPoint",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 628,
+      "sourceLine": 627,
       "originalLine": 34119,
       "characters": 1646,
       "sourceHash": "5b44a85ca47426dfc72005d941e2192b4e36b47ea1f448febfa12c34aace3321",
@@ -22291,7 +22292,7 @@
     {
       "name": "spawnGravelLandingEffects",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 661,
+      "sourceLine": 660,
       "originalLine": 34152,
       "characters": 1392,
       "sourceHash": "fbc2c92c721487d3b576264c87371156111ed809e19614d7d3d9955a3c8a1649",
@@ -22307,7 +22308,7 @@
     {
       "name": "spawnGravelDigBurst",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 694,
+      "sourceLine": 693,
       "originalLine": 34183,
       "characters": 3575,
       "sourceHash": "ec4c8d4c6ffda547f97f183c361de06435f00982e2d390a4d0066ee100e8df25",
@@ -22323,7 +22324,7 @@
     {
       "name": "updateGravelDigBursts",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 767,
+      "sourceLine": 766,
       "originalLine": 34252,
       "characters": 222,
       "sourceHash": "87c67b6c87051b6aa4e87d7e6387a7d8070a205d46f01a37532bac927f030073",
@@ -22332,7 +22333,7 @@
     {
       "name": "spawnCoinGlint",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 773,
+      "sourceLine": 772,
       "originalLine": 34258,
       "characters": 534,
       "sourceHash": "246adf0634e780dd6825926177e43a935e846204208919f1b954c556d8e44385",
@@ -22344,7 +22345,7 @@
     {
       "name": "getBoroughGravelCoinFindStatus",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 791,
+      "sourceLine": 790,
       "originalLine": null,
       "characters": 612,
       "sourceHash": "b5dcfceed8a5103b66d595c2725434692560638c6db0f76bc7bf7a8ce43f4b64",
@@ -22356,7 +22357,7 @@
     {
       "name": "attemptGravelCoinFind",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 813,
+      "sourceLine": 812,
       "originalLine": 34276,
       "characters": 1325,
       "sourceHash": "c8ba0da62c620091907e8ee5977063f0e7a0cb6bc8a109d1904ba691d94d9baa",
@@ -22376,7 +22377,7 @@
     {
       "name": "getBoroughOtocinclusCoinFindStatus",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 845,
+      "sourceLine": 844,
       "originalLine": null,
       "characters": 755,
       "sourceHash": "b6fab886f953fe0109a3eb70e38ec4c18a0410afbc4fa8552a5cd1aefaa9cc3c",
@@ -22388,7 +22389,7 @@
     {
       "name": "getTankOtocinclusCoinFindStatus",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 871,
+      "sourceLine": 870,
       "originalLine": null,
       "characters": 137,
       "sourceHash": "4080850a1dd79d57b35cb42c23561dad0975668e7c1384f8ca57a34187150e63",
@@ -22400,7 +22401,7 @@
     {
       "name": "attemptOtocinclusCoinFind",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 875,
+      "sourceLine": 874,
       "originalLine": null,
       "characters": 1808,
       "sourceHash": "fdfd44e71677a9e8029221a59094b02068be42da72cd0c44651ec7619ebc27c6",
@@ -22426,7 +22427,7 @@
     {
       "name": "isOtocinclusGravelScanner",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 931,
+      "sourceLine": 930,
       "originalLine": null,
       "characters": 191,
       "sourceHash": "610689651fbcde010ab12c9b951e4ba3188351c23dd8fee384340bb9432a160b",
@@ -22438,7 +22439,7 @@
     {
       "name": "pickOtocinclusGravelScanTarget",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 935,
+      "sourceLine": 934,
       "originalLine": null,
       "characters": 811,
       "sourceHash": "b8cefcf0dc37ed71e5d4b7f128852b7afff2fb9b437153ca34b6756749abdce7",
@@ -22454,7 +22455,7 @@
     {
       "name": "spawnOtocinclusImmediatePebbleSpit",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 957,
+      "sourceLine": 956,
       "originalLine": null,
       "characters": 1870,
       "sourceHash": "7bb89e9cee3de5a96e139a7498be32a21639b426681542ef7a10c3a24ea1ba0f",
@@ -22472,7 +22473,7 @@
     {
       "name": "performOtocinclusGravelScan",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1005,
+      "sourceLine": 1004,
       "originalLine": null,
       "characters": 916,
       "sourceHash": "1fdfd68e1111a3fc7fb8311b2790edf00ac56f85f79442c7115f4f864a37aa91",
@@ -22493,20 +22494,22 @@
     {
       "name": "updateFishGravelPebbleAction",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1034,
+      "sourceLine": 1033,
       "originalLine": 34296,
-      "characters": 2585,
-      "sourceHash": "3e542b48d6ea8b2cce7e2c604edd2aaf2e635a09de95548fe709f2b492dd6c15",
+      "characters": 2940,
+      "sourceHash": "508672a367fe88664d132f4b9ec1ea190e09db59950791fe43f2eed492c1f5a7",
       "calls": [
         "attemptGravelCoinFind",
         "canUseFishGravelPebblePlay",
         "clearFishGravelPebbleAction",
         "getFishFacingDirection",
         "getFishGravelPebbleAction",
+        "getFishTankLayer",
         "getSedimentStrength",
         "isFishDead",
         "isFishSpeciesEligibleForGravelPebble",
         "randomBetween",
+        "setFishDesiredTankLayer",
         "setFishDirection",
         "spawnFishGravelPebbleToss",
         "spawnGravelCloudEffectAtPoint",
@@ -22516,7 +22519,7 @@
     {
       "name": "updateFishPebbleTosses",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1107,
+      "sourceLine": 1114,
       "originalLine": 34369,
       "characters": 661,
       "sourceHash": "cd7ab2e705e977df5fc6e809375b96beed8bf305acfe6527b1e29602174418f9",
@@ -22529,7 +22532,7 @@
     {
       "name": "updateSedimentClouds",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1135,
+      "sourceLine": 1142,
       "originalLine": 34397,
       "characters": 211,
       "sourceHash": "5872b36b153c8aabe4af733877c8e4736279bfb19b34587f950062e704292bf9",
@@ -22538,7 +22541,7 @@
     {
       "name": "updateCoinGlints",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1141,
+      "sourceLine": 1148,
       "originalLine": 34403,
       "characters": 199,
       "sourceHash": "714f6858f689b7633d5a5b970ea7f6e27780bf21675cd971b74e1057eca5991b",
@@ -22547,7 +22550,7 @@
     {
       "name": "updateFishSedimentWakes",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1147,
+      "sourceLine": 1154,
       "originalLine": 34409,
       "characters": 2008,
       "sourceHash": "4e835fa289bdbc2cc9095569589c88feff59df73eeccef23501a176222b7902a",
@@ -22566,7 +22569,7 @@
     {
       "name": "updateWaterLifeEffects",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1209,
+      "sourceLine": 1216,
       "originalLine": 34471,
       "characters": 308,
       "sourceHash": "8ed6d30f9bb89162aa95f30b8ffd3422047a277914d1acb44175217b0a970f03",
@@ -22583,7 +22586,7 @@
     {
       "name": "getFishPebbleTossPose",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1219,
+      "sourceLine": 1226,
       "originalLine": 34481,
       "characters": 907,
       "sourceHash": "e956ff45c23c8d303bf6b1ba0a947791fec86945db57e3894162ab253c44af09",
@@ -22595,7 +22598,7 @@
     {
       "name": "getFishSchoolFollowLeader",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1236,
+      "sourceLine": 1243,
       "originalLine": 34498,
       "characters": 172,
       "sourceHash": "630f3814a60f2323e904067a581ecd6d78db1e751a0d18105c2385cdeec2234d",
@@ -22604,7 +22607,7 @@
     {
       "name": "getFishSchoolingCompatibilityId",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1244,
+      "sourceLine": 1251,
       "originalLine": null,
       "characters": 348,
       "sourceHash": "11da142a89a270acde826fe3f51a17ffa66d22a242b3d2c223639cbafe04a73b",
@@ -22616,7 +22619,7 @@
     {
       "name": "isFishEligibleSchoolLeader",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1255,
+      "sourceLine": 1262,
       "originalLine": 34506,
       "characters": 830,
       "sourceHash": "1d8ad35497178c9cc3c3c6ea48f7733b75ff7d284c7e40eead3b1eebb83f7d5c",
@@ -22630,7 +22633,7 @@
     {
       "name": "getFishSchoolFormationSubLayerPattern",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1285,
+      "sourceLine": 1292,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "b4674c996f49b596073484b04ac3173978d12bbfcf659e050e81d14f7f9b333b",
@@ -22641,7 +22644,7 @@
     {
       "name": "assignFishSchoolFormationDepthSlot",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1296,
+      "sourceLine": 1303,
       "originalLine": null,
       "characters": 1076,
       "sourceHash": "3a45e669159afbe376cf5845cca3e4e33b4cdf2862ff9ca659930f64d9edae81",
@@ -22652,7 +22655,7 @@
     {
       "name": "getFishSchoolFormationSubLayer",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1333,
+      "sourceLine": 1340,
       "originalLine": null,
       "characters": 355,
       "sourceHash": "65314ed4ee02b15751a863503d69e4b690fa79b83812a7fb12197677bf1ee574",
@@ -22666,7 +22669,7 @@
     {
       "name": "getFishSchoolActiveFollowers",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1342,
+      "sourceLine": 1349,
       "originalLine": null,
       "characters": 341,
       "sourceHash": "275ff72c393ead2ad2a75213b6855299ed73bb14198001eef2ff17185dc3515f",
@@ -22677,7 +22680,7 @@
     {
       "name": "hasActiveFishSchoolFollowers",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1356,
+      "sourceLine": 1363,
       "originalLine": null,
       "characters": 130,
       "sourceHash": "a247aa7d05681b3ba4ff07ecec444d2b1307bfcaab8ca81c45113b26bce8818e",
@@ -22688,7 +22691,7 @@
     {
       "name": "getFishSchoolStableRank",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1360,
+      "sourceLine": 1367,
       "originalLine": null,
       "characters": 365,
       "sourceHash": "06734b582512ef5ae5a9c2f1294789cc9c7fa2b65934238dc79336ffb29c0711",
@@ -22699,7 +22702,7 @@
     {
       "name": "assignFishSchoolFormationSlot",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1372,
+      "sourceLine": 1379,
       "originalLine": null,
       "characters": 582,
       "sourceHash": "2bdd878ae468627e5b98bebd92c94e51e8fac78b6ef0cd6a322b46c1a97b9b1c",
@@ -22710,7 +22713,7 @@
     {
       "name": "getFishSchoolFormationOffset",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1392,
+      "sourceLine": 1399,
       "originalLine": null,
       "characters": 1249,
       "sourceHash": "b5623fcd28fa9d115f43191ca7ae17b74b4505219ff8d092133f6972084831e4",
@@ -22725,7 +22728,7 @@
     {
       "name": "getFishSchoolFollowAnchor",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1423,
+      "sourceLine": 1430,
       "originalLine": 34533,
       "characters": 1563,
       "sourceHash": "c54f1e1eb3d9af860852b1a8b1ff7224e7e2561bda2d1374289efa037098d75e",
@@ -22741,7 +22744,7 @@
     {
       "name": "getFishSchoolFollowFacingDirection",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1460,
+      "sourceLine": 1467,
       "originalLine": 34574,
       "characters": 1122,
       "sourceHash": "1456e1274b3776bf79c4dc511b64ccb9b5c54f382d09e5fd05e2c651e33e2d64",
@@ -22755,7 +22758,7 @@
     {
       "name": "updateFishSchoolFollowTarget",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1497,
+      "sourceLine": 1504,
       "originalLine": 34611,
       "characters": 2300,
       "sourceHash": "66317a8617bbca410989a7ebaf8ab15b3956a12b67323b08cabdf1a0190f62b5",
@@ -22774,7 +22777,7 @@
     {
       "name": "pickSameSpeciesFollowTarget",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1561,
+      "sourceLine": 1568,
       "originalLine": 34644,
       "characters": 4307,
       "sourceHash": "2ccdbf2107ad3623d7a773be16799019ad5e4c52c59e38edc2d23dfc75e72e39",

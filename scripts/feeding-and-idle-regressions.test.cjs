@@ -46,6 +46,12 @@ test('pellets remain independent consumables and eating removes only the reached
   assert.match(feeding, /for \(const pellet of state\.floatingPellets\)/);
 });
 
+test('leftover food reservations are released if the assigned fish is no longer actually pursuing that pellet', () => {
+  assert.match(feeding, /const currentTargetStillPursuing = Boolean\([\s\S]*currentTarget\.activity === "feeding"[\s\S]*currentTarget\.feedingPelletId === pellet\.id[\s\S]*canFishTargetFoodPellet\(currentTarget, pellet, now\)/);
+  assert.match(feeding, /if \(currentTargetStillPursuing\) \{\s*continue;\s*\}/);
+  assert.match(feeding, /pellet\.targetFishId = "";[\s\S]*const candidates = state\.fish/);
+});
+
 
 test('surface flakes can be eaten at the fish highest legal Y without exact vertical overlap', () => {
   assert.match(motion, /const surfaceFoodTarget = Boolean\(pellet\.surfaceFloating \|\| pellet\.foodKey === "fishFlakes"\)/);

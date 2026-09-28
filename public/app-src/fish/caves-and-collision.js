@@ -2064,6 +2064,62 @@ function resolveDraggedFishCaveCollision(fish, species, targetXNorm, targetYNorm
   }, direct);
 }
 
+// Turn a blocked step into a short, deterministic tangent step.  Fish do not
+// generally freeze against an obstacle and choose a wholly new destination;
+// they glide along its edge, then resume the original heading once clear.  A
+// stable side selection prevents the left/right flip that reads as stutter.
+function findFishObstacleSlideMove(fish, species, startXNorm, startYNorm, nextXNorm, nextYNorm, now, layer, blocker = null) {
+  const stepX = (nextXNorm - startXNorm) * TANK_WIDTH;
+  const stepY = (nextYNorm - startYNorm) * TANK_HEIGHT;
+  const stepLength = Math.hypot(stepX, stepY);
+  if (stepLength < 0.001) return null;
+
+  const blockerKey = String(blocker?.id || fish.blockedDecorId || fish.caveDecorId || fish.id || "fish");
+  const memory = getFishNavigationMemory(fish, now, true);
+  const hasCommittedSide = memory
+    && memory.obstacleRouteDecorId === blockerKey
+    && Number(memory.obstacleRouteUntil) > now
+    && Number(memory.obstacleRouteSide) !== 0;
+  const preferredSide = hasCommittedSide
+    ? (Number(memory.obstacleRouteSide) < 0 ? -1 : 1)
+    : ((typeof hashStringToUint32 === "function" ? hashStringToUint32(blockerKey) : blockerKey.length) % 2 === 0 ? 1 : -1);
+  const unitX = stepX / stepLength;
+  const unitY = stepY / stepLength;
+  const subLayer = getFishTankSubLayer(fish);
+
+  for (const side of [preferredSide, -preferredSide]) {
+    const candidateXNorm = clampFishXNormToMobileViewport(
+      startXNorm + (stepX * 0.42 - unitY * stepLength * 0.9 * side) / TANK_WIDTH,
+      fish,
+      species,
+      now
+    );
+    const candidateYNorm = clamp(
+      startYNorm + (stepY * 0.42 + unitX * stepLength * 0.9 * side) / TANK_HEIGHT,
+      0.14,
+      0.8
+    );
+    const direction = Math.abs(candidateXNorm - startXNorm) > 0.0001
+      ? (candidateXNorm >= startXNorm ? 1 : -1)
+      : (fish.direction || 1);
+    const pose = getFishCollisionPose(fish, species, now, candidateXNorm, candidateYNorm, direction);
+    if (findBlockingCaveForFishPose(fish, species, now, pose, layer)) continue;
+    if (getOverlappingDecorForFish(fish, species, now, pose, {
+      minLayer: layer,
+      maxLayer: layer,
+      depthLayer: layer,
+      depthSubLayer: subLayer
+    }).length) continue;
+    if (memory) {
+      memory.obstacleRouteDecorId = blockerKey;
+      memory.obstacleRouteSide = side;
+      memory.obstacleRouteUntil = now + FISH_NAV_OBSTACLE_ROUTE_COMMIT_MS;
+    }
+    return { xNorm: candidateXNorm, yNorm: candidateYNorm, direction, route: side < 0 ? "left" : "right" };
+  }
+  return null;
+}
+
 function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   if (!species || species.behavior === "sucker") {
@@ -2117,6 +2173,19 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
       };
     }
 
+    const slide = findFishObstacleSlideMove(
+      fish, species, startXNorm, startYNorm, resolvedXNorm, resolvedYNorm, now, effectiveLayer, blockingDecor.item
+    );
+    if (slide) {
+      return {
+        ...slide,
+        blocked: false,
+        slidingAroundDecor: true,
+        blockingCave: null,
+        blockingDecor: blockingDecor.item || null
+      };
+    }
+
     if (tryFishSubLayerPass(fish, species, now, { xNorm: resolvedXNorm, yNorm: resolvedYNorm })) {
       return {
         xNorm: resolvedXNorm,
@@ -2156,6 +2225,21 @@ function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) 
       yNorm: resolvedYNorm,
       blocked: false,
       blockingCave: null
+    };
+  }
+
+  const slide = !fish.caveState
+    ? findFishObstacleSlideMove(
+      fish, species, startXNorm, startYNorm, resolvedXNorm, resolvedYNorm, now, effectiveLayer, blockingCave.item
+    )
+    : null;
+  if (slide) {
+    return {
+      ...slide,
+      blocked: false,
+      slidingAroundDecor: true,
+      blockingCave,
+      blockingDecor: null
     };
   }
 
@@ -2439,6 +2523,32 @@ function isFishRightOfWaySchoolLeader(fish, now = Date.now()) {
   ));
 }
 
+function getFishActiveSchoolLeaderId(fish, now = Date.now()) {
+  if (!fish?.id || !Array.isArray(state?.fish)) return null;
+  if (fish.followFishId && Number(fish.followUntil) > now) {
+    return fish.followFishId;
+  }
+  return isFishRightOfWaySchoolLeader(fish, now) ? fish.id : null;
+}
+
+function areFishActiveSchoolmates(leftFish, rightFish, now = Date.now()) {
+  const leftLeaderId = getFishActiveSchoolLeaderId(leftFish, now);
+  const rightLeaderId = getFishActiveSchoolLeaderId(rightFish, now);
+  return Boolean(leftLeaderId && rightLeaderId && leftLeaderId === rightLeaderId);
+}
+
+function releaseFishFromCrowdedSchoolSlot(fish, blocker, now = Date.now()) {
+  if (!fish?.followFishId || !areFishActiveSchoolmates(fish, blocker, now)) {
+    return false;
+  }
+  // A crowded schoolmate is a temporary safety interruption, not a reason to
+  // forget its leader and persistent slot.  Collision recovery will provide a
+  // safe waypoint; SCHOOLING then re-enters through its normal catch-up path.
+  fish.schoolState = "suspended";
+  deferFishSchoolFollowForRecovery(fish, now + 3600 + Math.random() * 1800);
+  return true;
+}
+
 function getFishRightOfWayDestinationDistance(fish, now = Date.now()) {
   if (!fish) return Number.POSITIVE_INFINITY;
   const targetAt = Number(fish.targetAt);
@@ -2578,6 +2688,9 @@ function getFishNavigationMemory(fish, now = Date.now(), create = true) {
       avoidanceDepthAnchorXNorm: Number(fish.xNorm) || 0.5,
       avoidanceDepthAnchorYNorm: Number(fish.yNorm) || 0.5,
       avoidanceDepthReason: null,
+      obstacleRouteDecorId: null,
+      obstacleRouteSide: 0,
+      obstacleRouteUntil: 0,
       unstuckLevel: 0,
       unstuckCooldownUntil: 0,
       lastEscapeAt: 0
@@ -3384,6 +3497,40 @@ function getFishCollisionDetourCandidates(fish, species, blocker, now = Date.now
   ];
 }
 
+// A detour is only useful if the fish can actually occupy its destination.
+// In particular, do not send a fish around another fish by placing it inside
+// a root, cave, or other decor silhouette.
+function findFishClearDetourTarget(fish, species, candidates, now = Date.now()) {
+  if (!fish || !species || !Array.isArray(candidates)) return null;
+  const layer = getFishTankLayer(fish);
+  const subLayer = getFishTankSubLayer(fish);
+
+  for (const candidate of candidates) {
+    if (!candidate || Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm) < 0.012) {
+      continue;
+    }
+    const direction = Math.abs(candidate.xNorm - fish.xNorm) > 0.0001
+      ? (candidate.xNorm >= fish.xNorm ? 1 : -1)
+      : (fish.direction || 1);
+    const pose = getFishCollisionPose(fish, species, now, candidate.xNorm, candidate.yNorm, direction);
+    if (findBlockingCaveForFishPose(fish, species, now, pose, layer)) continue;
+    if (getOverlappingDecorForFish(fish, species, now, pose, {
+      minLayer: layer,
+      maxLayer: layer,
+      depthLayer: layer,
+      depthSubLayer: subLayer
+    }).length) continue;
+    if (findFishBodyCollisionAtPose(fish, species, now, candidate.xNorm, candidate.yNorm, {
+      layer,
+      subLayer,
+      direction
+    })) continue;
+    return candidate;
+  }
+
+  return null;
+}
+
 function queueFishCollisionAvoidance(fish, species, blocker, now = Date.now(), options = {}) {
   if (
     !fish?.id
@@ -3418,6 +3565,13 @@ function queueFishCollisionAvoidance(fish, species, blocker, now = Date.now(), o
       }
       return true;
     }
+  }
+
+  // A yielding schoolmate must not immediately steer back into the same
+  // formation slot when this avoidance window ends. Keep the leader's route,
+  // but let the crowded follower roam before it can join again.
+  if (!blocksLayerChange) {
+    releaseFishFromCrowdedSchoolSlot(fish, blocker, now);
   }
 
   // First solve local congestion in depth. A fish should pass another fish on
@@ -3477,31 +3631,9 @@ function queueFishCollisionAvoidance(fish, species, blocker, now = Date.now(), o
     }
   }
 
-  const layer = getFishTankLayer(fish);
   const candidates = getFishCollisionDetourCandidates(fish, species, blocker, now);
-  let target = null;
-  for (const candidate of candidates) {
-    if (Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm) < 0.012) {
-      continue;
-    }
-    const collision = findFishBodyCollisionAtPose(
-      fish,
-      species,
-      now,
-      candidate.xNorm,
-      candidate.yNorm,
-      { layer, subLayer: getFishTankSubLayer(fish) }
-    );
-    if (!collision) {
-      target = candidate;
-      break;
-    }
-  }
-
-  target ||= candidates.find((candidate) => Math.hypot(candidate.xNorm - fish.xNorm, candidate.yNorm - fish.yNorm) >= 0.012) || {
-    xNorm: fish.xNorm,
-    yNorm: fish.yNorm
-  };
+  const target = findFishClearDetourTarget(fish, species, candidates, now);
+  if (!target) return false;
 
   runtime.fishCollisionAvoidanceById.set(fish.id, {
     blockedFishId: blocker.id,
@@ -3514,6 +3646,20 @@ function queueFishCollisionAvoidance(fish, species, blocker, now = Date.now(), o
     yNorm: target.yNorm,
     until: now + durationMs
   });
+
+  // A collision detour is a short-lived movement lease. Any active social
+  // controller must yield for the same interval instead of immediately
+  // reasserting its formation target on the next steering refresh.
+  const recoveryUntil = now + durationMs;
+  if (typeof deferFishActionSteeringForRecovery === "function") {
+    deferFishActionSteeringForRecovery(fish, recoveryUntil);
+  }
+  if (typeof deferDebugBehaviorSteeringForRecovery === "function") {
+    deferDebugBehaviorSteeringForRecovery(fish, recoveryUntil);
+  }
+  if (typeof deferFishSchoolFollowForRecovery === "function") {
+    deferFishSchoolFollowForRecovery(fish, recoveryUntil);
+  }
 
   fish.motionVelocityXNorm = 0;
   fish.motionVelocityYNorm = 0;

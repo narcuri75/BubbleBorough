@@ -51,7 +51,7 @@ const requiredFeatureRegressionLabels = [
   "Phase 16 uniform selector gives every position in a ten-variant pool one equal interval",
   "Phase 16 consecutive fish level-ups recalculate odds from the newly reduced locked pool",
   "Phase 20 fish store variants expose progression lock state and shared next-unlock odds",
-  "Phase 21 catalog variant controls explicitly disable and ignore locked fish appearances",
+  "Phase 21 catalog variant controls ignore stale locked fish appearances without displaying them",
   "Phase 21 fish locks do not change non-fish variant selection behavior",
   "Phase 22 fish purchases keep the base available, reject locked alternates, then preserve the exact appearance after mastery unlock",
   "Phase 25 breeding appearance pool uses only unlocked cosmetics plus appearances actually owned by parents",

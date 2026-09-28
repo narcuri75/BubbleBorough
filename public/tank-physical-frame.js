@@ -22,8 +22,15 @@
     sideBottomSeam: 80,
     barLeftInset: 19,
     barRightInset: 26,
+    barCornerOverlap: 4,
+    ratioLockEdgeReveal: 8,
+    badgeHeight: 64,
+    badgeLeftOverlap: 10,
     maxDevicePixelRatio: 2
   });
+
+  const BADGE_IMAGE = "bubble-borough_badge.png";
+  const spriteOpaqueBoundsCache = new WeakMap();
 
   const SHEETS = Object.freeze({
     horizontal: Object.freeze({
@@ -63,10 +70,60 @@
     pieces: null,
     tankStage: null,
     sprites: null,
+    badgeImage: null,
     observers: [],
     listeners: [],
-    assetBaseUrl: null
+    assetBaseUrl: null,
+    assetLoadPromise: null,
+    ratioLockFrameEnabled: true
   };
+
+  const FRAME_CALIBRATION_DEFAULTS = Object.freeze({
+    horizontal: Object.freeze({
+      top: 0,
+      bottom: 0,
+      left: -2,
+      right: 4,
+      "top-left": -2,
+      "top-right": 4,
+      "bottom-left": -2,
+      "bottom-right": 4,
+      badge: 15
+    }),
+    vertical: Object.freeze({ top: 0, bottom: 0, "top-bar": 0, "bottom-bar": 0 })
+  });
+
+  const debugCalibration = {
+    horizontal: { ...FRAME_CALIBRATION_DEFAULTS.horizontal },
+    vertical: { ...FRAME_CALIBRATION_DEFAULTS.vertical }
+  };
+
+  function getDebugCalibrationOffset(axis, key) {
+    return finiteNumber(debugCalibration?.[axis]?.[key], 0);
+  }
+
+  function setDebugCalibrationOffset(axis, key, value) {
+    if (!Object.hasOwn(debugCalibration, axis) || !Object.hasOwn(debugCalibration[axis], key)) return false;
+    debugCalibration[axis][key] = Math.round(Math.max(-160, Math.min(160, finiteNumber(value, 0))) * 4) / 4;
+    scheduleRender();
+    return true;
+  }
+
+  function resetDebugCalibration() {
+    for (const role of EXPECTED_ROLES) debugCalibration.horizontal[role] = FRAME_CALIBRATION_DEFAULTS.horizontal[role];
+    debugCalibration.horizontal.badge = FRAME_CALIBRATION_DEFAULTS.horizontal.badge;
+    debugCalibration.vertical.top = FRAME_CALIBRATION_DEFAULTS.vertical.top;
+    debugCalibration.vertical.bottom = FRAME_CALIBRATION_DEFAULTS.vertical.bottom;
+    debugCalibration.vertical["top-bar"] = FRAME_CALIBRATION_DEFAULTS.vertical["top-bar"];
+    debugCalibration.vertical["bottom-bar"] = FRAME_CALIBRATION_DEFAULTS.vertical["bottom-bar"];
+    scheduleRender();
+  }
+
+  function setRatioLockFrameEnabled(value) {
+    state.ratioLockFrameEnabled = Boolean(value);
+    scheduleRender();
+    return state.ratioLockFrameEnabled;
+  }
 
   function finiteNumber(value, fallback) {
     const number = Number(value);
@@ -228,10 +285,18 @@
     const lookup = {};
 
     for (const [sheetKey, payload] of Object.entries(sheetPayloads || {})) {
-      Object.assign(
-        lookup,
-        buildSheetSpriteLookup(payload?.metadata, payload?.image, sheetKey)
-      );
+      const sheetLookup = buildSheetSpriteLookup(payload?.metadata, payload?.image, sheetKey);
+      const allowedRoles = new Set(SHEETS[sheetKey]?.roles || []);
+
+      for (const [role, sprite] of Object.entries(sheetLookup)) {
+        if (!allowedRoles.has(role)) {
+          throw new Error(`Unexpected ${role} sprite in tank frame sheet: ${sheetKey}`);
+        }
+        if (lookup[role]) {
+          throw new Error(`Duplicate tank frame sprite role: ${role}`);
+        }
+        lookup[role] = sprite;
+      }
     }
 
     const missing = EXPECTED_ROLES.filter((role) => !lookup[role]);
@@ -271,10 +336,18 @@
     });
   }
 
-  function computeFrameGeometry(aquariumRect, sprites, config = FRAME_CONFIG) {
+  function computeFrameGeometry(aquariumRect, sprites, config = FRAME_CONFIG, placement = "outside", presentationScale = 1) {
     if (!sprites) return null;
 
     const tank = snapAquariumRect(aquariumRect);
+    const ratioLockPresentation = placement === "ratio-lock";
+    // The tank rectangle is already the final transformed rectangle. Scale the
+    // frame artwork and its calibration values by the same Ratio Lock factor,
+    // keeping the physical frame proportionate at every presentation size.
+    const scale = ratioLockPresentation
+      ? Math.max(0.05, Math.min(8, finiteNumber(presentationScale, 1)))
+      : 1;
+    const scaled = (value) => finiteNumber(value, 0) * scale;
     const topSprite = sprites.top;
     const bottomSprite = sprites.bottom;
     const leftSprite = sprites.left;
@@ -284,21 +357,28 @@
     const bottomLeftSprite = sprites["bottom-left"];
     const bottomRightSprite = sprites["bottom-right"];
 
-    const horizontalBarHeight = Math.round(Math.max(
+    // The supplied horizontal art is 78px while the fixed corner anchors are
+    // 79px high. Present the bars at the corner thickness so their visible
+    // outer frame reads as one continuous piece instead of a thinner strip.
+    const horizontalBarHeight = scaled(Math.max(
       clampFiniteNonNegative(topSprite?.sourceHeight),
-      clampFiniteNonNegative(bottomSprite?.sourceHeight)
+      clampFiniteNonNegative(bottomSprite?.sourceHeight),
+      clampFiniteNonNegative(topLeftSprite?.sourceHeight),
+      clampFiniteNonNegative(topRightSprite?.sourceHeight),
+      clampFiniteNonNegative(bottomLeftSprite?.sourceHeight),
+      clampFiniteNonNegative(bottomRightSprite?.sourceHeight)
     ));
-    const verticalRailWidth = Math.round(Math.max(
+    const verticalRailWidth = scaled(Math.max(
       clampFiniteNonNegative(leftSprite?.sourceWidth),
       clampFiniteNonNegative(rightSprite?.sourceWidth)
     ));
-    const cornerWidth = Math.round(Math.max(
+    const cornerWidth = scaled(Math.max(
       clampFiniteNonNegative(topLeftSprite?.sourceWidth),
       clampFiniteNonNegative(topRightSprite?.sourceWidth),
       clampFiniteNonNegative(bottomLeftSprite?.sourceWidth),
       clampFiniteNonNegative(bottomRightSprite?.sourceWidth)
     ));
-    const cornerHeight = Math.round(Math.max(
+    const cornerHeight = scaled(Math.max(
       clampFiniteNonNegative(topLeftSprite?.sourceHeight),
       clampFiniteNonNegative(topRightSprite?.sourceHeight),
       clampFiniteNonNegative(bottomLeftSprite?.sourceHeight),
@@ -308,48 +388,112 @@
     if (!horizontalBarHeight || !verticalRailWidth || !cornerWidth || !cornerHeight) {
       return null;
     }
+    const topLeftWidth = scaled(topLeftSprite.sourceWidth);
+    const topLeftHeight = scaled(topLeftSprite.sourceHeight);
+    const topRightWidth = scaled(topRightSprite.sourceWidth);
+    const topRightHeight = scaled(topRightSprite.sourceHeight);
+    const bottomLeftWidth = scaled(bottomLeftSprite.sourceWidth);
+    const bottomLeftHeight = scaled(bottomLeftSprite.sourceHeight);
+    const bottomRightWidth = scaled(bottomRightSprite.sourceWidth);
+    const bottomRightHeight = scaled(bottomRightSprite.sourceHeight);
 
     /*
-      #tankStage is the INNER playable glass rectangle. The prototype calibration
-      was measured on the physical frame's outer rectangle. Expand the final
-      rendered glass bounds by the artwork's calibrated physical insets first,
-      then apply the exact bar/rail seam equations to that outer rectangle.
+      The final rendered aquarium rectangle is the INNER playable glass area.
+      Frame artwork is presented immediately OUTSIDE that rectangle.  The
+      previous implementation used the same coordinates inside the tank and
+      then put the layer behind .app-shell, so every frame sprite was covered
+      by the aquarium it was supposed to frame.
 
-      With the current artwork this produces:
-      left physical inset  = 7 + 21 = 28px
-      right physical inset = 8 + 21 = 29px
-      top physical inset   = 79px
-      bottom physical inset= 78px
+      Correct production dimensions remain:
 
-      It keeps the frame outside gameplay while preserving the live prototype's
-      asymmetric visual alignment.
+        horizontal bar width = tankWidth  - barLeftInset - barRightInset
+        vertical rail height = tankHeight - sideTopSeam  - sideBottomSeam
+
+      Corners remain fixed-size anchors. Bars stretch only on X. Rails stretch
+      only on Y. The calibrated side offsets are mirrored across the glass edge
+      so the rails remain external. None of this changes aquarium or simulation
+      geometry.
     */
-    const leftPhysicalInset = Math.round(config.leftRailOffset + verticalRailWidth);
-    const rightPhysicalInset = Math.round(config.rightRailOffset + verticalRailWidth);
-    const topPhysicalInset = cornerHeight;
-    const bottomPhysicalInset = horizontalBarHeight;
-
-    const outerLeft = tank.left - leftPhysicalInset;
-    const outerTop = tank.top - topPhysicalInset;
-    const outerWidth = Math.max(0, tank.width + leftPhysicalInset + rightPhysicalInset);
-    const outerHeight = Math.max(0, tank.height + topPhysicalInset + bottomPhysicalInset);
+    const outerLeft = tank.left;
+    const outerTop = tank.top;
+    const outerWidth = Math.max(0, Math.round(tank.width));
+    const outerHeight = Math.max(0, Math.round(tank.height));
     const outerRight = outerLeft + outerWidth;
     const outerBottom = outerTop + outerHeight;
 
     const horizontalWidth = Math.max(
       0,
-      Math.round(outerWidth - config.barLeftInset - config.barRightInset)
+      Math.round(tank.width - scaled(config.barLeftInset) - scaled(config.barRightInset))
     );
-    const verticalHeight = Math.max(
+    const seamBoundVerticalHeight = Math.max(
       0,
-      Math.round(outerHeight - config.sideTopSeam - config.sideBottomSeam)
+      Math.round(tank.height - scaled(config.sideTopSeam) - scaled(config.sideBottomSeam))
     );
+    const edgeReveal = Math.max(0, scaled(config.ratioLockEdgeReveal));
+    const verticalHeight = ratioLockPresentation ? outerHeight : seamBoundVerticalHeight;
 
-    const topBarY = outerTop + Math.max(0, cornerHeight - horizontalBarHeight);
-    const bottomBarY = outerBottom - horizontalBarHeight;
-    const leftRailX = outerLeft + config.leftRailOffset;
-    const rightRailX = outerRight - config.rightRailOffset - verticalRailWidth;
-    const railY = outerTop + config.sideTopSeam;
+    // A Ratio Lock composition can be flush with its browser viewport above
+    // and below. Keep only a narrow physical lip visible there, while the side
+    // rails stay fully visible and are centered precisely on the glass edge.
+    const topBarY = ratioLockPresentation
+      ? outerTop - horizontalBarHeight + edgeReveal
+      : outerTop - horizontalBarHeight;
+    const bottomBarY = ratioLockPresentation
+      ? outerBottom - edgeReveal
+      : outerBottom;
+    // Keep the established bar-to-glass placement, then use its opaque-art
+    // bottom as the shared zero baseline for both lower corners.
+    const bottomArtworkBaselineY = bottomBarY
+      + horizontalBarHeight * getSpriteOpaqueBottomRatio(bottomSprite);
+    const leftRailX = ratioLockPresentation
+      ? outerLeft - verticalRailWidth / 2
+      : outerLeft - verticalRailWidth - scaled(config.leftRailOffset);
+    const rightRailX = ratioLockPresentation
+      ? outerRight - verticalRailWidth / 2
+      : outerRight + scaled(config.rightRailOffset);
+    const railY = ratioLockPresentation ? outerTop : outerTop + scaled(config.sideTopSeam);
+    const leftCornerX = ratioLockPresentation
+      ? outerLeft - topLeftWidth / 2
+      : outerLeft - topLeftWidth;
+    const rightCornerX = ratioLockPresentation
+      ? outerRight - topRightWidth / 2
+      : outerRight;
+    // Calibration is a final CSS-pixel trim. Scaling it with the composition
+    // made the controls ineffective in small Ratio Lock presentations.
+    const topSectionY = getDebugCalibrationOffset("vertical", "top");
+    const bottomSectionY = getDebugCalibrationOffset("vertical", "bottom");
+    const topBarYAdjustment = getDebugCalibrationOffset("vertical", "top-bar");
+    const bottomBarYAdjustment = getDebugCalibrationOffset("vertical", "bottom-bar");
+    // Keep each vertical rail connected as the top/bottom frame sections move.
+    const railHeight = Math.max(0, verticalHeight - topSectionY + bottomSectionY);
+    const topLeftX = leftCornerX + getDebugCalibrationOffset("horizontal", "top-left");
+    const topRightX = rightCornerX + getDebugCalibrationOffset("horizontal", "top-right");
+    const bottomLeftX = (ratioLockPresentation ? outerLeft - bottomLeftWidth / 2 : outerLeft - bottomLeftWidth)
+      + getDebugCalibrationOffset("horizontal", "bottom-left");
+    const bottomRightX = (ratioLockPresentation ? outerRight - bottomRightWidth / 2 : outerRight)
+      + getDebugCalibrationOffset("horizontal", "bottom-right");
+    const extendBarBetweenCorners = (preferredX, preferredWidth, leftCornerRight, rightCornerLeft) => {
+      // Intentionally tuck the bars behind both corners. A zero-width join is
+      // vulnerable to fractional layout, transparent edge pixels, and browser
+      // compositing seams; corners have the higher paint order and conceal the
+      // small overlap.
+      const overlap = Math.max(0, scaled(config.barCornerOverlap));
+      const x = Math.min(preferredX, leftCornerRight - overlap);
+      const right = Math.max(preferredX + preferredWidth, rightCornerLeft + overlap);
+      return { x, width: Math.max(0, right - x) };
+    };
+    const topBar = extendBarBetweenCorners(
+      outerLeft + scaled(config.barLeftInset) + getDebugCalibrationOffset("horizontal", "top"),
+      horizontalWidth,
+      topLeftX + topLeftWidth,
+      topRightX
+    );
+    const bottomBar = extendBarBetweenCorners(
+      outerLeft + scaled(config.barLeftInset) + getDebugCalibrationOffset("horizontal", "bottom"),
+      horizontalWidth,
+      bottomLeftX + bottomLeftWidth,
+      bottomRightX
+    );
 
     return Object.freeze({
       aquarium: tank,
@@ -368,54 +512,135 @@
         cornerHeight
       }),
       top: Object.freeze({
-        x: outerLeft + config.barLeftInset,
-        y: topBarY,
-        width: horizontalWidth,
+        x: topBar.x,
+        y: topBarY + topSectionY + topBarYAdjustment,
+        width: topBar.width,
         height: horizontalBarHeight
       }),
       bottom: Object.freeze({
-        x: outerLeft + config.barLeftInset,
-        y: bottomBarY,
-        width: horizontalWidth,
+        x: bottomBar.x,
+        y: bottomBarY + bottomSectionY + bottomBarYAdjustment,
+        width: bottomBar.width,
         height: horizontalBarHeight
       }),
       left: Object.freeze({
-        x: leftRailX,
-        y: railY,
+        x: leftRailX + getDebugCalibrationOffset("horizontal", "left"),
+        y: railY + topSectionY,
         width: verticalRailWidth,
-        height: verticalHeight
+        height: railHeight
       }),
       right: Object.freeze({
-        x: rightRailX,
-        y: railY,
+        x: rightRailX + getDebugCalibrationOffset("horizontal", "right"),
+        y: railY + topSectionY,
         width: verticalRailWidth,
-        height: verticalHeight
+        height: railHeight
       }),
       "top-left": Object.freeze({
-        x: outerLeft,
-        y: outerTop,
-        width: topLeftSprite.sourceWidth,
-        height: topLeftSprite.sourceHeight
+        x: topLeftX,
+        y: (ratioLockPresentation ? outerTop - topLeftHeight + edgeReveal : outerTop - topLeftHeight) + topSectionY,
+        width: topLeftWidth,
+        height: topLeftHeight
       }),
       "top-right": Object.freeze({
-        x: outerRight - topRightSprite.sourceWidth,
-        y: outerTop,
-        width: topRightSprite.sourceWidth,
-        height: topRightSprite.sourceHeight
+        x: topRightX,
+        y: (ratioLockPresentation ? outerTop - topRightHeight + edgeReveal : outerTop - topRightHeight) + topSectionY,
+        width: topRightWidth,
+        height: topRightHeight
       }),
       "bottom-left": Object.freeze({
-        x: outerLeft,
-        y: outerBottom - bottomLeftSprite.sourceHeight,
-        width: bottomLeftSprite.sourceWidth,
-        height: bottomLeftSprite.sourceHeight
+        x: bottomLeftX,
+        y: bottomArtworkBaselineY - bottomLeftHeight * getSpriteOpaqueBottomRatio(bottomLeftSprite) + bottomSectionY,
+        width: bottomLeftWidth,
+        height: bottomLeftHeight
       }),
       "bottom-right": Object.freeze({
-        x: outerRight - bottomRightSprite.sourceWidth,
-        y: outerBottom - bottomRightSprite.sourceHeight,
-        width: bottomRightSprite.sourceWidth,
-        height: bottomRightSprite.sourceHeight
+        x: bottomRightX,
+        y: bottomArtworkBaselineY - bottomRightHeight * getSpriteOpaqueBottomRatio(bottomRightSprite) + bottomSectionY,
+        width: bottomRightWidth,
+        height: bottomRightHeight
       })
     });
+  }
+
+  function getSpriteOpaqueBottomRatio(sprite) {
+    const sourceHeight = clampFiniteNonNegative(sprite?.sourceHeight);
+    if (!sourceHeight) return 1;
+    const bounds = getSpriteOpaqueBounds(sprite);
+    return clampFiniteNonNegative((finiteNumber(bounds?.maxY, sourceHeight - 1) + 1) / sourceHeight);
+  }
+
+  function getSpriteOpaqueBounds(sprite) {
+    if (!sprite?.image || !sprite.sourceWidth || !sprite.sourceHeight) return null;
+    const cached = spriteOpaqueBoundsCache.get(sprite);
+    if (cached) return cached;
+
+    const fullBounds = Object.freeze({
+      minX: 0,
+      minY: 0,
+      maxX: sprite.sourceWidth - 1,
+      maxY: sprite.sourceHeight - 1
+    });
+    if (typeof document === "undefined") return fullBounds;
+    try {
+      const canvas = document.createElement("canvas");
+      canvas.width = sprite.sourceWidth;
+      canvas.height = sprite.sourceHeight;
+      const context = canvas.getContext("2d", { willReadFrequently: true });
+      if (!context) return fullBounds;
+      context.drawImage(sprite.image, sprite.sourceX, sprite.sourceY, sprite.sourceWidth, sprite.sourceHeight, 0, 0, sprite.sourceWidth, sprite.sourceHeight);
+      const pixels = context.getImageData(0, 0, sprite.sourceWidth, sprite.sourceHeight).data;
+      let minX = sprite.sourceWidth;
+      let minY = sprite.sourceHeight;
+      let maxX = -1;
+      let maxY = -1;
+      for (let y = 0; y < sprite.sourceHeight; y += 1) {
+        for (let x = 0; x < sprite.sourceWidth; x += 1) {
+          if (pixels[(y * sprite.sourceWidth + x) * 4 + 3] <= 8) continue;
+          minX = Math.min(minX, x);
+          minY = Math.min(minY, y);
+          maxX = Math.max(maxX, x);
+          maxY = Math.max(maxY, y);
+        }
+      }
+      const bounds = maxX >= minX && maxY >= minY
+        ? Object.freeze({ minX, minY, maxX, maxY })
+        : fullBounds;
+      spriteOpaqueBoundsCache.set(sprite, bounds);
+      canvas.width = 0;
+      canvas.height = 0;
+      return bounds;
+    } catch {
+      return fullBounds;
+    }
+  }
+
+  function computeBadgeGeometry(geometry, image, config = FRAME_CONFIG, presentationScale = 1) {
+    if (!geometry?.bottom || !image) return null;
+    const naturalWidth = clampFiniteNonNegative(image.naturalWidth || image.width);
+    const naturalHeight = clampFiniteNonNegative(image.naturalHeight || image.height);
+    if (!naturalWidth || !naturalHeight) return null;
+
+    const scale = Math.max(0.05, Math.min(8, finiteNumber(presentationScale, 1)));
+    const height = scaledBadgeHeight(config, scale);
+    const width = height * naturalWidth / naturalHeight;
+    const bottom = geometry.bottom;
+    return Object.freeze({
+      // The badge's base geometry scales with Ratio Lock. Its debug trim is a
+      // final CSS-pixel adjustment so one 0.25px click remains usable even in
+      // a very small locked presentation.
+      x: bottom.x - finiteNumber(config.badgeLeftOverlap, 0) * scale + getBadgeDebugOffset(),
+      y: bottom.y + (bottom.height - height) / 2,
+      width,
+      height
+    });
+  }
+
+  function scaledBadgeHeight(config, scale) {
+    return clampFiniteNonNegative(finiteNumber(config?.badgeHeight, FRAME_CONFIG.badgeHeight) * scale);
+  }
+
+  function getBadgeDebugOffset() {
+    return getDebugCalibrationOffset("horizontal", "badge");
   }
 
   function roleVisibility(exposed) {
@@ -431,83 +656,161 @@
     });
   }
 
+  function isRatioLockPresentationActive() {
+    return document.documentElement?.dataset?.layoutRatioLock === "true";
+  }
+
+  function createSpriteRenderSpec(sprite, destination) {
+    if (!sprite?.image || !destination) return null;
+
+    const source = Object.freeze({
+      x: finiteNumber(sprite.sourceX, 0),
+      y: finiteNumber(sprite.sourceY, 0),
+      width: clampFiniteNonNegative(sprite.sourceWidth),
+      height: clampFiniteNonNegative(sprite.sourceHeight)
+    });
+    const display = Object.freeze({
+      x: finiteNumber(destination.x, 0),
+      y: finiteNumber(destination.y, 0),
+      width: clampFiniteNonNegative(destination.width),
+      height: clampFiniteNonNegative(destination.height)
+    });
+
+    if (!source.width || !source.height || !display.width || !display.height) return null;
+
+    return Object.freeze({
+      image: sprite.image,
+      source,
+      display,
+      rotation: ((finiteNumber(sprite.rotation, 0) % 360) + 360) % 360,
+      flipX: sprite.flipX === true,
+      flipY: sprite.flipY === true
+    });
+  }
+
   function drawSprite(context, sprite, destination) {
-    if (!context || !sprite?.image || !destination) return;
+    if (!context) return false;
 
-    const width = clampFiniteNonNegative(destination.width);
-    const height = clampFiniteNonNegative(destination.height);
-    if (width <= 0 || height <= 0) return;
+    const spec = createSpriteRenderSpec(sprite, destination);
+    if (!spec) return false;
 
-    const sourceX = finiteNumber(sprite.sourceX, 0);
-    const sourceY = finiteNumber(sprite.sourceY, 0);
-    const sourceWidth = clampFiniteNonNegative(sprite.sourceWidth);
-    const sourceHeight = clampFiniteNonNegative(sprite.sourceHeight);
-    if (!sourceWidth || !sourceHeight) return;
-
-    const rotation = ((finiteNumber(sprite.rotation, 0) % 360) + 360) % 360;
-    const flipX = sprite.flipX === true;
-    const flipY = sprite.flipY === true;
-
-    if (!rotation && !flipX && !flipY) {
+    const { source, display } = spec;
+    if (!spec.rotation && !spec.flipX && !spec.flipY) {
       context.drawImage(
-        sprite.image,
-        sourceX,
-        sourceY,
-        sourceWidth,
-        sourceHeight,
-        destination.x,
-        destination.y,
-        width,
-        height
+        spec.image,
+        source.x,
+        source.y,
+        source.width,
+        source.height,
+        display.x,
+        display.y,
+        display.width,
+        display.height
       );
-      return;
+      return true;
     }
 
     context.save();
-    const centerX = destination.x + width / 2;
-    const centerY = destination.y + height / 2;
+    const centerX = display.x + display.width / 2;
+    const centerY = display.y + display.height / 2;
     context.translate(centerX, centerY);
-    context.scale(flipX ? -1 : 1, flipY ? -1 : 1);
-    context.rotate(rotation * Math.PI / 180);
+    context.scale(spec.flipX ? -1 : 1, spec.flipY ? -1 : 1);
+    context.rotate(spec.rotation * Math.PI / 180);
     context.drawImage(
-      sprite.image,
-      sourceX,
-      sourceY,
-      sourceWidth,
-      sourceHeight,
-      -width / 2,
-      -height / 2,
-      width,
-      height
+      spec.image,
+      source.x,
+      source.y,
+      source.width,
+      source.height,
+      -display.width / 2,
+      -display.height / 2,
+      display.width,
+      display.height
     );
     context.restore();
+    return true;
+  }
+
+  function computeAvailableViewportRect(visualViewport, innerWidth, innerHeight, documentWidth, documentHeight) {
+    const visualWidth = clampFiniteNonNegative(visualViewport?.width);
+    const visualHeight = clampFiniteNonNegative(visualViewport?.height);
+    const useVisualViewport = visualWidth > 0 && visualHeight > 0;
+
+    const left = useVisualViewport
+      ? finiteNumber(visualViewport?.offsetLeft, 0)
+      : 0;
+    const top = useVisualViewport
+      ? finiteNumber(visualViewport?.offsetTop, 0)
+      : 0;
+    const width = useVisualViewport
+      ? visualWidth
+      : Math.max(0, finiteNumber(innerWidth, finiteNumber(documentWidth, 0)));
+    const height = useVisualViewport
+      ? visualHeight
+      : Math.max(0, finiteNumber(innerHeight, finiteNumber(documentHeight, 0)));
+
+    return Object.freeze({
+      left,
+      top,
+      right: left + width,
+      bottom: top + height,
+      width,
+      height
+    });
   }
 
   function getViewportRect() {
-    const width = Math.max(
-      0,
-      finiteNumber(window.innerWidth, document.documentElement?.clientWidth || 0)
+    return computeAvailableViewportRect(
+      window.visualViewport,
+      window.innerWidth,
+      window.innerHeight,
+      document.documentElement?.clientWidth || 0,
+      document.documentElement?.clientHeight || 0
     );
-    const height = Math.max(
-      0,
-      finiteNumber(window.innerHeight, document.documentElement?.clientHeight || 0)
-    );
+  }
 
-    return Object.freeze({ left: 0, top: 0, right: width, bottom: height, width, height });
+  function snapDestinationRect(destination) {
+    if (!destination) return null;
+
+    const x = finiteNumber(destination.x, 0);
+    const y = finiteNumber(destination.y, 0);
+    const width = clampFiniteNonNegative(destination.width);
+    const height = clampFiniteNonNegative(destination.height);
+
+    /*
+      Snap the connected edges, not x/y and width/height independently. This
+      keeps two pieces that share an edge on the same quarter-CSS-pixel grid after
+      fractional browser scaling. This preserves connected seams while allowing
+      calibration controls to make a meaningful 0.25px adjustment.
+    */
+    const snapQuarterPixel = (value) => Math.round(value * 4) / 4;
+    const left = snapQuarterPixel(x);
+    const top = snapQuarterPixel(y);
+    const right = snapQuarterPixel(x + width);
+    const bottom = snapQuarterPixel(y + height);
+
+    return Object.freeze({
+      x: left,
+      y: top,
+      width: Math.max(0, right - left),
+      height: Math.max(0, bottom - top),
+      right,
+      bottom
+    });
   }
 
   function configurePieceCanvas(piece, destination) {
     const canvas = piece?.canvas;
     const context = piece?.context;
-    if (!canvas || !context || !destination) return false;
+    if (!canvas || !context || !destination) return null;
 
-    const width = clampFiniteNonNegative(destination.width);
-    const height = clampFiniteNonNegative(destination.height);
-    if (width <= 0 || height <= 0) {
+    const snapped = snapDestinationRect(destination);
+    if (!snapped || snapped.width <= 0 || snapped.height <= 0) {
       canvas.hidden = true;
-      return false;
+      return null;
     }
 
+    const { x, y, width, height } = snapped;
     const dpr = Math.max(
       1,
       Math.min(FRAME_CONFIG.maxDevicePixelRatio, finiteNumber(window.devicePixelRatio, 1))
@@ -520,8 +823,8 @@
       canvas.height = backingHeight;
     }
 
-    canvas.style.left = `${destination.x}px`;
-    canvas.style.top = `${destination.y}px`;
+    canvas.style.left = `${x}px`;
+    canvas.style.top = `${y}px`;
     canvas.style.width = `${width}px`;
     canvas.style.height = `${height}px`;
     canvas.hidden = false;
@@ -530,11 +833,33 @@
     context.imageSmoothingEnabled = true;
     if ("imageSmoothingQuality" in context) context.imageSmoothingQuality = "high";
     context.clearRect(0, 0, width, height);
-    return true;
+    return snapped;
+  }
+
+  function renderSpritePiece(piece, sprite, destination) {
+    if (!piece?.canvas || !piece?.context || !sprite || !destination) return false;
+    const display = configurePieceCanvas(piece, destination);
+    if (!display) return false;
+
+    return drawSprite(
+      piece.context,
+      sprite,
+      { x: 0, y: 0, width: display.width, height: display.height }
+    );
+  }
+
+  function getRatioLockPresentationScale() {
+    if (typeof document === "undefined") return 1;
+    const root = document.documentElement;
+    if (!root || typeof getComputedStyle !== "function") return 1;
+    return Math.max(0.05, Math.min(8, finiteNumber(
+      getComputedStyle(root).getPropertyValue("--layout-ratio-lock-scale"),
+      1
+    )));
   }
 
   function render() {
-    if (!state.layer || !state.pieces || !state.tankStage || !state.assetsReady || !state.sprites) {
+    if (!state.layer || !state.pieces || !state.tankStage || !state.assetsReady || !state.sprites || !state.badgeImage) {
       return;
     }
 
@@ -553,14 +878,32 @@
       return;
     }
 
+    const ratioLockPresentation = isRatioLockPresentationActive();
+    // The frame preference controls only the special Ratio Lock perimeter. It
+    // deliberately does not change the aquarium's locked dimensions or scale.
+    if (ratioLockPresentation && !state.ratioLockFrameEnabled) {
+      state.layer.hidden = true;
+      return;
+    }
     const exposed = computeExposedEdges(tankRect, viewport, FRAME_CONFIG.epsilon);
-    const visible = roleVisibility(exposed);
+    // Ratio Lock presents one continuous physical perimeter, including where
+    // the locked composition meets the browser edge. Ordinary layouts retain
+    // the exposed-edge-only rule, so they do not acquire a permanent border.
+    const visible = ratioLockPresentation
+      ? Object.freeze(Object.fromEntries(EXPECTED_ROLES.map((role) => [role, true])))
+      : roleVisibility(exposed);
     if (!Object.values(visible).some(Boolean)) {
       state.layer.hidden = true;
       return;
     }
 
-    const geometry = computeFrameGeometry(tankRect, state.sprites, FRAME_CONFIG);
+    const geometry = computeFrameGeometry(
+      tankRect,
+      state.sprites,
+      FRAME_CONFIG,
+      ratioLockPresentation ? "ratio-lock" : "outside",
+      ratioLockPresentation ? getRatioLockPresentationScale() : 1
+    );
     if (!geometry) {
       state.layer.hidden = true;
       return;
@@ -577,12 +920,27 @@
       }
 
       const destination = geometry[role];
-      if (!configurePieceCanvas(piece, destination)) continue;
-      drawSprite(
-        piece.context,
-        state.sprites[role],
-        { x: 0, y: 0, width: destination.width, height: destination.height }
-      );
+      renderSpritePiece(piece, state.sprites[role], destination);
+    }
+
+    const badge = state.pieces.badge;
+    if (badge?.canvas) {
+      if (!visible.bottom) {
+        badge.canvas.hidden = true;
+      } else {
+        const destination = computeBadgeGeometry(
+          geometry,
+          state.badgeImage,
+          FRAME_CONFIG,
+          ratioLockPresentation ? getRatioLockPresentationScale() : 1
+        );
+        if (destination) {
+          const display = configurePieceCanvas(badge, destination);
+          if (display) badge.context.drawImage(state.badgeImage, 0, 0, display.width, display.height);
+        } else {
+          badge.canvas.hidden = true;
+        }
+      }
     }
   }
 
@@ -609,6 +967,7 @@
     if (!(layer instanceof HTMLElement)) {
       layer = document.createElement("div");
       layer.id = "tankPhysicalFrameLayer";
+      layer.className = "tank-physical-frame-layer";
       layer.setAttribute("aria-hidden", "true");
       layer.hidden = true;
       Object.assign(layer.style, {
@@ -621,15 +980,29 @@
         pointerEvents: "none",
         userSelect: "none",
         touchAction: "none",
-        zIndex: "1"
+        zIndex: "10"
       });
-      document.body.appendChild(layer);
+
+      /*
+        Keep the physical frame as a body-level presentation sibling, never a
+        child of #tankStage or .app-shell. Both of those are intentionally
+        clipped by the game layout. Mounting immediately BEFORE .app-shell also
+        keeps the frame independent of the clipped composition.  Its pieces
+        occupy only the exposed space outside the final aquarium bounds, while
+        pointer-events remain disabled so the game/UI retains all interaction.
+      */
+      const appShell = document.querySelector(".app-shell");
+      if (appShell?.parentNode === document.body) {
+        document.body.insertBefore(layer, appShell);
+      } else {
+        document.body.appendChild(layer);
+      }
     }
 
     const pieces = {};
     const edgeRoles = new Set(["top", "bottom", "left", "right"]);
 
-    for (const role of EXPECTED_ROLES) {
+    for (const role of [...EXPECTED_ROLES, "badge"]) {
       let canvas = layer.querySelector(`canvas[data-tank-frame-role="${role}"]`);
       if (!(canvas instanceof HTMLCanvasElement)) {
         canvas = document.createElement("canvas");
@@ -648,7 +1021,7 @@
           pointerEvents: "none",
           userSelect: "none",
           touchAction: "none",
-          zIndex: edgeRoles.has(role) ? "1" : "2"
+          zIndex: role === "badge" ? "3" : (edgeRoles.has(role) ? "1" : "2")
         });
         layer.appendChild(canvas);
       }
@@ -668,13 +1041,22 @@
   }
 
   function attachLayoutObservers() {
+    const appShell = document.querySelector(".app-shell");
+    const stageParent = state.tankStage?.parentElement || null;
     const resizeTargets = [
       state.tankStage,
-      state.tankStage?.parentElement,
-      document.querySelector(".app-shell"),
+      stageParent,
+      appShell,
       document.documentElement
     ].filter(Boolean);
 
+    /*
+      ResizeObserver handles real layout-size changes, including the tank/editor
+      resizing systems. Ratio Lock itself is a transform on .app-shell, so it is
+      also covered by the root/app-shell mutation observers below. We schedule a
+      single animation-frame render from all of these signals rather than running
+      a permanent requestAnimationFrame loop.
+    */
     if (typeof ResizeObserver === "function") {
       const resizeObserver = new ResizeObserver(scheduleRender);
       resizeTargets.forEach((target) => resizeObserver.observe(target));
@@ -685,7 +1067,7 @@
       const ratioMutationObserver = new MutationObserver(scheduleRender);
       ratioMutationObserver.observe(document.documentElement, {
         attributes: true,
-        attributeFilter: ["style", "data-layout-ratio-lock"]
+        attributeFilter: ["class", "style", "data-layout-ratio-lock"]
       });
       state.observers.push(() => ratioMutationObserver.disconnect());
 
@@ -695,11 +1077,36 @@
         attributeFilter: ["class", "style", "hidden"]
       });
       state.observers.push(() => stageMutationObserver.disconnect());
+
+      if (appShell) {
+        const shellMutationObserver = new MutationObserver(scheduleRender);
+        shellMutationObserver.observe(appShell, {
+          attributes: true,
+          attributeFilter: ["class", "style", "hidden"]
+        });
+        state.observers.push(() => shellMutationObserver.disconnect());
+      }
+
+      if (stageParent && stageParent !== appShell) {
+        const parentMutationObserver = new MutationObserver(scheduleRender);
+        parentMutationObserver.observe(stageParent, {
+          attributes: true,
+          attributeFilter: ["class", "style", "hidden"]
+        });
+        state.observers.push(() => parentMutationObserver.disconnect());
+      }
     }
 
     addListener(window, "resize", scheduleRender, { passive: true });
     addListener(window, "orientationchange", scheduleRender, { passive: true });
+    addListener(window, "pageshow", scheduleRender, { passive: true });
     addListener(document, "fullscreenchange", scheduleRender, { passive: true });
+    addListener(document, "visibilitychange", () => {
+      if (document.visibilityState === "visible") scheduleRender();
+    }, { passive: true });
+
+    if (appShell) addListener(appShell, "transitionend", scheduleRender, { passive: true });
+    if (state.tankStage) addListener(state.tankStage, "transitionend", scheduleRender, { passive: true });
 
     if (window.visualViewport) {
       addListener(window.visualViewport, "resize", scheduleRender, { passive: true });
@@ -741,17 +1148,26 @@
     return { sheetKey, image, metadata };
   }
 
-  async function loadAssets() {
-    const entries = await Promise.all(
+  function loadAssets() {
+    if (state.assetLoadPromise) return state.assetLoadPromise;
+
+    state.assetLoadPromise = Promise.all(
       Object.entries(SHEETS).map(async ([sheetKey, sheetConfig]) => {
         const payload = await loadSheet(sheetKey, sheetConfig);
         return [sheetKey, payload];
       })
-    );
+    ).then(async (entries) => {
+      state.sprites = buildFrameSpriteLookup(Object.fromEntries(entries));
+      state.badgeImage = await loadImage(new URL(BADGE_IMAGE, state.assetBaseUrl).href);
+      state.assetsReady = true;
+      scheduleRender();
+      return state.sprites;
+    }).catch((error) => {
+      state.assetLoadPromise = null;
+      throw error;
+    });
 
-    state.sprites = buildFrameSpriteLookup(Object.fromEntries(entries));
-    state.assetsReady = true;
-    scheduleRender();
+    return state.assetLoadPromise;
   }
 
   function start(scriptUrl) {
@@ -811,7 +1227,10 @@
     state.pieces = null;
     state.tankStage = null;
     state.sprites = null;
+    state.badgeImage = null;
     state.assetsReady = false;
+    state.assetLoadPromise = null;
+    state.ratioLockFrameEnabled = true;
     state.installed = false;
   }
 
@@ -823,9 +1242,17 @@
     computePackedSourceRects,
     buildSheetSpriteLookup,
     buildFrameSpriteLookup,
+    createSpriteRenderSpec,
+    snapDestinationRect,
+    computeAvailableViewportRect,
     computeExposedEdges,
     computeFrameGeometry,
+    computeBadgeGeometry,
     roleVisibility,
+    isRatioLockPresentationActive,
+    setRatioLockFrameEnabled,
+    setDebugCalibrationOffset,
+    resetDebugCalibration,
     install,
     destroy,
     render: scheduleRender

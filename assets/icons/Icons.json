@@ -14,13 +14,13 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "161e3bf5-9207-4331-93a7-36df05568088",
+      "id": "eecafb6f-bae3-400c-b089-756f2b9eaf96",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "45069bf4-8142-4c1a-9e65-0d7be8011c7f",
+          "id": "f511489c-8e31-4c5f-a39c-eddf2d0dbc26",
           "width": 100,
           "height": 100,
           "x": 0,
@@ -31,172 +31,7 @@
           "name": "debug.png"
         },
         {
-          "id": "5e05c2b5-3d35-4401-a3b3-1403984802da",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "fish_care.png"
-        },
-        {
-          "id": "47fb1470-c647-4a99-a1bd-7c0d2e414404",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "edit_tank.png"
-        },
-        {
-          "id": "4d238243-45bd-4337-803d-3d17cb775387",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "aquarium_overview.png"
-        },
-        {
-          "id": "0d031e08-c8d9-4eb1-ac00-658973735aa7",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "Store_Icon.png"
-        },
-        {
-          "id": "bcb6e18b-2187-40c2-a642-dd8c06e6136a",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "scoop.png"
-        },
-        {
-          "id": "0ab68e87-1a78-40ce-be86-be5f047ef7a5",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "store.png"
-        },
-        {
-          "id": "01a74875-82a7-4f14-8f45-6d1ede8d8d63",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "fish_box.png"
-        },
-        {
-          "id": "2716a2ff-8f1e-424d-8686-c19d1797b892",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "feed_fish.png"
-        },
-        {
-          "id": "4b5a0f25-4a59-4d06-b6c6-e03d7e6e366a",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "sponge.png"
-        },
-        {
-          "id": "5d818504-1c0f-4dca-bb9e-f4ca3691ee5c",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "medicine.png"
-        },
-        {
-          "id": "54f77239-a830-437d-843a-60fa2b5971ec",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "settings.png"
-        },
-        {
-          "id": "79fc1bea-e3a0-4cca-ae52-292ce55dafb7",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "tasks.png"
-        },
-        {
-          "id": "1cfa012a-0e15-45f0-95ca-6d5c8ae671bc",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "coin.png"
-        },
-        {
-          "id": "18a746c6-50d2-4e1e-9ff2-296775e3394d",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "tank_info.png"
-        },
-        {
-          "id": "2d0cd64f-cb3c-4df0-94e3-81bfb0df335b",
-          "width": 100,
-          "height": 100,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "tools.png"
-        },
-        {
-          "id": "cfad3332-5531-4ea7-8d7f-e3d7889d740d",
+          "id": "1a20f5f3-b651-4f5c-ad7f-b0ae7b75add5",
           "width": 100,
           "height": 100,
           "x": 0,
@@ -207,7 +42,161 @@
           "name": "decor_box.png"
         },
         {
-          "id": "e9c2e6de-c7e9-4ea1-8229-d44d58df8269",
+          "id": "0f43e94c-b5d0-4a34-8cd1-135f125b3871",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "edit_tank.png"
+        },
+        {
+          "id": "b72372b2-9cf4-42ce-8014-1664e11fee46",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "feed_fish.png"
+        },
+        {
+          "id": "1d22db9e-632c-4af0-a9c9-2e9f137139cd",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "fish_box.png"
+        },
+        {
+          "id": "50607b68-b44e-4418-a42f-46ced522bed1",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "fish_care.png"
+        },
+        {
+          "id": "3a112fcd-42d0-4575-989f-b4d6f3f40072",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "medicine.png"
+        },
+        {
+          "id": "9c4d9c97-e334-4e9b-a2b7-d45b78824cbf",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "scoop.png"
+        },
+        {
+          "id": "6ea5b071-6f46-43f1-a25a-a82fb8237733",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "settings.png"
+        },
+        {
+          "id": "5c5409fd-ac2c-41f5-83a6-0ca7c49e8566",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sponge.png"
+        },
+        {
+          "id": "2ee73f4b-1344-43be-ade3-d84040001f54",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "store.png"
+        },
+        {
+          "id": "db2ebf7f-fc6a-43b8-8f63-972c40739862",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "Store_Icon.png"
+        },
+        {
+          "id": "04578d18-2c1d-4927-9929-fb8488f79c14",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tank_info.png"
+        },
+        {
+          "id": "e4654430-e4ad-4715-981a-35f237104596",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tasks.png"
+        },
+        {
+          "id": "0ed757e5-4ed0-44a6-8910-d09ccc263371",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "tools.png"
+        },
+        {
+          "id": "a814126f-5251-4e0f-aee8-fe7421a656b4",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "aquarium_overview.png"
+        },
+        {
+          "id": "0891d6aa-b6cb-4463-970b-060cbeadd871",
           "width": 100,
           "height": 100,
           "x": 0,
@@ -216,6 +205,50 @@
           "flipX": false,
           "flipY": false,
           "name": "bell.png"
+        },
+        {
+          "id": "8c28d3b8-9724-414a-b3e3-95ee214cff9b",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "coin.png"
+        },
+        {
+          "id": "5172cae1-bcf4-4a90-848e-f5334b4fde01",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "meat_icon.png"
+        },
+        {
+          "id": "cc0550b3-5955-4ff1-b442-e7aae2c80306",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "sparkle_1.png"
+        },
+        {
+          "id": "a2898cb6-0fa5-4a20-94da-861fe6c94d21",
+          "width": 100,
+          "height": 100,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "found_coin_flash.png"
         }
       ]
     }

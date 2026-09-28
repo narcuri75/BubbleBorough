@@ -335,6 +335,13 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
   }
   const cache = loadSpriteRuntimeImage.frames || (loadSpriteRuntimeImage.frames = new Map());
   let canvas = cache.get(frame.key);
+  // Released canvases remain as lightweight cache entries until their LRU
+  // position expires. Treat a zero-sized released crop as a cache miss so a
+  // later visit can recreate it instead of returning a blank sprite.
+  if (!isUsableRuntimeImage(canvas)) {
+    cache.delete(frame.key);
+    canvas = null;
+  }
   if (!canvas) {
     const sheetPath = resolveAppUrl(`${frame.sheet.path}?v=${frame.sheet.version}`);
     const sheets = loadSpriteRuntimeImage.sheets || (loadSpriteRuntimeImage.sheets = new Map());
@@ -347,6 +354,10 @@ async function loadSpriteRuntimeImage(path, timeoutMs) {
       readers.image = result.image;
       // Another alias may have finished while the shared sheet was loading.
       canvas = cache.get(frame.key);
+      if (!isUsableRuntimeImage(canvas)) {
+        cache.delete(frame.key);
+        canvas = null;
+      }
       if (!canvas) {
         const sheet = result.image;
         if (!frame.sheet.runtimeSource && (sheet.naturalWidth !== frame.sheet.width || sheet.naturalHeight !== frame.sheet.height)) return { loaded: false, reason: "sprite-sheet-size" };
@@ -540,18 +551,11 @@ function releaseInactiveDecorImages(targetState = state) {
     ? runtime.decorMap.get(runtime.placementMode.decorKey)
     : null;
   for (const path of getDecorArtworkPaths(placementDecor)) keep.add(path);
-  for (const [path, image] of runtime.images) {
+  for (const [path] of runtime.images) {
     const normalized = String(path).replace(/\\/g, "/").toLowerCase();
     const isDecorArtwork = /(^|\/)assets\/decor\//.test(normalized) || knownDecorPaths.has(path);
     if (!isDecorArtwork || keep.has(path)) continue;
-    image?.removeAttribute?.("src");
-    runtime.images.delete(path);
-    runtime.imageLoadFailures.delete(path);
-    runtime.imageRecoveryNextAt.delete(path);
-    runtime.alphaMaskCache.delete(path);
-    for (const cacheKey of runtime.maskRegionCache.keys()) {
-      if (cacheKey === path || cacheKey.startsWith(`${path}|`)) runtime.maskRegionCache.delete(cacheKey);
-    }
+    releaseRuntimeImage(path);
   }
   runtime.caveInteriorMaskCache.clear();
   runtime.caveShellMaskCache.clear();
@@ -561,6 +565,36 @@ function releaseInactiveDecorImages(targetState = state) {
   runtime.caveCollisionFrameCache = null;
   runtime.decorHangoutZonesKey = "";
   runtime.decorHangoutZones = [];
+}
+
+function releaseInactiveTankImages(targetState = state) {
+  const tanks = Array.isArray(targetState?.tanks) ? targetState.tanks : [];
+  const activeTank = tanks.find((tank) => tank?.id === targetState?.activeTankId) || tanks[0];
+  if (!activeTank) return;
+
+  const activeState = { ...targetState, tanks: [activeTank], activeTankId: activeTank.id };
+  const keep = new Set([
+    ...getOwnedFishPreloadPaths(activeState),
+    ...getPlacedDecorPreloadPaths(activeState),
+    getLocalBackgroundImageDataUrl(activeTank),
+    runtime.backgroundMap.get(activeTank.selectedBackground)?.path,
+    runtime.tankMap.get(activeTank.selectedTankAsset)?.path,
+    runtime.bubbleMap.get(activeTank.selectedBubbleAsset)?.path
+  ].filter(Boolean));
+  const catalogArtwork = new Set([
+    ...runtime.backgroundCatalog.map((entry) => entry?.path),
+    ...runtime.tankCatalog.map((entry) => entry?.path),
+    ...runtime.bubbleCatalog.map((entry) => entry?.path)
+  ].filter(Boolean));
+
+  for (const [path] of runtime.images) {
+    const normalized = String(path).replace(/\\/g, "/").toLowerCase();
+    const isFishArtwork = /(^|\/)assets\/fish\//.test(normalized)
+      || /(^|\/)assets\/web\/proteus\/dna_fish\//.test(normalized);
+    if ((catalogArtwork.has(path) || isFishArtwork) && !keep.has(path)) {
+      releaseRuntimeImage(path);
+    }
+  }
 }
 
 function preloadDecorArtwork(decor) {

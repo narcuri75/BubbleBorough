@@ -156,6 +156,7 @@ function releaseLayoutRatioLockReference() {
 
 function initializeLayoutRatioLockFromSettings(options = {}) {
   const settings = getUiSettings();
+  window.BubbleBoroughTankFrame?.setRatioLockFrameEnabled?.(settings.ratioLockFrameEnabled !== false);
   const enabled = Boolean(state && settings.layoutRatioLockEnabled);
   if (!enabled) {
     if (isLayoutRatioLockActive()) releaseLayoutRatioLockReference();
@@ -213,6 +214,24 @@ function setLayoutRatioLockEnabled(value, options = {}) {
     showToast(enabled
       ? "Ratio Lock on. Current window size is saved as the layout reference."
       : "Ratio Lock off. Turn it back on when you want to save a new layout reference.");
+  }
+  return true;
+}
+
+function setRatioLockFrameEnabled(value, options = {}) {
+  if (!state) return false;
+
+  const enabled = Boolean(value);
+  state.uiSettings = sanitizeUiSettings({
+    ...getUiSettings(),
+    ratioLockFrameEnabled: enabled
+  });
+  window.BubbleBoroughTankFrame?.setRatioLockFrameEnabled?.(enabled);
+
+  if (options.save !== false) saveState();
+  if (options.render !== false) renderUi(Date.now(), { full: false });
+  if (options.showToast !== false) {
+    showToast(enabled ? "Ratio Lock frame on." : "Ratio Lock frame off.");
   }
   return true;
 }
@@ -1134,6 +1153,31 @@ function bindEvents() {
     handleDebugSwimAnimationSpeedInput(event.currentTarget);
   });
   dom.debugSwimAnimationSpeedResetButton?.addEventListener("click", () => resetDebugSwimAnimationSpeedTuner());
+  dom.debugTankFrameCalibration?.addEventListener("click", (event) => {
+    const button = event.target?.closest?.("button[data-tank-frame-step]");
+    const control = button?.closest?.("[data-tank-frame-axis][data-tank-frame-key]");
+    const output = control?.querySelector?.("output");
+    if (!button || !control || !output) return;
+    const current = Number.parseFloat(output.value || output.textContent) || 0;
+    const step = Number.parseInt(button.dataset.tankFrameStep, 10);
+    const amount = event.shiftKey ? 0.25 : 1;
+    const next = Math.max(-160, Math.min(160, current + (step < 0 ? -amount : amount)));
+    if (window.BubbleBoroughTankFrame?.setDebugCalibrationOffset?.(control.dataset.tankFrameAxis, control.dataset.tankFrameKey, next)) {
+      output.value = output.textContent = String(next);
+    }
+  });
+  dom.debugTankFrameCalibrationReset?.addEventListener("click", () => {
+    window.BubbleBoroughTankFrame?.resetDebugCalibration?.();
+    dom.debugTankFrameCalibration?.querySelectorAll("[data-tank-frame-axis][data-tank-frame-key]").forEach((control) => {
+      const horizontalKey = control.dataset.tankFrameAxis === "horizontal" ? control.dataset.tankFrameKey : "";
+      const verticalKey = control.dataset.tankFrameAxis === "vertical" ? control.dataset.tankFrameKey : "";
+      const defaults = { left: -2, right: 4, "top-left": -2, "top-right": 4, "bottom-left": -2, "bottom-right": 4, badge: 15 };
+      const verticalDefaults = { "top-bar": 0, "bottom-bar": 0 };
+      const value = String(horizontalKey ? (defaults[horizontalKey] || 0) : (verticalDefaults[verticalKey] || 0));
+      const output = control.querySelector("output");
+      if (output) output.value = output.textContent = value;
+    });
+  });
   dom.debugDepthTuner?.addEventListener("input", (event) => {
     const input = event.target?.closest?.("[data-depth-tuning-key]");
     if (input) {
@@ -1651,8 +1695,11 @@ function bindEvents() {
   dom.toolbarTileColorInput?.addEventListener("change", (event) => {
     setToolbarTileColor(event.currentTarget?.value);
   });
-  dom.ambientBubblesToggleInput?.addEventListener("change", (event) => {
-    setAmbientBubblesEnabled(event.currentTarget?.checked);
+  dom.ambientBubbleLevelInput?.addEventListener("input", (event) => {
+    setAmbientBubbleLevel(event.currentTarget?.value);
+  });
+  dom.ambientBubbleLevelInput?.addEventListener("change", (event) => {
+    setAmbientBubbleLevel(event.currentTarget?.value);
   });
   dom.waterParticlesToggleInput?.addEventListener("change", (event) => {
     setWaterParticlesEnabled(event.currentTarget?.checked);
@@ -1693,6 +1740,9 @@ function bindEvents() {
   });
   dom.layoutRatioLockToggleInput?.addEventListener("change", (event) => {
     setLayoutRatioLockEnabled(event.currentTarget?.checked);
+  });
+  dom.layoutRatioLockFrameToggleInput?.addEventListener("change", (event) => {
+    setRatioLockFrameEnabled(event.currentTarget?.checked);
   });
   dom.storeFoodTab?.addEventListener("click", () => {
     runtime.storeTab = "food";

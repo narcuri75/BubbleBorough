@@ -810,6 +810,7 @@ function drawAmbientBubbles(now, layer = 3) {
   }
 
   const stableScale = getViewportStableAssetScale();
+  const speedMultiplier = getAmbientBubbleSpeedMultiplier();
   tankContext.save();
   tankContext.beginPath();
   tankContext.rect(GLASS_MARGIN_X, WATER_SURFACE_Y + 2, TANK_WIDTH - GLASS_MARGIN_X * 2, TANK_HEIGHT - WATER_SURFACE_Y - GLASS_MARGIN_BOTTOM - 2);
@@ -821,7 +822,7 @@ function drawAmbientBubbles(now, layer = 3) {
     }
 
     const bubbleImage = getBubbleSpriteByIndex(bubble.spriteIndex);
-    const rawProgress = (now / 1000) * bubble.speed + bubble.offset;
+    const rawProgress = (now / 1000) * bubble.speed * speedMultiplier + bubble.offset;
     const progress = rawProgress % 1;
     const cycle = Math.floor(rawProgress);
     const travelPhase = progress * bubble.wave + bubble.offset * 8;
@@ -1150,6 +1151,7 @@ function collectAmbientBubbleParticleFields(now = Date.now()) {
 
   const fields = [];
   const stableScale = getViewportStableAssetScale();
+  const speedMultiplier = getAmbientBubbleSpeedMultiplier();
   for (const bubble of getVisibleAmbientSceneBubbles()) {
     const renderPass = getAmbientBubbleRenderPass(bubble.layer || 3);
     const layerProfile = getAmbientBubbleLayerProfile(renderPass);
@@ -1157,7 +1159,7 @@ function collectAmbientBubbleParticleFields(now = Date.now()) {
       continue;
     }
 
-    const progress = ((now / 1000) * bubble.speed + bubble.offset) % 1;
+    const progress = ((now / 1000) * bubble.speed * speedMultiplier + bubble.offset) % 1;
     const travelPhase = progress * bubble.wave + bubble.offset * 8;
     const x = bubble.x * TANK_WIDTH
       + Math.sin(travelPhase) * bubble.wobble * layerProfile.wobbleScale * stableScale
@@ -1175,7 +1177,7 @@ function collectAmbientBubbleParticleFields(now = Date.now()) {
       x,
       y,
       radius: radius + 30 * stableScale,
-      speed: Math.max(28, bubble.speed * 82) * stableScale,
+      speed: Math.max(28, bubble.speed * speedMultiplier * 82) * stableScale,
       layers: getAmbientBubbleParticleLayers(renderPass),
       strength: clamp((Number(bubble.alpha) || 0.45) * 1.4, 0.35, 1.1)
     });

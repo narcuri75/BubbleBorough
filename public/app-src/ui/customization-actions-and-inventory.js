@@ -627,6 +627,9 @@ function renderSettingsOverlay() {
   if (dom.layoutRatioLockToggleInput) {
     dom.layoutRatioLockToggleInput.checked = uiSettings.layoutRatioLockEnabled !== false;
   }
+  if (dom.layoutRatioLockFrameToggleInput) {
+    dom.layoutRatioLockFrameToggleInput.checked = uiSettings.ratioLockFrameEnabled !== false;
+  }
   if (dom.violenceGoreToggleInput) {
     dom.violenceGoreToggleInput.checked = settings.violenceAndGoreEnabled;
   }
@@ -651,8 +654,13 @@ function renderSettingsOverlay() {
   if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
     dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
   }
-  if (dom.ambientBubblesToggleInput) {
-    dom.ambientBubblesToggleInput.checked = uiSettings.ambientBubblesEnabled;
+  if (dom.ambientBubbleLevelInput instanceof HTMLInputElement) {
+    const ambientBubbleLevel = normalizeAmbientBubbleLevel(uiSettings.ambientBubbleLevel);
+    const ambientBubbleProfile = getAmbientBubbleLevelProfile(ambientBubbleLevel);
+    dom.ambientBubbleLevelInput.value = String(ambientBubbleLevel);
+    if (dom.ambientBubbleLevelOutput) {
+      dom.ambientBubbleLevelOutput.textContent = `${ambientBubbleLevel} · ${ambientBubbleProfile.label}`;
+    }
   }
   if (dom.waterParticlesToggleInput) {
     dom.waterParticlesToggleInput.checked = uiSettings.waterParticlesEnabled;

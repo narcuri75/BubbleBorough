@@ -24,6 +24,9 @@ const DEFAULT_APP_CONFIG = Object.freeze({
 const DESKTOP_PORTABLE_BACKUP_INTERVAL_MS = 10 * 60 * 1000;
 const DEFERRED_STATE_SAVE_MIN_INTERVAL_MS = 4000;
 const DEFERRED_TICK_UI_MIN_INTERVAL_MS = 2500;
+// Full-resolution tank canvases multiply both memory and repaint work on
+// high-density displays. The artwork remains crisp at this modest cap.
+const PORTABLE_PERFORMANCE_MAX_RENDER_DPR = 1.25;
 const SOFTWARE_RENDERER_PATTERNS = Object.freeze([
   /swiftshader/i,
   /llvmpipe/i,
@@ -984,8 +987,24 @@ const FISH_SOCIAL_SIZE_BY_SPECIES = Object.freeze({
   "orchid-dottyback": "small",
   "six-line-wrasse": "small",
   "flame-hawkfish": "small",
+  "tetra": "tiny",
+  "cardinal": "small",
+  "chromis": "tiny",
+  "danio": "small",
+  "endler": "tiny",
+  "mosquitofish": "tiny",
+  "platy": "small",
+  "rasbora": "small",
+  "killifish": "small",
+  "neon-barb": "small",
+  "neon-zebra-danio": "small",
+  "assessor": "small",
+  "barb": "small",
+  "basslets-grammas": "small",
+  "dottyback": "small",
 
   "blue-tang": "medium",
+  "tang": "medium",
   "goldfish": "medium",
   "moor-goldfish": "medium",
   "angelfish": "medium",
@@ -996,6 +1015,10 @@ const FISH_SOCIAL_SIZE_BY_SPECIES = Object.freeze({
   "lionfish": "medium",
   "davy-dwarf-chimera-barracuda": "medium",
   "coral-beauty-angelfish": "medium",
+  "lookdown": "medium",
+  "cichlid": "medium",
+  "neon-angelfish": "medium",
+  "neon-rainbow-shark": "medium",
 
   "koi": "large",
   "bull-shark": "large",
@@ -1005,68 +1028,75 @@ const FISH_SOCIAL_SIZE_BY_SPECIES = Object.freeze({
 
   "orca": "giant"
 });
+const FISH_SOCIAL_MODES = Object.freeze({
+  SCHOOL: "school",
+  SHOAL: "shoal",
+  PAIR: "pair",
+  POD: "pod",
+  HOST: "host",
+  FLEXIBLE: "flexible",
+  SOLITARY: "solitary"
+});
 const FISH_SOCIAL_PROFILES = Object.freeze({
-  "zebra-danio": { category: "own_kind_required", ownKindMinimum: 2 },
-  "cherry-barb": { category: "own_kind_required", ownKindMinimum: 2 },
-  "rainbowfish": { category: "own_kind_required", ownKindMinimum: 2 },
-  "discus": { category: "own_kind_required", ownKindMinimum: 2 },
-  "chili-rasbora": { category: "own_kind_required", ownKindMinimum: 2 },
-  "ember-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
-  "harlequin-rasbora": { category: "own_kind_required", ownKindMinimum: 2 },
-  "pencilfish": { category: "own_kind_required", ownKindMinimum: 2 },
-  "rummy-nose-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
-  "otocinclus": { category: "own_kind_required", ownKindMinimum: 2 },
-  "neon-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
-  "celestial-pearl-danio": { category: "own_kind_required", ownKindMinimum: 2 },
-  "koi": { category: "own_kind_required", ownKindMinimum: 2 },
-  "orca": { category: "own_kind_required", ownKindMinimum: 2 },
-  "green-chromis": { category: "own_kind_required", ownKindMinimum: 2 },
-  "banggai-cardinalfish": { category: "own_kind_required", ownKindMinimum: 1 },
+  // Current cross-catalog social groups. These IDs describe biological/social
+  // compatibility and intentionally do not replace speciesId.
+  "tetra": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "neon-tetra": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "danio": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "danio", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "neon-zebra-danio": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "danio", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "barb": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "barb", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "neon-barb": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "barb", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "angelfish": { category: "pair_bond", socialGroupId: "freshwater-angelfish", socialMode: "pair", socialMinimum: 2, socialIdeal: 2 },
+  "neon-angelfish": { category: "pair_bond", socialGroupId: "freshwater-angelfish", socialMode: "pair", socialMinimum: 2, socialIdeal: 2 },
+  "goldfish": { category: "flexible", affinityGroup: "goldfish", affinityGroups: ["goldfish"], socialGroupId: "goldfish", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "moor-goldfish": { category: "flexible", affinityGroup: "goldfish", affinityGroups: ["goldfish"], socialGroupId: "goldfish", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "guppy": { category: "own_kind_preferred", socialGroupId: "guppy-endler", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"] },
+  "endler": { category: "own_kind_preferred", socialGroupId: "guppy-endler", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"] },
+  "platy": { category: "own_kind_preferred", socialGroupId: "xiphophorus", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"] },
+  "swordtail": { category: "own_kind_preferred", socialGroupId: "xiphophorus", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"] },
 
-  "guppy": { category: "own_kind_preferred" },
-  "molly": { category: "own_kind_preferred" },
-  "swordtail": { category: "own_kind_preferred" },
-  "livebearer": { category: "own_kind_preferred" },
-  "piranha": { category: "own_kind_preferred" },
+  // Current single-catalog social groups.
+  "molly": { category: "own_kind_preferred", socialGroupId: "molly", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"] },
+  "rainbowfish": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "rainbowfish", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "discus": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "discus", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "pencilfish": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "pencilfish", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "otocinclus": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "otocinclus", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "rasbora": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "rasbora", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "piranha": { category: "own_kind_preferred", socialGroupId: "piranha", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "koi": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "koi", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "chromis": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "chromis", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
+  "cardinal": { category: "own_kind_preferred", socialGroupId: "cardinal", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4 },
+  "clownfish": { category: "pair_bond", socialGroupId: "clownfish", socialMode: "pair", socialMinimum: 2, socialIdeal: 2 },
+  "seahorse": { category: "pair_bond", socialGroupId: "seahorse", socialMode: "pair", socialMinimum: 2, socialIdeal: 2 },
+  "orca": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "orca", socialMode: "pod", socialMinimum: 2, socialIdeal: 4 },
+  "lookdown": { category: "own_kind_required", ownKindMinimum: 2, socialGroupId: "lookdown", socialMode: "school", socialMinimum: 2, socialIdeal: 4 },
 
-  "clownfish": { category: "pair_bond" },
-  "angelfish": { category: "pair_bond" },
-  "blue-ram": { category: "pair_bond" },
-  "seahorse": { category: "pair_bond" },
-  "yellow-watchman-goby": { category: "host_bond", hostSpeciesIds: ["pistol-shrimp"] },
-  "pistol-shrimp": { category: "host_bond", hostSpeciesIds: ["yellow-watchman-goby"] },
+  // Existing current special profiles remain intact. Broad catalog families
+  // intentionally receive no shared group unless explicitly configured above.
+  "betta": { category: "solitary", socialMode: "solitary" },
+  "pufferfish": { category: "solitary", socialMode: "solitary" },
+  "lionfish": { category: "solitary", socialMode: "solitary" },
+  "gourami": { category: "flexible", socialMode: "flexible" },
+  "bull-shark": { category: "flexible", socialMode: "flexible" },
+  "great-white-shark": { category: "flexible", socialMode: "flexible" },
+  "hammerhead-shark": { category: "flexible", socialMode: "flexible" },
+  "sunfish": { category: "flexible", socialMode: "flexible" },
+  "coral-beauty-angelfish": { category: "flexible", socialMode: "flexible" },
+  "firefish": { category: "solitary", socialMode: "solitary" },
+  "six-line-wrasse": { category: "solitary", socialMode: "solitary" },
+  "cleaner-shrimp": { category: "flexible", socialMode: "flexible" },
+  "pistol-shrimp": { category: "host_bond", hostSpeciesIds: ["yellow-watchman-goby"], socialMode: "host" },
 
-  "blue-tang": { category: "flexible" },
-  "goldfish": { category: "flexible", affinityGroup: "goldfish" },
-  "moor-goldfish": { category: "flexible", affinityGroup: "goldfish" },
-  "royal-gramma": { category: "flexible" },
-  "yellow-tang": { category: "flexible" },
-  "gourami": { category: "flexible" },
-  "bull-shark": { category: "flexible" },
-  "great-white-shark": { category: "flexible" },
-  "hammerhead-shark": { category: "flexible" },
-  "sunfish": { category: "flexible" },
-  "davy-bioluminescent-glass-fangfish": { category: "flexible" },
-  "davy-dwarf-hyperfin": { category: "flexible" },
-  "coral-beauty-angelfish": { category: "flexible" },
-  "tailspot-blenny": { category: "flexible" },
-  "cleaner-shrimp": { category: "flexible" },
-  "fighting-conch": { category: "solitary" },
-  "firefish": { category: "solitary" },
-  "orchid-dottyback": { category: "solitary" },
-  "six-line-wrasse": { category: "solitary" },
-  "flame-hawkfish": { category: "solitary" },
-
-  "betta": { category: "solitary" },
-  "pufferfish": { category: "solitary" },
-  "wonder-killifish": { category: "solitary" },
-  "lionfish": { category: "solitary" },
-  "davy-bioluminescent-angler-pike": { category: "solitary" },
-  "davy-dwarf-chimera-barracuda": { category: "solitary" },
+  // Davy's Locker species are still current supplemental catalog entries.
+  "davy-bioluminescent-glass-fangfish": { category: "flexible", socialMode: "flexible" },
+  "davy-dwarf-hyperfin": { category: "flexible", socialMode: "flexible" },
+  "davy-bioluminescent-angler-pike": { category: "solitary", socialMode: "solitary" },
+  "davy-dwarf-chimera-barracuda": { category: "solitary", socialMode: "solitary" },
 
   "pilot-fish": {
     category: "host_bond",
-    hostSpeciesIds: ["bull-shark", "great-white-shark", "hammerhead-shark", "sunfish"]
+    hostSpeciesIds: ["bull-shark", "great-white-shark", "hammerhead-shark", "sunfish"],
+    socialMode: "host"
   }
 });
 const FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM = 2;
@@ -1676,9 +1706,10 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   gravelShadowIntensity: 0.35,
   tankMouseInputLocked: false,
   layoutRatioLockEnabled: true,
+  ratioLockFrameEnabled: true,
   layoutRatioLockWidth: 0,
   layoutRatioLockHeight: 0,
-  ambientBubblesEnabled: true,
+  ambientBubbleLevel: 2,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
   decorShadowsEnabled: true,
@@ -1993,6 +2024,15 @@ const SIZE_STEP = 0.05;
 const GRAVEL_COLOR_SWATCHES = Object.freeze(CUSTOM_GRAVEL_COLOR_OPTIONS.map((choice) => choice.color));
 const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
 const AMBIENT_BUBBLE_COUNT = 30;
+const AMBIENT_BUBBLE_LEVEL_MIN = 0;
+const AMBIENT_BUBBLE_LEVEL_MAX = 3;
+const AMBIENT_BUBBLE_LEVEL_DEFAULT = 2;
+const AMBIENT_BUBBLE_LEVEL_PROFILES = Object.freeze({
+  0: Object.freeze({ count: 0, speedMultiplier: 0, label: "Off" }),
+  1: Object.freeze({ count: 8, speedMultiplier: 0.55, label: "Light" }),
+  2: Object.freeze({ count: 16, speedMultiplier: 0.75, label: "Medium" }),
+  3: Object.freeze({ count: AMBIENT_BUBBLE_COUNT, speedMultiplier: 1, label: "High" })
+});
 const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
 const TANK_DEPTH_SUBLAYERS = 3;
@@ -2056,6 +2096,7 @@ const DISEASE_GREEN_BUBBLE_POP_MS = 620;
 const DISEASE_GREEN_BUBBLE_MAX_PER_FISH = 24;
 const MOOD_BUBBLE_CONFIG = Object.freeze({
   colors: Object.freeze({
+    Neutral: "#B7C2C8",
     Happy: "#FFD45A",
     Cozy: "#F2A6A6",
     Playful: "#67D7A5",
@@ -2083,7 +2124,16 @@ const MOOD_BUBBLE_CONFIG = Object.freeze({
   tapStressDecayPerSecond: 0.22,
   scaredStressThreshold: 1
 });
-const FISH_NEW_TANK_ACCLIMATION_MS = 90 * 1000;
+const FISH_NEW_TANK_ACCLIMATION_MS = 30 * MINUTE_MS;
+const FISH_LONELINESS_MIN = 0;
+const FISH_LONELINESS_MAX = 100;
+const FISH_LONELY_MOOD_THRESHOLD = 45;
+const FISH_LONELINESS_GAIN_PER_MINUTE = 0.75;
+const FISH_LONELINESS_FULL_GROUP_RECOVERY_PER_MINUTE = 2;
+const FISH_LONELINESS_STRONG_PARTIAL_RECOVERY_PER_MINUTE = 1.2;
+const FISH_LONELINESS_STRONG_PARTIAL_SATISFACTION = 0.7;
+const FISH_LONELINESS_FULL_SATISFACTION = 0.95;
+const FISH_LONELINESS_MAX_ELAPSED_MS = 5 * MINUTE_MS;
 const DEFAULT_TANK_LAYER = 3;
 const LAYER_BOTTOM_GRAVEL_SURFACE_OFFSET_PX = 0;
 const LAYER_BOTTOM_GRAVEL_STEP_PX = 20;
@@ -2411,6 +2461,7 @@ const FISH_NAV_UNSTUCK_COOLDOWN_MS = 900;
 const FISH_NAV_OSCILLATION_WINDOW_MS = 3200;
 const FISH_NAV_OSCILLATION_REVERSALS = 3;
 const FISH_NAV_ESCAPE_WAYPOINT_MS = 1550;
+const FISH_NAV_OBSTACLE_ROUTE_COMMIT_MS = 1150;
 // Phase 18: a pair of fish shares one deterministic right-of-way decision for
 // the duration of an encounter. This prevents mirrored lane changes where both
 // fish repeatedly choose the same avoidance maneuver.
@@ -2513,8 +2564,24 @@ const SAME_SPECIES_FOLLOW_VERTICAL_JITTER_NORM = 0.034;
 const SAME_SPECIES_SCHOOL_SLOT_MIN_MS = 9000;
 const SAME_SPECIES_SCHOOL_SLOT_MAX_MS = 18000;
 const SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC = 4.6;
+const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = 1200;
+const SCHOOL_FORMATION_COMMAND_INTERVAL_MS = 180;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
+const SCHOOL_MAX_FOLLOWERS = 5;
+const SCHOOL_FORMATION_MIN_MS = 20000;
+const SCHOOL_FORMATION_MAX_MS = 60000;
+const SCHOOL_REJOIN_DISTANCE_NORM = 0.145;
+const SCHOOL_REJOIN_SETTLE_DISTANCE_NORM = 0.07;
+// Social formations deliberately ignore sub-body-size corrections. Without a
+// shared settle zone, a moving leader makes followers repeatedly flip and
+// brake while trying to occupy a mathematically exact point.
+const SOCIAL_FORMATION_POSITION_DEADZONE_NORM = 0.012;
+const SOCIAL_FORMATION_TURN_DEADZONE_NORM = 0.024;
+// A social formation needs a short heading commitment after a real reversal.
+// Without it a follower can complete one turn and immediately accept the
+// opposite request from a moving leader or a freshly released detour.
+const SOCIAL_FORMATION_TURN_COMMIT_MS = 720;
 const SAME_SPECIES_SCHOOL_SEPARATION_RADIUS_NORM = 0.09;
 const SAME_SPECIES_SCHOOL_COHESION_BLEND = 0.08;
 const BABY_FISH_SCALE_MULTIPLIER = 0.45;
@@ -3571,7 +3638,6 @@ const FISH_TYPES = [
       "carnivore"
     ],
     "juvenileFoods": [
-      "basic",
       "brineShrimp",
       "carnivore"
     ],
@@ -3871,6 +3937,7 @@ const FISH_TYPES = [
       "carnivore"
     ],
     "juvenileFoods": [
+      "basic",
       "brineShrimp",
       "carnivore"
     ],
@@ -6907,6 +6974,91 @@ const FISH_TYPES = [
     "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
     "Fish_enabled": true,
     "starterFish": true
+  },
+  {
+    "id": "lookdown",
+    "name": "Lookdown",
+    "genetics": "natural",
+    "cost": 18,
+    "mealCoins": 1,
+    "asset": "/assets/fish/lookdown-fish_classic-silver.png",
+    "assetVariants": [
+      "/assets/fish/lookdown-fish_classic-silver.png",
+      "/assets/fish/lookdown-fish_blue.png",
+      "/assets/fish/lookdown-fish_golden.png",
+      "/assets/fish/lookdown-fish_barred.png"
+    ],
+    "variantLabels": [
+      "Classic Silver",
+      "Blue",
+      "Golden",
+      "Barred"
+    ],
+    "description": "A tall, reflective saltwater schooling fish with a steep forehead and a bright metallic body.",
+    "width": 512,
+    "displayWidth": 230,
+    "bobSpeed": 1.2,
+    "swimStyle": "steady",
+    "speedMin": 0.022,
+    "speedMax": 0.034,
+    "targetMinMs": 2400,
+    "targetMaxMs": 5200,
+    "defaultNames": [
+      "Mirror",
+      "Silver",
+      "Flash",
+      "Luna",
+      "Chrome",
+      "Glint",
+      "Beacon",
+      "Shimmer",
+      "Ray",
+      "Halo",
+      "Gleam",
+      "Mercury"
+    ],
+    "caveEnabled": false,
+    "needs": {
+      "decor": [],
+      "friends": {
+        "min": 0,
+        "alike": false
+      }
+    },
+    "dislikedTypes": [],
+    "turnAnimation": "simple",
+    "liveBirth": false,
+    "seller": "Common Current",
+    "waterType": "saltwater",
+    "lifespanDays": 70,
+    "capacityCost": 1,
+    "cleanupAnimal": false,
+    "canBreed": true,
+    "dietProfile": "carnivore",
+    "acceptedFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "juvenileFoods": [
+      "basic",
+      "brineShrimp",
+      "carnivore"
+    ],
+    "careRequirements": {
+      "waterType": "saltwater",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "dietaryMode": "carnivore",
+      "waterNote": "Saltwater required."
+    },
+    "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+    "Fish_enabled": true,
+    "socialGroupId": "lookdown",
+    "socialMode": "school"
   },
   {
     "id": "cichlid",
@@ -12097,6 +12249,8 @@ const dom = {
   debugSwimAnimationSpeedSlider: document.querySelector("#debugSwimAnimationSpeedSlider"),
   debugSwimAnimationSpeedOutput: document.querySelector("#debugSwimAnimationSpeedOutput"),
   debugSwimAnimationSpeedResetButton: document.querySelector("#debugSwimAnimationSpeedResetButton"),
+  debugTankFrameCalibration: document.querySelector("#debugTankFrameCalibration"),
+  debugTankFrameCalibrationReset: document.querySelector("#debugTankFrameCalibrationReset"),
   debugDepthTuner: document.querySelector("#debugDepthTuner"),
   debugDepthTunerReadout: document.querySelector("#debugDepthTunerReadout"),
   debugDepthTunerResetButton: document.querySelector("#debugDepthTunerResetButton"),
@@ -12237,6 +12391,7 @@ const dom = {
   debugModeToggleInput: document.querySelector("#debugModeToggleInput"),
   peacefulModeToggleInput: document.querySelector("#peacefulModeToggleInput"),
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
+  layoutRatioLockFrameToggleInput: document.querySelector("#layoutRatioLockFrameToggleInput"),
   webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
@@ -12279,7 +12434,8 @@ const dom = {
   uiSoundVolumeOutput: document.querySelector("#uiSoundVolumeOutput"),
   gravelShadowIntensityInput: document.querySelector("#gravelShadowIntensityInput"),
   gravelShadowIntensityOutput: document.querySelector("#gravelShadowIntensityOutput"),
-  ambientBubblesToggleInput: document.querySelector("#ambientBubblesToggleInput"),
+  ambientBubbleLevelInput: document.querySelector("#ambientBubbleLevelInput"),
+  ambientBubbleLevelOutput: document.querySelector("#ambientBubbleLevelOutput"),
   waterParticlesToggleInput: document.querySelector("#waterParticlesToggleInput"),
   causticLightingToggleInput: document.querySelector("#causticLightingToggleInput"),
   decorShadowsToggleInput: document.querySelector("#decorShadowsToggleInput"),
@@ -12589,6 +12745,7 @@ const runtime = {
   // behavior-driven swim preset selection remains authoritative.
   debugSwimAnimationPresetOverride: "",
   fishSpeciesMergeCache: new Map(),
+  fishSocialSatisfactionCache: new Map(),
   deferredStateSaveDirty: false,
   deferredStateSaveRequestedAt: 0,
   deferredStateSaveTimerId: 0,

@@ -399,6 +399,7 @@ function resetLivingFishPredatorState(fish, now = Date.now(), options = {}) {
   fish.piranhaLastBloodAt = null;
   fish.decayStage = null;
   fish.tankAddedAt = now;
+  fish.lonelinessUpdatedAt = now;
 
   if (options.entryAnimation) {
     fish.entryStartedAt = now;
@@ -759,24 +760,24 @@ function setGravelShadowIntensity(value, options = {}) {
   return true;
 }
 
-function setAmbientBubblesEnabled(value) {
+function setAmbientBubbleLevel(value) {
   if (!state) {
     return;
   }
 
   const currentSettings = getUiSettings();
+  const nextLevel = normalizeAmbientBubbleLevel(value);
   const nextSettings = sanitizeUiSettings({
     ...currentSettings,
-    ambientBubblesEnabled: Boolean(value)
+    ambientBubbleLevel: nextLevel
   });
-  if (currentSettings.ambientBubblesEnabled === nextSettings.ambientBubblesEnabled) {
+  if (currentSettings.ambientBubbleLevel === nextSettings.ambientBubbleLevel) {
     return;
   }
 
   state.uiSettings = nextSettings;
   saveState();
   renderUi(Date.now(), { full: false });
-  showToast(nextSettings.ambientBubblesEnabled ? "Ambient bubbles on." : "Ambient bubbles off.");
 }
 
 function setWaterParticlesEnabled(value) {
@@ -2035,7 +2036,12 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     return;
   }
 
-  clearFishSchoolFollowState(fish);
+  // A failed local move is a temporary separation, not a reason to dissolve a
+  // school. Preserve membership and let the follower rejoin after its short
+  // avoidance lease rather than rebuilding a new relationship every collision.
+  if (typeof deferFishSchoolFollowForRecovery === "function") {
+    deferFishSchoolFollowForRecovery(fish, now + 900);
+  }
 
   if (fish.caveState) {
     fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
@@ -2115,11 +2121,39 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     : randomBetween(0.03, 0.08);
 
   const blockedDecorId = fish.hangoutDecorId || fish.blockedDecorId || null;
+  const clampCandidate = (xNorm, yNorm) => ({
+    xNorm: clamp(xNorm, 0.08, 0.92),
+    yNorm: clampFishYNormToLayer(yNorm, fish, species, getFishTankLayer(fish), { minYNorm: 0.14, maxYNorm: 0.8 })
+  });
+  const target = findFishClearDetourTarget(fish, species, [
+    clampCandidate(fish.xNorm + awayX * horizontalDistance, fish.yNorm + awayY * verticalDistance),
+    clampCandidate(fish.xNorm + awayX * horizontalDistance, fish.yNorm),
+    clampCandidate(fish.xNorm, fish.yNorm + awayY * verticalDistance),
+    clampCandidate(fish.xNorm - awayX * horizontalDistance * 0.6, fish.yNorm - awayY * verticalDistance * 0.6)
+  ], now);
 
-  fish.targetXNorm = clamp(fish.xNorm + awayX * horizontalDistance, 0.08, 0.92);
-  fish.targetYNorm = clamp(fish.yNorm + awayY * verticalDistance, 0.14, 0.8);
+  // Stay put briefly when every local waypoint is occupied. Assigning a
+  // blocked random target restarts the same collision loop every few frames.
+  if (!target) {
+    fish.motionVelocityXNorm = 0;
+    fish.motionVelocityYNorm = 0;
+    fish.targetXNorm = fish.xNorm;
+    fish.targetYNorm = fish.yNorm;
+    fish.wallAvoidUntil = now + 420;
+    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 420);
+    if (typeof deferFishActionSteeringForRecovery === "function") {
+      deferFishActionSteeringForRecovery(fish, fish.targetAt);
+    }
+    return;
+  }
+
+  fish.targetXNorm = target.xNorm;
+  fish.targetYNorm = target.yNorm;
   fish.targetAt = now + 900 + Math.random() * 900;
   fish.wallAvoidUntil = now + 650;
+  if (typeof deferFishActionSteeringForRecovery === "function") {
+    deferFishActionSteeringForRecovery(fish, fish.targetAt);
+  }
   fish.hangoutDecorId = null;
   fish.blockedDecorId = blockedDecorId;
   fish.blockedDecorUntil = now + 3200;
@@ -3723,6 +3757,21 @@ function updateFishMotion(now, deltaSeconds) {
 
     let moveDx = fish.targetXNorm - fish.xNorm;
     let moveDy = fish.targetYNorm - fish.yNorm;
+    let handledDirectionThisFrame = false;
+    const socialActionSteering = runtime.fishActionSteeringByFishId?.get(fish.id) || null;
+    const socialDebugSteering = runtime.debugBehaviorSteeringByFishId?.get(fish.id) || null;
+    const socialFormationActive = Boolean(
+      (Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil))
+      || socialActionSteering?.type === "follow"
+      || socialDebugSteering?.type === "follow"
+    );
+    if (socialFormationActive && !getActiveFishCollisionAvoidance(fish, now)) {
+      // Do not make a social fish turn or glide backward to erase a few pixels
+      // of formation error. The render-time sway handles that final bit of
+      // life, while the simulation waits for a meaningful formation change.
+      if (Math.abs(moveDx) < SOCIAL_FORMATION_TURN_DEADZONE_NORM) moveDx = 0;
+      if (Math.abs(moveDy) < SOCIAL_FORMATION_POSITION_DEADZONE_NORM) moveDy = 0;
+    }
 
     // Never let a normal swimming fish translate backward. Following targets
     // move often enough that they can cross behind a follower between steering
@@ -3735,15 +3784,31 @@ function updateFishMotion(now, deltaSeconds) {
       ? (moveDx >= 0 ? 1 : -1)
       : 0;
     const renderedFacingDirection = canUseHorizontalFacing ? getFishFacingDirection(fish) : 0;
+    const socialTurnCommitActive = socialFormationActive
+      && Number(fish.socialTurnCommitUntil) > now
+      && Number(fish.socialTurnCommittedDirection) !== 0
+      && requestedHorizontalDirection !== 0
+      && requestedHorizontalDirection !== Number(fish.socialTurnCommittedDirection);
     if (
       canUseHorizontalFacing
       && requestedHorizontalDirection !== 0
       && requestedHorizontalDirection !== renderedFacingDirection
       && !pufferInflatedOwnsMovement
+      && !socialTurnCommitActive
     ) {
       setFishDirection(fish, requestedHorizontalDirection, species, now);
+      if (socialFormationActive) {
+        fish.socialTurnCommittedDirection = requestedHorizontalDirection;
+        fish.socialTurnCommitUntil = now + SOCIAL_FORMATION_TURN_COMMIT_MS;
+      }
       fish.motionVelocityXNorm = 0;
       fish.motionVelocityYNorm = 0;
+      moveDx = 0;
+      moveDy = 0;
+      handledDirectionThisFrame = true;
+    } else if (socialTurnCommitActive) {
+      // Do not let a newly crossed formation endpoint command an immediate
+      // counter-turn. Hold position until the social heading commitment ends.
       moveDx = 0;
       moveDy = 0;
     }
@@ -3844,8 +3909,6 @@ function updateFishMotion(now, deltaSeconds) {
     if (turnaroundHoldsPosition) {
       motionTarget = Math.min(motionTarget, 0.08);
     }
-    let handledDirectionThisFrame = false;
-
     if (moveDistance > 0.0001 && !turnaroundHoldsPosition) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
@@ -3940,7 +4003,7 @@ function updateFishMotion(now, deltaSeconds) {
       }
       if (Number.isFinite(fish.followUntil) && now < fish.followUntil) {
         const leader = getFishSchoolFollowLeader(fish);
-        if (isFishEligibleSchoolLeader(leader, fish, species, now)) {
+        if (isFishSchoolLeaderAvailable(fish, leader, species, now)) {
           const leaderSpeed = Math.max(0.00001, Number(leader.swimSpeed) || fish.swimSpeed);
           const currentSpeed = Math.max(0.00001, Number(fish.swimSpeed) || leaderSpeed);
           const formationDistance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
@@ -3993,7 +4056,7 @@ function updateFishMotion(now, deltaSeconds) {
         && !fish.caveState
         && !activeQueuedFishAction
         && !activeDebugSteering
-        && (!activeFishActionSteering || activeFishActionSteering.type === "inspect");
+        && (!activeFishActionSteering || ["inspect", "follow"].includes(activeFishActionSteering.type));
       let step;
       let stepXNorm;
       let stepYNorm;
@@ -4109,31 +4172,13 @@ function updateFishMotion(now, deltaSeconds) {
           (attemptedFishYNorm - previousYNorm) * TANK_HEIGHT
         );
         if (attemptedFishDistancePx > 0.001) {
-          // Resolve fish-vs-fish contact after cave/world collision has picked
-          // the attempted endpoint. Reset to the frame start so the segment
-          // test can stop at the last safe point rather than letting sprites
-          // tunnel through one another during a large frame step.
-          fish.xNorm = previousXNorm;
-          fish.yNorm = previousYNorm;
-          const fishCollisionMove = resolveFishBodyCollision(
-            fish,
-            species,
-            attemptedFishXNorm,
-            attemptedFishYNorm,
-            now
-          );
-          fish.xNorm = fishCollisionMove.xNorm;
-          fish.yNorm = fishCollisionMove.yNorm;
-          if (fishCollisionMove.blocked && fishCollisionMove.blockingFish) {
-            queueFishCollisionAvoidance(
-              fish,
-              species,
-              fishCollisionMove.blockingFish,
-              now,
-              { reason: "body" }
-            );
-            handledDirectionThisFrame = true;
-          }
+          // Fish intentionally share the horizontal swimming plane. Physical
+          // body avoidance made dense schools repeatedly deadlock around
+          // decor; depth transitions still use the occupancy checks in
+          // caves-and-collision.js, so a fish cannot switch through another
+          // fish occupying that depth position.
+          fish.xNorm = attemptedFishXNorm;
+          fish.yNorm = attemptedFishYNorm;
         }
       }
 
@@ -4185,10 +4230,17 @@ function updateFishMotion(now, deltaSeconds) {
         }
       } else if (!handledDirectionThisFrame && !pufferInflatedOwnsMovement) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
-        const signatureBehaviorFacing = panicOwnsMovement ? null : getFishSignatureBehaviorFacingDirection(fish, species, now);
+        const signatureBehaviorFacing = panicOwnsMovement || socialFormationActive
+          ? null
+          : getFishSignatureBehaviorFacingDirection(fish, species, now);
+        // Social formations already reduced moveDx through their settle zone.
+        // Use that authoritative travel vector here too; reading the raw
+        // target resurrected tiny corrections solely as turn animations.
         const facingDx = fish.activity === "feeding" && pelletPose
           ? pelletPose.xNorm - fish.xNorm
-          : fish.targetXNorm - fish.xNorm;
+          : socialFormationActive
+            ? moveDx
+            : fish.targetXNorm - fish.xNorm;
         const schoolFollowFacing = !panicOwnsMovement && fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
@@ -4221,7 +4273,7 @@ function updateFishMotion(now, deltaSeconds) {
     const debugFaceDirectionAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame
       ? getDebugBehaviorFacingDirection(fish, now)
       : null;
-    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame
+    const signatureBehaviorFacingAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame && !socialFormationActive
       ? getFishSignatureBehaviorFacingDirection(fish, species, now)
       : null;
     if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
@@ -4238,6 +4290,7 @@ function updateFishMotion(now, deltaSeconds) {
       !panicOwnsMovement &&
       !pufferInflatedOwnsMovement &&
       !handledDirectionThisFrame &&
+      !socialFormationActive &&
       !(Number.isFinite(fish.wallAvoidUntil) && now < fish.wallAvoidUntil)
     ) {
       const nearbyCorpse = getNearestDeadFish(fish);
@@ -4635,12 +4688,18 @@ function applyFishMoodDepthPreference(fish, species, now = Date.now(), options =
   }
   const disposition = typeof getFishDisposition === "function" ? getFishDisposition(fish, now) : { mood: "Happy" };
   const mood = String(disposition?.mood || "Happy");
+  // Movement controllers are selected before this passive preference pass.
+  // Do not let a mood layer update overwrite an active social/disease/panic
+  // route in the same frame.
+  if (options.panicOwnsMovement || options.fishActionOwnsMovement || options.debugBehaviorOwnsMovement || options.diseaseAvoidanceOwnsMovement) {
+    return false;
+  }
   const activelySchoolFollowing = Boolean(
     fish.followFishId
     && Number.isFinite(Number(fish.followUntil))
     && Number(fish.followUntil) > now
   );
-  if (activelySchoolFollowing && ["Cozy", "Curious", "Social"].includes(mood)) {
+  if (activelySchoolFollowing) {
     return false;
   }
   if (typeof getActiveFishCollisionAvoidance === "function" && getActiveFishCollisionAvoidance(fish, now)) {

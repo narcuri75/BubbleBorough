@@ -3606,7 +3606,7 @@ function getWebSurfInboxMessages() {
       subject: webSurfTemplate?.subject || "Welcome to WebSurf!",
       preview: webSurfTemplate?.preview || "Your new WebSurf email address is ready.",
       destination: "home",
-      icon: "assets/icons/WebSurf_icon.png",
+      icon: "assets/web/websurf/WebSurf_icon.png",
       time: welcomeSentAt
     });
     const template = getWebSurfAutoEmailTemplate("welcome_to_bubble_borough");
@@ -3621,7 +3621,7 @@ function getWebSurfInboxMessages() {
       subject: template?.subject || "Welcome to Bubble Borough",
       preview: template?.preview || "Your aquarium is ready. Let's get you started.",
       destination: "home",
-      icon: "assets/icons/WebSurf_icon.png",
+      icon: "assets/web/websurf/WebSurf_icon.png",
       time: welcomeSentAt + 1
     });
   }
@@ -4015,17 +4015,22 @@ function getBubbleBodegaHomeRecommendations(tank = getCurrentTank(), now = Date.
   const foodUsers = new Map();
   for (const fish of livingFish) {
     const accepted = getFishAcceptedFoodKeys(fish).filter((id) => shouldShowFoodInStore(getFoodMeta(id)));
-    const stocked = accepted.find((id) => Math.max(0, Number(state.foodInventory?.[id]) || 0) > 0);
-    const foodId = stocked || accepted[0];
+    // Flakes are the surface-floating form of Basic Food. Treat the two as
+    // one pantry choice for recommendations, just as feeding does.
+    const options = accepted.includes("basic") && shouldShowFoodInStore(getFoodMeta("fishFlakes"))
+      ? [...new Set([...accepted, "fishFlakes"])]
+      : accepted;
+    const stocked = options.filter((id) => Math.max(0, Number(state.foodInventory?.[id]) || 0) > 0);
+    const foodId = accepted.includes("basic") ? "basic" : stocked[0] || accepted[0];
     if (!foodId) continue;
-    const entry = foodUsers.get(foodId) || [];
-    entry.push(fish);
+    const entry = foodUsers.get(foodId) || { fish: [], options };
+    entry.fish.push(fish);
     foodUsers.set(foodId, entry);
   }
-  for (const [foodId, users] of foodUsers) {
-    const feedingsLeft = Math.floor(Math.max(0, Number(state.foodInventory?.[foodId]) || 0) / Math.max(1, users.length));
+  for (const [foodId, entry] of foodUsers) {
+    const feedingsLeft = Math.floor(entry.options.reduce((total, id) => total + Math.max(0, Number(state.foodInventory?.[id]) || 0), 0) / Math.max(1, entry.fish.length));
     if (feedingsLeft <= 2) {
-      for (const fish of users) add("food", foodId, feedingsLeft === 0 ? 220 : 160, feedingsLeft === 0 ? "Out of food" : `${feedingsLeft} feeding${feedingsLeft === 1 ? "" : "s"} left`, fish);
+      for (const fish of entry.fish) add("food", foodId, feedingsLeft === 0 ? 220 : 160, feedingsLeft === 0 ? "Out of food" : `${feedingsLeft} feeding${feedingsLeft === 1 ? "" : "s"} left`, fish);
     }
   }
 
@@ -4037,8 +4042,13 @@ function getBubbleBodegaHomeRecommendations(tank = getCurrentTank(), now = Date.
     const comfort = getFishComfort(fish, now, tank);
     const needs = getFishNeedsSnapshot(fish, now).needs;
     if (!isMealFreeFish(fish) && Number(needs?.hunger) <= 45) {
-      const foodId = getFishAcceptedFoodKeys(fish).find((id) => shouldShowFoodInStore(getFoodMeta(id)));
-      if (foodId) add("food", foodId, Number(needs.hunger) <= 20 ? 260 : 190, Number(needs.hunger) <= 20 ? "Feed immediately" : "A meal would help", fish);
+      const accepted = getFishAcceptedFoodKeys(fish).filter((id) => shouldShowFoodInStore(getFoodMeta(id)));
+      const options = accepted.includes("basic") && shouldShowFoodInStore(getFoodMeta("fishFlakes"))
+        ? [...new Set([...accepted, "fishFlakes"])]
+        : accepted;
+      const hasCompatibleFood = options.some((id) => Math.max(0, Number(state.foodInventory?.[id]) || 0) > 0);
+      const foodId = accepted[0];
+      if (foodId && !hasCompatibleFood) add("food", foodId, Number(needs.hunger) <= 20 ? 260 : 190, Number(needs.hunger) <= 20 ? "Feed immediately" : "A meal would help", fish);
     }
     if (comfort.value < 0.65) {
       for (const need of getFishNeedsStatus(fish, tank, now)) {
@@ -4179,7 +4189,7 @@ function renderWebSurfHomePage() {
     </article>`;
   }).join("");
   return `<header class="websurf-home-header">
-      <img ${assetImageAttributes("assets/icons/WebSurf_icon.png")} alt="WebSurf" />
+      <img ${assetImageAttributes("assets/web/websurf/WebSurf_icon.png")} alt="WebSurf" />
       <div><span>WEBSURF.SWIM</span><h1 id="webHomeTitle">Welcome, ${escapeHtml(username)}</h1><p>${escapeHtml(addressName)}@WebSurf.swim</p></div>
     </header>
     <main class="websurf-home-main">

@@ -5134,6 +5134,51 @@ button.borough-overview-task:hover, button.borough-overview-task:focus-visible {
   accent-color: #7de0f8;
 }
 
+.debug-frame-stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 0;
+  color: var(--ink);
+  font-size: 0.66rem;
+  font-weight: 800;
+}
+
+.debug-frame-stepper > div {
+  display: grid;
+  grid-template-columns: 24px minmax(30px, auto) 24px;
+  align-items: center;
+  gap: 4px;
+}
+
+.debug-frame-stepper button {
+  width: 24px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid rgba(120, 213, 240, 0.48);
+  border-radius: 5px;
+  background: rgba(15, 42, 58, 0.9);
+  color: #dff8ff;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.9rem;
+  line-height: 1;
+}
+
+.debug-frame-stepper button:hover,
+.debug-frame-stepper button:focus-visible {
+  border-color: #7de0f8;
+  background: rgba(31, 89, 116, 0.95);
+}
+
+.debug-frame-stepper output {
+  min-width: 30px;
+  color: var(--gold);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
 .debug-depth-tuner-readout {
   min-height: 34px;
   padding: 6px 7px;
@@ -6577,13 +6622,6 @@ html[data-hardware-acceleration-notice-open="true"] .utility-overlay[data-utilit
 }
 
 @media (min-width: 768px) and (min-height: 560px) {
-  .utility-overlay[data-utility-mode="invite-friend"] .utility-panel {
-    width: min(640px, calc(100vw - 40px));
-    height: auto;
-    max-height: min(76dvh, 540px);
-    grid-template-rows: auto minmax(0, auto) auto;
-  }
-
   .utility-overlay[data-utility-mode="fish-sell-confirm"] .utility-panel {
     width: min(520px, calc(100vw - 40px));
     height: auto;
@@ -12362,81 +12400,6 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   width: min(100vw, 177.77777778dvh);
   height: min(100dvh, 56.25vw);
   aspect-ratio: 16 / 9;
-}
-
-.mobile-unsupported-blocker {
-  display: none;
-}
-
-@media (max-width: 767px), (max-width: 1180px) and (max-height: 620px) {
-  .loading-overlay,
-  html:not([data-layout-ratio-lock="true"]) .app-shell,
-  .toast {
-    display: none !important;
-  }
-
-  html[data-layout-ratio-lock="true"] .mobile-unsupported-blocker {
-    display: none !important;
-  }
-
-  body {
-    background:
-      radial-gradient(circle at 50% 18%, rgba(125, 224, 248, 0.18), transparent 30%),
-      linear-gradient(180deg, #071a29 0%, #02080f 100%);
-  }
-
-  .mobile-unsupported-blocker {
-    position: fixed;
-    inset: 0;
-    z-index: 11000;
-    display: grid;
-    place-items: center;
-    padding:
-      calc(env(safe-area-inset-top, 0px) + 18px)
-      calc(env(safe-area-inset-right, 0px) + 18px)
-      calc(env(safe-area-inset-bottom, 0px) + 18px)
-      calc(env(safe-area-inset-left, 0px) + 18px);
-    background:
-      radial-gradient(circle at 50% 18%, rgba(125, 224, 248, 0.18), transparent 30%),
-      linear-gradient(180deg, #071a29 0%, #02080f 100%);
-    color: var(--ink);
-    text-align: center;
-    pointer-events: auto;
-  }
-
-  .mobile-unsupported-card {
-    width: min(100%, 430px);
-    display: grid;
-    gap: 12px;
-    padding: 22px;
-    border-radius: 14px;
-    background: rgba(6, 20, 33, 0.92);
-    border: 1px solid rgba(173, 225, 255, 0.18);
-    box-shadow: 0 28px 70px rgba(0, 0, 0, 0.42);
-  }
-
-  .mobile-unsupported-kicker {
-    margin: 0;
-    color: var(--brand);
-    font-size: 0.7rem;
-    font-weight: 900;
-    letter-spacing: 0;
-    text-transform: uppercase;
-  }
-
-  .mobile-unsupported-card h1 {
-    margin: 0;
-    font-size: 1.5rem;
-    line-height: 1.1;
-    letter-spacing: 0;
-  }
-
-  .mobile-unsupported-card p:last-child {
-    margin: 0;
-    color: rgba(232, 247, 255, 0.76);
-    font-size: 0.96rem;
-    line-height: 1.35;
-  }
 }
 
 @media (max-width: 980px) and (max-height: 620px) and (orientation: landscape) {
@@ -18622,12 +18585,6 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .cloud-dialog-backdrop { position: fixed; inset: 0; z-index: 100000; display: grid; place-items: center; padding: 20px; background: rgba(0,12,23,.78); }
 .cloud-dialog { width: min(680px, 94vw); max-height: 90vh; overflow: auto; border-radius: 20px; padding: 22px; background: #f5fbff; color: #12384d; box-shadow: 0 24px 70px rgba(0,0,0,.45); }
 .cloud-dialog h2 { margin-top: 0; }
-.invite-friend-card { display: grid; gap: 16px; }
-.invite-friend-field { display: grid; gap: 7px; color: var(--muted); font-size: 12px; font-weight: 800; }
-.invite-friend-field textarea { width: 100%; min-height: 116px; box-sizing: border-box; resize: vertical; border: 1px solid rgba(5,59,99,.2); border-radius: 12px; padding: 12px; background: #fff; color: #12384d; font: inherit; line-height: 1.45; }
-.invite-friend-field textarea:focus { outline: 2px solid rgba(20,130,180,.25); border-color: #3d91b6; }
-.invite-friend-meta { display: flex; justify-content: space-between; gap: 12px; min-height: 18px; color: #557486; font-size: 11px; }
-.invite-friend-meta [data-invite-friend-status] { text-align: right; }
 .cloud-conflict-grid { display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 14px; margin: 16px 0; }
 .cloud-conflict-grid section { display: grid; gap: 9px; padding: 14px; border-radius: 14px; background: #e6f5ff; }
 .cloud-conflict-grid span { font-size: 13px; }
@@ -19322,8 +19279,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .loading-overlay.is-ready.is-auth-mode { width: 100vw; min-width: 0; }
 .loading-overlay.is-ready.is-auth-mode .startup-auth-title { overflow-wrap: anywhere; }
 .loading-overlay.is-ready.is-auth-mode .startup-auth-title:focus { outline: none; }
-/* Email callbacks remain usable on phones; gameplay retains its device guard. */
-body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupported-blocker { display: none !important; }
+/* Email callbacks remain usable at compact viewport sizes. */
 .loading-overlay.is-ready.is-auth-mode:not([hidden]) { display: grid !important; }
 
 /* Settings dashboard redesign 2026-09-10 */
@@ -19615,6 +19571,60 @@ body:has(.loading-overlay.is-ready.is-auth-mode:not([hidden])) .mobile-unsupport
 
 #settingsOverlay .settings-depth-level-ticks span:first-child { text-align: left; }
 #settingsOverlay .settings-depth-level-ticks span:last-child { text-align: right; }
+
+#settingsOverlay .settings-ambient-bubble-row {
+  grid-template-columns: minmax(0, 1fr) minmax(190px, 235px);
+}
+
+#settingsOverlay .settings-ambient-bubble-control {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 3px;
+  min-width: 190px;
+}
+
+#settingsOverlay .settings-ambient-bubble-control output {
+  justify-self: end;
+  color: #8de8ff;
+  font-size: .69rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+#settingsOverlay #ambientBubbleLevelInput {
+  width: 100%;
+  min-width: 0;
+  margin: 0;
+  accent-color: #36d7f3;
+  cursor: pointer;
+}
+
+#settingsOverlay .settings-ambient-bubble-ticks {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  color: rgba(190, 220, 232, .58);
+  font-size: .56rem;
+  line-height: 1.05;
+  text-align: center;
+}
+
+#settingsOverlay .settings-ambient-bubble-ticks span {
+  display: grid;
+  gap: 2px;
+}
+
+#settingsOverlay .settings-ambient-bubble-ticks strong {
+  color: inherit;
+  font-size: .58rem;
+}
+
+#settingsOverlay .settings-ambient-bubble-ticks small {
+  color: inherit;
+  font-size: .52rem;
+}
+
+#settingsOverlay .settings-ambient-bubble-ticks span:first-child { text-align: left; }
+#settingsOverlay .settings-ambient-bubble-ticks span:last-child { text-align: right; }
 
 #settingsOverlay .settings-color-input {
   width: 58px;
@@ -23931,7 +23941,12 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .bubblebodega-home-section p { margin: 3px 0 0; color: #31566b; font-size: .86rem; }
 .bubblebodega-home-link { border: 0; color: #083d64; background: transparent; font: 800 .86rem/1 system-ui, sans-serif; white-space: nowrap; cursor: pointer; }
 .bubblebodega-home-link:hover { color: #0879bf; text-decoration: underline; }
-.bubblebodega-home-product-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; }
+.bubblebodega-home-product-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(225px, 260px));
+  justify-content: start;
+  gap: 10px;
+}
 .tankazon-store .bubblebodega-home-product-card { height: 248px !important; min-height: 248px !important; max-height: 248px !important; grid-template-rows: 128px 50px 42px !important; background: #fff; }
 .tankazon-store .bubblebodega-home-product-card .shop-thumb, .tankazon-store .bubblebodega-home-product-card .decor-thumb { height: 128px !important; min-height: 128px !important; }
 .tankazon-store .bubblebodega-home-product-card .shop-card-main { min-height: 0; }
@@ -23965,7 +23980,7 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card::after { content: none; }
 .tankazon-store.is-bubblebodega-home-open .bubblebodega-home-product-card .bubblebodega-home-reason { display: none !important; }
 
-@media (max-width: 800px) { .tankazon-nav-promo { display: none; } .bubblebodega-home-product-row { grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); } }
+@media (max-width: 800px) { .tankazon-nav-promo { display: none; } .bubblebodega-home-product-row { grid-template-columns: repeat(auto-fill, minmax(150px, 225px)); } }
 .tankazon-store .tankazon-search { height: 38px; grid-template-columns: minmax(0,1fr) 44px; }
 .tankazon-store .tankazon-search input { padding-inline: 11px; font-size: .88rem; }
 .tankazon-store .tankazon-search-scope { min-width: 70px; padding-left: 9px; padding-right: 22px; font-size: .72rem; }
@@ -25792,6 +25807,20 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   margin-left: auto;
 }
 
+/* Open messages use the inbox width rather than a centered reading column.
+   Keep the action controls as the separate rail directly below the viewport. */
+.websurf-mail-body {
+  display: block;
+}
+.websurf-email-scroll {
+  width: 100%;
+  box-sizing: border-box;
+}
+.websurf-mail-actions {
+  width: 100%;
+  align-self: stretch;
+}
+
 /* Keep the designer counter out of the header dead-space and anchored to the
    specimen viewport. */
 .proteus-designer-preview-column { position: relative; }
@@ -26525,6 +26554,17 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   background: #74797d !important;
 }
 
+/* Purchase History is a third shell row: browser tabs, store chrome, then the
+   scrollable account content.  A later general shell rule previously reduced
+   the panel to two rows while this page still targeted row 2, which pushed the
+   store header below the order list. */
+.tankazon-store.tankazon-account-open .tankazon-panel {
+  grid-template-rows: 40px auto minmax(0, 1fr) !important;
+}
+.tankazon-store.tankazon-account-open .tankazon-account-page {
+  grid-row: 3;
+}
+
 /* Settings layout refresh 2026-09-24
    Compact two-column dashboard based on the approved settings mockup. */
 #settingsOverlay .settings-dashboard-panel,
@@ -26540,20 +26580,38 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   grid-template-areas:
     "account account"
     "left right";
+  grid-auto-rows: max-content;
   column-gap: 12px;
-  row-gap: 12px;
+  row-gap: 16px;
 }
 
 #settingsOverlay .settings-dashboard-column,
 #settingsOverlay.websurf-settings-page .settings-dashboard-column {
   gap: 12px;
+  min-height: 0;
 }
 
 #settingsOverlay .settings-section,
 #settingsOverlay.websurf-settings-page .settings-section {
+  position: relative;
+  isolation: isolate;
   gap: 7px;
   padding: 11px 12px;
   border-radius: 13px;
+}
+
+/* The dashboard columns flow independently. Reserve real grid space for each
+   card so an added preference (such as Ratio Lock Frame) cannot visually run
+   into the card above or below it at a scaled Ratio Lock size. */
+#settingsOverlay .settings-dashboard-column > .settings-section,
+#settingsOverlay.websurf-settings-page .settings-dashboard-column > .settings-section {
+  min-height: max-content;
+  overflow: hidden;
+}
+
+#settingsOverlay #accountCloudSaveSettingsSection,
+#settingsOverlay.websurf-settings-page #accountCloudSaveSettingsSection {
+  overflow: visible;
 }
 
 #settingsOverlay .settings-section-heading,

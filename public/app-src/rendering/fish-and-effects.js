@@ -267,6 +267,9 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   const drawWidth = aspect >= 1 ? size : size * aspect;
   const drawHeight = aspect >= 1 ? size / aspect : size;
   const mouth = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
+  if (!mouth) {
+    return;
+  }
 
   tankContext.save();
   tankContext.globalAlpha = 1;

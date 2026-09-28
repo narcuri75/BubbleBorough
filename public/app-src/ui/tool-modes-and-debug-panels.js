@@ -1053,18 +1053,16 @@ async function init() {
   const tutorialResumeChanged = restoreTutorialRuntimeState(Date.now());
   applyContentSettingsEffects(Date.now());
 
-  const selectedBackgroundKeys = new Set(getAllTanks().map((tank) => tank.selectedBackground).filter(Boolean));
+  // Decode only the aquarium the player is currently viewing. The old startup
+  // path decoded every tank shell and every owned fish across the save, which
+  // turns a small active scene into gigabytes of native image memory.
+  const activeTank = getCurrentTank();
   await preloadImages(filterPreloadPathsForCurrentContentSettings([
-    ...runtime.backgroundCatalog
-      .filter((item) => selectedBackgroundKeys.has(item.key) && !isCustomBackgroundKey(item.key) && !isLocalImageBackgroundKey(item.key))
-      .map((item) => item.path),
-    ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
-    ...runtime.tankCatalog.map((item) => item.path),
+    ...getTankSwitchPreloadPaths(activeTank),
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
-    ...Object.values(TANK_SUBSTRATE_ASSET_PATHS).map((path) => resolveAppUrl(path)),
-    ...runtime.bubbleCatalog.map((item) => item.path),
+    getTankSubstrateAssetPath(activeTank),
     AUTO_DISPENSER_IMAGE_PATH,
     ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,
     ...AUTO_DISPENSER_VARIANT_BG_PATHS,
@@ -1089,9 +1087,6 @@ async function init() {
     ...GRIME_OVERLAY_ASSET_PATHS,
     ...WATER_PARTICLE_ASSET_PATHS,
     ...Object.values(TOOL_CURSOR_ICON_PATHS),
-    ...getPlacedDecorPreloadPaths(),
-    ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
-    ...getCustomFishCatalogEntries(state).map((item) => item.asset),
     runtime.foodAndMedCatalog?.fallbackImage,
     FOOD_PELLET_IMAGE_PATH,
     ...Object.values(runtime.foodAndMedCatalog?.items?.food || {}).flatMap((entry) => [
@@ -1101,10 +1096,11 @@ async function init() {
     ...Object.values(runtime.foodAndMedCatalog?.items?.medicine || {}).flatMap((entry) => [
       entry.image ? resolveFoodAndMedAssetPath(entry.image) : ""
     ].filter(Boolean)),
-    ...getOwnedFishPreloadPaths()
+    // Store assets are loaded lazily by their respective UI instead of being
+    // retained by the gameplay image cache at launch.
   ]), { maxAttempts: 1 });
 
-  const criticalFishImagePaths = [...new Set(getAllTankFish(state)
+  const criticalFishImagePaths = [...new Set((activeTank?.fish || [])
     .map((fish) => {
       const species = getSpeciesForFish(fish);
       return species ? (getFishDisplayAssetPath(fish, species, Date.now()) || species.asset) : "";
@@ -1950,7 +1946,8 @@ function isFocusedTextEntry() {
 }
 
 function getStageRenderDevicePixelRatio() {
-  return Math.max(1, window.devicePixelRatio || 1);
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  return Math.min(dpr, PORTABLE_PERFORMANCE_MAX_RENDER_DPR);
 }
 
 function isStageRenderViewTransitionActive() {
@@ -2016,13 +2013,18 @@ function getAmbientBubbleSeedCount() {
   return AMBIENT_BUBBLE_COUNT;
 }
 
+function getAmbientBubbleSpeedMultiplier() {
+  return getAmbientBubbleLevelProfile().speedMultiplier;
+}
+
 function getVisibleAmbientSceneBubbles() {
-  if (!areAmbientBubblesEnabled()) {
+  const visibleCount = getAmbientBubbleLevelProfile().count;
+  if (visibleCount <= 0) {
     return [];
   }
 
   const bubbles = Array.isArray(runtime.scene?.bubbles) ? runtime.scene.bubbles : [];
-  return bubbles.slice(0, Math.min(AMBIENT_BUBBLE_COUNT, bubbles.length));
+  return bubbles.slice(0, Math.min(visibleCount, bubbles.length));
 }
 
 function getMaxVisibleBubblerBubblesPerSpout() {

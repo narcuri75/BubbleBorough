@@ -6441,127 +6441,6 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
-      "path": "assets/icons/Icons.webp",
-      "version": "fcd517497f9f",
-      "width": 400,
-      "height": 500,
-      "frames": {
-        "debug.png": [
-          0,
-          0,
-          100,
-          100
-        ],
-        "fish_care.png": [
-          100,
-          0,
-          100,
-          100
-        ],
-        "edit_tank.png": [
-          200,
-          0,
-          100,
-          100
-        ],
-        "aquarium_overview.png": [
-          300,
-          0,
-          100,
-          100
-        ],
-        "Store_Icon.png": [
-          0,
-          100,
-          100,
-          100
-        ],
-        "scoop.png": [
-          100,
-          100,
-          100,
-          100
-        ],
-        "store.png": [
-          200,
-          100,
-          100,
-          100
-        ],
-        "fish_box.png": [
-          300,
-          100,
-          100,
-          100
-        ],
-        "feed_fish.png": [
-          0,
-          200,
-          100,
-          100
-        ],
-        "sponge.png": [
-          100,
-          200,
-          100,
-          100
-        ],
-        "medicine.png": [
-          200,
-          200,
-          100,
-          100
-        ],
-        "settings.png": [
-          300,
-          200,
-          100,
-          100
-        ],
-        "tasks.png": [
-          0,
-          300,
-          100,
-          100
-        ],
-        "coin.png": [
-          100,
-          300,
-          100,
-          100
-        ],
-        "tank_info.png": [
-          200,
-          300,
-          100,
-          100
-        ],
-        "tools.png": [
-          300,
-          300,
-          100,
-          100
-        ],
-        "decor_box.png": [
-          0,
-          400,
-          100,
-          100
-        ],
-        "bell.png": [
-          100,
-          400,
-          100,
-          100
-        ]
-      },
-      "delivery": {
-        "root": "assets/generated/sprites/icons/Icons",
-        "version": "8cf498811d9f-v1",
-        "standalone": false
-      }
-    },
-    {
       "path": "assets/icons/cursors.webp",
       "version": "94eb860edde8",
       "width": 384,
@@ -6649,6 +6528,145 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/icons/cursors",
         "version": "f95e1e3317b4-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/icons/icons.webp",
+      "version": "db3344ed4b92",
+      "width": 400,
+      "height": 600,
+      "frames": {
+        "debug.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "decor_box.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "edit_tank.png": [
+          200,
+          0,
+          100,
+          100
+        ],
+        "feed_fish.png": [
+          300,
+          0,
+          100,
+          100
+        ],
+        "fish_box.png": [
+          0,
+          100,
+          100,
+          100
+        ],
+        "fish_care.png": [
+          100,
+          100,
+          100,
+          100
+        ],
+        "medicine.png": [
+          200,
+          100,
+          100,
+          100
+        ],
+        "scoop.png": [
+          300,
+          100,
+          100,
+          100
+        ],
+        "settings.png": [
+          0,
+          200,
+          100,
+          100
+        ],
+        "sponge.png": [
+          100,
+          200,
+          100,
+          100
+        ],
+        "store.png": [
+          200,
+          200,
+          100,
+          100
+        ],
+        "Store_Icon.png": [
+          300,
+          200,
+          100,
+          100
+        ],
+        "tank_info.png": [
+          0,
+          300,
+          100,
+          100
+        ],
+        "tasks.png": [
+          100,
+          300,
+          100,
+          100
+        ],
+        "tools.png": [
+          200,
+          300,
+          100,
+          100
+        ],
+        "aquarium_overview.png": [
+          300,
+          300,
+          100,
+          100
+        ],
+        "bell.png": [
+          0,
+          400,
+          100,
+          100
+        ],
+        "coin.png": [
+          100,
+          400,
+          100,
+          100
+        ],
+        "meat_icon.png": [
+          200,
+          400,
+          100,
+          100
+        ],
+        "sparkle_1.png": [
+          300,
+          400,
+          100,
+          100
+        ],
+        "found_coin_flash.png": [
+          0,
+          500,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/icons/icons",
+        "version": "b46abd0da7b0-v1",
         "standalone": false
       }
     },
@@ -6806,6 +6824,247 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/icons/settings",
         "version": "6c0bacde4d6f-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/icons/settings_2.webp",
+      "version": "f67bc37108fb",
+      "width": 400,
+      "height": 1000,
+      "frames": {
+        "audio-wave.png": [
+          2,
+          0,
+          95,
+          100
+        ],
+        "bubbles.png": [
+          100,
+          3,
+          100,
+          93
+        ],
+        "bubbles-hd.png": [
+          200,
+          7,
+          100,
+          85
+        ],
+        "close.png": [
+          300,
+          0,
+          100,
+          99
+        ],
+        "cloud.png": [
+          0,
+          112,
+          100,
+          75
+        ],
+        "cloud-complete.png": [
+          100,
+          111,
+          100,
+          77
+        ],
+        "code.png": [
+          200,
+          109,
+          100,
+          82
+        ],
+        "coin.png": [
+          300,
+          100,
+          100,
+          100
+        ],
+        "data.png": [
+          6,
+          200,
+          87,
+          100
+        ],
+        "download.png": [
+          100,
+          207,
+          100,
+          86
+        ],
+        "expand.png": [
+          200,
+          200,
+          100,
+          100
+        ],
+        "explosion.png": [
+          303,
+          200,
+          94,
+          100
+        ],
+        "eyedropper.png": [
+          2,
+          300,
+          96,
+          100
+        ],
+        "heart.png": [
+          100,
+          304,
+          100,
+          91
+        ],
+        "house.png": [
+          200,
+          304,
+          100,
+          92
+        ],
+        "layers.png": [
+          304,
+          300,
+          91,
+          100
+        ],
+        "leaf.png": [
+          0,
+          403,
+          100,
+          94
+        ],
+        "letter.png": [
+          100,
+          409,
+          100,
+          81
+        ],
+        "light-dark.png": [
+          200,
+          400,
+          99,
+          100
+        ],
+        "lock.png": [
+          306,
+          400,
+          88,
+          100
+        ],
+        "lock-gold.png": [
+          2,
+          500,
+          95,
+          100
+        ],
+        "log-out.png": [
+          100,
+          504,
+          100,
+          92
+        ],
+        "mask.png": [
+          203,
+          500,
+          94,
+          100
+        ],
+        "mountain.png": [
+          300,
+          513,
+          100,
+          73
+        ],
+        "music-note.png": [
+          3,
+          600,
+          93,
+          100
+        ],
+        "page.png": [
+          105,
+          600,
+          90,
+          100
+        ],
+        "person.png": [
+          201,
+          600,
+          97,
+          100
+        ],
+        "pop-out.png": [
+          300,
+          601,
+          100,
+          98
+        ],
+        "reset.png": [
+          0,
+          701,
+          100,
+          97
+        ],
+        "screen.png": [
+          100,
+          700,
+          99,
+          100
+        ],
+        "screen-night.png": [
+          200,
+          701,
+          100,
+          98
+        ],
+        "settings-gear.png": [
+          300,
+          700,
+          100,
+          100
+        ],
+        "sparkles.png": [
+          2,
+          800,
+          96,
+          100
+        ],
+        "speaker.png": [
+          100,
+          803,
+          100,
+          93
+        ],
+        "speech-bubble.png": [
+          200,
+          807,
+          100,
+          86
+        ],
+        "sun.png": [
+          300,
+          800,
+          99,
+          100
+        ],
+        "upload.png": [
+          0,
+          904,
+          100,
+          92
+        ],
+        "wave.png": [
+          100,
+          905,
+          100,
+          90
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/icons/settings_2",
+        "version": "7bc15dc7a6e9-v1",
         "standalone": false
       }
     },
@@ -7081,88 +7340,88 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/tank-frame/corners.webp",
-      "version": "e28c578e1e89",
-      "width": 58,
+      "version": "0785f33116f7",
+      "width": 74,
       "height": 158,
       "frames": {
         "tank_frame_top-left.png": [
           0,
           0,
-          29,
+          37,
           79
         ],
         "tank_frame_top-right.png": [
-          29,
+          37,
           0,
-          29,
+          37,
           79
         ],
         "tank_frame_bottom-left.png": [
           0,
           79,
-          29,
+          37,
           79
         ],
         "tank_frame_bottom-right.png": [
-          29,
+          37,
           79,
-          29,
+          37,
           79
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/tank-frame/corners",
-        "version": "898aa4647c91-v1",
+        "version": "f1c39f4f386c-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/tank-frame/left-right.webp",
-      "version": "5d1beaea6cad",
-      "width": 42,
+      "version": "af80c6687952",
+      "width": 74,
       "height": 673,
       "frames": {
         "tank_frame_right.png": [
           0,
           0,
-          21,
+          37,
           673
         ],
         "tank_frame_left.png": [
-          21,
+          37,
           0,
-          21,
+          37,
           673
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/tank-frame/left-right",
-        "version": "ccce82f29862-v1",
+        "version": "185003110abc-v1",
         "standalone": false
       }
     },
     {
       "path": "assets/tank-frame/top-bottom.webp",
-      "version": "57fd28e2c8b4",
-      "width": 1484,
-      "height": 156,
+      "version": "eb326fed9ab8",
+      "width": 1465,
+      "height": 158,
       "frames": {
         "tank_frame_top.png": [
           0,
           0,
-          1484,
-          78
+          1465,
+          79
         ],
         "tank_frame_bottom.png": [
           0,
-          78,
-          1484,
-          78
+          79,
+          1465,
+          79
         ]
       },
       "delivery": {
         "root": "assets/generated/sprites/tank-frame/top-bottom",
-        "version": "4ada107e8ec6-v1",
+        "version": "9e63e3bc232e-v1",
         "standalone": false
       }
     },

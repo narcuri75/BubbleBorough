@@ -267,6 +267,29 @@ function normalizeFishSocialCategory(value) {
   return allowed.includes(normalized) ? normalized : "";
 }
 
+function normalizeFishSocialMode(value) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "-");
+  const allowed = typeof FISH_SOCIAL_MODES !== "undefined"
+    ? Object.values(FISH_SOCIAL_MODES)
+    : ["school", "shoal", "pair", "pod", "host", "flexible", "solitary"];
+  return allowed.includes(normalized) ? normalized : "";
+}
+
+function normalizeFishSocialGroupId(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}
+
+function normalizeFishAffinityGroups(values) {
+  const source = Array.isArray(values) ? values : (values ? [values] : []);
+  return source
+    .map((value) => normalizeFishSocialGroupId(value))
+    .filter((value, index, list) => Boolean(value) && list.indexOf(value) === index);
+}
+
 function normalizeFishSocialSizeClass(value) {
   const normalized = String(value || "").trim().toLowerCase().replace(/[\s_-]+/g, "-");
   const allowed = typeof FISH_SOCIAL_SIZE_CLASSES !== "undefined"
@@ -328,16 +351,17 @@ function getFishSocialProfile(speciesOrFish) {
     }
   }
 
+  let customSocialAffinity = "";
   if (!category && species?.customAsset) {
-    const affinity = typeof normalizeCustomFishSocialAffinity === "function"
+    customSocialAffinity = typeof normalizeCustomFishSocialAffinity === "function"
       ? normalizeCustomFishSocialAffinity(species.socialAffinity)
       : ["independent", "schooling"].includes(String(species.socialAffinity || "").toLowerCase())
         ? String(species.socialAffinity || "").toLowerCase()
         : "adaptive";
-    if (affinity === "independent") {
+    if (customSocialAffinity === "independent") {
       category = "solitary";
       source = "custom-social-affinity";
-    } else if (affinity === "schooling") {
+    } else if (customSocialAffinity === "schooling") {
       category = "own_kind_required";
       source = "custom-social-affinity";
     }
@@ -357,11 +381,62 @@ function getFishSocialProfile(speciesOrFish) {
     category = "flexible";
   }
 
+  let socialMode = normalizeFishSocialMode(
+    fish?.socialMode
+    ?? species?.socialMode
+    ?? species?.socialProfile?.socialMode
+    ?? configuredSpeciesProfile?.socialMode
+  );
+  if (!socialMode) {
+    if (customSocialAffinity === "schooling") socialMode = "school";
+    else if (category === "pair_bond") socialMode = "pair";
+    else if (category === "host_bond") socialMode = "host";
+    else if (category === "solitary") socialMode = "solitary";
+    else if (category === "own_kind_required") socialMode = "school";
+    else if (category === "own_kind_preferred") socialMode = "shoal";
+    else socialMode = "flexible";
+  }
+
+  const socialGroupId = normalizeFishSocialGroupId(
+    fish?.socialGroupId
+    ?? species?.socialGroupId
+    ?? species?.socialProfile?.socialGroupId
+    ?? configuredSpeciesProfile?.socialGroupId
+    ?? ""
+  ) || null;
+
+  const configuredSocialMinimum = Number(
+    fish?.socialMinimum
+    ?? species?.socialMinimum
+    ?? species?.socialProfile?.socialMinimum
+    ?? configuredSpeciesProfile?.socialMinimum
+  );
+  const configuredSocialIdeal = Number(
+    fish?.socialIdeal
+    ?? species?.socialIdeal
+    ?? species?.socialProfile?.socialIdeal
+    ?? configuredSpeciesProfile?.socialIdeal
+  );
+  const defaultSocialMinimum = ["school", "shoal", "pair", "pod"].includes(socialMode) ? 2 : 0;
+  const defaultSocialIdeal = socialMode === "pair"
+    ? 2
+    : ["school", "shoal", "pod"].includes(socialMode)
+      ? 4
+      : 0;
+  const socialMinimum = Math.max(0, Number.isFinite(configuredSocialMinimum)
+    ? Math.round(configuredSocialMinimum)
+    : defaultSocialMinimum);
+  const socialIdeal = Math.max(
+    socialMinimum,
+    Number.isFinite(configuredSocialIdeal) ? Math.round(configuredSocialIdeal) : defaultSocialIdeal
+  );
+
   const configuredMinimum = Number(
     fish?.socialOwnKindMinimum
     ?? species?.socialOwnKindMinimum
     ?? species?.socialProfile?.ownKindMinimum
     ?? configuredSpeciesProfile?.ownKindMinimum
+    ?? (category === "own_kind_required" ? socialMinimum : undefined)
   );
   const defaultMinimum = typeof FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM !== "undefined"
     ? FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM
@@ -384,13 +459,23 @@ function getFishSocialProfile(speciesOrFish) {
     ?? species?.socialProfile?.compatibleFriendRequired
     ?? configuredSpeciesProfile?.compatibleFriendRequired
   );
-  const affinityGroup = String(
+  const affinityGroups = normalizeFishAffinityGroups([
+    ...normalizeFishAffinityGroups(
+      fish?.affinityGroups
+      ?? fish?.socialAffinityGroups
+      ?? species?.affinityGroups
+      ?? species?.socialAffinityGroups
+      ?? species?.socialProfile?.affinityGroups
+      ?? configuredSpeciesProfile?.affinityGroups
+      ?? []
+    ),
     fish?.socialAffinityGroup
-    ?? species?.socialAffinityGroup
-    ?? species?.socialProfile?.affinityGroup
-    ?? configuredSpeciesProfile?.affinityGroup
-    ?? ""
-  ).trim();
+      ?? species?.socialAffinityGroup
+      ?? species?.socialProfile?.affinityGroup
+      ?? configuredSpeciesProfile?.affinityGroup
+      ?? ""
+  ]);
+  const affinityGroup = affinityGroups[0] || "";
   const rawSocialSizeClass = (
     fish?.socialSizeClass
     ?? species?.socialSizeClass
@@ -420,17 +505,44 @@ function getFishSocialProfile(speciesOrFish) {
     ownKindMinimum,
     hostSpeciesIds,
     compatibleFriendRequired,
+    socialGroupId,
+    socialMode,
+    socialMinimum,
+    socialIdeal,
+    affinityGroups,
+    // Keep the singular field as a compatibility alias for the established
+    // friendship/relationship scoring code. New social satisfaction uses the array.
     affinityGroup,
     sizeClass,
     sizeLabel,
     sizeRank,
     requiresOwnKind: category === "own_kind_required",
     prefersOwnKind: ["own_kind_required", "own_kind_preferred", "pair_bond"].includes(category),
-    pairBondCapable: category === "pair_bond",
-    hostBondCapable: category === "host_bond",
-    solitary: category === "solitary",
-    crossSpeciesFriendshipCapable: category !== "solitary"
+    pairBondCapable: category === "pair_bond" || socialMode === "pair",
+    hostBondCapable: category === "host_bond" || socialMode === "host",
+    solitary: category === "solitary" || socialMode === "solitary",
+    coordinatedSchooling: ["school", "pod"].includes(socialMode),
+    crossSpeciesFriendshipCapable: category !== "solitary" && socialMode !== "solitary"
   };
+}
+
+function getFishProperSocialCompatibilityId(fishOrSpecies) {
+  const profile = getFishSocialProfile(fishOrSpecies);
+  if (!["school", "shoal", "pair", "pod"].includes(profile.socialMode)) return "";
+  if (profile.socialGroupId) return profile.socialGroupId;
+  return String(
+    fishOrSpecies?.speciesId
+    || fishOrSpecies?.id
+    || (typeof fishOrSpecies === "string" ? fishOrSpecies : "")
+    || ""
+  );
+}
+
+function areFishProperSocialGroupmates(fishOrSpecies, otherFishOrSpecies) {
+  if (!fishOrSpecies || !otherFishOrSpecies || fishOrSpecies === otherFishOrSpecies) return false;
+  const left = getFishProperSocialCompatibilityId(fishOrSpecies);
+  const right = getFishProperSocialCompatibilityId(otherFishOrSpecies);
+  return Boolean(left && right && left === right);
 }
 
 function getFishSocialSizeClass(fishOrSpecies) {
@@ -475,11 +587,192 @@ function areFishEstablishedFriends(fish, otherFish) {
   return false;
 }
 
+function isFishInNewTankAcclimation(fish, now = Date.now()) {
+  if (!fish || typeof FISH_NEW_TANK_ACCLIMATION_MS === "undefined") return false;
+  const tankAddedAt = Number(fish.tankAddedAt);
+  if (!Number.isFinite(tankAddedAt) || tankAddedAt <= 0 || now < tankAddedAt) return false;
+  return now - tankAddedAt < FISH_NEW_TANK_ACCLIMATION_MS;
+}
+
+function isFishSafeSocialCompanion(fish, otherFish, now = Date.now()) {
+  if (!fish || !otherFish || fish.id === otherFish.id) return false;
+  if (typeof isFishDead === "function" && (isFishDead(fish) || isFishDead(otherFish))) return false;
+  const fishAvoid = fish?.behaviorSignals?.avoid_specific_fish;
+  const otherAvoid = otherFish?.behaviorSignals?.avoid_specific_fish;
+  if (
+    (fishAvoid && String(fishAvoid.targetId || "") === String(otherFish.id || "") && (!Number(fishAvoid.expiresAt) || Number(fishAvoid.expiresAt) > now))
+    || (otherAvoid && String(otherAvoid.targetId || "") === String(fish.id || "") && (!Number(otherAvoid.expiresAt) || Number(otherAvoid.expiresAt) > now))
+  ) {
+    return false;
+  }
+
+  const negativeKinds = new Set(["fear", "dislike", "rival"]);
+  const directStoredKind = fish?.relationships?.[otherFish.id]?.kind;
+  const reverseStoredKind = otherFish?.relationships?.[fish.id]?.kind;
+  if (negativeKinds.has(directStoredKind) || negativeKinds.has(reverseStoredKind)) return false;
+  if (typeof getRelationshipKindForFish === "function") {
+    const direct = getRelationshipKindForFish(fish, otherFish);
+    const reverse = getRelationshipKindForFish(otherFish, fish);
+    if (negativeKinds.has(direct) || negativeKinds.has(reverse)) return false;
+  }
+
+  const properGroupmate = typeof areFishProperSocialGroupmates === "function"
+    && areFishProperSocialGroupmates(fish, otherFish);
+  const bondedPartner = String(fish?.pairBondPartnerId || "") === String(otherFish.id || "")
+    || String(otherFish?.pairBondPartnerId || "") === String(fish?.id || "");
+  const hostMatch = typeof isFishHostBondMatch === "function" && isFishHostBondMatch(fish, otherFish);
+  if (properGroupmate || bondedPartner || hostMatch) return true;
+
+  if (typeof canFishBuildFriendship === "function") {
+    return canFishBuildFriendship(fish, otherFish, now, { passive: false });
+  }
+  return true;
+}
+
+function getFishSocialSatisfaction(fish, tank = getCurrentTank(), now = Date.now(), options = {}) {
+  const socialCache = typeof runtime !== "undefined" && runtime?.fishSocialSatisfactionCache instanceof Map
+    ? runtime.fishSocialSatisfactionCache
+    : null;
+  const fishId = String(fish?.id || "");
+  const tankId = String(tank?.id || "");
+  if (!options.forceRecalculate && fishId && socialCache?.has(fishId)) {
+    const cached = socialCache.get(fishId);
+    if (cached?.tankId === tankId && cached?.status) return cached.status;
+  }
+
+  const profile = getFishSocialProfile(fish);
+  const livingFish = (Array.isArray(tank?.fish) ? tank.fish : [])
+    .filter((entry) => entry && (typeof isFishDead !== "function" || !isFishDead(entry)));
+  const groupModes = new Set(["school", "shoal", "pair", "pod"]);
+  const hasStructuredGroup = groupModes.has(profile.socialMode) && Number(profile.socialIdeal) > 1;
+  const socialMinimum = Math.max(0, Number(profile.socialMinimum) || 0);
+  const idealGroupSize = Math.max(socialMinimum, Number(profile.socialIdeal) || 0);
+  const affinityGroups = new Set(Array.isArray(profile.affinityGroups) ? profile.affinityGroups : []);
+  let properGroupCount = livingFish.includes(fish) ? 1 : 0;
+  let affinityCompanionCount = 0;
+  let establishedFriendCount = 0;
+  let ordinaryCompatibleCount = 0;
+  let bondedPartnerPresent = false;
+  let hostPresent = false;
+
+  for (const otherFish of livingFish) {
+    if (!otherFish || otherFish.id === fish?.id) continue;
+    if (!isFishSafeSocialCompanion(fish, otherFish, now)) continue;
+
+    const directBond = String(fish?.pairBondPartnerId || "") === String(otherFish.id || "")
+      || String(otherFish?.pairBondPartnerId || "") === String(fish?.id || "");
+    if (directBond) bondedPartnerPresent = true;
+    const hostMatch = typeof isFishHostBondMatch === "function" && isFishHostBondMatch(fish, otherFish);
+    if (hostMatch) hostPresent = true;
+
+    if (typeof areFishProperSocialGroupmates === "function" && areFishProperSocialGroupmates(fish, otherFish)) {
+      properGroupCount += 1;
+      continue;
+    }
+    if (directBond || hostMatch) continue;
+
+    const establishedFriend = typeof areFishEstablishedFriends === "function"
+      ? areFishEstablishedFriends(fish, otherFish)
+      : fish?.relationships?.[otherFish.id]?.kind === "friend" || otherFish?.relationships?.[fish?.id]?.kind === "friend";
+    if (establishedFriend) {
+      establishedFriendCount += 1;
+      continue;
+    }
+
+    const otherProfile = getFishSocialProfile(otherFish);
+    const otherAffinityGroups = Array.isArray(otherProfile.affinityGroups) ? otherProfile.affinityGroups : [];
+    if (affinityGroups.size > 0 && otherAffinityGroups.some((groupId) => affinityGroups.has(groupId))) {
+      affinityCompanionCount += 1;
+      continue;
+    }
+    ordinaryCompatibleCount += 1;
+  }
+
+  if (!livingFish.includes(fish) && fish && (typeof isFishDead !== "function" || !isFishDead(fish))) {
+    properGroupCount = Math.max(1, properGroupCount);
+  }
+
+  let properGroupSatisfaction = 0;
+  if (hasStructuredGroup) {
+    if (properGroupCount >= idealGroupSize) {
+      properGroupSatisfaction = 1;
+    } else if (properGroupCount >= Math.max(2, socialMinimum)) {
+      const start = Math.max(2, socialMinimum);
+      const span = Math.max(1, idealGroupSize - start);
+      const progress = clamp((properGroupCount - start) / span, 0, 1);
+      const eased = 1 - Math.pow(1 - progress, 1.25);
+      properGroupSatisfaction = 0.72 + eased * 0.28;
+    } else if (properGroupCount > 1) {
+      const denominator = Math.max(1, socialMinimum - 1);
+      properGroupSatisfaction = 0.5 * clamp((properGroupCount - 1) / denominator, 0, 1);
+    }
+  }
+
+  let satisfaction = properGroupSatisfaction;
+  if (bondedPartnerPresent || hostPresent) satisfaction = Math.max(satisfaction, 0.95);
+  satisfaction += Math.min(0.35, establishedFriendCount * 0.35);
+  satisfaction += Math.min(0.3, affinityCompanionCount * 0.12);
+  satisfaction += Math.min(0.32, ordinaryCompatibleCount * 0.08);
+
+  if (hasStructuredGroup && properGroupCount < idealGroupSize && !bondedPartnerPresent && !hostPresent) {
+    satisfaction = Math.min(satisfaction, properGroupCount > 1 ? 0.92 : 0.65);
+  }
+  if (profile.solitary || profile.socialMode === "solitary") satisfaction = 1;
+  satisfaction = clamp(satisfaction, 0, 1);
+
+  const lonelinessEligible = !profile.solitary && (
+    hasStructuredGroup
+    || profile.compatibleFriendRequired === true
+  );
+
+  const status = {
+    satisfaction,
+    properGroupCount,
+    idealGroupSize,
+    affinityCompanionCount,
+    establishedFriendCount,
+    ordinaryCompatibleCount,
+    bondedPartnerPresent,
+    hostPresent,
+    socialGroupId: profile.socialGroupId || null,
+    socialMode: profile.socialMode || "flexible",
+    socialMinimum,
+    lonelinessEligible
+  };
+  if (fishId && socialCache) socialCache.set(fishId, { tankId, calculatedAt: now, status });
+  return status;
+}
+
+function refreshFishSocialSatisfactionCache(tank = getCurrentTank(), now = Date.now()) {
+  if (typeof runtime === "undefined") return 0;
+  if (!(runtime.fishSocialSatisfactionCache instanceof Map)) runtime.fishSocialSatisfactionCache = new Map();
+  const cache = runtime.fishSocialSatisfactionCache;
+  cache.clear();
+  const livingFish = (Array.isArray(tank?.fish) ? tank.fish : [])
+    .filter((fish) => fish && (typeof isFishDead !== "function" || !isFishDead(fish)));
+  for (const fish of livingFish) {
+    getFishSocialSatisfaction(fish, tank, now, { forceRecalculate: true });
+  }
+  return livingFish.length;
+}
+
+function getFishLonelyActivityText(fish, socialStatus = null) {
+  const status = socialStatus || (typeof getFishSocialSatisfaction === "function" ? getFishSocialSatisfaction(fish) : null);
+  if (status?.socialMode === "school") return "Looking for more of its school";
+  if (status?.socialMode === "pair") return "Looking for a companion";
+  if (status?.socialMode === "pod") return "Looking for its pod";
+  return "Looking for company";
+}
+
 function getFishBiologicalSocialStatus(fish, tank = getCurrentTank(), now = Date.now()) {
   const profile = getFishSocialProfile(fish);
+  const socialSatisfaction = typeof getFishSocialSatisfaction === "function"
+    ? getFishSocialSatisfaction(fish, tank, now)
+    : null;
   if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
     return {
       ...profile,
+      ...(socialSatisfaction || {}),
       requiresOwnKind: false,
       compatibleFriendRequired: false,
       requirement: null,
@@ -492,6 +785,10 @@ function getFishBiologicalSocialStatus(fish, tank = getCurrentTank(), now = Date
   const livingFish = (Array.isArray(tank?.fish) ? tank.fish : [])
     .filter((entry) => entry && (typeof isFishDead !== "function" || !isFishDead(entry)));
   const sameSpeciesCount = livingFish.filter((entry) => entry.speciesId === fish?.speciesId).length;
+  const properGroupCount = socialSatisfaction?.properGroupCount ?? livingFish.filter((entry) => (
+    entry === fish
+    || (typeof areFishProperSocialGroupmates === "function" && areFishProperSocialGroupmates(fish, entry))
+  )).length;
   const peacefulOverride = Boolean(
     fish
     && (typeof isFishDead !== "function" || !isFishDead(fish))
@@ -502,49 +799,42 @@ function getFishBiologicalSocialStatus(fish, tank = getCurrentTank(), now = Date
   let satisfied = true;
   let requirement = null;
   let missingReason = "";
-  let matchingCompanionCount = Math.max(0, sameSpeciesCount - (livingFish.includes(fish) ? 1 : 0));
+  let matchingCompanionCount = Math.max(0, properGroupCount - (livingFish.includes(fish) ? 1 : 0));
+  const structuredGroup = ["school", "shoal", "pair", "pod"].includes(profile.socialMode)
+    && Math.max(Number(profile.socialMinimum) || 0, Number(profile.socialIdeal) || 0) > 1;
 
-  if (profile.requiresOwnKind) {
-    requirement = "own_kind";
-    satisfied = peacefulOverride || sameSpeciesCount >= profile.ownKindMinimum;
+  if (structuredGroup) {
+    requirement = profile.socialMode === "pair" ? "companion" : "own_kind";
+    const minimum = Math.max(2, Number(profile.socialMinimum) || 2);
+    satisfied = peacefulOverride || properGroupCount >= minimum;
     if (!satisfied) {
-      missingReason = `Needs ${Math.max(0, profile.ownKindMinimum - sameSpeciesCount)} more of its own kind.`;
+      missingReason = `Needs ${Math.max(0, minimum - properGroupCount)} more of its social group.`;
     }
   } else if (profile.compatibleFriendRequired) {
     requirement = "compatible_friend";
     const compatibleFriends = livingFish.filter((entry) => {
       if (!entry || entry.id === fish?.id) return false;
-      const directRelationship = fish?.relationships?.[entry.id];
-      const reverseRelationship = entry?.relationships?.[fish?.id];
-      const establishedFriend = typeof areFishEstablishedFriends === "function"
+      if (typeof isFishSafeSocialCompanion === "function" && !isFishSafeSocialCompanion(fish, entry, now)) return false;
+      return typeof areFishEstablishedFriends === "function"
         ? areFishEstablishedFriends(fish, entry)
         : fish?.pairBondPartnerId === entry.id
           || entry?.pairBondPartnerId === fish?.id
-          || directRelationship?.kind === "friend"
-          || reverseRelationship?.kind === "friend";
-      if (!establishedFriend) return false;
-      if (typeof canFishBuildFriendship === "function") {
-        return canFishBuildFriendship(fish, entry, now, { passive: false });
-      }
-      if (typeof areFishSocialSizesCompatible === "function" && !areFishSocialSizesCompatible(fish, entry)) {
-        return false;
-      }
-      if (typeof getRelationshipKindForFish !== "function") return true;
-      return ["friend", "neutral"].includes(getRelationshipKindForFish(fish, entry));
+          || fish?.relationships?.[entry.id]?.kind === "friend"
+          || entry?.relationships?.[fish?.id]?.kind === "friend";
     });
     matchingCompanionCount = compatibleFriends.length;
     satisfied = peacefulOverride || compatibleFriends.length > 0;
-    if (!satisfied) {
-      missingReason = "Needs a compatible peaceful friend.";
-    }
+    if (!satisfied) missingReason = "Needs a compatible peaceful friend.";
   }
 
   return {
     ...profile,
+    ...(socialSatisfaction || {}),
     requirement,
     satisfied,
-    lonelinessEligible: profile.requiresOwnKind || profile.compatibleFriendRequired,
+    lonelinessEligible: socialSatisfaction?.lonelinessEligible ?? (structuredGroup || profile.compatibleFriendRequired),
     sameSpeciesCount,
+    properGroupCount,
     matchingCompanionCount,
     missingReason,
     checkedAt: now

@@ -856,11 +856,16 @@ function getTankSwitchPreloadPaths(tank) {
     activeTankId: tank.id
   };
   const background = runtime.backgroundMap.get(tank.selectedBackground);
+  const tankArtwork = runtime.tankMap.get(tank.selectedTankAsset);
+  const bubbleArtwork = runtime.bubbleMap.get(tank.selectedBubbleAsset);
   return filterPreloadPathsForCurrentContentSettings([...new Set([
     ...getPlacedDecorPreloadPaths(targetState),
     ...getOwnedFishPreloadPaths(targetState),
     background?.path,
-    getLocalBackgroundImageDataUrl(tank)
+    getLocalBackgroundImageDataUrl(tank),
+    tankArtwork?.path,
+    bubbleArtwork?.path,
+    getTankSubstrateAssetPath(tank)
   ].filter(Boolean))]);
 }
 
@@ -944,6 +949,7 @@ function setActiveTank(tankId, options = {}) {
       }
       renderTank(Date.now());
       releaseInactiveDecorImages(state);
+      releaseInactiveTankImages(state);
       requestAnimationFrame(() => finishTankSwitchLoadingTransition(transitionToken));
     });
   });

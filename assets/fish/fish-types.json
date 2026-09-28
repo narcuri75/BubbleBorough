@@ -371,7 +371,6 @@
         "carnivore"
       ],
       "juvenileFoods": [
-        "basic",
         "brineShrimp",
         "carnivore"
       ],
@@ -671,6 +670,7 @@
         "carnivore"
       ],
       "juvenileFoods": [
+        "basic",
         "brineShrimp",
         "carnivore"
       ],
@@ -3707,6 +3707,91 @@
       "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
       "Fish_enabled": true,
       "starterFish": true
+    },
+    {
+      "id": "lookdown",
+      "name": "Lookdown",
+      "genetics": "natural",
+      "cost": 18,
+      "mealCoins": 1,
+      "asset": "/assets/fish/lookdown-fish_classic-silver.png",
+      "assetVariants": [
+        "/assets/fish/lookdown-fish_classic-silver.png",
+        "/assets/fish/lookdown-fish_blue.png",
+        "/assets/fish/lookdown-fish_golden.png",
+        "/assets/fish/lookdown-fish_barred.png"
+      ],
+      "variantLabels": [
+        "Classic Silver",
+        "Blue",
+        "Golden",
+        "Barred"
+      ],
+      "description": "A tall, reflective saltwater schooling fish with a steep forehead and a bright metallic body.",
+      "width": 512,
+      "displayWidth": 230,
+      "bobSpeed": 1.2,
+      "swimStyle": "steady",
+      "speedMin": 0.022,
+      "speedMax": 0.034,
+      "targetMinMs": 2400,
+      "targetMaxMs": 5200,
+      "defaultNames": [
+        "Mirror",
+        "Silver",
+        "Flash",
+        "Luna",
+        "Chrome",
+        "Glint",
+        "Beacon",
+        "Shimmer",
+        "Ray",
+        "Halo",
+        "Gleam",
+        "Mercury"
+      ],
+      "caveEnabled": false,
+      "needs": {
+        "decor": [],
+        "friends": {
+          "min": 0,
+          "alike": false
+        }
+      },
+      "dislikedTypes": [],
+      "turnAnimation": "simple",
+      "liveBirth": false,
+      "seller": "Common Current",
+      "waterType": "saltwater",
+      "lifespanDays": 70,
+      "capacityCost": 1,
+      "cleanupAnimal": false,
+      "canBreed": true,
+      "dietProfile": "carnivore",
+      "acceptedFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "juvenileFoods": [
+        "basic",
+        "brineShrimp",
+        "carnivore"
+      ],
+      "careRequirements": {
+        "waterType": "saltwater",
+        "acceptedFoods": [
+          "basic",
+          "brineShrimp",
+          "carnivore"
+        ],
+        "dietaryMode": "carnivore",
+        "waterNote": "Saltwater required."
+      },
+      "variantRequirementPolicy": "inherit-species-requirements-unless-overridden",
+      "Fish_enabled": true,
+      "socialGroupId": "lookdown",
+      "socialMode": "school"
     },
     {
       "id": "cichlid",

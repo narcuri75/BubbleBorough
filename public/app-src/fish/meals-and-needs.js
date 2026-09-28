@@ -1732,13 +1732,16 @@ function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fis
     ? "Looking for more swimming room. Try a roomier tank."
     : conflict.tag === "sharp_decor" ? "Sharp decor is making this fish uncomfortable."
     : "Tankmates are making this fish uneasy. Check compatibility in Details." };
-  const socialStatus = typeof getFishBiologicalSocialStatus === "function"
-    ? getFishBiologicalSocialStatus(fish, currentTank, now)
-    : null;
-  if (socialStatus?.lonelinessEligible && !socialStatus.satisfied) {
-    return { tone: "okay", text: socialStatus.requirement === "compatible_friend"
-      ? "Would enjoy a peaceful friend in the tank."
-      : "Would enjoy a companion of the same species." };
+  const socialStatus = typeof getFishSocialSatisfaction === "function"
+    ? getFishSocialSatisfaction(fish, currentTank, now)
+    : (typeof getFishBiologicalSocialStatus === "function" ? getFishBiologicalSocialStatus(fish, currentTank, now) : null);
+  const lonelinessScore = clamp(Number(fish?.lonelinessScore) || 0, 0, 100);
+  const lonelinessThreshold = typeof FISH_LONELY_MOOD_THRESHOLD !== "undefined" ? FISH_LONELY_MOOD_THRESHOLD : 45;
+  if (socialStatus?.lonelinessEligible && lonelinessScore >= lonelinessThreshold) {
+    const activity = typeof getFishLonelyActivityText === "function"
+      ? getFishLonelyActivityText(fish, socialStatus)
+      : "Looking for company";
+    return { tone: "okay", text: `${activity}.` };
   }
   const missing = getFishNeedsStatus(fish, currentTank, now).find(item => !item.met);
   if (!missing) return null;
@@ -1759,6 +1762,7 @@ function getFishCareStatus(fish, now = Date.now(), needs = sanitizeFishNeeds(fis
 
 function getFishMoodPresentation(mood) {
   const presentation = {
+    Neutral: { tone: "okay", color: "#b7c2c8" },
     Happy: { tone: "good", color: "#59e5cb" },
     Cozy: { tone: "good", color: "#8fdda0" },
     Playful: { tone: "good", color: "#5edfff" },
@@ -1812,9 +1816,12 @@ function getFishDisposition(fish, now = Date.now()) {
   const biologicalSocialStatus = typeof getFishBiologicalSocialStatus === "function"
     ? getFishBiologicalSocialStatus(fish, currentTank, now)
     : null;
-  const missingSocialNeed = biologicalSocialStatus
-    ? Boolean(biologicalSocialStatus.lonelinessEligible && !biologicalSocialStatus.satisfied)
-    : missingNeeds.some((need) => need.tag === "school_2_plus" || need.tag === "social_own_kind");
+  const socialSatisfaction = typeof getFishSocialSatisfaction === "function"
+    ? getFishSocialSatisfaction(fish, currentTank, now)
+    : null;
+  const lonelinessScore = clamp(Number(fish?.lonelinessScore) || 0, 0, 100);
+  const lonelinessThreshold = typeof FISH_LONELY_MOOD_THRESHOLD !== "undefined" ? FISH_LONELY_MOOD_THRESHOLD : 45;
+  const visibleLoneliness = Boolean(socialSatisfaction?.lonelinessEligible && lonelinessScore >= lonelinessThreshold);
   const missingHabitatNeeds = missingNeeds.filter((need) => need.tag !== "school_2_plus" && need.tag !== "social_own_kind");
   const immediateThreat = typeof getFishImmediateFoodThreat === "function" ? getFishImmediateFoodThreat(fish, now) : null;
   const hungerLowThreshold = typeof FISH_HUNGER_LOW_THRESHOLD !== "undefined" ? FISH_HUNGER_LOW_THRESHOLD : 55;
@@ -1835,11 +1842,9 @@ function getFishDisposition(fish, now = Date.now()) {
   const threateningConflict = activeConflicts.find((conflict) => threatConflictTags.has(conflict.tag));
   const stressfulConflict = activeConflicts.find((conflict) => stressConflictTags.has(conflict.tag));
   const mildConflict = activeConflicts.find((conflict) => mildConflictTags.has(conflict.tag));
-  const tankAddedAt = Number(fish?.tankAddedAt || fish?.acquiredAt) || 0;
-  const acclimationWindowMs = typeof FISH_NEW_TANK_ACCLIMATION_MS !== "undefined"
-    ? FISH_NEW_TANK_ACCLIMATION_MS
-    : 90 * 1000;
-  const isAcclimating = tankAddedAt > 0 && now >= tankAddedAt && now - tankAddedAt < acclimationWindowMs;
+  const isAcclimating = typeof isFishInNewTankAcclimation === "function"
+    ? isFishInNewTankAcclimation(fish, now)
+    : false;
 
   let nearbyFriend = null;
   const nearbyTankFish = Array.isArray(currentTank?.fish)
@@ -1916,28 +1921,20 @@ function getFishDisposition(fish, now = Date.now()) {
     };
   }
 
-  if (missingSocialNeed && !isAcclimating) {
-    if (biologicalSocialStatus?.requirement === "compatible_friend") {
-      return {
-        mood: "Lonely",
-        activity: "Looking for a peaceful friend"
-      };
-    }
-    const ownKindMinimum = biologicalSocialStatus?.ownKindMinimum || 2;
-    const sameSpeciesCount = biologicalSocialStatus?.sameSpeciesCount || 1;
-    const missingCount = Math.max(1, ownKindMinimum - sameSpeciesCount);
-    return {
-      mood: "Lonely",
-      activity: missingCount > 1
-        ? `Looking for ${missingCount} more of its own kind`
-        : "Looking for company of its own kind"
-    };
-  }
-
   // Critical hunger is specific and actionable enough to beat generic
   // environmental stress. Less urgent hunger is considered after habitat care.
   if (!mealFree && hunger <= hungerCriticalThreshold) {
     return { mood: "Hungry", activity: "Really needs a meal" };
+  }
+
+  // During acclimation, ordinary social/environmental moods are suppressed.
+  // A genuinely injured fish still surfaces an actionable state instead of
+  // having that problem hidden behind Neutral.
+  if (isAcclimating && healthRatio <= 0.7) {
+    return { mood: "Stressed", activity: "Recovering from poor health" };
+  }
+  if (isAcclimating) {
+    return { mood: "Neutral", activity: "Settling into its new home" };
   }
 
   if ((Number(fish?.pairBondMourningUntil) || 0) > now) {
@@ -1948,12 +1945,13 @@ function getFishDisposition(fish, now = Date.now()) {
     };
   }
 
-  // Give newly introduced fish a brief neutral settling period. Immediate
-  // threats, illness, aggression, panic, and critical hunger still outrank it,
-  // but missing habitat or social needs no longer make a fish Uneasy the moment
-  // it touches the water.
-  if (isAcclimating) {
-    return { mood: "Curious", activity: "Exploring its new home" };
+  if (visibleLoneliness) {
+    return {
+      mood: "Lonely",
+      activity: typeof getFishLonelyActivityText === "function"
+        ? getFishLonelyActivityText(fish, socialSatisfaction)
+        : "Looking for company"
+    };
   }
 
   const severeEnvironmentProblem = Boolean(stressfulConflict)
@@ -2016,7 +2014,7 @@ function getFishDisposition(fish, now = Date.now()) {
   if (/play|pebble/.test(action) || fish?.activity === gravelPebbleActivity) {
     return { mood: "Playful", activity: /pebble/.test(action) ? "Tossing a little pebble" : "Having a little fun" };
   }
-  const socialNeedSatisfied = !biologicalSocialStatus?.lonelinessEligible || biologicalSocialStatus.satisfied;
+  const socialNeedSatisfied = !socialSatisfaction?.lonelinessEligible || lonelinessScore < lonelinessThreshold;
   if (socialNeedSatisfied && (/hangout|greet|follow|school|breed|mate/.test(action) || nearbyFriend || recentFriendInteraction)) {
     return {
       mood: "Social",
@@ -2110,13 +2108,76 @@ function calculateFishNeedDeltas(fish, now = Date.now(), elapsedMs = 0) {
   };
 }
 
+function updateFishLoneliness(fish, tank = getCurrentTank(), now = Date.now()) {
+  if (!fish || (typeof isFishDead === "function" && isFishDead(fish))) return false;
+  const previousScore = clamp(Number(fish.lonelinessScore) || 0, 0, 100);
+  const previousUpdatedAt = Number(fish.lonelinessUpdatedAt);
+  if (!Number.isFinite(previousUpdatedAt) || previousUpdatedAt <= 0 || now < previousUpdatedAt) {
+    fish.lonelinessScore = previousScore;
+    fish.lonelinessUpdatedAt = now;
+    return false;
+  }
+
+  const maxElapsedMs = typeof FISH_LONELINESS_MAX_ELAPSED_MS !== "undefined"
+    ? FISH_LONELINESS_MAX_ELAPSED_MS
+    : 5 * 60 * 1000;
+  const elapsedMs = clamp(now - previousUpdatedAt, 0, maxElapsedMs);
+  fish.lonelinessUpdatedAt = now;
+  if (elapsedMs <= 0) return false;
+  if (typeof isFishInNewTankAcclimation === "function" && isFishInNewTankAcclimation(fish, now)) {
+    return false;
+  }
+
+  const socialStatus = typeof getFishSocialSatisfaction === "function"
+    ? getFishSocialSatisfaction(fish, tank, now)
+    : null;
+  if (!socialStatus) return false;
+
+  const satisfaction = clamp(Number(socialStatus.satisfaction) || 0, 0, 1);
+  const minutes = elapsedMs / (typeof MINUTE_MS !== "undefined" ? MINUTE_MS : 60000);
+  const gainPerMinute = typeof FISH_LONELINESS_GAIN_PER_MINUTE !== "undefined" ? FISH_LONELINESS_GAIN_PER_MINUTE : 0.75;
+  const fullRecoveryPerMinute = typeof FISH_LONELINESS_FULL_GROUP_RECOVERY_PER_MINUTE !== "undefined"
+    ? FISH_LONELINESS_FULL_GROUP_RECOVERY_PER_MINUTE
+    : 2;
+  const partialRecoveryPerMinute = typeof FISH_LONELINESS_STRONG_PARTIAL_RECOVERY_PER_MINUTE !== "undefined"
+    ? FISH_LONELINESS_STRONG_PARTIAL_RECOVERY_PER_MINUTE
+    : 1.2;
+  const fullSatisfaction = typeof FISH_LONELINESS_FULL_SATISFACTION !== "undefined"
+    ? FISH_LONELINESS_FULL_SATISFACTION
+    : 0.95;
+  const strongPartialSatisfaction = typeof FISH_LONELINESS_STRONG_PARTIAL_SATISFACTION !== "undefined"
+    ? FISH_LONELINESS_STRONG_PARTIAL_SATISFACTION
+    : 0.7;
+
+  let delta = 0;
+  if (!socialStatus.lonelinessEligible || satisfaction >= fullSatisfaction) {
+    delta = -fullRecoveryPerMinute * minutes;
+  } else if (satisfaction >= strongPartialSatisfaction) {
+    delta = -partialRecoveryPerMinute * minutes;
+  } else {
+    delta = gainPerMinute * (1 - satisfaction) * minutes;
+  }
+
+  const nextScore = clamp(previousScore + delta, 0, 100);
+  if (Math.abs(nextScore - previousScore) <= 0.0001) return false;
+  fish.lonelinessScore = nextScore;
+  return true;
+}
+
 function updateFishNeeds(now = Date.now()) {
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     return typeof enforcePeacefulModeState === "function" ? enforcePeacefulModeState(now) : false;
   }
   let changed = false;
+  const socialTank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
+  // Social relationships are evaluated once per simulation update and cached.
+  // Mood/render reads reuse this snapshot instead of rescanning the tank every frame.
+  if (typeof refreshFishSocialSatisfactionCache === "function") {
+    refreshFishSocialSatisfactionCache(socialTank, now);
+  }
   for (const fish of getLivingTankFish()) {
     fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+    changed = updateFishLoneliness(fish, socialTank, now) || changed;
     const previousUpdatedAt = Number.isFinite(Number(fish.needsUpdatedAt)) ? Number(fish.needsUpdatedAt) : now;
     const elapsedMs = clamp(now - previousUpdatedAt, 0, FISH_NEEDS_MAX_OFFLINE_MS);
     if (elapsedMs <= 0) {

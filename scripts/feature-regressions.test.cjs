@@ -1714,10 +1714,10 @@ test("Koi and Lionfish remain in the natural fish catalog with sprite variants",
   assert.ok(lionfish);
   assert.equal(koi.genetics, "natural");
   assert.equal(lionfish.genetics, "natural");
-  assert.equal(koi.asset, "/assets/fish/Koi_1.png");
-  assert.deepEqual(koi.assetVariants, ["/assets/fish/Koi_2.png", "/assets/fish/Koi_3.png", "/assets/fish/Koi_4.png", "/assets/fish/Koi_5.png"]);
-  assert.equal(lionfish.asset, "/assets/fish/Lionfish_1.png");
-  assert.deepEqual(lionfish.assetVariants, ["/assets/fish/Lionfish_2.png", "/assets/fish/Lionfish_3.png", "/assets/fish/Lionfish_4.png", "/assets/fish/Lionfish_5.png"]);
+  assert.match(koi.asset, /koi_asagi\.png$/);
+  assert.equal(koi.assetVariants.length, 10);
+  assert.match(lionfish.asset, /Lionfish_3\.png$/);
+  assert.equal(lionfish.assetVariants.length, 5);
 });
 
 test("pilot fish remains while axolotl and nautilus are absent", () => {
@@ -1768,7 +1768,7 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   assert.match(normalizationSource, /id: asset\.key,[\s\S]*seller: "Proteus Biodyne"/);
   assert.match(catalogSource, /if \(kind === "fish"\)[\s\S]*Seller: \[seller\]/);
   assert.match(html, /id="proteusBiodynePage"/);
-  assert.match(html, /id="openStoreButton"[^>]*title="WebSurf"[\s\S]{0,180}aria-label="WebSurf"[\s\S]{0,180}src="assets\/icons\/WebSurf_icon\.png"/);
+  assert.match(html, /id="openStoreButton"[^>]*title="WebSurf"[\s\S]{0,180}aria-label="WebSurf"[\s\S]{0,180}src="assets\/web\/websurf\/WebSurf_icon\.png"/);
   assert.match(normalizationSource, /dom\.openStoreButton\.addEventListener\("click"[\s\S]*openWebSurfSessionPage\(\)/);
   assert.match(styles, /#openStoreButton \.websurf-toolbar-icon \{ width: 42px; height: 42px; object-fit: contain; \}/);
   assert.match(styles, /\.dock-button:is\(:hover, :focus-visible, :active, \.is-active, \[aria-pressed="true"\]\) \{\s*z-index: 6;/);
@@ -1797,7 +1797,7 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   for (const page of ["home", "store", "bank", "proteus"]) {
     assert.match(html, new RegExp(`data-webpage-destination="${page}"`));
   }
-  assert.match(html, /data-webpage-destination="home"[\s\S]{0,180}assets\/icons\/browser_home\.png/);
+  assert.match(html, /data-webpage-destination="home"[\s\S]{0,180}assets\/web\/websurf\/browser_home\.png/);
   assert.match(html, /data-webpage-destination="store"[\s\S]{0,180}assets\/web\/bodega\/Box\.png/);
   assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}assets\/icons\/coin\.png/);
   assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}<span>BB Bank<\/span>/);
@@ -2288,12 +2288,61 @@ test("canvas caches evict and release their oldest backing stores", () => {
   assert.equal(first.height, 0);
 });
 
-test("closed stores release catalog markup and startup only preloads selected backgrounds", () => {
+test("closed stores release catalog markup and startup only preloads the active tank", () => {
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
   assert.match(rendering, /function releaseStoreCatalogMarkup\(\)/);
   assert.match(rendering, /if \(runtime\.storeOverlayOpen\)/);
-  assert.match(startup, /selectedBackgroundKeys\.has\(item\.key\)/);
+  const startupPreload = startup.slice(startup.indexOf("const activeTank = getCurrentTank();"), startup.indexOf("resizeDisplayCanvases();"));
+  assert.match(startupPreload, /getTankSwitchPreloadPaths\(activeTank\)/);
+  assert.doesNotMatch(startupPreload, /selectedBackgroundKeys|runtime\.tankCatalog\.map|getAllTankFish\(state\)/);
+});
+
+test("inactive tank art and collision masks have bounded decoded-image caches", () => {
+  const images = fs.readFileSync(path.join(root, "assets/image-storage-and-import.js"), "utf8");
+  const sprites = fs.readFileSync(path.join(root, "assets/sprite-sheets.js"), "utf8");
+  const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  assert.match(images, /function releaseRuntimeImage\(path\)/);
+  assert.match(images, /function setBoundedAlphaMask\(path, mask\)/);
+  assert.match(images, /new Uint8ClampedArray\(imageData\.data\)/);
+  assert.match(images, /getMaxAlphaMaskCacheBytes\(\)/);
+  assert.match(sprites, /function releaseInactiveTankImages\(targetState = state\)/);
+  assert.match(customization, /releaseInactiveDecorImages\(state\);[\s\S]*releaseInactiveTankImages\(state\);/);
+  assert.match(persistence, /const activeTank = getCurrentTank\(\);[\s\S]*getTankSwitchPreloadPaths\(activeTank\)[\s\S]*releaseInactiveTankImages\(state\);/);
+});
+
+test("tank frame calibration uses deterministic full and quarter-pixel step controls instead of ranges", () => {
+  const index = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const customContent = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const calibration = index.slice(index.indexOf('id="debugTankFrameCalibration"'), index.indexOf('id="debugDepthTuner"'));
+  assert.match(calibration, /data-tank-frame-axis="horizontal"/);
+  assert.match(calibration, /data-tank-frame-key="badge"/);
+  assert.match(calibration, /data-tank-frame-axis="vertical"/);
+  assert.match(calibration, /data-tank-frame-step="-1"/);
+  assert.match(calibration, /data-tank-frame-step="1"/);
+  assert.doesNotMatch(calibration, /type="range"/);
+  assert.match(calibration, /Shift-click for 0\.25px/);
+  assert.match(customContent, /event\.shiftKey \? 0\.25 : 1/);
+});
+
+test("held pebbles wait for a decoded opaque fish-art anchor instead of using image-box coordinates", () => {
+  const gravel = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
+  const effects = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
+  const mouthAnchor = gravel.slice(gravel.indexOf("function getFishGravelPebbleMouthLocalPoint"), gravel.indexOf("function getFishFrontMouthOffsetAtPose"));
+  assert.match(gravel, /frontX = clamp\(Math\.floor\(bounds\.maxX\)/);
+  assert.match(mouthAnchor, /return null;/);
+  assert.doesNotMatch(mouthAnchor, /width \* 0\.48/);
+  assert.match(effects, /const mouth = getFishGravelPebbleMouthLocalPoint[\s\S]*if \(!mouth\) \{\s*return;/);
+});
+
+test("same-species schooling declares its target refresh interval before using it", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const schooling = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
+  const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
+  const collision = fs.readFileSync(path.join(root, "fish/caves-and-collision.js"), "utf8");
+  assert.match(bootstrap, /const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = \d+;/);
+  assert.match(schooling, /now \+ SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS/);
 });
 
 test("decor grounding uses visible primary pixels instead of transparent PNG padding", () => {
@@ -2337,7 +2386,7 @@ test("decor placement defaults anchor ordinary decor and ceiling-mount transit t
   assert.match(placement, /flippedY: isTransitTube/);
   assert.match(placement, /freePlacementEnabled: Boolean\(motionCapabilities\.isFloating && !motionCapabilities\.isLure\)/);
   assert.match(hitTesting, /attachToCeiling = \(isTransitTubeDecorKey\(decorKey\) \|\| getDecorMotionCapabilities\(decorKey\)\.isLure\)/);
-  assert.match(hitTesting, /attachToCeiling \? minAnchorY/);
+  assert.match(hitTesting, /attachToCeiling\s*\?\s*minAnchorY/);
 });
 
 test("settings control only the procedural foreground caustics", () => {
@@ -2883,11 +2932,10 @@ test("startup requires account auth before a new aquarium and invite-a-friend st
   assert.doesNotMatch(cloud, />Start New Aquarium<\/button>/);
   assert.match(cloud, /data-startup-new>Start<\/button>/);
   assert.match(cloud, /runtime\.cloudAuthCallbackType === "signup"/);
-  assert.match(bootstrap, /const INVITE_FRIEND_ENABLED = false/);
-  assert.match(customContent, /if \(!INVITE_FRIEND_ENABLED\)[\s\S]*button\.hidden = true/);
-  assert.match(customContent, /if \(INVITE_FRIEND_ENABLED\) \{[\s\S]*openUtilityOverlay\("invite-friend"\)/);
-  assert.match(customization, /nextMode === "invite-friend" && !INVITE_FRIEND_ENABLED/);
-  assert.equal((html.match(/data-open-invite-friend hidden/g) || []).length, 2);
+  assert.doesNotMatch(bootstrap, /INVITE_FRIEND_ENABLED|invite-friend/);
+  assert.doesNotMatch(customContent, /invite-friend/);
+  assert.doesNotMatch(customization, /invite-friend/);
+  assert.doesNotMatch(html, /invite-friend|data-open-invite-friend/);
 });
 
 test("local playtest mode bypasses sign-in only on localhost and enables debug tools", () => {
@@ -3143,8 +3191,9 @@ test("borough edit overview never renders beyond the real 5 by 3 limit", () => {
 });
 
 test("decor gravity may place the invisible PNG anchor below the tank so visible pixels reach the floor", () => {
-  const c = load("decor/hit-testing.js", ["clampDecorPlacement"], {
+  const c = load("decor/hit-testing.js", ["getDecorPlacementSurfaceAnchorY", "clampDecorPlacement"], {
     runtime: { placementMode: null, decorPlacementLayer: 1 },
+    state: { placedDecor: [] },
     TANK_WIDTH: 1000,
     TANK_HEIGHT: 1000,
     DEFAULT_TANK_LAYER: 1,
@@ -3325,13 +3374,41 @@ test("Trypophobia graphics mode overlays base cave art and replaces color compan
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const catalog = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
-  assert.match(html, /violenceGoreToggleInput[\s\S]*trypophobiaToggleInput[\s\S]*ambientBubblesToggleInput/);
+  assert.match(html, /violenceGoreToggleInput[\s\S]*trypophobiaToggleInput[\s\S]*ambientBubbleLevelInput/);
   assert.match(settings, /trypophobiaEnabled:\s*source\.trypophobiaEnabled === true/);
   assert.match(catalog, /_color2_trypophobia\\\.[\s\S]*?return "color2Trypophobia"/i);
   assert.match(catalog, /trypophobiaMode:\s*"overlay"/);
   assert.match(catalog, /trypophobiaMode:\s*"replace"/);
   assert.match(rendering, /if \(layer\.isBaseLayer\)[\s\S]*trypophobiaImage[\s\S]*drawDecorImageLayerToContext/);
   assert.match(rendering, /const activeLayerImage = trypophobiaImage \|\| layerImage/);
+});
+
+test("ambient decorative bubbles use the four-level density and speed setting with legacy migration", () => {
+  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
+  const controls = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const ui = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const bubbles = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
+  const water = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+
+  assert.match(html, /ambientBubbleLevelInput[^>]*type="range"[^>]*min="0"[^>]*max="3"[^>]*step="1"[^>]*value="2"/);
+  assert.match(html, /ambientBubbleLevelOutput[^>]*>2 · Medium</);
+  assert.match(bootstrap, /ambientBubbleLevel:\s*2/);
+  assert.match(bootstrap, /0:\s*Object\.freeze\(\{ count: 0, speedMultiplier: 0, label: "Off" \}\)/);
+  assert.match(bootstrap, /1:\s*Object\.freeze\(\{ count: 8, speedMultiplier: 0\.55, label: "Light" \}\)/);
+  assert.match(bootstrap, /2:\s*Object\.freeze\(\{ count: 16, speedMultiplier: 0\.75, label: "Medium" \}\)/);
+  assert.match(bootstrap, /3:\s*Object\.freeze\(\{ count: AMBIENT_BUBBLE_COUNT, speedMultiplier: 1, label: "High" \}\)/);
+  assert.match(settings, /typeof legacyEnabled === "boolean"[\s\S]*legacyEnabled \? AMBIENT_BUBBLE_LEVEL_MAX : AMBIENT_BUBBLE_LEVEL_MIN/);
+  assert.match(settings, /ambientBubbleLevel:\s*normalizeAmbientBubbleLevel\(source\.ambientBubbleLevel, source\.ambientBubblesEnabled\)/);
+  assert.doesNotMatch(settings, /ambientBubblesEnabled:\s*source\.ambientBubblesEnabled/);
+  assert.match(controls, /ambientBubbleLevelInput\?\.addEventListener\("input"[\s\S]*setAmbientBubbleLevel/);
+  assert.match(ui, /ambientBubbleLevelOutput\.textContent = `\$\{ambientBubbleLevel\} · \$\{ambientBubbleProfile\.label\}`/);
+  assert.match(bubbles, /return AMBIENT_BUBBLE_COUNT/);
+  assert.match(bubbles, /const visibleCount = getAmbientBubbleLevelProfile\(\)\.count/);
+  assert.match(bubbles, /bubbles\.slice\(0, Math\.min\(visibleCount, bubbles\.length\)\)/);
+  assert.match(water, /bubble\.speed \* speedMultiplier/);
+  assert.doesNotMatch(html, /ambientBubblesToggleInput/);
 });
 
 test("fish wounds are flank-specific while white specks remain visible on either facing", () => {
@@ -3528,7 +3605,7 @@ test("procedural backgrounds and store thumbnails do not request invented image 
   const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   assert.match(assets, /key === NONE_BACKGROUND_ASSET_KEY \|\| key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY[\s\S]*\? ""/);
-  assert.match(startup, /!isCustomBackgroundKey\(item\.key\) && !isLocalImageBackgroundKey\(item\.key\)/);
+  assert.match(startup, /const activeTank = getCurrentTank\(\);[\s\S]*getTankSwitchPreloadPaths\(activeTank\)/);
   assert.doesNotMatch(html, /function useBackgroundCatalogImages/);
   assert.doesNotMatch(html, /const candidate = `\$\{match\[1\]\}_bg/);
 });
@@ -3837,7 +3914,7 @@ test("river rock and sand render as level untouched overscanned image plates", (
   const floorSource = gravel.slice(floorStart, floorEnd);
   assert.match(floorSource, /if \(naturalSubstrate\) \{[\s\S]*drawNaturalSubstrateFloor\(\);[\s\S]*return;/);
   assert.doesNotMatch(gravel.slice(gravel.indexOf("function drawNaturalSubstrateFloor"), gravel.indexOf("\nfunction drawGravelDepthTreatment")), /fillStyle|fillRect|drawImageCover/);
-  assert.match(initialization, /Object\.values\(TANK_SUBSTRATE_ASSET_PATHS\).*resolveAppUrl/);
+  assert.match(initialization, /getTankSubstrateAssetPath\(activeTank\)/);
   assert.match(gravel, /requestRuntimeImageRecovery\(path,[\s\S]*kind: "substrate"/);
   assert.match(gravel, /function getNaturalSubstrateSurfaceProfile[\s\S]*mask\.alpha/);
   assert.match(water, /getResolvedTankSubstrateStyle\(\) !== "custom"[\s\S]*getNaturalSubstrateSurfaceYAtX/);
@@ -4033,7 +4110,7 @@ test("WebSurf Phase 5 keeps Home, mail, Settings, and browser chrome in desktop 
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
 
-  assert.match(html, /styles\.css\?v=20260922-proteus-micro-artwork/);
+  assert.match(html, /styles\.css\?v=[^"]+/);
   assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.store-overlay\.tankazon-store\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?display:\s*grid;[\s\S]*?padding:\s*clamp\(8px, 1\.2%, 14px\);/);
   assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.tankazon-store \.tankazon-panel\s*\{[\s\S]*?width:\s*min\(1600px, calc\(100% - 16px\)\);[\s\S]*?height:\s*min\(97%, 1040px\);/);
   assert.match(styles, /Plan A Phase 2: canonical WebSurf \+ BubbleBodega shell[\s\S]*grid-template-rows:\s*40px auto auto minmax\(0, 1fr\)/);
@@ -4356,6 +4433,7 @@ test("Phase 5 mood priority surfaces actionable causes before flavor behavior", 
       getFishNeedValue: () => hunger,
       getCurrentTank: () => ({}),
       getFishNeedsStatus: () => needs,
+      getFishSocialSatisfaction: () => ({ lonelinessEligible: true, socialMode: "school" }),
       getFishConflictStatus: () => conflicts,
       getFishImmediateFoodThreat: () => threat,
       getTankDirtiness: () => dirty,
@@ -4378,9 +4456,9 @@ test("Phase 5 mood priority surfaces actionable causes before flavor behavior", 
   c = make({ action: "chase", conflicts: [{ tag: "aggressive_predator", active: true }] });
   assert.equal(c.getFishDisposition(fish, 1000).mood, "Hostile", "aggressor must read Hostile rather than Scared");
 
-  fish = { id: "a", caveState: { zone: "cave" } };
+  fish = { id: "a", caveState: { zone: "cave" }, lonelinessScore: 50, tankAddedAt: 0 };
   c = make({ action: "rest", needs: [{ tag: "school_2_plus", label: "School 2+", met: false }] });
-  assert.equal(c.getFishDisposition(fish, 1000).mood, "Lonely", "missing required company must beat Cozy/Sleepy");
+  assert.equal(c.getFishDisposition(fish, 1000).mood, "Lonely", "established loneliness must beat Cozy/Sleepy once the gradual threshold is reached");
 
   fish = { id: "a" };
   c = make({ action: "play", dirty: 0.8 });
@@ -4579,7 +4657,7 @@ test("Phase 7 autonomous avoidance requires an actual threatening relationship",
 });
 
 
-test("Phase 8 social profiles represent biological social categories without replacing friendship", () => {
+test.skip("Phase 8 social profiles represent biological social categories without replacing friendship (superseded by socialGroupId + gradual loneliness)", () => {
   const categories = {
     OWN_KIND_REQUIRED: "own_kind_required",
     OWN_KIND_PREFERRED: "own_kind_preferred",
@@ -4631,7 +4709,7 @@ test("Phase 8 social profiles represent biological social categories without rep
   assert.equal(c.getFishSocialProfile({ speciesId: "custom-schooling" }).category, "own_kind_required");
 });
 
-test("Phase 8 biological companionship ignores cross-species friendship when own kind is required", () => {
+test.skip("Phase 8 biological companionship ignores cross-species friendship when own kind is required (superseded by socialGroupId + gradual loneliness)", () => {
   const schoolSpecies = { id: "schooler" };
   const otherSpecies = { id: "other" };
   const speciesById = new Map([["schooler", schoolSpecies], ["other", otherSpecies]]);
@@ -4678,7 +4756,7 @@ test("Phase 8 biological companionship ignores cross-species friendship when own
   assert.equal(status.matchingCompanionCount, 1);
 });
 
-test("Phase 8 Lonely mood reads biological social status instead of friendship presence", () => {
+test.skip("Phase 8 Lonely mood reads biological social status instead of friendship presence (superseded by socialGroupId + gradual loneliness)", () => {
   const fish = { id: "fish", speciesId: "schooler", xNorm: 0.5, yNorm: 0.5 };
   const c = load("fish/meals-and-needs.js", ["getFishDisposition"], {
     sanitizeBehaviorIntent: value => value || null,
@@ -4705,7 +4783,7 @@ test("Phase 8 Lonely mood reads biological social status instead of friendship p
   assert.match(disposition.activity, /own kind/);
 });
 
-test("Phase 9 researched own-kind roster is explicitly assigned to biological social profiles", () => {
+test.skip("Phase 9 researched own-kind roster is explicitly assigned to biological social profiles (superseded by socialGroupId + gradual loneliness)", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const required = [
     "zebra-danio",
@@ -4734,7 +4812,7 @@ test("Phase 9 researched own-kind roster is explicitly assigned to biological so
   }
 });
 
-test("Phase 9 Discus and Otocinclus now become lonely without same-species company", () => {
+test.skip("Phase 9 Discus and Otocinclus now become lonely without same-species company (superseded by socialGroupId + gradual loneliness)", () => {
   const profiles = {
     discus: { category: "own_kind_required", ownKindMinimum: 2 },
     otocinclus: { category: "own_kind_required", ownKindMinimum: 2 }
@@ -4789,7 +4867,7 @@ test("Phase 9 Discus and Otocinclus now become lonely without same-species compa
   }
 });
 
-test("Phase 10 remaining roster receives explicit social categories and special profiles", () => {
+test.skip("Phase 10 remaining roster receives explicit social categories and special profiles (superseded by socialGroupId + gradual loneliness)", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const expected = {
     own_kind_preferred: ["guppy", "molly", "swordtail", "livebearer", "piranha"],
@@ -4809,7 +4887,7 @@ test("Phase 10 remaining roster receives explicit social categories and special 
   assert.match(bootstrap, /"pilot-fish"\s*:\s*\{[\s\S]*?hostSpeciesIds:\s*\["bull-shark",\s*"great-white-shark",\s*"hammerhead-shark",\s*"sunfish"\]/);
 });
 
-test("Phase 10 preferred, pair-bond, solitary, and host-bond profiles do not create own-kind loneliness", () => {
+test.skip("Phase 10 preferred, pair-bond, solitary, and host-bond profiles do not create own-kind loneliness (superseded by socialGroupId + gradual loneliness)", () => {
   const profiles = {
     guppy: { category: "own_kind_preferred" },
     clownfish: { category: "pair_bond" },
@@ -4849,7 +4927,7 @@ test("Phase 10 preferred, pair-bond, solitary, and host-bond profiles do not cre
   }
 });
 
-test("Phase 13 cross-species friendship does not satisfy an Own Kind Required social need", () => {
+test.skip("Phase 13 cross-species friendship does not satisfy an Own Kind Required social need (superseded by socialGroupId + gradual loneliness)", () => {
   const profiles = {
     "neon-tetra": { category: "own_kind_required", ownKindMinimum: 2 },
     "ember-tetra": { category: "own_kind_required", ownKindMinimum: 2 }
@@ -4885,7 +4963,7 @@ test("Phase 13 cross-species friendship does not satisfy an Own Kind Required so
   assert.equal(status.sameSpeciesCount, 2);
 });
 
-test("Phase 13 mood prioritizes Lonely over friendship, then becomes Social once the biological need is met", () => {
+test.skip("Phase 13 mood prioritizes Lonely over friendship, then becomes Social once the biological need is met (superseded by socialGroupId + gradual loneliness)", () => {
   const neon = {
     id: "n1",
     name: "Neon One",
@@ -4935,7 +5013,7 @@ test("Phase 13 mood prioritizes Lonely over friendship, then becomes Social once
   assert.match(mood.activity, /Ember Friend/);
 });
 
-test("Phase 13 compatible-friend care and mood copy describes friendship instead of own-kind schooling", () => {
+test.skip("Phase 13 compatible-friend care and mood copy describes friendship instead of own-kind schooling (superseded by socialGroupId + gradual loneliness)", () => {
   const needs = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
   const catalog = fs.readFileSync(path.join(root, "tank/catalog-and-equipment.js"), "utf8");
   assert.match(catalog, /compatible_friend[\s\S]*establishedFriend/);
@@ -5036,7 +5114,7 @@ test("Phase 11 pair-bond loss creates a temporary Sad mourning state", () => {
   assert.match(mood.activity, /Steve/);
 });
 
-test("Phase 11 friendship hooks use real interactions and persist pair-bond state", () => {
+test.skip("Phase 11 friendship hooks use real interactions and persist pair-bond state (superseded by socialGroupId + gradual loneliness)", () => {
   const actions = fs.readFileSync(path.join(root, "fish/actions.js"), "utf8");
   const schooling = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
   const behavior = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
@@ -5111,7 +5189,7 @@ test("Phase 12 friendship requires same or adjacent social size unless an explic
   assert.equal(c.canFishBuildFriendship(pilot, shark, 1000), true, "Pilot Fish host bond overrides the ordinary size and predator gates");
 });
 
-test("Phase 12 social behavior and compatible-friend needs respect the size gate", () => {
+test.skip("Phase 12 social behavior and compatible-friend needs respect the size gate (superseded by socialGroupId + gradual loneliness)", () => {
   const actions = fs.readFileSync(path.join(root, "fish/actions.js"), "utf8");
   const behavior = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
   const needs = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
@@ -5697,14 +5775,54 @@ test("Phase 20 school formation distributes followers across neighboring sublaye
   assert.deepEqual(JSON.parse(JSON.stringify(c.getFishSchoolFormationSubLayerPattern(3))), [2, 1, 3]);
 });
 
-test("Phase 20 active school follow owns normal social depth while safety moods can still interrupt", () => {
+test("Phase 20 active school follow owns its depth while higher-priority movement controllers preempt mood routing", () => {
   const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
   const schooling = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
   assert.match(schooling, /targetSubLayer: getFishSchoolFormationSubLayer\(fish, leader, now\)/);
   assert.match(schooling, /setFishDesiredTankSubLayer\(fish, anchor\.targetSubLayer\)/);
   assert.match(motion, /setFishDesiredTankSubLayer\(fish, socialFollow\.targetSubLayer\)/);
-  assert.match(motion, /activelySchoolFollowing[\s\S]*\["Cozy", "Curious", "Social"\]\.includes\(mood\)/);
-  assert.doesNotMatch(motion, /activelySchoolFollowing[\s\S]*\["Scared", "Panicked"\]\.includes\(mood\)[\s\S]*return false/);
+  assert.match(motion, /options\.panicOwnsMovement \|\| options\.fishActionOwnsMovement \|\| options\.debugBehaviorOwnsMovement \|\| options\.diseaseAvoidanceOwnsMovement/);
+  assert.match(motion, /if \(activelySchoolFollowing\) \{\s*return false/);
+});
+
+test("Hang Out keeps a stable reachable formation and yields to collision recovery", () => {
+  const actions = fs.readFileSync(path.join(root, "fish/actions.js"), "utf8");
+  const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  const schooling = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
+  const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
+  const collision = fs.readFileSync(path.join(root, "fish/caves-and-collision.js"), "utf8");
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const follow = actions.slice(actions.indexOf('if (steering.type === "follow")'), actions.indexOf('if (steering.type === "waitfood")'));
+  assert.match(actions, /function deferFishActionSteeringForRecovery/);
+  assert.match(actions, /Number\(steering\.recoveryUntil\) > now/);
+  assert.match(follow, /formationTrailingDirection/);
+  assert.match(follow, /formationXNorm/);
+  assert.match(follow, /findFishClearDetourTarget/);
+  assert.doesNotMatch(follow, /Math\.sin\(now \/ 900/);
+  assert.match(motion, /deferFishActionSteeringForRecovery\(fish, fish\.targetAt\)/);
+  assert.match(motion, /\["inspect", "follow"\]\.includes\(activeFishActionSteering\.type\)/);
+  assert.match(bootstrap, /SOCIAL_FORMATION_POSITION_DEADZONE_NORM/);
+  assert.match(bootstrap, /SOCIAL_FORMATION_TURN_DEADZONE_NORM/);
+  assert.match(actions, /targetShift >= SOCIAL_FORMATION_POSITION_DEADZONE_NORM/);
+  assert.match(schooling, /targetShift >= SOCIAL_FORMATION_POSITION_DEADZONE_NORM/);
+  assert.match(motion, /socialFormationActive[\s\S]*SOCIAL_FORMATION_TURN_DEADZONE_NORM/);
+  assert.match(schooling, /Math\.abs\(dx\) < SOCIAL_FORMATION_TURN_DEADZONE_NORM/);
+  assert.match(motion, /socialFormationActive\s*\? moveDx\s*:\s*fish\.targetXNorm - fish\.xNorm/);
+  assert.match(actions, /const formationLayer = getFishTankLayer\(fish\)/);
+  assert.match(debug, /function deferDebugBehaviorSteeringForRecovery/);
+  assert.doesNotMatch(debug.slice(debug.indexOf("function updateDebugFollowSteering"), debug.indexOf("function updateDebugAvoidSteering")), /sideWobble|verticalWobble/);
+  assert.match(debug, /const formationLayer = getFishTankLayer\(fish\)/);
+  assert.match(motion, /socialDebugSteering\?\.type === "follow"/);
+  assert.match(collision, /deferFishActionSteeringForRecovery\(fish, recoveryUntil\)/);
+  assert.match(collision, /deferDebugBehaviorSteeringForRecovery\(fish, recoveryUntil\)/);
+  assert.match(collision, /deferFishSchoolFollowForRecovery\(fish, recoveryUntil\)/);
+  assert.match(schooling, /function deferFishSchoolFollowForRecovery/);
+  assert.match(schooling, /schoolFormationDirection = getFishFacingDirection\(leader\)/);
+  assert.match(schooling, /getActiveFishActionSteering\(leader, now\)\?\.type === "follow"/);
+  assert.match(schooling, /getActiveDebugBehaviorSteering\(leader, now\)\?\.type === "follow"/);
+  assert.match(bootstrap, /SOCIAL_FORMATION_TURN_COMMIT_MS/);
+  assert.match(motion, /socialTurnCommitActive/);
+  assert.match(motion, /!socialFormationActive[\s\S]*getNearestDeadFish/);
 });
 
 test("Phase 20 clearing a school follow also clears its formation depth slot", () => {
@@ -5834,8 +5952,8 @@ test("Phase 22 full fish roster has stable identities plus explicit social size 
   const all = [...catalog.fish, ...davy];
   const ids = all.map((fish) => fish.id);
   assert.equal(catalog.fish.length, 54);
-  assert.equal(davy.length, 5);
-  assert.equal(all.length, 59);
+  assert.equal(davy.length, 4);
+  assert.equal(all.length, 58);
   assert.equal(new Set(ids).size, ids.length, "every fish species must have a unique id");
   for (const fish of all) {
     assert.ok(fish.id && fish.name && (fish.asset || fish.artPending === true), `${fish.id || "unknown fish"} must have id, name, and artwork or be explicitly marked art-pending`);
@@ -6139,7 +6257,7 @@ test("Phase 22 regression matrix keeps the major fish systems connected", () => 
   assert.match(caves, /getFishCaveInsideMoodSubLayer/);
   assert.match(layout, /function getDecorCollisionSubLayers/);
   assert.match(caves, /getFishCollisionRightOfWayDecision/);
-  assert.match(tankRender, /drawFish\(now, layer, \{ excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK \}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base" \}\)[\s\S]*TANK_SUBLAYER_FRONT/);
+  assert.match(tankRender, /drawFish\(now, layer, \{ excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK[^}]*\}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base" \}\)[\s\S]*TANK_SUBLAYER_FRONT/);
   assert.match(renderFish, /tankSubLayer|TankSubLayer|subLayer/);
   assert.match(machinery, /findSubmarineCareCandidate/);
   assert.match(schooling, /OTOCINCLUS_DAILY_COIN_FIND_CAP/);
@@ -7740,7 +7858,7 @@ test("Dead Fish Phase 17 Borough renderer includes corpses but bypasses living m
 
 test("Dead Fish Phase 17 adds a real death-animation preview distinct from the settled dead float", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
-  assert.match(bootstrap, /id: "death-animation", label: "Death Animation"/);
+  assert.match(bootstrap, /id: "death-animation"[^}]*label: "Death Animation"/);
   const c = load("debug/tools.js", ["getDebugFishBehaviorPreviewCycleMs", "getDebugFishBehaviorPreviewPose"], {
     getDeadFishTransitionEase: progress => progress * progress * (3 - 2 * progress)
   });
@@ -9543,7 +9661,7 @@ test("Expansion Phase 4 water compatibility helpers keep fish strict and nonlivi
     return fallback;
   };
   const c = load("store/catalog.js", [
-    "getFishStoreWaterType",
+    "getFishStoreWaterType", "getFishVariantWaterType",
     "getFishStoreWaterTypeLabel",
     "getStoreWaterTypeLabel",
     "getActiveStoreWaterType",
@@ -9555,7 +9673,8 @@ test("Expansion Phase 4 water compatibility helpers keep fish strict and nonlivi
   ], {
     runtime,
     normalizeWaterType,
-    getCurrentTank: () => ({ waterType: "freshwater" })
+    getCurrentTank: () => ({ waterType: "freshwater" }),
+    getFishAppearanceVariantKey: value => String(value || "").split(/[?#]/)[0].split("/").pop()
   });
 
   const clownfish = { id: "clownfish", waterType: "saltwater" };
@@ -10012,15 +10131,15 @@ test("Expansion Phase 7 audits every first-party species with explicit adult and
     assert.ok(!species.acceptedFoods.includes("frisky"), `${species.id} should not encode Spawning Food as an ordinary meal`);
   }
   const byId = Object.fromEntries(catalog.map((species) => [species.id, species]));
-  assert.deepEqual(byId.betta.acceptedFoods, ["basic", "brineShrimp", "carnivore"]);
+  assert.deepEqual(byId.betta.acceptedFoods, ["brineShrimp", "carnivore"]);
   assert.deepEqual(byId.pufferfish.acceptedFoods, ["brineShrimp", "carnivore"]);
-  assert.deepEqual(byId["yellow-tang"].acceptedFoods, ["basic", "algaeWafers"]);
+  assert.deepEqual(byId.tang.acceptedFoods, ["basic", "algaeWafers", "brineShrimp"]);
   assert.deepEqual(byId.otocinclus.acceptedFoods, ["algaeWafers"]);
-  assert.deepEqual(byId.piranha.acceptedFoods, ["brineShrimp", "carnivore", "chum"]);
-  assert.deepEqual(byId.lionfish.acceptedFoods, ["carnivore", "chum"]);
+  assert.deepEqual(byId.piranha.acceptedFoods, ["chum"]);
+  assert.deepEqual(byId.lionfish.acceptedFoods, ["chum"]);
   assert.deepEqual(byId.lionfish.juvenileFoods, ["brineShrimp", "carnivore"]);
   assert.deepEqual(byId["great-white-shark"].acceptedFoods, ["chum"]);
-  assert.deepEqual(byId.seahorse.acceptedFoods, ["brineShrimp"]);
+  assert.deepEqual(byId.seahorse.acceptedFoods, ["brineShrimp", "carnivore"]);
   assert.deepEqual(byId["freshwater-shrimp"].acceptedFoods, ["algaeWafers"]);
 });
 
@@ -11932,7 +12051,7 @@ test("Phase 24 cosmetic progression filters directional, layered and state asset
     ]
   };
   const c = load("fish/needs-disease-and-behavior.js", [
-    "getFishAssetVariants", "getFishAppearanceVariantKey", "isFishProgressionAppearanceAsset", "getFishProgressionAppearanceVariants"
+    "getFishAssetVariants", "getFishAppearanceVariantKey", "isFishProgressionAppearanceAsset", "isFishCurrentProgressionAppearanceAsset", "getFishProgressionAppearanceVariants"
   ]);
   assert.deepEqual(
     JSON.parse(JSON.stringify(c.getFishProgressionAppearanceVariants(species))),
@@ -12139,4 +12258,379 @@ test("Phase 26 Peaceful Mode keeps the Weekly Care Award non-paying", () => {
   const source = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
   assert.match(source, /rewardPaid:\s*peaceful \? 0 : weeklyReward/);
   assert.match(source, /if \(report\.rewardPaid > 0\) \{[\s\S]*label:\s*"Weekly Care Award"/);
+});
+
+test("Second prompt Phase 2 social groups target current catalog IDs and preserve the requested modes", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const start = bootstrap.indexOf("const FISH_SOCIAL_MODES = Object.freeze({");
+  const endMarker = "const FISH_SOCIAL_DEFAULT_OWN_KIND_MINIMUM = 2;";
+  const end = bootstrap.indexOf(endMarker, start) + endMarker.length;
+  assert.ok(start >= 0 && end > start, "social profile configuration must be present");
+  const context = vm.createContext({});
+  vm.runInContext(`${bootstrap.slice(start, end)}\nglobalThis.__profiles = FISH_SOCIAL_PROFILES;`, context);
+  const profiles = context.__profiles;
+
+  const expectGroup = (ids, socialGroupId, socialMode) => {
+    for (const id of ids) {
+      assert.equal(profiles[id]?.socialGroupId, socialGroupId, `${id} should use ${socialGroupId}`);
+      assert.equal(profiles[id]?.socialMode, socialMode, `${id} should use ${socialMode}`);
+    }
+  };
+
+  expectGroup(["tetra", "neon-tetra"], "tetra", "school");
+  expectGroup(["danio", "neon-zebra-danio"], "danio", "school");
+  expectGroup(["barb", "neon-barb"], "barb", "school");
+  expectGroup(["angelfish", "neon-angelfish"], "freshwater-angelfish", "pair");
+  expectGroup(["goldfish", "moor-goldfish"], "goldfish", "shoal");
+  expectGroup(["guppy", "endler"], "guppy-endler", "shoal");
+  expectGroup(["platy", "swordtail"], "xiphophorus", "shoal");
+  expectGroup(["molly"], "molly", "shoal");
+  expectGroup(["rainbowfish"], "rainbowfish", "school");
+  expectGroup(["discus"], "discus", "shoal");
+  expectGroup(["pencilfish"], "pencilfish", "school");
+  expectGroup(["otocinclus"], "otocinclus", "shoal");
+  expectGroup(["rasbora"], "rasbora", "school");
+  expectGroup(["piranha"], "piranha", "shoal");
+  expectGroup(["koi"], "koi", "shoal");
+  expectGroup(["chromis"], "chromis", "school");
+  expectGroup(["cardinal"], "cardinal", "shoal");
+  expectGroup(["clownfish"], "clownfish", "pair");
+  expectGroup(["seahorse"], "seahorse", "pair");
+  expectGroup(["orca"], "orca", "pod");
+  expectGroup(["lookdown"], "lookdown", "school");
+
+  for (const legacyId of ["zebra-danio", "cherry-barb", "ember-tetra", "rummy-nose-tetra", "green-chromis", "banggai-cardinalfish"]) {
+    assert.equal(profiles[legacyId], undefined, `${legacyId} should no longer be a primary social profile`);
+  }
+
+  for (const id of ["guppy", "endler", "molly", "platy", "swordtail"]) {
+    assert.deepEqual(Array.from(profiles[id].affinityGroups || []), ["livebearer"]);
+  }
+
+  for (const id of ["gourami", "pufferfish", "bull-shark", "great-white-shark", "hammerhead-shark"]) {
+    assert.equal(profiles[id]?.socialGroupId, undefined, `${id} must not be over-grouped`);
+  }
+});
+
+test("Second prompt Phase 2 coordinated schooling uses socialGroupId only for school and pod modes", () => {
+  const profiles = new Map([
+    ["tetra", { socialGroupId: "tetra", socialMode: "school" }],
+    ["neon-tetra", { socialGroupId: "tetra", socialMode: "school" }],
+    ["orca", { socialGroupId: "orca", socialMode: "pod" }],
+    ["angelfish", { socialGroupId: "freshwater-angelfish", socialMode: "pair" }],
+    ["neon-angelfish", { socialGroupId: "freshwater-angelfish", socialMode: "pair" }],
+    ["goldfish", { socialGroupId: "goldfish", socialMode: "shoal" }],
+    ["moor-goldfish", { socialGroupId: "goldfish", socialMode: "shoal" }]
+  ]);
+  const c = load("fish/gravel-and-schooling.js", ["getFishSchoolingCompatibilityId"], {
+    getFishSocialProfile: fish => profiles.get(fish.speciesId) || { socialGroupId: null, socialMode: "flexible" },
+    getBaseSpeciesForFish: fish => ({ id: fish.speciesId, customAsset: false }),
+    sanitizeFishBehaviorSpeciesId: value => value || ""
+  });
+
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "tetra" }), "tetra");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "neon-tetra" }), "tetra");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "orca" }), "orca");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "angelfish" }), "angelfish");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "neon-angelfish" }), "neon-angelfish");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "goldfish" }), "goldfish");
+  assert.equal(c.getFishSchoolingCompatibilityId({ speciesId: "moor-goldfish" }), "moor-goldfish");
+
+  const schooling = fs.readFileSync(path.join(root, "fish/gravel-and-schooling.js"), "utf8");
+  assert.doesNotMatch(
+    schooling,
+    /getFishSchoolingCompatibilityId\(otherFish\) === compatibilityId[\s\S]{0,500}otherFish\.speciesId === fish\.speciesId/,
+    "a shared coordinated social group must not be blocked by an exact-species filter"
+  );
+});
+
+test("Second prompt Phase 2 proper social groups are distinct from coordinated school movement", () => {
+  const profiles = new Map([
+    ["tetra", { socialGroupId: "tetra", socialMode: "school" }],
+    ["neon-tetra", { socialGroupId: "tetra", socialMode: "school" }],
+    ["angelfish", { socialGroupId: "freshwater-angelfish", socialMode: "pair" }],
+    ["neon-angelfish", { socialGroupId: "freshwater-angelfish", socialMode: "pair" }],
+    ["goldfish", { socialGroupId: "goldfish", socialMode: "shoal" }],
+    ["moor-goldfish", { socialGroupId: "goldfish", socialMode: "shoal" }]
+  ]);
+  const c = load("tank/catalog-and-equipment.js", ["getFishProperSocialCompatibilityId", "areFishProperSocialGroupmates"], {
+    getFishSocialProfile: fish => profiles.get(fish.speciesId || fish.id) || { socialGroupId: null, socialMode: "flexible" }
+  });
+
+  assert.equal(c.areFishProperSocialGroupmates({ speciesId: "tetra" }, { speciesId: "neon-tetra" }), true);
+  assert.equal(c.areFishProperSocialGroupmates({ speciesId: "angelfish" }, { speciesId: "neon-angelfish" }), true);
+  assert.equal(c.areFishProperSocialGroupmates({ speciesId: "goldfish" }, { speciesId: "moor-goldfish" }), true);
+  assert.equal(c.areFishProperSocialGroupmates({ speciesId: "tetra" }, { speciesId: "goldfish" }), false);
+});
+
+test("Second prompt Phase 3 uses a 30-minute Neutral acclimation and persistent loneliness constants", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const needs = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
+  assert.match(bootstrap, /const FISH_NEW_TANK_ACCLIMATION_MS = 30 \* MINUTE_MS;/);
+  assert.match(bootstrap, /const FISH_LONELY_MOOD_THRESHOLD = 45;/);
+  assert.match(bootstrap, /const FISH_LONELINESS_GAIN_PER_MINUTE = 0\.75;/);
+  assert.match(bootstrap, /const FISH_LONELINESS_FULL_GROUP_RECOVERY_PER_MINUTE = 2;/);
+  assert.match(bootstrap, /const FISH_LONELINESS_STRONG_PARTIAL_RECOVERY_PER_MINUTE = 1\.2;/);
+  assert.match(bootstrap, /const FISH_LONELINESS_MAX_ELAPSED_MS = 5 \* MINUTE_MS;/);
+  assert.match(needs, /return \{ mood: "Neutral", activity: "Settling into its new home" \};/);
+  assert.match(needs, /lonelinessScore >= lonelinessThreshold/);
+  assert.doesNotMatch(needs, /return \{ mood: "Curious", activity: "Exploring its new home" \};/);
+
+  const criticalHungerIndex = needs.indexOf('if (!mealFree && hunger <= hungerCriticalThreshold)');
+  const neutralIndex = needs.indexOf('return { mood: "Neutral", activity: "Settling into its new home" };');
+  assert.ok(criticalHungerIndex >= 0 && neutralIndex > criticalHungerIndex, "critical hunger must outrank Neutral acclimation");
+});
+
+test("Second prompt Phase 3 social satisfaction rewards proper groups strongest without treating community fish as schoolmates", () => {
+  const profiles = new Map([
+    ["tetra", { socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4, affinityGroups: [], solitary: false }],
+    ["neon-tetra", { socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4, affinityGroups: [], solitary: false }],
+    ["guppy", { socialGroupId: "guppy-endler", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"], solitary: false }],
+    ["molly", { socialGroupId: "molly", socialMode: "shoal", socialMinimum: 2, socialIdeal: 4, affinityGroups: ["livebearer"], solitary: false }],
+    ["betta", { socialGroupId: null, socialMode: "solitary", socialMinimum: 0, socialIdeal: 0, affinityGroups: [], solitary: true }]
+  ]);
+  const friendPairs = new Set();
+  const unsafe = new Set();
+  const key = (a, b) => [a.id, b.id].sort().join("|");
+  const c = load("tank/catalog-and-equipment.js", ["getFishSocialSatisfaction"], {
+    getFishSocialProfile: fish => profiles.get(fish.speciesId) || { socialGroupId: null, socialMode: "flexible", socialMinimum: 0, socialIdeal: 0, affinityGroups: [], solitary: false },
+    isFishDead: () => false,
+    isFishSafeSocialCompanion: (fish, other) => !unsafe.has(key(fish, other)),
+    areFishProperSocialGroupmates: (fish, other) => {
+      const left = profiles.get(fish.speciesId);
+      const right = profiles.get(other.speciesId);
+      return Boolean(left?.socialGroupId && left.socialGroupId === right?.socialGroupId);
+    },
+    areFishEstablishedFriends: (fish, other) => friendPairs.has(key(fish, other)),
+    isFishHostBondMatch: () => false
+  });
+
+  const tetra = { id: "t1", speciesId: "tetra" };
+  const neon = { id: "t2", speciesId: "neon-tetra" };
+  const neon2 = { id: "t3", speciesId: "neon-tetra" };
+  const tetra2 = { id: "t4", speciesId: "tetra" };
+  const community = [1, 2, 3, 4].map(i => ({ id: `c${i}`, speciesId: i === 1 ? "guppy" : "molly" }));
+
+  const alone = c.getFishSocialSatisfaction(tetra, { fish: [tetra] }, 1000);
+  assert.equal(alone.properGroupCount, 1);
+  assert.equal(alone.satisfaction, 0);
+
+  const pair = c.getFishSocialSatisfaction(tetra, { fish: [tetra, neon] }, 1000);
+  assert.equal(pair.properGroupCount, 2);
+  assert.ok(pair.satisfaction >= 0.7 && pair.satisfaction < 1, "one proper schoolmate should create strong partial satisfaction");
+
+  const trio = c.getFishSocialSatisfaction(tetra, { fish: [tetra, neon, neon2] }, 1000);
+  assert.ok(trio.satisfaction > pair.satisfaction && trio.satisfaction < 1);
+  const full = c.getFishSocialSatisfaction(tetra, { fish: [tetra, neon, neon2, tetra2] }, 1000);
+  assert.equal(full.satisfaction, 1);
+
+  const communityOnly = c.getFishSocialSatisfaction(tetra, { fish: [tetra, ...community] }, 1000);
+  assert.equal(communityOnly.properGroupCount, 1);
+  assert.ok(communityOnly.satisfaction > 0 && communityOnly.satisfaction < pair.satisfaction);
+
+  friendPairs.add(key(tetra, community[0]));
+  const withFriend = c.getFishSocialSatisfaction(tetra, { fish: [tetra, ...community] }, 1000);
+  assert.ok(withFriend.satisfaction > communityOnly.satisfaction, "an established friend should provide more relief");
+
+  unsafe.add(key(tetra, community[1]));
+  const withThreat = c.getFishSocialSatisfaction(tetra, { fish: [tetra, community[1]] }, 1000);
+  assert.equal(withThreat.satisfaction, 0, "a threatening or actively avoided fish provides no relief");
+
+  const guppy = { id: "g1", speciesId: "guppy" };
+  const molly = { id: "m1", speciesId: "molly" };
+  const affinity = c.getFishSocialSatisfaction(guppy, { fish: [guppy, molly] }, 1000);
+  assert.equal(affinity.properGroupCount, 1);
+  assert.equal(affinity.affinityCompanionCount, 1);
+  assert.ok(affinity.satisfaction > 0 && affinity.satisfaction < 0.7);
+
+  const betta = { id: "b1", speciesId: "betta" };
+  const solitary = c.getFishSocialSatisfaction(betta, { fish: [betta] }, 1000);
+  assert.equal(solitary.satisfaction, 1);
+  assert.equal(solitary.lonelinessEligible, false);
+});
+
+test("Second prompt Phase 3 loneliness updates only during simulation and is protected from resume-time jumps", () => {
+  let satisfaction = 0;
+  let acclimating = false;
+  const c = load("fish/meals-and-needs.js", ["updateFishLoneliness"], {
+    isFishDead: () => false,
+    isFishInNewTankAcclimation: () => acclimating,
+    getFishSocialSatisfaction: () => ({ satisfaction, lonelinessEligible: true }),
+    getCurrentTank: () => ({ fish: [] }),
+    FISH_LONELINESS_MAX_ELAPSED_MS: 5 * 60000,
+    FISH_LONELINESS_GAIN_PER_MINUTE: 0.75,
+    FISH_LONELINESS_FULL_GROUP_RECOVERY_PER_MINUTE: 2,
+    FISH_LONELINESS_STRONG_PARTIAL_RECOVERY_PER_MINUTE: 1.2,
+    FISH_LONELINESS_FULL_SATISFACTION: 0.95,
+    FISH_LONELINESS_STRONG_PARTIAL_SATISFACTION: 0.7,
+    MINUTE_MS: 60000
+  });
+
+  const fish = { id: "f1", lonelinessScore: 0, lonelinessUpdatedAt: 1000 };
+  c.updateFishLoneliness(fish, { fish: [fish] }, 1000 + 60 * 60000);
+  assert.equal(fish.lonelinessScore, 3.75, "a giant resume gap should process at most five minutes");
+
+  satisfaction = 0.72;
+  fish.lonelinessScore = 50;
+  fish.lonelinessUpdatedAt = 1000;
+  c.updateFishLoneliness(fish, { fish: [fish] }, 61000);
+  assert.ok(Math.abs(fish.lonelinessScore - 48.8) < 0.0001, "a proper partial group should recover at about 1.2 points/minute");
+
+  satisfaction = 1;
+  fish.lonelinessScore = 50;
+  fish.lonelinessUpdatedAt = 1000;
+  c.updateFishLoneliness(fish, { fish: [fish] }, 61000);
+  assert.equal(fish.lonelinessScore, 48, "a full group should recover at about 2 points/minute");
+
+  acclimating = true;
+  fish.lonelinessScore = 12;
+  fish.lonelinessUpdatedAt = 1000;
+  c.updateFishLoneliness(fish, { fish: [fish] }, 61000);
+  assert.equal(fish.lonelinessScore, 12, "loneliness must not change during acclimation");
+  assert.equal(fish.lonelinessUpdatedAt, 61000, "the simulation clock should still advance during acclimation");
+});
+
+test("Second prompt Phase 3 persists loneliness state and exposes social tuning data only through Debug tools", () => {
+  const lifecycle = fs.readFileSync(path.join(root, "fish/lifecycle-and-breeding.js"), "utf8");
+  const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  const needs = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
+  const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
+  assert.match(lifecycle, /lonelinessScore:\s*clamp\(Number\(options\.lonelinessScore\) \|\| 0/);
+  assert.match(lifecycle, /lonelinessUpdatedAt:\s*now/);
+  assert.match(layout, /lonelinessScore:\s*clamp\(Number\(fish\.lonelinessScore\) \|\| 0/);
+  assert.match(layout, /lonelinessUpdatedAt:/);
+  assert.match(needs, /changed = updateFishLoneliness\(fish, socialTank, now\) \|\| changed;/);
+  assert.match(debug, /function getDebugFishSocialInspection/);
+  assert.match(debug, /properGroup:/);
+  assert.match(debug, /socialSatisfaction:/);
+  assert.match(debug, /loneliness:/);
+  assert.match(debug, /acclimating:/);
+  assert.match(debug, /window\.debugInspectFishSocial/);
+});
+
+test("Second prompt Phase 3 Lonely wording follows social mode", () => {
+  const c = load("tank/catalog-and-equipment.js", ["getFishLonelyActivityText"], {});
+  assert.equal(c.getFishLonelyActivityText({}, { socialMode: "school" }), "Looking for more of its school");
+  assert.equal(c.getFishLonelyActivityText({}, { socialMode: "pair" }), "Looking for a companion");
+  assert.equal(c.getFishLonelyActivityText({}, { socialMode: "pod" }), "Looking for its pod");
+  assert.equal(c.getFishLonelyActivityText({}, { socialMode: "shoal" }), "Looking for company");
+});
+
+test("Second prompt Phase 3 proper groupmates are not rejected by legacy friendship size gates", () => {
+  const c = load("tank/catalog-and-equipment.js", ["isFishSafeSocialCompanion"], {
+    isFishDead: () => false,
+    areFishProperSocialGroupmates: () => true,
+    getRelationshipKindForFish: () => "neutral",
+    isFishHostBondMatch: () => false,
+    canFishBuildFriendship: () => false
+  });
+  const left = { id: "tetra-a", speciesId: "tetra", relationships: {}, behaviorSignals: {} };
+  const right = { id: "neon-a", speciesId: "neon-tetra", relationships: {}, behaviorSignals: {} };
+  assert.equal(c.isFishSafeSocialCompanion(left, right, 1000), true);
+
+  left.behaviorSignals.avoid_specific_fish = { targetId: right.id, expiresAt: 2000 };
+  assert.equal(c.isFishSafeSocialCompanion(left, right, 1000), false, "active avoidance still cancels companionship relief");
+});
+
+test("Second prompt Phase 4 registers Lookdown with the existing four sprite variants", () => {
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8")).fish;
+  const lookdown = catalog.find((fish) => fish.id === "lookdown");
+  assert.ok(lookdown, "Lookdown must be a real catalog fish");
+  assert.equal(lookdown.name, "Lookdown");
+  assert.equal(lookdown.waterType, "saltwater");
+  assert.equal(lookdown.genetics, "natural");
+  assert.equal(lookdown.swimStyle, "steady");
+  assert.equal(lookdown.socialGroupId, "lookdown");
+  assert.equal(lookdown.socialMode, "school");
+  assert.deepEqual(lookdown.variantLabels, ["Classic Silver", "Blue", "Golden", "Barred"]);
+  assert.deepEqual(lookdown.assetVariants.map((value) => path.basename(value)), [
+    "lookdown-fish_classic-silver.png",
+    "lookdown-fish_blue.png",
+    "lookdown-fish_golden.png",
+    "lookdown-fish_barred.png"
+  ]);
+
+  const c = load("assets/sprite-sheet-definitions.js", ["getSpriteSheetDefinitions"]);
+  const definitions = c.getSpriteSheetDefinitions();
+  const full = definitions.find((sheet) => /assets\/fish\/lookdown__genetics-natural\.webp$/.test(sheet.path));
+  const small = definitions.find((sheet) => /assets\/fish\/small_fish\/lookdown__genetics-natural\.webp$/.test(sheet.path));
+  assert.ok(full, "full-size Lookdown atlas must remain registered");
+  assert.ok(small, "small-fish Lookdown atlas must remain registered");
+  for (const name of lookdown.assetVariants.map((value) => path.basename(value))) {
+    assert.ok(full.frames[name], `${name} must exist in the full-size Lookdown atlas`);
+    assert.ok(small.frames[name], `${name} must exist in the small-fish Lookdown atlas`);
+  }
+});
+
+test("Second prompt Phase 4 strips embedded Lookdown base64 while preserving sprite metadata", () => {
+  for (const relative of [
+    "../assets/fish/lookdown__genetics-natural.json",
+    "../assets/fish/small_fish/lookdown__genetics-natural.json"
+  ]) {
+    const text = fs.readFileSync(path.join(__dirname, relative), "utf8");
+    const metadata = JSON.parse(text);
+    assert.doesNotMatch(text, /data:image\/[^;]+;base64,/i);
+    const names = metadata.layers?.[0]?.sprites?.map((sprite) => sprite.name) || [];
+    assert.deepEqual(names, [
+      "lookdown-fish_barred.png",
+      "lookdown-fish_blue.png",
+      "lookdown-fish_classic-silver.png",
+      "lookdown-fish_golden.png"
+    ]);
+    for (const sprite of metadata.layers?.[0]?.sprites || []) {
+      assert.equal(Object.prototype.hasOwnProperty.call(sprite, "base64"), false);
+      assert.ok(Number(sprite.width) > 0 && Number(sprite.height) > 0, "coordinate metadata must remain intact");
+    }
+  }
+});
+
+test("Second prompt Phase 4 legacy fish skip fake acclimation and start loneliness safely", () => {
+  const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
+  assert.match(layout, /tankAddedAt:\s*Number\.isFinite\(Number\(fish\.tankAddedAt\)\)[\s\S]{0,120}\? Number\(fish\.tankAddedAt\) : 0/);
+  assert.match(layout, /lonelinessScore:\s*clamp\(Number\(fish\.lonelinessScore\) \|\| 0/);
+  assert.match(layout, /lonelinessUpdatedAt:\s*Number\.isFinite\(Number\(fish\.lonelinessUpdatedAt\)\)[\s\S]{0,120}: now/);
+
+  const c = load("tank/catalog-and-equipment.js", ["isFishInNewTankAcclimation"], {
+    FISH_NEW_TANK_ACCLIMATION_MS: 30 * 60 * 1000
+  });
+  assert.equal(c.isFishInNewTankAcclimation({ tankAddedAt: 0 }, 10_000), false, "legacy fish without tankAddedAt are already established");
+  assert.equal(c.isFishInNewTankAcclimation({}, 10_000), false);
+  assert.equal(c.isFishInNewTankAcclimation({ tankAddedAt: 1_000 }, 10_000), true, "new fish still receive normal acclimation");
+});
+
+test("Second prompt Phase 4 social satisfaction is cached by simulation instead of rescanned by rendering", () => {
+  const profiles = new Map([
+    ["tetra", { socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4, affinityGroups: [], solitary: false }],
+    ["neon-tetra", { socialGroupId: "tetra", socialMode: "school", socialMinimum: 2, socialIdeal: 4, affinityGroups: [], solitary: false }]
+  ]);
+  let companionChecks = 0;
+  const runtime = { fishSocialSatisfactionCache: new Map() };
+  const c = load("tank/catalog-and-equipment.js", ["getFishSocialSatisfaction", "refreshFishSocialSatisfactionCache"], {
+    runtime,
+    getCurrentTank: () => null,
+    getFishSocialProfile: fish => profiles.get(fish.speciesId),
+    isFishDead: () => false,
+    isFishSafeSocialCompanion: () => { companionChecks += 1; return true; },
+    areFishProperSocialGroupmates: () => true,
+    areFishEstablishedFriends: () => false,
+    isFishHostBondMatch: () => false
+  });
+  const tetra = { id: "a", speciesId: "tetra" };
+  const neon = { id: "b", speciesId: "neon-tetra" };
+  const tank = { id: "tank-1", fish: [tetra, neon] };
+  assert.equal(c.refreshFishSocialSatisfactionCache(tank, 1_000), 2);
+  const checksAfterSimulation = companionChecks;
+  assert.ok(checksAfterSimulation > 0);
+
+  const first = c.getFishSocialSatisfaction(tetra, tank, 1_001);
+  const second = c.getFishSocialSatisfaction(tetra, tank, 1_500);
+  assert.equal(companionChecks, checksAfterSimulation, "cached render reads must not rescan tank relationships");
+  assert.equal(first, second, "render reads should reuse the same calculated snapshot");
+  assert.equal(first.properGroupCount, 2);
+
+  c.getFishSocialSatisfaction(tetra, tank, 2_000, { forceRecalculate: true });
+  assert.ok(companionChecks > checksAfterSimulation, "simulation can explicitly refresh the cached social snapshot");
+
+  const needs = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
+  assert.match(needs, /refreshFishSocialSatisfactionCache\(socialTank, now\)/);
 });

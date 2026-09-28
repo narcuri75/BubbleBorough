@@ -224,7 +224,7 @@ function sanitizeWebSurfSentEmails(rawEmails) {
     const subject = typeof rawEmail.subject === "string" ? rawEmail.subject.slice(0, 180) : "";
     const preview = typeof rawEmail.preview === "string" ? rawEmail.preview.slice(0, 320) : "";
     const destination = typeof rawEmail.destination === "string" ? rawEmail.destination.slice(0, 80) : "";
-    const icon = typeof rawEmail.icon === "string" ? rawEmail.icon.slice(0, 400) : "assets/icons/WebSurf_icon.png";
+    const icon = typeof rawEmail.icon === "string" ? rawEmail.icon.slice(0, 400) : "assets/web/websurf/WebSurf_icon.png";
     const time = Number.isFinite(Number(rawEmail.time)) ? Math.max(0, Number(rawEmail.time)) : Date.now();
     const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
       ? {
@@ -402,6 +402,22 @@ function saveDepthEffectLevelPreference(value) {
   return depthEffectLevel;
 }
 
+function normalizeAmbientBubbleLevel(value, legacyEnabled) {
+  const numeric = Number(value);
+  if (Number.isFinite(numeric)) {
+    return clamp(Math.round(numeric), AMBIENT_BUBBLE_LEVEL_MIN, AMBIENT_BUBBLE_LEVEL_MAX);
+  }
+  if (typeof legacyEnabled === "boolean") {
+    return legacyEnabled ? AMBIENT_BUBBLE_LEVEL_MAX : AMBIENT_BUBBLE_LEVEL_MIN;
+  }
+  return AMBIENT_BUBBLE_LEVEL_DEFAULT;
+}
+
+function getAmbientBubbleLevelProfile(level = getAmbientBubbleLevel()) {
+  const normalized = normalizeAmbientBubbleLevel(level);
+  return AMBIENT_BUBBLE_LEVEL_PROFILES[normalized] || AMBIENT_BUBBLE_LEVEL_PROFILES[AMBIENT_BUBBLE_LEVEL_DEFAULT];
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
   const hasTankAmbienceVolume = Object.prototype.hasOwnProperty.call(source, "tankAmbienceVolume");
@@ -437,9 +453,10 @@ function sanitizeUiSettings(rawSettings) {
     gravelShadowIntensity: normalizeSettingsVolume(source.gravelShadowIntensity, DEFAULT_UI_SETTINGS.gravelShadowIntensity),
     tankMouseInputLocked: isTankMouseLockFeatureEnabled() && source.tankMouseInputLocked === true,
     layoutRatioLockEnabled: source.layoutRatioLockEnabled !== false,
+    ratioLockFrameEnabled: source.ratioLockFrameEnabled !== false,
     layoutRatioLockWidth: Math.max(0, Math.round(Number(source.layoutRatioLockWidth) || 0)),
     layoutRatioLockHeight: Math.max(0, Math.round(Number(source.layoutRatioLockHeight) || 0)),
-    ambientBubblesEnabled: source.ambientBubblesEnabled !== false,
+    ambientBubbleLevel: normalizeAmbientBubbleLevel(source.ambientBubbleLevel, source.ambientBubblesEnabled),
     waterParticlesEnabled: source.waterParticlesEnabled !== false,
     causticLightingEnabled: CAUSTIC_LIGHTING_SETTING_ENABLED && source.causticLightingEnabled !== false,
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
@@ -457,8 +474,12 @@ function getUiSettings() {
   return sanitizeUiSettings(state?.uiSettings);
 }
 
+function getAmbientBubbleLevel() {
+  return normalizeAmbientBubbleLevel(getUiSettings().ambientBubbleLevel);
+}
+
 function areAmbientBubblesEnabled() {
-  return getUiSettings().ambientBubblesEnabled;
+  return getAmbientBubbleLevel() > AMBIENT_BUBBLE_LEVEL_MIN;
 }
 
 function areWaterParticlesEnabled() {
@@ -2787,13 +2808,12 @@ async function applyImportedSaveData(rawState) {
   syncRuntimeCustomFishAssetsFromState(state);
   syncRuntimeCustomDecorAssetsFromState(state);
   restoreTutorialRuntimeState(now);
+  const activeTank = getCurrentTank();
   await preloadImages([
-    ...getPlacedDecorPreloadPaths(),
-    ...getOwnedFishPreloadPaths(),
-    ...getAllTanks().map((tank) => getLocalBackgroundImageDataUrl(tank)).filter(Boolean),
-    ...getCustomDecorCatalogEntries(state).flatMap((item) => [item.path, item.bgPath].filter(Boolean)),
-    ...getCustomFishCatalogEntries(state).map((item) => item.asset)
+    ...getTankSwitchPreloadPaths(activeTank)
   ]).then(() => renderUi(Date.now()));
+  releaseInactiveDecorImages(state);
+  releaseInactiveTankImages(state);
   applyContentSettingsEffects(now);
   const decorPlacementChanged = normalizePlacedDecorState();
   const stateChanged = syncState(now);

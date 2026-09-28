@@ -433,6 +433,62 @@ function isUsableRuntimeImage(image) {
   return Boolean(image && Number(image.naturalWidth || image.width) > 0 && Number(image.naturalHeight || image.height) > 0);
 }
 
+function getMaxAlphaMaskCacheBytes() {
+  return 64 * 1024 * 1024;
+}
+
+function releaseRuntimeImage(path) {
+  if (!path || !runtime?.images) return false;
+  const image = runtime.images.get(path);
+  if (!image) return false;
+  let retainedByAlias = false;
+  for (const [otherPath, candidate] of runtime.images) {
+    if (otherPath !== path && candidate === image) {
+      retainedByAlias = true;
+      break;
+    }
+  }
+  // Canvas dimensions own their backing stores; shrinking them eagerly returns
+  // those pixels instead of waiting for a later GC pass. Detached Image
+  // elements release their decoded resource when their source is removed.
+  if (!retainedByAlias && typeof HTMLCanvasElement !== "undefined" && image instanceof HTMLCanvasElement) {
+    image.width = 0;
+    image.height = 0;
+  } else if (!retainedByAlias) {
+    image?.removeAttribute?.("src");
+  }
+  runtime.images.delete(path);
+  runtime.imageLoadFailures.delete(path);
+  runtime.imageRecoveryNextAt.delete(path);
+  runtime.alphaMaskCache.delete(path);
+  for (const cacheKey of runtime.maskRegionCache.keys()) {
+    if (cacheKey === path || cacheKey.startsWith(`${path}|`)) runtime.maskRegionCache.delete(cacheKey);
+  }
+  return true;
+}
+
+function getAlphaMaskByteSize(mask) {
+  return Math.max(0, Number(mask?.alpha?.byteLength) || 0) + Math.max(0, Number(mask?.grid?.byteLength) || 0);
+}
+
+function setBoundedAlphaMask(path, mask) {
+  if (!path || !mask) return;
+  if (runtime.alphaMaskCache.has(path)) runtime.alphaMaskCache.delete(path);
+  runtime.alphaMaskCache.set(path, mask);
+  let bytes = 0;
+  for (const entry of runtime.alphaMaskCache.values()) bytes += getAlphaMaskByteSize(entry);
+  while (runtime.alphaMaskCache.size > 96 || bytes > getMaxAlphaMaskCacheBytes()) {
+    const oldestPath = runtime.alphaMaskCache.keys().next().value;
+    if (oldestPath === path && runtime.alphaMaskCache.size === 1) break;
+    const oldest = runtime.alphaMaskCache.get(oldestPath);
+    runtime.alphaMaskCache.delete(oldestPath);
+    bytes -= getAlphaMaskByteSize(oldest);
+    for (const cacheKey of runtime.maskRegionCache.keys()) {
+      if (cacheKey === oldestPath || cacheKey.startsWith(`${oldestPath}|`)) runtime.maskRegionCache.delete(cacheKey);
+    }
+  }
+}
+
 function loadRuntimeImageAttempt(path, timeoutMs) {
   if (getSpriteAssetFrame(path)) return loadSpriteRuntimeImage(path, timeoutMs);
   return new Promise((resolve) => {
@@ -1543,7 +1599,10 @@ function buildAlphaMaskFromBuffer(width, height, alphaBuffer) {
 
   for (let y = 0; y < height; y += 1) {
     for (let x = 0; x < width; x += 1) {
-      const alpha = alphaBuffer[(y * width + x) * 4 + 3];
+      const pixelIndex = y * width + x;
+      const alpha = alphaBuffer.length === width * height
+        ? alphaBuffer[pixelIndex]
+        : alphaBuffer[pixelIndex * 4 + 3];
       if (alpha < ALPHA_HIT_THRESHOLD) {
         continue;
       }
@@ -1589,6 +1648,9 @@ function getImageAlphaMask(path) {
 
   const cached = runtime.alphaMaskCache.get(path);
   if (cached) {
+    // Map insertion order is our LRU order.
+    runtime.alphaMaskCache.delete(path);
+    runtime.alphaMaskCache.set(path, cached);
     return cached;
   }
 
@@ -1608,12 +1670,17 @@ function getImageAlphaMask(path) {
   context.clearRect(0, 0, image.width, image.height);
   context.drawImage(image, 0, 0);
   const imageData = context.getImageData(0, 0, image.width, image.height);
-  const mask = buildAlphaMaskFromBuffer(image.width, image.height, imageData.data);
+  // Several placement and rendering helpers use both alpha and RGB values
+  // from this mask (including the fish nose anchor used for held pebbles).
+  // Keep a detached RGBA copy for that established contract; the bounded LRU
+  // cache below, together with active-tank preloading, contains its memory.
+  const pixels = new Uint8ClampedArray(imageData.data);
+  const mask = buildAlphaMaskFromBuffer(image.width, image.height, pixels);
   if (!mask) {
     return null;
   }
 
-  runtime.alphaMaskCache.set(path, mask);
+  setBoundedAlphaMask(path, mask);
   return mask;
 }
 

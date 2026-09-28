@@ -215,21 +215,29 @@ function getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, 
     };
   }
 
-  return {
-    x: width * 0.48 + wiggleX,
-    y: -height * 0.02
-  };
+  // A carried pebble must be attached to the rendered fish artwork, never to
+  // an estimated point in the full source rectangle (which can contain large
+  // transparent margins). Defer that single visual until its decoded mask is
+  // available instead of drawing it in the wrong place.
+  return null;
 }
 
 function getFishFrontMouthOffsetAtPose(fish, species, width, height, pose, now = Date.now(), localForwardOffsetPx = 0) {
   const localPoint = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
-  localPoint.x += Number.isFinite(localForwardOffsetPx) ? localForwardOffsetPx : 0;
+  // Non-pebble effects retain a safe provisional point while their artwork is
+  // still decoding. Held pebbles call the strict helper directly and never
+  // use this image-rectangle fallback.
+  const resolvedPoint = localPoint || {
+    x: width * 0.48 + (pose?.wiggle || 0) * width * 0.018,
+    y: -height * 0.02
+  };
+  resolvedPoint.x += Number.isFinite(localForwardOffsetPx) ? localForwardOffsetPx : 0;
   const bodyScaleX = pose.bodyScaleX || 1;
   const bodyScaleY = pose.bodyScaleY || 1;
   const tilt = pose.tilt || 0;
   const facingScaleX = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
-  const scaledX = bodyScaleX * localPoint.x;
-  const scaledY = bodyScaleY * localPoint.y;
+  const scaledX = bodyScaleX * resolvedPoint.x;
+  const scaledY = bodyScaleY * resolvedPoint.y;
   const useSuckerFacePivot = (
     SUCKER_FISH_FACE_PIVOT_ENABLED
     && !pose.isDead
@@ -383,6 +391,7 @@ function createFishGravelPebbleAction(fish, species, now = Date.now()) {
 
   return {
     stage: "dive",
+    pickupLayer: clampTankLayer(getFishTankLayer(fish)),
     assetPath: pebbleAsset.path,
     color,
     colorize: colorizeSettings[colorIndex] === true,
@@ -423,7 +432,7 @@ function startFishGravelPebbleAction(fish, species, now = Date.now(), options = 
     species,
     randomBetween(Math.max(species.speedMin, species.speedMax * 0.72), species.speedMax)
   );
-  setFishDesiredTankLayer(fish, getFishTankLayer(fish));
+  setFishDesiredTankLayer(fish, action.pickupLayer);
   if (Math.abs(fish.targetXNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
     setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
   }
@@ -524,14 +533,9 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
   const normalizedLayer = clampTankLayer(layer);
   const stableScale = getViewportStableAssetScale();
   const size = (Number.isFinite(Number(holdSizePx)) ? Number(holdSizePx) : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * stableScale;
-  if (typeof tossOrLayer === "object" && Number.isFinite(Number(tossOrLayer.endX))) {
-    return clamp(
-      getTankFloorSurfaceYAtX(Number(tossOrLayer.endX)) - size * 0.46 + offsetPx,
-      WATER_SURFACE_Y + 24,
-      TANK_HEIGHT - GLASS_MARGIN_BOTTOM - size * 0.5
-    );
-  }
-
+  // Fish-play pebbles belong to the depth layer where they were picked up.
+  // Their drop finishes on that layer's authored gravel/floor line, not on the
+  // front-most physical substrate surface at the pebble's screen X position.
   return clamp(
     getTankLayerBottomBoundaryY(normalizedLayer) - size * 0.5 + offsetPx,
     WATER_SURFACE_Y + 24,
@@ -541,7 +545,7 @@ function getFishPebbleTossLayerLandingY(tossOrLayer, holdSizePx = FISH_GRAVEL_PE
 
 function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
   if (!fish || !species || !action?.assetPath || !action?.color) {
-    return;
+    return false;
   }
 
   if (runtime.fishPebbleTosses.length >= MAX_ACTIVE_FISH_GRAVEL_PEBBLE_TOSSES) {
@@ -559,11 +563,13 @@ function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
     drawWidth * (0.5 - FISH_GRAVEL_PEBBLE_MOUTH_OVERLAP_RATIO)
   );
   if (!mouthPoint) {
-    return;
+    return false;
   }
 
   const landingX = clamp(mouthPoint.x + randomBetween(-56, 56), GLASS_MARGIN_X + 10, TANK_WIDTH - GLASS_MARGIN_X - 10);
-  const landingLayer = getFishTankLayer(fish);
+  const landingLayer = clampTankLayer(
+    Number.isFinite(Number(action.pickupLayer)) ? Number(action.pickupLayer) : getFishTankLayer(fish)
+  );
   const landingYOffsetPx = randomBetween(-2, 3);
   const landingY = getFishPebbleTossLayerLandingY({
     endLayer: landingLayer,
@@ -591,6 +597,7 @@ function spawnFishGravelPebbleToss(fish, species, action, now = Date.now()) {
     startedAt: now,
     durationMs: 2800 + Math.hypot(landingX - mouthPoint.x, landingY - mouthPoint.y) * 2.2
   });
+  return true;
 }
 
 function getSedimentStrength(now = Date.now(), multiplier = 1) {
@@ -1053,6 +1060,10 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
   fish.activity = FISH_GRAVEL_PEBBLE_ACTIVITY;
   fish.feedingPelletId = null;
   fish.hangoutDecorId = null;
+  setFishDesiredTankLayer(
+    fish,
+    Number.isFinite(Number(action.pickupLayer)) ? Number(action.pickupLayer) : getFishTankLayer(fish)
+  );
 
   if (action.stage === "dive") {
     fish.targetXNorm = action.pickupXNorm;
@@ -1088,9 +1099,13 @@ function updateFishGravelPebbleAction(fish, species, now = Date.now()) {
     fish.targetYNorm = action.carryTargetYNorm;
     fish.targetAt = now + 2400;
     if (Math.hypot(fish.xNorm - action.carryTargetXNorm, fish.yNorm - action.carryTargetYNorm) <= FISH_GRAVEL_PEBBLE_SPIT_REACHED_DISTANCE_NORM) {
-      spawnFishGravelPebbleToss(fish, species, action, now);
-      clearFishGravelPebbleAction(fish, species, now);
-      return false;
+      if (spawnFishGravelPebbleToss(fish, species, action, now)) {
+        clearFishGravelPebbleAction(fish, species, now);
+        return false;
+      }
+      // Keep the pebble visibly held if the release pose cannot be resolved on
+      // this frame. Retry instead of clearing the action and popping the rock.
+      fish.targetAt = now + 250;
     }
   } else {
     clearFishGravelPebbleAction(fish, species, now);
@@ -1242,6 +1257,16 @@ function getFishSchoolFollowLeader(fish) {
 }
 
 function getFishSchoolingCompatibilityId(fish) {
+  const socialProfile = typeof getFishSocialProfile === "function"
+    ? getFishSocialProfile(fish)
+    : null;
+  if (
+    socialProfile?.socialGroupId
+    && ["school", "pod"].includes(socialProfile.socialMode)
+  ) {
+    return socialProfile.socialGroupId;
+  }
+
   const species = getBaseSpeciesForFish(fish);
   if (species?.customAsset) {
     return sanitizeFishBehaviorSpeciesId(
@@ -1274,12 +1299,29 @@ function isFishEligibleSchoolLeader(leader, follower, species, now = Date.now())
   if (Number.isFinite(leader.followUntil) && now < leader.followUntil) {
     return false;
   }
+  // User/debug follow is also a formation. Treating that fish as an
+  // independent school leader created follower chains with two moving
+  // controllers and a perpetually shifting anchor.
+  if (
+    (typeof getActiveFishActionSteering === "function" && getActiveFishActionSteering(leader, now)?.type === "follow")
+    || (typeof getActiveDebugBehaviorSteering === "function" && getActiveDebugBehaviorSteering(leader, now)?.type === "follow")
+  ) {
+    return false;
+  }
 
   if (species?.behavior === "sucker") {
     return false;
   }
 
   return true;
+}
+
+function isFishSchoolLeaderAvailable(fish, leader, species, now = Date.now()) {
+  if (["hangout", "debug"].includes(fish?.schoolSource)) {
+    return Boolean(leader && !isFishDead(leader) && leader.activity === "roam" && !leader.caveState
+      && !(leader.followFishId && Number(leader.followUntil) > now));
+  }
+  return isFishEligibleSchoolLeader(leader, fish, species, now);
 }
 
 function getFishSchoolFormationSubLayerPattern(leaderSubLayer) {
@@ -1353,6 +1395,42 @@ function getFishSchoolActiveFollowers(leader, now = Date.now()) {
   ));
 }
 
+// This is the single entry point for every social movement request.  The
+// legacy follow fields remain the persisted compatibility shape, but no caller
+// is allowed to calculate a follower destination on its own.
+function requestFishSchoolingRelationship(fish, leader, now = Date.now(), options = {}) {
+  if (!fish || !leader || fish.id === leader.id || isFishDead(fish) || isFishDead(leader)) return null;
+  const followerSpecies = getSpeciesForFish(fish);
+  if (!options.allowMixedSpecies && !isFishEligibleSchoolLeader(leader, fish, followerSpecies, now)) return null;
+  if (leader.followFishId && Number(leader.followUntil) > now) return null;
+  // A fish which already has followers is an active leader.  It may never be
+  // repurposed as somebody else's follower; that is the other half of the
+  // no-chain invariant (the leader check above covers the target half).
+  if (getFishSchoolActiveFollowers(fish, now).length > 0) return null;
+  const existingLeader = getFishSchoolFollowLeader(fish);
+  if (existingLeader && existingLeader.id !== leader.id) return null;
+  if (!existingLeader && getFishSchoolActiveFollowers(leader, now).length >= SCHOOL_MAX_FOLLOWERS) return null;
+
+  const durationMs = Math.max(1000, Number(options.durationMs) || randomBetween(SAME_SPECIES_FOLLOW_MIN_MS, SAME_SPECIES_FOLLOW_MAX_MS));
+  fish.followFishId = leader.id;
+  fish.followUntil = Math.max(Number(fish.followUntil) || 0, now + durationMs);
+  fish.followCooldownUntil = fish.followUntil + randomBetween(3500, 7000);
+  fish.schoolId = leader.id;
+  fish.schoolRole = "follower";
+  fish.schoolSource = options.source || "schooling";
+  fish.schoolState = fish.schoolState === "suspended" ? "rejoining" : (fish.schoolState || "formation");
+  leader.schoolFormation = leader.schoolFormation || options.formation || "staggered";
+  leader.schoolFormationUntil = Number(leader.schoolFormationUntil) || now + randomBetween(SCHOOL_FORMATION_MIN_MS, SCHOOL_FORMATION_MAX_MS);
+  fish.schoolFormation = leader.schoolFormation;
+  fish.schoolFormationUntil = leader.schoolFormationUntil;
+  fish.schoolFormationDirection = Number(fish.schoolFormationDirection) || getFishFacingDirection(leader);
+  fish.followDepthSlot = Number.isInteger(Number(fish.followDepthSlot)) ? fish.followDepthSlot : null;
+  fish.followFormationSlot = Number.isInteger(Number(fish.followFormationSlot)) ? fish.followFormationSlot : null;
+  assignFishSchoolFormationDepthSlot(fish, leader, now);
+  assignFishSchoolFormationSlot(fish, leader, now);
+  return fish;
+}
+
 function hasActiveFishSchoolFollowers(leader, now = Date.now()) {
   return getFishSchoolActiveFollowers(leader, now).length > 0;
 }
@@ -1384,9 +1462,33 @@ function assignFishSchoolFormationSlot(fish, leader, now = Date.now()) {
     }
   }
   let slot = 0;
-  while (used.has(slot)) slot += 1;
+  while (used.has(slot) && slot < SCHOOL_MAX_FOLLOWERS) slot += 1;
+  if (slot >= SCHOOL_MAX_FOLLOWERS) return -1;
   fish.followFormationSlot = slot;
   return slot;
+}
+
+function maybeChooseFishSchoolFormation(fish, leader, now = Date.now()) {
+  if (Number(leader.schoolFormationUntil) > now && leader.schoolFormation) {
+    fish.schoolFormation = leader.schoolFormation;
+    fish.schoolFormationUntil = leader.schoolFormationUntil;
+    return leader.schoolFormation;
+  }
+  const leaderDistance = Math.hypot(
+    (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
+    (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
+  );
+  const depthTravel = Math.abs(getDesiredFishTankDepthIndex(leader) - getFishTankDepthIndex(leader));
+  const choices = leaderDistance > 0.11
+    ? ["inline", "inline", "inline", "staggered", "ladder"]
+    : depthTravel > 0
+      ? ["ladder", "ladder", "staggered", "compact"]
+      : ["staggered", "staggered", "compact", "broad", "ladder"];
+  leader.schoolFormation = choices[Math.floor(Math.random() * choices.length)];
+  leader.schoolFormationUntil = now + randomBetween(SCHOOL_FORMATION_MIN_MS, SCHOOL_FORMATION_MAX_MS);
+  fish.schoolFormation = leader.schoolFormation;
+  fish.schoolFormationUntil = leader.schoolFormationUntil;
+  return leader.schoolFormation;
 }
 
 function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
@@ -1401,6 +1503,7 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
   const slot = assignFishSchoolFormationSlot(fish, leader, now);
   const row = Math.floor(slot / 3) + 1;
   const lane = slot % 3;
+  const formation = maybeChooseFishSchoolFormation(fish, leader, now);
   const trailingDistance = clamp(
     bodySpacingNorm * (0.9 + row * 0.72),
     SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
@@ -1412,10 +1515,24 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
     0.018,
     0.055
   );
-  const laneOffset = lane === 0 ? 0 : (lane === 1 ? -verticalStep : verticalStep);
+  let laneOffset = lane === 0 ? 0 : (lane === 1 ? -verticalStep : verticalStep);
   const rowOffset = row > 1 ? ((row % 2 === 0 ? 1 : -1) * verticalStep * 0.35) : 0;
+  let distanceMultiplier = 1;
+  if (formation === "inline") {
+    distanceMultiplier = 1.18 + slot * 0.14;
+    laneOffset *= 0.42;
+  } else if (formation === "ladder") {
+    distanceMultiplier = 0.8 + row * 0.12;
+    laneOffset *= 0.72;
+  } else if (formation === "broad") {
+    distanceMultiplier = 0.72 + row * 0.1;
+    laneOffset *= 1.65;
+  } else if (formation === "compact") {
+    distanceMultiplier = 0.68 + row * 0.08;
+    laneOffset *= 0.78;
+  }
   return {
-    trailingDistance,
+    trailingDistance: trailingDistance * distanceMultiplier,
     yOffsetNorm: clamp(laneOffset + rowOffset, -0.085, 0.085)
   };
 }
@@ -1425,7 +1542,28 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
     return null;
   }
 
-  const leaderDirection = getFishFacingDirection(leader);
+  // Keep the slot on the side selected when this follow began. A leader's
+  // rendered facing changes instantly at a turnaround; using it live moves a
+  // trailing slot across the leader by two spacing widths and forces a serial
+  // left/right reversal in every follower.
+  const currentLeaderDirection = getFishFacingDirection(leader);
+  const storedDirection = Number(fish.schoolFormationDirection) < 0 ? -1
+    : Number(fish.schoolFormationDirection) > 0 ? 1
+      : currentLeaderDirection;
+  // A turn is a group event: retain existing positions briefly, then let the
+  // smoothed targets reform behind the new heading.  This prevents an instant
+  // mirror through the leader while still allowing a completed turn to settle.
+  if (currentLeaderDirection !== storedDirection) {
+    fish.schoolTurnStartedAt = Number(fish.schoolTurnStartedAt) || now;
+    if (now - fish.schoolTurnStartedAt >= 420) {
+      fish.schoolFormationDirection = currentLeaderDirection;
+      fish.schoolTurnStartedAt = null;
+    }
+  } else {
+    fish.schoolTurnStartedAt = null;
+  }
+  const leaderDirection = Number(fish.schoolFormationDirection) < 0 ? -1
+    : Number(fish.schoolFormationDirection) > 0 ? 1 : currentLeaderDirection;
   const formation = getFishSchoolFormationOffset(fish, leader, now);
   const leaderTargetX = Number.isFinite(Number(leader.targetXNorm)) ? Number(leader.targetXNorm) : leader.xNorm;
   const leaderTargetY = Number.isFinite(Number(leader.targetYNorm)) ? Number(leader.targetYNorm) : leader.yNorm;
@@ -1450,7 +1588,7 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
   return {
     xNorm: desiredXNorm,
     yNorm: desiredYNorm,
-    targetLayer: clampTankLayer(getFishTankLayer(fish)),
+    targetLayer: clampTankLayer(getFishTankLayer(leader) + ([0, -1, 1][assignFishSchoolFormationDepthSlot(fish, leader, now) % 3])),
     targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
     offsetXNorm: -leaderDirection * formation.trailingDistance,
     offsetYNorm: formation.yOffsetNorm
@@ -1471,7 +1609,29 @@ function getFishSchoolFollowFacingDirection(fish, species, now = Date.now(), fal
   }
 
   const leader = getFishSchoolFollowLeader(fish);
-  if (!isFishEligibleSchoolLeader(leader, fish, species, now)) {
+  // A leader may use a cave as an ordinary resting behavior.  Its followers
+  // do not attempt to enter the same portal; they keep their relationship and
+  // wait in a loose, depth-layered pocket at the entrance until it returns.
+  if (leader?.caveState) {
+    const slot = Math.max(0, assignFishSchoolFormationSlot(fish, leader, now));
+    const side = slot % 2 === 0 ? -1 : 1;
+    fish.schoolState = "suspended";
+    fish.targetXNorm = clamp(
+      Number(leader.caveApproachXNorm ?? leader.xNorm) + side * (0.035 + Math.floor(slot / 2) * 0.018),
+      0.08,
+      0.92
+    );
+    fish.targetYNorm = clamp(
+      Number(leader.caveApproachYNorm ?? leader.yNorm) + (slot % 3 - 1) * 0.026,
+      0.14,
+      0.8
+    );
+    fish.targetAt = Math.max(now + 900, Number(leader.caveInsideUntil) || now + 900);
+    setFishDesiredTankLayer(fish, getFishTankLayer(leader));
+    setFishDesiredTankSubLayer(fish, getFishSchoolFormationSubLayer(fish, leader, now));
+    return true;
+  }
+  if (!isFishSchoolLeaderAvailable(fish, leader, species, now)) {
     return null;
   }
 
@@ -1482,6 +1642,12 @@ function getFishSchoolFollowFacingDirection(fish, species, now = Date.now(), fal
   const dx = Number.isFinite(Number(fallbackDx))
     ? Number(fallbackDx)
     : (targetXNorm - fish.xNorm);
+  // A settled follower has no horizontal travel request. Do not inherit a
+  // leader's fresh direction change at rest: that was starting a turnaround
+  // even though the formation target was deliberately inside its settle zone.
+  if (Math.abs(dx) < SOCIAL_FORMATION_TURN_DEADZONE_NORM) {
+    return null;
+  }
   const spacingNorm = clamp(
     Math.abs(Number(fish.followOffsetXNorm)) || SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
     SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
@@ -1510,16 +1676,87 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     return false;
   }
 
-  const leader = getFishSchoolFollowLeader(fish);
-  if (!isFishEligibleSchoolLeader(leader, fish, species, now)) {
+  // Older saves predate schoolSource.  A persisted `follow` intent was created
+  // by the Debug Follow control, so never reinterpret it as ambient schooling
+  // after a reload.  That turns temporary debug links into long-lived follower
+  // chains (and makes unrelated fish appear to pick arbitrary leaders).
+  if (!fish.schoolSource && fish.behaviorIntent?.type === "follow") {
+    fish.behaviorIntent = null;
     clearFishSchoolFollowState(fish);
     return false;
+  }
+
+  // Untyped non-debug relationships can be migrated as ambient schooling, but
+  // only for an explicitly coordinated social group below.
+  if (!fish.schoolSource) fish.schoolSource = "schooling";
+  if (
+    fish.schoolSource === "debug"
+    && !(typeof getActiveDebugBehaviorSteering === "function" && getActiveDebugBehaviorSteering(fish, now)?.type === "follow")
+  ) {
+    if (fish.behaviorIntent?.type === "follow") fish.behaviorIntent = null;
+    clearFishSchoolFollowState(fish);
+    return false;
+  }
+  if (fish.schoolSource === "schooling" && !(typeof getFishSocialProfile === "function" && getFishSocialProfile(fish)?.coordinatedSchooling)) {
+    clearFishSchoolFollowState(fish);
+    return false;
+  }
+
+  if (Number(fish.schoolRecoveryUntil) > now) {
+    return true;
+  }
+  if (fish.schoolRecoveryUntil) {
+    fish.schoolRecoveryUntil = null;
+  }
+
+  const leader = getFishSchoolFollowLeader(fish);
+  if (!isFishSchoolLeaderAvailable(fish, leader, species, now)) {
+    clearFishSchoolFollowState(fish);
+    return false;
+  }
+  if (fish.schoolSource === "schooling") {
+    const compatibilityId = getFishSchoolingCompatibilityId(fish);
+    const electedLeader = state.fish
+      .filter((candidate) => (
+        candidate
+        && getFishSchoolingCompatibilityId(candidate) === compatibilityId
+        && !isFishDead(candidate)
+        && candidate.activity === "roam"
+        && !candidate.caveState
+        && !(candidate.followFishId && Number(candidate.followUntil) > now)
+      ))
+      .sort((left, right) => getFishSchoolStableRank(left) - getFishSchoolStableRank(right))[0];
+    if (!electedLeader || electedLeader.id !== leader.id) {
+      clearFishSchoolFollowState(fish);
+      return false;
+    }
+  }
+
+  // Changing a fish's navigation endpoint every render frame restarts its
+  // arrival easing and presents as a visible brake/twitch.  Formation intent
+  // is sampled at a short fixed cadence; collision and panic remain higher
+  // priority and can still replace this target immediately.
+  if (Number(fish.schoolNextTargetRefreshAt) > now) {
+    return true;
   }
 
   const anchor = getFishSchoolFollowAnchor(fish, leader, now);
   if (!anchor) {
     clearFishSchoolFollowState(fish);
     return false;
+  }
+
+  const rawSlotDistance = Math.hypot(anchor.xNorm - fish.xNorm, anchor.yNorm - fish.yNorm);
+  if (rawSlotDistance >= SCHOOL_REJOIN_DISTANCE_NORM) {
+    fish.schoolState = "rejoining";
+  } else if (fish.schoolState === "rejoining" && rawSlotDistance <= SCHOOL_REJOIN_SETTLE_DISTANCE_NORM) {
+    fish.schoolState = "formation";
+  } else if (!fish.schoolState || fish.schoolState === "suspended") {
+    fish.schoolState = "formation";
+  }
+  if (fish.schoolState === "rejoining" && species.speedMode === "dynamic") {
+    const leaderSpeed = Number(leader.swimSpeed) || normalizeFishSpeed(species, species.speedMin);
+    fish.swimSpeed = normalizeFishSpeed(species, leaderSpeed * 1.2);
   }
 
   const previousTargetX = Number.isFinite(Number(fish.schoolTargetXNorm))
@@ -1549,9 +1786,25 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
   fish.schoolTargetXNorm = nextTargetX;
   fish.schoolTargetYNorm = nextTargetY;
   fish.schoolTargetUpdatedAt = now;
-  fish.schoolNextTargetRefreshAt = null;
-  fish.targetXNorm = nextTargetX;
-  fish.targetYNorm = nextTargetY;
+  fish.schoolNextTargetRefreshAt = now + SCHOOL_FORMATION_COMMAND_INTERVAL_MS;
+  const targetShift = Math.hypot(
+    nextTargetX - (Number(fish.targetXNorm) || fish.xNorm || 0.5),
+    nextTargetY - (Number(fish.targetYNorm) || fish.yNorm || 0.5)
+  );
+  const formationError = Math.hypot(
+    nextTargetX - (Number(fish.xNorm) || 0.5),
+    nextTargetY - (Number(fish.yNorm) || 0.5)
+  );
+  // A school is a moving formation, not a sequence of exact waypoint snaps.
+  // Retain a settled endpoint until the formation has visibly moved far enough
+  // to justify another steering correction.
+  if (
+    targetShift >= SOCIAL_FORMATION_POSITION_DEADZONE_NORM
+    || formationError >= SOCIAL_FORMATION_TURN_DEADZONE_NORM
+  ) {
+    fish.targetXNorm = nextTargetX;
+    fish.targetYNorm = nextTargetY;
+  }
   fish.targetAt = Math.max(now + 500, fish.followUntil);
   setFishDesiredTankLayer(fish, anchor.targetLayer);
   setFishDesiredTankSubLayer(fish, anchor.targetSubLayer);
@@ -1576,7 +1829,11 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   }
 
   const schoolingStrength = getFishSchoolingStrength(fish, species);
-  if (schoolingStrength <= 0.025) {
+  const socialProfile = typeof getFishSocialProfile === "function" ? getFishSocialProfile(fish) : null;
+  // Ambient schooling is reserved for species explicitly authored as a
+  // coordinated school/pod.  A generic social, pair, shoal, or solitary fish
+  // must never be silently enrolled just because another fish swims nearby.
+  if (schoolingStrength <= 0.025 || !socialProfile?.coordinatedSchooling) {
     return null;
   }
   const locomotionProfile = getFishLocomotionProfile(fish || species);
@@ -1586,6 +1843,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   const localCandidates = state.fish
     .filter((otherFish) => (
       otherFish
+      && otherFish.id !== fish.id
       && getFishSchoolingCompatibilityId(otherFish) === compatibilityId
       && !isFishDead(otherFish)
       && otherFish.activity === "roam"
@@ -1593,7 +1851,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
       && !otherFish.entryStartedAt
       && !isFishDiseaseAvoidanceSource(otherFish)
       && !isFishSickOrDying(otherFish)
-      && otherFish.speciesId === fish.speciesId
+      && !(otherFish.followFishId && Number(otherFish.followUntil) > now)
       && Math.hypot(otherFish.xNorm - fish.xNorm, otherFish.yNorm - fish.yNorm) <= followRadiusNorm
     ))
     .map((candidate) => ({
@@ -1603,6 +1861,9 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
       rank: getFishSchoolStableRank(candidate)
     }));
 
+  // Do not build a school from a lone pair.  Requiring two other independent
+  // neighbors avoids the visual "everyone follows a random fish" effect and
+  // leaves ordinary social interaction to the Hang Out action.
   if (localCandidates.length < 2) {
     return null;
   }
@@ -1618,16 +1879,26 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     return null;
   }
 
-  // Prefer a fish that is already leading this local school. If no leader has
-  // formed yet, elect one deterministically. The elected fish stays independent
-  // and everyone else follows it, so the group has a real direction instead of
-  // several simultaneous mini-leaders pulling the school into a knot.
-  localCandidates.sort((left, right) => {
-    if (right.followerCount !== left.followerCount) return right.followerCount - left.followerCount;
-    if (left.rank !== right.rank) return left.rank - right.rank;
-    return left.distanceNorm - right.distanceNorm;
-  });
-  const leader = localCandidates[0]?.fish || null;
+  // Elect one stable leader for this compatibility group rather than letting
+  // every nearby cluster nominate a different anchor.  The old local-only
+  // election was the source of the random-looking follow pairs.
+  const independentCompatible = state.fish
+    .filter((otherFish) => (
+      otherFish
+      && getFishSchoolingCompatibilityId(otherFish) === compatibilityId
+      && !isFishDead(otherFish)
+      && otherFish.activity === "roam"
+      && !otherFish.caveState
+      && !otherFish.entryStartedAt
+      && !isFishDiseaseAvoidanceSource(otherFish)
+      && !isFishSickOrDying(otherFish)
+      && !(otherFish.followFishId && Number(otherFish.followUntil) > now)
+    ))
+    .sort((left, right) => getFishSchoolStableRank(left) - getFishSchoolStableRank(right));
+  const leader = independentCompatible[0] || null;
+  if (leader && Math.hypot(leader.xNorm - fish.xNorm, leader.yNorm - fish.yNorm) > followRadiusNorm) {
+    return null;
+  }
   if (!leader || leader.id === fish.id || !isFishEligibleSchoolLeader(leader, fish, species, now)) {
     return null;
   }
@@ -1637,24 +1908,21 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   }
 
   const followDurationScale = clamp(locomotionProfile.schoolDurationScale, 0.7, 2.1);
-  const followUntil = now + randomBetween(
+  const followDurationMs = randomBetween(
     SAME_SPECIES_FOLLOW_MIN_MS * followDurationScale,
     SAME_SPECIES_FOLLOW_MAX_MS * followDurationScale
   );
-  fish.followFishId = leader.id;
-  fish.followUntil = followUntil;
-  fish.followCooldownUntil = followUntil + randomBetween(3500, 7000);
   fish.followOffsetXNorm = null;
   fish.followOffsetYNorm = null;
   fish.followDepthSlot = null;
   fish.followFormationSlot = null;
-  fish.followSlotUntil = followUntil;
   fish.schoolNextTargetRefreshAt = 0;
   fish.schoolTargetXNorm = null;
   fish.schoolTargetYNorm = null;
   fish.schoolTargetUpdatedAt = null;
-  assignFishSchoolFormationDepthSlot(fish, leader, now);
-  assignFishSchoolFormationSlot(fish, leader, now);
+  if (!requestFishSchoolingRelationship(fish, leader, now, { source: "schooling", durationMs: followDurationMs })) {
+    return null;
+  }
   const anchor = getFishSchoolFollowAnchor(fish, leader, now);
   if (!anchor) {
     clearFishSchoolFollowState(fish);
@@ -1665,7 +1933,7 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
   fish.followOffsetYNorm = anchor.offsetYNorm;
   fish.schoolTargetXNorm = anchor.xNorm;
   fish.schoolTargetYNorm = anchor.yNorm;
-  fish.schoolNextTargetRefreshAt = now + SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS;
+  fish.schoolNextTargetRefreshAt = now;
 
   return {
     leaderId: leader.id,
@@ -1673,6 +1941,15 @@ function pickSameSpeciesFollowTarget(fish, species, now = Date.now()) {
     yNorm: anchor.yNorm,
     targetLayer: anchor.targetLayer,
     targetSubLayer: anchor.targetSubLayer,
-    lingerMs: followUntil - now
+    lingerMs: fish.followUntil - now
   };
+}
+
+function deferFishSchoolFollowForRecovery(fish, until = 0) {
+  if (!fish || !Number.isFinite(Number(fish.followUntil)) || Number(fish.followUntil) <= Date.now()) {
+    return false;
+  }
+  fish.schoolState = "suspended";
+  fish.schoolRecoveryUntil = Math.max(Number(fish.schoolRecoveryUntil) || 0, Number(until) || 0);
+  return true;
 }

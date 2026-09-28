@@ -1417,29 +1417,6 @@
         "assets/generated/sprites/grime/Grime/grime-level-3.webp.thumb.webp": "cf5a514d59a05b943662851c09a3929b68913bfef6e00d47b834d65217a65a1f"
       }
     },
-    "assets/icons/Icons.webp": {
-      "version": "8cf498811d9f-v1",
-      "files": {
-        "assets/generated/sprites/icons/Icons/debug.png.thumb.webp": "5358c3e27c92e4d1ecf382e18e39be3d8a35e0fb483c8c5656618e327f7650cb",
-        "assets/generated/sprites/icons/Icons/fish_care.png.thumb.webp": "de256e8210a5cead4df78be4e5545a2d5fa393968d243c073e2b096926ca6f60",
-        "assets/generated/sprites/icons/Icons/edit_tank.png.thumb.webp": "b6d81ad93fe876ab5e617171bd2620a1af98df72cecca88b93814c7cf36b2546",
-        "assets/generated/sprites/icons/Icons/aquarium_overview.png.thumb.webp": "139f955f3de7286376ba6968a22d335e57a1cfd302e06f97251ef970b7507cd2",
-        "assets/generated/sprites/icons/Icons/Store_Icon.png.thumb.webp": "e3347ea577828c13e8fce76c33ceec6c556921ecdac59057400893315262232b",
-        "assets/generated/sprites/icons/Icons/scoop.png.thumb.webp": "a436e43996290462d7772da455ba9d20a6b465e52a90bc4674e17a0fac634998",
-        "assets/generated/sprites/icons/Icons/store.png.thumb.webp": "4d6c23894ee0b029fb75824dc59e02e027ac5bad82acde3b672a7abaebf3fecb",
-        "assets/generated/sprites/icons/Icons/fish_box.png.thumb.webp": "2e69d9074bd9e313bab80c24d406269a954b30d36f0d90efa1446bbcace9d2a7",
-        "assets/generated/sprites/icons/Icons/feed_fish.png.thumb.webp": "829b151bd366d9024114e74560ce53581591fbc968a270e60476d525f97b2d33",
-        "assets/generated/sprites/icons/Icons/sponge.png.thumb.webp": "b3428ecf10df8a94906a241c0258ac69dd7b2831493199a13e263645b371fd74",
-        "assets/generated/sprites/icons/Icons/medicine.png.thumb.webp": "74699dc523f5b5300c9bd7de3a6c571ef991479b3a1242e852d1901d59b345ad",
-        "assets/generated/sprites/icons/Icons/settings.png.thumb.webp": "af9083b1905aeabbcb3cd27e036d00e236b3a1271770f4d6b05ba85ac7ad559c",
-        "assets/generated/sprites/icons/Icons/tasks.png.thumb.webp": "3c8f649cb30f197f7e011800067d664fb952208535cb1f9313d3c90ba9d667bd",
-        "assets/generated/sprites/icons/Icons/coin.png.thumb.webp": "8ab52f531e254f3ba1da70632539910a38ce38806a21a672665688edc03fd995",
-        "assets/generated/sprites/icons/Icons/tank_info.png.thumb.webp": "c4322fed076fc46526b1c9b102b668bce516cd069633fdb970a1ef4394f73005",
-        "assets/generated/sprites/icons/Icons/tools.png.thumb.webp": "9e9ef7efaade549fc936c978b06d1886a9f42c562baef2a6db0e18b5d686dc70",
-        "assets/generated/sprites/icons/Icons/decor_box.png.thumb.webp": "80f4506aa87b18346ec1468a5235d34ada6acd17bdd336482b59db13275c0563",
-        "assets/generated/sprites/icons/Icons/bell.png.thumb.webp": "8c584069612cc0e6c26486a37775013c87ec45ba75bb91b8a7c3e6338160fd8b"
-      }
-    },
     "assets/icons/cursors.webp": {
       "version": "f95e1e3317b4-v1",
       "files": {
@@ -1456,6 +1433,32 @@
         "assets/generated/sprites/icons/cursors/anti-parasite_cursor.png.thumb.webp": "ab0842749ecb7825a09e7cf73ae0b0f32c5560cf7affb508b5c0a784d05cf195",
         "assets/generated/sprites/icons/cursors/osmotic-stress_cursor.png.thumb.webp": "bcd878920c1d4347e0572696dfb85e9a40af02d904db8178e5fabdc359cb42b7",
         "assets/generated/sprites/icons/cursors/net_cursor.png.thumb.webp": "66cdad4704c6f21a3ffef3d791e79cb61b6569925a4812622c179a2c56137bf1"
+      }
+    },
+    "assets/icons/icons.webp": {
+      "version": "b46abd0da7b0-v1",
+      "files": {
+        "assets/generated/sprites/icons/icons/debug.png.thumb.webp": "cca2095c26da7d27c17edf08cc33c1a0e98ed3955f15d86f298650fe69d15c2c",
+        "assets/generated/sprites/icons/icons/decor_box.png.thumb.webp": "80f4506aa87b18346ec1468a5235d34ada6acd17bdd336482b59db13275c0563",
+        "assets/generated/sprites/icons/icons/edit_tank.png.thumb.webp": "b6d81ad93fe876ab5e617171bd2620a1af98df72cecca88b93814c7cf36b2546",
+        "assets/generated/sprites/icons/icons/feed_fish.png.thumb.webp": "829b151bd366d9024114e74560ce53581591fbc968a270e60476d525f97b2d33",
+        "assets/generated/sprites/icons/icons/fish_box.png.thumb.webp": "2e69d9074bd9e313bab80c24d406269a954b30d36f0d90efa1446bbcace9d2a7",
+        "assets/generated/sprites/icons/icons/fish_care.png.thumb.webp": "5f6e0e37a402b9b650a6245fba4abe198adbdea74a6bd9d754a1866ff0503df8",
+        "assets/generated/sprites/icons/icons/medicine.png.thumb.webp": "bab22514732c1920df9ed495315235b3f6361c6d2c27a2879b0704b40b3756a2",
+        "assets/generated/sprites/icons/icons/scoop.png.thumb.webp": "0745fac5d0fdfb30028ac432ca8b97cc244d51a097a332cc28e5c67b1f767314",
+        "assets/generated/sprites/icons/icons/settings.png.thumb.webp": "af9083b1905aeabbcb3cd27e036d00e236b3a1271770f4d6b05ba85ac7ad559c",
+        "assets/generated/sprites/icons/icons/sponge.png.thumb.webp": "b3428ecf10df8a94906a241c0258ac69dd7b2831493199a13e263645b371fd74",
+        "assets/generated/sprites/icons/icons/store.png.thumb.webp": "3dca68489c73101426af72caefd7e8ade40dc21e52372a55333cc801240a71a2",
+        "assets/generated/sprites/icons/icons/Store_Icon.png.thumb.webp": "e3347ea577828c13e8fce76c33ceec6c556921ecdac59057400893315262232b",
+        "assets/generated/sprites/icons/icons/tank_info.png.thumb.webp": "c4322fed076fc46526b1c9b102b668bce516cd069633fdb970a1ef4394f73005",
+        "assets/generated/sprites/icons/icons/tasks.png.thumb.webp": "3c8f649cb30f197f7e011800067d664fb952208535cb1f9313d3c90ba9d667bd",
+        "assets/generated/sprites/icons/icons/tools.png.thumb.webp": "9e9ef7efaade549fc936c978b06d1886a9f42c562baef2a6db0e18b5d686dc70",
+        "assets/generated/sprites/icons/icons/aquarium_overview.png.thumb.webp": "f4861159c094f18cf895d3e86dc5abe18d5a1ae7487bcd4de24fa1142ddddd99",
+        "assets/generated/sprites/icons/icons/bell.png.thumb.webp": "8c584069612cc0e6c26486a37775013c87ec45ba75bb91b8a7c3e6338160fd8b",
+        "assets/generated/sprites/icons/icons/coin.png.thumb.webp": "8ab52f531e254f3ba1da70632539910a38ce38806a21a672665688edc03fd995",
+        "assets/generated/sprites/icons/icons/meat_icon.png.thumb.webp": "c12bf7444e2652253c5d21c03b7acddf259aabb94292862326d08e5fd7f56102",
+        "assets/generated/sprites/icons/icons/sparkle_1.png.thumb.webp": "c8f6093752c7a971ab6ded70d155dd2a84ce6338c822683d6c002f662a930e21",
+        "assets/generated/sprites/icons/icons/found_coin_flash.png.thumb.webp": "476d157897d5468ec2038719df191bdd4640780b7c26350628c3ff20f00ea117"
       }
     },
     "assets/icons/settings.webp": {
@@ -1485,6 +1488,49 @@
         "assets/generated/sprites/icons/settings/sync-syncing.png.thumb.webp": "1b3888276f3e1dd2bfb6234c77b9d10fcd454883f080017ac919202ca41c4d35",
         "assets/generated/sprites/icons/settings/user.png.thumb.webp": "26799f5cd316f0b1e3e3f3357b49b3e0d30f336948574eec9811d98f44cb3e4c",
         "assets/generated/sprites/icons/settings/visit-site.png.thumb.webp": "6670f3f1975c95808e93586e9b97f3bccf60481ce0a7bba425f9b41b1581b392"
+      }
+    },
+    "assets/icons/settings_2.webp": {
+      "version": "7bc15dc7a6e9-v1",
+      "files": {
+        "assets/generated/sprites/icons/settings_2/audio-wave.png.thumb.webp": "93dde6ed0e0b8e62676080c64b45c9d3807029b708b72a6339e27ecdd375bf01",
+        "assets/generated/sprites/icons/settings_2/bubbles.png.thumb.webp": "f4f6f6478d393b6ad150cfeb505a0e0f7468c05a06416571c619dc016c126f18",
+        "assets/generated/sprites/icons/settings_2/bubbles-hd.png.thumb.webp": "2344dac5348fc6c44c871bbbbf4ade59884853724b5b0053cbe5c9bab5d08b66",
+        "assets/generated/sprites/icons/settings_2/close.png.thumb.webp": "2c62b235613dbfea04a743641b361888865a2cee8103d518e4548e821163b888",
+        "assets/generated/sprites/icons/settings_2/cloud.png.thumb.webp": "eeaa956bdaa95e999bdf0e832b69ccfdb3b91b7ad4a1ed4631864783c23cee26",
+        "assets/generated/sprites/icons/settings_2/cloud-complete.png.thumb.webp": "fc4973852c8832953347049954d502da8e4773f159ff33c5abd6d5badf45aa01",
+        "assets/generated/sprites/icons/settings_2/code.png.thumb.webp": "29adc1552d8987f0c01e0dcc339bc63eccc816e311f7e86a9c7fa35d7ec46f05",
+        "assets/generated/sprites/icons/settings_2/coin.png.thumb.webp": "5e3c9013d04e323964c5a579726f3167e6f1b6c143529c65489c87d621dd002a",
+        "assets/generated/sprites/icons/settings_2/data.png.thumb.webp": "044a44fdaa58e24928c954c7830bfa2631932d7b7a9455f9df10f2ffc85e7def",
+        "assets/generated/sprites/icons/settings_2/download.png.thumb.webp": "536ae7db24ad23a45e0c5c7f30ae4ce2ab69507e2a028694b1edf631f0e5b513",
+        "assets/generated/sprites/icons/settings_2/expand.png.thumb.webp": "69283d92a8f3616ccea7b5ac52867666db44d0595eb7ba23dcaded28755a86bb",
+        "assets/generated/sprites/icons/settings_2/explosion.png.thumb.webp": "f8fe86928f11c2bdd0c711726d82b5e8d8dad07a82dcc9f69986922c0d823f2b",
+        "assets/generated/sprites/icons/settings_2/eyedropper.png.thumb.webp": "056c4eb928c35452b4f0caae8992461d8e9ec40dceeb89b49363ffae9038387e",
+        "assets/generated/sprites/icons/settings_2/heart.png.thumb.webp": "0c380d8cf6065292bc3fefe57b510073c055e05f34570de27ca4f69b072eebd8",
+        "assets/generated/sprites/icons/settings_2/house.png.thumb.webp": "362dd62c4b4913ea7a0a859c5f7ce2832a3e789539f551f658eea8cee15441b0",
+        "assets/generated/sprites/icons/settings_2/layers.png.thumb.webp": "1164e79ac80a91257b8c1509d19d68b4e6b91c208178278b598159f2786e1f65",
+        "assets/generated/sprites/icons/settings_2/leaf.png.thumb.webp": "1b0493ca01901812d0064e3ed5ad547e7f3b6e32fb8c62e7f3c1b7a205d2cb5b",
+        "assets/generated/sprites/icons/settings_2/letter.png.thumb.webp": "3500905874091d7708af7e82ca9ae9a5604436adfbf98ac0f0c6e71d0cc0cc8e",
+        "assets/generated/sprites/icons/settings_2/light-dark.png.thumb.webp": "cd1fd8cd223c203ae4ef655ef7b9c1ece9357203cbe1c27bc34260fa8e7a19f1",
+        "assets/generated/sprites/icons/settings_2/lock.png.thumb.webp": "2b63af94f425df6123298e3d32f929f0f78e5c1e4f5b0f7f188419bdf242061e",
+        "assets/generated/sprites/icons/settings_2/lock-gold.png.thumb.webp": "1ed72e22f0fe0f3920b26df0ebf8ec16514c930cd158173ab970f6fe7466d0d6",
+        "assets/generated/sprites/icons/settings_2/log-out.png.thumb.webp": "a16cc67094b890030a63cab4895c12072b4af77ab3d2884274623de71d534ef3",
+        "assets/generated/sprites/icons/settings_2/mask.png.thumb.webp": "17577d38e1ea64502d65d04fa1a132898d2136f4103f9b41e5957ddef2bcbc60",
+        "assets/generated/sprites/icons/settings_2/mountain.png.thumb.webp": "7ff83a5ba57a3089e36f964463c17f944a024857ba155a50e36b989a59cada27",
+        "assets/generated/sprites/icons/settings_2/music-note.png.thumb.webp": "90ace37686d6895b9673a6d928c4cd81b04a451be75628f98ab124a6f4e84124",
+        "assets/generated/sprites/icons/settings_2/page.png.thumb.webp": "16a6d18cc1a55a3ef8dc424e4bf6415dc0e97abc9682e0b6bd4dbf57766bad97",
+        "assets/generated/sprites/icons/settings_2/person.png.thumb.webp": "9b496035478922e8ca49117215c2f5ef61470ad9787a03b43f1798fe0ecdb6ed",
+        "assets/generated/sprites/icons/settings_2/pop-out.png.thumb.webp": "2985c087f9b31f349beef9435ec99d5631e31405e5c3c5488b88993bfebc1231",
+        "assets/generated/sprites/icons/settings_2/reset.png.thumb.webp": "f6fbc098d77db7737b8e86ee503d952c714b397ba28a07a61ab9075ddc501781",
+        "assets/generated/sprites/icons/settings_2/screen.png.thumb.webp": "75ce44ff99b6d87c208a426399fc99c6d3dff74d50b2dd0667aa8e2b9b85d207",
+        "assets/generated/sprites/icons/settings_2/screen-night.png.thumb.webp": "7b52be797bcff7c78fc519f71c4f0167d855277a0dc8532ff908e7d6dfac6be2",
+        "assets/generated/sprites/icons/settings_2/settings-gear.png.thumb.webp": "31929b85fa0190d78bfc94a8daaa569626c463456c172707d97d323f05398447",
+        "assets/generated/sprites/icons/settings_2/sparkles.png.thumb.webp": "32056bcff74d1194f77c71b1d559c53dfb91368ef05503de7ef5c1b528afe555",
+        "assets/generated/sprites/icons/settings_2/speaker.png.thumb.webp": "b0ddd2315021111ec754f239555d3a15273dc9027683710e3315c6ee7a533f15",
+        "assets/generated/sprites/icons/settings_2/speech-bubble.png.thumb.webp": "c5ea5779ac11ab18dd45d34ceb5fdce2c642cdebe43344b17874330fdfffe622",
+        "assets/generated/sprites/icons/settings_2/sun.png.thumb.webp": "62b4d878d57eb50425ff3097c9167385c211a7fd7870548531e6089427adf66a",
+        "assets/generated/sprites/icons/settings_2/upload.png.thumb.webp": "183cc5f24ef0317783017b75c8df1d9f63b4690928a6681eca638b26d2480cee",
+        "assets/generated/sprites/icons/settings_2/wave.png.thumb.webp": "ff7f1c18eaeacfb7d429a0d2b782b7891de16cdcd2a7334057fa587c99fe3c84"
       }
     },
     "assets/misc/Egg.webp": {
@@ -1550,26 +1596,26 @@
       }
     },
     "assets/tank-frame/corners.webp": {
-      "version": "898aa4647c91-v1",
+      "version": "f1c39f4f386c-v1",
       "files": {
-        "assets/generated/sprites/tank-frame/corners/tank_frame_top-left.png.thumb.webp": "9ef3f75f8cd543f6239a914a23807aef00c9c49df2c8ed63ff98885ace431b21",
-        "assets/generated/sprites/tank-frame/corners/tank_frame_top-right.png.thumb.webp": "72798485e2be75218fbb1d48c3b9473dcfe8d71f7ba0917e683be6a5d936ce4c",
-        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-left.png.thumb.webp": "e8aec5e43ada6143e128bfe3ab95f2c2b0f96385425b94555046253b26cd6e27",
-        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-right.png.thumb.webp": "db1644f812c777cb8c71937928520e71403f09bd8a90015d3a93717a9b862627"
+        "assets/generated/sprites/tank-frame/corners/tank_frame_top-left.png.thumb.webp": "9b0ad4b3ebfc521c0f2970b7319f4a5eabf9c882da7e98899447ae30f399e905",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_top-right.png.thumb.webp": "56b5f5fe239b9e17afa01ecfdf99069f09110d2ab840168f2fe4dccc1e755eff",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-left.png.thumb.webp": "6afa4ea7c37e442677730d73f8d89bab55422fae6d553f8767e8a97ae069d5e1",
+        "assets/generated/sprites/tank-frame/corners/tank_frame_bottom-right.png.thumb.webp": "4c6733d90d3ead3fcf4e9aa9196f26ba05a804fa47db69885c73d5adf919426c"
       }
     },
     "assets/tank-frame/left-right.webp": {
-      "version": "ccce82f29862-v1",
+      "version": "185003110abc-v1",
       "files": {
-        "assets/generated/sprites/tank-frame/left-right/tank_frame_right.png.thumb.webp": "5b1434910e4cbb49d7ed0e77c01e17b188a4e1ae3f68e84dbc249f14df10d5e2",
-        "assets/generated/sprites/tank-frame/left-right/tank_frame_left.png.thumb.webp": "e830c275fbc982a45cd495683f4919ac57a0ba786d8c784886abc20dfce81fa7"
+        "assets/generated/sprites/tank-frame/left-right/tank_frame_right.png.thumb.webp": "c8eccf754b64f9af917f55133eacbbb0bbb174bf462be24058c21b94219d9104",
+        "assets/generated/sprites/tank-frame/left-right/tank_frame_left.png.thumb.webp": "a2b4f3f83e28691337f32a4080836e6a268a15464debd16f9a88c0fa99257ec0"
       }
     },
     "assets/tank-frame/top-bottom.webp": {
-      "version": "4ada107e8ec6-v1",
+      "version": "9e63e3bc232e-v1",
       "files": {
-        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_top.png.thumb.webp": "2043720feb3bccd8b150b723c8529e65bf9af29c7114bd411421ef294437dad4",
-        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_bottom.png.thumb.webp": "1547af4a56161cd2ab3b88c99c48ee836056acbfa5e2f249f8ebd58499c8c989"
+        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_top.png.thumb.webp": "b182c417214346bd6d9f8700df77a930703f0cf3e99cc65fae4241508a2c7818",
+        "assets/generated/sprites/tank-frame/top-bottom/tank_frame_bottom.png.thumb.webp": "7dcff08888d6ab7a86e85c9c2568aa4e231f0f355d054f40b1642c0e087e0187"
       }
     },
     "assets/web/davy/fish/bioluminescent-angler-pike__genetics-enhanced.webp": {

@@ -333,6 +333,19 @@ function clearFishActionSteering(fish) {
   }
 }
 
+function deferFishActionSteeringForRecovery(fish, until) {
+  if (!fish?.id || !Number.isFinite(Number(until))) {
+    return false;
+  }
+  const steering = runtime.fishActionSteeringByFishId.get(fish.id);
+  if (!steering) {
+    return false;
+  }
+  steering.recoveryUntil = Math.max(Number(steering.recoveryUntil) || 0, Number(until));
+  steering.nextRefreshAt = Math.max(Number(steering.nextRefreshAt) || 0, Number(until));
+  return true;
+}
+
 function prepareFishForUserAction(fish, species, now = Date.now(), options = {}) {
   if (!fish || !species) {
     return false;
@@ -620,6 +633,15 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
   if (!steering || !fish || !species || isFishDead(fish) || fish.caveState || fish.activity !== "roam") {
     return false;
   }
+  // Collision recovery owns the destination until its safe waypoint has been
+  // reached. Without this gate Follow reissued the leader's blocked position
+  // every 260ms, creating a collide / detour / collide loop around decor.
+  if (Number(steering.recoveryUntil) > now) {
+    return true;
+  }
+  if (steering.recoveryUntil) {
+    steering.recoveryUntil = 0;
+  }
   if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
     return true;
   }
@@ -630,14 +652,96 @@ function updateFishActionSteering(fish, species, now = Date.now()) {
       clearFishActionSteering(fish);
       return false;
     }
-    const distance = Math.hypot((fish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (fish.yNorm || 0.5) - (targetFish.yNorm || 0.5));
-    const side = (Number(fish.phase) || 0.5) > 0.5 ? 1 : -1;
-    fish.targetXNorm = clamp((targetFish.xNorm || 0.5) - getFishFacingDirection(targetFish) * 0.045 + side * 0.018, 0.08, 0.92);
-    fish.targetYNorm = clampFishYNormToLayer((targetFish.yNorm || 0.5) + Math.sin(now / 900 + fish.phase * Math.PI) * 0.028, fish, species, getFishTankLayer(targetFish), { minYNorm: 0.14, maxYNorm: 0.8 });
+    const relationshipActive = fish.followFishId === targetFish.id && Number(fish.followUntil) > now;
+    if (!relationshipActive && !requestFishSchoolingRelationship(fish, targetFish, now, {
+      source: "hangout",
+      durationMs: Math.max(1000, Number(steering.expiresAt) - now),
+      allowMixedSpecies: true
+    })) {
+      clearFishActionSteering(fish);
+      clearFishSchoolFollowState(fish);
+      return false;
+    }
+    setFishBehaviorIntent(fish, "hang out", targetFish.name || "friend", now, {
+      targetId: targetFish.id,
+      targetName: targetFish.name || "",
+      durationMs: FISH_ACTION_STEER_REFRESH_MS * 5
+    });
+    // SCHOOLING owns the destination, layer, speed, and facing.  Keep this
+    // action only as a relationship/reward lifecycle entry.
+    return false;
+
+    const side = steering.formationSide || ((Number(fish.phase) || 0.5) > 0.5 ? 1 : -1);
+    steering.formationSide = side;
+    // A hangout is a loose, stable formation, not a pursuit point. Keep the
+    // original trailing side for this action so a leader turning around does
+    // not make its partner reverse across it every refresh.
+    const trailingDirection = steering.formationTrailingDirection || getFishFacingDirection(targetFish);
+    steering.formationTrailingDirection = trailingDirection;
+    const desiredXNorm = clamp((targetFish.xNorm || 0.5) - trailingDirection * 0.052, 0.08, 0.92);
+    const formationLayer = getFishTankLayer(fish);
+    const desiredYNorm = clampFishYNormToLayer(
+      (targetFish.yNorm || 0.5) + side * 0.022,
+      fish,
+      species,
+      formationLayer,
+      { minYNorm: 0.14, maxYNorm: 0.8 }
+    );
+    const currentFormationX = Number.isFinite(Number(steering.formationXNorm))
+      ? Number(steering.formationXNorm)
+      : desiredXNorm;
+    const currentFormationY = Number.isFinite(Number(steering.formationYNorm))
+      ? Number(steering.formationYNorm)
+      : desiredYNorm;
+    // Filter the moving leader position. This removes the small 260ms target
+    // jumps that were visible as a repeated brake-and-correct motion.
+    steering.formationXNorm = clamp(currentFormationX + (desiredXNorm - currentFormationX) * 0.42, 0.08, 0.92);
+    steering.formationYNorm = clampFishYNormToLayer(
+      currentFormationY + (desiredYNorm - currentFormationY) * 0.42,
+      fish,
+      species,
+      formationLayer,
+      { minYNorm: 0.14, maxYNorm: 0.8 }
+    );
+    const formationCandidates = [
+      { xNorm: steering.formationXNorm, yNorm: steering.formationYNorm },
+      { xNorm: steering.formationXNorm, yNorm: steering.formationYNorm + side * 0.046 },
+      { xNorm: steering.formationXNorm - trailingDirection * 0.028, yNorm: steering.formationYNorm - side * 0.032 },
+      { xNorm: steering.formationXNorm - trailingDirection * 0.052, yNorm: steering.formationYNorm + side * 0.018 }
+    ].map((candidate) => ({
+      xNorm: clamp(candidate.xNorm, 0.08, 0.92),
+      yNorm: clampFishYNormToLayer(candidate.yNorm, fish, species, formationLayer, { minYNorm: 0.14, maxYNorm: 0.8 })
+    }));
+    const reachableFormation = typeof findFishClearDetourTarget === "function"
+      ? findFishClearDetourTarget(fish, species, formationCandidates, now)
+      : { xNorm: steering.formationXNorm, yNorm: steering.formationYNorm };
+    if (reachableFormation) {
+      const targetShift = Math.hypot(
+        reachableFormation.xNorm - (Number(fish.targetXNorm) || fish.xNorm || 0.5),
+        reachableFormation.yNorm - (Number(fish.targetYNorm) || fish.yNorm || 0.5)
+      );
+      const formationError = Math.hypot(
+        reachableFormation.xNorm - (Number(fish.xNorm) || 0.5),
+        reachableFormation.yNorm - (Number(fish.yNorm) || 0.5)
+      );
+      // Keep the commanded endpoint still once the pair is visually settled.
+      // This is separate from filtering the leader: it prevents tiny target
+      // updates from repeatedly restarting the follower's arrival easing.
+      if (
+        targetShift >= SOCIAL_FORMATION_POSITION_DEADZONE_NORM
+        || formationError >= SOCIAL_FORMATION_TURN_DEADZONE_NORM
+      ) {
+        fish.targetXNorm = reachableFormation.xNorm;
+        fish.targetYNorm = reachableFormation.yNorm;
+      }
+    }
+    const distance = Math.hypot((fish.xNorm || 0.5) - (fish.targetXNorm || 0.5), (fish.yNorm || 0.5) - (fish.targetYNorm || 0.5));
     fish.targetAt = now + 620;
     fish.hangoutDecorId = null;
     fish.hangoutZoneType = null;
-    setFishDesiredTankLayer(fish, getFishTankLayer(targetFish));
+    // Social pair movement is planar. Following another fish into an
+    // unreachable depth lane causes repeated collision/recovery transitions.
+    setFishDesiredTankLayer(fish, formationLayer);
     steering.distanceNorm = distance;
     steering.leaderSwimSpeed = Number(targetFish.swimSpeed) || 0;
     steering.leaderMoving = Math.hypot((targetFish.targetXNorm || targetFish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (targetFish.targetYNorm || targetFish.yNorm || 0.5) - (targetFish.yNorm || 0.5)) > 0.002;
@@ -1039,6 +1143,21 @@ function updateQueuedFishActionControl(fish, species, now = Date.now()) {
   if (active.action === "breed") {
     setFishBehaviorIntent(fish, "mate", "partner", now, { durationMs: FISH_ACTION_STEER_REFRESH_MS * 5 });
     return true;
+  }
+
+  if (active.action === "hangout" || active.action === "greet") {
+    const steering = getActiveFishActionSteering(fish, now);
+    const partner = steering ? getFishByIdFast(steering.targetFishId) : null;
+    if (!partner || isFishDead(partner)) return false;
+    const relationshipActive = fish.followFishId === partner.id && Number(fish.followUntil) > now;
+    if (!relationshipActive && !requestFishSchoolingRelationship(fish, partner, now, {
+      source: "hangout",
+      durationMs: Math.max(1000, Number(steering.expiresAt) - now),
+      allowMixedSpecies: true
+    })) {
+      clearFishActionSteering(fish);
+    }
+    return false;
   }
 
   return updateFishActionSteering(fish, species, now) || Boolean(active);

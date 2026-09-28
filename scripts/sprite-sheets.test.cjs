@@ -95,8 +95,8 @@ test("optional Proteus Z-01 sprite pipeline supports absent, base-only, and mult
     assert.ok(multi);
     assert.deepEqual(Object.keys(multi.frames), ["zombie_fish.png", "zombie_fish_2.png", "zombie_fish_3.png"]);
 
-    fs.mkdirSync(path.join(incompleteRoot, "fish"), { recursive: true });
-    fs.writeFileSync(path.join(incompleteRoot, "fish/zombie_fish.json"), "{}");
+    fs.mkdirSync(path.join(incompleteRoot, "web/proteus/dna_fish"), { recursive: true });
+    fs.writeFileSync(path.join(incompleteRoot, "web/proteus/dna_fish/zombie_fish.json"), "{}");
     assert.throws(() => buildDefinitions(incompleteRoot), /Proteus Z-01 sprite assets are incomplete/);
   } finally {
     for (const directory of [absentRoot, baseRoot, multiRoot, incompleteRoot]) fs.rmSync(directory, { recursive: true, force: true });
@@ -129,12 +129,27 @@ test("renamed sheet frames retain legacy paths and authored grid order", async (
   await c.preloadImages(["assets/fish/otocinclus.png", "assets/fish/otocinclus_0.png"]);
   assert.equal(requests.length, 1);
   assert.equal(c.runtime.images.get("assets/fish/otocinclus.png"), c.runtime.images.get("assets/fish/otocinclus_0.png"));
-  const zebra = c.getSpriteAssetFrame("assets/fish/zebradanio.png");
-  assert.deepEqual(Array.from(zebra.rect), [512, 0, 512, 168]);
+  const zebra = c.getSpriteAssetFrame("assets/fish/zebra-danio_neon-blue.png");
+  assert.ok(zebra?.rect?.[2] > 0);
   const shark = c.getSpriteAssetFrame("assets/fish/Great_White_Shark.png");
   assert.equal(shark.rect[0], 512);
   assert.ok(c.getSpriteAssetFrame("assets/fish/Hammerhead_Shark_5.png"));
-  assert.ok(c.getSpriteAssetFrame("assets/fish/WonderKillifish.png"));
+  assert.ok(c.getSpriteAssetFrame("assets/fish/angelfish_silver.png"));
+});
+
+test("meal indicator meat icon resolves from the shared icons atlas", async () => {
+  const { context: c, requests, draws } = runtimeContext();
+  const meatIcon = "assets/icons/meat_icon.png";
+  const frame = c.getSpriteAssetFrame(meatIcon);
+  assert.ok(frame, "meat icon must remain addressable by its logical frame path");
+  assert.match(frame.sheet.path, /assets\/icons\/icons\.webp$/i);
+  assert.deepEqual(Array.from(frame.rect), [200, 400, 100, 100]);
+
+  const result = await c.preloadImages([meatIcon]);
+  assert.equal(result[0].loaded, true);
+  assert.equal(requests.length, 1);
+  assert.match(requests[0], /assets\/icons\/icons\.webp\?v=[a-f0-9]{12}$/i);
+  assert.deepEqual(draws[0].slice(1), [200, 400, 100, 100, 0, 0, 100, 100]);
 });
 
 test("Otocinclus keeps all four appearances across normal, front-glass and swimming poses", async () => {
@@ -167,10 +182,10 @@ test("Otocinclus keeps all four appearances across normal, front-glass and swimm
 
 test("sheet lookup accepts legacy cache queries and subdirectory URLs while leaving loose/custom assets alone", () => {
   const { context: c } = runtimeContext();
-  const frame = c.getSpriteAssetFrame("./assets/fish/angelfish.png?v=old#saved");
+  const frame = c.getSpriteAssetFrame("./assets/fish/angelfish_silver.png?v=old#saved");
   assert.ok(frame);
-  assert.equal(frame, c.getSpriteAssetFrame("https://example.test/game/assets/fish/angelfish.png"));
-  for (const value of ["assets/decor/seaweed-bunch.png", "data:image/png;base64,custom", "blob:custom", "https://another.test/game/assets/fish/angelfish.png"]) assert.equal(c.getSpriteAssetFrame(value), null);
+  assert.equal(frame, c.getSpriteAssetFrame("https://example.test/game/assets/fish/angelfish_silver.png"));
+  for (const value of ["assets/decor/seaweed-bunch.png", "data:image/png;base64,custom", "blob:custom", "https://another.test/game/assets/fish/angelfish_silver.png"]) assert.equal(c.getSpriteAssetFrame(value), null);
 });
 
 test("concurrent frames share one sheet request and aliases share a correctly cropped canvas", async () => {
@@ -197,10 +212,10 @@ test("concurrent frames share one sheet request and aliases share a correctly cr
 
 test("later fish variants reload a temporary sheet without discarding existing crops", async () => {
   const { context: c, requests } = runtimeContext();
-  const main = "assets/fish/angelfish.png";
+  const main = "assets/fish/angelfish_silver.png";
   await c.preloadImages([main]);
   const original = c.runtime.images.get(main);
-  await c.preloadImages(["assets/fish/angelfish_1.png", "assets/fish/angelfish_2.png"]);
+  await c.preloadImages(["assets/fish/angelfish_altum.png", "assets/fish/angelfish_black_lace.png"]);
   assert.equal(requests.length, 2);
   assert.equal(c.loadSpriteRuntimeImage.sheets.size, 0);
   assert.ok(!c.runtime.images.has(requests[0]));
@@ -213,13 +228,13 @@ test("temporary sheet timeouts release readers and cannot repopulate the runtime
   const { context: c, requests } = runtimeContext();
   const setTimer = c.window.setTimeout;
   c.window.setTimeout = callback => { queueMicrotask(callback); return 0; };
-  const result = await c.preloadImagePath("assets/fish/angelfish.png", { maxAttempts: 1 });
+  const result = await c.preloadImagePath("assets/fish/angelfish_silver.png", { maxAttempts: 1 });
   assert.equal(result.loaded, false);
   assert.equal(result.reason, "timeout");
   assert.equal(c.loadSpriteRuntimeImage.sheets.size, 0);
   assert.equal(c.runtime.images.size, 0);
   c.window.setTimeout = setTimer;
-  assert.equal((await c.preloadImagePath("assets/fish/angelfish.png")).loaded, true);
+  assert.equal((await c.preloadImagePath("assets/fish/angelfish_silver.png")).loaded, true);
   assert.equal(requests.length, 2);
   assert.ok(!c.runtime.images.has(requests[0]));
 });
@@ -290,12 +305,12 @@ test("decor startup loads only placed artwork and companions, while inventory us
   assert.equal(c.runtime.decorHangoutZonesKey, "");
 });
 
-test("fish appearances can mix sheet frames with a newly added loose variant without probing missing files", async () => {
+test("fish appearance discovery adds an authored loose numeric variant without inventing missing siblings", async () => {
   const { context: c, requests } = runtimeContext();
   c.setTimeout = setTimeout;
   c.clearTimeout = clearTimeout;
   const fish = { asset: "assets/fish/angelfish.png" };
   await c.discoverFishAppearanceVariants([fish], [{ key: "angelfish_5.png" }]);
-  assert.deepEqual(Array.from(fish.assetVariants), Array.from({ length: 6 }, (_, i) => `assets/fish/angelfish${i ? `_${i}` : ""}.png`));
+  assert.deepEqual(Array.from(fish.assetVariants), ["assets/fish/angelfish.png", "assets/fish/angelfish_5.png"]);
   assert.deepEqual(requests, ["assets/fish/angelfish_5.png"]);
 });

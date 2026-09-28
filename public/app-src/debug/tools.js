@@ -641,6 +641,52 @@ function inspectFishProgressionDebug(fishOrId = null, options = {}) {
   return inspection;
 }
 
+function getDebugFishSocialInspection(fishOrId = null, now = Date.now()) {
+  const fish = fishOrId && typeof fishOrId === "object"
+    ? fishOrId
+    : getManagedFishById(String(fishOrId || runtime.selectedFishId || runtime.selectedFishStatusFishId || ""))?.fish || null;
+  if (!fish) return null;
+  const tank = typeof getFishSimulationTank === "function"
+    ? getFishSimulationTank(fish)
+    : (typeof getCurrentTank === "function" ? getCurrentTank() : null);
+  const status = typeof getFishSocialSatisfaction === "function"
+    ? getFishSocialSatisfaction(fish, tank, now)
+    : null;
+  if (!status) return null;
+  return {
+    fishId: String(fish.id || ""),
+    fishName: String(fish.name || fish.speciesId || "Fish"),
+    socialGroupId: status.socialGroupId || "(none)",
+    socialMode: status.socialMode || "flexible",
+    properGroup: `${status.properGroupCount} / ${status.idealGroupSize || 0}`,
+    socialSatisfaction: `${Math.round(clamp(Number(status.satisfaction) || 0, 0, 1) * 100)}%`,
+    loneliness: `${Math.round(clamp(Number(fish.lonelinessScore) || 0, 0, 100))} / 100`,
+    acclimating: typeof isFishInNewTankAcclimation === "function" && isFishInNewTankAcclimation(fish, now) ? "Yes" : "No",
+    establishedFriends: Number(status.establishedFriendCount) || 0,
+    affinityCompanions: Number(status.affinityCompanionCount) || 0,
+    ordinaryCompatibleCompanions: Number(status.ordinaryCompatibleCount) || 0,
+    bondedPartnerPresent: Boolean(status.bondedPartnerPresent),
+    hostPresent: Boolean(status.hostPresent)
+  };
+}
+
+function inspectFishSocialDebug(fishOrId = null, options = {}) {
+  if (!isDebugModeEnabled()) {
+    if (options.toast !== false) showToast("Debug tools are not enabled.");
+    return null;
+  }
+  const inspection = getDebugFishSocialInspection(fishOrId, Date.now());
+  if (!inspection) {
+    if (options.toast !== false) showToast("Select a fish to inspect social state.");
+    return null;
+  }
+  if (typeof console !== "undefined" && typeof console.table === "function") {
+    console.table(inspection);
+  }
+  if (options.toast !== false) showToast(`${inspection.fishName} social state logged to console.`);
+  return inspection;
+}
+
 function getDebugFishSwimAnimationMetrics(fishOrId = null) {
   const fish = fishOrId && typeof fishOrId === "object"
     ? fishOrId
@@ -693,6 +739,7 @@ function exposeDebugConsoleCommands() {
   }
   window.debugWhalesBreathe = forceAllWhalesToBreatheDebug;
   window.debugInspectFishProgression = (fishId = "") => inspectFishProgressionDebug(fishId || null, { toast: false });
+  window.debugInspectFishSocial = (fishId = "") => inspectFishSocialDebug(fishId || null, { toast: false });
   window.debugInspectSwimAnimation = (fishId = "") => inspectFishSwimAnimationDebug(fishId || null, { toast: false });
   window.debugSetSwimAnimationPreset = (presetId = "regular") => {
     if (!isDebugModeEnabled()) {
@@ -1626,6 +1673,12 @@ function getActiveDebugBehaviorSteering(fish, now = Date.now()) {
   }
   if (!isDebugModeEnabled() || (Number(steering.expiresAt) || 0) <= now) {
     runtime.debugBehaviorSteeringByFishId.delete(fish.id);
+    if (fish.schoolSource === "debug") {
+      clearFishSchoolFollowState(fish);
+    }
+    if (fish.behaviorIntent?.type === "follow") {
+      fish.behaviorIntent = null;
+    }
     return null;
   }
   return steering;
@@ -1656,6 +1709,15 @@ function clearDebugBehaviorSteering(fish) {
   if (fish?.id && runtime.debugBehaviorSteeringByFishId) {
     runtime.debugBehaviorSteeringByFishId.delete(fish.id);
   }
+}
+
+function deferDebugBehaviorSteeringForRecovery(fish, until) {
+  if (!fish?.id || !Number.isFinite(Number(until))) return false;
+  const steering = runtime.debugBehaviorSteeringByFishId?.get(fish.id);
+  if (!steering) return false;
+  steering.recoveryUntil = Math.max(Number(steering.recoveryUntil) || 0, Number(until));
+  steering.nextRefreshAt = Math.max(Number(steering.nextRefreshAt) || 0, Number(until));
+  return true;
 }
 
 function getDebugBehaviorFacingDirection(fish, now = Date.now()) {
@@ -1710,37 +1772,73 @@ function updateDebugFollowSteering(fish, species, steering, now = Date.now()) {
     clearDebugBehaviorSteering(fish);
     return false;
   }
+  const relationshipActive = fish.followFishId === targetFish.id && Number(fish.followUntil) > now;
+  if (!relationshipActive && !requestFishSchoolingRelationship(fish, targetFish, now, {
+    source: "debug",
+    durationMs: Math.max(1000, Number(steering.expiresAt) - now),
+    allowMixedSpecies: true
+  })) {
+    // Debug scenarios must not keep resurrecting an invalid follower chain.
+    // The selected fish returns to ordinary roaming until Debug Follow is
+    // explicitly invoked again against an independent leader.
+    clearDebugBehaviorSteering(fish);
+    clearFishSchoolFollowState(fish);
+    return false;
+  }
+  setDebugBehaviorSteeringIntent(fish, steering, "follow", "friend", now, {
+    targetName: steering.targetName || getDebugFishDisplayName(targetFish),
+    durationMs: DEBUG_BEHAVIOR_STEER_REFRESH_MS * 5
+  });
+  // Debug Follow intentionally exercises the authoritative school controller
+  // rather than maintaining a second movement implementation.
+  return false;
+
+  if (Number(steering.recoveryUntil) > now) {
+    return true;
+  }
+  if (steering.recoveryUntil) steering.recoveryUntil = 0;
   if (now < Number(steering.nextRefreshAt || 0) && now < Number(fish.targetAt || 0)) {
     return true;
   }
 
-  const elapsed = Math.max(0, now - (Number(steering.startedAt) || now));
   const targetDirection = getFishFacingDirection(targetFish);
-  const distance = Math.hypot((fish.xNorm || 0.5) - (targetFish.xNorm || 0.5), (fish.yNorm || 0.5) - (targetFish.yNorm || 0.5));
-  const sideWobble = Math.sin(elapsed / 1100 + (fish.phase || 0) * Math.PI * 2) * 0.012;
-  const verticalWobble = Math.cos(elapsed / 1350 + (fish.phase || 0) * Math.PI * 2) * 0.016;
+  const side = steering.formationSide || ((Number(fish.phase) || 0.5) > 0.5 ? 1 : -1);
+  steering.formationSide = side;
+  const trailingDirection = steering.formationTrailingDirection || targetDirection;
+  steering.formationTrailingDirection = trailingDirection;
   const leaderMoveX = (targetFish.targetXNorm || targetFish.xNorm || 0.5) - (targetFish.xNorm || 0.5);
   const leaderMoveY = (targetFish.targetYNorm || targetFish.yNorm || 0.5) - (targetFish.yNorm || 0.5);
   const leaderMoveDistance = Math.hypot(leaderMoveX, leaderMoveY);
-  const leaderHeadingX = leaderMoveDistance > 0.002 ? leaderMoveX / leaderMoveDistance : targetDirection;
-  const leaderHeadingY = leaderMoveDistance > 0.002 ? leaderMoveY / leaderMoveDistance : 0;
-  const lookahead = leaderMoveDistance > 0.002
-    ? DEBUG_BEHAVIOR_FOLLOW_LOOKAHEAD_NORM * (distance <= DEBUG_BEHAVIOR_FOLLOW_CLOSE_NORM ? 1.2 : 0.7)
-    : 0;
-  const trailX = (targetFish.xNorm || 0.5) - targetDirection * DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM + sideWobble;
-  const trailY = (targetFish.yNorm || 0.5) + verticalWobble;
-  fish.targetXNorm = clamp(trailX + leaderHeadingX * lookahead, 0.08, 0.92);
-  fish.targetYNorm = clampFishYNormToLayer(
-    trailY + leaderHeadingY * lookahead,
+  const formationLayer = getFishTankLayer(fish);
+  const desiredXNorm = clamp((targetFish.xNorm || 0.5) - trailingDirection * DEBUG_BEHAVIOR_FOLLOW_DISTANCE_NORM, 0.08, 0.92);
+  const desiredYNorm = clampFishYNormToLayer(
+    (targetFish.yNorm || 0.5) + side * 0.022,
     fish,
     species,
-    getFishTankLayer(targetFish),
+    formationLayer,
     { minYNorm: 0.14, maxYNorm: 0.8 }
   );
+  const previousXNorm = Number.isFinite(Number(steering.formationXNorm)) ? Number(steering.formationXNorm) : desiredXNorm;
+  const previousYNorm = Number.isFinite(Number(steering.formationYNorm)) ? Number(steering.formationYNorm) : desiredYNorm;
+  steering.formationXNorm = clamp(previousXNorm + (desiredXNorm - previousXNorm) * 0.42, 0.08, 0.92);
+  steering.formationYNorm = clampFishYNormToLayer(
+    previousYNorm + (desiredYNorm - previousYNorm) * 0.42,
+    fish, species, formationLayer, { minYNorm: 0.14, maxYNorm: 0.8 }
+  );
+  const targetShift = Math.hypot(
+    steering.formationXNorm - (Number(fish.targetXNorm) || fish.xNorm || 0.5),
+    steering.formationYNorm - (Number(fish.targetYNorm) || fish.yNorm || 0.5)
+  );
+  const formationError = Math.hypot(steering.formationXNorm - fish.xNorm, steering.formationYNorm - fish.yNorm);
+  if (targetShift >= SOCIAL_FORMATION_POSITION_DEADZONE_NORM || formationError >= SOCIAL_FORMATION_TURN_DEADZONE_NORM) {
+    fish.targetXNorm = steering.formationXNorm;
+    fish.targetYNorm = steering.formationYNorm;
+  }
+  const distance = Math.hypot((fish.xNorm || 0.5) - (fish.targetXNorm || 0.5), (fish.yNorm || 0.5) - (fish.targetYNorm || 0.5));
   fish.targetAt = now + 520;
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
-  setFishDesiredTankLayer(fish, getFishTankLayer(targetFish));
+  setFishDesiredTankLayer(fish, formationLayer);
   steering.distanceNorm = distance;
   steering.leaderSwimSpeed = Number(targetFish.swimSpeed) || 0;
   steering.leaderMoving = leaderMoveDistance > 0.002;

@@ -20,14 +20,6 @@
 </head>
 
 <body>
-  <section class="mobile-unsupported-blocker" aria-label="Unsupported device" role="status">
-    <div class="mobile-unsupported-card">
-      <p class="mobile-unsupported-kicker">Bubble Borough</p>
-      <h1>Please Use A Computer</h1>
-      <p>For the best experience with Bubble Borough, please use a desktop or laptop computer. Bubble Borough is not intended for mobile devices.</p>
-    </div>
-  </section>
-
   <div id="loadingOverlay" class="loading-overlay" role="status" aria-live="polite">
     <div id="loadingOverlayBackground" class="tank-stage-background loading-overlay-background" aria-hidden="true"></div>
     <div id="loadingOverlayUnderwater" class="tank-stage-underwater loading-overlay-underwater" aria-hidden="true"></div>
@@ -426,7 +418,7 @@
                 <nav class="webpage-tab-strip" aria-label="Web pages">
                   <div class="webpage-tab-list">
                     <button type="button" class="webpage-tab" data-webpage-destination="home" aria-label="Open the browser home page">
-                      <img src="assets/icons/browser_home.png" alt="" aria-hidden="true" />
+                      <img src="assets/web/websurf/browser_home.png" alt="" aria-hidden="true" />
                       <span>Home</span>
                     </button>
                     <button type="button" class="webpage-tab is-active" data-webpage-destination="store" aria-current="page">
@@ -1029,13 +1021,22 @@
                         <input id="trypophobiaToggleInput" class="settings-checkbox" type="checkbox" />
                       </label>
 
-                      <label class="settings-toggle-row" for="ambientBubblesToggleInput">
+                      <div class="settings-toggle-row settings-ambient-bubble-row">
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Ambient Bubbles</span>
-                          <span class="settings-toggle-note">Shows drifting aquarium bubbles.</span>
+                          <span class="settings-toggle-note">Adjusts decorative bubble density and rise speed.</span>
                         </div>
-                        <input id="ambientBubblesToggleInput" class="settings-checkbox" type="checkbox" />
-                      </label>
+                        <div class="settings-ambient-bubble-control">
+                          <output id="ambientBubbleLevelOutput" for="ambientBubbleLevelInput">2 · Medium</output>
+                          <input id="ambientBubbleLevelInput" type="range" min="0" max="3" step="1" value="2" aria-label="Ambient bubbles from 0 off to 3 high" />
+                          <div class="settings-ambient-bubble-ticks" aria-hidden="true">
+                            <span><strong>0</strong><small>Off</small></span>
+                            <span><strong>1</strong><small>Light</small></span>
+                            <span><strong>2</strong><small>Medium</small></span>
+                            <span><strong>3</strong><small>High</small></span>
+                          </div>
+                        </div>
+                      </div>
 
                       <label class="settings-toggle-row" for="waterParticlesToggleInput">
                         <div class="settings-toggle-copy">
@@ -1139,6 +1140,14 @@
                           <span class="settings-toggle-note">Keeps your saved game layout and proportions when the window is resized. Turn it off and back on to save the current window size as the new ratio.</span>
                         </div>
                         <input id="layoutRatioLockToggleInput" class="settings-checkbox" type="checkbox" checked />
+                      </label>
+
+                      <label class="settings-toggle-row" for="layoutRatioLockFrameToggleInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Ratio Lock Frame</span>
+                          <span class="settings-toggle-note">Shows the physical aquarium frame around the locked layout. This does not change the aquarium size or Ratio Lock behavior.</span>
+                        </div>
+                        <input id="layoutRatioLockFrameToggleInput" class="settings-checkbox" type="checkbox" checked />
                       </label>
 
                       <label class="settings-toolbar-color-row" for="toolbarTileColorInput">
@@ -1524,7 +1533,7 @@
 
               <button id="openStoreButton" class="dock-button shop" type="button" title="WebSurf"
                 aria-label="WebSurf">
-                <img class="dock-button-icon websurf-toolbar-icon" src="assets/icons/WebSurf_icon.png" alt="" aria-hidden="true"
+                <img class="dock-button-icon websurf-toolbar-icon" src="assets/web/websurf/WebSurf_icon.png" alt="" aria-hidden="true"
                   draggable="false" />
                 <span id="webSurfUnreadBadge" class="dock-button-badge" aria-label="Unread WebSurf mail" hidden></span>
               </button>
@@ -1707,6 +1716,32 @@
                         <span class="debug-menu-icon">&#8634;</span><span>Reset to 90%</span>
                       </button>
                     </div>
+                  </div>
+                </div>
+                <div class="debug-menu-section debug-frame-calibration-section">
+                  <h3>Tank Frame Calibration</h3>
+                  <div id="debugTankFrameCalibration" class="debug-depth-tuner">
+                    <p class="debug-depth-tuner-note">Offsets are visual-only. Connected bars extend to meet their corners. Click for 1px; Shift-click for 0.25px.</p>
+                    <h4>Horizontal</h4>
+                    <div class="debug-frame-calibration-grid">
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="top"><span>Top bar</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move top bar left one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move top bar right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="bottom"><span>Bottom bar</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move bottom bar left one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move bottom bar right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="left"><span>Left rail</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move left rail left one pixel">−</button><output aria-live="polite">-2</output><button type="button" data-tank-frame-step="1" aria-label="Move left rail right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="right"><span>Right rail</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move right rail left one pixel">−</button><output aria-live="polite">4</output><button type="button" data-tank-frame-step="1" aria-label="Move right rail right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="top-left"><span>Top-left corner</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move top-left corner left one pixel">−</button><output aria-live="polite">-2</output><button type="button" data-tank-frame-step="1" aria-label="Move top-left corner right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="top-right"><span>Top-right corner</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move top-right corner left one pixel">−</button><output aria-live="polite">4</output><button type="button" data-tank-frame-step="1" aria-label="Move top-right corner right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="bottom-left"><span>Bottom-left corner</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move bottom-left corner left one pixel">−</button><output aria-live="polite">-2</output><button type="button" data-tank-frame-step="1" aria-label="Move bottom-left corner right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="bottom-right"><span>Bottom-right corner</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move bottom-right corner left one pixel">−</button><output aria-live="polite">4</output><button type="button" data-tank-frame-step="1" aria-label="Move bottom-right corner right one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="horizontal" data-tank-frame-key="badge"><span>Badge</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move badge left one pixel">−</button><output aria-live="polite">15</output><button type="button" data-tank-frame-step="1" aria-label="Move badge right one pixel">+</button></div></div>
+                    </div>
+                    <h4>Vertical Sections</h4>
+                    <div class="debug-frame-calibration-grid">
+                      <div class="debug-frame-stepper" data-tank-frame-axis="vertical" data-tank-frame-key="top"><span>Top section</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move top section up one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move top section down one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="vertical" data-tank-frame-key="bottom"><span>Bottom section</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move bottom section up one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move bottom section down one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="vertical" data-tank-frame-key="top-bar"><span>Top bar only</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move top bar up one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move top bar down one pixel">+</button></div></div>
+                      <div class="debug-frame-stepper" data-tank-frame-axis="vertical" data-tank-frame-key="bottom-bar"><span>Bottom bar only</span><div><button type="button" data-tank-frame-step="-1" aria-label="Move bottom bar up one pixel">−</button><output aria-live="polite">0</output><button type="button" data-tank-frame-step="1" aria-label="Move bottom bar down one pixel">+</button></div></div>
+                    </div>
+                    <button id="debugTankFrameCalibrationReset" class="debug-menu-button" type="button"><span class="debug-menu-icon">↺</span><span>Reset Frame Calibration</span></button>
                   </div>
                 </div>
                 <div class="debug-menu-section debug-depth-tuner-section">
@@ -2005,6 +2040,7 @@
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
   <script src="public/websurf-store.js?v=20260924-cart-search-ram"></script>
+  <script src="public/tank-physical-frame.js?v=20260926-frame-sprites"></script>
 
   <script>
     (() => {
@@ -2133,13 +2169,6 @@
 
   <script>
     (() => {
-      const mobileDeviceQuery = "(hover: none) and (pointer: coarse), (max-width: 767px), (max-width: 1180px) and (max-height: 620px)";
-      const mobileAgentPattern = /Android.*Mobile|iPhone|iPod|IEMobile|Windows Phone|webOS|BlackBerry|Opera Mini/i;
-      if (window.matchMedia?.(mobileDeviceQuery)?.matches || mobileAgentPattern.test(navigator.userAgent || "")) {
-        document.documentElement.dataset.unsupportedMobileDevice = "true";
-        // Load authentication on phones too; the existing game-device blocker remains.
-      }
-
       const script = document.createElement("script");
       const isLocalDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[?::1\]?)$/i.test(window.location.hostname || "");
       const appBundleVersion = isLocalDevelopmentHost

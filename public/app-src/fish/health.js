@@ -629,6 +629,16 @@ function clearFishSchoolFollowState(fish) {
   fish.schoolNextTargetRefreshAt = null;
   fish.schoolTargetXNorm = null;
   fish.schoolTargetYNorm = null;
+  fish.schoolTargetUpdatedAt = null;
+  fish.schoolFormationDirection = null;
+  fish.schoolRecoveryUntil = null;
+  fish.schoolId = null;
+  fish.schoolRole = null;
+  fish.schoolSource = null;
+  fish.schoolFormation = null;
+  fish.schoolFormationUntil = null;
+  fish.schoolState = null;
+  fish.schoolTurnStartedAt = null;
 }
 
 function pruneFishGravelPebbleRuntimeState(now = Date.now()) {

@@ -3589,11 +3589,29 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
     return null;
   }
   if (species?.id === "pilot-fish" || ["social", "follower"].includes(personality) || getFishBehaviorProfile(species).group === "small-social" || fish.pairBondPartnerId) {
+    const isActiveFriendFollow = (candidate) => {
+      const intent = typeof getFishBehaviorIntent === "function"
+        ? getFishBehaviorIntent(candidate, now)
+        : candidate?.behaviorIntent;
+      return String(intent?.type || "").toLowerCase() === "follow";
+    };
     const friendPool = nearby
       .filter((entry) => (
         entry.relation.kind === "friend"
         && entry.distance <= 0.42
         && (typeof canFishBuildFriendship !== "function" || canFishBuildFriendship(fish, entry.fish, now, { passive: false }))
+        // A social visit should be a one-to-one trailing pair. Letting a fish
+        // join a friend that is already following someone (or already has a
+        // follower) turns several independent friendship choices into a
+        // tightening chain around one collision point.
+        && !(isActiveFriendFollow(entry.fish) && getFishBehaviorIntent(entry.fish, now)?.targetId === fish.id)
+        && !state.fish.some((otherFish) => (
+          otherFish
+          && otherFish.id !== fish.id
+          && otherFish.id !== entry.fish.id
+          && isActiveFriendFollow(otherFish)
+          && getFishBehaviorIntent(otherFish, now)?.targetId === entry.fish.id
+        ))
       ))
       .sort((left, right) => {
         const leftBond = fish.pairBondPartnerId === left.fish.id ? 1 : 0;
@@ -3601,27 +3619,11 @@ function pickRelationshipBehaviorTarget(fish, species, now = Date.now(), options
         if (leftBond !== rightBond) return rightBond - leftBond;
         return (Number(right.relation.score) || 0) - (Number(left.relation.score) || 0) || left.distance - right.distance;
       });
-    const friend = friendPool[0] || null;
-    // Established friends can choose one another for background companionship.
-    // Bonded partners are intentionally much more likely to be selected.
-    const baseFollowChance = friend && fish.pairBondPartnerId === friend.fish.id ? 0.13 : 0.045;
-    if (friend && Math.random() < getFishMoodAdjustedBehaviorChance(fish, "follow_friend", baseFollowChance, now)) {
-      if (typeof reinforceFishFriendshipPair === "function") {
-        reinforceFishFriendshipPair(fish, friend.fish, fish.pairBondPartnerId === friend.fish.id ? 1.6 : 1.0, now, { source: "follow" });
-      }
-      return {
-        xNorm: clamp(friend.fish.xNorm + randomBetween(-0.1, 0.1), 0.08, 0.92),
-        yNorm: clamp(friend.fish.yNorm + randomBetween(-0.075, 0.075), 0.14, 0.8),
-        targetLayer: getFishTankLayer(friend.fish),
-        targetAt: now + randomBetween(3200, 7200),
-        intentType: "follow",
-        intentCause: fish.pairBondPartnerId === friend.fish.id ? "bonded partner" : "friend",
-        intentTargetId: friend.fish.id,
-        intentTargetName: friend.fish.name,
-        signalType: "follow_friend",
-        debugText: `follow ${friend.fish.name} | ${fish.pairBondPartnerId === friend.fish.id ? "bonded partner" : "friend"}`
-      };
-    }
+    // Friendship continues to inform mood, pairing, and explicit Hang Out
+    // actions.  It must not independently issue a direct per-fish follow
+    // target, though: that old routine raced the centralized school controller
+    // and continuously rebuilt arbitrary follower chains.
+    void friendPool;
   }
   return null;
 }
@@ -4272,6 +4274,20 @@ function pickMovementPatternBehaviorTarget(fish, species, now = Date.now()) {
 function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   if (!fish || !species || fish.activity !== "roam" || fish.caveState || isFishDead(fish)) {
     return false;
+  }
+  // The former ambient friendship routine persisted direct `follow` intents.
+  // Schooling is now the sole autonomous social movement controller, so keep a
+  // follow intent only while an explicit player Hang Out or Debug scenario owns
+  // it.  This also cleans saves made before that controller existed.
+  const activeActionFollow = runtime.fishActionSteeringByFishId?.get(fish.id)?.type === "follow";
+  const activeDebugFollow = runtime.debugBehaviorSteeringByFishId?.get(fish.id)?.type === "follow";
+  if (getFishBehaviorIntent(fish, now)?.type === "follow" && !activeActionFollow && !activeDebugFollow) {
+    fish.behaviorIntent = null;
+    if (fish.behaviorSignals?.follow_friend) {
+      const signals = { ...fish.behaviorSignals };
+      delete signals.follow_friend;
+      fish.behaviorSignals = signals;
+    }
   }
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     fish.behaviorIntent = null;

@@ -60,10 +60,6 @@ body.mobile-page {
   touch-action: manipulation;
 }
 
-body.mobile-page .mobile-unsupported-blocker {
-  display: none !important;
-}
-
 body.mobile-page #editQuickRef,
 body.mobile-page .management-summary-disclaimer {
   display: none !important;

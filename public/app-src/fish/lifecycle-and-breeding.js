@@ -238,6 +238,8 @@ function createFishRecord(speciesId, options = {}) {
     visitedNeighborhoodIds: getCurrentTank()?.id ? [getCurrentTank().id] : [],
     needs: sanitizeFishNeeds(options.needs, null, now),
     needsUpdatedAt: now,
+    lonelinessScore: clamp(Number(options.lonelinessScore) || 0, FISH_LONELINESS_MIN, FISH_LONELINESS_MAX),
+    lonelinessUpdatedAt: now,
     lastNeedEventAtByType: sanitizeFishNeedEventMap(options.lastNeedEventAtByType),
     nextWasteAt: Number.isFinite(Number(options.nextWasteAt)) ? Math.max(0, Number(options.nextWasteAt)) : 0,
     disease: sanitizeBehaviorDiseaseSnapshot(options.disease, now),

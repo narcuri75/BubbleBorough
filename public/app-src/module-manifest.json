@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 54,
-  "functionCount": 3770,
+  "functionCount": 3804,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -67,7 +67,7 @@
     },
     {
       "path": "tank/catalog-and-equipment.js",
-      "functionCount": 139,
+      "functionCount": 149,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -166,7 +166,7 @@
     },
     {
       "path": "ui/tool-modes-and-debug-panels.js",
-      "functionCount": 89,
+      "functionCount": 90,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -206,7 +206,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 157,
+      "functionCount": 158,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -307,7 +307,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 126,
+      "functionCount": 129,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -395,7 +395,7 @@
     },
     {
       "path": "assets/image-storage-and-import.js",
-      "functionCount": 69,
+      "functionCount": 73,
       "dependencies": [
         "assets/custom-content.js",
         "assets/sprite-sheets.js",
@@ -553,7 +553,7 @@
     },
     {
       "path": "fish/actions.js",
-      "functionCount": 81,
+      "functionCount": 82,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -684,13 +684,15 @@
     },
     {
       "path": "fish/gravel-and-schooling.js",
-      "functionCount": 62,
+      "functionCount": 66,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
+        "debug/tools.js",
         "decor/layout-and-layers.js",
+        "fish/actions.js",
         "fish/appearance.js",
         "fish/caves-and-collision.js",
         "fish/feeding-and-medicine.js",
@@ -775,7 +777,7 @@
     },
     {
       "path": "debug/tools.js",
-      "functionCount": 143,
+      "functionCount": 146,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1234,7 +1236,7 @@
     },
     {
       "path": "fish/meals-and-needs.js",
-      "functionCount": 71,
+      "functionCount": 72,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1287,7 +1289,7 @@
     },
     {
       "path": "fish/caves-and-collision.js",
-      "functionCount": 91,
+      "functionCount": 96,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -1295,6 +1297,7 @@
         "decor/customization.js",
         "decor/hit-testing.js",
         "decor/layout-and-layers.js",
+        "fish/actions.js",
         "fish/appearance.js",
         "fish/cave-navigation.js",
         "fish/decor-behavior.js",
@@ -1378,7 +1381,7 @@
     },
     {
       "path": "assets/sprite-sheets.js",
-      "functionCount": 23,
+      "functionCount": 24,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheet-definitions.js",
@@ -1387,6 +1390,7 @@
         "core/utilities.js",
         "decor/customization.js",
         "fish/appearance.js",
+        "tank/backgrounds-and-catalogs.js",
         "tank/catalog-and-equipment.js"
       ]
     }

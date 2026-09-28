@@ -521,7 +521,7 @@ test("Phase 7 auto dispenser refuses incompatible stock without removing it from
   assert.match(toasts.at(-1), /No fish in this tank can eat/);
 });
 
-test("Nerite and shrimp are purchasable Other creatures while Turbo stays hidden without art", () => {
+test("Nerite, shrimp, and Turbo Snails are purchasable Other creatures with authored sprite sheets", () => {
   const fishTypes = JSON.parse(fs.readFileSync(path.join(root, "../../assets/fish/fish-types.json"), "utf8")).fish;
   const byId = new Map(fishTypes.map((entry) => [entry.id, entry]));
   for (const id of ["freshwater-shrimp", "marine-shrimp", "nerite-snail"]) {
@@ -533,7 +533,10 @@ test("Nerite and shrimp are purchasable Other creatures while Turbo stays hidden
   }
   assert.match(String(byId.get("nerite-snail")?.asset || ""), /snail_1\.png$/);
   assert.equal(byId.get("nerite-snail")?.assetVariants?.length, 5);
-  assert.equal(byId.get("turbo-snail")?.storeHiddenUntilArt, true);
+  assert.notEqual(byId.get("turbo-snail")?.storeHiddenUntilArt, true);
+  assert.equal(byId.get("turbo-snail")?.assetVariants?.length, 5);
+  assert.equal(fs.existsSync(path.join(root, "../../assets/fish/turbo_snail.webp")), true);
+  assert.equal(fs.existsSync(path.join(root, "../../assets/fish/turbo_snail.json")), true);
 });
 
 test("Fishing Lure appearance labels are editable data and thumbnails stay inside fixed buttons", () => {

@@ -355,7 +355,10 @@ function sanitizeFish(fish, options = {}) {
     condition: sanitizeFishFoundationCondition(fish.condition, fish),
     cleanupAnimal: fish.cleanupAnimal === true || species?.cleanupAnimal === true,
     capacityCost: clamp(Number(fish.capacityCost) || Number(species?.capacityCost) || 1, 0.1, 8),
-    tankAddedAt: Number.isFinite(fish.tankAddedAt) ? fish.tankAddedAt : (Number.isFinite(fish.acquiredAt) ? fish.acquiredAt : now),
+    // Legacy saves may predate tankAddedAt. A missing timestamp means this fish
+    // is already established, not newly introduced, so do not force it through
+    // the new-tank acclimation window on load.
+    tankAddedAt: Number.isFinite(Number(fish.tankAddedAt)) && Number(fish.tankAddedAt) > 0 ? Number(fish.tankAddedAt) : 0,
     lifeState: dead ? "dead" : "alive",
     deadAt: dead ? (Number.isFinite(fish.deadAt) ? fish.deadAt : now) : null,
     deathCause: dead && typeof fish.deathCause === "string" && fish.deathCause.trim() ? fish.deathCause.trim().slice(0, 80) : "",
@@ -428,6 +431,8 @@ function sanitizeFish(fish, options = {}) {
       : [],
     needs: sanitizeFishNeeds(fish.needs, fish, now),
     needsUpdatedAt: Number.isFinite(Number(fish.needsUpdatedAt)) ? Math.max(0, Number(fish.needsUpdatedAt)) : now,
+    lonelinessScore: clamp(Number(fish.lonelinessScore) || 0, FISH_LONELINESS_MIN, FISH_LONELINESS_MAX),
+    lonelinessUpdatedAt: Number.isFinite(Number(fish.lonelinessUpdatedAt)) ? Math.max(0, Number(fish.lonelinessUpdatedAt)) : now,
     lastNeedEventAtByType: sanitizeFishNeedEventMap(fish.lastNeedEventAtByType),
     lastNeighborhoodMoveAt: Number.isFinite(Number(fish.lastNeighborhoodMoveAt)) ? Math.max(0, Number(fish.lastNeighborhoodMoveAt)) : 0,
     lastBoroughServiceAtByType: sanitizeFishNeedEventMap(fish.lastBoroughServiceAtByType),

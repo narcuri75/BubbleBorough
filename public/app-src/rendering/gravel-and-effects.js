@@ -886,31 +886,47 @@ function drawCoinGlints(now = Date.now()) {
     return;
   }
 
+  const flashImage = runtime.images.get(COIN_FIND_FLASH_IMAGE_PATH);
+  const sparkleImage = runtime.images.get(COIN_FIND_SPARKLE_IMAGE_PATH);
+  if (!isUsableRuntimeImage(flashImage)) {
+    void preloadImagePath(COIN_FIND_FLASH_IMAGE_PATH, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+  }
+  if (!isUsableRuntimeImage(sparkleImage)) {
+    void preloadImagePath(COIN_FIND_SPARKLE_IMAGE_PATH, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+  }
+
   tankContext.save();
   tankContext.globalCompositeOperation = "screen";
   for (const glint of runtime.coinGlints) {
     const duration = Math.max(1, Number(glint.durationMs) || GRAVEL_COIN_GLINT_DURATION_MS);
     const progress = clamp((now - (Number(glint.startedAt) || now)) / duration, 0, 1);
-    const ease = 1 - Math.pow(1 - progress, 2);
-    const alpha = Math.sin(progress * Math.PI) * 0.95;
-    const x = glint.x + Math.sin(now / 220 + glint.seed * 8) * 5;
-    const y = glint.y - ease * 38;
-    const size = 7 + Math.sin(progress * Math.PI) * 4;
+    const flashFadeIn = clamp(progress / 0.13, 0, 1);
+    const flashFadeOut = clamp((1 - progress) / 0.42, 0, 1);
+    const flashSize = 54 + Math.sin(Math.min(1, progress / 0.35) * Math.PI * 0.5) * 18;
 
-    tankContext.globalAlpha = alpha;
-    tankContext.strokeStyle = "rgba(255, 238, 148, 0.95)";
-    tankContext.fillStyle = "rgba(255, 188, 52, 0.78)";
-    tankContext.lineWidth = 1.4;
-    tankContext.beginPath();
-    tankContext.ellipse(x, y, size * 0.72, size * 0.36, -0.2, 0, Math.PI * 2);
-    tankContext.fill();
-    tankContext.stroke();
-    tankContext.beginPath();
-    tankContext.moveTo(x - size * 1.2, y);
-    tankContext.lineTo(x + size * 1.2, y);
-    tankContext.moveTo(x, y - size * 1.2);
-    tankContext.lineTo(x, y + size * 1.2);
-    tankContext.stroke();
+    if (isUsableRuntimeImage(flashImage)) {
+      tankContext.globalAlpha = flashFadeIn * flashFadeOut * 0.92;
+      tankContext.drawImage(flashImage, glint.x - flashSize / 2, glint.y - flashSize / 2, flashSize, flashSize);
+    }
+
+    if (!isUsableRuntimeImage(sparkleImage)) {
+      continue;
+    }
+    for (let index = 0; index < COIN_FIND_SPARKLE_COUNT; index += 1) {
+      const angle = glint.seed * Math.PI * 2 + index * (Math.PI * 2 / COIN_FIND_SPARKLE_COUNT) + 0.22;
+      const distance = 20 + ((glint.seed * 97 + index * 19) % 1) * 12;
+      const delay = 0.08 + index * 0.055;
+      const localProgress = clamp((progress - delay) / Math.max(0.01, 0.8 - delay), 0, 1);
+      if (localProgress <= 0 || localProgress >= 1) continue;
+      const rise = 10 + localProgress * (19 + index * 2);
+      const x = glint.x + Math.cos(angle) * distance * (0.45 + localProgress * 0.55);
+      const y = glint.y + Math.sin(angle) * distance * 0.62 - rise;
+      const pop = Math.sin(localProgress * Math.PI);
+      const size = (10 + (index % 3) * 3) * (0.62 + pop * 0.55);
+
+      tankContext.globalAlpha = pop * 0.94;
+      tankContext.drawImage(sparkleImage, x - size / 2, y - size / 2, size, size);
+    }
   }
   tankContext.restore();
 }

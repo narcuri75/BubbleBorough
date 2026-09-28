@@ -1790,8 +1790,15 @@ function pickFoodDropSpritePath(foodOrKey) {
 
 function resolveStoredFoodDropSpritePath(foodOrKey, spritePath = "") {
   const explicitSpritePath = typeof spritePath === "string" ? spritePath.trim() : "";
-  if (explicitSpritePath) {
-    return explicitSpritePath;
+  const paths = getFoodDropSpritePaths(foodOrKey);
+  if (explicitSpritePath && paths.length) {
+    // A saved pellet may outlive an asset rebuild. Only retain the stored
+    // sprite when it still belongs to the selected food type.
+    const normalizedExplicitPath = String(explicitSpritePath).split(/[?#]/)[0].replace(/\\/g, "/").toLowerCase();
+    const matchingPath = paths.find((path) => (
+      String(path).split(/[?#]/)[0].replace(/\\/g, "/").toLowerCase() === normalizedExplicitPath
+    ));
+    if (matchingPath) return matchingPath;
   }
   return pickFoodDropSpritePath(foodOrKey);
 }

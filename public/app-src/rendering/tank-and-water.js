@@ -1600,6 +1600,9 @@ function drawFoodPelletPieceToContext(context, x, y, pellet, appearance) {
 function drawFoodSpritePieceToContext(context, x, y, pellet, spritePath) {
   const image = spritePath ? runtime.images.get(spritePath) : null;
   if (!image) {
+    if (spritePath) {
+      void preloadImagePath(spritePath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+    }
     return false;
   }
 
@@ -1950,6 +1953,9 @@ function drawFallbackChumPiece(x, y, pellet) {
 function drawFoodSpritePiece(x, y, pellet, spritePath, now = Date.now()) {
   const image = spritePath ? runtime.images.get(spritePath) : null;
   if (!image) {
+    if (spritePath) {
+      void preloadImagePath(spritePath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
+    }
     return false;
   }
 
@@ -2006,7 +2012,9 @@ function drawPellets(now) {
     const appearance = getFoodDropAppearance(pellet.foodKey, pellet);
     if (appearance.dropStyle === "sprite") {
       if (!drawFoodSpritePiece(x, y, pellet, appearance.spritePath, now)) {
-        drawFallbackChumPiece(x, y, pellet);
+        // A restored pellet can render before its atlas crop is decoded. Use
+        // its own neutral food appearance for that brief gap, never chum.
+        drawFoodPelletPiece(x, y, pellet, appearance);
       }
     } else {
       drawFoodPelletPiece(x, y, pellet, appearance);

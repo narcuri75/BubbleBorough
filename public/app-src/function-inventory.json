@@ -35336,16 +35336,18 @@
       "module": "rendering/gravel-and-effects.js",
       "sourceLine": 884,
       "originalLine": 54758,
-      "characters": 1254,
-      "sourceHash": "34667f832adc57ed2802016d4bda9296a5084342380b8777474f9366be40b6ec",
+      "characters": 2295,
+      "sourceHash": "9a84b47bfafb19c808d89561937e3ecdfbfdd28af799306f021ffaa0b0c911b6",
       "calls": [
-        "clamp"
+        "clamp",
+        "isUsableRuntimeImage",
+        "preloadImagePath"
       ]
     },
     {
       "name": "invalidateGravelBedCache",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 918,
+      "sourceLine": 934,
       "originalLine": 54792,
       "characters": 227,
       "sourceHash": "1db61660f60b4b391dee81a4dc8d40e2a256e9232ac44d6206887627c701df13",
@@ -35354,7 +35356,7 @@
     {
       "name": "ensureGravelLayouts",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 927,
+      "sourceLine": 943,
       "originalLine": 54801,
       "characters": 5451,
       "sourceHash": "aa372dd5d10ff1f1986a1efa712be72aeda451300b115288af143aa509b53c2e",
@@ -35370,7 +35372,7 @@
     {
       "name": "getGravelBedCacheKey",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1088,
+      "sourceLine": 1104,
       "originalLine": 54962,
       "characters": 335,
       "sourceHash": "9328e1393a932710b0ef4e210f26665d09a74865331a3836b983b41319dac935",
@@ -35383,7 +35385,7 @@
     {
       "name": "getGravelBedCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1095,
+      "sourceLine": 1111,
       "originalLine": 54969,
       "characters": 1209,
       "sourceHash": "dd6eff3e8fd5a2c08e037e592f6034a9ce54c20237b85fbcfd9bb970de9f0c96",
@@ -35399,7 +35401,7 @@
     {
       "name": "getGravelCapCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1134,
+      "sourceLine": 1150,
       "originalLine": 55008,
       "characters": 119,
       "sourceHash": "180bcd200e6562fb2af90d49b460fc2e9875c5496404475f4d20d21d7745fd16",
@@ -35410,7 +35412,7 @@
     {
       "name": "getGravelCacheDimensions",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1141,
+      "sourceLine": 1157,
       "originalLine": 55015,
       "characters": 880,
       "sourceHash": "3698bf9910c0d9ce54f25de63b8d144f15e670b25a8049623448b606501f52eb",
@@ -35419,7 +35421,7 @@
     {
       "name": "renderGravelBedToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1159,
+      "sourceLine": 1175,
       "originalLine": 55024,
       "characters": 639,
       "sourceHash": "25568a13e92160f9ffd29733487bca83a005c9e57a0bd37c0586f8e55d1bef09",
@@ -35432,7 +35434,7 @@
     {
       "name": "renderGravelCapToCanvas",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1189,
+      "sourceLine": 1205,
       "originalLine": 55054,
       "characters": 650,
       "sourceHash": "386c1db4c1249aaaddcaae17c6afc755abbb214829917e2a906077a7086cae56",
@@ -35445,7 +35447,7 @@
     {
       "name": "drawGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1219,
+      "sourceLine": 1235,
       "originalLine": 55184,
       "characters": 654,
       "sourceHash": "de54e0f2d652cbcbc1c2f636d8386ffc3f44fced5405e0ccbacaaa88d1a95a78",
@@ -35458,7 +35460,7 @@
     {
       "name": "getGravelPebbleAsset",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1236,
+      "sourceLine": 1252,
       "originalLine": 55201,
       "characters": 356,
       "sourceHash": "942d1d8c1a7f5d29ed59a156911726c343a4758d1e7a538d4310bb5a839dcfc5",
@@ -35467,7 +35469,7 @@
     {
       "name": "getPebbleShapeDescriptor",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1247,
+      "sourceLine": 1263,
       "originalLine": 55212,
       "characters": 1695,
       "sourceHash": "9a62ee8c729413ea3166fc07edff0393fefe99c81fce66427f34b28163a5e5b8",
@@ -35481,7 +35483,7 @@
     {
       "name": "getTintedGravelPebbleSprite",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1305,
+      "sourceLine": 1321,
       "originalLine": 55270,
       "characters": 2787,
       "sourceHash": "5b2f4a36e9794275d0762e8a9440271a0728e42f88b6139bf173b2a29bc7194a",
@@ -35500,7 +35502,7 @@
     {
       "name": "getPebbleSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1383,
+      "sourceLine": 1399,
       "originalLine": 55348,
       "characters": 1495,
       "sourceHash": "1bcbd57cc21bfcd698dc52c28c027f052b9be28ea477ad92bd7e284ed7e18da1",
@@ -35512,7 +35514,7 @@
     {
       "name": "getCaveLayerSourceStats",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1438,
+      "sourceLine": 1454,
       "originalLine": 55403,
       "characters": 1492,
       "sourceHash": "55eff79f648cb24788849d7524509aed71d9130eb1881260c9287edfae0c2023",
@@ -35524,7 +35526,7 @@
     {
       "name": "getTintedCaveLayerImage",
       "module": "rendering/gravel-and-effects.js",
-      "sourceLine": 1493,
+      "sourceLine": 1509,
       "originalLine": 55458,
       "characters": 2856,
       "sourceHash": "0a7a4ffecc4a4b5e14dbeff6f72eaa24192dbe7c035a45280ce6544c7f88a3f9",
@@ -36300,19 +36302,20 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 1600,
       "originalLine": 53786,
-      "characters": 1090,
-      "sourceHash": "0acf314808acb722015b0be1a9449310f5ec58ec24467bdbe76e61ffb66f2a4c",
+      "characters": 1215,
+      "sourceHash": "5f9474375ff25c9b2c00aa203188e8ff454c4431eea3112d06c37615824aa6d2",
       "calls": [
         "clamp",
         "getChumSpriteVisualScale",
         "getFoodSpriteVisualSize",
-        "getViewportStableAssetScale"
+        "getViewportStableAssetScale",
+        "preloadImagePath"
       ]
     },
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1624,
+      "sourceLine": 1627,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -36329,7 +36332,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1673,
+      "sourceLine": 1676,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -36345,7 +36348,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1709,
+      "sourceLine": 1712,
       "originalLine": 53892,
       "characters": 2219,
       "sourceHash": "b462803ceffa8ade2d6ccbe886ce9da045800bb9d6ccdf3e9557c4ce06e3faf3",
@@ -36365,7 +36368,7 @@
     {
       "name": "drawAutoDispenserStatusLight",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1777,
+      "sourceLine": 1780,
       "originalLine": null,
       "characters": 1528,
       "sourceHash": "a872455095371f53d0c76692b0fad3de7201dcc8e3d0f39daed65987d4d672b1",
@@ -36376,7 +36379,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1815,
+      "sourceLine": 1818,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -36389,7 +36392,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1873,
+      "sourceLine": 1876,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -36401,7 +36404,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1903,
+      "sourceLine": 1906,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -36415,7 +36418,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1924,
+      "sourceLine": 1927,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -36427,26 +36430,26 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1950,
+      "sourceLine": 1953,
       "originalLine": 54109,
-      "characters": 2183,
-      "sourceHash": "05ffd2fdab826c26c04aa431d738ceea991cf67e2c2894817f0ff1580f817208",
+      "characters": 2308,
+      "sourceHash": "672498dc5862e9d7e5bd7d5f0c2affbb036b995966e21cf314bebccf792173a4",
       "calls": [
         "clamp",
         "getChumSpriteVisualScale",
         "getFoodSpriteVisualSize",
-        "getViewportStableAssetScale"
+        "getViewportStableAssetScale",
+        "preloadImagePath"
       ]
     },
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1994,
+      "sourceLine": 2000,
       "originalLine": 54130,
-      "characters": 753,
-      "sourceHash": "f25d2d290841ff9b895fadaeeee6be06fa83174e3a165a629d9d8c5ca8d08491",
+      "characters": 916,
+      "sourceHash": "b9e1595521aa2fe1611eb2b4de579d20a9bd45bb1420c9a2bf7f64a63f3611b2",
       "calls": [
-        "drawFallbackChumPiece",
         "drawFoodPelletPiece",
         "drawFoodSpritePiece",
         "getFoodDropAppearance",
@@ -36457,7 +36460,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2018,
+      "sourceLine": 2026,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -36469,7 +36472,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2037,
+      "sourceLine": 2045,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -36482,7 +36485,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2047,
+      "sourceLine": 2055,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -36493,7 +36496,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2070,
+      "sourceLine": 2078,
       "originalLine": 54182,
       "characters": 779,
       "sourceHash": "ab210dd26faf0eeaf7a61be1e8e9d443de6cc5a86ac733f2911f1f5417b2fa97",
@@ -40550,16 +40553,17 @@
       "module": "tank/catalog-and-equipment.js",
       "sourceLine": 1791,
       "originalLine": 3788,
-      "characters": 265,
-      "sourceHash": "163c529ecd4a5ca23933b942b78813fbc35bca591e5a512af4dd23768d6c007c",
+      "characters": 749,
+      "sourceHash": "5e609448fef1f54edd6f59880495dcddbe2ebc3427cd651b92504a7424bfbbc6",
       "calls": [
+        "getFoodDropSpritePaths",
         "pickFoodDropSpritePath"
       ]
     },
     {
       "name": "getFoodDropStyle",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1799,
+      "sourceLine": 1806,
       "originalLine": 3796,
       "characters": 269,
       "sourceHash": "fa6c5354b8fe635dbc499d27d336494663a7b5f2626abadb666d5e2967f0b4be",
@@ -40571,7 +40575,7 @@
     {
       "name": "isPelletSizedFoodSprite",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1807,
+      "sourceLine": 1814,
       "originalLine": null,
       "characters": 170,
       "sourceHash": "566462c76534336051e155022e92e32e3f54f38a13dfde07929b8b9234bab95c",
@@ -40582,7 +40586,7 @@
     {
       "name": "getFoodSpriteVisualSize",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1812,
+      "sourceLine": 1819,
       "originalLine": null,
       "characters": 762,
       "sourceHash": "6e394329c71e06e6ad82d006da06cc986f6a8bd576a7a96b6c66d09da682c1fa",
@@ -40595,7 +40599,7 @@
     {
       "name": "getChumSpriteVisualScale",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1836,
+      "sourceLine": 1843,
       "originalLine": null,
       "characters": 443,
       "sourceHash": "0907a1175543317e61a55b7579110f7d23ae9a089b32ebd4e067f0edc3496ff6",
@@ -40604,7 +40608,7 @@
     {
       "name": "getFoodDropAppearance",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1849,
+      "sourceLine": 1856,
       "originalLine": 3804,
       "characters": 1092,
       "sourceHash": "9bf9a9ba175f37a27e6a94fc77e3f37b010c90a3fb313e4b4d61fd8b8ff1a501",
@@ -40619,7 +40623,7 @@
     {
       "name": "getDefaultMedicineInventory",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1868,
+      "sourceLine": 1875,
       "originalLine": 3823,
       "characters": 129,
       "sourceHash": "07621c0aee4d2ee82ce10d487e37ffbb1b97faed877d71a00f04bd32f1a38171",
@@ -40630,7 +40634,7 @@
     {
       "name": "sanitizeDispenserStoredPellet",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1872,
+      "sourceLine": 1879,
       "originalLine": 3827,
       "characters": 388,
       "sourceHash": "5889a9bed5703583bd4d27781d4c1d2422727f3bb06a5e3da185f1bf9f62e50d",
@@ -40643,7 +40647,7 @@
     {
       "name": "isTankCareAutomationPaused",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1889,
+      "sourceLine": 1896,
       "originalLine": null,
       "characters": 282,
       "sourceHash": "fb90a3cb99b2c8024b246e39042c6e3132b1fa2fc29b7558f973f3a5ecf93f06",
@@ -40655,7 +40659,7 @@
     {
       "name": "createDefaultAutoDispenserState",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1897,
+      "sourceLine": 1904,
       "originalLine": 3844,
       "characters": 1752,
       "sourceHash": "52e1ec42842ca0c153d42c15c3bd379544ca48422cd279079160a6adc678edeb",
@@ -40669,7 +40673,7 @@
     {
       "name": "getAutoDispenserLoadedCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1926,
+      "sourceLine": 1933,
       "originalLine": 3866,
       "characters": 161,
       "sourceHash": "5b6bbba76cba57a511bc0e621c7f02851b7b053a1f89bd5b90fc86692ba96a7e",
@@ -40678,7 +40682,7 @@
     {
       "name": "isAutoDispenserFoodLow",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1930,
+      "sourceLine": 1937,
       "originalLine": 3870,
       "characters": 403,
       "sourceHash": "bbcc6d9bdb3479749522a58f4128c53b9555a47e0b24b29a07feac187cc657a5",
@@ -40690,7 +40694,7 @@
     {
       "name": "getAutoDispenserDemandCount",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1944,
+      "sourceLine": 1951,
       "originalLine": null,
       "characters": 382,
       "sourceHash": "edf5e781a91b8053c2b11540f2c4dd58f0bb547e7253d08f1a89bbaf6423ec72",
@@ -40705,7 +40709,7 @@
     {
       "name": "hasAutoDispenserInstalled",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1950,
+      "sourceLine": 1957,
       "originalLine": 3884,
       "characters": 125,
       "sourceHash": "d9f5f3165c899b64cc5ed24dbd2feb22ad171a781278aea67f43e5dccbe580a8",
@@ -40716,7 +40720,7 @@
     {
       "name": "deployAutoDispenser",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1954,
+      "sourceLine": 1961,
       "originalLine": null,
       "characters": 767,
       "sourceHash": "2857f78d421efea92232dc996a13e12c16bd9ee2395e1e86e290afe48aacc15e",
@@ -40732,7 +40736,7 @@
     {
       "name": "recallAutoDispenser",
       "module": "tank/catalog-and-equipment.js",
-      "sourceLine": 1971,
+      "sourceLine": 1978,
       "originalLine": null,
       "characters": 516,
       "sourceHash": "e27e7ee757398290367942996fe1aa918e7909a82063380508906a16124d4f53",

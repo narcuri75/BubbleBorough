@@ -108,9 +108,13 @@ function beginFishTurnRendererSession(
     // The visual pose can change on the same simulation tick that requests a
     // reversal. Latch its pre-turn steering tilt so the mesh starts from what
     // the player was actually seeing, rather than the newly selected target.
-    fish.turnV26EntryTilt = Number.isFinite(Number(fish.swimTilt))
-      ? Number(fish.swimTilt)
-      : 0;
+    const visualPoseKey = String(fish.id || fish.speciesId || "fish");
+    const previousVisualPose = runtime?.fishVisualPoseSmoothingStates instanceof Map
+      ? runtime.fishVisualPoseSmoothingStates.get(visualPoseKey)
+      : null;
+    fish.turnV26EntryTilt = Number.isFinite(Number(previousVisualPose?.tilt))
+      ? Number(previousVisualPose.tilt)
+      : (Number.isFinite(Number(fish.swimTilt)) ? Number(fish.swimTilt) : 0);
     fish.turnV26ActiveDepthSign = chooseFishTurnV26DepthSign(fish);
     fish.turnV26LastDepthSign = fish.turnV26ActiveDepthSign;
     fish.turnV26StyleActive = resolveFishTurnV26Style(fish, species, startedAt);

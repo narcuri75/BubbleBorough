@@ -2355,8 +2355,8 @@ const FISH_TURN_V26_RENDER_PADDING_Y = 3.5;
 // The mesh owns the middle of a complex reversal, but the ordinary swim pose
 // owns its endpoints. These short overlap windows prevent a climb, dive, or
 // body wave from disappearing the instant the v26 canvas takes over.
-const FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS = 0.14;
-const FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS = 0.82;
+const FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS = 0.24;
+const FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS = 0.76;
 const FISH_TURN_V26_EDGE_CLOSURE = 100;
 const FISH_TURN_V26_EDGE_REACH = 26;
 const FISH_TURN_V26_EDGE_ROUNDNESS = 68;
@@ -2535,7 +2535,10 @@ const FISH_PASSIVE_BRAKE_DISTANCE_NORM = 0.12;
 const FISH_PASSIVE_ARRIVAL_EPSILON_NORM = 0.0012;
 const FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM = 0.0025;
 const FISH_TRAVERSAL_MAX_VELOCITY_NORM = 0.42;
-const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.62;
+const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.52;
+const FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX = 28;
+const FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX = 64;
+const FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT = 0.18;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
 // Phase 16: the fifteen depth positions form one contiguous travel track. Each
@@ -38853,8 +38856,17 @@ function updateFishBehaviorPathStatus(fish, brain, now = Date.now()) {
   if (!brain.target || !Number.isFinite(Number(brain.target.xNorm))) return;
   const distanceSq = (fish.xNorm - brain.target.xNorm) ** 2 + (fish.yNorm - brain.target.yNorm) ** 2;
   const path = brain.path || (brain.path = { lastDistanceSq: distanceSq, lastProgressAt: now, state: "direct" });
-  if (distanceSq + 0.0008 < path.lastDistanceSq) path.lastProgressAt = now;
-  path.lastDistanceSq = distanceSq;
+  const targetChanged = !Number.isFinite(path.targetXNorm)
+    || !Number.isFinite(path.targetYNorm)
+    || Math.hypot(brain.target.xNorm - path.targetXNorm, brain.target.yNorm - path.targetYNorm) > 0.03;
+  // Compare cumulative progress against a checkpoint. Comparing only adjacent
+  // thought ticks falsely declares slow, steadily moving fish stuck.
+  if (targetChanged || distanceSq + 0.0001 < path.lastDistanceSq) {
+    path.lastProgressAt = now;
+    path.lastDistanceSq = distanceSq;
+    path.targetXNorm = brain.target.xNorm;
+    path.targetYNorm = brain.target.yNorm;
+  }
   if (now - path.lastProgressAt > 5000 && distanceSq > 0.004) {
     path.state = "queued";
     path.lastProgressAt = now;
@@ -94439,7 +94451,7 @@ function stabilizeFishPassiveMotionTarget(fish, now, deltaSeconds, options = nul
   return { xNorm: nextX, yNorm: nextY };
 }
 
-function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds) {
+function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, options = {}) {
   const distance = Math.hypot(moveDx, moveDy);
   const previousVelocityX = Number(fish.motionVelocityXNorm) || 0;
   const previousVelocityY = Number(fish.motionVelocityYNorm) || 0;
@@ -94458,8 +94470,8 @@ function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds) {
   const directionX = distance > 0.000001 ? moveDx / distance : 0;
   const directionY = distance > 0.000001 ? moveDy / distance : 0;
   const brakeDistance = Math.max(
-    FISH_PASSIVE_BRAKE_DISTANCE_NORM,
-    previousSpeed * 0.72
+    Number(options.arrivalDistanceNorm) || FISH_PASSIVE_BRAKE_DISTANCE_NORM,
+    previousSpeed * (options.arrivalDistanceNorm ? 0.25 : 0.72)
   );
   const arrival = clamp(distance / brakeDistance, 0, 1);
   const desiredSpeed = speed * (0.035 + arrival * 0.965);
@@ -94576,14 +94588,22 @@ function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now)
     : (Math.PI * 0.5) + (Math.PI * 0.5) * destinationPhase;
   const horizontalMomentum = Math.cos(turnAngle);
   const arcAmount = Math.sin(turnAngle);
-  const requestedVertical = (Number(requestedYNorm) || 0) * 0.35;
+  // Latch the arc for this turn. A moving target must not flip the vertical
+  // bend halfway through an otherwise committed visual reversal.
+  if (fish.traversalArcStartedAt !== fish.turnStartedAt) {
+    fish.traversalArcStartedAt = fish.turnStartedAt;
+    fish.traversalArcVertical = (Number(requestedYNorm) || 0) * 0.35;
+    fish.traversalArcDistance = horizontalDistance;
+  }
+  const requestedVertical = Number(fish.traversalArcVertical) || 0;
+  const arcDistance = Number(fish.traversalArcDistance) || horizontalDistance;
   const arcDirection = Math.abs(requestedVertical) > 0.0001
     ? Math.sign(requestedVertical)
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1);
-  const arcVertical = arcAmount * horizontalDistance * FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO * arcDirection;
+  const arcVertical = arcAmount * arcDistance * FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO * arcDirection;
   const travelDirection = horizontalMomentum < -0.0001 ? toDirection : fromDirection;
   return {
-    xNorm: fromDirection * horizontalDistance * horizontalMomentum,
+    xNorm: fromDirection * arcDistance * horizontalMomentum,
     yNorm: requestedVertical + arcVertical,
     motionScale,
     progress,
@@ -94694,7 +94714,7 @@ function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetY
   const targetDistance = Math.hypot(dx, dy);
   if (targetDistance <= 0.02) return null;
   const lookahead = clamp(
-    Math.max(Number(fish.traversalSpeedNorm) || 0, FISH_OBSTACLE_LOOKAHEAD_MIN_NORM),
+    Math.max((Number(fish.traversalSpeedNorm) || 0) * 1.6, FISH_OBSTACLE_LOOKAHEAD_MIN_NORM),
     FISH_OBSTACLE_LOOKAHEAD_MIN_NORM,
     FISH_OBSTACLE_LOOKAHEAD_MAX_NORM
   );
@@ -94704,19 +94724,44 @@ function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetY
   const direction = Math.abs(probeXNorm - fish.xNorm) > 0.0001
     ? (probeXNorm >= fish.xNorm ? 1 : -1)
     : (fish.direction || 1);
-  const pose = getFishCollisionPose(fish, species, now, probeXNorm, probeYNorm, direction);
-  const blockingCave = findBlockingCaveForFishPose(fish, species, now, pose, layer);
-  const blockingDecor = !blockingCave
-    ? getOverlappingDecorForFish(fish, species, now, pose, {
-      minLayer: layer,
-      maxLayer: layer,
-      depthLayer: layer,
-      depthSubLayer: getFishTankSubLayer(fish)
-    }).find(({ item }) => !isCaveDecorKey(item?.decorKey))
-    : null;
+  // Sample the corridor, not just its far endpoint: a narrow ornament can
+  // sit entirely between the fish and that endpoint. Include carried velocity
+  // because steering takes time to bend a swimming fish onto its new course.
+  const velocityX = Number(fish.motionVelocityXNorm) || 0;
+  const velocityY = Number(fish.motionVelocityYNorm) || 0;
+  const velocityLength = Math.hypot(velocityX, velocityY);
+  const paths = [{ x: probeXNorm, y: probeYNorm }];
+  if (velocityLength > 0.002) {
+    paths.unshift({
+      x: clampFishXNormToMobileViewport(fish.xNorm + velocityX / velocityLength * lookahead, fish, species, now),
+      y: clamp(fish.yNorm + velocityY / velocityLength * lookahead, 0.14, 0.8)
+    });
+  }
+  let blockingCave = null;
+  let blockingDecor = null;
+  let blockedPath = paths[0];
+  for (let sample = 1; sample <= 4 && !blockingCave && !blockingDecor; sample += 1) {
+    for (const path of paths) {
+      const pose = getFishCollisionPose(fish, species, now,
+        fish.xNorm + (path.x - fish.xNorm) * sample / 4,
+        fish.yNorm + (path.y - fish.yNorm) * sample / 4,
+        path.x === fish.xNorm ? direction : (path.x > fish.xNorm ? 1 : -1));
+      blockingCave = findBlockingCaveForFishPose(fish, species, now, pose, layer);
+      blockingDecor = !blockingCave ? getOverlappingDecorForFish(fish, species, now, pose, {
+        minLayer: layer,
+        maxLayer: layer,
+        depthLayer: layer,
+        depthSubLayer: getFishTankSubLayer(fish)
+      }).find(({ item }) => !isCaveDecorKey(item?.decorKey)) : null;
+      if (blockingCave || blockingDecor) {
+        blockedPath = path;
+        break;
+      }
+    }
+  }
   const blocker = blockingCave?.item || blockingDecor?.item || null;
   if (!blocker) return null;
-  const slide = findFishObstacleSlideMove(fish, species, fish.xNorm, fish.yNorm, probeXNorm, probeYNorm, now, layer, blocker);
+  const slide = findFishObstacleSlideMove(fish, species, fish.xNorm, fish.yNorm, blockedPath.x, blockedPath.y, now, layer, blocker);
   if (!slide) return null;
   fish.traversalObstacleWaypointXNorm = slide.xNorm;
   fish.traversalObstacleWaypointYNorm = slide.yNorm;
@@ -95348,6 +95393,7 @@ function updateFishMotion(now, deltaSeconds) {
       applyFishCollisionAvoidanceSteering(fish, species, now);
     }
 
+    const naturalSchoolFollowActive = Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil);
     const passiveMotionEligible = fish.activity === "roam"
       && !pendingTravel
       && !panicOwnsMovement
@@ -95356,7 +95402,6 @@ function updateFishMotion(now, deltaSeconds) {
       && !activeQueuedFishAction
       && !activeDebugSteering
       && !activeFishActionSteering
-      && !(Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil))
       && !(Number.isFinite(Number(fish.wallAvoidUntil)) && now < Number(fish.wallAvoidUntil))
       && !getActiveFishCollisionAvoidance(fish, now);
     const behaviorOwnsArrival = Boolean(
@@ -95365,7 +95410,7 @@ function updateFishMotion(now, deltaSeconds) {
       && Number(fish.behaviorBrain.commitUntil) > now
     );
     const passiveTarget = stabilizeFishPassiveMotionTarget(fish, now, deltaSeconds, {
-      urgent: !passiveMotionEligible || behaviorOwnsArrival
+      urgent: !passiveMotionEligible || behaviorOwnsArrival || naturalSchoolFollowActive
     });
     const traversalTargetUrgent = fish.activity !== "roam"
       || pendingTravel
@@ -95385,7 +95430,7 @@ function updateFishMotion(now, deltaSeconds) {
       targetXNorm: passiveTarget.xNorm,
       targetYNorm: passiveTarget.yNorm
     });
-    const cruiseWaypoint = passiveMotionEligible && !behaviorOwnsArrival
+    const cruiseWaypoint = passiveMotionEligible && !behaviorOwnsArrival && !naturalSchoolFollowActive
       ? getFishCruiseContinuationWaypoint(fish, species, traversalTarget.xNorm, traversalTarget.yNorm, now)
       : (clearFishCruiseWaypoint(fish), null);
     const decorApproachEligible = fish.activity === "roam"
@@ -95396,13 +95441,22 @@ function updateFishMotion(now, deltaSeconds) {
       && !fish.caveState
       && !activeQueuedFishAction
       && !activeDebugSteering
-      && !activeFishActionSteering
+      && (!activeFishActionSteering
+        || (activeFishActionSteering.type === "inspect"
+          && (!activeFishActionSteering.inspectPhase || activeFishActionSteering.inspectPhase === "approach")))
       && !getActiveFishCollisionAvoidance(fish, now);
     const decorApproachWaypoint = decorApproachEligible
       ? getFishDecorApproachWaypoint(fish, traversalTarget.xNorm, traversalTarget.yNorm, now)
       : (clearFishDecorApproachWaypoint(fish), null);
     const intendedTraversalTarget = decorApproachWaypoint || cruiseWaypoint || traversalTarget;
-    const obstacleWaypoint = traversalTargetUrgent
+    // A school target needs prompt updates, but that does not grant permission
+    // to skip navigation. Only explicit movement owners bypass anticipation.
+    const obstacleAnticipationEligible = fish.activity === "roam"
+      && !pendingTravel && !panicOwnsMovement && !pufferInflatedOwnsMovement
+      && !whaleBreathOwnsMovement && !fish.caveState
+      && !activeQueuedFishAction && !activeDebugSteering && !activeFishActionSteering
+      && !getActiveFishCollisionAvoidance(fish, now);
+    const obstacleWaypoint = !obstacleAnticipationEligible
       ? null
       : getFishAnticipatoryObstacleWaypoint(fish, species, intendedTraversalTarget.xNorm, intendedTraversalTarget.yNorm, now);
     const steeringTargetXNorm = obstacleWaypoint?.xNorm ?? intendedTraversalTarget.xNorm;
@@ -95432,11 +95486,12 @@ function updateFishMotion(now, deltaSeconds) {
     const freeSwimmingOtocinclusForFacing = species.id === "otocinclus"
       && isSuckerFishFreeSwimming(fish, species, now);
     const canUseHorizontalFacing = effectiveBehavior !== "sucker" || freeSwimmingOtocinclusForFacing;
-    const requestedHorizontalDirection = Math.abs(moveDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM
-      ? (moveDx >= 0 ? 1 : -1)
+    const requestedHorizontalDirection = Math.hypot(moveDx, moveDy) > FISH_DIRECTION_TARGET_DEADZONE_NORM
+      ? getFishSteeringHorizontalDirection(fish, moveDx, moveDy)
       : 0;
     const renderedFacingDirection = canUseHorizontalFacing ? getFishFacingDirection(fish) : 0;
     const socialTurnCommitActive = socialFormationActive
+      && !obstacleWaypoint
       && Number(fish.socialTurnCommitUntil) > now
       && Number(fish.socialTurnCommittedDirection) !== 0
       && requestedHorizontalDirection !== 0
@@ -95444,13 +95499,12 @@ function updateFishMotion(now, deltaSeconds) {
     const activeTurnReversalTraversal = canUseHorizontalFacing
       && fish.turnStartedAt
       && Number(fish.turnDurationMs) > 0
-      && Number(fish.turnFromDirection) !== Number(fish.turnToDirection)
-      && requestedHorizontalDirection !== 0
-      && requestedHorizontalDirection === (Number(fish.turnToDirection) < 0 ? -1 : 1);
+      && Number(fish.turnFromDirection) !== Number(fish.turnToDirection);
     let turnReversalTraversal = activeTurnReversalTraversal
       ? getFishTurnReversalTraversal(fish, moveDx, moveDy, now)
       : null;
-    const turnaroundCooldownBypass = panicOwnsMovement
+    const turnaroundCooldownBypass = Boolean(obstacleWaypoint)
+      || panicOwnsMovement
       || zombieAggressionOwnsMovement
       || pufferInflatedOwnsMovement
       || whaleBreathOwnsMovement
@@ -95511,9 +95565,11 @@ function updateFishMotion(now, deltaSeconds) {
       handledDirectionThisFrame = true;
     } else if (socialTurnCommitActive) {
       // Do not let a newly crossed formation endpoint command an immediate
-      // counter-turn. Hold position until the social heading commitment ends.
-      moveDx = 0;
-      moveDy = 0;
+      // counter-turn. Keep a small forward glide while the formation catches
+      // up rather than visibly freezing whenever a school slot crosses behind us.
+      const forwardMagnitude = FISH_TURNAROUND_COOLDOWN_MIN_FORWARD_NORM;
+      moveDx = Number(fish.socialTurnCommittedDirection) * forwardMagnitude;
+      moveDy = clamp(moveDy, -forwardMagnitude * 0.35, forwardMagnitude * 0.35);
     }
 
     if (canUseHorizontalFacing && (Math.abs(moveDx) > 0.000001 || Math.abs(moveDy) > 0.000001) && !pufferInflatedOwnsMovement) {
@@ -95523,6 +95579,7 @@ function updateFishMotion(now, deltaSeconds) {
         moveDy,
         deltaSeconds,
         {
+          turnReversal: Boolean(turnReversalTraversal),
           urgency: Number.isFinite(fish.panicUntil) && now < fish.panicUntil
             ? 1.75
             : fish.activity === FISH_GRAVEL_DIG_ACTIVITY
@@ -95753,7 +95810,9 @@ function updateFishMotion(now, deltaSeconds) {
       let stepXNorm;
       let stepYNorm;
       if (usesPassiveMotion) {
-        const passiveStep = integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds);
+        const passiveStep = integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, {
+          arrivalDistanceNorm: socialFormationActive ? 0.035 : undefined
+        });
         stepXNorm = passiveStep.x;
         stepYNorm = passiveStep.y;
         step = passiveStep.distance;
@@ -104303,9 +104362,13 @@ function beginFishTurnRendererSession(
     // The visual pose can change on the same simulation tick that requests a
     // reversal. Latch its pre-turn steering tilt so the mesh starts from what
     // the player was actually seeing, rather than the newly selected target.
-    fish.turnV26EntryTilt = Number.isFinite(Number(fish.swimTilt))
-      ? Number(fish.swimTilt)
-      : 0;
+    const visualPoseKey = String(fish.id || fish.speciesId || "fish");
+    const previousVisualPose = runtime?.fishVisualPoseSmoothingStates instanceof Map
+      ? runtime.fishVisualPoseSmoothingStates.get(visualPoseKey)
+      : null;
+    fish.turnV26EntryTilt = Number.isFinite(Number(previousVisualPose?.tilt))
+      ? Number(previousVisualPose.tilt)
+      : (Number.isFinite(Number(fish.swimTilt)) ? Number(fish.swimTilt) : 0);
     fish.turnV26ActiveDepthSign = chooseFishTurnV26DepthSign(fish);
     fish.turnV26LastDepthSign = fish.turnV26ActiveDepthSign;
     fish.turnV26StyleActive = resolveFishTurnV26Style(fish, species, startedAt);
@@ -108449,7 +108512,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
       tankContext.translate(-suckerFacePivotX, -suckerFacePivotY);
     } else {
-      tankContext.rotate(pose.tilt);
+      tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
     }
 
     const tubeTravel = pendingTravel?.mode === "tube";
@@ -117039,9 +117102,46 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
   return fish.swimTilt;
 }
 
+function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
+  const dxPx = (Number(deltaXNorm) || 0) * TANK_WIDTH;
+  const dyPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  const traversalHeadingXNorm = Number(fish?.traversalHeadingXNorm);
+  const carriedDirection = Math.abs(traversalHeadingXNorm) > 0.000001
+    ? (traversalHeadingXNorm < 0 ? -1 : 1)
+    : getFishFacingDirection(fish);
+  const lateralClearancePx = clamp(
+    Math.abs(dyPx) * FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT,
+    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX,
+    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX
+  );
+  const verticallyDominant = Math.abs(dyPx) > Math.max(10, Math.abs(dxPx) * 1.15);
+
+  // A target almost directly above or below is not permission to alternate
+  // left/right on sub-pixel error. Carry the current heading until the fish
+  // has made enough lateral room to arc back toward the target. This makes a
+  // vertical destination a two-part swimming route instead of a wall press.
+  if (verticallyDominant && Math.abs(dxPx) < lateralClearancePx) {
+    return carriedDirection;
+  }
+  if (Math.abs(dxPx) > 0.5) {
+    return dxPx < 0 ? -1 : 1;
+  }
+  return carriedDirection;
+}
+
 function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
   const dx = Number(deltaXNorm) || 0;
   const dy = Number(deltaYNorm) || 0;
+  if (fish && options.turnReversal) {
+    // A reversal already supplies a continuous heading through zero X.
+    // Ordinary forward-only steering would destroy that midpoint and snap
+    // from source-facing to destination-facing horizontal motion.
+    const lengthPx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
+    fish.steeringVerticalRatio = lengthPx > 0.001
+      ? clamp(dy * TANK_HEIGHT / lengthPx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO)
+      : 0;
+    return { xNorm: dx, yNorm: dy };
+  }
   const distanceNorm = Math.hypot(dx, dy);
   if (!fish || distanceNorm <= 0.000001) {
     if (fish) fish.steeringVerticalRatio = 0;
@@ -117055,7 +117155,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     return { xNorm: dx, yNorm: dy };
   }
 
-  const desiredVerticalRatio = clamp(dyPx / distancePx, -1, 1);
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO);
   const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
     ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
     : 0;
@@ -117073,12 +117173,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     ? desiredVerticalRatio
     : nextVerticalRatio;
 
-  const traversalHeadingXNorm = Number(fish.traversalHeadingXNorm);
-  const horizontalSign = Math.abs(dxPx) > 0.5
-    ? (dxPx >= 0 ? 1 : -1)
-    : (Math.abs(traversalHeadingXNorm) > 0.000001
-      ? (traversalHeadingXNorm >= 0 ? 1 : -1)
-      : getFishFacingDirection(fish));
+  const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
   const verticalRatio = fish.steeringVerticalRatio;
   const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
 

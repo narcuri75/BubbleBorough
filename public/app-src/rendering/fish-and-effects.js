@@ -1840,7 +1840,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
       tankContext.translate(-suckerFacePivotX, -suckerFacePivotY);
     } else {
-      tankContext.rotate(pose.tilt);
+      tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
     }
 
     const tubeTravel = pendingTravel?.mode === "tube";

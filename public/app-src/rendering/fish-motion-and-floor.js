@@ -291,9 +291,46 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
   return fish.swimTilt;
 }
 
+function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
+  const dxPx = (Number(deltaXNorm) || 0) * TANK_WIDTH;
+  const dyPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  const traversalHeadingXNorm = Number(fish?.traversalHeadingXNorm);
+  const carriedDirection = Math.abs(traversalHeadingXNorm) > 0.000001
+    ? (traversalHeadingXNorm < 0 ? -1 : 1)
+    : getFishFacingDirection(fish);
+  const lateralClearancePx = clamp(
+    Math.abs(dyPx) * FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT,
+    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX,
+    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX
+  );
+  const verticallyDominant = Math.abs(dyPx) > Math.max(10, Math.abs(dxPx) * 1.15);
+
+  // A target almost directly above or below is not permission to alternate
+  // left/right on sub-pixel error. Carry the current heading until the fish
+  // has made enough lateral room to arc back toward the target. This makes a
+  // vertical destination a two-part swimming route instead of a wall press.
+  if (verticallyDominant && Math.abs(dxPx) < lateralClearancePx) {
+    return carriedDirection;
+  }
+  if (Math.abs(dxPx) > 0.5) {
+    return dxPx < 0 ? -1 : 1;
+  }
+  return carriedDirection;
+}
+
 function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
   const dx = Number(deltaXNorm) || 0;
   const dy = Number(deltaYNorm) || 0;
+  if (fish && options.turnReversal) {
+    // A reversal already supplies a continuous heading through zero X.
+    // Ordinary forward-only steering would destroy that midpoint and snap
+    // from source-facing to destination-facing horizontal motion.
+    const lengthPx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
+    fish.steeringVerticalRatio = lengthPx > 0.001
+      ? clamp(dy * TANK_HEIGHT / lengthPx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO)
+      : 0;
+    return { xNorm: dx, yNorm: dy };
+  }
   const distanceNorm = Math.hypot(dx, dy);
   if (!fish || distanceNorm <= 0.000001) {
     if (fish) fish.steeringVerticalRatio = 0;
@@ -307,7 +344,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     return { xNorm: dx, yNorm: dy };
   }
 
-  const desiredVerticalRatio = clamp(dyPx / distancePx, -1, 1);
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO);
   const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
     ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
     : 0;
@@ -325,12 +362,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     ? desiredVerticalRatio
     : nextVerticalRatio;
 
-  const traversalHeadingXNorm = Number(fish.traversalHeadingXNorm);
-  const horizontalSign = Math.abs(dxPx) > 0.5
-    ? (dxPx >= 0 ? 1 : -1)
-    : (Math.abs(traversalHeadingXNorm) > 0.000001
-      ? (traversalHeadingXNorm >= 0 ? 1 : -1)
-      : getFishFacingDirection(fish));
+  const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
   const verticalRatio = fish.steeringVerticalRatio;
   const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
 

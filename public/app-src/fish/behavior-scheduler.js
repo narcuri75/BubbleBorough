@@ -77,8 +77,17 @@ function updateFishBehaviorPathStatus(fish, brain, now = Date.now()) {
   if (!brain.target || !Number.isFinite(Number(brain.target.xNorm))) return;
   const distanceSq = (fish.xNorm - brain.target.xNorm) ** 2 + (fish.yNorm - brain.target.yNorm) ** 2;
   const path = brain.path || (brain.path = { lastDistanceSq: distanceSq, lastProgressAt: now, state: "direct" });
-  if (distanceSq + 0.0008 < path.lastDistanceSq) path.lastProgressAt = now;
-  path.lastDistanceSq = distanceSq;
+  const targetChanged = !Number.isFinite(path.targetXNorm)
+    || !Number.isFinite(path.targetYNorm)
+    || Math.hypot(brain.target.xNorm - path.targetXNorm, brain.target.yNorm - path.targetYNorm) > 0.03;
+  // Compare cumulative progress against a checkpoint. Comparing only adjacent
+  // thought ticks falsely declares slow, steadily moving fish stuck.
+  if (targetChanged || distanceSq + 0.0001 < path.lastDistanceSq) {
+    path.lastProgressAt = now;
+    path.lastDistanceSq = distanceSq;
+    path.targetXNorm = brain.target.xNorm;
+    path.targetYNorm = brain.target.yNorm;
+  }
   if (now - path.lastProgressAt > 5000 && distanceSq > 0.004) {
     path.state = "queued";
     path.lastProgressAt = now;

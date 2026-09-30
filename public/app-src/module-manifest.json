@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 56,
-  "functionCount": 3994,
+  "functionCount": 3995,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -1372,7 +1372,7 @@
     },
     {
       "path": "rendering/fish-motion-and-floor.js",
-      "functionCount": 40,
+      "functionCount": 41,
       "dependencies": [
         "assets/custom-content.js",
         "core/utilities.js",

@@ -17,7 +17,21 @@ const rendererSource = read("public/app-src/rendering/fish-and-effects.js");
 function extractFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
   assert.ok(start >= 0, `${name} should exist`);
-  const bodyStart = source.indexOf("{", start);
+  const parametersStart = source.indexOf("(", start);
+  let parameterDepth = 0;
+  let parametersEnd = -1;
+  for (let index = parametersStart; index < source.length; index += 1) {
+    if (source[index] === "(") parameterDepth += 1;
+    if (source[index] === ")") {
+      parameterDepth -= 1;
+      if (parameterDepth === 0) {
+        parametersEnd = index;
+        break;
+      }
+    }
+  }
+  assert.ok(parametersEnd >= 0, `${name} parameters should close`);
+  const bodyStart = source.indexOf("{", parametersEnd);
   let depth = 0;
   for (let index = bodyStart; index < source.length; index += 1) {
     if (source[index] === "{") depth += 1;
@@ -251,6 +265,117 @@ test("phase 8 reversal traversal is normalized, so the 650 ms v26 clock preserve
   assert.ok(Math.abs(sample(650, 0.5).xNorm) < 1e-9, "horizontal travel eases to zero at the normalized turn apex");
   assert.ok(Math.abs(sample(650, 0.5).yNorm) > 0.001, "the apex has an arc path rather than a stationary frame");
   assert.ok(sample(650, 0.75).motionScale > sample(650, 0.5).motionScale, "destination launch accelerates out of the reversal");
+});
+
+test("a committed reversal keeps its arc when its target jumps across the fish", () => {
+  const getReversal = vm.runInNewContext(`(${extractFunction(motionSource, "getFishTurnReversalTraversal")})`, {
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    FISH_TURN_TRAVERSAL_ARC_APEX_PROGRESS: 0.5,
+    FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE: 0.2,
+    FISH_TURN_TRAVERSAL_DRIFT_MAX_SCALE: 0.52,
+    FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE: 0.2,
+    FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO: 0.26
+  });
+  const fish = { turnStartedAt: 1000, turnDurationMs: 650, turnFromDirection: 1, turnToDirection: -1 };
+  getReversal(fish, -0.3, 0.08, 1000);
+  const steady = getReversal({ ...fish }, -0.3, 0.08, 1325);
+  const crossed = getReversal(fish, 0.01, -0.2, 1325);
+  assert.equal(crossed.xNorm, steady.xNorm);
+  assert.equal(crossed.yNorm, steady.yNorm);
+  fish.turnStartedAt = 2000;
+  assert.ok(getReversal(fish, 0.3, -0.2, 2325).yNorm < 0, "a new turn may choose a new arc");
+});
+
+for (const momentumOnly of [false, true]) {
+  test(`obstacle anticipation detects a thin object ${momentumOnly ? "along carried momentum" : "between probe endpoints"}`, () => {
+    const fish = { xNorm: 0.5, yNorm: 0.5, direction: 1, traversalSpeedNorm: 0.05,
+      motionVelocityXNorm: momentumOnly ? -0.05 : 0, motionVelocityYNorm: 0 };
+    const obstacleX = momentumOnly ? 0.46 : 0.54;
+    let slideCalls = 0;
+    const anticipate = vm.runInNewContext(`(${extractFunction(motionSource, "getFishAnticipatoryObstacleWaypoint")})`, {
+      clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+      FISH_OBSTACLE_LOOKAHEAD_MIN_NORM: 0.045, FISH_OBSTACLE_LOOKAHEAD_MAX_NORM: 0.11,
+      FISH_OBSTACLE_WAYPOINT_MS: 900,
+      getFishBoundaryAnticipationWaypoint: () => null,
+      clampFishXNormToMobileViewport: x => x,
+      getFishTankLayer: () => 1, getFishTankSubLayer: () => 0,
+      getFishCollisionPose: (f, s, t, x, y) => ({ x, y }),
+      findBlockingCaveForFishPose: () => null,
+      getOverlappingDecorForFish: (f, s, t, pose) => Math.abs(pose.x - obstacleX) < 0.005
+        ? [{ item: { id: "thin-ornament" } }] : [],
+      isCaveDecorKey: () => false,
+      findFishObstacleSlideMove: () => { slideCalls++; return { xNorm: 0.53, yNorm: 0.58 }; }
+    });
+    const waypoint = anticipate(fish, { behavior: "swim" }, 0.8, 0.5, 1000);
+    assert.equal(waypoint?.reason, "decor");
+    assert.equal(slideCalls, 1);
+    anticipate(fish, { behavior: "swim" }, 0.8, 0.5, 1016);
+    assert.equal(slideCalls, 1, "hold the detour instead of changing sides every frame");
+  });
+}
+
+test("near-vertical targets carry the current heading until there is room to arc back", () => {
+  const context = {
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    TANK_WIDTH: 1500,
+    TANK_HEIGHT: 1000,
+    FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT: 0.18,
+    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX: 28,
+    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX: 64,
+    getFishFacingDirection: (fish) => Number(fish?.displayDirection) < 0 ? -1 : 1
+  };
+  const getDirection = vm.runInNewContext(
+    `(${extractFunction(turnSource, "getFishSteeringHorizontalDirection")})`,
+    context
+  );
+  const fish = { traversalHeadingXNorm: 1, displayDirection: 1 };
+
+  assert.equal(getDirection(fish, -0.004, -0.3), 1, "tiny opposite error cannot chatter the heading during a climb");
+  assert.equal(getDirection(fish, -0.06, -0.3), -1, "the fish turns back after gaining lateral clearance");
+  assert.equal(getDirection(fish, -0.2, -0.02), -1, "ordinary horizontal travel still follows its destination");
+  assert.match(motionSource, /requestedHorizontalDirection[\s\S]*getFishSteeringHorizontalDirection\(fish, moveDx, moveDy\)/);
+});
+
+test("vertical steering always retains a meaningful forward component", () => {
+  const context = {
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    TANK_WIDTH: 1500,
+    TANK_HEIGHT: 1000,
+    FISH_VERTICAL_TRAVERSAL_MAX_RATIO: 0.52,
+    FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT: 0.18,
+    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX: 28,
+    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX: 64,
+    getFishFacingDirection: (fish) => Number(fish?.displayDirection) < 0 ? -1 : 1
+  };
+  context.getFishSteeringHorizontalDirection = vm.runInNewContext(
+    `(${extractFunction(turnSource, "getFishSteeringHorizontalDirection")})`,
+    context
+  );
+  const getVector = vm.runInNewContext(
+    `(${extractFunction(turnSource, "getFishGradualSteeringVector")})`,
+    context
+  );
+  const fish = { traversalHeadingXNorm: 1, displayDirection: 1, steeringVerticalRatio: 0 };
+  let vector = null;
+  for (let frame = 0; frame < 180; frame += 1) {
+    vector = getVector(fish, 0, -0.35, 1 / 60);
+  }
+
+  assert.ok(Math.abs(fish.steeringVerticalRatio) <= 0.52 + 1e-12);
+  assert.ok(vector.xNorm > 0.01, "a vertical destination keeps visible forward travel");
+  assert.ok(Math.abs(vector.yNorm * context.TANK_HEIGHT) < Math.abs(vector.xNorm * context.TANK_WIDTH), "the rendered route is more forward than vertical");
+});
+
+test("v26 latches the last rendered tilt and applies it to ordinary fish during the handoff", () => {
+  const turnRendererSource = read("public/app-src/rendering/fish-turn-v26.js");
+  assert.match(turnRendererSource, /previousVisualPose = runtime\?\.fishVisualPoseSmoothingStates instanceof Map/);
+  assert.match(turnRendererSource, /fish\.turnV26EntryTilt = Number\.isFinite\(Number\(previousVisualPose\?\.tilt\)\)/);
+  assert.match(rendererSource, /else \{\s*tankContext\.rotate\(v26VisualContinuity\?\.tilt \?\? pose\.tilt\);\s*\}/);
+});
+
+test("inspect approaches retain the decor waypoint instead of bypassing it", () => {
+  assert.match(motionSource, /activeFishActionSteering\.type === "inspect"[\s\S]*activeFishActionSteering\.inspectPhase === "approach"/);
+  assert.match(motionSource, /const decorApproachWaypoint = decorApproachEligible[\s\S]*getFishDecorApproachWaypoint/);
 });
 
 test("phase 8 documentation keeps visual trajectories separate from authoritative locomotion", () => {

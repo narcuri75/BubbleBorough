@@ -587,7 +587,8 @@ test("phase 1 keeps the entry swim pose, crossfades both endpoints, and reveals 
 });
 
 test("phase 1 continuity is wired through the v26 session and renderer overlap", () => {
-  assert.match(v26Source, /fish\.turnV26EntryTilt = Number\.isFinite\(Number\(fish\.swimTilt\)\)/);
+  assert.match(v26Source, /fish\.turnV26EntryTilt = Number\.isFinite\(Number\(previousVisualPose\?\.tilt\)\)/);
+  assert.match(v26Source, /Number\.isFinite\(Number\(fish\.swimTilt\)\) \? Number\(fish\.swimTilt\) : 0/);
   assert.match(v26Source, /function getFishTurnV26VisualContinuity\(/);
   assert.match(v26Source, /context\.globalAlpha \*= Number\.isFinite\(requestedAlpha\)/);
   assert.match(rendererSource, /const v26VisualContinuity = v26TurnRendererActive/);

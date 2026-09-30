@@ -336,8 +336,12 @@ test('Vertical traversal always retains forward travel from physical heading', (
     TANK_WIDTH: 1000,
     TANK_HEIGHT: 600,
     FISH_VERTICAL_TRAVERSAL_MAX_RATIO: 0.62,
+    FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT: 0.4,
+    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX: 18,
+    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX: 80,
     getFishFacingDirection: () => -1
   };
+  context.getFishSteeringHorizontalDirection = vm.runInNewContext(`(${extractFunction(fishMotion, 'getFishSteeringHorizontalDirection')})`, context);
   const steer = vm.runInNewContext(`(${extractFunction(fishMotion, 'getFishGradualSteeringVector')})`, context);
   const fish = { traversalHeadingXNorm: 1, steeringVerticalRatio: 0 };
   const vector = steer(fish, 0, -0.4, 0.1);
@@ -475,7 +479,7 @@ test('A completed turnaround commits to forward travel before another ordinary r
 
 test('Turnaround cooldown routes a shallow forward continuation and keeps urgent movement exempt', () => {
   const source = extractFunction(predators, 'updateFishMotion');
-  assert.match(source, /const turnaroundCooldownBypass = panicOwnsMovement/);
+  assert.match(source, /const turnaroundCooldownBypass = Boolean\(obstacleWaypoint\)\s*\|\| panicOwnsMovement/);
   assert.match(source, /\|\| zombieAggressionOwnsMovement/);
   assert.match(source, /\|\| Boolean\(getActiveFishCollisionAvoidance\(fish, now\)\)/);
   assert.match(source, /moveDx = turnaroundCooldown\.direction \* forwardMagnitude;/);

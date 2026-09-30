@@ -904,3 +904,9 @@ Phase 23 replaces the old midpoint horizontal direction switch with a continuous
 The turn retains a meaningful fraction of its exit velocity. Normal passive swimming consumes that velocity on the first post-turn frame, so the v26/sprite handoff and the movement handoff both coast naturally instead of restarting from zero.
 
 This only changes the authoritative free-swim path during an already-approved turnaround. It does not alter target selection, collision constraints, tank depth, behavior ownership, or the visual v26 trajectory.
+
+## Stable turn arcs and anticipatory obstacle corridors
+
+An accepted reversal keeps its locomotion arc until the visual turn finishes, even if a moving target crosses back to the source side. Arc distance and vertical intent are latched per turn so target changes cannot abruptly bend the fish in the opposite vertical direction mid-turn. A new turn chooses a fresh arc.
+
+Passive obstacle anticipation samples four positions along the intended path and, when present, the carried velocity path. Its lookahead includes steering response time. This catches obstacles between probe endpoints and obstacles the fish is still coasting toward. Existing collision resolution remains authoritative, and committed detours retain their existing lifetime. An obstacle waypoint bypasses the post-turn forward commitment so that commitment cannot force the fish into an obstacle.

@@ -556,7 +556,7 @@ test("phase 6 all four styles begin and finish at the same render-space origin",
   }
 });
 
-test("phase 1 keeps the entry swim pose, crossfades both endpoints, and reveals the destination facing", () => {
+test("phase 1 gives the complex turn sole visual ownership without a fade seam", () => {
   const fish = {
     turnStartedAt: 1000,
     turnDurationMs: 650,
@@ -565,8 +565,8 @@ test("phase 1 keeps the entry swim pose, crossfades both endpoints, and reveals 
     turnV26EntryTilt: 0.31
   };
   const atStart = mathContext.getFishTurnV26VisualContinuity(fish, -0.28, 1000);
-  assert.equal(atStart.meshAlpha, 0);
-  assert.equal(atStart.spriteAlpha, 1);
+  assert.equal(atStart.meshAlpha, 1);
+  assert.equal(atStart.spriteAlpha, 0);
   assert.equal(atStart.spriteDirection, 1);
   assert.ok(Math.abs(atStart.tilt - 0.31) < 1e-12);
 
@@ -575,7 +575,8 @@ test("phase 1 keeps the entry swim pose, crossfades both endpoints, and reveals 
   assert.equal(middle.spriteAlpha, 0);
 
   const nearEnd = mathContext.getFishTurnV26VisualContinuity(fish, -0.28, 1600);
-  assert.ok(nearEnd.meshAlpha > 0 && nearEnd.meshAlpha < 1);
+  assert.equal(nearEnd.meshAlpha, 1);
+  assert.equal(nearEnd.spriteAlpha, 0);
   assert.equal(nearEnd.spriteDirection, -1);
   assert.ok(nearEnd.tilt < 0.31 && nearEnd.tilt > -0.28);
 
@@ -668,11 +669,12 @@ test("drawFish uses the base fish source art for v26 body geometry and depth-tre
   assert.doesNotMatch(v26Source, /\.swimSpeed\s*=/);
 });
 
-test("phase 15 v26 failure degrades to the lightweight sprite turn", () => {
-  assert.match(rendererSource, /if \(!renderedByV26\) \{[\s\S]*markFishTurnRendererFallback\(fish, "simple"\);[\s\S]*drawFishLightweightTurnFallbackFrame\(/);
+test("phase 15 v26 failure preserves the live sprite without reviving simple turns", () => {
+  assert.match(rendererSource, /if \(!renderedByV26\) \{[\s\S]*Keep the live sprite visible until/);
+  assert.doesNotMatch(rendererSource, /if \(!renderedByV26\) \{[\s\S]*markFishTurnRendererFallback\(fish, "simple"\);/);
   assert.match(v26Source, /console\.warn\("Fish Turn v26 volume renderer failed; using the lightweight turn fallback\.", error\);/);
   assert.doesNotMatch(rendererSource, /drawFishTurnaroundRig/);
-  assert.match(contract, /lightweight sprite turn is the emergency fallback/i);
+  assert.doesNotMatch(contract, /lightweight sprite turn is the emergency fallback/i);
 });
 
 test("phase 7 latches renderer backend and v26 style for the whole turn session", () => {
@@ -735,25 +737,32 @@ test("phase 7 renderer session is keyed to the active turn start and cannot leak
 });
 
 
-test("phase 15 production complex turns use 650 ms while explicit lightweight turns keep simple timing", () => {
+test("phase 24 production complex turns scale the 650 ms baseline while lightweight turns keep simple timing", () => {
   assert.match(bootstrapSource, /const FISH_TURN_V26_DURATION_MS = 650;/);
   assert.match(mealsSource, /function getComplexFishTurnDurationMs\(fish, species, rendererBackend = null\)/);
   assert.match(mealsSource, /const normalizedBackend = normalizeFishTurnRendererBackend\(rendererBackend, "v26"\);/);
   assert.match(mealsSource, /if \(normalizedBackend === "simple"\) \{\s*return getSimpleFishTurnDurationMs\(fish, species\);/);
-  assert.match(mealsSource, /return FISH_TURN_V26_DURATION_MS;/);
+  assert.match(mealsSource, /FISH_TURN_V26_DURATION_MS \* turnDurationScale/);
+  assert.match(mealsSource, /const variation = 0\.9 \+ Math\.random\(\) \* 0\.2/);
 
   const context = {
     FISH_TURN_V26_DURATION_MS: 650,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     normalizeFishTurnRendererBackend: (value, fallback = "v26") => String(value || fallback).toLowerCase() === "simple" ? "simple" : "v26",
-    getSimpleFishTurnDurationMs: () => 185
+    getSimpleFishTurnDurationMs: () => 185,
+    getFishLocomotionProfile: () => ({ turnDurationScale: 1 }),
+    normalizeFishSpeed: (species, value) => Number(value) || 0.05,
+    getFishVisualSize: () => 0,
+    Date,
+    Math
   };
   const getComplexDuration = vm.runInNewContext(
     `(${extractFunction(mealsSource, "getComplexFishTurnDurationMs")})`,
     context
   );
 
-  assert.equal(getComplexDuration({}, { type: "whale" }, "v26"), 650);
-  assert.equal(getComplexDuration({}, { type: "shark" }, null), 650);
+  const v26Duration = getComplexDuration({ swimSpeed: 0.05 }, { speedMin: 0.02, speedMax: 0.08 }, "v26");
+  assert.ok(v26Duration >= 420 && v26Duration <= 1120);
   assert.equal(getComplexDuration({}, { type: "whale" }, "simple"), 185);
 });
 
@@ -1661,16 +1670,15 @@ test("phase 14 v26 remains read-only with respect to authoritative gameplay pose
   assert.match(contract, /does not promote v26 to the production default/i);
 });
 
-test("phase 13 schooling reads committed leader facing instead of renderer yaw", () => {
-  assert.match(gravelSchoolingSource, /function getFishSchoolLeaderFormationDirection\(/);
-  assert.match(gravelSchoolingSource, /getFishHorizontalTurnState\(leader, now\)/);
-  assert.match(gravelSchoolingSource, /turnState\?\.active && turnState\.reversing/);
-  assert.match(gravelSchoolingSource, /return Number\(turnState\.fromDirection\) < 0 \? -1 : 1/);
-  assert.match(gravelSchoolingSource, /schoolFormationDirection = Number\(fish\.schoolFormationDirection\) \|\| getFishSchoolLeaderFormationDirection\(leader, now\)/);
-  assert.match(gravelSchoolingSource, /const currentLeaderDirection = getFishSchoolLeaderFormationDirection\(leader, now\)/);
-  assert.match(gravelSchoolingSource, /const leaderDirection = getFishSchoolLeaderFormationDirection\(leader, now\)/);
-  assert.match(bootstrapSource, /const SCHOOL_FORMATION_HEADING_SETTLE_MS = 420/);
-  assert.match(gravelSchoolingSource, /now - fish\.schoolTurnStartedAt >= SCHOOL_FORMATION_HEADING_SETTLE_MS/);
+test("phase 24 schooling follows delayed leader path history instead of mirroring renderer yaw", () => {
+  assert.match(gravelSchoolingSource, /function recordFishSchoolLeaderPathHistory\(/);
+  assert.match(gravelSchoolingSource, /function getFishSchoolLeaderHistoricalPose\(/);
+  assert.match(gravelSchoolingSource, /const historicalPose = getFishSchoolLeaderHistoricalPose\(fish, leader, now\);/);
+  assert.match(gravelSchoolingSource, /pathDelayMs: Number\(historicalPose\?\.delayMs\) \|\| 0/);
+  assert.match(gravelSchoolingSource, /toleranceXNorm: formation\.toleranceXNorm/);
+  assert.match(bootstrapSource, /const SCHOOL_PATH_HISTORY_MS = 3600/);
+  assert.match(bootstrapSource, /const SCHOOL_PATH_DELAY_BASE_MS = 140/);
+  assert.match(bootstrapSource, /const SCHOOL_FORMATION_MANEUVER_LOCK_MS = 1200/);
 
   let active = true;
   const context = {
@@ -1689,9 +1697,9 @@ test("phase 13 schooling reads committed leader facing instead of renderer yaw",
     context
   );
   const leader = { displayDirection: -1 };
-  assert.equal(getDirection(leader, 1200), 1, "active turn keeps school formation on the latched source side");
+  assert.equal(getDirection(leader, 1200), 1, "the source-side direction remains available for legacy formation consumers during an active turn");
   active = false;
-  assert.equal(getDirection(leader, 1900), -1, "completed turn exposes the final displayed side to schooling");
+  assert.equal(getDirection(leader, 1900), -1, "completed turn exposes the final displayed side");
 });
 
 test("phase 13 active school leaders cannot visually leave followers with a Wide Fluid U-turn", () => {

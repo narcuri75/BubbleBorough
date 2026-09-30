@@ -50,10 +50,10 @@ function makePresentation(overrides = {}) {
   );
 }
 
-test('Phase 32 shows individual Care Level and cumulative XP toward the next level', () => {
+test('Phase 32 shows individual Care Level and XP within the current level', () => {
   const progress = makePresentation();
   assert.equal(progress.levelLabel, 'Lv. 3');
-  assert.equal(progress.xpLabel, '18 / 27 Care XP');
+  assert.equal(progress.xpLabel, '6 / 15 Care XP');
   assert.equal(progress.nextLevelThreshold, 27);
   assert.equal(progress.careLevel, 3);
 });

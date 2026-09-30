@@ -359,5 +359,41 @@ function applyScheduledFishBehaviorTarget(fish, species, now = Date.now()) {
 function getFishBehaviorDebugSnapshot(fish, now = Date.now()) {
   const brain = ensureFishBehaviorBrain(fish, now);
   const scheduler = getFishBehaviorScheduler();
-  return { intention: brain.intention, stage: brain.stage, nextUpdateAt: brain.nextThinkAt, traits: brain.traits, scores: brain.scores, memory: brain.memory, path: brain.path || null, pathQueueSize: scheduler.pathQueue.length, capabilities: getFishBehaviorCapabilities(fish), school: scheduler.schools?.get(getFishSchoolFollowLeader(fish)?.id) || null, tier: getFishBehaviorSimulationTier(fish, now), performance: scheduler.counters, metrics: scheduler.metrics.last };
+  const velocityX = Number(fish?.motionVelocityXNorm) || 0;
+  const velocityY = Number(fish?.motionVelocityYNorm) || 0;
+  return {
+    intention: brain.intention,
+    stage: brain.stage,
+    nextUpdateAt: brain.nextThinkAt,
+    traits: brain.traits,
+    scores: brain.scores,
+    memory: brain.memory,
+    path: brain.path || null,
+    pathQueueSize: scheduler.pathQueue.length,
+    capabilities: getFishBehaviorCapabilities(fish),
+    school: scheduler.schools?.get(getFishSchoolFollowLeader(fish)?.id) || null,
+    tier: getFishBehaviorSimulationTier(fish, now),
+    performance: scheduler.counters,
+    metrics: scheduler.metrics.last,
+    locomotion: {
+      speed: Math.hypot(velocityX, velocityY),
+      swimSpeed: Number(fish?.swimSpeed) || 0,
+      velocityX,
+      velocityY,
+      headingX: Number(fish?.traversalHeadingXNorm) || 0,
+      headingY: Number(fish?.traversalHeadingYNorm) || 0,
+      desiredHeadingX: Number(fish?.traversalDesiredHeadingXNorm) || 0,
+      desiredHeadingY: Number(fish?.traversalDesiredHeadingYNorm) || 0,
+      steeringX: Number(fish?.steeringHeadingXScreen) || 0,
+      steeringY: Number(fish?.steeringHeadingYScreen) || 0,
+      verticalRatio: Number(fish?.steeringVerticalRatio) || 0,
+      speedBias: Number(fish?.locomotionSpeedBias) || 1,
+      propulsionState: String(fish?.locomotionPropulsionState || "cruise"),
+      pathWanderRadians: Number(fish?.locomotionPathWanderRadians) || 0,
+      turnCooldownUntil: Number(fish?.turnaroundCooldownUntil) || 0,
+      obstacleReason: Number(fish?.traversalObstacleUntil) > now ? "detour" : "none",
+      schoolState: String(fish?.schoolState || "none"),
+      schoolPathDelayMs: Number(fish?.schoolPathDelayMs) || 0
+    }
+  };
 }

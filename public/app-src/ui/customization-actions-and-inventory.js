@@ -2766,14 +2766,17 @@ function getFishManagementProgressionPresentation(fish, species) {
     ? getFishCareLevelThresholds(species)
     : { 1: 0 };
   const isMaxLevel = careLevel >= FISH_CARE_LEVEL_MAX;
+  const currentLevelThreshold = Math.max(0, Math.floor(Number(thresholds?.[careLevel]) || 0));
   const nextLevelThreshold = isMaxLevel
     ? null
     : Math.max(careXp, Math.floor(Number(thresholds?.[careLevel + 1]) || careXp));
+  const levelXpSpan = isMaxLevel ? 0 : Math.max(1, nextLevelThreshold - currentLevelThreshold);
+  const levelXp = isMaxLevel ? 0 : clamp(careXp - currentLevelThreshold, 0, levelXpSpan);
   const levelLabel = isMaxLevel ? `Lv. ${FISH_CARE_LEVEL_MAX} MAX` : `Lv. ${careLevel}`;
-  const xpLabel = isMaxLevel ? "" : `${careXp} / ${nextLevelThreshold} Care XP`;
+  const xpLabel = isMaxLevel ? "" : `${levelXp} / ${levelXpSpan} Care XP`;
   const xpProgress = isMaxLevel || !nextLevelThreshold
     ? 1
-    : clamp(careXp / nextLevelThreshold, 0, 1);
+    : clamp(levelXp / levelXpSpan, 0, 1);
 
   const mastery = typeof getFishSpeciesMasteryRecord === "function"
     ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
@@ -2798,6 +2801,9 @@ function getFishManagementProgressionPresentation(fish, species) {
 
   return {
     careXp,
+    currentLevelThreshold,
+    levelXp,
+    levelXpSpan,
     careLevel,
     isMaxLevel,
     nextLevelThreshold,
@@ -3621,6 +3627,14 @@ function renderFishInspector(now) {
   const moodPresentation = needsSnapshot ? getFishMoodPresentation(needsSnapshot.mood.label) : null;
   dom.fishInspector.hidden = false;
   setTextIfChanged(dom.inspectorSpecies, getFishInspectorSpeciesLabel(fish, species));
+  const progression = getFishManagementProgressionPresentation(fish, species);
+  if (dom.inspectorProgression && dom.inspectorProgressionContent) {
+    dom.inspectorProgression.hidden = !progression;
+    const progressionMarkup = progression
+      ? `<div class="fish-inspector-progression-summary"><strong>${escapeHtml(progression.levelLabel)}</strong><span>${escapeHtml(progression.xpLabel || "Maximum Care Level")}</span></div>${progression.isMaxLevel ? "" : `<div class="fish-care-xp-track fish-inspector-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.nextLevelThreshold}" aria-valuenow="${progression.careXp}"><span style="width:${Math.round(progression.xpProgress * 100)}%"></span></div>`}`
+      : "";
+    setMarkupIfChanged("fish-inspector-progression", dom.inspectorProgressionContent, progressionMarkup);
+  }
   const inspectorMaxHealthUnits = getFishMaxHealthUnits(fish, baseSpecies);
   const inspectorHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !dead
     ? inspectorMaxHealthUnits

@@ -500,6 +500,21 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   startleStrength: 1,
   startleRecoveryScale: 1,
   turnDurationScale: 1,
+  accelerationScale: 1,
+  decelerationScale: 1,
+  turnRateScale: 1,
+  turnRadiusScale: 1,
+  verticalSteeringLimit: 0.82,
+  coastBias: 0.42,
+  propulsionFrequency: 1,
+  propulsionAmplitude: 1,
+  pathLookaheadScale: 1,
+  pathWanderStrength: 1,
+  stationKeepingStrength: 1,
+  depthWanderStrength: 1,
+  schoolElasticity: 1,
+  wallComfortDistance: 1,
+  turnCommitBodyLengths: 0.65,
   speedMinBlend: 0.2,
   speedMaxBlend: 0.8,
   dartChance: 0,
@@ -516,7 +531,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
   "green-chromis": createFishLocomotionProfile({ movementPattern: "school-cruise", preferredY: 0.43, verticalSpread: 0.62, targetDistanceMin: 0.2, targetDistanceMax: 0.56, headingPersistence: 0.64, hoverChance: 0.025, schoolStrength: 0.8, schoolSpacingScale: 0.84, schoolDurationScale: 1.45, structureAffinity: 0.88, startleStrength: 1.3, turnDurationScale: 0.82, speedMinBlend: 0.5, speedMaxBlend: 0.94, dartChance: 0.12, targetDurationScale: 0.88 }),
   "banggai-cardinalfish": createFishLocomotionProfile({ movementPattern: "group-hover", preferredY: 0.48, verticalSpread: 0.5, targetDistanceMin: 0.1, targetDistanceMax: 0.3, headingPersistence: 0.38, hoverChance: 0.38, hoverMinMs: 1300, hoverMaxMs: 3300, schoolStrength: 0.52, structureAffinity: 1.34, caveAffinity: 1.1, startleStrength: 1.15, turnDurationScale: 1.28, speedMinBlend: 0.04, speedMaxBlend: 0.42, targetDurationScale: 1.3 }),
   "firefish": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.42, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.24, hoverChance: 0.46, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 1.9, caveAffinity: 2.25, homeRangeStrength: 0.86, homeRangeRadius: 0.14, startleStrength: 1.55, turnDurationScale: 0.8, speedMinBlend: 0.06, speedMaxBlend: 0.54, dartChance: 0.28, targetDurationScale: 1.26 }),
-  "yellow-watchman-goby": createFishLocomotionProfile({ movementPattern: "bottom-stop-go", preferredY: 0.86, verticalSpread: 0.22, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.34, hoverChance: 0.52, hoverMinMs: 1500, hoverMaxMs: 3800, structureAffinity: 2.05, caveAffinity: 2.5, homeRangeStrength: 0.96, homeRangeRadius: 0.12, startleStrength: 1.16, turnDurationScale: 1.35, speedMinBlend: 0.02, speedMaxBlend: 0.36, dartChance: 0.1, targetDurationScale: 1.38 }),
+  "yellow-watchman-goby": createFishLocomotionProfile({ movementPattern: "bottom-stop-go", preferredY: 0.86, verticalSpread: 0.22, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.34, hoverChance: 0.52, hoverMinMs: 1500, hoverMaxMs: 3800, structureAffinity: 2.05, caveAffinity: 2.5, homeRangeStrength: 0.96, homeRangeRadius: 0.12, startleStrength: 1.16, turnDurationScale: 1.35, accelerationScale: 1.12, decelerationScale: 1.3, turnRateScale: 1.08, verticalSteeringLimit: 0.76, coastBias: 0.18, propulsionFrequency: 1.05, stationKeepingStrength: 1.35, pathLookaheadScale: 0.74, wallComfortDistance: 0.88, turnCommitBodyLengths: 0.42, speedMinBlend: 0.02, speedMaxBlend: 0.36, dartChance: 0.1, targetDurationScale: 1.38 }),
   "tailspot-blenny": createFishLocomotionProfile({ movementPattern: "bottom-graze", preferredY: 0.8, verticalSpread: 0.25, targetDistanceMin: 0.04, targetDistanceMax: 0.2, headingPersistence: 0.32, hoverChance: 0.4, hoverMinMs: 1100, hoverMaxMs: 2900, structureAffinity: 2, caveAffinity: 1.1, homeRangeStrength: 0.5, startleStrength: 1.02, turnDurationScale: 1.18, speedMinBlend: 0.06, speedMaxBlend: 0.44, targetDurationScale: 1.24 }),
   "orchid-dottyback": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.4, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.26, hoverChance: 0.38, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 2, caveAffinity: 2.3, homeRangeStrength: 0.9, homeRangeRadius: 0.14, startleStrength: 1.15, turnDurationScale: 0.86, speedMinBlend: 0.06, speedMaxBlend: 0.5, dartChance: 0.24, targetDurationScale: 1.2 }),
   "six-line-wrasse": createFishLocomotionProfile({ movementPattern: "crevice-cruise", preferredY: 0.5, verticalSpread: 0.64, targetDistanceMin: 0.2, targetDistanceMax: 0.52, headingPersistence: 0.58, hoverChance: 0.05, schoolStrength: 0.08, structureAffinity: 1.65, caveAffinity: 1.48, startleStrength: 1.08, turnDurationScale: 0.78, speedMinBlend: 0.5, speedMaxBlend: 0.98, dartChance: 0.18, targetDurationScale: 0.84 }),
@@ -636,8 +651,11 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
     hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
     schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
-    startleStrength: 1.02, turnDurationScale: 1.5, speedMinBlend: 0.04,
-    speedMaxBlend: 0.46, targetDurationScale: 1.22
+    startleStrength: 1.02, turnDurationScale: 1.5, accelerationScale: 0.72,
+    decelerationScale: 0.78, turnRateScale: 0.72, turnRadiusScale: 1.28,
+    verticalSteeringLimit: 0.72, coastBias: 0.68, propulsionFrequency: 0.78,
+    propulsionAmplitude: 0.88, pathLookaheadScale: 1.12, wallComfortDistance: 1.14,
+    turnCommitBodyLengths: 0.82, speedMinBlend: 0.04, speedMaxBlend: 0.46, targetDurationScale: 1.22
   }),
   "discus": createFishLocomotionProfile({
     movementPattern: "group-hover", preferredY: 0.5, verticalSpread: 0.54,
@@ -697,7 +715,10 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.002, schoolStrength: 0.7, schoolSpacingScale: 0.88,
     schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.75, structureAffinity: 0.68,
     caveAffinity: 0.7, startleStrength: 1.28, turnDurationScale: 0.7,
-    speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
+    accelerationScale: 1.34, decelerationScale: 1.22, turnRateScale: 1.36,
+    turnRadiusScale: 0.72, verticalSteeringLimit: 0.88, coastBias: 0.22,
+    propulsionFrequency: 1.28, propulsionAmplitude: 0.92, pathLookaheadScale: 0.82,
+    schoolElasticity: 0.78, turnCommitBodyLengths: 0.46, speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
   }),
   "cherry-barb": createFishLocomotionProfile({
     movementPattern: "calm-shoal", preferredY: 0.56, verticalSpread: 0.58,
@@ -836,22 +857,31 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
     hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
     caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
-    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
+    accelerationScale: 0.66, decelerationScale: 0.62, turnRateScale: 0.58,
+    turnRadiusScale: 1.55, verticalSteeringLimit: 0.68, coastBias: 0.8,
+    propulsionFrequency: 0.66, propulsionAmplitude: 1.16, pathLookaheadScale: 1.5,
+    wallComfortDistance: 1.45, turnCommitBodyLengths: 1.05, speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
   }),
   "great-white-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
     targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.985,
     hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
     caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
-    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
+    accelerationScale: 0.58, decelerationScale: 0.56, turnRateScale: 0.52,
+    turnRadiusScale: 1.7, verticalSteeringLimit: 0.64, coastBias: 0.86,
+    propulsionFrequency: 0.6, propulsionAmplitude: 1.22, pathLookaheadScale: 1.65,
+    wallComfortDistance: 1.58, turnCommitBodyLengths: 1.18, speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
   }),
   "hammerhead-shark": createFishLocomotionProfile({
     movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
     targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.95,
     hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
     structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
-    turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
-    targetDurationScale: 1.15
+    turnDurationScale: 0.76, accelerationScale: 0.7, decelerationScale: 0.66,
+    turnRateScale: 0.64, turnRadiusScale: 1.48, verticalSteeringLimit: 0.72,
+    coastBias: 0.76, propulsionFrequency: 0.68, propulsionAmplitude: 1.12,
+    pathLookaheadScale: 1.42, wallComfortDistance: 1.38, turnCommitBodyLengths: 1.0,
+    speedMinBlend: 0.5, speedMaxBlend: 0.92, targetDurationScale: 1.15
   }),
   "orca": createFishLocomotionProfile({
     movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
@@ -910,7 +940,9 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMinBlend: 0.42, speedMaxBlend: 0.94, dartChance: 0.62, dartSpeedMinBlend: 0.9, targetDurationScale: 0.66
   })
 });
-const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
+// Temporarily hidden while its attached-glass directional art is separated
+// from purchasable appearance variants.
+const HIDDEN_FISH_OPTION_IDS = new Set(["loach", "otocinclus"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "open-water-cruiser": ["bold", "explorer", "social", "routine-loving", "curious", "greedy"],
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
@@ -2304,7 +2336,7 @@ const WATER_PARTICLE_ASSET_PATHS = Object.freeze(
   Array.from({ length: 10 }, (_, index) => resolveAppUrl(`assets/misc/particle${index + 1}.png`))
 );
 const FISH_DIRECTION_TARGET_DEADZONE_NORM = 0.006;
-const FISH_SWIM_TILT_MAX = Math.PI / 4;
+const FISH_SWIM_TILT_MAX = Math.PI / 2;
 const FISH_SWIM_TILT_RESPONSE_PER_SECOND = 5.2;
 const FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND = 2.35;
 const FISH_SWIM_TILT_SETTLE_EPSILON = 0.001;
@@ -2533,9 +2565,27 @@ const FISH_MOTION_SCALE = 1.62;
 const FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC = 2.65;
 const FISH_PASSIVE_BRAKE_DISTANCE_NORM = 0.12;
 const FISH_PASSIVE_ARRIVAL_EPSILON_NORM = 0.0012;
+// Low-frequency locomotion variation. These values change only at bounded
+// state transitions, never on every frame, so movement stays organic without
+// turning into procedural jitter.
+const FISH_LOCOMOTION_SPEED_BIAS_MIN = 0.94;
+const FISH_LOCOMOTION_SPEED_BIAS_MAX = 1.06;
+const FISH_LOCOMOTION_SPEED_BIAS_MIN_MS = 1800;
+const FISH_LOCOMOTION_SPEED_BIAS_MAX_MS = 4200;
+const FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS = 0.075;
+const FISH_LOCOMOTION_PATH_WANDER_MIN_MS = 2200;
+const FISH_LOCOMOTION_PATH_WANDER_MAX_MS = 5200;
+const FISH_PROPULSION_PUSH_MIN_MS = 520;
+const FISH_PROPULSION_PUSH_MAX_MS = 1150;
+const FISH_PROPULSION_CRUISE_MIN_MS = 900;
+const FISH_PROPULSION_CRUISE_MAX_MS = 2600;
+const FISH_PROPULSION_COAST_MIN_MS = 520;
+const FISH_PROPULSION_COAST_MAX_MS = 1500;
 const FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM = 0.0025;
 const FISH_TRAVERSAL_MAX_VELOCITY_NORM = 0.42;
-const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.52;
+// Climbs and dives may reach a fully vertical heading; steering still eases
+// into that heading using the species' angular response.
+const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 1;
 const FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX = 28;
 const FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX = 64;
 const FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT = 0.18;
@@ -2685,6 +2735,12 @@ const SAME_SPECIES_SCHOOL_SLOT_MAX_MS = 18000;
 const SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC = 4.6;
 const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = 1200;
 const SCHOOL_FORMATION_COMMAND_INTERVAL_MS = 180;
+const SCHOOL_PATH_HISTORY_MS = 3600;
+const SCHOOL_PATH_SAMPLE_INTERVAL_MS = 110;
+const SCHOOL_PATH_DELAY_BASE_MS = 140;
+const SCHOOL_PATH_DELAY_PER_SLOT_MS = 72;
+const SCHOOL_PATH_DELAY_MAX_MS = 560;
+const SCHOOL_FORMATION_MANEUVER_LOCK_MS = 1200;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
 const FISH_PASSIVE_TARGET_RESPONSE_PER_SEC = 4.2;
@@ -12599,6 +12655,8 @@ const dom = {
   customGravelPanel: document.querySelector("#customGravelPanel"),
   equipmentCustomGravelPanel: document.querySelector("#equipmentCustomGravelPanel"),
   fishInspector: document.querySelector("#fishInspector"),
+  inspectorProgression: document.querySelector("#inspectorProgression"),
+  inspectorProgressionContent: document.querySelector("#inspectorProgressionContent"),
   fishActionFlyout: document.querySelector("#fishActionFlyout"),
   fishActionFlyoutName: document.querySelector("#fishActionFlyoutName"),
   fishActionFlyoutSettings: document.querySelector("#fishActionFlyoutSettings"),
@@ -26831,11 +26889,15 @@ function renderFishBehaviorSchedulerReadout(now = Date.now()) {
   const school = snapshot.school ? `${snapshot.school.members.length} followers${snapshot.school.alert ? " alert" : ""}` : "none";
   const performance = snapshot.performance || {};
   const metrics = snapshot.metrics || null;
+  const locomotion = snapshot.locomotion || {};
+  const turnCooldownMs = Math.max(0, Math.round((Number(locomotion.turnCooldownUntil) || 0) - now));
   setTextIfChanged(dom.debugFishBehaviorReadout, [
     `Intention: ${snapshot.intention} / ${snapshot.stage} (${snapshot.tier})`,
     `Scores: ${scores}`,
     `Traits: ${traits}`,
     `Path: ${path} | School: ${school}`,
+    `Locomotion: ${String(locomotion.propulsionState || "cruise")} speed ${Number(locomotion.speed || 0).toFixed(3)} / ${Number(locomotion.swimSpeed || 0).toFixed(3)} bias ${Number(locomotion.speedBias || 1).toFixed(2)} vertical ${Number(locomotion.verticalRatio || 0).toFixed(2)}`,
+    `Heading: ${Number(locomotion.headingX || 0).toFixed(2)},${Number(locomotion.headingY || 0).toFixed(2)} steering ${Number(locomotion.steeringX || 0).toFixed(2)},${Number(locomotion.steeringY || 0).toFixed(2)} wander ${Number(locomotion.pathWanderRadians || 0).toFixed(3)} turn lock ${turnCooldownMs}ms school delay ${Math.round(Number(locomotion.schoolPathDelayMs) || 0)}ms`,
     `AI: ${performance.evaluations || 0} eval, ${performance.queries || 0} local queries, ${performance.deferred || 0} deferred`,
     metrics ? `1s: ${metrics.evaluationsPerSecond.toFixed(1)} eval/s, ${metrics.queriesPerSecond.toFixed(1)} queries/s, avg ${metrics.averageEvaluationMs.toFixed(2)}ms max ${metrics.maximumEvaluationMs.toFixed(2)}ms` : "1s: collecting metrics…"
   ].join("\n"));
@@ -39138,7 +39200,43 @@ function applyScheduledFishBehaviorTarget(fish, species, now = Date.now()) {
 function getFishBehaviorDebugSnapshot(fish, now = Date.now()) {
   const brain = ensureFishBehaviorBrain(fish, now);
   const scheduler = getFishBehaviorScheduler();
-  return { intention: brain.intention, stage: brain.stage, nextUpdateAt: brain.nextThinkAt, traits: brain.traits, scores: brain.scores, memory: brain.memory, path: brain.path || null, pathQueueSize: scheduler.pathQueue.length, capabilities: getFishBehaviorCapabilities(fish), school: scheduler.schools?.get(getFishSchoolFollowLeader(fish)?.id) || null, tier: getFishBehaviorSimulationTier(fish, now), performance: scheduler.counters, metrics: scheduler.metrics.last };
+  const velocityX = Number(fish?.motionVelocityXNorm) || 0;
+  const velocityY = Number(fish?.motionVelocityYNorm) || 0;
+  return {
+    intention: brain.intention,
+    stage: brain.stage,
+    nextUpdateAt: brain.nextThinkAt,
+    traits: brain.traits,
+    scores: brain.scores,
+    memory: brain.memory,
+    path: brain.path || null,
+    pathQueueSize: scheduler.pathQueue.length,
+    capabilities: getFishBehaviorCapabilities(fish),
+    school: scheduler.schools?.get(getFishSchoolFollowLeader(fish)?.id) || null,
+    tier: getFishBehaviorSimulationTier(fish, now),
+    performance: scheduler.counters,
+    metrics: scheduler.metrics.last,
+    locomotion: {
+      speed: Math.hypot(velocityX, velocityY),
+      swimSpeed: Number(fish?.swimSpeed) || 0,
+      velocityX,
+      velocityY,
+      headingX: Number(fish?.traversalHeadingXNorm) || 0,
+      headingY: Number(fish?.traversalHeadingYNorm) || 0,
+      desiredHeadingX: Number(fish?.traversalDesiredHeadingXNorm) || 0,
+      desiredHeadingY: Number(fish?.traversalDesiredHeadingYNorm) || 0,
+      steeringX: Number(fish?.steeringHeadingXScreen) || 0,
+      steeringY: Number(fish?.steeringHeadingYScreen) || 0,
+      verticalRatio: Number(fish?.steeringVerticalRatio) || 0,
+      speedBias: Number(fish?.locomotionSpeedBias) || 1,
+      propulsionState: String(fish?.locomotionPropulsionState || "cruise"),
+      pathWanderRadians: Number(fish?.locomotionPathWanderRadians) || 0,
+      turnCooldownUntil: Number(fish?.turnaroundCooldownUntil) || 0,
+      obstacleReason: Number(fish?.traversalObstacleUntil) > now ? "detour" : "none",
+      schoolState: String(fish?.schoolState || "none"),
+      schoolPathDelayMs: Number(fish?.schoolPathDelayMs) || 0
+    }
+  };
 }
 // </bundle-source>
 
@@ -46872,6 +46970,14 @@ function portalOpeningFitsFish(item, fish, species, now, mouth, direction = null
   );
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
   if (!fishDescriptor) {
+    return false;
+  }
+
+  // Absence of foreground pixels is not sufficient: a point above the roof
+  // is also transparent. The whole body must occupy the cave's allowed space
+  // before it can cross between interior and exterior depth.
+  const interiorDescriptor = getCaveInteriorContainmentDescriptor(item);
+  if (!interiorDescriptor || !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
     return false;
   }
 
@@ -64449,6 +64555,8 @@ function clearFishSchoolFollowState(fish) {
   fish.schoolFormationUntil = null;
   fish.schoolState = null;
   fish.schoolTurnStartedAt = null;
+  fish.schoolRejoinActive = false;
+  fish.schoolPathDelayMs = 0;
 }
 
 function pruneFishGravelPebbleRuntimeState(now = Date.now()) {
@@ -66128,12 +66236,120 @@ function assignFishSchoolFormationSlot(fish, leader, now = Date.now()) {
   return slot;
 }
 
+function recordFishSchoolLeaderPathHistory(leader, now = Date.now()) {
+  if (!leader) return [];
+  if (!Array.isArray(leader.schoolPathHistory)) leader.schoolPathHistory = [];
+  if (now - (Number(leader.schoolPathHistoryLastSampleAt) || 0) < SCHOOL_PATH_SAMPLE_INTERVAL_MS) {
+    return leader.schoolPathHistory;
+  }
+  const speed = Math.hypot(
+    Number(leader.traversalVelocityXNorm) || 0,
+    Number(leader.traversalVelocityYNorm) || 0
+  );
+  const headingX = speed > 0.000001
+    ? (Number(leader.traversalVelocityXNorm) || 0) / speed
+    : (Number(leader.traversalHeadingXNorm) || (Number(leader.direction) < 0 ? -1 : 1));
+  const headingY = speed > 0.000001
+    ? (Number(leader.traversalVelocityYNorm) || 0) / speed
+    : (Number(leader.traversalHeadingYNorm) || 0);
+  leader.schoolPathHistory.push({
+    time: now,
+    xNorm: Number(leader.xNorm) || 0.5,
+    yNorm: Number(leader.yNorm) || 0.5,
+    z: typeof getFishTankDepthZ === "function" ? getFishTankDepthZ(leader) : 0.5,
+    headingX,
+    headingY,
+    direction: Math.abs(headingX) > 0.02 ? (headingX < 0 ? -1 : 1) : (Number(leader.direction) < 0 ? -1 : 1),
+    speed
+  });
+  leader.schoolPathHistoryLastSampleAt = now;
+  const oldestAllowed = now - SCHOOL_PATH_HISTORY_MS;
+  while (leader.schoolPathHistory.length > 2 && Number(leader.schoolPathHistory[0]?.time) < oldestAllowed) {
+    leader.schoolPathHistory.shift();
+  }
+  const maxSamples = Math.ceil(SCHOOL_PATH_HISTORY_MS / Math.max(1, SCHOOL_PATH_SAMPLE_INTERVAL_MS)) + 4;
+  if (leader.schoolPathHistory.length > maxSamples) {
+    leader.schoolPathHistory.splice(0, leader.schoolPathHistory.length - maxSamples);
+  }
+  return leader.schoolPathHistory;
+}
+
+function getFishSchoolLeaderHistoricalPose(fish, leader, now = Date.now()) {
+  const history = recordFishSchoolLeaderPathHistory(leader, now);
+  const slot = Math.max(0, assignFishSchoolFormationSlot(fish, leader, now));
+  const profile = getFishLocomotionProfile(fish || getSpeciesForFish(fish));
+  const durationScale = clamp(Number(profile?.schoolDurationScale) || 1, 0.7, 1.5);
+  const delayMs = clamp(
+    (SCHOOL_PATH_DELAY_BASE_MS + slot * SCHOOL_PATH_DELAY_PER_SLOT_MS) * durationScale,
+    SCHOOL_PATH_DELAY_BASE_MS,
+    SCHOOL_PATH_DELAY_MAX_MS
+  );
+  const targetTime = now - delayMs;
+  if (!history.length) {
+    return {
+      xNorm: Number(leader.xNorm) || 0.5,
+      yNorm: Number(leader.yNorm) || 0.5,
+      z: typeof getFishTankDepthZ === "function" ? getFishTankDepthZ(leader) : 0.5,
+      headingX: Number(leader.traversalHeadingXNorm) || Number(leader.direction) || 1,
+      headingY: Number(leader.traversalHeadingYNorm) || 0,
+      direction: Number(leader.direction) < 0 ? -1 : 1,
+      speed: Number(leader.traversalSpeedNorm) || 0,
+      delayMs
+    };
+  }
+  if (targetTime <= Number(history[0].time)) return { ...history[0], delayMs };
+  const latest = history[history.length - 1];
+  if (targetTime >= Number(latest.time)) return { ...latest, delayMs };
+  for (let index = 1; index < history.length; index += 1) {
+    const right = history[index];
+    const left = history[index - 1];
+    if (targetTime > Number(right.time)) continue;
+    const span = Math.max(1, Number(right.time) - Number(left.time));
+    const blend = clamp((targetTime - Number(left.time)) / span, 0, 1);
+    const headingX = Number(left.headingX) + (Number(right.headingX) - Number(left.headingX)) * blend;
+    const headingY = Number(left.headingY) + (Number(right.headingY) - Number(left.headingY)) * blend;
+    return {
+      xNorm: Number(left.xNorm) + (Number(right.xNorm) - Number(left.xNorm)) * blend,
+      yNorm: Number(left.yNorm) + (Number(right.yNorm) - Number(left.yNorm)) * blend,
+      z: Number(left.z) + (Number(right.z) - Number(left.z)) * blend,
+      headingX,
+      headingY,
+      direction: Math.abs(headingX) > 0.02
+        ? (headingX < 0 ? -1 : 1)
+        : (blend < 0.5 ? Number(left.direction) : Number(right.direction)),
+      speed: Number(left.speed) + (Number(right.speed) - Number(left.speed)) * blend,
+      delayMs
+    };
+  }
+  return { ...latest, delayMs };
+}
+
 function maybeChooseFishSchoolFormation(fish, leader, now = Date.now()) {
   if (Number(leader.schoolFormationUntil) > now && leader.schoolFormation) {
     fish.schoolFormation = leader.schoolFormation;
     fish.schoolFormationUntil = leader.schoolFormationUntil;
     return leader.schoolFormation;
   }
+
+  const leaderTurning = Number(leader.turnStartedAt) > 0
+    && Number(leader.turnDurationMs) > 0
+    && now < Number(leader.turnStartedAt) + Number(leader.turnDurationMs);
+  const leaderPanicking = Number(leader.panicUntil) > now;
+  const leaderAvoiding = Number(leader.traversalObstacleUntil) > now
+    || Number(leader.wallAvoidUntil) > now;
+  const leaderDepthTransition = Math.abs(getDesiredFishTankDepthZ(leader) - getFishTankDepthZ(leader)) > 0.08;
+  const followerRejoining = getFishSchoolActiveFollowers(leader, now)
+    .some((follower) => follower.schoolState === "rejoining");
+  if (
+    leader.schoolFormation
+    && (leaderTurning || leaderPanicking || leader.caveState || leaderAvoiding || leaderDepthTransition || followerRejoining)
+  ) {
+    leader.schoolFormationUntil = now + SCHOOL_FORMATION_MANEUVER_LOCK_MS;
+    fish.schoolFormation = leader.schoolFormation;
+    fish.schoolFormationUntil = leader.schoolFormationUntil;
+    return leader.schoolFormation;
+  }
+
   const leaderDistance = Math.hypot(
     (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
     (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
@@ -66155,6 +66371,7 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   const locomotionProfile = getFishLocomotionProfile(fish || species);
   const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.68, 1.55);
+  const elasticity = clamp(Number(locomotionProfile.schoolElasticity) || 1, 0.55, 1.6);
   const bodySpacingNorm = clamp(
     (Math.max(60, getFishVisualSize(fish)) + Math.max(60, getFishVisualSize(leader))) / TANK_WIDTH * 0.32 * spacingScale,
     SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
@@ -66191,45 +66408,34 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
     distanceMultiplier = 0.68 + row * 0.08;
     laneOffset *= 0.78;
   }
+
+  // Each slot is an elastic region. Stable, low-amplitude phase offsets make
+  // the school breathe without rerolling positions or turning into boids.
+  const phase = (getFishSchoolStableRank(fish) % 4096) / 4096 * Math.PI * 2;
+  const breathe = Math.sin(now / 2100 + phase);
+  const breatheSide = Math.cos(now / 2600 + phase * 0.73);
+  const finalTrailingDistance = trailingDistance * distanceMultiplier * (1 + breatheSide * 0.035 * elasticity);
+  const finalYOffset = clamp(
+    laneOffset + rowOffset + breathe * verticalStep * 0.16 * elasticity,
+    -0.085,
+    0.085
+  );
   return {
-    trailingDistance: trailingDistance * distanceMultiplier,
-    yOffsetNorm: clamp(laneOffset + rowOffset, -0.085, 0.085)
+    trailingDistance: finalTrailingDistance,
+    yOffsetNorm: finalYOffset,
+    toleranceXNorm: clamp(finalTrailingDistance * 0.18 * elasticity, 0.012, 0.036),
+    toleranceYNorm: clamp(verticalStep * 0.62 * elasticity, 0.01, 0.034)
   };
 }
 
 function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
-  if (!fish || !leader) {
-    return null;
-  }
+  if (!fish || !leader) return null;
 
-  // Keep the slot on the side selected when this follow began. The leader's
-  // formation-facing value is latched to the source side for the whole active
-  // reversal, so v26 yaw and midpoint orientation cannot mirror follower slots.
-  const currentLeaderDirection = getFishSchoolLeaderFormationDirection(leader, now);
-  const storedDirection = Number(fish.schoolFormationDirection) < 0 ? -1
-    : Number(fish.schoolFormationDirection) > 0 ? 1
-      : currentLeaderDirection;
-  // A turn is a group event: retain existing positions briefly, then let the
-  // smoothed targets reform behind the new heading.  This prevents an instant
-  // mirror through the leader while still allowing a completed turn to settle.
-  if (currentLeaderDirection !== storedDirection) {
-    fish.schoolTurnStartedAt = Number(fish.schoolTurnStartedAt) || now;
-    if (now - fish.schoolTurnStartedAt >= SCHOOL_FORMATION_HEADING_SETTLE_MS) {
-      fish.schoolFormationDirection = currentLeaderDirection;
-      fish.schoolTurnStartedAt = null;
-    }
-  } else {
-    fish.schoolTurnStartedAt = null;
-  }
-  const leaderDirection = Number(fish.schoolFormationDirection) < 0 ? -1
-    : Number(fish.schoolFormationDirection) > 0 ? 1 : currentLeaderDirection;
+  const historicalPose = getFishSchoolLeaderHistoricalPose(fish, leader, now);
+  const leaderDirection = Number(historicalPose?.direction) < 0 ? -1 : 1;
   const formation = getFishSchoolFormationOffset(fish, leader, now);
-  const leaderTargetX = Number.isFinite(Number(leader.targetXNorm)) ? Number(leader.targetXNorm) : leader.xNorm;
-  const leaderTargetY = Number.isFinite(Number(leader.targetYNorm)) ? Number(leader.targetYNorm) : leader.yNorm;
-  const leaderTargetDistance = Math.hypot(leaderTargetX - leader.xNorm, leaderTargetY - leader.yNorm);
-  const lookAheadBlend = clamp(leaderTargetDistance * 0.7, 0, 0.14);
-  const travelAnchorX = leader.xNorm + (leaderTargetX - leader.xNorm) * lookAheadBlend;
-  const travelAnchorY = leader.yNorm + (leaderTargetY - leader.yNorm) * lookAheadBlend;
+  const travelAnchorX = Number(historicalPose?.xNorm) || Number(leader.xNorm) || 0.5;
+  const travelAnchorY = Number(historicalPose?.yNorm) || Number(leader.yNorm) || 0.5;
   const desiredXNorm = clamp(
     travelAnchorX - leaderDirection * formation.trailingDistance,
     0.08,
@@ -66241,46 +66447,57 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
     0.8
   );
   const depthOffsetZ = getFishSchoolFormationDepthOffset(fish, leader, now);
-  const targetZ = sanitizeTankDepthZ(getDesiredFishTankDepthZ(leader) + depthOffsetZ);
+  const pathDepth = Number.isFinite(Number(historicalPose?.z))
+    ? Number(historicalPose.z)
+    : getDesiredFishTankDepthZ(leader);
+  const targetZ = sanitizeTankDepthZ(pathDepth + depthOffsetZ);
 
   const occupiedFish = [leader, ...getFishSchoolActiveFollowers(leader, now)]
     .filter((otherFish) => otherFish?.id !== fish.id);
   const separation = SCHOOL_FORMATION_MIN_SEPARATION_NORM;
-  const separationCandidates = [
-    { xNorm: desiredXNorm, yNorm: desiredYNorm },
-    { xNorm: desiredXNorm - leaderDirection * separation, yNorm: desiredYNorm },
-    { xNorm: desiredXNorm, yNorm: desiredYNorm + separation },
-    { xNorm: desiredXNorm, yNorm: desiredYNorm - separation },
-    { xNorm: desiredXNorm - leaderDirection * separation * 0.72, yNorm: desiredYNorm + (formation.yOffsetNorm >= 0 ? separation * 0.72 : -separation * 0.72) }
-  ].map((candidate) => ({
-    xNorm: clamp(candidate.xNorm, 0.08, 0.92),
-    yNorm: clamp(candidate.yNorm, 0.14, 0.8)
-  }));
-  const separatedAnchor = separationCandidates.reduce((best, candidate) => {
-    const candidateClearance = occupiedFish.length
-      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(candidate.xNorm - otherFish.xNorm, candidate.yNorm - otherFish.yNorm)))
-      : Number.POSITIVE_INFINITY;
-    const bestClearance = best && occupiedFish.length
-      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(best.xNorm - otherFish.xNorm, best.yNorm - otherFish.yNorm)))
-      : Number.NEGATIVE_INFINITY;
-    return candidateClearance > bestClearance ? candidate : best;
-  }, null) || { xNorm: desiredXNorm, yNorm: desiredYNorm };
+  const desiredClearance = occupiedFish.length
+    ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(desiredXNorm - otherFish.xNorm, desiredYNorm - otherFish.yNorm)))
+    : Number.POSITIVE_INFINITY;
+  let separatedAnchor = { xNorm: desiredXNorm, yNorm: desiredYNorm };
+  // Only correct genuine near-overlap. Choosing the maximum-clearance point on
+  // every refresh made formation slots look rigid and repulsive.
+  if (desiredClearance < separation * 0.72) {
+    const separationCandidates = [
+      { xNorm: desiredXNorm - leaderDirection * separation * 0.68, yNorm: desiredYNorm },
+      { xNorm: desiredXNorm, yNorm: desiredYNorm + separation * 0.72 },
+      { xNorm: desiredXNorm, yNorm: desiredYNorm - separation * 0.72 },
+      { xNorm: desiredXNorm - leaderDirection * separation * 0.52, yNorm: desiredYNorm + (formation.yOffsetNorm >= 0 ? separation * 0.5 : -separation * 0.5) }
+    ].map((candidate) => ({
+      xNorm: clamp(candidate.xNorm, 0.08, 0.92),
+      yNorm: clamp(candidate.yNorm, 0.14, 0.8)
+    }));
+    const valid = separationCandidates
+      .map((candidate) => ({
+        ...candidate,
+        clearance: occupiedFish.length
+          ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(candidate.xNorm - otherFish.xNorm, candidate.yNorm - otherFish.yNorm)))
+          : Number.POSITIVE_INFINITY,
+        displacement: Math.hypot(candidate.xNorm - desiredXNorm, candidate.yNorm - desiredYNorm)
+      }))
+      .filter((candidate) => candidate.clearance >= separation * 0.72)
+      .sort((left, right) => left.displacement - right.displacement);
+    if (valid.length) separatedAnchor = valid[0];
+  }
 
-  // Followers use a stable slot behind one leader. Do not steer from a live
-  // centroid or from every nearby fish. Those continuously moving forces were
-  // causing the school to collapse into a blob and oscillate vertically.
   return {
     xNorm: separatedAnchor.xNorm,
     yNorm: separatedAnchor.yNorm,
-    // Formation depth is expressed through sublayers below. Keep each
-    // follower in its current tank layer so a leader's depth maneuver cannot
-    // pull the whole school across rendered tank strata in one refresh.
     targetLayer: clampTankLayer(getFishTankLayer(fish)),
     targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
     targetZ,
     offsetXNorm: -leaderDirection * formation.trailingDistance,
     offsetYNorm: formation.yOffsetNorm,
-    offsetZ: depthOffsetZ
+    offsetZ: depthOffsetZ,
+    toleranceXNorm: formation.toleranceXNorm,
+    toleranceYNorm: formation.toleranceYNorm,
+    pathDelayMs: Number(historicalPose?.delayMs) || 0,
+    pathDirection: leaderDirection,
+    pathSpeed: Number(historicalPose?.speed) || 0
   };
 }
 
@@ -66423,8 +66640,13 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     }
   }
 
+  // Record the leader independently of follower command cadence. The history
+  // is shared by the whole school and internally rate-limited, so turns can
+  // propagate through followers without storing a duplicate trail per fish.
+  recordFishSchoolLeaderPathHistory(leader, now);
+
   // Changing a fish's navigation endpoint every render frame restarts its
-  // arrival easing and presents as a visible brake/twitch.  Formation intent
+  // arrival easing and presents as a visible brake/twitch. Formation intent
   // is sampled at a short fixed cadence; collision and panic remain higher
   // priority and can still replace this target immediately.
   if (Number(fish.schoolNextTargetRefreshAt) > now) {
@@ -66445,9 +66667,29 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
   } else if (!fish.schoolState || fish.schoolState === "suspended") {
     fish.schoolState = "formation";
   }
+  fish.schoolRejoinActive = fish.schoolState === "rejoining";
+  fish.schoolPathDelayMs = Number(anchor.pathDelayMs) || 0;
   if (fish.schoolState === "rejoining" && species.speedMode === "dynamic") {
     const leaderSpeed = Number(leader.swimSpeed) || normalizeFishSpeed(species, species.speedMin);
     fish.swimSpeed = normalizeFishSpeed(species, leaderSpeed * 1.2);
+  }
+
+  const insideElasticSlot = fish.schoolState !== "rejoining"
+    && Math.abs(anchor.xNorm - fish.xNorm) <= Math.max(0.004, Number(anchor.toleranceXNorm) || 0)
+    && Math.abs(anchor.yNorm - fish.yNorm) <= Math.max(0.004, Number(anchor.toleranceYNorm) || 0);
+  if (insideElasticSlot) {
+    // The follower is already inside its preferred region. Stop issuing tiny
+    // exact-coordinate corrections and let normal momentum/station keeping do
+    // the last few pixels of work until the school genuinely moves away.
+    fish.schoolTargetXNorm = fish.xNorm;
+    fish.schoolTargetYNorm = fish.yNorm;
+    fish.schoolTargetUpdatedAt = now;
+    fish.schoolNextTargetRefreshAt = now + SCHOOL_FORMATION_COMMAND_INTERVAL_MS;
+    fish.targetXNorm = fish.xNorm;
+    fish.targetYNorm = fish.yNorm;
+    fish.targetAt = Math.max(now + 500, fish.followUntil);
+    setFishDesiredTankDepth(fish, anchor.targetZ);
+    return true;
   }
 
   const previousTargetX = Number.isFinite(Number(fish.schoolTargetXNorm))
@@ -87353,14 +87595,17 @@ function getFishManagementProgressionPresentation(fish, species) {
     ? getFishCareLevelThresholds(species)
     : { 1: 0 };
   const isMaxLevel = careLevel >= FISH_CARE_LEVEL_MAX;
+  const currentLevelThreshold = Math.max(0, Math.floor(Number(thresholds?.[careLevel]) || 0));
   const nextLevelThreshold = isMaxLevel
     ? null
     : Math.max(careXp, Math.floor(Number(thresholds?.[careLevel + 1]) || careXp));
+  const levelXpSpan = isMaxLevel ? 0 : Math.max(1, nextLevelThreshold - currentLevelThreshold);
+  const levelXp = isMaxLevel ? 0 : clamp(careXp - currentLevelThreshold, 0, levelXpSpan);
   const levelLabel = isMaxLevel ? `Lv. ${FISH_CARE_LEVEL_MAX} MAX` : `Lv. ${careLevel}`;
-  const xpLabel = isMaxLevel ? "" : `${careXp} / ${nextLevelThreshold} Care XP`;
+  const xpLabel = isMaxLevel ? "" : `${levelXp} / ${levelXpSpan} Care XP`;
   const xpProgress = isMaxLevel || !nextLevelThreshold
     ? 1
-    : clamp(careXp / nextLevelThreshold, 0, 1);
+    : clamp(levelXp / levelXpSpan, 0, 1);
 
   const mastery = typeof getFishSpeciesMasteryRecord === "function"
     ? getFishSpeciesMasteryRecord(species.id, { species, create: false })
@@ -87385,6 +87630,9 @@ function getFishManagementProgressionPresentation(fish, species) {
 
   return {
     careXp,
+    currentLevelThreshold,
+    levelXp,
+    levelXpSpan,
     careLevel,
     isMaxLevel,
     nextLevelThreshold,
@@ -88208,6 +88456,14 @@ function renderFishInspector(now) {
   const moodPresentation = needsSnapshot ? getFishMoodPresentation(needsSnapshot.mood.label) : null;
   dom.fishInspector.hidden = false;
   setTextIfChanged(dom.inspectorSpecies, getFishInspectorSpeciesLabel(fish, species));
+  const progression = getFishManagementProgressionPresentation(fish, species);
+  if (dom.inspectorProgression && dom.inspectorProgressionContent) {
+    dom.inspectorProgression.hidden = !progression;
+    const progressionMarkup = progression
+      ? `<div class="fish-inspector-progression-summary"><strong>${escapeHtml(progression.levelLabel)}</strong><span>${escapeHtml(progression.xpLabel || "Maximum Care Level")}</span></div>${progression.isMaxLevel ? "" : `<div class="fish-care-xp-track fish-inspector-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.nextLevelThreshold}" aria-valuenow="${progression.careXp}"><span style="width:${Math.round(progression.xpProgress * 100)}%"></span></div>`}`
+      : "";
+    setMarkupIfChanged("fish-inspector-progression", dom.inspectorProgressionContent, progressionMarkup);
+  }
   const inspectorMaxHealthUnits = getFishMaxHealthUnits(fish, baseSpecies);
   const inspectorHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !dead
     ? inspectorMaxHealthUnits
@@ -93142,6 +93398,7 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   }
 
   if (fish.caveState) {
+    if (resolvedMove.caveInteriorBlocked) recoverFishInsideCave(fish, species, now);
     fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
     fish.wallAvoidUntil = now + 220;
     return;
@@ -93149,15 +93406,12 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
 
   if (resolvedMove?.blockingCave) {
     const blocking = resolvedMove.blockingCave;
-    const safeFrontLayer = Math.max(1, clampTankLayer((blocking.span?.front || 3) - 1));
-    setFishTankLayers(fish, safeFrontLayer, safeFrontLayer);
-    setFishDesiredTankLayer(fish, safeFrontLayer);
     fish.hangoutDecorId = null;
     fish.blockedDecorId = blocking.item?.id || null;
     fish.blockedDecorUntil = now + 2400;
     fish.wallAvoidUntil = now + 420;
-    fish.targetXNorm = clamp(attemptedXNorm, 0.08, 0.92);
-    fish.targetYNorm = clamp(attemptedYNorm, 0.14, 0.8);
+    fish.targetXNorm = clamp(fish.xNorm - Math.sign(attemptedXNorm - fish.xNorm) * 0.06, 0.08, 0.92);
+    fish.targetYNorm = clamp(fish.yNorm - Math.sign(attemptedYNorm - fish.yNorm) * 0.035, 0.14, 0.8);
     fish.targetAt = now + 1400 + Math.hypot(fish.xNorm - fish.targetXNorm, fish.yNorm - fish.targetYNorm) * 12000;
     if (Math.abs(fish.targetXNorm - fish.xNorm) > 0.002) {
       setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
@@ -94451,13 +94705,105 @@ function stabilizeFishPassiveMotionTarget(fish, now, deltaSeconds, options = nul
   return { xNorm: nextX, yNorm: nextY };
 }
 
+function updateFishLocomotionVariation(fish, species, now, deltaSeconds, options = {}) {
+  if (!fish) return;
+  const profile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish || species)
+    : null;
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const urgent = Boolean(options.urgent);
+
+  if (!Number.isFinite(Number(fish.locomotionSpeedBias))) {
+    fish.locomotionSpeedBias = 1;
+    fish.locomotionSpeedBiasTarget = 1;
+    fish.locomotionSpeedBiasNextAt = now + FISH_LOCOMOTION_SPEED_BIAS_MIN_MS;
+  }
+  if (!Number.isFinite(Number(fish.locomotionSpeedBiasTarget))) {
+    fish.locomotionSpeedBiasTarget = 1;
+  }
+  if (now >= (Number(fish.locomotionSpeedBiasNextAt) || 0)) {
+    fish.locomotionSpeedBiasTarget = FISH_LOCOMOTION_SPEED_BIAS_MIN
+      + Math.random() * (FISH_LOCOMOTION_SPEED_BIAS_MAX - FISH_LOCOMOTION_SPEED_BIAS_MIN);
+    fish.locomotionSpeedBiasNextAt = now + FISH_LOCOMOTION_SPEED_BIAS_MIN_MS
+      + Math.random() * (FISH_LOCOMOTION_SPEED_BIAS_MAX_MS - FISH_LOCOMOTION_SPEED_BIAS_MIN_MS);
+  }
+  const speedBiasResponse = 1 - Math.exp(-elapsedSeconds * 0.8);
+  fish.locomotionSpeedBias += (fish.locomotionSpeedBiasTarget - fish.locomotionSpeedBias) * speedBiasResponse;
+
+  if (!Number.isFinite(Number(fish.locomotionPathWanderRadians))) {
+    fish.locomotionPathWanderRadians = 0;
+    fish.locomotionPathWanderTargetRadians = 0;
+    fish.locomotionPathWanderNextAt = now + FISH_LOCOMOTION_PATH_WANDER_MIN_MS;
+  }
+  if (now >= (Number(fish.locomotionPathWanderNextAt) || 0)) {
+    const wanderStrength = clamp(Number(profile?.pathWanderStrength) || 1, 0, 1.8);
+    const maxWander = FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS * wanderStrength;
+    fish.locomotionPathWanderTargetRadians = (Math.random() * 2 - 1) * maxWander;
+    fish.locomotionPathWanderNextAt = now + FISH_LOCOMOTION_PATH_WANDER_MIN_MS
+      + Math.random() * (FISH_LOCOMOTION_PATH_WANDER_MAX_MS - FISH_LOCOMOTION_PATH_WANDER_MIN_MS);
+  }
+  const wanderResponse = 1 - Math.exp(-elapsedSeconds * 0.65);
+  fish.locomotionPathWanderRadians += (
+    (Number(fish.locomotionPathWanderTargetRadians) || 0) - fish.locomotionPathWanderRadians
+  ) * wanderResponse;
+
+  let propulsionState = String(fish.locomotionPropulsionState || "cruise");
+  if (!["push", "cruise", "coast"].includes(propulsionState)) propulsionState = "cruise";
+  if (now >= (Number(fish.locomotionPropulsionUntil) || 0)) {
+    const coastBias = clamp(Number(profile?.coastBias) || 0.42, 0.08, 0.86);
+    if (urgent) {
+      propulsionState = Math.random() < 0.66 ? "push" : "cruise";
+    } else if (propulsionState === "push") {
+      propulsionState = "cruise";
+    } else if (propulsionState === "coast") {
+      propulsionState = "push";
+    } else {
+      propulsionState = Math.random() < coastBias ? "coast" : "push";
+    }
+    let minMs = FISH_PROPULSION_CRUISE_MIN_MS;
+    let maxMs = FISH_PROPULSION_CRUISE_MAX_MS;
+    if (propulsionState === "push") {
+      minMs = FISH_PROPULSION_PUSH_MIN_MS;
+      maxMs = FISH_PROPULSION_PUSH_MAX_MS;
+    } else if (propulsionState === "coast") {
+      minMs = FISH_PROPULSION_COAST_MIN_MS;
+      maxMs = FISH_PROPULSION_COAST_MAX_MS;
+    }
+    fish.locomotionPropulsionState = propulsionState;
+    fish.locomotionPropulsionUntil = now + minMs + Math.random() * Math.max(1, maxMs - minMs);
+  } else {
+    fish.locomotionPropulsionState = propulsionState;
+  }
+
+  const frequencyScale = clamp(Number(profile?.propulsionFrequency) || 1, 0.45, 2);
+  const amplitudeScale = clamp(Number(profile?.propulsionAmplitude) || 1, 0.5, 1.8);
+  if (propulsionState === "push") {
+    fish.locomotionPropulsionSpeedScale = urgent ? 1.12 : 1.07;
+    fish.locomotionTailFrequencyScale = frequencyScale * 1.12;
+    fish.locomotionTailAmplitudeScale = amplitudeScale * 1.1;
+  } else if (propulsionState === "coast") {
+    fish.locomotionPropulsionSpeedScale = urgent ? 0.96 : 0.84;
+    fish.locomotionTailFrequencyScale = frequencyScale * 0.72;
+    fish.locomotionTailAmplitudeScale = amplitudeScale * 0.68;
+  } else {
+    fish.locomotionPropulsionSpeedScale = 1;
+    fish.locomotionTailFrequencyScale = frequencyScale;
+    fish.locomotionTailAmplitudeScale = amplitudeScale;
+  }
+}
+
 function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, options = {}) {
   const distance = Math.hypot(moveDx, moveDy);
   const previousVelocityX = Number(fish.motionVelocityXNorm) || 0;
   const previousVelocityY = Number(fish.motionVelocityYNorm) || 0;
   const previousSpeed = Math.hypot(previousVelocityX, previousVelocityY);
+  const accelerationScale = clamp(Number(options.accelerationScale) || 1, 0.35, 2.5);
+  const decelerationScale = clamp(Number(options.decelerationScale) || 1, 0.35, 2.8);
+  const speedBias = clamp(Number(fish.locomotionSpeedBias) || 1, FISH_LOCOMOTION_SPEED_BIAS_MIN, FISH_LOCOMOTION_SPEED_BIAS_MAX);
+  const propulsionScale = clamp(Number(fish.locomotionPropulsionSpeedScale) || 1, 0.72, 1.18);
+
   if (distance <= FISH_PASSIVE_ARRIVAL_EPSILON_NORM) {
-    const settle = Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC * 2.6);
+    const settle = Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC * 2.6 * decelerationScale);
     fish.motionVelocityXNorm = previousVelocityX * settle;
     fish.motionVelocityYNorm = previousVelocityY * settle;
     if (previousSpeed <= FISH_PASSIVE_ARRIVAL_EPSILON_NORM) {
@@ -94467,24 +94813,26 @@ function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, o
     return { x: 0, y: 0, distance: 0 };
   }
 
-  const directionX = distance > 0.000001 ? moveDx / distance : 0;
-  const directionY = distance > 0.000001 ? moveDy / distance : 0;
+  const directionX = moveDx / distance;
+  const directionY = moveDy / distance;
   const brakeDistance = Math.max(
     Number(options.arrivalDistanceNorm) || FISH_PASSIVE_BRAKE_DISTANCE_NORM,
     previousSpeed * (options.arrivalDistanceNorm ? 0.25 : 0.72)
   );
   const arrival = clamp(distance / brakeDistance, 0, 1);
-  const desiredSpeed = speed * (0.035 + arrival * 0.965);
-  const response = 1 - Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC);
+  const requestedSpeed = speed * speedBias * propulsionScale;
+  const desiredSpeed = requestedSpeed * (0.035 + arrival * 0.965);
+  const responseScale = desiredSpeed >= previousSpeed ? accelerationScale : decelerationScale;
+  const response = 1 - Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC * responseScale);
   const velocityX = previousVelocityX + (directionX * desiredSpeed - previousVelocityX) * response;
   const velocityY = previousVelocityY + (directionY * desiredSpeed - previousVelocityY) * response;
   const candidateX = velocityX * deltaSeconds;
   const candidateY = velocityY * deltaSeconds;
   const candidateDistance = Math.hypot(candidateX, candidateY);
 
-  // A target is an aim point, never a place to ping-pong through. Reaching it
-  // can consume the remaining tiny step, but never injects a minimum movement
-  // that repeatedly pushes a fish back into its own target or a world bound.
+  // A destination is an aim region, not a point that should be crossed and
+  // corrected forever. Braking may consume the final small step but never
+  // injects movement that would make the fish ping-pong around the target.
   const brakingRatio = candidateDistance > distance && candidateDistance > 0.000001
     ? clamp(distance / candidateDistance, 0, 1)
     : 1;
@@ -94578,33 +94926,26 @@ function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now)
       + (1 - FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE) * destinationPhase * destinationPhase;
   const requestedDistance = Math.hypot(requestedXNorm, requestedYNorm);
   const horizontalDistance = Math.max(0.018, Math.abs(Number(requestedXNorm) || 0), requestedDistance * 0.45);
-  // A fish does not reverse its velocity on one simulation frame. Rotate the
-  // forward travel vector continuously through a small vertical arc: X eases
-  // through zero at the apex while Y carries it through the water. This keeps
-  // the physical path aligned with the visual turn rather than looking like a
-  // stationary sprite that flips into its new direction.
   const turnAngle = progress < apexProgress
     ? (Math.PI * 0.5) * sourcePhase
     : (Math.PI * 0.5) + (Math.PI * 0.5) * destinationPhase;
   const horizontalMomentum = Math.cos(turnAngle);
-  const arcAmount = Math.sin(turnAngle);
-  // Latch the arc for this turn. A moving target must not flip the vertical
-  // bend halfway through an otherwise committed visual reversal.
+
+  // Fish Turn v26 already supplies the toward/away visual depth maneuver. The
+  // world-space route should only climb or dive when navigation actually asked
+  // for it, so a horizontal reversal no longer manufactures an up/down arc.
   if (fish.traversalArcStartedAt !== fish.turnStartedAt) {
     fish.traversalArcStartedAt = fish.turnStartedAt;
-    fish.traversalArcVertical = (Number(requestedYNorm) || 0) * 0.35;
+    fish.traversalArcVertical = clamp(Number(requestedYNorm) || 0, -0.12, 0.12) * 0.55;
     fish.traversalArcDistance = horizontalDistance;
   }
   const requestedVertical = Number(fish.traversalArcVertical) || 0;
   const arcDistance = Number(fish.traversalArcDistance) || horizontalDistance;
-  const arcDirection = Math.abs(requestedVertical) > 0.0001
-    ? Math.sign(requestedVertical)
-    : (Number(fish.turnSpinDirection) < 0 ? -1 : 1);
-  const arcVertical = arcAmount * arcDistance * FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO * arcDirection;
+  const verticalCarry = requestedVertical * (0.72 + Math.abs(horizontalMomentum) * 0.28);
   const travelDirection = horizontalMomentum < -0.0001 ? toDirection : fromDirection;
   return {
     xNorm: fromDirection * arcDistance * horizontalMomentum,
-    yNorm: requestedVertical + arcVertical,
+    yNorm: verticalCarry,
     motionScale,
     progress,
     travelDirection
@@ -94662,25 +95003,57 @@ function getFishBoundaryAnticipationWaypoint(fish, targetXNorm, targetYNorm) {
   if (!fish) return null;
   const dx = Number(targetXNorm) - Number(fish.xNorm);
   const dy = Number(targetYNorm) - Number(fish.yNorm);
-  const inset = FISH_BOUNDARY_ANTICIPATION_INSET_NORM;
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  const speedRatio = clamp(
+    Math.hypot(Number(fish.motionVelocityXNorm) || 0, Number(fish.motionVelocityYNorm) || 0)
+      / Math.max(0.01, Number(fish.swimSpeed) || 0.04),
+    0,
+    1.4
+  );
+  const comfortScale = clamp(Number(locomotionProfile?.wallComfortDistance) || 1, 0.65, 1.75);
+  const inset = FISH_BOUNDARY_ANTICIPATION_INSET_NORM * comfortScale * (1 + speedRatio * 0.24);
   const left = 0.08 + inset;
   const right = 0.92 - inset;
   const top = 0.14 + inset;
   const bottom = 0.8 - inset;
-  const chooseVerticalDetour = () => (Number(fish.yNorm) <= 0.47 ? 1 : -1);
-  const chooseHorizontalDetour = () => (Number(fish.xNorm) <= 0.5 ? 1 : -1);
+  const carriedHorizontal = Number(fish.steeringHeadingXScreen) || Number(fish.traversalHeadingXNorm) || Number(fish.direction) || 1;
+  const carriedVertical = Number(fish.steeringHeadingYScreen) || Number(fish.traversalHeadingYNorm) || 0;
+  const chooseVerticalDetour = () => Math.abs(carriedVertical) > 0.12
+    ? (carriedVertical < 0 ? -1 : 1)
+    : (Number(fish.yNorm) <= 0.47 ? 1 : -1);
+  const chooseHorizontalDetour = () => Math.abs(carriedHorizontal) > 0.12
+    ? (carriedHorizontal < 0 ? -1 : 1)
+    : (Number(fish.xNorm) <= 0.5 ? 1 : -1);
 
   if (dx > 0 && fish.xNorm >= right) {
-    return { xNorm: Math.min(0.91, fish.xNorm + 0.018), yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.1, 0.14, 0.8), reason: "right-wall" };
+    return {
+      xNorm: clamp(Math.min(fish.xNorm, right - 0.004), 0.09, 0.91),
+      yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.11, 0.15, 0.79),
+      reason: "right-wall"
+    };
   }
   if (dx < 0 && fish.xNorm <= left) {
-    return { xNorm: Math.max(0.09, fish.xNorm - 0.018), yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.1, 0.14, 0.8), reason: "left-wall" };
+    return {
+      xNorm: clamp(Math.max(fish.xNorm, left + 0.004), 0.09, 0.91),
+      yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.11, 0.15, 0.79),
+      reason: "left-wall"
+    };
   }
   if (dy < 0 && fish.yNorm <= top) {
-    return { xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.08, 0.08, 0.92), yNorm: Math.max(0.15, fish.yNorm - 0.014), reason: "top-wall" };
+    return {
+      xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.09, 0.09, 0.91),
+      yNorm: clamp(Math.max(fish.yNorm, top + 0.004), 0.15, 0.79),
+      reason: "top-wall"
+    };
   }
   if (dy > 0 && fish.yNorm >= bottom) {
-    return { xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.08, 0.08, 0.92), yNorm: Math.min(0.79, fish.yNorm + 0.014), reason: "bottom-wall" };
+    return {
+      xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.09, 0.09, 0.91),
+      yNorm: clamp(Math.min(fish.yNorm, bottom - 0.004), 0.15, 0.79),
+      reason: "bottom-wall"
+    };
   }
   return null;
 }
@@ -94713,10 +95086,21 @@ function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetY
   const dy = Number(targetYNorm) - Number(fish.yNorm);
   const targetDistance = Math.hypot(dx, dy);
   if (targetDistance <= 0.02) return null;
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish || species)
+    : null;
+  const visualBodyLengthNorm = typeof getFishVisualSize === "function"
+    ? clamp((Number(getFishVisualSize(fish, species)) || 0) / Math.max(1, TANK_WIDTH), 0, 0.16)
+    : 0;
+  const lookaheadScale = clamp(Number(locomotionProfile?.pathLookaheadScale) || 1, 0.55, 1.9);
   const lookahead = clamp(
-    Math.max((Number(fish.traversalSpeedNorm) || 0) * 1.6, FISH_OBSTACLE_LOOKAHEAD_MIN_NORM),
+    Math.max(
+      (Number(fish.traversalSpeedNorm) || 0) * 1.75,
+      visualBodyLengthNorm * 0.85,
+      FISH_OBSTACLE_LOOKAHEAD_MIN_NORM
+    ) * lookaheadScale,
     FISH_OBSTACLE_LOOKAHEAD_MIN_NORM,
-    FISH_OBSTACLE_LOOKAHEAD_MAX_NORM
+    FISH_OBSTACLE_LOOKAHEAD_MAX_NORM * 1.45
   );
   const probeXNorm = clampFishXNormToMobileViewport(fish.xNorm + dx / targetDistance * lookahead, fish, species, now);
   const probeYNorm = clamp(fish.yNorm + dy / targetDistance * lookahead, 0.14, 0.8);
@@ -94920,11 +95304,16 @@ function getFishCruiseContinuationWaypoint(fish, species, targetXNorm, targetYNo
     directionY = 0;
   }
 
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish || species)
+    : null;
+  const lookaheadScale = clamp(Number(locomotionProfile?.pathLookaheadScale) || 1, 0.65, 1.65);
+  const waypointScale = cruiseProfile.waypointScale * lookaheadScale;
   const forwardDistance = Math.max(
-    FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM * cruiseProfile.waypointScale,
+    FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM * waypointScale,
     Math.min(
-      targetDistance + FISH_CRUISE_WAYPOINT_EXTENSION_NORM * cruiseProfile.waypointScale,
-      (FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM + FISH_CRUISE_WAYPOINT_EXTENSION_NORM) * cruiseProfile.waypointScale
+      targetDistance + FISH_CRUISE_WAYPOINT_EXTENSION_NORM * waypointScale,
+      (FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM + FISH_CRUISE_WAYPOINT_EXTENSION_NORM) * waypointScale
     )
   );
   const unrestrictedX = fish.xNorm + directionX * forwardDistance;
@@ -95360,6 +95749,7 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     if (!pendingTravel) {
+      updateRequestedFishCaveExit(fish, species, now);
       enforceFishLayerBoundary(fish, species);
       clampFishToMobileViewport(fish, species, now);
     } else if (pendingTubeTravel) {
@@ -95394,6 +95784,15 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     const naturalSchoolFollowActive = Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil);
+    const locomotionProfile = getFishLocomotionProfile(fish || species);
+    updateFishLocomotionVariation(fish, species, now, deltaSeconds, {
+      urgent: panicOwnsMovement
+        || fish.activity === "feeding"
+        || Boolean(activeQueuedFishAction)
+        || Boolean(activeDebugSteering)
+        || Boolean(activeFishActionSteering)
+        || Boolean(fish.schoolRejoinActive)
+    });
     const passiveMotionEligible = fish.activity === "roam"
       && !pendingTravel
       && !panicOwnsMovement
@@ -95588,7 +95987,14 @@ function updateFishMotion(now, deltaSeconds) {
                 ? 1.12
                 : fish.activity === "feeding"
                   ? 1.1
-                  : 1
+                  : 1,
+          wanderScale: passiveMotionEligible
+            && !behaviorOwnsArrival
+            && !naturalSchoolFollowActive
+            && !obstacleWaypoint
+            && !decorApproachWaypoint
+            ? 1
+            : 0
         }
       );
       moveDx = gradualSteering.xNorm;
@@ -95798,20 +96204,43 @@ function updateFishMotion(now, deltaSeconds) {
       }
 
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
-      // Roaming and inspection used to move in a straight fixed-size step, then
-      // stop on the exact target. That made the position and the bob animation
-      // visibly snap at the end of every little movement. Keep responsive,
-      // direct movement for urgent work, but give passive swimming a small
-      // velocity state so it accelerates, coasts, and settles naturally.
-      const usesPassiveMotion = passiveMotionEligible
+      // Ordinary living swimming shares one velocity controller. Behaviors set
+      // the destination and urgency, while locomotion preserves the animal's
+      // momentum across roaming, feeding, inspecting, and social following.
+      const sharedLocomotionEligible = passiveMotionEligible
+        || Boolean(fish.caveState)
+        || fish.activity === "feeding"
+        || activeFishActionSteering?.type === "inspect"
+        || activeFishActionSteering?.type === "follow"
+        || activeDebugSteering?.type === "follow"
+        || activeDebugSteering?.type === "inspect-lure";
+      const usesPassiveMotion = sharedLocomotionEligible
+        && !pendingTravel
+        && !panicOwnsMovement
+        && !pufferInflatedOwnsMovement
         && !whaleBreathOwnsMovement
+        && fish.activity !== FISH_GRAVEL_PEBBLE_ACTIVITY
+        && fish.activity !== FISH_GRAVEL_DIG_ACTIVITY
         && !turnReversalTraversal;
       let step;
       let stepXNorm;
       let stepYNorm;
       if (usesPassiveMotion) {
         const passiveStep = integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, {
-          arrivalDistanceNorm: socialFormationActive ? 0.035 : undefined
+          arrivalDistanceNorm: fish.caveState ? 0.025 : fish.activity === "feeding"
+            ? 0.018
+            : socialFormationActive
+              ? 0.035
+              : activeFishActionSteering?.type === "inspect"
+                ? 0.024
+                : undefined,
+          accelerationScale: clamp(
+            (Number(locomotionProfile?.accelerationScale) || 1)
+              * (fish.schoolRejoinActive ? 1.25 : fish.activity === "feeding" ? 1.12 : 1),
+            0.35,
+            2.5
+          ),
+          decelerationScale: clamp(Number(locomotionProfile?.decelerationScale) || 1, 0.35, 2.8)
         });
         stepXNorm = passiveStep.x;
         stepYNorm = passiveStep.y;
@@ -95867,13 +96296,7 @@ function updateFishMotion(now, deltaSeconds) {
         fish.yNorm = nextYNorm;
       } else {
         const activeCavePlan = fish.caveState ? getActiveFishCavePlan(fish) : null;
-        const skipDebugCaveCollision = Boolean(
-          activeCavePlan?.debugForced &&
-          isDebugCaveTestFish(fish) &&
-          ["enter", "inside", "exit", "depart"].includes(fish.caveState) &&
-          fish.caveDecorId &&
-          activeCavePlan.decorId === fish.caveDecorId
-        );
+        const skipDebugCaveCollision = false;
 
         if (skipDebugCaveCollision) {
           fish.xNorm = nextXNorm;
@@ -96070,6 +96493,9 @@ function updateFishMotion(now, deltaSeconds) {
 
     const isSnail = species.behavior === "snail";
     if (isSnail) motionTarget = Math.min(motionTarget, 0.035);
+    const propulsionAmplitudeScale = clamp(Number(fish.locomotionTailAmplitudeScale) || 1, 0.55, 1.35);
+    const propulsionFrequencyScale = clamp(Number(fish.locomotionTailFrequencyScale) || 1, 0.5, 1.8);
+    motionTarget = clamp(motionTarget * propulsionAmplitudeScale, 0, 1);
     fish.motionLevel = clamp(
       fish.motionLevel + (motionTarget - fish.motionLevel) * Math.min(1, deltaSeconds * (isDirectedSwim ? 6.2 : 4.2)),
       isSnail ? 0.01 : 0.04,
@@ -96077,7 +96503,9 @@ function updateFishMotion(now, deltaSeconds) {
     );
     fish.wiggleClock += deltaSeconds * (isSnail
       ? 0.03
-      : (0.35 + fish.motionLevel * (1.85 + fish.swimSpeed * 18)) * (isFishCriticallyLowHealth(fish) ? 1.22 : 1));
+      : (0.35 + fish.motionLevel * (1.85 + fish.swimSpeed * 18))
+        * propulsionFrequencyScale
+        * (isFishCriticallyLowHealth(fish) ? 1.22 : 1));
 
     if (fish.activity === "feeding" && pellet && pelletPose) {
       const mouthPoint = getFishGravelPebbleMouthPoint(fish, species, now);
@@ -96264,12 +96692,14 @@ function getFishProfileHoverTarget(fish, species, layer, profile) {
   if (Math.random() > clamp(profile.hoverChance, 0, 0.85)) {
     return null;
   }
-  // Physical micro-targets made an idle fish repeatedly move, stop, and move
-  // again. Keep its simulation position stable; getFishPose supplies the
-  // continuous visual bob each frame.
+  // Hovering is station keeping, not a frozen coordinate. Pick one very small
+  // local correction for the whole hover bout and let the shared velocity
+  // integrator coast into it. This avoids the old per-frame micro-target jitter.
+  const stationKeepingStrength = clamp(Number(profile?.stationKeepingStrength) || 1, 0.55, 1.8);
+  const microRadius = 0.008 / stationKeepingStrength;
   const placement = clampFishPlacement(
-    fish.xNorm,
-    fish.yNorm,
+    Number(fish.xNorm) + randomBetween(-microRadius, microRadius),
+    Number(fish.yNorm) + randomBetween(-microRadius * 0.7, microRadius * 0.7),
     species,
     { fish, layer }
   );
@@ -96537,9 +96967,13 @@ function assignSpeciesRoamTarget(fish, species, now) {
   const baseRoamDepthZ = hoverTarget
     ? getFishTankDepthZ(fish)
     : getTankDepthZFromLegacyPosition(targetLayer, DEFAULT_TANK_SUBLAYER);
+  const depthWanderStrength = clamp(Number(profile?.depthWanderStrength) || 1, 0.45, 1.6);
   const targetRoamDepthZ = hoverTarget
     ? baseRoamDepthZ
-    : sanitizeTankDepthZ(baseRoamDepthZ + randomBetween(-0.072, 0.072), baseRoamDepthZ);
+    : sanitizeTankDepthZ(
+      baseRoamDepthZ + randomBetween(-0.072, 0.072) * depthWanderStrength,
+      baseRoamDepthZ
+    );
 
   fish.targetXNorm = placement.xNorm;
   fish.targetYNorm = placement.yNorm;
@@ -98387,6 +98821,9 @@ function drawContinuousTankDepthSubstrateTreatment(context, bounds) {
 
 function renderTank(now) {
   runtime.fishStatsOverlayQueue?.clear();
+  // The selected-fish card is rendered on the dedicated top glass canvas.
+  // Clear it before the scene so the card/effects survive the full tank pass.
+  glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   const dirtiness = getTankDirtiness(now);
   // Resolve every authored support surface before drawing. Free-placed decor
   // may sit above its support in screen space and therefore be painted first;
@@ -98474,7 +98911,6 @@ function renderTank(now) {
   tankContext.restore();
   drawGrime(dirtiness);
   drawCleaningSparkles(now);
-  glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
   drawDecorEditTankBoundary();
   drawQueuedFishStatsOverlays();
@@ -104399,10 +104835,24 @@ function chooseFishTurnV26DepthSign(fish) {
   // The camera is on negative Z, so negative depth reads as toward the camera.
   if (mode === "toward") return -1;
   if (mode === "away") return 1;
+
   const previousDepthSign = Number(fish?.turnV26LastDepthSign);
-  return previousDepthSign === -1 || previousDepthSign === 1
-    ? -previousDepthSign
-    : (Math.random() < 0.5 ? -1 : 1);
+  const repeatCount = Math.max(0, Number(fish?.turnV26DepthRepeatCount) || 0);
+  const depthZ = typeof getFishTankDepthZ === "function"
+    ? Math.max(0, Math.min(1, Number(getFishTankDepthZ(fish)) || 0.5))
+    : 0.5;
+  // Fish near the back have more visual room to turn toward the viewer, while
+  // fish near the front are gently biased away. History resists obvious runs
+  // without creating the old mechanical toward/away/toward alternation.
+  let towardProbability = 0.64 - depthZ * 0.28;
+  if (previousDepthSign === -1) towardProbability -= repeatCount >= 2 ? 0.25 : 0.13;
+  if (previousDepthSign === 1) towardProbability += repeatCount >= 2 ? 0.25 : 0.13;
+  towardProbability = Math.max(0.15, Math.min(0.85, towardProbability));
+  const nextDepthSign = Math.random() < towardProbability ? -1 : 1;
+  if (fish) {
+    fish.turnV26DepthRepeatCount = nextDepthSign === previousDepthSign ? repeatCount + 1 : 0;
+  }
+  return nextDepthSign;
 }
 
 function easeFishTurnV26Continuity(value) {
@@ -104417,7 +104867,12 @@ function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now())
   const exitStart = clamp(FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS, entryEnd, 0.999);
   const meshIn = easeFishTurnV26Continuity(progress / entryEnd);
   const meshOut = 1 - easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
-  const meshAlpha = turnState.active ? clamp(Math.min(meshIn, meshOut), 0, 1) : 0;
+  // Do not crossfade the flat sprite into the turn mesh. That creates a
+  // visible ghost/dissolve seam at both ends of the reversal. Once a complex
+  // turn starts, the mesh owns the entire active interval; the normal sprite
+  // resumes only after the terminal-frame handshake.
+  const turnVisualActive = turnState.active && progress < 1;
+  const meshAlpha = turnVisualActive ? 1 : 0;
   const current = Number.isFinite(Number(currentTilt)) ? Number(currentTilt) : 0;
   const entry = Number.isFinite(Number(fish?.turnV26EntryTilt))
     ? Number(fish.turnV26EntryTilt)
@@ -104425,7 +104880,7 @@ function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now())
   const exitBlend = easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
   return {
     meshAlpha,
-    spriteAlpha: 1 - meshAlpha,
+    spriteAlpha: turnVisualActive ? 0 : 1,
     spriteDirection: progress < 0.5 ? turnState.fromDirection : turnState.toDirection,
     tilt: entry + (current - entry) * exitBlend
   };
@@ -105945,9 +106400,10 @@ function getFishTurnV26VisualAnchorLocalPoint(
   }
   const style = getFishTurnV26Style(fish);
   const turnDepthSign = getFishTurnV26DepthSign(fish);
+  const visualProgress = easeFishTurnV26Continuity(turnState.progress);
   const styleTransform = computeFishTurnV26StyleTransform(
     style,
-    turnState.progress,
+    visualProgress,
     sourceDirection,
     turnDepthSign
   );
@@ -105958,7 +106414,7 @@ function getFishTurnV26VisualAnchorLocalPoint(
     u,
     v,
     fishAspect: Number(shapeImage.width) / Math.max(1, Number(shapeImage.height)),
-    turnProgress: turnState.progress,
+    turnProgress: visualProgress,
     sourceDirection,
     turnDepthSign,
     facingDirection: getFishFacingDirection(fish),
@@ -106506,7 +106962,7 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
 
   try {
     const turnState = getFishHorizontalTurnState(fish, now);
-    const turnProgress = clamp(Number(turnState.progress) || 0, 0, 1);
+    const turnProgress = easeFishTurnV26Continuity(clamp(Number(turnState.progress) || 0, 0, 1));
     const sourceDirection = getFishTurnV26SourceDirection();
     const turnStyle = getFishTurnV26Style(fish);
     const turnDepthSign = getFishTurnV26DepthSign(fish);
@@ -107084,21 +107540,26 @@ function isFishInCaveRenderSublayer(fish) {
     return false;
   }
 
-  const frontZ = getFishCaveDepthRegion(fish, "front");
-  const interiorZ = getFishCaveDepthRegion(fish, "interior");
-  const threshold = (frontZ + interiorZ) / 2;
-  const hysteresis = 0.012;
-  const previous = runtime.caveRenderOcclusionByFishId?.get?.(fish.id) === true;
-  const z = getFishTankDepthZ(fish);
-  const isInside = previous
-    ? z <= threshold + hysteresis
-    : z <= threshold - hysteresis;
-  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, isInside);
-  return isInside;
+  // Entry/exit ownership changes only after the body clears a real opening.
+  // Mood-driven depth easing must not move an occupant between draw passes.
+  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, true);
+  return true;
 }
 
 function getFishSameLayerRenderPriority(fish) {
   return isFishInCaveRenderSublayer(fish) ? 1 : 0;
+}
+
+function getFishRenderPassLayer(fish) {
+  if (isFishInCaveRenderSublayer(fish)) {
+    const decor = getCaveBehaviorDecorById(fish.caveDecorId);
+    if (decor) {
+      // Both cave images are painted in the front-layer sandwich, including
+      // legacy caves whose simulation interior still uses another layer.
+      return clampTankLayer(getDecorLayerSpan(decor.decorKey, getDecorTankLayer(decor)).front);
+    }
+  }
+  return clampTankLayer(getFishTankLayer(fish));
 }
 
 function drawFishPebbleTosses(now, layer = null) {
@@ -108015,7 +108476,7 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     if (!pendingTravel) {
       clampFishToMobileViewport(fish, species, now);
     }
-    const layer = clampTankLayer(getFishTankLayer(fish));
+    const layer = getFishRenderPassLayer(fish);
     let record = pool[recordIndex];
     if (!record) {
       record = {};
@@ -108447,10 +108908,10 @@ function drawFish(now, layer = null, options = {}) {
       continue;
     }
     const caveInteriorFish = record.caveInteriorFish;
-    if (!recordsArePreFiltered && options.caveInteriorOnly === true && !caveInteriorFish) {
+    if (options.caveInteriorOnly === true && !caveInteriorFish) {
       continue;
     }
-    if (!recordsArePreFiltered && options.excludeCaveInterior === true && caveInteriorFish) {
+    if (options.excludeCaveInterior === true && caveInteriorFish) {
       continue;
     }
 
@@ -108613,20 +109074,10 @@ function drawFish(now, layer = null, options = {}) {
           }
         );
         if (!renderedByV26) {
-          // A v26 failure is sticky for this turn session. Do not retry WebGL
-          // on later frames or swap complex renderers mid-reversal. Degrade to
-          // the existing lightweight squash/flip visual while movement stays
-          // on the same authoritative turn timeline.
-          markFishTurnRendererFallback(fish, "simple");
-          drawFishLightweightTurnFallbackFrame(
-            tankContext,
-            depthRenderImage,
-            fishDrawX,
-            width,
-            spriteHeight,
-            fish,
-            now
-          );
+          // Never fall back to the lightweight squash/flip renderer while
+          // complex turning is enabled. Keep the live sprite visible until
+          // the volume renderer can draw it, avoiding a dark one-frame swap.
+          tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
         } else {
           // Keep the live swim warp visible under the mesh for a brief overlap
           // at both endpoints. This preserves the current dive/climb and tail
@@ -108806,6 +109257,10 @@ function drawFish(now, layer = null, options = {}) {
     queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
+      // This nested binding intentionally routes the complete selected-fish
+      // card to glassCanvas, which is composited above tankCanvas and grime.
+      // Foreground decor must never occlude the stats overlay.
+      const tankContext = glassContext;
       tankContext.save();
       if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
         const fontSize = 10 * stableScale;
@@ -108837,6 +109292,7 @@ function drawFish(now, layer = null, options = {}) {
       } else {
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
       const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Happy");
+      const progression = pose.isDead ? null : getFishManagementProgressionPresentation(fish, species);
       const moodPresentation = pose.isDead
         ? { tone: "danger", color: "#ff627d" }
         : getFishMoodPresentation(moodLabel);
@@ -108847,58 +109303,112 @@ function drawFish(now, layer = null, options = {}) {
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
-      const fontSize = 11 * stableScale;
-      const rowHeight = 18 * stableScale;
-      const rowGap = 2 * stableScale;
-      const totalHeight = rowHeight * 4 + rowGap * 3;
-      const radius = 8 * stableScale;
+      const fontSize = 13 * stableScale;
+      const cardHeight = 78 * stableScale;
+      const radius = 16 * stableScale;
       tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
-      const moodWidth = tankContext.measureText(moodLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const mealIconSize = 13 * stableScale;
+      const mealIconSize = 16 * stableScale;
       const mealIconGap = 7 * stableScale;
-      const mealWidth = mealIconSize * 2 + mealIconGap;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth, mealWidth) + 18 * stableScale));
-      const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
+      const labelWidth = Math.max(236 * stableScale, Math.ceil(Math.max(nameWidth, heartWidth) + 166 * stableScale));
+      const targetLabelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
-      const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
+      const targetTopY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - cardHeight);
+      runtime.fishStatsOverlayAnchorStates ||= new Map();
+      const overlayAnchorKey = String(fish.id || fish.speciesId || "selected-fish");
+      const previousOverlayAnchor = runtime.fishStatsOverlayAnchorStates.get(overlayAnchorKey);
+      const overlayEase = previousOverlayAnchor ? 0.2 : 1;
+      const labelX = previousOverlayAnchor
+        ? previousOverlayAnchor.x + (targetLabelX - previousOverlayAnchor.x) * overlayEase
+        : targetLabelX;
+      const topY = previousOverlayAnchor
+        ? previousOverlayAnchor.y + (targetTopY - previousOverlayAnchor.y) * overlayEase
+        : targetTopY;
+      runtime.fishStatsOverlayAnchorStates.set(overlayAnchorKey, { x: labelX, y: topY });
       const moodStroke = moodPresentation.color || "#59e5cb";
 
-      for (let row = 0; row < 4; row += 1) {
-        const y = topY + row * (rowHeight + rowGap);
-        tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
-        tankContext.beginPath();
-        tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
-        tankContext.fill();
-        tankContext.strokeStyle = row === 3 ? moodStroke : "rgba(94, 220, 239, 0.72)";
-        tankContext.lineWidth = Math.max(1, stableScale);
-        tankContext.stroke();
-      }
+      tankContext.save();
+      tankContext.shadowColor = "rgba(31, 194, 239, 0.28)";
+      tankContext.shadowBlur = 9 * stableScale;
+      const cardGradient = tankContext.createLinearGradient(0, topY, 0, topY + cardHeight);
+      cardGradient.addColorStop(0, "rgba(10, 39, 57, 0.94)");
+      cardGradient.addColorStop(1, "rgba(3, 17, 28, 0.91)");
+      tankContext.fillStyle = cardGradient;
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.82)";
+      tankContext.lineWidth = Math.max(1.25, stableScale);
+      tankContext.beginPath();
+      tankContext.roundRect(labelX - labelWidth / 2, topY, labelWidth, cardHeight, radius);
+      tankContext.fill();
+      tankContext.stroke();
+      tankContext.shadowBlur = 0;
+      tankContext.strokeStyle = "rgba(187, 246, 255, 0.18)";
+      tankContext.lineWidth = Math.max(0.6, stableScale * 0.5);
+      tankContext.beginPath();
+      tankContext.roundRect(labelX - labelWidth / 2 + 2 * stableScale, topY + 2 * stableScale, labelWidth - 4 * stableScale, cardHeight - 4 * stableScale, radius - 2 * stableScale);
+      tankContext.stroke();
+      tankContext.restore();
 
-      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(fish.name || "Fish", labelX, topY + rowHeight / 2 + 0.5);
-
-      const heartCenterY = topY + rowHeight + rowGap + rowHeight / 2 + 0.5;
-      const heartGap = 4 * stableScale;
-      tankContext.fillStyle = "#ff627d";
-      tankContext.textAlign = "right";
-      tankContext.fillText("♥", labelX - heartGap / 2, heartCenterY);
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
       tankContext.textAlign = "left";
-      tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
+      tankContext.font = `800 ${fontSize * 1.12}px Trebuchet MS`;
+      tankContext.fillText(fish.name || "Fish", labelX - labelWidth / 2 + 14 * stableScale, topY + 16 * stableScale);
+      tankContext.font = `600 ${fontSize}px Trebuchet MS`;
 
-      const mealCenterY = topY + (rowHeight + rowGap) * 2 + rowHeight / 2;
+      const barX = labelX - labelWidth / 2 + 12 * stableScale;
+      const barY = topY + 23 * stableScale;
+      const barWidth = labelWidth * 0.63;
+      const barHeight = 14 * stableScale;
+      tankContext.fillStyle = "rgba(2, 18, 28, 0.82)";
+      tankContext.beginPath();
+      tankContext.roundRect(barX, barY, barWidth, barHeight, 7 * stableScale);
+      tankContext.fill();
+      if (progression && !progression.isMaxLevel) {
+        tankContext.save();
+        tankContext.beginPath();
+        tankContext.roundRect(barX + 2 * stableScale, barY + 2 * stableScale, barWidth - 4 * stableScale, barHeight - 4 * stableScale, 5 * stableScale);
+        tankContext.clip();
+        const xpGradient = tankContext.createLinearGradient(0, barY, 0, barY + barHeight);
+        xpGradient.addColorStop(0, "rgba(119, 241, 111, 0.96)");
+        xpGradient.addColorStop(1, "rgba(36, 186, 73, 0.94)");
+        tankContext.fillStyle = xpGradient;
+        tankContext.fillRect(barX + 2 * stableScale, barY + 2 * stableScale, (barWidth - 4 * stableScale) * progression.xpProgress, barHeight - 4 * stableScale);
+        tankContext.restore();
+      }
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.82)";
+      tankContext.stroke();
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "center";
+      const overlayLevelLabel = progression
+        ? progression.levelLabel.replace(/^Lv\./, "Lvl")
+        : "Level unavailable";
+      tankContext.font = `600 ${fontSize * 1.08}px Trebuchet MS`;
+      tankContext.fillText(overlayLevelLabel, labelX + labelWidth * 0.36, barY + barHeight / 2 + 0.5 * stableScale);
+
+      const heartCenterY = topY + 60 * stableScale;
+      const heartCenterX = labelX - labelWidth * 0.34;
+      const heartGap = 5 * stableScale;
+      tankContext.font = `800 ${fontSize * 1.2}px Trebuchet MS`;
+      tankContext.fillStyle = "#ff627d";
+      tankContext.textAlign = "right";
+      tankContext.fillText("♥", heartCenterX - heartGap / 2, heartCenterY);
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "left";
+      tankContext.font = `700 ${fontSize * 1.08}px Trebuchet MS`;
+      tankContext.fillText(heartLabel, heartCenterX + heartGap / 2, heartCenterY);
+
+      const mealCenterY = topY + 60 * stableScale;
+      const mealCenterX = labelX - labelWidth * 0.06;
       const dailyMeals = getFishDailyMealIndicatorState(fish, now);
       const meatIconPath = "assets/icons/meat_icon.png";
       const meatIcon = runtime.images.get(meatIconPath);
       if (!isUsableRuntimeImage(meatIcon)) {
         void preloadImagePath(meatIconPath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
       } else {
-        const firstX = labelX - mealIconGap / 2 - mealIconSize;
-        const secondX = labelX + mealIconGap / 2;
+        const firstX = mealCenterX - mealIconGap / 2 - mealIconSize;
+        const secondX = mealCenterX + mealIconGap / 2;
         const iconY = mealCenterY - mealIconSize / 2;
         tankContext.save();
         tankContext.filter = dailyMeals.am ? "none" : "grayscale(1) brightness(0.62)";
@@ -108912,9 +109422,22 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.restore();
       }
 
-      tankContext.textAlign = "center";
+      tankContext.textAlign = "left";
       tankContext.fillStyle = moodPresentation.color || "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
+      const moodPillWidth = Math.min(labelWidth * 0.3, 68 * stableScale);
+      const moodPillX = labelX + labelWidth / 2 - moodPillWidth - 12 * stableScale;
+      const moodPillY = topY + 50 * stableScale;
+      const moodPillHeight = 18 * stableScale;
+      tankContext.fillStyle = "rgba(3, 20, 31, 0.68)";
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.62)";
+      tankContext.lineWidth = Math.max(0.75, stableScale * 0.7);
+      tankContext.beginPath();
+      tankContext.roundRect(moodPillX, moodPillY, moodPillWidth, moodPillHeight, 11 * stableScale);
+      tankContext.fill();
+      tankContext.stroke();
+      tankContext.textAlign = "center";
+      tankContext.fillStyle = "rgba(125, 224, 248, 0.96)";
+      tankContext.fillText(moodLabel, moodPillX + moodPillWidth / 2, moodPillY + moodPillHeight / 2 + 0.5 * stableScale);
       tankContext.restore();
       }
     }
@@ -109512,9 +110035,13 @@ function getFishPose(fish, species, now) {
     const useComplexTurn = turnProgress !== null
       && getFishTurnAnimationMode(fish, species) === "complex"
       && getFishTurnRendererBackend(fish, species) === "v26";
+    // Keep the source-facing sprite stable for the entire turn.  Switching the
+    // canvas flip at the midpoint makes the fish visibly snap to the other
+    // direction; the turn squash/mesh carries the visual reversal, and the
+    // destination-facing sprite is only allowed back after the terminal frame.
     const renderDirection = turnProgress === null
       ? getFishFacingDirection(fish)
-      : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
+      : turnFromDirection;
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
@@ -109629,7 +110156,11 @@ function getFishPose(fish, species, now) {
   // only its smoothly changing amplitude reflects the current swim effort.
   const bobClock = now / 1000;
   const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
-  const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
+  const settledIdle = targetDistanceNorm < 0.012;
+  // Keep a visible, gentle breathing/bobbing motion even when simulation
+  // motionLevel is intentionally very low for sleepy/resting fish.
+  const idleBobAmplitude = settledIdle ? 1.65 : 0.7;
+  const bobAmplitude = (idleBobAmplitude + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
   const verticalBob = useDepthSwimWarp
     ? 0
     : (Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
@@ -109647,9 +110178,14 @@ function getFishPose(fish, species, now) {
   const useComplexTurn = turnProgress !== null
       && getFishTurnAnimationMode(fish, species) === "complex"
       && getFishTurnRendererBackend(fish, species) === "v26";
+  // Do not flip the live sprite halfway through a turn.  That creates a hard
+  // left/right snap in the exact frame where the fish should be rotating.
+  // Keep its source orientation until the completed turn hands off to the
+  // destination orientation; the body squash/complex renderer supplies the
+  // gradual visual transition in between.
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
-    : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
+    : turnFromDirection;
   const turnLean = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
@@ -109739,7 +110275,7 @@ function getFishPose(fish, species, now) {
     wiggle: seahorsePerched ? wholeBodyWiggle * 0.24 : wholeBodyWiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (0.7 + motionLevel * 1.55))
+    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (settledIdle ? 1.2 : 0.7 + motionLevel * 1.55))
       + turnSway * (entryProgress === null ? 1 : entryRightingEase)
       + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
       + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)
@@ -109821,15 +110357,12 @@ function getConfiguredFishTurnAnimationMode(species) {
 }
 
 function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
-  const activeMode = fish?.turnStartedAt && Number(fish.turnDurationMs) > 0
-    ? String(fish.turnAnimationMode || "").trim().toLowerCase()
-    : "";
-  if (["simple", "complex"].includes(activeMode)) {
-    return activeMode;
-  }
   if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
     return "simple";
   }
+  // Complex turning is authoritative whenever the setting is enabled. A stale
+  // per-fish `simple` mode from an older save must not reintroduce the squash-
+  // and-flip path during a complex-renderer session.
   return "complex";
 }
 
@@ -109857,7 +110390,35 @@ function getComplexFishTurnDurationMs(fish, species, rendererBackend = null) {
   if (normalizedBackend === "simple") {
     return getSimpleFishTurnDurationMs(fish, species);
   }
-  return FISH_TURN_V26_DURATION_MS;
+
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish || species)
+    : null;
+  const turnDurationScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.85);
+  const speedMin = Math.max(0.00001, Number(species?.speedMin) || 0.00001);
+  const speedMax = Math.max(speedMin, Number(species?.speedMax) || speedMin);
+  const currentSpeed = typeof normalizeFishSpeed === "function"
+    ? normalizeFishSpeed(species, Number(fish?.swimSpeed))
+    : Math.max(speedMin, Number(fish?.swimSpeed) || speedMin);
+  const speedBlend = speedMax <= speedMin
+    ? 0.5
+    : clamp((currentSpeed - speedMin) / Math.max(0.00001, speedMax - speedMin), 0, 1);
+  const speedScale = 1.09 - speedBlend * 0.17;
+  const visualSize = typeof getFishVisualSize === "function"
+    ? Number(getFishVisualSize(fish, species)) || 0
+    : 0;
+  const tankWidth = typeof TANK_WIDTH !== "undefined" ? Math.max(1, TANK_WIDTH) : 1600;
+  const bodyScale = visualSize > 0
+    ? clamp(0.9 + visualSize / tankWidth * 1.8, 0.9, 1.24)
+    : 1;
+  const panicActive = Number.isFinite(Number(fish?.panicUntil)) && Date.now() < Number(fish.panicUntil);
+  const urgencyScale = panicActive ? 0.84 : 1;
+  const variation = 0.9 + Math.random() * 0.2;
+  return clamp(
+    FISH_TURN_V26_DURATION_MS * turnDurationScale * speedScale * bodyScale * urgencyScale * variation,
+    420,
+    1120
+  );
 }
 
 function getFishTurnDurationMs(fish, species, animationMode = null, rendererBackend = null) {
@@ -113530,7 +114091,7 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
     }
 
     if (configuredPoints) {
-      const configuredReleaseAt = Math.max(Number(fish.caveTriggerCooldownUntil) || 0, now + 250);
+      const configuredReleaseAt = Number(fish.caveTriggerCooldownUntil) || 0;
       if (now < configuredReleaseAt) {
         plan.normalSeatHoldUntil = configuredReleaseAt;
         fish.targetAt = configuredReleaseAt;
@@ -113635,10 +114196,28 @@ function getFishCaveDepthRegion(fish, region = "interior") {
   );
 }
 
+function isFishCaveEntranceBusy(fish, decorId, mouth, species, now) {
+  if (!mouth) return true;
+  const width = getFishDisplayWidth(fish, species, now);
+  return state.fish.some(other => {
+    if (other.id === fish.id || other.caveDecorId !== decorId || isFishDead(other)) return false;
+    const distancePx = Math.hypot((other.xNorm - mouth.xNorm) * TANK_WIDTH,
+      (other.yNorm - mouth.yNorm) * TANK_HEIGHT);
+    const otherSpecies = getSpeciesForFish(other);
+    const clearancePx = (width + getFishDisplayWidth(other, otherSpecies, now)) * 0.6;
+    if (distancePx > clearancePx) return false;
+    // Exit traffic and occupants clear the opening first. Stable priority
+    // prevents two arriving fish from both waiting for each other forever.
+    return !["approach", "align"].includes(other.caveState)
+      || !fish.caveState || String(other.id) < String(fish.id);
+  });
+}
+
 function beginFishCaveBehavior(fish, plan, now = Date.now()) {
   if (!fish || !plan) {
     return false;
   }
+  if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, getSpeciesForFish(fish), now)) return false;
 
   const debugTestLoop = isDebugCaveTestFish(fish);
   const debugForced = debugTestLoop || plan.debugForced === true;
@@ -113744,6 +114323,24 @@ function abortFishCaveBehavior(fish, now = Date.now(), blockCurrentDecor = false
 
   const priorState = fish.caveState;
   const wasInsideCave = ["enter", "inside", "exit", "depart"].includes(priorState);
+  if (wasInsideCave && !(typeof isFishDead === "function" && isFishDead(fish))) {
+    const plan = getActiveFishCavePlan(fish);
+    const decor = plan && getCaveBehaviorDecorById(plan.decorId);
+    const species = getSpeciesForFish(fish);
+    if (decor && species && plan.mouth && !portalOpeningFitsFish(decor, fish, species, now, fish)) {
+      if (plan.exitRequested) return;
+      // Feeding/panic/cancellation must not eject an interior occupant through
+      // the shell. Finish a physical exit before releasing cave ownership.
+      fish.caveState = "exit";
+      plan.exitRequested = true;
+      fish.cavePathIndex = 0;
+      const node = plan.exitPathNodes?.[0] || plan.mouth;
+      fish.targetXNorm = node.xNorm;
+      fish.targetYNorm = node.yNorm;
+      fish.targetAt = now + 1300;
+      return;
+    }
+  }
   const fallbackFrontLayer = clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER);
   const fallbackSubLayer = clampTankSubLayer(fish.caveReturnSubLayer ?? TANK_SUBLAYER_FRONT);
   const fallbackXNorm = clamp(
@@ -113837,21 +114434,71 @@ function fishShapeLeavesActiveCaveInterior(fish, species, now, xNorm, yNorm) {
     return true;
   }
 
-  if (fish.caveState === "enter") {
-    return false;
-  }
-
   const interiorDescriptor = getCaveInteriorContainmentDescriptor(decor);
-  if (interiorDescriptor && !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
-    return true;
-  }
+  // The exterior shell is the UNION of the front and background artwork.
+  // Testing it here incorrectly treats the entire usable interior as solid.
+  // Interior occupants must instead fit entirely inside the allowed volume.
+  return !interiorDescriptor
+    || !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX);
+}
 
-  const barrierDescriptor = getCaveBarrierDescriptor(decor);
-  if (barrierDescriptor && shapesOverlapByMaskStrict(fishDescriptor, barrierDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
-    return true;
+function recoverFishInsideCave(fish, species, now) {
+  const plan = getActiveFishCavePlan(fish);
+  const decor = plan && getCaveBehaviorDecorById(plan.decorId);
+  if (!plan || !decor) return false;
+  fish.motionVelocityXNorm = 0;
+  fish.motionVelocityYNorm = 0;
+  // Collision recovery never changes depth or grants passage through a wall.
+  // Replanning is rate-limited because mask route searches are expensive.
+  if (now < (Number(plan.collisionRetryAt) || 0)) return true;
+  const progressed = Math.hypot(fish.xNorm - (plan.collisionLastX ?? fish.xNorm),
+    fish.yNorm - (plan.collisionLastY ?? fish.yNorm)) > 0.012;
+  plan.collisionFailures = progressed ? 1 : (Number(plan.collisionFailures) || 0) + 1;
+  plan.collisionLastX = fish.xNorm;
+  plan.collisionLastY = fish.yNorm;
+  plan.collisionRetryAt = now + Math.min(4000, 900 * plan.collisionFailures);
+  const mouth = getActiveFishCaveTriggerRegion(fish) || plan.mouth;
+  if (plan.collisionFailures >= 2 && mouth && !["exit", "depart"].includes(fish.caveState)) {
+    // Do not keep retrying the same unreachable seat or interior destination.
+    plan.seatId = null;
+    plan.normalSeatPoint = null;
+    fish.caveSeatId = null;
+    fish.caveState = "exit";
+    plan.exitRequested = true;
   }
+  const destination = ["exit", "depart"].includes(fish.caveState)
+    ? mouth : plan.normalSeatPoint || plan.inside;
+  if (!destination) return true;
+  const nodes = buildNormalCaveInsideTravelNodes(decor, fish, species,
+    { xNorm: fish.xNorm, yNorm: fish.yNorm }, destination, now);
+  if (nodes.length) {
+    if (["exit", "depart"].includes(fish.caveState)) {
+      plan.exitPathNodes = nodes;
+      fish.caveState = "exit";
+    } else {
+      plan.entryPathNodes = nodes;
+      fish.caveState = "enter";
+    }
+    fish.cavePathIndex = 0;
+    setFishTargetToCaveNode(fish, nodes[0], now, 1200);
+  }
+  return true;
+}
 
-  return false;
+function updateRequestedFishCaveExit(fish, species, now) {
+  const plan = fish.caveState && getActiveFishCavePlan(fish);
+  if (!plan?.exitRequested) return;
+  const node = fish.caveState === "leave"
+    ? plan.approach
+    : plan.exitPathNodes?.[fish.cavePathIndex || 0] || plan.mouth;
+  if (node) {
+    fish.targetXNorm = node.xNorm;
+    fish.targetYNorm = node.yNorm;
+  }
+  const activity = fish.activity;
+  fish.activity = "roam";
+  updateFishCaveBehavior(fish, species, now);
+  fish.activity = activity;
 }
 
 function forceFishToCaveFrontLayer(fish, species, now = Date.now()) {
@@ -113985,7 +114632,7 @@ function enforceActiveCaveMaskRule(fish, species, now = Date.now()) {
     }
   }
 
-  return forceFishToCaveFrontLayer(fish, species, now);
+  return recoverFishInsideCave(fish, species, now);
 }
 
 function updateFishCaveBehavior(fish, species, now = Date.now()) {
@@ -114051,6 +114698,14 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
   }
 
   if (fish.caveState === "align") {
+    if (isFishCaveEntranceBusy(fish, plan.decorId, mouthNode, species, now)) {
+      fish.targetXNorm = plan.approach?.xNorm ?? fish.caveApproachXNorm ?? fish.xNorm;
+      fish.targetYNorm = plan.approach?.yNorm ?? fish.caveApproachYNorm ?? fish.yNorm;
+      fish.targetAt = now + 600;
+      return true;
+    }
+    fish.targetXNorm = mouthNode.xNorm;
+    fish.targetYNorm = mouthNode.yNorm;
     fish.hangoutDecorId = fish.caveDecorId;
     setFishTankLayers(
       fish,
@@ -114059,8 +114714,13 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_FRONT, TANK_SUBLAYER_FRONT);
     if (reachedTrigger || stalledAtTrigger) {
-      fish.xNorm = clamp(mouthNode.xNorm, 0.08, 0.92);
-      fish.yNorm = clamp(mouthNode.yNorm, 0.14, 0.8);
+      // Crossing depth is legal only where the whole body fits the opening.
+      // A stall timer cannot authorize passage through the solid rim.
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+        fish.targetXNorm = mouthNode.xNorm;
+        fish.targetYNorm = mouthNode.yNorm;
+        return true;
+      }
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
@@ -114180,8 +114840,11 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
         return true;
       }
 
-      fish.xNorm = clamp(mouthNode.xNorm, 0.08, 0.92);
-      fish.yNorm = clamp(mouthNode.yNorm, 0.14, 0.8);
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+        fish.targetXNorm = mouthNode.xNorm;
+        fish.targetYNorm = mouthNode.yNorm;
+        return true;
+      }
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
@@ -114217,8 +114880,11 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_MIDDLE, TANK_SUBLAYER_MIDDLE);
     if (reachedMouth) {
-      fish.xNorm = clamp(plan.mouth.xNorm, 0.08, 0.92);
-      fish.yNorm = clamp(plan.mouth.yNorm, 0.14, 0.8);
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+        fish.targetXNorm = plan.mouth.xNorm;
+        fish.targetYNorm = plan.mouth.yNorm;
+        return true;
+      }
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       fish.caveState = "leave";
@@ -114639,6 +115305,54 @@ function findFishObstacleSlideMove(fish, species, startXNorm, startYNorm, nextXN
 }
 
 function resolveFishCaveCollision(fish, nextXNorm, nextYNorm, now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  if (!species || species.behavior === "sucker") {
+    return { xNorm: nextXNorm, yNorm: nextYNorm, blocked: false };
+  }
+  const interior = ["enter", "inside", "exit", "depart"].includes(fish.caveState);
+  if (!interior) {
+    const candidates = getCaveCollisionFrameCandidates(getFishTankLayer(fish), now);
+    const margin = getFishDisplayWidth(fish, species, now);
+    const sweptBounds = {
+      left: Math.min(fish.xNorm, nextXNorm) * TANK_WIDTH - margin,
+      right: Math.max(fish.xNorm, nextXNorm) * TANK_WIDTH + margin,
+      top: Math.min(fish.yNorm, nextYNorm) * TANK_HEIGHT - margin,
+      bottom: Math.max(fish.yNorm, nextYNorm) * TANK_HEIGHT + margin
+    };
+    if (!candidates.some(candidate => boundsIntersect(sweptBounds, candidate.descriptor.bounds))) {
+      return resolveFishCaveCollisionEndpoint(fish, nextXNorm, nextYNorm, now);
+    }
+  }
+  const dx = nextXNorm - fish.xNorm;
+  const dy = nextYNorm - fish.yNorm;
+  const distancePx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
+  // Bound work after a long frame by shortening travel, never by increasing
+  // sample spacing (which would allow tunnelling through thin cave walls).
+  const samplePx = 4;
+  const maxSamples = 12;
+  const travelScale = Math.min(1, samplePx * maxSamples / Math.max(distancePx, 0.001));
+  const steps = Math.max(1, Math.ceil(distancePx * travelScale / samplePx));
+  let safeX = fish.xNorm;
+  let safeY = fish.yNorm;
+  for (let i = 1; i <= steps; i += 1) {
+    const t = i / steps * travelScale;
+    const x = fish.xNorm + dx * t;
+    const y = fish.yNorm + dy * t;
+    if (interior && fishShapeLeavesActiveCaveInterior(fish, species, now, x, y)) {
+      return { xNorm: safeX, yNorm: safeY, blocked: true, caveInteriorBlocked: true };
+    }
+    const pose = getFishCollisionPose(fish, species, now, x, y);
+    const blockingCave = findBlockingCaveForFishPose(fish, species, now, pose);
+    if (blockingCave) {
+      return { xNorm: safeX, yNorm: safeY, blocked: true, blockingCave };
+    }
+    safeX = x;
+    safeY = y;
+  }
+  return resolveFishCaveCollisionEndpoint(fish, safeX, safeY, now);
+}
+
+function resolveFishCaveCollisionEndpoint(fish, nextXNorm, nextYNorm, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   if (!species || species.behavior === "sucker") {
     return {
@@ -116978,10 +117692,21 @@ function getFishTurnLocomotionState(fish, now = Date.now()) {
 function beginFishTurnaroundCooldown(fish, direction, now = Date.now()) {
   if (!fish) return;
   const startedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  const turnScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.65, 1.8);
+  const speedRatio = clamp(
+    Math.hypot(Number(fish.traversalVelocityXNorm) || 0, Number(fish.traversalVelocityYNorm) || 0)
+      / Math.max(0.01, Number(fish.swimSpeed) || 0.04),
+    0,
+    1.5
+  );
+  const momentumScale = 0.9 + speedRatio * 0.22;
   fish.turnaroundCooldownDirection = normalizeFishHorizontalDirection(direction, getFishFacingDirection(fish));
   fish.turnaroundCooldownStartedAt = startedAt;
-  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS;
-  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS;
+  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS * turnScale * momentumScale;
+  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS * turnScale * momentumScale;
   fish.turnaroundCooldownStartXNorm = Number(fish.xNorm) || 0.5;
   fish.turnaroundCooldownStartYNorm = Number(fish.yNorm) || 0.5;
 }
@@ -116994,13 +117719,21 @@ function getFishTurnaroundCooldownState(fish, now = Date.now()) {
     (Number(fish?.xNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartXNorm) || 0.5),
     (Number(fish?.yNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartYNorm) || 0.5)
   );
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  const bodyLengthNorm = typeof getFishVisualSize === "function"
+    ? clamp((Number(getFishVisualSize(fish)) || 0) / Math.max(1, TANK_WIDTH), 0.01, 0.18)
+    : 0;
+  const bodyLengthCommitment = bodyLengthNorm * clamp(Number(locomotionProfile?.turnCommitBodyLengths) || 0.65, 0.3, 1.4);
+  const requiredTravel = Math.max(FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM, bodyLengthCommitment);
   const active = Number(now) < until
-    || (Number(now) < maxUntil && traveled < FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM);
+    || (Number(now) < maxUntil && traveled < requiredTravel);
   if (!active && fish) {
     fish.turnaroundCooldownUntil = 0;
     fish.turnaroundCooldownMaxUntil = 0;
   }
-  return { active, direction, traveled, until, maxUntil };
+  return { active, direction, traveled, requiredTravel, until, maxUntil };
 }
 
 function normalizeAngle(angle) {
@@ -117071,7 +117804,7 @@ function getFishSwimTiltForVector(deltaXNorm, deltaYNorm) {
   }
 
   return clamp(
-    Math.atan2(deltaYPx, Math.max(0.001, deltaXPx)),
+    Math.atan2(deltaYPx, deltaXPx),
     -FISH_SWIM_TILT_MAX,
     FISH_SWIM_TILT_MAX
   );
@@ -117105,24 +117838,19 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
 function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
   const dxPx = (Number(deltaXNorm) || 0) * TANK_WIDTH;
   const dyPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  const steeringHeadingX = Number(fish?.steeringHeadingXScreen);
   const traversalHeadingXNorm = Number(fish?.traversalHeadingXNorm);
-  const carriedDirection = Math.abs(traversalHeadingXNorm) > 0.000001
-    ? (traversalHeadingXNorm < 0 ? -1 : 1)
-    : getFishFacingDirection(fish);
-  const lateralClearancePx = clamp(
-    Math.abs(dyPx) * FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT,
-    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX,
-    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX
-  );
-  const verticallyDominant = Math.abs(dyPx) > Math.max(10, Math.abs(dxPx) * 1.15);
+  const carriedDirection = Math.abs(steeringHeadingX) > 0.000001
+    ? (steeringHeadingX < 0 ? -1 : 1)
+    : Math.abs(traversalHeadingXNorm) > 0.000001
+      ? (traversalHeadingXNorm < 0 ? -1 : 1)
+      : getFishFacingDirection(fish);
+  // Cave nodes already encode body clearance. Open-water staging can steer
+  // sideways into the roof while trying to reach a nearby docking point.
+  if (fish?.caveState) return Math.abs(dxPx) > 3 ? (dxPx < 0 ? -1 : 1) : carriedDirection;
 
-  // A target almost directly above or below is not permission to alternate
-  // left/right on sub-pixel error. Carry the current heading until the fish
-  // has made enough lateral room to arc back toward the target. This makes a
-  // vertical destination a two-part swimming route instead of a wall press.
-  if (verticallyDominant && Math.abs(dxPx) < lateralClearancePx) {
-    return carriedDirection;
-  }
+  // Vertical travel keeps the last left/right render side without inventing
+  // a sideways destination. Only meaningful horizontal intent requests a turn.
   if (Math.abs(dxPx) > 0.5) {
     return dxPx < 0 ? -1 : 1;
   }
@@ -117132,16 +117860,28 @@ function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
 function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
   const dx = Number(deltaXNorm) || 0;
   const dy = Number(deltaYNorm) || 0;
+  if (fish?.caveState && !options.turnReversal) {
+    // Confined docking is an explicit precision maneuver. Velocity smoothing
+    // still applies, but the route cannot invent lateral room inside a wall.
+    return { xNorm: dx, yNorm: dy };
+  }
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  // Legacy species verticalSteeringLimit values no longer restrict direction.
+  // Species still differ in angular response, acceleration and turn radius.
+  const verticalLimit = FISH_VERTICAL_TRAVERSAL_MAX_RATIO;
+
   if (fish && options.turnReversal) {
-    // A reversal already supplies a continuous heading through zero X.
-    // Ordinary forward-only steering would destroy that midpoint and snap
-    // from source-facing to destination-facing horizontal motion.
+    // The reversal controller owns the heading while the fish crosses through
+    // the turn. Keep any true vertical intent, but never invent extra climb.
     const lengthPx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
     fish.steeringVerticalRatio = lengthPx > 0.001
-      ? clamp(dy * TANK_HEIGHT / lengthPx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO)
+      ? clamp(dy * TANK_HEIGHT / lengthPx, -verticalLimit, verticalLimit)
       : 0;
     return { xNorm: dx, yNorm: dy };
   }
+
   const distanceNorm = Math.hypot(dx, dy);
   if (!fish || distanceNorm <= 0.000001) {
     if (fish) fish.steeringVerticalRatio = 0;
@@ -117151,39 +117891,77 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const dxPx = dx * TANK_WIDTH;
   const dyPx = dy * TANK_HEIGHT;
   const distancePx = Math.hypot(dxPx, dyPx);
-  if (distancePx <= 0.001) {
-    return { xNorm: dx, yNorm: dy };
-  }
-
-  const desiredVerticalRatio = clamp(dyPx / distancePx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO);
-  const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
-    ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
-    : 0;
-  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
-  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
-  const response = 1 - Math.exp(-2.8 * urgency * elapsedSeconds);
-  const responsiveStep = (desiredVerticalRatio - currentVerticalRatio) * response;
-  const maximumStep = 1.45 * urgency * elapsedSeconds;
-  const nextVerticalRatio = clamp(
-    currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
-    -FISH_VERTICAL_TRAVERSAL_MAX_RATIO,
-    FISH_VERTICAL_TRAVERSAL_MAX_RATIO
-  );
-  fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
-    ? desiredVerticalRatio
-    : nextVerticalRatio;
+  if (distancePx <= 0.001) return { xNorm: dx, yNorm: dy };
 
   const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
-  const verticalRatio = fish.steeringVerticalRatio;
-  const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -verticalLimit, verticalLimit);
+  const desiredHorizontalRatio = Math.sqrt(Math.max(0, 1 - desiredVerticalRatio * desiredVerticalRatio));
+  let desiredHeadingX = horizontalSign * desiredHorizontalRatio;
+  let desiredHeadingY = desiredVerticalRatio;
 
-  // Convert the smoothed screen-space heading back into normalized tank-space
-  // while preserving the remaining target distance. This bends the path into
-  // climbs and dives instead of instantly snapping to a new diagonal vector.
-  // The vertical component is bounded, so a climb or dive always carries a
-  // visible forward swim rather than reading as an in-place sprite rotation.
-  const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
-  const unitYNorm = verticalRatio / TANK_HEIGHT;
+  const wanderScale = clamp(Number(options.wanderScale) || 0, 0, 1);
+  const maxWanderRadians = typeof FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS !== "undefined"
+    ? FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS
+    : 0;
+  const wanderRadians = clamp(
+    Number(fish.locomotionPathWanderRadians) || 0,
+    -maxWanderRadians,
+    maxWanderRadians
+  ) * wanderScale;
+  if (Math.abs(wanderRadians) > 0.000001) {
+    const cosine = Math.cos(wanderRadians);
+    const sine = Math.sin(wanderRadians);
+    const rotatedX = desiredHeadingX * cosine - desiredHeadingY * sine;
+    const rotatedY = desiredHeadingX * sine + desiredHeadingY * cosine;
+    if (rotatedX * horizontalSign > 0.05) {
+      desiredHeadingX = rotatedX;
+      desiredHeadingY = clamp(rotatedY, -verticalLimit, verticalLimit);
+    }
+  }
+
+  const desiredAngle = Math.atan2(desiredHeadingY, desiredHeadingX);
+  let currentHeadingX = Number(fish.steeringHeadingXScreen);
+  let currentHeadingY = Number(fish.steeringHeadingYScreen);
+  if (!Number.isFinite(currentHeadingX) || !Number.isFinite(currentHeadingY) || Math.hypot(currentHeadingX, currentHeadingY) < 0.1) {
+    const traversalX = Number(fish.traversalHeadingXNorm) || 0;
+    const traversalY = Number(fish.traversalHeadingYNorm) || 0;
+    const traversalLengthPx = Math.hypot(traversalX * TANK_WIDTH, traversalY * TANK_HEIGHT);
+    if (traversalLengthPx > 0.001) {
+      currentHeadingX = traversalX * TANK_WIDTH / traversalLengthPx;
+      currentHeadingY = traversalY * TANK_HEIGHT / traversalLengthPx;
+    } else {
+      currentHeadingX = getFishFacingDirection(fish);
+      currentHeadingY = 0;
+    }
+  }
+
+  const currentAngle = Math.atan2(currentHeadingY, currentHeadingX);
+  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
+  const turnRateScale = clamp(Number(locomotionProfile?.turnRateScale) || 1, 0.45, 2.2);
+  const turnRadiusScale = clamp(Number(locomotionProfile?.turnRadiusScale) || 1, 0.55, 1.8);
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  // A broad-bodied cruiser should need more water to redirect than a small
+  // agile fish, even if both are reacting to the same steering intent.
+  const maximumAngularStep = Math.PI * 1.35 * turnRateScale / Math.sqrt(turnRadiusScale) * urgency * elapsedSeconds;
+  const rawAngleDelta = desiredAngle - currentAngle;
+  const angleDelta = Math.atan2(Math.sin(rawAngleDelta), Math.cos(rawAngleDelta));
+  const nextAngle = currentAngle + clamp(angleDelta, -maximumAngularStep, maximumAngularStep);
+
+  let nextHeadingX = Math.cos(nextAngle);
+  let nextHeadingY = Math.sin(nextAngle);
+  // Eliminate floating-point residual sideways drift at exactly +/-90 degrees.
+  if (Math.abs(nextHeadingX) < 1e-10) nextHeadingX = 0;
+  nextHeadingY = clamp(nextHeadingY, -verticalLimit, verticalLimit);
+  const headingLength = Math.hypot(nextHeadingX, nextHeadingY) || 1;
+  nextHeadingX /= headingLength;
+  nextHeadingY /= headingLength;
+
+  fish.steeringHeadingXScreen = nextHeadingX;
+  fish.steeringHeadingYScreen = nextHeadingY;
+  fish.steeringVerticalRatio = nextHeadingY;
+
+  const unitXNorm = nextHeadingX / TANK_WIDTH;
+  const unitYNorm = nextHeadingY / TANK_HEIGHT;
   const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
   return {
     xNorm: unitXNorm / unitNormLength * distanceNorm,

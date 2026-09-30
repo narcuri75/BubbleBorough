@@ -317,6 +317,14 @@ function portalOpeningFitsFish(item, fish, species, now, mouth, direction = null
     return false;
   }
 
+  // Absence of foreground pixels is not sufficient: a point above the roof
+  // is also transparent. The whole body must occupy the cave's allowed space
+  // before it can cross between interior and exterior depth.
+  const interiorDescriptor = getCaveInteriorContainmentDescriptor(item);
+  if (!interiorDescriptor || !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
+    return false;
+  }
+
   const frontDescriptor = getCaveFrontDescriptor(item);
   if (frontDescriptor && shapesOverlapByMaskStrict(fishDescriptor, frontDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
     return false;

@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 3995,
+  "functionCount": 4003,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -19577,8 +19577,8 @@
       "module": "fish/behavior-scheduler.js",
       "sourceLine": 359,
       "originalLine": null,
-      "characters": 634,
-      "sourceHash": "5d840ac5a5c16f1df7a12add2c0dfe3747c85825c6692b708c7b3f627ee889a7",
+      "characters": 1883,
+      "sourceHash": "27dfcbf0d633dade900a2d19af638c99dc84675feafe29bf8d24b38170b0aa8b",
       "calls": [
         "ensureFishBehaviorBrain",
         "getFishBehaviorCapabilities",
@@ -19809,19 +19809,21 @@
       "module": "fish/cave-navigation.js",
       "sourceLine": 302,
       "originalLine": 22964,
-      "characters": 652,
-      "sourceHash": "e88bf166217d4cfe6002d34af3c6ab6805ecec9a06e8f4032d96413816d9f983",
+      "characters": 1088,
+      "sourceHash": "896316d96d9b730774d8d0aae4826da13ecf09e4d6097a3a24e6ef9a60cfa13e",
       "calls": [
         "getCaveFrontDescriptor",
+        "getCaveInteriorContainmentDescriptor",
         "getFishCollisionPose",
         "getFishShapeDescriptor",
+        "shapeContainedByMaskStrict",
         "shapesOverlapByMaskStrict"
       ]
     },
     {
       "name": "buildConfiguredCaveDockingPlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 328,
+      "sourceLine": 336,
       "originalLine": 22990,
       "characters": 460,
       "sourceHash": "260861475c3ef78f379f85fcffd3d2c71e91d4f421485dea55e6c79c9beffab2",
@@ -19834,7 +19836,7 @@
     {
       "name": "buildTriggerSeatCavePlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 347,
+      "sourceLine": 355,
       "originalLine": 23009,
       "characters": 4072,
       "sourceHash": "3f2d5af9e348bac0621182731187fd04d971303e1b34a2f2cfd1d786bbaaecf2",
@@ -19859,7 +19861,7 @@
     {
       "name": "buildSimpleCaveDockingPlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 457,
+      "sourceLine": 465,
       "originalLine": 23123,
       "characters": 4194,
       "sourceHash": "dad12d9085f0e310ca77fddf718c99b241c6c4ae80ae2c31cee23214b916fd10",
@@ -19884,7 +19886,7 @@
     {
       "name": "collectCaveBehaviorPlansForFish",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 576,
+      "sourceLine": 584,
       "originalLine": 23245,
       "characters": 1196,
       "sourceHash": "19c70cf16bbd8d82a5f327d8404aa9e8d165f7602bb206e95591597bd54bcc7b",
@@ -19898,7 +19900,7 @@
     {
       "name": "clearFishCaveBehavior",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 611,
+      "sourceLine": 619,
       "originalLine": 23267,
       "characters": 835,
       "sourceHash": "1fdb2f7d37ec57fe08434380015848eefb2b220adcd4a743a8fdacc4aeca8bca",
@@ -19907,7 +19909,7 @@
     {
       "name": "getCaveBehaviorDecorById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 642,
+      "sourceLine": 650,
       "originalLine": 23293,
       "characters": 158,
       "sourceHash": "f6b7d226807ab00b20c2f05d0c6f0f9d5aae26b42df5b2bc6bf58accb4cb9f86",
@@ -19916,7 +19918,7 @@
     {
       "name": "getActiveFishCavePlan",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 650,
+      "sourceLine": 658,
       "originalLine": 23301,
       "characters": 136,
       "sourceHash": "1731968b590dad36404a72b8653aa91a404561a62c5889391e99a6ef23b33999",
@@ -19925,7 +19927,7 @@
     {
       "name": "getActiveFishCaveTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 658,
+      "sourceLine": 666,
       "originalLine": 23309,
       "characters": 293,
       "sourceHash": "c918decbecd4e010eb52c22bbdd7209529a0dcc17869b1fe6fe45181cede0933",
@@ -19938,7 +19940,7 @@
     {
       "name": "getActiveFishCaveSeatRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 671,
+      "sourceLine": 679,
       "originalLine": 23322,
       "characters": 315,
       "sourceHash": "c86356f4db9fd6b944e11392c324e87f616c5ecbe5e3ad56aa84374d81064815",
@@ -19951,7 +19953,7 @@
     {
       "name": "applyFishCaveSeatFacing",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 684,
+      "sourceLine": 692,
       "originalLine": 23335,
       "characters": 298,
       "sourceHash": "9d8a3aaa4989936e6f9a646040d1933e4dba55baca8ba53c3ad96b0c2e7ac71b",
@@ -19963,7 +19965,7 @@
     {
       "name": "applyFishCaveSeatFacingById",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 693,
+      "sourceLine": 701,
       "originalLine": 23344,
       "characters": 312,
       "sourceHash": "b374753e7d930a31f0a196c4de547e5b766d6f1028a92eaddb7e98097017725c",
@@ -19976,7 +19978,7 @@
     {
       "name": "getReservedFishCaveSeatId",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 702,
+      "sourceLine": 710,
       "originalLine": 23353,
       "characters": 359,
       "sourceHash": "61f5d0c3d5b3872c75aba9caed45d29040199c5e06c5ccbdf760f8f4d7f5e6b9",
@@ -19985,7 +19987,7 @@
     {
       "name": "getFishActiveCaveInsideLayer",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 715,
+      "sourceLine": 723,
       "originalLine": 23366,
       "characters": 442,
       "sourceHash": "a8ee1659c04efc2a543643138d79be733de3ae28a56a74328c4f51f37d96b6e8",
@@ -19996,7 +19998,7 @@
     {
       "name": "getPortalMatchForTriggerRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 732,
+      "sourceLine": 740,
       "originalLine": 23383,
       "characters": 1281,
       "sourceHash": "caa7e917c3ea6081fa25618092b0e2ca4580b22403700b5fc688a3ad15605c7c",
@@ -20007,7 +20009,7 @@
     {
       "name": "getExplicitCaveBehaviorPortals",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 773,
+      "sourceLine": 781,
       "originalLine": 23424,
       "characters": 625,
       "sourceHash": "f5ba39a3281e839d8a8d4602d50ab5844e086b106e49925b0ed2be57a8237b20",
@@ -20016,7 +20018,7 @@
     {
       "name": "buildCaveNavigationCacheKey",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 788,
+      "sourceLine": 796,
       "originalLine": 23439,
       "characters": 828,
       "sourceHash": "984bb4ed2e81655deed6b6ebb87ac93ab36059f2458f7ff0b848cc32d8b0401e",
@@ -20029,7 +20031,7 @@
     {
       "name": "getCaveNavigationData",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 805,
+      "sourceLine": 813,
       "originalLine": 23454,
       "characters": 2224,
       "sourceHash": "3ada600b2f262e47c1a1bb83098e7cff02563c602c98370217746f26fb59e8c5",
@@ -20044,7 +20046,7 @@
     {
       "name": "getCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 869,
+      "sourceLine": 877,
       "originalLine": 23518,
       "characters": 74,
       "sourceHash": "3477f304194e5c3429a4715284368e2df501d70c650ead054b5a8aa517ed009e",
@@ -20053,7 +20055,7 @@
     {
       "name": "isCaveNavCellInBounds",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 873,
+      "sourceLine": 881,
       "originalLine": 23522,
       "characters": 132,
       "sourceHash": "91f6556f54c187817fb579dbbf946d5be6536d0d3e71b202bc19a234d1085b5a",
@@ -20062,7 +20064,7 @@
     {
       "name": "getCaveNavCellCenter",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 877,
+      "sourceLine": 885,
       "originalLine": 23526,
       "characters": 280,
       "sourceHash": "d0306a85f691589956fce5e2c22c973c05eed802dd3105f4732fb8f75c5467fe",
@@ -20073,7 +20075,7 @@
     {
       "name": "getCaveNavCellFromWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 888,
+      "sourceLine": 896,
       "originalLine": 23537,
       "characters": 402,
       "sourceHash": "707e6d82bac0838a3808c7c7db09dca6e9114bbd7be79771187a7bcd9ffd4b8e",
@@ -20085,7 +20087,7 @@
     {
       "name": "collectCaveNavCandidatesNearWorldPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 906,
+      "sourceLine": 914,
       "originalLine": 23555,
       "characters": 1130,
       "sourceHash": "f236caed8e953bc643f5442752e473cc1f92ba7bd84cbb32b2106ef13c262b41",
@@ -20099,7 +20101,7 @@
     {
       "name": "getFishDescriptorAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 945,
+      "sourceLine": 953,
       "originalLine": 23594,
       "characters": 246,
       "sourceHash": "966cddbac2b174ddf3e10117f88ac96c592a9ebb6bb299c30ed10c2410d7eab3",
@@ -20111,7 +20113,7 @@
     {
       "name": "canFishOccupyCavePoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 950,
+      "sourceLine": 958,
       "originalLine": 23599,
       "characters": 503,
       "sourceHash": "b01f2c84a982ddda6b24b5ebb29ff1cf6cec503d61c2703ee404e5bfb2e3d8e4",
@@ -20123,7 +20125,7 @@
     {
       "name": "canFishOccupyCaveNavIndex",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 966,
+      "sourceLine": 974,
       "originalLine": 23615,
       "characters": 513,
       "sourceHash": "a2f23352c5e7493519b3fd3ea8c194e0cdce0b3b61728895c6b41d926be1f811",
@@ -20135,7 +20137,7 @@
     {
       "name": "buildReachableCaveRegion",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 987,
+      "sourceLine": 995,
       "originalLine": 23636,
       "characters": 1775,
       "sourceHash": "1ae488175ea69c600a57904d3deb0042fab29fbc2e6167fa64b976b6d22c2db4",
@@ -20148,7 +20150,7 @@
     {
       "name": "buildCavePathIndices",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1050,
+      "sourceLine": 1058,
       "originalLine": 23701,
       "characters": 346,
       "sourceHash": "6d154b58ba89458ef4e52b6132db430dceaeb64021ec37ebe2fd8bfeca3529c6",
@@ -20157,7 +20159,7 @@
     {
       "name": "compressCavePathNodes",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1069,
+      "sourceLine": 1077,
       "originalLine": 23720,
       "characters": 637,
       "sourceHash": "d0c7c982ac7347212863ba58880522d69b3cb5cc5e97f45dbf06005b4d0946a6",
@@ -20168,7 +20170,7 @@
     {
       "name": "sanitizeGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1092,
+      "sourceLine": 1100,
       "originalLine": 23743,
       "characters": 1382,
       "sourceHash": "679f31954c190e52e867850032f8c3aec7b7fdaac43c72f2a93d753780d53610",
@@ -20181,7 +20183,7 @@
     {
       "name": "reconcileLooseGravelPebbles",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1117,
+      "sourceLine": 1125,
       "originalLine": 23769,
       "characters": 1757,
       "sourceHash": "762d9b8eeb12f4c9d0be8402a9ff7d1eef7e720b5b1e54587c0f8a0f1bc9fdfc",
@@ -20195,7 +20197,7 @@
     {
       "name": "getDecorPebbleProfile",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1166,
+      "sourceLine": 1174,
       "originalLine": 23819,
       "characters": 568,
       "sourceHash": "95fc5c0c8529d517af3b1e9091caa6c6e6df89b6bbd12d4cf7395e64b643abec",
@@ -20206,7 +20208,7 @@
     {
       "name": "getDecorPebbleSurfacePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1180,
+      "sourceLine": 1188,
       "originalLine": 23833,
       "characters": 729,
       "sourceHash": "130c9a7a8d255e8f1b14cdd3259b39680cfbd85853fed9312a0378a7a65a6539",
@@ -20219,7 +20221,7 @@
     {
       "name": "getLooseGravelFloorPose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1202,
+      "sourceLine": 1210,
       "originalLine": 23855,
       "characters": 509,
       "sourceHash": "1a5e5b679fd4cdd96b47e5b042c3ca1b87f6c409f83b231d41ec7324363a1577",
@@ -20231,7 +20233,7 @@
     {
       "name": "resolveLiveGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1218,
+      "sourceLine": 1226,
       "originalLine": 23871,
       "characters": 543,
       "sourceHash": "352b1eef543e69af9ff94db2b7b5aa8cb9ace285f78262ac20da590cddcc6295",
@@ -20243,7 +20245,7 @@
     {
       "name": "getPebbleDropTarget",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1235,
+      "sourceLine": 1243,
       "originalLine": 23888,
       "characters": 1476,
       "sourceHash": "d04f631f9f2dee3942b7bad3a8e587e7fc0fa54e5fb1f83834166da751d1eb16",
@@ -20259,7 +20261,7 @@
     {
       "name": "findLiveGravelPebbleAtPoint",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1288,
+      "sourceLine": 1296,
       "originalLine": 23941,
       "characters": 574,
       "sourceHash": "5334cd8e4703ddf83db5e3ca348924f975042cbf55f2df02c8b022037cc12d3e",
@@ -20271,7 +20273,7 @@
     {
       "name": "isPointNearGravelBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1305,
+      "sourceLine": 1313,
       "originalLine": 23958,
       "characters": 188,
       "sourceHash": "1054cab4ccf3759338c2c2193774e623195ed118e62974f79439b6d1008e0c87",
@@ -20282,7 +20284,7 @@
     {
       "name": "createLoosePebbleFromBed",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1310,
+      "sourceLine": 1318,
       "originalLine": 23963,
       "characters": 744,
       "sourceHash": "45159d3f9a59be0679fbef5ed127ccd53a37ede9b4542c6d96904a56edc6f78e",
@@ -20296,7 +20298,7 @@
     {
       "name": "beginGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1329,
+      "sourceLine": 1337,
       "originalLine": 23982,
       "characters": 1514,
       "sourceHash": "1428f2dd48a509a529c07c46598e0412d9b4dabc5ea0c3a181e1ddb63e1a59e1",
@@ -20316,7 +20318,7 @@
     {
       "name": "updateDraggedGravelPebble",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1380,
+      "sourceLine": 1388,
       "originalLine": 24033,
       "characters": 647,
       "sourceHash": "859545cf34c7220fe6c296edefe9113c10bfd7690951c648633d0518a8d950c5",
@@ -20327,7 +20329,7 @@
     {
       "name": "finalizeGravelPebbleDrag",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1400,
+      "sourceLine": 1408,
       "originalLine": 24053,
       "characters": 1301,
       "sourceHash": "e44aee179a290471037531fb39e5d374049a305d749976504181129b0761870c",
@@ -20344,7 +20346,7 @@
     {
       "name": "getFallingGravelPebblePose",
       "module": "fish/cave-navigation.js",
-      "sourceLine": 1452,
+      "sourceLine": 1460,
       "originalLine": 24106,
       "characters": 487,
       "sourceHash": "57130a88c706d73d75f40a839f273b200f6e29b319caa355db67c747c56f7fa1",
@@ -20648,8 +20650,8 @@
       "module": "fish/caves-and-collision.js",
       "sourceLine": 865,
       "originalLine": 60273,
-      "characters": 8715,
-      "sourceHash": "aedeee63b989096cd8bf31d8c7379db0748015b54bcb01fdce3c90e1c05cc41f",
+      "characters": 8694,
+      "sourceHash": "936a2d1c76a10576dd5ff1cae98be6f63996e1dc96968a8aabac29db1b43d9e4",
       "calls": [
         "advanceNormalCavePath",
         "applyFishCaveSeatFacingById",
@@ -20694,12 +20696,25 @@
       ]
     },
     {
-      "name": "beginFishCaveBehavior",
+      "name": "isFishCaveEntranceBusy",
       "module": "fish/caves-and-collision.js",
       "sourceLine": 1147,
+      "originalLine": null,
+      "characters": 882,
+      "sourceHash": "6deebcc17346d9c75df445475fe805f3dffa79639b4e020b84f57fba5b27220e",
+      "calls": [
+        "getFishDisplayWidth",
+        "getSpeciesForFish",
+        "isFishDead"
+      ]
+    },
+    {
+      "name": "beginFishCaveBehavior",
+      "module": "fish/caves-and-collision.js",
+      "sourceLine": 1164,
       "originalLine": 60533,
-      "characters": 4032,
-      "sourceHash": "7f9d668cccffb1f75c552e69b47af77dec296f53b424ed93a8c11d00ec31fb6e",
+      "characters": 4138,
+      "sourceHash": "7445dfac3823b62be3182e8b14f511996f13e7cd506f4d0e05adf038a13f9ecd",
       "calls": [
         "clampTankLayer",
         "ensureDebugCaveSequencePrepared",
@@ -20709,6 +20724,7 @@
         "getFishTankSubLayer",
         "getSpeciesForFish",
         "isDebugCaveTestFish",
+        "isFishCaveEntranceBusy",
         "normalizeCaveSeatFacing",
         "setFishTankLayers",
         "setFishTankSublayers"
@@ -20717,15 +20733,20 @@
     {
       "name": "abortFishCaveBehavior",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1249,
+      "sourceLine": 1267,
       "originalLine": 60628,
-      "characters": 1348,
-      "sourceHash": "f08f0c74d730f8e9aed2d3b39d93021bd250081d4d6eb96054c7068566d086c0",
+      "characters": 2166,
+      "sourceHash": "80af0208659a0171b99707e2fe75512650b5e23633c23956d3575926971bd913",
       "calls": [
         "clamp",
         "clampTankLayer",
         "clampTankSubLayer",
         "clearFishCaveBehavior",
+        "getActiveFishCavePlan",
+        "getCaveBehaviorDecorById",
+        "getSpeciesForFish",
+        "isFishDead",
+        "portalOpeningFitsFish",
         "setFishDesiredTankLayer",
         "setFishTankLayers",
         "setFishTankSublayers"
@@ -20734,7 +20755,7 @@
     {
       "name": "isFishWithinCaveCenterTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1294,
+      "sourceLine": 1330,
       "originalLine": 60668,
       "characters": 589,
       "sourceHash": "62af175dd943e5161d69520026c3331bde5850755ff5725698620099cff5a624",
@@ -20746,7 +20767,7 @@
     {
       "name": "isFishSettledInActiveCaveInterior",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1312,
+      "sourceLine": 1348,
       "originalLine": 60686,
       "characters": 306,
       "sourceHash": "9e1dd2fd5c179d5fa62737a80ce2f03a4a326c1aeafc653daa9a8ba4031ddff9",
@@ -20759,25 +20780,50 @@
     {
       "name": "fishShapeLeavesActiveCaveInterior",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1325,
+      "sourceLine": 1361,
       "originalLine": 60699,
-      "characters": 1228,
-      "sourceHash": "537375759d97e4b8a01e5b3a4e721f32724433f01321b26b59b8168544b34be5",
+      "characters": 1163,
+      "sourceHash": "902737cd9c7d3bb6450d17ba0330f3192842ef9c5a10d804733bac998d5abf31",
       "calls": [
         "getActiveFishCavePlan",
-        "getCaveBarrierDescriptor",
         "getCaveBehaviorDecorById",
         "getCaveInteriorContainmentDescriptor",
         "getFishCollisionPose",
         "getFishShapeDescriptor",
-        "shapeContainedByMaskStrict",
-        "shapesOverlapByMaskStrict"
+        "shapeContainedByMaskStrict"
+      ]
+    },
+    {
+      "name": "recoverFishInsideCave",
+      "module": "fish/caves-and-collision.js",
+      "sourceLine": 1393,
+      "originalLine": null,
+      "characters": 1868,
+      "sourceHash": "12ae781f460b58758b823d1ac22913265b2deefcb7f4c58f219e276813dd2c9d",
+      "calls": [
+        "buildNormalCaveInsideTravelNodes",
+        "getActiveFishCavePlan",
+        "getActiveFishCaveTriggerRegion",
+        "getCaveBehaviorDecorById",
+        "setFishTargetToCaveNode"
+      ]
+    },
+    {
+      "name": "updateRequestedFishCaveExit",
+      "module": "fish/caves-and-collision.js",
+      "sourceLine": 1436,
+      "originalLine": null,
+      "characters": 509,
+      "sourceHash": "587ae4fd8261dbaeab9556f54ec062ce52620fc0ec2406f18e9bd22669d56a29",
+      "calls": [
+        "getActiveFishCavePlan",
+        "updateFishCaveBehavior"
       ]
     },
     {
       "name": "forceFishToCaveFrontLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1366,
+      "sourceLine": 1452,
       "originalLine": 60740,
       "characters": 1104,
       "sourceHash": "6bfddf7fb423b4b3c5589eca2ac37724aa592392c6478f1399d1ff54cb98553d",
@@ -20794,7 +20840,7 @@
     {
       "name": "retargetFishToSafeCaveInteriorPoint",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1403,
+      "sourceLine": 1489,
       "originalLine": 60777,
       "characters": 944,
       "sourceHash": "4b6349fded4e6adf492c1bd5320b691a549f4b993224339c96b9e61c9650bb6f",
@@ -20809,14 +20855,13 @@
     {
       "name": "enforceActiveCaveMaskRule",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1429,
+      "sourceLine": 1515,
       "originalLine": 60803,
-      "characters": 2362,
-      "sourceHash": "f4116c2504d6850d5fddcc61af546997b2c5e2afcd3f9e96464872fb2d61465e",
+      "characters": 2358,
+      "sourceHash": "03dd01e479de86671fcbc043c13cf3ac7a14b776f115e875a43366a11feb88ac",
       "calls": [
         "clamp",
         "fishShapeLeavesActiveCaveInterior",
-        "forceFishToCaveFrontLayer",
         "getActiveFishCavePlan",
         "getActiveFishCaveSeatRegion",
         "getCaveBehaviorDecorById",
@@ -20826,6 +20871,7 @@
         "isFishSettledInActiveCaveInterior",
         "normalizeCaveSeatFacing",
         "pickCaveSeatIdleTarget",
+        "recoverFishInsideCave",
         "retargetFishToSafeCaveInteriorPoint",
         "setFishDirection"
       ]
@@ -20833,15 +20879,14 @@
     {
       "name": "updateFishCaveBehavior",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1500,
+      "sourceLine": 1586,
       "originalLine": 60874,
-      "characters": 10648,
-      "sourceHash": "f1463a0af7f368eb8a022297d0c6a41da3730d0b8cc10f7d746d2c8e84146b69",
+      "characters": 11430,
+      "sourceHash": "8beb4f1ce0b6fa8d8438528c08d3c9cc9a34f657e5adf966946e99401b35253b",
       "calls": [
         "abortFishCaveBehavior",
         "applyFishCaveSeatFacingById",
         "canFishChangeToLayer",
-        "clamp",
         "clampTankLayer",
         "clearNormalCavePathState",
         "getActiveFishCavePlan",
@@ -20852,8 +20897,10 @@
         "getFishCaveInsideMoodSubLayer",
         "getFishCollisionPose",
         "isDebugCaveTestFish",
+        "isFishCaveEntranceBusy",
         "isFishWithinRegionBounds",
         "normalizeCaveSeatFacing",
+        "portalOpeningFitsFish",
         "randomBetween",
         "setFishDesiredTankLayer",
         "setFishDirection",
@@ -20867,7 +20914,7 @@
     {
       "name": "getCaveBarrierDescriptor",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1774,
+      "sourceLine": 1879,
       "originalLine": 61139,
       "characters": 515,
       "sourceHash": "d1757909777b8a1ba105df9d3bf76b68c20c69725300d311029a6f85631f284f",
@@ -20882,7 +20929,7 @@
     {
       "name": "getFishCollisionPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1796,
+      "sourceLine": 1901,
       "originalLine": 61162,
       "characters": 654,
       "sourceHash": "39a3447801285dadfa9597bf8bbbe173c49d609332e4de81be5f769065c3672c",
@@ -20894,7 +20941,7 @@
     {
       "name": "getFishFootprintBoundsAtPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1817,
+      "sourceLine": 1922,
       "originalLine": 61184,
       "characters": 617,
       "sourceHash": "d3390c82270a9b8afc51ca759091d056cf5856ed7987f633e9e9435e92f4925e",
@@ -20906,7 +20953,7 @@
     {
       "name": "getCaveCollisionFrameCandidates",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1838,
+      "sourceLine": 1943,
       "originalLine": null,
       "characters": 1577,
       "sourceHash": "24984c129712fd927bd3534aa707b2b63090590095841ef7992ca38005863eba",
@@ -20922,7 +20969,7 @@
     {
       "name": "findBlockingCaveForFishPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1881,
+      "sourceLine": 1986,
       "originalLine": 61206,
       "characters": 1880,
       "sourceHash": "282e9de8e5e082ba81eeadff99f7aa37d1cc5330ba29721992916e48eabb657c",
@@ -20943,7 +20990,7 @@
     {
       "name": "pushFishOutOfBlockingCave",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1933,
+      "sourceLine": 2038,
       "originalLine": 61247,
       "characters": 1432,
       "sourceHash": "ac10639a7b429149b711c4306d1a93757bae1adf607232c67afc6f0050c1fd04",
@@ -20959,7 +21006,7 @@
     {
       "name": "isDraggedFishBlockedByCaveAtLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1970,
+      "sourceLine": 2075,
       "originalLine": 61287,
       "characters": 260,
       "sourceHash": "7747c8531b9ac12439df6a795e9d2462d630f7f2d6aae7aac1277080eeea5037",
@@ -20971,7 +21018,7 @@
     {
       "name": "resolveDraggedFishCaveSegment",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 1975,
+      "sourceLine": 2080,
       "originalLine": 61292,
       "characters": 2150,
       "sourceHash": "3d8b465d1d1d9584fdd4e41f373c36b69e32ac76f0d3c4422b255676ff310611",
@@ -20984,7 +21031,7 @@
     {
       "name": "resolveDraggedFishCaveCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2058,
+      "sourceLine": 2163,
       "originalLine": 61375,
       "characters": 1153,
       "sourceHash": "bfcd6f0a6f20864f22d37e279c5197cb1fa18ffcecd8b877a2bb567e5b371781",
@@ -20996,7 +21043,7 @@
     {
       "name": "findFishObstacleSlideMove",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2098,
+      "sourceLine": 2203,
       "originalLine": null,
       "characters": 2225,
       "sourceHash": "2881f7f3743c3c5011ed3fc6f645e23a5afcf96d096d031ecff0749774f4ee1b",
@@ -21014,10 +21061,29 @@
     {
       "name": "resolveFishCaveCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2150,
+      "sourceLine": 2255,
       "originalLine": 61411,
-      "characters": 3880,
-      "sourceHash": "a17bec40828c83d5182f2693f65dd474d6ca686c5fe6071e206122c7d3cce40b",
+      "characters": 2224,
+      "sourceHash": "987d7413ea83386b30c5a8cb00bfe5c8111f1326cb325796dfc4cbf03b740c30",
+      "calls": [
+        "boundsIntersect",
+        "findBlockingCaveForFishPose",
+        "fishShapeLeavesActiveCaveInterior",
+        "getCaveCollisionFrameCandidates",
+        "getFishCollisionPose",
+        "getFishDisplayWidth",
+        "getFishTankLayer",
+        "getSpeciesForFish",
+        "resolveFishCaveCollisionEndpoint"
+      ]
+    },
+    {
+      "name": "resolveFishCaveCollisionEndpoint",
+      "module": "fish/caves-and-collision.js",
+      "sourceLine": 2303,
+      "originalLine": null,
+      "characters": 3888,
+      "sourceHash": "84b98a4cf01ed3ee973cb7cfa6bd04f02c79699d5ec9cecf7ec450b1dc755b4a",
       "calls": [
         "clamp",
         "clampFishXNormToMobileViewport",
@@ -21037,7 +21103,7 @@
     {
       "name": "getFishShapeDescriptor",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2290,
+      "sourceLine": 2443,
       "originalLine": 61487,
       "characters": 3874,
       "sourceHash": "37f45f71380e5088cbb67f0b56facb6a027041ae8203797540a985a300894acb",
@@ -21056,7 +21122,7 @@
     {
       "name": "getPlacedDecorDepthBuckets",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2381,
+      "sourceLine": 2534,
       "originalLine": null,
       "characters": 902,
       "sourceHash": "d7f7abeef31fac6089bbf5ddadbe990c674b700458ab3251563c805c9cee283d",
@@ -21070,7 +21136,7 @@
     {
       "name": "getNearbyPlacedDecorByDepth",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2403,
+      "sourceLine": 2556,
       "originalLine": null,
       "characters": 929,
       "sourceHash": "6e68ec3eee0608c8da5f6d551cfe93ab0d43e63d95e2a2ca752b6984179a7386",
@@ -21084,7 +21150,7 @@
     {
       "name": "getOverlappingDecorForFish",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2426,
+      "sourceLine": 2579,
       "originalLine": 61570,
       "characters": 1942,
       "sourceHash": "ff280b82c20fd73a5b0320ee013c2438657ab2cec89e971be86703761a5a8502",
@@ -21112,7 +21178,7 @@
     {
       "name": "shouldFishParticipateInLivingCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2485,
+      "sourceLine": 2638,
       "originalLine": null,
       "characters": 152,
       "sourceHash": "51b58e1dc1c379a968d28292045ca4e0250cda825b1f26d6e74e7de08b475288",
@@ -21123,7 +21189,7 @@
     {
       "name": "getOverlappingFishForLayerChange",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2492,
+      "sourceLine": 2645,
       "originalLine": 61605,
       "characters": 2208,
       "sourceHash": "f6321810df08cbbd197880220cf2a146e2be874405137b27c04ed300f521196a",
@@ -21147,7 +21213,7 @@
     {
       "name": "getActiveFishCollisionAvoidance",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2560,
+      "sourceLine": 2713,
       "originalLine": null,
       "characters": 905,
       "sourceHash": "e6be26db1c00b5e9e5e2fcb1e6785a021ee8baf5579e7ee26b6fa7d03bb26b90",
@@ -21158,7 +21224,7 @@
     {
       "name": "clearFishCollisionAvoidance",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2586,
+      "sourceLine": 2739,
       "originalLine": null,
       "characters": 177,
       "sourceHash": "93eb09f3d7eef969e94b56d2fa616523b126506e23576fbe1d9b3d585f88edd4",
@@ -21167,7 +21233,7 @@
     {
       "name": "getFishRightOfWayPairKey",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2592,
+      "sourceLine": 2745,
       "originalLine": null,
       "characters": 419,
       "sourceHash": "10ef142c6c98921f6e83d51827ac0d06b57c9812c301113a5e03899dda97aea0",
@@ -21178,7 +21244,7 @@
     {
       "name": "isFishRightOfWayEscapePriority",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2602,
+      "sourceLine": 2755,
       "originalLine": null,
       "characters": 466,
       "sourceHash": "460eededa30615368cf5c85aa70eaf3f0cd3d9cc5eb3848ba08d501ec7e22e06",
@@ -21189,7 +21255,7 @@
     {
       "name": "isFishRightOfWaySchoolLeader",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2612,
+      "sourceLine": 2765,
       "originalLine": null,
       "characters": 374,
       "sourceHash": "70a126bf96688a1703f475f8ed02f0ca5210ebc3a967e51e7cc10b1808c7cf3b",
@@ -21200,7 +21266,7 @@
     {
       "name": "getFishActiveSchoolLeaderId",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2623,
+      "sourceLine": 2776,
       "originalLine": null,
       "characters": 287,
       "sourceHash": "be542c7a421498107c56ad119337d4a4489739071ed9eb36f800a19a694f5fc9",
@@ -21211,7 +21277,7 @@
     {
       "name": "areFishActiveSchoolmates",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2631,
+      "sourceLine": 2784,
       "originalLine": null,
       "characters": 295,
       "sourceHash": "ee2e543388aa97a4bede6af1b2805e39e970ed0342d065f32df4bc4f767de1ea",
@@ -21222,7 +21288,7 @@
     {
       "name": "releaseFishFromCrowdedSchoolSlot",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2637,
+      "sourceLine": 2790,
       "originalLine": null,
       "characters": 540,
       "sourceHash": "a913169c2b6ef1fe933cdaeae0548175c5b90187a38b04b5f915bdac1c2a0e19",
@@ -21234,7 +21300,7 @@
     {
       "name": "getFishRightOfWayDestinationDistance",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2649,
+      "sourceLine": 2802,
       "originalLine": null,
       "characters": 1339,
       "sourceHash": "cf17e8784c32835e53edf907ecedc5ba5657f044ca5e7977b17a7538a440186a",
@@ -21248,7 +21314,7 @@
     {
       "name": "getFishRightOfWaySizeRank",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2678,
+      "sourceLine": 2831,
       "originalLine": null,
       "characters": 450,
       "sourceHash": "6c8495b5c7ecc5055aea57180af760b20baf5c3e760360bee50b937ee7de030b",
@@ -21261,7 +21327,7 @@
     {
       "name": "compareFishRightOfWayPriority",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2690,
+      "sourceLine": 2843,
       "originalLine": null,
       "characters": 1132,
       "sourceHash": "d17dc59ffecca5fd136323b8a32f4acb677706fefa429861de1e185bb25b8760",
@@ -21275,7 +21341,7 @@
     {
       "name": "getFishCollisionRightOfWayDecision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2715,
+      "sourceLine": 2868,
       "originalLine": null,
       "characters": 1105,
       "sourceHash": "f2cd5108fd8f9f9000f2e0c478d647d2dd7541ee6be0a9e3c78773c0920cf17f",
@@ -21287,7 +21353,7 @@
     {
       "name": "clearFishRightOfWayForFish",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2749,
+      "sourceLine": 2902,
       "originalLine": null,
       "characters": 327,
       "sourceHash": "878aea1d15b7da30bcf48f586dbc2429c3256b283afc88fc308cdd56680da338",
@@ -21296,7 +21362,7 @@
     {
       "name": "getFishNavigationMemory",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2758,
+      "sourceLine": 2911,
       "originalLine": null,
       "characters": 2118,
       "sourceHash": "c5ba6a5656e2870fad9cc03f953fa028719db3120e759bad6fd28417e221f19a",
@@ -21305,7 +21371,7 @@
     {
       "name": "clearFishNavigationMemory",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2816,
+      "sourceLine": 2969,
       "originalLine": null,
       "characters": 171,
       "sourceHash": "3d21492f1e25600c6a864090e90646bb5727f367d6cf08bdc41c390743d9722c",
@@ -21314,7 +21380,7 @@
     {
       "name": "updateFishNavigationProgress",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2822,
+      "sourceLine": 2975,
       "originalLine": null,
       "characters": 1905,
       "sourceHash": "52e7690c0374af73d94dd4de7e672a44ea72043020ffe5298ae854b115fb6917",
@@ -21327,7 +21393,7 @@
     {
       "name": "getFishNavigationTransitionKey",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2873,
+      "sourceLine": 3026,
       "originalLine": null,
       "characters": 182,
       "sourceHash": "8157b1da25534f340e0ca2fef18579b6d137a522c8ef145bd88797c160294a81",
@@ -21336,7 +21402,7 @@
     {
       "name": "didFishRecentlyFailNavigationTransition",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2877,
+      "sourceLine": 3030,
       "originalLine": null,
       "characters": 310,
       "sourceHash": "b01bd82e6c9f6f0c36d1645027531b5af0e76c0131a72f31e2196f0aa8074dcc",
@@ -21347,7 +21413,7 @@
     {
       "name": "recordFishNavigationFailure",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2883,
+      "sourceLine": 3036,
       "originalLine": null,
       "characters": 1880,
       "sourceHash": "41b35879ce8c1c231c6e8d20bb8785d6a7727e3cb8398b8f8a15dc8c297ab5c1",
@@ -21359,7 +21425,7 @@
     {
       "name": "noteFishNavigationSubLayerCommit",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2933,
+      "sourceLine": 3086,
       "originalLine": null,
       "characters": 447,
       "sourceHash": "2d6511aaadb22a1d4f4eaca0fe01dbc75a4212938870d6efa629efaf9ae82f7e",
@@ -21370,7 +21436,7 @@
     {
       "name": "clearFishNavigationDepthEscapeTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2943,
+      "sourceLine": 3096,
       "originalLine": null,
       "characters": 933,
       "sourceHash": "88b3a284973465d270843134388554d69f054194f1a0c80a62611604a5cdf0aa",
@@ -21381,7 +21447,7 @@
     {
       "name": "noteFishNavigationDepthEscapeTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2965,
+      "sourceLine": 3118,
       "originalLine": null,
       "characters": 1026,
       "sourceHash": "eca8b4c3a1c51f610c74146297ea602d5a9d8c6e1d427c007b92d6154c942d0d",
@@ -21394,7 +21460,7 @@
     {
       "name": "getActiveFishNavigationDepthEscapeTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2983,
+      "sourceLine": 3136,
       "originalLine": null,
       "characters": 479,
       "sourceHash": "73cf15987a6201689e35d24a97268a4ab10e74eb65a6d42b17f02555c09adb01",
@@ -21407,7 +21473,7 @@
     {
       "name": "isFishNavigationCommitBlockingDepthPosition",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 2993,
+      "sourceLine": 3146,
       "originalLine": null,
       "characters": 536,
       "sourceHash": "fbab4e4aab9f0361ea741d1726c8718b92c9c657d6d99c9e460c6786384b3382",
@@ -21420,7 +21486,7 @@
     {
       "name": "noteFishNavigationDepthTransition",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3003,
+      "sourceLine": 3156,
       "originalLine": null,
       "characters": 1275,
       "sourceHash": "e06e4b3577f4bbe98278cfb636f6c56acca43963bddf4517ffae0a8927e224b2",
@@ -21434,7 +21500,7 @@
     {
       "name": "getFishNavigationEscapeWaypointCandidates",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3031,
+      "sourceLine": 3184,
       "originalLine": null,
       "characters": 701,
       "sourceHash": "9ad79c7e43114dbd542303ed4fedbd5d10e819f2e3d157a6572cbaed621ac7ba",
@@ -21448,7 +21514,7 @@
     {
       "name": "isFishNavigationEscapeWaypointClear",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3051,
+      "sourceLine": 3204,
       "originalLine": null,
       "characters": 1149,
       "sourceHash": "e18a59cae183d61cbabc6f9ca66c11291bb4acb910f1e96b83ea87ad294f41c7",
@@ -21464,7 +21530,7 @@
     {
       "name": "queueFishNavigationEscapeWaypoint",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3082,
+      "sourceLine": 3235,
       "originalLine": null,
       "characters": 1665,
       "sourceHash": "e965aa9b5a24b1f7ac81d9d8ec9b7b236f91b0d8064fe58b89571a77b4107b87",
@@ -21479,7 +21545,7 @@
     {
       "name": "tryFishNavigationAdjacentMajorLayerEscape",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3119,
+      "sourceLine": 3272,
       "originalLine": null,
       "characters": 987,
       "sourceHash": "7c1605a57c47b2521befb6d77ec85ddb93b7b15a312e2103ae43eda15619b0ec",
@@ -21497,7 +21563,7 @@
     {
       "name": "maybeEscalateFishNavigationUnstuck",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3138,
+      "sourceLine": 3291,
       "originalLine": null,
       "characters": 1635,
       "sourceHash": "5c89b529c553278d8ae8c4478a412f856e4fb6394c510c6b2d927fd100a7d43c",
@@ -21513,7 +21579,7 @@
     {
       "name": "findFishBodyCollisionAtPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3177,
+      "sourceLine": 3330,
       "originalLine": null,
       "characters": 2163,
       "sourceHash": "220b5a7b7d6ac541b549c98561111b9d8b89677ad7157f2f5114fe2bf8fd6639",
@@ -21538,7 +21604,7 @@
     {
       "name": "resolveFishBodyCollision",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3241,
+      "sourceLine": 3394,
       "originalLine": null,
       "characters": 2541,
       "sourceHash": "d35a8530b2a7d2645c6585d9369fb4784cc0e58e20abb4793cdf04a84c72881b",
@@ -21552,7 +21618,7 @@
     {
       "name": "getFishAlternateSubLayerCandidates",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3333,
+      "sourceLine": 3486,
       "originalLine": null,
       "characters": 1394,
       "sourceHash": "e15bf62011550fdc9f00a6ac78420fc19c628a86faa3222acf7d04bb0eaa8402",
@@ -21569,7 +21635,7 @@
     {
       "name": "canFishOccupySubLayerAtPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3362,
+      "sourceLine": 3515,
       "originalLine": null,
       "characters": 1054,
       "sourceHash": "fad2507b59f0ef16b5038dc5161ce139a16093e99acdf3f7a7a8925c790079b3",
@@ -21586,7 +21652,7 @@
     {
       "name": "canFishOccupyDepthPositionAtPose",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3391,
+      "sourceLine": 3544,
       "originalLine": null,
       "characters": 1392,
       "sourceHash": "6f5e3bd7cc91024dad2648e357c784e4e63afb82b9f33e8dcef45a885823b1c5",
@@ -21603,7 +21669,7 @@
     {
       "name": "getFishNavigationDepthEscapeDirectionOrder",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3419,
+      "sourceLine": 3572,
       "originalLine": null,
       "characters": 741,
       "sourceHash": "ca8170ce3b68a47a31b24ba6a1c471533eb1ddf42025fa81f9aba13caa985dc2",
@@ -21615,7 +21681,7 @@
     {
       "name": "findFishNavigationDepthEscapeTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3437,
+      "sourceLine": 3590,
       "originalLine": null,
       "characters": 2456,
       "sourceHash": "8ac0202c2d7e6d96d94b512db955330aa6a4279bd998c1125fe25b85fe744e9a",
@@ -21634,7 +21700,7 @@
     {
       "name": "tryFishNavigationDepthEscape",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3479,
+      "sourceLine": 3632,
       "originalLine": null,
       "characters": 576,
       "sourceHash": "14883b8c5c5b7117408ba6967f7243091551d2ee21f908fc0926cc5377a520db",
@@ -21649,7 +21715,7 @@
     {
       "name": "tryFishSubLayerPass",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3489,
+      "sourceLine": 3642,
       "originalLine": null,
       "characters": 2741,
       "sourceHash": "cbf9b76485b52f252f420ce56509882253781974905d61a16440c135286b39c9",
@@ -21677,7 +21743,7 @@
     {
       "name": "getFishCollisionDetourCandidates",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3550,
+      "sourceLine": 3703,
       "originalLine": null,
       "characters": 1624,
       "sourceHash": "5c51731f836e8a3e18c3f08153817b2d01477af300830ea62abda33c48c0cb53",
@@ -21692,7 +21758,7 @@
     {
       "name": "findFishClearDetourTarget",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3586,
+      "sourceLine": 3739,
       "originalLine": null,
       "characters": 1124,
       "sourceHash": "090dfb29f221b57779b6aefa85bae59a594ca66ff5170165e4b77fe4b74ca379",
@@ -21708,7 +21774,7 @@
     {
       "name": "queueFishCollisionAvoidance",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3617,
+      "sourceLine": 3770,
       "originalLine": null,
       "characters": 6151,
       "sourceHash": "3b97cba53c571d520969bb9e93f35c7b9283170c5db6e0ef7d8ae451b646c397",
@@ -21740,7 +21806,7 @@
     {
       "name": "applyFishCollisionAvoidanceSteering",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3761,
+      "sourceLine": 3914,
       "originalLine": null,
       "characters": 844,
       "sourceHash": "5eb5de7a880d9b0df4aa939eabb56b20c80a6158c061de87624d0ea701e0dff9",
@@ -21755,7 +21821,7 @@
     {
       "name": "getFishLayerChangeBlockingFish",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3789,
+      "sourceLine": 3942,
       "originalLine": null,
       "characters": 952,
       "sourceHash": "0549fbe23d34225f29635f89d22c7a2f757baae44c9356a6c429facf374d67b1",
@@ -21770,7 +21836,7 @@
     {
       "name": "canFishChangeToLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3812,
+      "sourceLine": 3965,
       "originalLine": 61651,
       "characters": 1319,
       "sourceHash": "3c8d476edaf7d2e7b588847a6827e2949185654b36e67b6798555789c0ed9354",
@@ -21787,7 +21853,7 @@
     {
       "name": "canFishChangeToDepthPosition",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3849,
+      "sourceLine": 4002,
       "originalLine": null,
       "characters": 1138,
       "sourceHash": "9ca866da39aab94b17680a2ab9e48ef0b13911ec5481caac6ee1898b443ab563",
@@ -21803,7 +21869,7 @@
     {
       "name": "getFishDepthPositionBlockingFish",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3885,
+      "sourceLine": 4038,
       "originalLine": null,
       "characters": 550,
       "sourceHash": "68a986388155b94e377cbd5109b42023392b88ada6d2354e4417deca50320e49",
@@ -21815,7 +21881,7 @@
     {
       "name": "canFishOccupyContinuousDepth",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3904,
+      "sourceLine": 4057,
       "originalLine": null,
       "characters": 405,
       "sourceHash": "4be53e85b08472f7685c90d0bd443f9485a1cb28488ca1d034818487360ab383",
@@ -21828,7 +21894,7 @@
     {
       "name": "findFishContinuousDepthEscape",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3915,
+      "sourceLine": 4068,
       "originalLine": null,
       "characters": 509,
       "sourceHash": "af905cbdb75c0c8747883869ab5e8f71dfba6dd0d4905a6b931280150b293149",
@@ -21840,7 +21906,7 @@
     {
       "name": "syncFishContinuousDepth",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3927,
+      "sourceLine": 4080,
       "originalLine": null,
       "characters": 1769,
       "sourceHash": "72952d39e6ddf901f466853c2ec5735519bca25949210fd88cc24d1c131122cb",
@@ -21861,7 +21927,7 @@
     {
       "name": "syncFishDrawLayer",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 3970,
+      "sourceLine": 4123,
       "originalLine": 61683,
       "characters": 7769,
       "sourceHash": "2350e59e760890528f755e43f67ce81c712753512d537eb9800b68cc735f3393",
@@ -21906,7 +21972,7 @@
     {
       "name": "getFishOcclusionBounds",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 4163,
+      "sourceLine": 4316,
       "originalLine": 61713,
       "characters": 497,
       "sourceHash": "65c782c48464521ba318d7221c434f4bced2fc62b0422afd69a69aa84e6da875",
@@ -21918,7 +21984,7 @@
     {
       "name": "boundsIntersect",
       "module": "fish/caves-and-collision.js",
-      "sourceLine": 4178,
+      "sourceLine": 4331,
       "originalLine": 61728,
       "characters": 243,
       "sourceHash": "3ec157577c52a9d857abcd3df39ea81b93c9c1fc9aa4b51d68c0e91a114f8802",
@@ -24220,29 +24286,60 @@
       ]
     },
     {
-      "name": "maybeChooseFishSchoolFormation",
+      "name": "recordFishSchoolLeaderPathHistory",
       "module": "fish/gravel-and-schooling.js",
       "sourceLine": 1494,
       "originalLine": null,
-      "characters": 1141,
-      "sourceHash": "de163772b86cfe6f0491c27fd5e932e059a8d000e330984537abab234a8666eb",
+      "characters": 1677,
+      "sourceHash": "67044c72d745ea63e966fb7de9037fbe62fd27e08c26cf5f202620518d2d92de",
+      "calls": [
+        "getFishTankDepthZ"
+      ]
+    },
+    {
+      "name": "getFishSchoolLeaderHistoricalPose",
+      "module": "fish/gravel-and-schooling.js",
+      "sourceLine": 1532,
+      "originalLine": null,
+      "characters": 2395,
+      "sourceHash": "91ab74ca115384db946f6cf05ae0406d7b999c41768424de46f94819f660b871",
+      "calls": [
+        "assignFishSchoolFormationSlot",
+        "clamp",
+        "getFishLocomotionProfile",
+        "getFishTankDepthZ",
+        "getSpeciesForFish",
+        "recordFishSchoolLeaderPathHistory"
+      ]
+    },
+    {
+      "name": "maybeChooseFishSchoolFormation",
+      "module": "fish/gravel-and-schooling.js",
+      "sourceLine": 1582,
+      "originalLine": null,
+      "characters": 2124,
+      "sourceHash": "9587cdd3282e8a22b4dd47bef53a8f3c0df66b0f54be9cee476f6e1048cb1d32",
       "calls": [
         "getDesiredFishTankDepthIndex",
+        "getDesiredFishTankDepthZ",
+        "getFishSchoolActiveFollowers",
         "getFishTankDepthIndex",
+        "getFishTankDepthZ",
         "randomBetween"
       ]
     },
     {
       "name": "getFishSchoolFormationOffset",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1517,
+      "sourceLine": 1625,
       "originalLine": null,
-      "characters": 1811,
-      "sourceHash": "2c854a30de07b55d75188655ff2b27708bce7d0f6ea6ab78538fee02fbdb452d",
+      "characters": 2589,
+      "sourceHash": "3cb6b8541d55b03f241cf2c2e1d04349e9404f970686cd86a6cd6a76333e5c53",
       "calls": [
         "assignFishSchoolFormationSlot",
         "clamp",
         "getFishLocomotionProfile",
+        "getFishSchoolStableRank",
         "getFishVisualSize",
         "getSpeciesForFish",
         "maybeChooseFishSchoolFormation"
@@ -24251,10 +24348,10 @@
     {
       "name": "getFishSchoolFollowAnchor",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1563,
+      "sourceLine": 1686,
       "originalLine": 34533,
-      "characters": 4582,
-      "sourceHash": "f4ae5b9e6eecec07e7c25a2bb0ce22a20605f730d8d2cdfc230c6783d7b520ef",
+      "characters": 3413,
+      "sourceHash": "c364adf217947a7c1414b3f4528032f4fd53dccb608f78ff8c26bf66e168a093",
       "calls": [
         "clamp",
         "clampTankLayer",
@@ -24263,7 +24360,7 @@
         "getFishSchoolFormationDepthOffset",
         "getFishSchoolFormationOffset",
         "getFishSchoolFormationSubLayer",
-        "getFishSchoolLeaderFormationDirection",
+        "getFishSchoolLeaderHistoricalPose",
         "getFishTankLayer",
         "sanitizeTankDepthZ"
       ]
@@ -24271,7 +24368,7 @@
     {
       "name": "getFishSchoolFollowFacingDirection",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1650,
+      "sourceLine": 1759,
       "originalLine": 34574,
       "characters": 2433,
       "sourceHash": "10f837636c2f1e770310771ea2719960b1e227a1b5779a583bba435aaee3168f",
@@ -24289,10 +24386,10 @@
     {
       "name": "updateFishSchoolFollowTarget",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1717,
+      "sourceLine": 1826,
       "originalLine": 34611,
-      "characters": 6000,
-      "sourceHash": "4d9db4edceaad829f75ffb995d77f5a1402bd29bf9af94a66bef132ef7aeb02a",
+      "characters": 7323,
+      "sourceHash": "3646f9714c73edb8a0e514fa6f6af747db083f9f2b2489f0ec8ca2ae00a3217f",
       "calls": [
         "clamp",
         "clearFishSchoolFollowState",
@@ -24306,13 +24403,14 @@
         "isFishSchoolLeaderAvailable",
         "isProteusZombieFish",
         "normalizeFishSpeed",
+        "recordFishSchoolLeaderPathHistory",
         "setFishDesiredTankDepth"
       ]
     },
     {
       "name": "pickSameSpeciesFollowTarget",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 1867,
+      "sourceLine": 2001,
       "originalLine": 34644,
       "characters": 5099,
       "sourceHash": "c7ad0c077fbf90e46af94af80617e6c801f741a7457f334f03f890703028fe59",
@@ -24339,7 +24437,7 @@
     {
       "name": "deferFishSchoolFollowForRecovery",
       "module": "fish/gravel-and-schooling.js",
-      "sourceLine": 2001,
+      "sourceLine": 2135,
       "originalLine": null,
       "characters": 334,
       "sourceHash": "8282de7fa293e42d8d4f8e18e3a39407ca9b42c4dd49268fdf5983179004e3fc",
@@ -24860,14 +24958,14 @@
       "module": "fish/health.js",
       "sourceLine": 617,
       "originalLine": 33469,
-      "characters": 721,
-      "sourceHash": "a7437914d7cf82ed56c7422ef02b752ced5bc43292d728e5a5115bf4368fb8d4",
+      "characters": 786,
+      "sourceHash": "cfc207a9e4eca5c14a4d4c1bb8b0fbc55d07cb26a5a54cffceb0d59a97cdea3c",
       "calls": []
     },
     {
       "name": "pruneFishGravelPebbleRuntimeState",
       "module": "fish/health.js",
-      "sourceLine": 644,
+      "sourceLine": 646,
       "originalLine": 33480,
       "characters": 633,
       "sourceHash": "2840aaa8b8cbb18c5438facf5bec1d50c10270c585d8ce93c3a62a24195b2009",
@@ -24876,7 +24974,7 @@
     {
       "name": "markFishAsDead",
       "module": "fish/health.js",
-      "sourceLine": 661,
+      "sourceLine": 663,
       "originalLine": 35097,
       "characters": 4381,
       "sourceHash": "4ca6de5da21e6f7dd3c84d057d048c1e23b69ef96c3bb30c02a2a4210efc7a51",
@@ -24911,7 +25009,7 @@
     {
       "name": "applyFishDamage",
       "module": "fish/health.js",
-      "sourceLine": 775,
+      "sourceLine": 777,
       "originalLine": 35176,
       "characters": 1070,
       "sourceHash": "04513b13864fa9d76ab934733496d1632270741911cfbedaefcd56661daeb453",
@@ -24926,7 +25024,7 @@
     {
       "name": "updateProteusZombieFishRegeneration",
       "module": "fish/health.js",
-      "sourceLine": 805,
+      "sourceLine": 807,
       "originalLine": null,
       "characters": 822,
       "sourceHash": "54eff7b04f8aa2ecba8ac4fda6a752b6a3ec44b4ee7dd448874576f006add944",
@@ -25847,8 +25945,8 @@
       "module": "fish/meals-and-needs.js",
       "sourceLine": 69,
       "originalLine": null,
-      "characters": 448,
-      "sourceHash": "ddbd8595e0165f83193a44da154ced61b42553da968318e521e24e2560034416",
+      "characters": 432,
+      "sourceHash": "65077d84503af6642424b7c332ddfea476a8ab54de6f666c7799610c258de638",
       "calls": [
         "areSimpleTurnAnimationsForced",
         "getSpeciesForFish"
@@ -25857,7 +25955,7 @@
     {
       "name": "getSimpleFishTurnDurationMs",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 82,
+      "sourceLine": 79,
       "originalLine": null,
       "characters": 934,
       "sourceHash": "1cad4ca77be85b462467e31e28f06ff8ebae6a9606b381ad9be534f2cb06796f",
@@ -25870,19 +25968,23 @@
     {
       "name": "getComplexFishTurnDurationMs",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 101,
+      "sourceLine": 98,
       "originalLine": null,
-      "characters": 301,
-      "sourceHash": "fd11f4d06b670d5a513bf9cf3ef32f13e38d327b8f7480bca2100d084dbcf1fa",
+      "characters": 1678,
+      "sourceHash": "8b96602e4ab131b00513ab47502cf1e7514e895350075fdba7e24e8316d2001a",
       "calls": [
+        "clamp",
+        "getFishLocomotionProfile",
+        "getFishVisualSize",
         "getSimpleFishTurnDurationMs",
+        "normalizeFishSpeed",
         "normalizeFishTurnRendererBackend"
       ]
     },
     {
       "name": "getFishTurnDurationMs",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 109,
+      "sourceLine": 134,
       "originalLine": 57522,
       "characters": 432,
       "sourceHash": "771e66fac35b16bb14ff63b491960e64d0f2f93869a4eb7fcc6cacf1b252182b",
@@ -25895,7 +25997,7 @@
     {
       "name": "formatSwimStyle",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 118,
+      "sourceLine": 143,
       "originalLine": 57539,
       "characters": 213,
       "sourceHash": "7dc96919045a37076074f6b72435c567052ff5391042b1c4255b314c4a7ccdb6",
@@ -25904,7 +26006,7 @@
     {
       "name": "getCurrentMealSlot",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 129,
+      "sourceLine": 154,
       "originalLine": 57551,
       "characters": 482,
       "sourceHash": "0bab0f9a220a6e02960304b91d03744dfcfd40592c01494b2bbc84c2da27ab1a",
@@ -25915,7 +26017,7 @@
     {
       "name": "getTodaysMealSlots",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 144,
+      "sourceLine": 169,
       "originalLine": 57559,
       "characters": 270,
       "sourceHash": "f7fbf17da12b2deb67eb0cd4fbe56b66d4b29b9713d1e00c91c16b8d59197856",
@@ -25926,7 +26028,7 @@
     {
       "name": "buildMealSlot",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 153,
+      "sourceLine": 178,
       "originalLine": 57568,
       "characters": 447,
       "sourceHash": "673f223ec8cca871fd8f1232c386528deeba7a770151b7d049efe5540b4c34e6",
@@ -25935,7 +26037,7 @@
     {
       "name": "getNextMealBoundary",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 166,
+      "sourceLine": 191,
       "originalLine": 57595,
       "characters": 541,
       "sourceHash": "6ff5ee96be2f113e795f1ba3f9fdf26125b9714c80ad1c3db5c8bc0ded4ed820",
@@ -25944,7 +26046,7 @@
     {
       "name": "getTankPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 184,
+      "sourceLine": 209,
       "originalLine": 57613,
       "characters": 1488,
       "sourceHash": "09f23b1a576ebefe4aa33ddf51e8a54477f13f548c64a3a8540b4bd58b9eb2e4",
@@ -25958,7 +26060,7 @@
     {
       "name": "getPelletPose",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 234,
+      "sourceLine": 259,
       "originalLine": 57662,
       "characters": 4975,
       "sourceHash": "3b1fde99d0995e37c115646c51593182577b52b9bdf6647017c800670214fdeb",
@@ -25972,7 +26074,7 @@
     {
       "name": "getPelletHitBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 342,
+      "sourceLine": 367,
       "originalLine": 57718,
       "characters": 1720,
       "sourceHash": "82dd1ffbec4427fed45365dad3883ae7d0cd5a3f4e3219e17097254ac2884832",
@@ -25989,7 +26091,7 @@
     {
       "name": "rgbaString",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 389,
+      "sourceLine": 414,
       "originalLine": 57760,
       "characters": 197,
       "sourceHash": "ebcd78e39543b52932460411644a0b473ba235ec0554ad1b690353ecd2ad04a2",
@@ -26000,7 +26102,7 @@
     {
       "name": "getBubbleOrbPalette",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 393,
+      "sourceLine": 418,
       "originalLine": 57764,
       "characters": 1287,
       "sourceHash": "8ff8b683369e3d5ddc8a6f9370c2aea82d44951bf63343e9aac5cd0325344dbc",
@@ -26016,7 +26118,7 @@
     {
       "name": "getOptionalBubbleOrbSprite",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 416,
+      "sourceLine": 441,
       "originalLine": 57787,
       "characters": 125,
       "sourceHash": "2b03a2f69c6a74c7087010ce147ab65b1e9faf9135e7666937964f967d6dd4dc",
@@ -26027,7 +26129,7 @@
     {
       "name": "getTintedBubbleOrbSprite",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 420,
+      "sourceLine": 445,
       "originalLine": 57791,
       "characters": 2345,
       "sourceHash": "ceea2363b184076da9eebec5b28006cf557c5710903817784166ed2eb5eec1f1",
@@ -26039,7 +26141,7 @@
     {
       "name": "drawBubbleOrbInteriorFillToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 497,
+      "sourceLine": 522,
       "originalLine": 57862,
       "characters": 396,
       "sourceHash": "b11c77ea38938440b7ef070464b297c6c8e394490ec5e930d73ed6b235c9f8cf",
@@ -26048,7 +26150,7 @@
     {
       "name": "drawMalformedBubbleSpriteToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 513,
+      "sourceLine": 538,
       "originalLine": 57879,
       "characters": 4607,
       "sourceHash": "e2283212e9077586e2fb2059964ee607aa63251ab309d24b5d399ef34a270b6f",
@@ -26062,7 +26164,7 @@
     {
       "name": "drawBubbleOrbToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 618,
+      "sourceLine": 643,
       "originalLine": 57984,
       "characters": 2064,
       "sourceHash": "31df99d1dd2898e5573d668ef5700b9767b27dffc095e2bcd93e3d254bccbc24",
@@ -26076,7 +26178,7 @@
     {
       "name": "drawBubbleOrb",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 668,
+      "sourceLine": 693,
       "originalLine": 58035,
       "characters": 154,
       "sourceHash": "aff82bc11252d5db873e5c79ef05f29f51a3234221e3c7d7a8f921dd75f0047d",
@@ -26087,7 +26189,7 @@
     {
       "name": "drawBubblePopBurstToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 672,
+      "sourceLine": 697,
       "originalLine": 58039,
       "characters": 1857,
       "sourceHash": "510236623fd5e3b490f1de4f1041433a7813fad6fe5db968196c634cc42e0e95",
@@ -26101,7 +26203,7 @@
     {
       "name": "getBubblerSpoutSourceOffsetRatio",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 716,
+      "sourceLine": 741,
       "originalLine": 58083,
       "characters": 1025,
       "sourceHash": "a045f2a5c53d41e850b02175617d79deaf0dcbe26d81a71d3d7a7c159bbdcf1c",
@@ -26113,7 +26215,7 @@
     {
       "name": "getBubblerSpoutHorizontalLocation",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 746,
+      "sourceLine": 771,
       "originalLine": 58113,
       "characters": 395,
       "sourceHash": "98cb10e6b7fcca56c242226db4d4bbbe35fd4f096680602fbfaeb7bce9e43608",
@@ -26124,7 +26226,7 @@
     {
       "name": "getBubblerDirectionVector",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 755,
+      "sourceLine": 780,
       "originalLine": 58122,
       "characters": 309,
       "sourceHash": "b9435a1c7d576ed8583150553d7c038fc734ec15c586bb1c30580235645342d0",
@@ -26135,7 +26237,7 @@
     {
       "name": "drawDecorBubblerEffectToContext",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 769,
+      "sourceLine": 794,
       "originalLine": 58136,
       "characters": 15957,
       "sourceHash": "a8cbf5746eaf8f77700626add346e2ae7c46383701edf81b198cb3b0354f928f",
@@ -26167,7 +26269,7 @@
     {
       "name": "drawDecorBubblerEffect",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1078,
+      "sourceLine": 1103,
       "originalLine": 58400,
       "characters": 169,
       "sourceHash": "d690ec1a74cb0a997c660068d9ad5b3b2aceadcdc23e1bd9895208292226e823",
@@ -26178,7 +26280,7 @@
     {
       "name": "drawTransitTubeBursts",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1082,
+      "sourceLine": 1107,
       "originalLine": null,
       "characters": 1451,
       "sourceHash": "dbc73973a2b06a85dc601ed66d27e3c440e423a735eed26c685e579d0cff7fa5",
@@ -26191,7 +26293,7 @@
     {
       "name": "drawDecorBubbleStreams",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1119,
+      "sourceLine": 1144,
       "originalLine": 58404,
       "characters": 1679,
       "sourceHash": "1c3ef10c8cc2046d3defafcfd169eb021ec5b31580e9a9c5deec538660ce36af",
@@ -26206,7 +26308,7 @@
     {
       "name": "getDecorBubbleIntensity",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1166,
+      "sourceLine": 1191,
       "originalLine": 58451,
       "characters": 330,
       "sourceHash": "5a0ec4968c52d6ea62d3f8ae6706fa7613fe74352feaac0cdd33b1eb8b519cd8",
@@ -26217,7 +26319,7 @@
     {
       "name": "getBubbleSpriteByIndex",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1174,
+      "sourceLine": 1199,
       "originalLine": 58465,
       "characters": 344,
       "sourceHash": "ff704e43f90a2cbc2d3dcffee78f26dd2bd53e4fdda8222bc6d9b1e79f65d4d3",
@@ -26228,7 +26330,7 @@
     {
       "name": "getPoopPose",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1188,
+      "sourceLine": 1213,
       "originalLine": 58479,
       "characters": 1235,
       "sourceHash": "da44bdca1137d22187eda52ed9b64af0c6f321398a2084d5f7da3a4672624ae4",
@@ -26242,7 +26344,7 @@
     {
       "name": "findFloatingPelletAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1226,
+      "sourceLine": 1251,
       "originalLine": 58517,
       "characters": 508,
       "sourceHash": "9c1dc3a0d93a12b47801422b268aa24e1b0c03e6b4ab8d9e20eb0edf6b224a81",
@@ -26253,7 +26355,7 @@
     {
       "name": "findPoopAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1248,
+      "sourceLine": 1273,
       "originalLine": 58539,
       "characters": 427,
       "sourceHash": "d82dff96388778a8cba7db5f7e5bd23b3e5b388c740cb2e3f08ecef5c26a08c8",
@@ -26264,7 +26366,7 @@
     {
       "name": "getAutoDispenserLayout",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1270,
+      "sourceLine": 1295,
       "originalLine": 58561,
       "characters": 2653,
       "sourceHash": "63372b0015ee5ffe5ba88cf0ad4f9633f143d0ca3129ecc6a2f7e58865570d90",
@@ -26278,7 +26380,7 @@
     {
       "name": "pointInSimpleBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1354,
+      "sourceLine": 1379,
       "originalLine": 58638,
       "characters": 178,
       "sourceHash": "6013914f3508e9cae15099ed2d697101335ef568bf5fef8e196ab71a0d747764",
@@ -26287,7 +26389,7 @@
     {
       "name": "expandBoundsAroundCenter",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1364,
+      "sourceLine": 1389,
       "originalLine": 58648,
       "characters": 530,
       "sourceHash": "ce7f640ba947caa7bd2637be5d6de84a3fec767f8a13599292ffdd5bbd0a880a",
@@ -26296,7 +26398,7 @@
     {
       "name": "getAutoDispenserHitTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1381,
+      "sourceLine": 1406,
       "originalLine": 58665,
       "characters": 236,
       "sourceHash": "238bdd94957e89ce3c77d65c0dd7c2bac7d0218e4bfe321e04b624b41987276d",
@@ -26309,7 +26411,7 @@
     {
       "name": "handleAutoDispenserInteractionAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1393,
+      "sourceLine": 1418,
       "originalLine": 58689,
       "characters": 427,
       "sourceHash": "e8638e412c7574f44d78c12f912ec91d42e6fd19151f20acc60c409b86e4edec",
@@ -26323,7 +26425,7 @@
     {
       "name": "getAutoDispenserHitBounds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1411,
+      "sourceLine": 1436,
       "originalLine": null,
       "characters": 151,
       "sourceHash": "1d8e2be2f55bc52d19bb8f93e5e91161513d7a308040c06148eadafc7d32877a",
@@ -26335,7 +26437,7 @@
     {
       "name": "setAutoDispenserPositionFromPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1416,
+      "sourceLine": 1441,
       "originalLine": null,
       "characters": 557,
       "sourceHash": "5cab2521765dda2d20cd433ae7c24bfce048a5465d82d8463c74878c8b679bf1",
@@ -26350,7 +26452,7 @@
     {
       "name": "setAutoDispenserTankLayer",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1429,
+      "sourceLine": 1454,
       "originalLine": null,
       "characters": 356,
       "sourceHash": "96b89d523f6f35f4aeef1a0caa0f4533cc560a21ee7087fa4f042d99d0e2648f",
@@ -26364,7 +26466,7 @@
     {
       "name": "scoopTankItemAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1440,
+      "sourceLine": 1465,
       "originalLine": 58727,
       "characters": 1520,
       "sourceHash": "9a9c0b1c869a7ce5808de4620165257eb8cc77ed6cb59309bbf4c05d450717f2",
@@ -26383,7 +26485,7 @@
     {
       "name": "handleScoopAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1500,
+      "sourceLine": 1525,
       "originalLine": 58767,
       "characters": 324,
       "sourceHash": "b41bc1adb9106efcfc348ea75bc247fc9103a077edc47c50ba17a9f6efc87bb1",
@@ -26397,7 +26499,7 @@
     {
       "name": "findFishEggAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1519,
+      "sourceLine": 1544,
       "originalLine": 58786,
       "characters": 873,
       "sourceHash": "cb6b0e4af7812d6fae0d011bb87d32974186220bda510f308af19dfb11dbd452",
@@ -26409,7 +26511,7 @@
     {
       "name": "findFishAtPoint",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1552,
+      "sourceLine": 1577,
       "originalLine": 58819,
       "characters": 551,
       "sourceHash": "400d177bf7a3c1d117641c8a5eb5231b278deb398c78e4a346a889a21a751829",
@@ -26423,7 +26525,7 @@
     {
       "name": "updateComfortHistoryEvents",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1570,
+      "sourceLine": 1595,
       "originalLine": 58851,
       "characters": 943,
       "sourceHash": "0dacaae4ab28409df4aca7fe68da0855171417a30786b481c08d0eb65c6060aa",
@@ -26438,7 +26540,7 @@
     {
       "name": "getFishComfort",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1595,
+      "sourceLine": 1620,
       "originalLine": 58876,
       "characters": 2973,
       "sourceHash": "3330d74191775be91fc645c6432e69b8258deb32ccaeb72f843d28b7629f8521",
@@ -26465,7 +26567,7 @@
     {
       "name": "getFishNeedValue",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1664,
+      "sourceLine": 1689,
       "originalLine": 58945,
       "characters": 178,
       "sourceHash": "3f1a97dfe114a1edff2e214976cfca808a5db4a1e57ac3691430731b00074b96",
@@ -26477,7 +26579,7 @@
     {
       "name": "setFishNeedValue",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1669,
+      "sourceLine": 1694,
       "originalLine": 58950,
       "characters": 434,
       "sourceHash": "24e33dbdd4a281b5df9bf958c2ab00e0f69396763aac7f86462068d37fefb027",
@@ -26490,7 +26592,7 @@
     {
       "name": "adjustFishNeed",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1680,
+      "sourceLine": 1705,
       "originalLine": 58960,
       "characters": 173,
       "sourceHash": "aedef731b226da7cde8cdfcf2332958ba5f596141117fd9f0008ce11d57b5f18",
@@ -26502,7 +26604,7 @@
     {
       "name": "getFishNeedsSnapshot",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1684,
+      "sourceLine": 1709,
       "originalLine": 58964,
       "characters": 487,
       "sourceHash": "6eae566b169aeb066f09a4d572ff330109613d7148e2207cf16f0d93808bd92a",
@@ -26517,7 +26619,7 @@
     {
       "name": "getFishCareStatus",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1693,
+      "sourceLine": 1718,
       "originalLine": null,
       "characters": 3190,
       "sourceHash": "99d5287988f6e0824be176f208d376e50581220d529359dd7c695d43b59fe828",
@@ -26543,7 +26645,7 @@
     {
       "name": "getFishMoodPresentation",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1746,
+      "sourceLine": 1771,
       "originalLine": null,
       "characters": 1001,
       "sourceHash": "1d751dae39482ff36c6baefbbadc6b2ea0186ee1e9487956d15d7a60b3951e73",
@@ -26552,7 +26654,7 @@
     {
       "name": "getFishDisposition",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 1770,
+      "sourceLine": 1795,
       "originalLine": null,
       "characters": 13714,
       "sourceHash": "847ca61fe07f7302cdc65861961bba7e8508d297572d8e0d816654261be74aab",
@@ -26589,7 +26691,7 @@
     {
       "name": "getFishHungerLabel",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2023,
+      "sourceLine": 2048,
       "originalLine": 58970,
       "characters": 131,
       "sourceHash": "d850732c51cf0087ae769afa41902a3d79bfd4f4d51a0f36c4adaa34eb7fba6b",
@@ -26601,7 +26703,7 @@
     {
       "name": "isFishHungryByNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2027,
+      "sourceLine": 2052,
       "originalLine": 58974,
       "characters": 237,
       "sourceHash": "155bdd17a814d98ae765c69aacd78f7083505e3067f0b70ed04f6cce4e2b3e05",
@@ -26614,7 +26716,7 @@
     {
       "name": "getHungryFishByNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2034,
+      "sourceLine": 2059,
       "originalLine": 58981,
       "characters": 218,
       "sourceHash": "2671fa21428496eb9790bb7d0af3126c64f322102fcea0216fcef5db393ba9e0",
@@ -26626,7 +26728,7 @@
     {
       "name": "getPersonalityNeedModifier",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2038,
+      "sourceLine": 2063,
       "originalLine": 58985,
       "characters": 893,
       "sourceHash": "59a4eeaaa3c81c2a92fec50fab37e76a472346566c658adc9abc34c459b36cff",
@@ -26637,7 +26739,7 @@
     {
       "name": "getFishEnvironmentNeedTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2053,
+      "sourceLine": 2078,
       "originalLine": 59000,
       "characters": 684,
       "sourceHash": "9e0c114dfadc87ea030a0679242717883aadf3df8e7d9d974fbde49d04fd5219",
@@ -26652,7 +26754,7 @@
     {
       "name": "getFishSocialNeedTarget",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2063,
+      "sourceLine": 2088,
       "originalLine": 59010,
       "characters": 889,
       "sourceHash": "70fb67beba0a38919225ccbb1850333399e31458b8554a96021a0451e5d6f35a",
@@ -26669,7 +26771,7 @@
     {
       "name": "calculateFishNeedDeltas",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2080,
+      "sourceLine": 2105,
       "originalLine": 59024,
       "characters": 724,
       "sourceHash": "0aacabc7b19cbecabdabcf97607e398d7f03c87c6af74d82b824be6f6f0483c1",
@@ -26683,7 +26785,7 @@
     {
       "name": "updateFishLoneliness",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2094,
+      "sourceLine": 2119,
       "originalLine": null,
       "characters": 2489,
       "sourceHash": "affdfe77aca115fbdb8de14aa59199973feb5d772cf5d60ab364b01c7aedaa00",
@@ -26698,7 +26800,7 @@
     {
       "name": "updateFishNeeds",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2150,
+      "sourceLine": 2175,
       "originalLine": 59110,
       "characters": 2176,
       "sourceHash": "22b6dbc427745effbe92a56817ca178e0ec086549d2896f2e96d198a24f8b02b",
@@ -26723,7 +26825,7 @@
     {
       "name": "maybeRecordFishNeedEvent",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2195,
+      "sourceLine": 2220,
       "originalLine": 59151,
       "characters": 483,
       "sourceHash": "cddd5f421625a1021896fb8e6d04ab8b0414e5754b7646ecdd9efa46bf50c5af",
@@ -26736,7 +26838,7 @@
     {
       "name": "formatFishAgeDuration",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2208,
+      "sourceLine": 2233,
       "originalLine": null,
       "characters": 608,
       "sourceHash": "11be4025806ff7e5e072029d22bbb9de0e382249b68cb4079e0c0a4c2b910d6e",
@@ -26745,7 +26847,7 @@
     {
       "name": "formatFishAge",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2230,
+      "sourceLine": 2255,
       "originalLine": 59164,
       "characters": 119,
       "sourceHash": "62e6f10c9c2e1d9607dbd8cde43a892f6aa9e498cee7af9fb867898a9975f690",
@@ -26756,7 +26858,7 @@
     {
       "name": "formatFishBiologicalAge",
       "module": "fish/meals-and-needs.js",
-      "sourceLine": 2234,
+      "sourceLine": 2259,
       "originalLine": null,
       "characters": 258,
       "sourceHash": "0c428e41798f307706b99266e060abdf0c41e144488d17f482171223b524e364",
@@ -30597,12 +30699,11 @@
       "module": "fish/predators-and-motion.js",
       "sourceLine": 2052,
       "originalLine": 50968,
-      "characters": 5983,
-      "sourceHash": "c54ac279cdfcfbddb751d0d847318078c25c02cdc0a878456bd6f7fcf7f76532",
+      "characters": 5956,
+      "sourceHash": "79ebde88d94cea5cc24148f1dd0133f16c630beabb428da8c770cfaa4c662570",
       "calls": [
         "clamp",
         "clampFishYNormToLayer",
-        "clampTankLayer",
         "deferFishActionSteeringForRecovery",
         "deferFishSchoolFollowForRecovery",
         "findFishClearDetourTarget",
@@ -30611,16 +30712,15 @@
         "normalizeFishSpeed",
         "randomBetween",
         "recordFishNavigationFailure",
-        "setFishDesiredTankLayer",
+        "recoverFishInsideCave",
         "setFishDirection",
-        "setFishTankLayers",
         "tryFishNavigationDepthEscape"
       ]
     },
     {
       "name": "getSuckerFishCollisionEntry",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2210,
+      "sourceLine": 2208,
       "originalLine": 51051,
       "characters": 948,
       "sourceHash": "ea63fcd94535b900ff328d2b554f3cef2de8735d6b5743ed62a8c8c60e9fe84a",
@@ -30637,7 +30737,7 @@
     {
       "name": "moveSuckerFishCollisionEntry",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2237,
+      "sourceLine": 2235,
       "originalLine": 51077,
       "characters": 1267,
       "sourceHash": "cd514b2a0653760cd20e2d4385a3a1a6a3d363816eef8bc27146685461302d47",
@@ -30649,7 +30749,7 @@
     {
       "name": "resolveSuckerFishGlassCollisions",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2276,
+      "sourceLine": 2274,
       "originalLine": 51116,
       "characters": 2538,
       "sourceHash": "ba2afd49f90fa3d71a859d863451e1655d167fb55c1dbc4c27eedbc2da371f8f",
@@ -30662,7 +30762,7 @@
     {
       "name": "getDebugForcedOtocinclusState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2336,
+      "sourceLine": 2334,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "2d5bc984a70a75233236f370858f1cd2a9575a6f6add5e1879617c7be0b07e59",
@@ -30675,7 +30775,7 @@
     {
       "name": "pickDebugOtocinclusSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2347,
+      "sourceLine": 2345,
       "originalLine": null,
       "characters": 645,
       "sourceHash": "93cf5bd885284f1bd684b3c154319970be364318036f40dac90c4f297aeddc93",
@@ -30687,7 +30787,7 @@
     {
       "name": "setDebugOtocinclusFreeSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2365,
+      "sourceLine": 2363,
       "originalLine": null,
       "characters": 1372,
       "sourceHash": "f70edc821d64e6be2bd579d513a026ad90cebd71490a913eefad42fe05c51919",
@@ -30705,7 +30805,7 @@
     {
       "name": "clearOtocinclusFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2399,
+      "sourceLine": 2397,
       "originalLine": null,
       "characters": 340,
       "sourceHash": "374b1c76a7e954bdb3143876bd46680623fb03ed8b1454f15b1230fc206ca66b",
@@ -30714,7 +30814,7 @@
     {
       "name": "forceDebugOtocinclusGlassState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2410,
+      "sourceLine": 2408,
       "originalLine": null,
       "characters": 1766,
       "sourceHash": "ee042eeb35e3e648f4965218998bc7c1cb72afeffc916f0e3841b7e1a211ad29",
@@ -30737,7 +30837,7 @@
     {
       "name": "applyDebugOtocinclusForcedTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2455,
+      "sourceLine": 2453,
       "originalLine": null,
       "characters": 1501,
       "sourceHash": "40fe36c4cf175c6c25b7515cf6061a34899c0035dfb4a96419452c6284df9c63",
@@ -30757,7 +30857,7 @@
     {
       "name": "setDebugOtocinclusForcedState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2497,
+      "sourceLine": 2495,
       "originalLine": null,
       "characters": 1620,
       "sourceHash": "ba29715e5faf266739e3fe8a79deccbba3f1f1cfa559ac61ff30ffa021441ccb",
@@ -30776,7 +30876,7 @@
     {
       "name": "clearAllDebugOtocinclusForcedStates",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2542,
+      "sourceLine": 2540,
       "originalLine": null,
       "characters": 924,
       "sourceHash": "38071217c74f45d20cb56880cab3c4ccbaa19165f77fe1d0eb7948acd62c473b",
@@ -30788,7 +30888,7 @@
     {
       "name": "startSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2567,
+      "sourceLine": 2565,
       "originalLine": null,
       "characters": 3168,
       "sourceHash": "e52d737c02fbe7fa24cf49ff609b2841736e6d5d6f544ae521ac08beb49a72ec",
@@ -30808,7 +30908,7 @@
     {
       "name": "finishSuckerFishFreeSwim",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2650,
+      "sourceLine": 2648,
       "originalLine": null,
       "characters": 1262,
       "sourceHash": "f603904fca868c24232bffcc4358348589a5cf66bdc6fafefc437e36f6743c32",
@@ -30825,7 +30925,7 @@
     {
       "name": "updateSuckerFishFreeSwimState",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2685,
+      "sourceLine": 2683,
       "originalLine": null,
       "characters": 3774,
       "sourceHash": "72836f72aa80658ac99cf8e3e877fafde39dbe4c5c0db1f49839cab500e53954",
@@ -30843,7 +30943,7 @@
     {
       "name": "getDavyMutationBehaviorKey",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2772,
+      "sourceLine": 2770,
       "originalLine": null,
       "characters": 480,
       "sourceHash": "7cbe2546248d7d788064d0c592506b631ab2e21731545d23f4ccaef7d502d528",
@@ -30854,7 +30954,7 @@
     {
       "name": "getNearestDavyMutationTankmate",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2788,
+      "sourceLine": 2786,
       "originalLine": null,
       "characters": 680,
       "sourceHash": "4f1c6b3dac6f0d04353fb343b0fd81a28f2b15ab5a9c2fe7db9addcf026e9fc7",
@@ -30866,7 +30966,7 @@
     {
       "name": "isPeacefulDavyCompanionTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2803,
+      "sourceLine": 2801,
       "originalLine": null,
       "characters": 346,
       "sourceHash": "6a2738625f5bd69ebc917968e1a81ab3684507d22929ad0b5c18db980dedbcf4",
@@ -30880,7 +30980,7 @@
     {
       "name": "maybeAssignDavyMutationReactionTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2810,
+      "sourceLine": 2808,
       "originalLine": null,
       "characters": 3886,
       "sourceHash": "33aea266c1053c56dd14209ebd0ecaeb1f701e70d7c128ebcd52752525f9f58a",
@@ -30901,7 +31001,7 @@
     {
       "name": "assignDavyMutationSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 2889,
+      "sourceLine": 2887,
       "originalLine": null,
       "characters": 10561,
       "sourceHash": "63cd0745e2e0aba1175bf9af5ceb6499271ae9709416492eb7dc803525e6e6cd",
@@ -30927,7 +31027,7 @@
     {
       "name": "getLionfishFeedingControl",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3099,
+      "sourceLine": 3097,
       "originalLine": null,
       "characters": 1228,
       "sourceHash": "28d50d9ef5f88cc1735029675cc87c5aedd81d21863ee5c051f9932a102fd909",
@@ -30938,7 +31038,7 @@
     {
       "name": "getDavyMutationFeedingControl",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3128,
+      "sourceLine": 3126,
       "originalLine": null,
       "characters": 3001,
       "sourceHash": "d38401561bc6351a58d3a79617ae77100e0a0fcdf33344fffd1a11ae0121c1f4",
@@ -30951,7 +31051,7 @@
     {
       "name": "getDavyMutationMotionSpeedMultiplier",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3205,
+      "sourceLine": 3203,
       "originalLine": null,
       "characters": 893,
       "sourceHash": "32486c7b6260be56ea0fe0dcdf10a058f129892fd1a4dd6d7fd2cbbf6145102b",
@@ -30962,7 +31062,7 @@
     {
       "name": "clearProteusZombieAggression",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3231,
+      "sourceLine": 3229,
       "originalLine": null,
       "characters": 680,
       "sourceHash": "9df513f881b81dbb103a01042a75d65a2c45b604ad933fe02577f886505529ec",
@@ -30974,7 +31074,7 @@
     {
       "name": "getProteusZombieAggressionCandidates",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3247,
+      "sourceLine": 3245,
       "originalLine": null,
       "characters": 255,
       "sourceHash": "b46762300f3a545138fc4d9059710af3b3dc22dfacf38240c515c066e88fa2b0",
@@ -30986,7 +31086,7 @@
     {
       "name": "updateProteusZombieFishAggression",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3257,
+      "sourceLine": 3255,
       "originalLine": null,
       "characters": 3750,
       "sourceHash": "52604e1936896c724b779ef97c20ae6c92bff50c55f5a9830e177609b64b7268",
@@ -31008,7 +31108,7 @@
     {
       "name": "stabilizeFishPassiveMotionTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3362,
+      "sourceLine": 3360,
       "originalLine": null,
       "characters": 1752,
       "sourceHash": "a697dfa053c0275ab1dd6f066c088806b24a0d7acdb5ac7637c76e55e221a825",
@@ -31017,12 +31117,24 @@
       ]
     },
     {
+      "name": "updateFishLocomotionVariation",
+      "module": "fish/predators-and-motion.js",
+      "sourceLine": 3388,
+      "originalLine": null,
+      "characters": 4212,
+      "sourceHash": "d491372cd9e4747aca91318d9e750eeeb940ee23c4b575efd8cc40016a8c55eb",
+      "calls": [
+        "clamp",
+        "getFishLocomotionProfile"
+      ]
+    },
+    {
       "name": "integrateFishPassiveMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3390,
+      "sourceLine": 3475,
       "originalLine": null,
-      "characters": 2381,
-      "sourceHash": "2129b366badca3bd57064839c39222ec845ad4d227b53b877ce7bb6cfa1e7779",
+      "characters": 2920,
+      "sourceHash": "d9c1d186e49b7dad0a32fc40a945d896ec1e7ea315ca208953e666833766fd55",
       "calls": [
         "clamp"
       ]
@@ -31030,7 +31142,7 @@
     {
       "name": "reconcileFishPassiveMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3435,
+      "sourceLine": 3527,
       "originalLine": null,
       "characters": 1010,
       "sourceHash": "84655791f4f4465a3c9c09f66a64aab6e629cc5afd65bd139147a1fb15f00e12",
@@ -31041,7 +31153,7 @@
     {
       "name": "syncFishTraversalStateFromMove",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3453,
+      "sourceLine": 3545,
       "originalLine": null,
       "characters": 2195,
       "sourceHash": "fe3105642b92cb4985d6291144bdf782ab121623a4deec5679283193b28954f1",
@@ -31052,10 +31164,10 @@
     {
       "name": "getFishTurnReversalTraversal",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3495,
+      "sourceLine": 3587,
       "originalLine": null,
-      "characters": 3024,
-      "sourceHash": "e6506192c0c902a47c121708104b4255304dfb21f3780e203a4d71e2db161572",
+      "characters": 2544,
+      "sourceHash": "7e598cadd8292da40e17b015afc3ff9a700948f64b2ef067ee4885e718c3ba40",
       "calls": [
         "clamp"
       ]
@@ -31063,7 +31175,7 @@
     {
       "name": "stabilizeFishTraversalTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3550,
+      "sourceLine": 3635,
       "originalLine": null,
       "characters": 2202,
       "sourceHash": "329c1eaa1da9f3d8d1ec8c9c387e6e87d29f38ca381b8f30a76b6202e8c9c138",
@@ -31074,21 +31186,22 @@
     {
       "name": "getFishBoundaryAnticipationWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3597,
+      "sourceLine": 3682,
       "originalLine": null,
-      "characters": 1325,
-      "sourceHash": "c7a45efa1fe24018b9709c845b8edcf13d321a21bb0d3bb39fbc8b922276c05c",
+      "characters": 2348,
+      "sourceHash": "9efd54b2db8b87602c6575f687aefc535bc7eabb08b46995d54c67a44be4e0de",
       "calls": [
-        "clamp"
+        "clamp",
+        "getFishLocomotionProfile"
       ]
     },
     {
       "name": "getFishAnticipatoryObstacleWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3624,
+      "sourceLine": 3741,
       "originalLine": null,
-      "characters": 4029,
-      "sourceHash": "5e8538ba0818872ab13cd66e1b9c4c2e82818fbfb11acfd3476e563a9c98bbf7",
+      "characters": 4513,
+      "sourceHash": "d0da0b938cf5d618d83d846cb5e91a10a6de0db1d3d3db723d6d19aabe0c4cef",
       "calls": [
         "clamp",
         "clampFishXNormToMobileViewport",
@@ -31096,8 +31209,10 @@
         "findFishObstacleSlideMove",
         "getFishBoundaryAnticipationWaypoint",
         "getFishCollisionPose",
+        "getFishLocomotionProfile",
         "getFishTankLayer",
         "getFishTankSubLayer",
+        "getFishVisualSize",
         "getOverlappingDecorForFish",
         "isCaveDecorKey"
       ]
@@ -31105,7 +31220,7 @@
     {
       "name": "clearFishCruiseWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3708,
+      "sourceLine": 3836,
       "originalLine": null,
       "characters": 280,
       "sourceHash": "ef1c4e5d0d3fe4554fed6598d7b458d359009fbca432e981db7adf05129f3385",
@@ -31114,7 +31229,7 @@
     {
       "name": "clearFishDecorApproachWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3717,
+      "sourceLine": 3845,
       "originalLine": null,
       "characters": 257,
       "sourceHash": "a7dbcd24a06d63cae83c6b5f7787a20a9361b834524743f23507a99d3704c452",
@@ -31123,7 +31238,7 @@
     {
       "name": "getFishDecorApproachWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3725,
+      "sourceLine": 3853,
       "originalLine": null,
       "characters": 2663,
       "sourceHash": "5aade2fbe5d4ee6c9eff953d882a00d01a03913b0bd96eeea587e37e942623b4",
@@ -31135,7 +31250,7 @@
     {
       "name": "getFishTraversalCruiseProfile",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3792,
+      "sourceLine": 3920,
       "originalLine": null,
       "characters": 877,
       "sourceHash": "861f2302edb5b2e45b086a48b30e1aff4694849eda8af4419159a8096fbc15ee",
@@ -31147,23 +31262,24 @@
     {
       "name": "getFishCruiseContinuationWaypoint",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3809,
+      "sourceLine": 3937,
       "originalLine": null,
-      "characters": 4344,
-      "sourceHash": "8c299e6a05f5d4ea19df21972480c22c15d7a12eaeb9de64b9165b92e987985d",
+      "characters": 4603,
+      "sourceHash": "d49584fb4a391537511846fae0aed817ef1de413ba28ef6ba97c0494cca09396",
       "calls": [
         "clamp",
         "clearFishCruiseWaypoint",
+        "getFishLocomotionProfile",
         "getFishTraversalCruiseProfile"
       ]
     },
     {
       "name": "updateFishMotion",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 3893,
+      "sourceLine": 4026,
       "originalLine": 51176,
-      "characters": 55037,
-      "sourceHash": "ea1e6e519ac3ebb415f7c6b9492dc1d74ef0a764a76409ac08ddb59ac7fcbec1",
+      "characters": 56730,
+      "sourceHash": "f1f47f9123d4ce1ec9e6cffeedd2665725f3e0a5df3c89d2c3e5f816d12ccbb4",
       "calls": [
         "abortFishCaveBehavior",
         "applyFishCollisionAvoidanceSteering",
@@ -31212,6 +31328,7 @@
         "getFishGradualSteeringVector",
         "getFishGravelPebbleAction",
         "getFishGravelPebbleMouthPoint",
+        "getFishLocomotionProfile",
         "getFishPersonality",
         "getFishSchoolFollowFacingDirection",
         "getFishSchoolFollowLeader",
@@ -31292,6 +31409,7 @@
         "updateFishBreedingSequence",
         "updateFishCaveBehavior",
         "updateFishGravelPebbleAction",
+        "updateFishLocomotionVariation",
         "updateFishNavigationProgress",
         "updateFishPebbleTosses",
         "updateFishSchoolFollowTarget",
@@ -31304,6 +31422,7 @@
         "updatePufferInflationMotionTarget",
         "updatePufferInflationState",
         "updateQueuedFishActionControl",
+        "updateRequestedFishCaveExit",
         "updateSuckerFishFreeSwimState",
         "updateWhaleBreathBehavior"
       ]
@@ -31311,7 +31430,7 @@
     {
       "name": "getFishProfileRoamSpeed",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5098,
+      "sourceLine": 5270,
       "originalLine": null,
       "characters": 707,
       "sourceHash": "51cc43e6d0c5c080695f65c1240656d0dbcdbb0010925fedb357136eff39de1c",
@@ -31324,7 +31443,7 @@
     {
       "name": "getFishProfileRoamY",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5118,
+      "sourceLine": 5290,
       "originalLine": null,
       "characters": 468,
       "sourceHash": "04978c318da4d0739f738cd7ff94a540d01493713f3541c852561d72cda0416d",
@@ -31337,7 +31456,7 @@
     {
       "name": "getFishProfileRoamX",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5128,
+      "sourceLine": 5300,
       "originalLine": null,
       "characters": 2164,
       "sourceHash": "1f03d02e36e74863cd1753d6a674b19d7b7f091baa44a541f1d87e4da9be9c8c",
@@ -31352,7 +31471,7 @@
     {
       "name": "getFishProfileHomeRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5176,
+      "sourceLine": 5348,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "e0b3ee3da671ecc36eb20de677e0e9593d6f0df4a7a32739bfb97c1e148eec98",
@@ -31365,10 +31484,10 @@
     {
       "name": "getFishProfileHoverTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5196,
+      "sourceLine": 5368,
       "originalLine": null,
-      "characters": 790,
-      "sourceHash": "da2f4501784d57146a1d79443dc6795a0c9241d3fc6c05859afef4160517b3d0",
+      "characters": 1100,
+      "sourceHash": "c24851c26fed6731965b390d2a54d4d368b475c6bd5512b5e8d809920e067cec",
       "calls": [
         "clamp",
         "clampFishPlacement",
@@ -31380,7 +31499,7 @@
     {
       "name": "getFishMoodDepthTargetFish",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5220,
+      "sourceLine": 5394,
       "originalLine": null,
       "characters": 2538,
       "sourceHash": "b1750eca094ba5e92e4dd9f18b69e1a0e63b0567ea60cf093bec91339b77d256",
@@ -31397,7 +31516,7 @@
     {
       "name": "getFishSocialCompanionDepthSubLayer",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5282,
+      "sourceLine": 5456,
       "originalLine": null,
       "characters": 558,
       "sourceHash": "45fdc8865307020e8cfa1a628ada3a143226bc13652cb54223d06f78faf86e94",
@@ -31408,7 +31527,7 @@
     {
       "name": "getFishMoodDepthPreference",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5295,
+      "sourceLine": 5469,
       "originalLine": null,
       "characters": 3067,
       "sourceHash": "b6e28a760eaebc49211a8692fdf50a68c33b0d2f31bbcf4a8f62a08a59012601",
@@ -31429,7 +31548,7 @@
     {
       "name": "applyFishMoodDepthPreference",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5378,
+      "sourceLine": 5552,
       "originalLine": null,
       "characters": 2751,
       "sourceHash": "edfa5f6f08aec75bbbaa7df1f0ba50356cd161f239bd74cd6594a732d95a7037",
@@ -31456,10 +31575,10 @@
     {
       "name": "assignSpeciesRoamTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5448,
+      "sourceLine": 5622,
       "originalLine": null,
-      "characters": 2335,
-      "sourceHash": "99aab5b59ebe602345e54cd06faaa9951848e5065ef4e80c22c8eefef6019e62",
+      "characters": 2466,
+      "sourceHash": "d4204476886aeaccac807fe95851cd1459fd0578922957b84c46f4ff5e751d98",
       "calls": [
         "clamp",
         "clampFishPlacement",
@@ -31483,7 +31602,7 @@
     {
       "name": "assignGobyPistolSharedBurrowTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5498,
+      "sourceLine": 5676,
       "originalLine": null,
       "characters": 2148,
       "sourceHash": "b823f63c39cb782130a58daf40c748e6125779653804bd738b3e00360a5f6980",
@@ -31506,7 +31625,7 @@
     {
       "name": "assignSwimTarget",
       "module": "fish/predators-and-motion.js",
-      "sourceLine": 5537,
+      "sourceLine": 5715,
       "originalLine": 51906,
       "characters": 9123,
       "sourceHash": "ec94ea7a7fd63864e5ad35ae5caa840bf681f3cd6ea4ee05109300e8f4e7ef86",
@@ -35203,17 +35322,14 @@
       "module": "rendering/fish-and-effects.js",
       "sourceLine": 405,
       "originalLine": null,
-      "characters": 793,
-      "sourceHash": "be46cc174ce6e34b63c00f2ee13141dc71ce01b599a557cee83cbc7fdce0990e",
-      "calls": [
-        "getFishCaveDepthRegion",
-        "getFishTankDepthZ"
-      ]
+      "characters": 532,
+      "sourceHash": "bac97581a4d20bd347ad182d79d35cb0a8a9d642e31deb873e00e20163bf58e0",
+      "calls": []
     },
     {
       "name": "getFishSameLayerRenderPriority",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 428,
+      "sourceLine": 421,
       "originalLine": 56706,
       "characters": 100,
       "sourceHash": "67ed2a3018373d50cf1cd8d92481243bb9b2d9076f7d43d30acecbdb9c39c9a4",
@@ -35222,9 +35338,25 @@
       ]
     },
     {
+      "name": "getFishRenderPassLayer",
+      "module": "rendering/fish-and-effects.js",
+      "sourceLine": 425,
+      "originalLine": null,
+      "characters": 468,
+      "sourceHash": "f0abcf4952c102e6774ad5008fb2177910cf3c15434c89a6226a4daf59f436a8",
+      "calls": [
+        "clampTankLayer",
+        "getCaveBehaviorDecorById",
+        "getDecorLayerSpan",
+        "getDecorTankLayer",
+        "getFishTankLayer",
+        "isFishInCaveRenderSublayer"
+      ]
+    },
+    {
       "name": "drawFishPebbleTosses",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 432,
+      "sourceLine": 437,
       "originalLine": 56714,
       "characters": 1095,
       "sourceHash": "df3b47a7e5487e0243f40df97939863f3a7c5f4a304f1b42e0e7d3319d211772",
@@ -35237,7 +35369,7 @@
     {
       "name": "fitDebugFishBehaviorLine",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 467,
+      "sourceLine": 472,
       "originalLine": 56770,
       "characters": 394,
       "sourceHash": "fd773b217a2af9b33db05c0bea8338ad552975ded1301c5146ba9f653c35e898",
@@ -35246,7 +35378,7 @@
     {
       "name": "drawDebugFishBehaviorBroadcast",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 481,
+      "sourceLine": 486,
       "originalLine": 56784,
       "characters": 3159,
       "sourceHash": "45ab6103c2bba9799b46508c61ecbc39c39dd7d7534d26b9c88a9240d83fc0c7",
@@ -35264,7 +35396,7 @@
     {
       "name": "queueDebugFishBehaviorBroadcast",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 561,
+      "sourceLine": 566,
       "originalLine": null,
       "characters": 346,
       "sourceHash": "9fd50a4167c2bbd8bd4f05cf82fecabf4ce08258aab104ac1549d5d02af8e839",
@@ -35275,7 +35407,7 @@
     {
       "name": "drawQueuedFishStatsOverlays",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 567,
+      "sourceLine": 572,
       "originalLine": null,
       "characters": 391,
       "sourceHash": "a9f8133a5055ac0c93b419335dc20dc3a452bfd88d3cd2ad18df75859021c937",
@@ -35286,7 +35418,7 @@
     {
       "name": "drawMissingFishArtworkFallback",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 579,
+      "sourceLine": 584,
       "originalLine": null,
       "characters": 1465,
       "sourceHash": "5d47148d78b55ffe7c4c4cd61337aec424747e45f40e459ec38fdb769b6ae7f4",
@@ -35303,7 +35435,7 @@
     {
       "name": "getFishDepthLightingStyle",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 612,
+      "sourceLine": 617,
       "originalLine": null,
       "characters": 583,
       "sourceHash": "3bbe6e21c739bc3916a48cea6250c24e1aa6eccea729b375fdd064fbcd4a98e5",
@@ -35315,7 +35447,7 @@
     {
       "name": "getFishTopLightOverlay",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 625,
+      "sourceLine": 630,
       "originalLine": null,
       "characters": 1299,
       "sourceHash": "ecb784ed0171d9e13e77ac6f24bc128e6d94e72f21d41b62fa2c93917da30021",
@@ -35326,7 +35458,7 @@
     {
       "name": "smoothFishSwimStep",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 665,
+      "sourceLine": 670,
       "originalLine": null,
       "characters": 196,
       "sourceHash": "62509cdc20a9a029e20c3302fbb2e9df23332d5df8d305156dd580a52847cef2",
@@ -35337,7 +35469,7 @@
     {
       "name": "getFishSwimSliceProfile",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 671,
+      "sourceLine": 676,
       "originalLine": null,
       "characters": 1683,
       "sourceHash": "6871fd36397ad7a9691746f04864a8598503bd197226ecfdd98d7da0f4ac68cb",
@@ -35348,7 +35480,7 @@
     {
       "name": "shouldUseFishSwimDepthWarp",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 718,
+      "sourceLine": 723,
       "originalLine": null,
       "characters": 706,
       "sourceHash": "d5867b51196ba34cc928df27859ab753a11a411290a4d9d7e72248ff35042bfb",
@@ -35361,7 +35493,7 @@
     {
       "name": "loadDebugFishSwimAnimationSpeedMultiplier",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 731,
+      "sourceLine": 736,
       "originalLine": null,
       "characters": 964,
       "sourceHash": "93321d275c1155988aee0383d13f42f07072bfac38de0ed48b5cd63453f8db5d",
@@ -35372,7 +35504,7 @@
     {
       "name": "getFishSwimAnimationSpeedMultiplier",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 758,
+      "sourceLine": 763,
       "originalLine": null,
       "characters": 237,
       "sourceHash": "73bc32408e7bc5a13fa6ab95cd6ec6e192e2ad379a134d02dd9812eeda1098e3",
@@ -35384,7 +35516,7 @@
     {
       "name": "setDebugFishSwimAnimationSpeedMultiplier",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 765,
+      "sourceLine": 770,
       "originalLine": null,
       "characters": 560,
       "sourceHash": "cfd488675b7945ca84af07d4a4cbfc7a324c6df7c3441c2d7804fc3cefd3ddc7",
@@ -35395,7 +35527,7 @@
     {
       "name": "resetDebugFishSwimAnimationSpeedMultiplier",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 781,
+      "sourceLine": 786,
       "originalLine": null,
       "characters": 414,
       "sourceHash": "7704abec640dbaa85f03cd0b94680069589c6068a17d5fceb35f32be1ca8df73",
@@ -35404,7 +35536,7 @@
     {
       "name": "getFishSwimAnimationDebugPresetOverride",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 792,
+      "sourceLine": 797,
       "originalLine": null,
       "characters": 324,
       "sourceHash": "84d8ee173615148ea9fdbe4f8d77e7c7d83c04cc3e395b614949602e4528745c",
@@ -35415,7 +35547,7 @@
     {
       "name": "getFishSwimAnimationPresetId",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 799,
+      "sourceLine": 804,
       "originalLine": null,
       "characters": 2693,
       "sourceHash": "fa20c55064a891307d39d3f4b47e7ab07181203fa775485e44fa87d60241fa3a",
@@ -35431,7 +35563,7 @@
     {
       "name": "getFishSwimMovementFactor",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 834,
+      "sourceLine": 839,
       "originalLine": null,
       "characters": 480,
       "sourceHash": "1676cee4c3a84a40ce33d70960d37abb55d5952730e950be6a71108eef4ce302",
@@ -35442,7 +35574,7 @@
     {
       "name": "normalizeFishSwimAnimationPhase",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 845,
+      "sourceLine": 850,
       "originalLine": null,
       "characters": 194,
       "sourceHash": "af3477d4a6f23b519d14aa448251c21179a818c8173f2946941f3ad3ba1124bf",
@@ -35451,7 +35583,7 @@
     {
       "name": "getFishSwimAnimationSeedPhase",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 852,
+      "sourceLine": 857,
       "originalLine": null,
       "characters": 203,
       "sourceHash": "1148c2b67c2ccc803bf7fc74b17a2d7b0f6e06acda9af42475df41fe257bca33",
@@ -35462,7 +35594,7 @@
     {
       "name": "advanceFishSwimAnimationPhase",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 857,
+      "sourceLine": 862,
       "originalLine": null,
       "characters": 1099,
       "sourceHash": "5dde3ae4f88eb942e8a24417f90bbfd38fd2b34824b6f2f511406874b5229e0a",
@@ -35476,7 +35608,7 @@
     {
       "name": "getFishSwimAnimationState",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 881,
+      "sourceLine": 886,
       "originalLine": null,
       "characters": 5264,
       "sourceHash": "c8455f4fb035f565c4e5e36ea8fd268ca72c679f5b311f67eab7d2f4a34753f4",
@@ -35494,7 +35626,7 @@
     {
       "name": "getFishSwimSliceCount",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1008,
+      "sourceLine": 1013,
       "originalLine": null,
       "characters": 1119,
       "sourceHash": "99bdd95e585b20c42cd18edff0b1a42937d3dd3af45027f0202ac4c3958b6ee9",
@@ -35503,7 +35635,7 @@
     {
       "name": "getFishSwimOpaqueHorizontalBounds",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1033,
+      "sourceLine": 1038,
       "originalLine": null,
       "characters": 623,
       "sourceHash": "78e088e01b9774b2f41c4438c9fdc0e7041b1c0bfdb1b7a1730d6373cf2b3034",
@@ -35515,7 +35647,7 @@
     {
       "name": "drawFishSwimDepthWarpImage",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1044,
+      "sourceLine": 1049,
       "originalLine": null,
       "characters": 6679,
       "sourceHash": "f182f5fad2a49a82c046bb4209e536b8ace1f39799c732b9b1062122a928687b",
@@ -35534,7 +35666,7 @@
     {
       "name": "drawFishTopLightOverlay",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1194,
+      "sourceLine": 1199,
       "originalLine": null,
       "characters": 1237,
       "sourceHash": "5f0ad64b26a9b1563aaaf2e4bbbb5421e88f8a5fedc74c26c9b57c25dc15797c",
@@ -35547,7 +35679,7 @@
     {
       "name": "compareFishRenderRecords",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1229,
+      "sourceLine": 1234,
       "originalLine": null,
       "characters": 399,
       "sourceHash": "fb3f4fd3171253b9e2faa3c3e1e46c4e7d72bebe43c4cbe8044622d75e12ea61",
@@ -35556,7 +35688,7 @@
     {
       "name": "prepareFishRenderRecord",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1245,
+      "sourceLine": 1250,
       "originalLine": null,
       "characters": 3290,
       "sourceHash": "a74838fa37243682d5da9fd8af0f84a769e90a46037ba51a0db97a444767ad4e",
@@ -35580,19 +35712,18 @@
     {
       "name": "prepareFishRenderFrameCache",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1312,
+      "sourceLine": 1317,
       "originalLine": null,
-      "characters": 4093,
-      "sourceHash": "16cc794fd5bc8d54a8824dfef702e7ab19813be6b248575ae35e55c38cc917bd",
+      "characters": 4083,
+      "sourceHash": "75ba95f4452d47f3fe3839b8aac8877ff218c78d04b92662da7fecbbfea4c8f0",
       "calls": [
         "clampFishToMobileViewport",
-        "clampTankLayer",
         "endDebugFrameProfilerSection",
         "getEffectiveFishBehavior",
+        "getFishRenderPassLayer",
         "getFishSameLayerRenderPriority",
         "getFishTankDepthIndex",
         "getFishTankDepthZ",
-        "getFishTankLayer",
         "getFishTankSubLayer",
         "getSpeciesForFish",
         "getTankShellBounds",
@@ -35603,7 +35734,7 @@
     {
       "name": "getFishLightweightTurnFallbackVisualState",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1434,
+      "sourceLine": 1439,
       "originalLine": null,
       "characters": 541,
       "sourceHash": "f7011cee0fefdfa094393a9209bdc0a2af87ba62e6ee0ef7e604058fe8930fb6",
@@ -35615,7 +35746,7 @@
     {
       "name": "drawFishLightweightTurnFallbackFrame",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1447,
+      "sourceLine": 1452,
       "originalLine": null,
       "characters": 792,
       "sourceHash": "0c5b17e886a85ac07f0e7e1894b46c75c1bc8a84bd4ca54e84895425eca23ca0",
@@ -35627,7 +35758,7 @@
     {
       "name": "getDeadFishEyeAnchorFromMask",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1466,
+      "sourceLine": 1471,
       "originalLine": null,
       "characters": 5119,
       "sourceHash": "8be9ca30d6dca62362d2c51198a98fb95dd340279a2f8151edc25c3c4c5790f3",
@@ -35638,7 +35769,7 @@
     {
       "name": "getDeadFishEyeAnchor",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1579,
+      "sourceLine": 1584,
       "originalLine": null,
       "characters": 153,
       "sourceHash": "892c076690079b81b9ecf4ee9fed4e3c4f7ba63a8380ed465a8170f28b798b94",
@@ -35650,7 +35781,7 @@
     {
       "name": "drawDeadFishEyeTreatment",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1584,
+      "sourceLine": 1589,
       "originalLine": null,
       "characters": 1072,
       "sourceHash": "5ac9e896e068b5dd7e5a18f995a0e5d125d826f136f5d04ac06d8b84348353b0",
@@ -35664,7 +35795,7 @@
     {
       "name": "normalizeFishInjuryDisplaySide",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1614,
+      "sourceLine": 1619,
       "originalLine": null,
       "characters": 113,
       "sourceHash": "d3f958b56d8bec7996bd8179be7478da6538f52316bf870edea93abcf2a1a09e",
@@ -35673,7 +35804,7 @@
     {
       "name": "getFishInjuryDisplaySide",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1618,
+      "sourceLine": 1623,
       "originalLine": null,
       "characters": 583,
       "sourceHash": "76cdb885db402e9ae182956bbc9773dc05076528efb2e7c69b3bca1b2cc93592",
@@ -35685,7 +35816,7 @@
     {
       "name": "isFishInjurySideFacingViewer",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1631,
+      "sourceLine": 1636,
       "originalLine": null,
       "characters": 264,
       "sourceHash": "34625b7043c8adab5481742686e07cc265ded16b5d37b0678ae8dd91d47b01fa",
@@ -35697,7 +35828,7 @@
     {
       "name": "getFishSymptomOverlayCanvas",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1638,
+      "sourceLine": 1643,
       "originalLine": null,
       "characters": 4551,
       "sourceHash": "3a93e846c8f0e597dae8a08af3f7cce4c0c76b4e39c4adf7e2c8bc63bcf4792c",
@@ -35720,10 +35851,10 @@
     {
       "name": "drawFish",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 1739,
+      "sourceLine": 1744,
       "originalLine": 56843,
-      "characters": 22195,
-      "sourceHash": "eee1241be4093bb718b8b2b15e475fa08cddae71781b0e2fb1dcd9de2f8ce611",
+      "characters": 26167,
+      "sourceHash": "3118cf4c6ccbb98fc06de2689cf81e50ecf954a19c05721011f481a81796f098",
       "calls": [
         "clamp",
         "clampTankLayer",
@@ -35734,7 +35865,6 @@
         "drawFishBirthdayHat",
         "drawFishDiseaseBubbles",
         "drawFishHeldGravelPebble",
-        "drawFishLightweightTurnFallbackFrame",
         "drawFishPufferBubbleBurst",
         "drawFishSwimDepthWarpImage",
         "drawFishTopLightOverlay",
@@ -35746,6 +35876,7 @@
         "getFishDailyMealIndicatorState",
         "getFishDepthLightingStyle",
         "getFishHorizontalTurnState",
+        "getFishManagementProgressionPresentation",
         "getFishMaxHealthUnits",
         "getFishMoodPresentation",
         "getFishNeedsSnapshot",
@@ -35764,7 +35895,6 @@
         "isProteusZombieFish",
         "isUsableRuntimeImage",
         "markFishTurnFinalFrameRendered",
-        "markFishTurnRendererFallback",
         "markLightweightCausticImage",
         "preloadImagePath",
         "prepareFishRenderFrameCache",
@@ -35776,7 +35906,7 @@
     {
       "name": "drawWaterSurface",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2256,
+      "sourceLine": 2323,
       "originalLine": 56995,
       "characters": 1232,
       "sourceHash": "4ee646237f1974b72bdb4c1142530e5ed6201e0a2ec42f61eb1acbc86d4c3a48",
@@ -35785,7 +35915,7 @@
     {
       "name": "drawSplashBursts",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2297,
+      "sourceLine": 2364,
       "originalLine": 57036,
       "characters": 2170,
       "sourceHash": "6ebd7fd4177aae783d3e6af05e42eadc2628af977385ada5a1a909191ec254b4",
@@ -35797,7 +35927,7 @@
     {
       "name": "drawGlassTapEffects",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2364,
+      "sourceLine": 2431,
       "originalLine": 57103,
       "characters": 3142,
       "sourceHash": "5bb6235ad81e7f5e038de679f0cc7ae1a595d11d232791d83a4628d7332added",
@@ -35809,7 +35939,7 @@
     {
       "name": "drawRearGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2454,
+      "sourceLine": 2521,
       "originalLine": null,
       "characters": 2343,
       "sourceHash": "53abb52d78dfe8037eea446f8766a26d0d51fd9f1c95c05c3b2ce980f03dbb6d",
@@ -35825,7 +35955,7 @@
     {
       "name": "drawGrime",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2509,
+      "sourceLine": 2576,
       "originalLine": 57194,
       "characters": 2228,
       "sourceHash": "2b50b41fc4edfbfbb976f040d6cc8940a036b628d3d7d160f02ab5fdb71e74d1",
@@ -35841,7 +35971,7 @@
     {
       "name": "drawCleaningSparkles",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2569,
+      "sourceLine": 2636,
       "originalLine": 57217,
       "characters": 2419,
       "sourceHash": "54ab38ef5b67f07b37a530c954732173d03f361e689c92d885fbd33bdeea7057",
@@ -35854,7 +35984,7 @@
     {
       "name": "smoothLivingFishVisualPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2639,
+      "sourceLine": 2706,
       "originalLine": null,
       "characters": 2211,
       "sourceHash": "70689fd1ebb309be2cdcf033e65810f36b47d9d8907dd9108542ce28e59d8937",
@@ -35865,10 +35995,10 @@
     {
       "name": "getFishPose",
       "module": "rendering/fish-and-effects.js",
-      "sourceLine": 2693,
+      "sourceLine": 2760,
       "originalLine": 57313,
-      "characters": 19211,
-      "sourceHash": "64b9563ad6918459920c0f2e5878ee94aef6514ba0048afc7df7f0e66a49edaf",
+      "characters": 19988,
+      "sourceHash": "edd3feb87fdf58b1447d1095ba53c59e4e3fd84e1850f49b1c4b953a5f797c59",
       "calls": [
         "clamp",
         "getActiveDebugBehaviorSteering",
@@ -36027,29 +36157,34 @@
       "module": "rendering/fish-motion-and-floor.js",
       "sourceLine": 167,
       "originalLine": null,
-      "characters": 618,
-      "sourceHash": "5908912b6aa0a3197ab5e2b82cc96a4ba1d7ff41d587e2aed1345984e8fa8cc2",
+      "characters": 1139,
+      "sourceHash": "86318ac72274edd705f3b8077db1ea249eadab1e0ba877b885b712d1a528062d",
       "calls": [
+        "clamp",
         "getFishFacingDirection",
+        "getFishLocomotionProfile",
         "normalizeFishHorizontalDirection"
       ]
     },
     {
       "name": "getFishTurnaroundCooldownState",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 178,
+      "sourceLine": 189,
       "originalLine": null,
-      "characters": 816,
-      "sourceHash": "b4ac577ac5461f22c371000c37307094e3fa7586494e0983559d04af0bd2b766",
+      "characters": 1316,
+      "sourceHash": "c4ffc1f4202164f76618b8fe9d9886225749f7d46f8a62bc8b7ba951ec72524f",
       "calls": [
+        "clamp",
         "getFishFacingDirection",
+        "getFishLocomotionProfile",
+        "getFishVisualSize",
         "normalizeFishHorizontalDirection"
       ]
     },
     {
       "name": "normalizeAngle",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 195,
+      "sourceLine": 214,
       "originalLine": 61878,
       "characters": 228,
       "sourceHash": "0892c04ac390375b8a7dbde56fcaa28da9f3b9575a0771e581758e0df8e4ae49",
@@ -36058,7 +36193,7 @@
     {
       "name": "getFishFacingAngle",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 206,
+      "sourceLine": 225,
       "originalLine": 61889,
       "characters": 194,
       "sourceHash": "a14386d57a11b9a0d138f81aa4aa9aa379a37f9152dcb91fbf557234143866b6",
@@ -36070,7 +36205,7 @@
     {
       "name": "getFishEntryProgress",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 212,
+      "sourceLine": 231,
       "originalLine": 61895,
       "characters": 315,
       "sourceHash": "889facdaea7f454a5a11176c28779df89226b68386ae57c998d9dc7d8f8b6844",
@@ -36081,7 +36216,7 @@
     {
       "name": "getFishEntryRightingProgress",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 228,
+      "sourceLine": 247,
       "originalLine": 61911,
       "characters": 288,
       "sourceHash": "b003323b96d227ce63489542a4e6b9fe8fd48d88c07b34070284216d10175a38",
@@ -36092,7 +36227,7 @@
     {
       "name": "getDirectedAngleDelta",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 241,
+      "sourceLine": 260,
       "originalLine": 61924,
       "characters": 571,
       "sourceHash": "7e2fcada1dc820f23097ffa9066aad902b0d50b7cf81136b88fa4057e195e618",
@@ -36103,10 +36238,10 @@
     {
       "name": "getFishSwimTiltForVector",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 255,
+      "sourceLine": 274,
       "originalLine": null,
-      "characters": 377,
-      "sourceHash": "7d9ac8a730c312f31886ac5ffc002f944eb629e514d45eba9749621e22a2be34",
+      "characters": 360,
+      "sourceHash": "af9d3201d6029a1db85ee5f6d442b1d27ef2c6f2dde79f8de4d3f234b08a3749",
       "calls": [
         "clamp"
       ]
@@ -36114,7 +36249,7 @@
     {
       "name": "updateFishSwimTilt",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 269,
+      "sourceLine": 288,
       "originalLine": null,
       "characters": 913,
       "sourceHash": "3ff07fa3cd62f0eeae2b2d88cb02735342d01dc872c7a37e3d072f28d431bd00",
@@ -36125,31 +36260,32 @@
     {
       "name": "getFishSteeringHorizontalDirection",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 294,
+      "sourceLine": 313,
       "originalLine": null,
-      "characters": 1205,
-      "sourceHash": "dbc12c8875f84b9acdca3500dec40de71458afd9e153c4fcbe25678bccd014ee",
+      "characters": 1047,
+      "sourceHash": "776b18b16adffa922bb01ea760322d32acb21a1f59a9187a1d1eae564533af0f",
       "calls": [
-        "clamp",
         "getFishFacingDirection"
       ]
     },
     {
       "name": "getFishGradualSteeringVector",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 321,
+      "sourceLine": 335,
       "originalLine": null,
-      "characters": 2925,
-      "sourceHash": "db13fa423ba019ae5e9718358f3a9744f981c40b7c11bb65e135649542d6ac72",
+      "characters": 5275,
+      "sourceHash": "31e61b9d826c206891d0b64e1abee8f55a973c9acde33833ec95e0eed420def0",
       "calls": [
         "clamp",
+        "getFishFacingDirection",
+        "getFishLocomotionProfile",
         "getFishSteeringHorizontalDirection"
       ]
     },
     {
       "name": "updateFishTurnState",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 383,
+      "sourceLine": 447,
       "originalLine": 61938,
       "characters": 4831,
       "sourceHash": "c869766c947c81b1f687bd951d467ed53a383efe267af02338f2a91e108782c7",
@@ -36168,7 +36304,7 @@
     {
       "name": "setSuckerFishAngle",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 494,
+      "sourceLine": 558,
       "originalLine": 61996,
       "characters": 1320,
       "sourceHash": "c58e4d0bd1175866f8663dc79711ba2b990e5ae9639844d3cb20c34b410ab5a6",
@@ -36181,7 +36317,7 @@
     {
       "name": "setFishDirection",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 527,
+      "sourceLine": 591,
       "originalLine": 62029,
       "characters": 3741,
       "sourceHash": "2461e08e457fdaedb115cde880787986c947424fc4dee33afcfc9f0d958121bd",
@@ -36200,7 +36336,7 @@
     {
       "name": "getActiveGravelContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 613,
+      "sourceLine": 677,
       "originalLine": 62085,
       "characters": 193,
       "sourceHash": "62fc1ee30199ef2c322353a1159d518e478c3a92952f5c2a4812e1a301f93f7e",
@@ -36209,7 +36345,7 @@
     {
       "name": "getVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 620,
+      "sourceLine": 684,
       "originalLine": 62092,
       "characters": 880,
       "sourceHash": "28658f8a7197a4eb5a84c5b75682490b107c433bbcc297be0bbd978648a14db3",
@@ -36222,7 +36358,7 @@
     {
       "name": "getSceneLayoutVisibleTankVirtualBounds",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 640,
+      "sourceLine": 704,
       "originalLine": null,
       "characters": 298,
       "sourceHash": "cd6bf9bad79514e5d9c4ed1bba24ea559cb585d893c195eb36a14d1590fc8f37",
@@ -36234,7 +36370,7 @@
     {
       "name": "normalizeViewportNormRange",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 650,
+      "sourceLine": 714,
       "originalLine": 62111,
       "characters": 226,
       "sourceHash": "a16329d25544f66799d7dd577f08bc63d15a41e7c37896633bfc2917081165f6",
@@ -36245,7 +36381,7 @@
     {
       "name": "getMobileViewportSwimBoundsNorm",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 665,
+      "sourceLine": 729,
       "originalLine": 62126,
       "characters": 1666,
       "sourceHash": "05895483f2b7d2030ae35cd419e8173bce371bbf08c403c80ce6cf4f38cf40c3",
@@ -36262,7 +36398,7 @@
     {
       "name": "clampFishXNormToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 715,
+      "sourceLine": 779,
       "originalLine": 62176,
       "characters": 379,
       "sourceHash": "16a99856e6c5d71e6c5b93ed4189807d7d8fb51547deec6caf3d5701cb3cee1b",
@@ -36276,7 +36412,7 @@
     {
       "name": "clampFishToMobileViewport",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 725,
+      "sourceLine": 789,
       "originalLine": 62186,
       "characters": 2246,
       "sourceHash": "016e68d4c7bfb7a799d4b0849b6d7b801ec595919d8aeede5a3e2ac628cd0d50",
@@ -36300,7 +36436,7 @@
     {
       "name": "getTargetVisibleGravelHeightPx",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 779,
+      "sourceLine": 843,
       "originalLine": 62234,
       "characters": 349,
       "sourceHash": "64827d5716f6d6fd867f674f22aaf476ab2a3312494333af30396c38b977e8d9",
@@ -36313,7 +36449,7 @@
     {
       "name": "getTargetVisibleGravelHeightVirtual",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 785,
+      "sourceLine": 849,
       "originalLine": 62240,
       "characters": 714,
       "sourceHash": "8c6dae974cff98f766955a22b26a9801d749383f02d5b00e64d77c79c1e04fbd",
@@ -36328,7 +36464,7 @@
     {
       "name": "getVisibleTankFloorBottomY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 803,
+      "sourceLine": 867,
       "originalLine": 62244,
       "characters": 99,
       "sourceHash": "196b4de17b76beae11b822407e61b661802888c329ea0b92bdd8b1b343e9ca2a",
@@ -36339,7 +36475,7 @@
     {
       "name": "getDynamicGravelSurfaceBaseY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 807,
+      "sourceLine": 871,
       "originalLine": 62248,
       "characters": 166,
       "sourceHash": "0741ea4087c298c4ff637bd41e5cb67b714cdae51e5eafe36a0ae3c21254c1e3",
@@ -36351,7 +36487,7 @@
     {
       "name": "getGravelFloorLayoutKey",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 814,
+      "sourceLine": 878,
       "originalLine": 62255,
       "characters": 194,
       "sourceHash": "a830f2450a7a4e034b26034c255df95ef38e1d9a66b5a5986ed2b14f6f2cdc98",
@@ -36363,7 +36499,7 @@
     {
       "name": "getGravelSurfacePointY",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 822,
+      "sourceLine": 886,
       "originalLine": 62263,
       "characters": 96,
       "sourceHash": "d3a3f4b128c7baf64839509ffe787feedfad832530c9a2e3c45447d340d92fa7",
@@ -36374,7 +36510,7 @@
     {
       "name": "traceTankFloorPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 826,
+      "sourceLine": 890,
       "originalLine": 62267,
       "characters": 563,
       "sourceHash": "e6f04f8bf97227a7869440515feb2601c475e4d3ff10d63892a1f8924dd8fd3b",
@@ -36386,7 +36522,7 @@
     {
       "name": "traceTankFloorSurfaceBandPath",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 839,
+      "sourceLine": 903,
       "originalLine": 62280,
       "characters": 654,
       "sourceHash": "c0728c82c5b8e14e13d3bc530fe87ea9aa8d8bebf67ca512880f9187a8d98c5d",
@@ -36398,7 +36534,7 @@
     {
       "name": "getTankFloorSurfaceYAtX",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 857,
+      "sourceLine": 921,
       "originalLine": 62298,
       "characters": 491,
       "sourceHash": "69eda8f7839c03b7196828dc8e3e7655a94df78177b7d0d71a18cf838039adc0",
@@ -36411,7 +36547,7 @@
     {
       "name": "buildGravelSurfaceContour",
       "module": "rendering/fish-motion-and-floor.js",
-      "sourceLine": 868,
+      "sourceLine": 932,
       "originalLine": 62309,
       "characters": 980,
       "sourceHash": "2abbbcd28c0921d929361e7df9fb3bd184c262d5468da4e5f1f1697ba6d4cecf",
@@ -36539,16 +36675,17 @@
       "module": "rendering/fish-turn-v26.js",
       "sourceLine": 143,
       "originalLine": null,
-      "characters": 428,
-      "sourceHash": "280e07b33cb479dabedbf40c2a2104965ff003081131a065e9d44d3c8d96346b",
+      "characters": 1247,
+      "sourceHash": "a7060f2df5f2c7c8d698d879cdd9c957cbe76737992956b8d50efed7cf2cde69",
       "calls": [
+        "getFishTankDepthZ",
         "getFishTurnV26TurnDepthMode"
       ]
     },
     {
       "name": "easeFishTurnV26Continuity",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 154,
+      "sourceLine": 168,
       "originalLine": null,
       "characters": 120,
       "sourceHash": "f06fb2dcc2b5b93c34fe3c4a936f4438afd52ee3fc1e494d8c50de8d5bfd59be",
@@ -36559,10 +36696,10 @@
     {
       "name": "getFishTurnV26VisualContinuity",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 159,
+      "sourceLine": 173,
       "originalLine": null,
-      "characters": 1122,
-      "sourceHash": "7d93afef913d0a0b5d378ba75f9bd757c05f5201c4bfdf7c645b2c4e36aa1f7f",
+      "characters": 1440,
+      "sourceHash": "cf2b579826b7fb3b198172031ca0d7b2895c1303cb7fec3eb06695e71bf0d047",
       "calls": [
         "clamp",
         "easeFishTurnV26Continuity",
@@ -36572,7 +36709,7 @@
     {
       "name": "markFishTurnRendererFallback",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 180,
+      "sourceLine": 199,
       "originalLine": null,
       "characters": 411,
       "sourceHash": "17c9bb06479168c607fc781b1e887ccb858171e005f2c74538dce6054824ac2f",
@@ -36584,7 +36721,7 @@
     {
       "name": "ensureFishTurnRendererSession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 189,
+      "sourceLine": 208,
       "originalLine": null,
       "characters": 455,
       "sourceHash": "b5c3bdcb0e7c42820793c26649e519130d1ffcca32dfc801759dbb05cf491ae1",
@@ -36599,7 +36736,7 @@
     {
       "name": "isFishComplexTurnRendererEligible",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 200,
+      "sourceLine": 219,
       "originalLine": null,
       "characters": 890,
       "sourceHash": "c899bce80c9ceba8b033357842f9199ac68f0dc474956518c5a83fb315eadfb3",
@@ -36612,7 +36749,7 @@
     {
       "name": "getFishV26SpecialMovementOwner",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 235,
+      "sourceLine": 254,
       "originalLine": null,
       "characters": 1955,
       "sourceHash": "45796a22f6a96e220005e590d5deadea093eb557295021e0dadb56c8529e4660",
@@ -36629,7 +36766,7 @@
     {
       "name": "canUseFishV26TurnRenderer",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 295,
+      "sourceLine": 314,
       "originalLine": null,
       "characters": 200,
       "sourceHash": "05b688909441f69ca834e925283bc36786deba1624bc789670f0e7e936f594d2",
@@ -36641,7 +36778,7 @@
     {
       "name": "shouldUseFishTurnV26RendererForSprite",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 304,
+      "sourceLine": 323,
       "originalLine": null,
       "characters": 605,
       "sourceHash": "134bf542b60842c45cbfb885f3faa4c4468555face3739928dba4d34645bf873",
@@ -36654,7 +36791,7 @@
     {
       "name": "clearFishTurnV26FinOverlaySession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 334,
+      "sourceLine": 353,
       "originalLine": null,
       "characters": 231,
       "sourceHash": "56d68fd0e17e95852861a328afee3685ccf1c6ac99a22dfbf1ca1ac89e5e8ad2",
@@ -36663,7 +36800,7 @@
     {
       "name": "stripFishTurnV26AssetQuery",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 342,
+      "sourceLine": 361,
       "originalLine": null,
       "characters": 101,
       "sourceHash": "d5bc1026c837822c6f260370f0d4e3a7d1dd6dae8991219fcb26ace0678abd14",
@@ -36672,7 +36809,7 @@
     {
       "name": "normalizeFishTurnV26AssetLookupPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 346,
+      "sourceLine": 365,
       "originalLine": null,
       "characters": 117,
       "sourceHash": "3419fb4506d60200d4072230435d9cd98e9b0af85a009fc95864e3a400134a70",
@@ -36683,7 +36820,7 @@
     {
       "name": "getFishTurnV26CompanionFinAssetPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 350,
+      "sourceLine": 369,
       "originalLine": null,
       "characters": 324,
       "sourceHash": "68f622fda082bee81079c343a84dbadfb2521ad0b65e06b6af38cd516730fea4",
@@ -36692,7 +36829,7 @@
     {
       "name": "getFishTurnV26ExplicitFinAssetPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 358,
+      "sourceLine": 377,
       "originalLine": null,
       "characters": 311,
       "sourceHash": "a8569ab54d6016aa05df219f71817612ef9b39ef88632b07d28be912b6458584",
@@ -36703,7 +36840,7 @@
     {
       "name": "getFishTurnV26SpriteFrameSpec",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 368,
+      "sourceLine": 387,
       "originalLine": null,
       "characters": 540,
       "sourceHash": "c0238941f0b05603d3c321c6e8fdc9a6dcb1d243cacd119d204bc8d985e48c47",
@@ -36714,7 +36851,7 @@
     {
       "name": "getFishTurnV26FinCandidateCacheKey",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 381,
+      "sourceLine": 400,
       "originalLine": null,
       "characters": 335,
       "sourceHash": "cce57a14d423075bec25c87291c46eb3dc730b7189672766cf6ffeaa56e0967c",
@@ -36723,7 +36860,7 @@
     {
       "name": "cropFishTurnV26FinSpriteFrame",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 390,
+      "sourceLine": 409,
       "originalLine": null,
       "characters": 1055,
       "sourceHash": "eb0711414c83d5c12f1c77f8550c0be227730e13e99deee880c2f40fbe5d616b",
@@ -36732,7 +36869,7 @@
     {
       "name": "resolveFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 412,
+      "sourceLine": 431,
       "originalLine": null,
       "characters": 926,
       "sourceHash": "29f14fabf71f9fba7b719e243cb1e04ffe970b7d67c12ee2ed246d6731b005e1",
@@ -36747,7 +36884,7 @@
     {
       "name": "getFishTurnV26FinDiscoveryCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 434,
+      "sourceLine": 453,
       "originalLine": null,
       "characters": 215,
       "sourceHash": "5e172c23c3f0dd9f0a024e95668d757da05d233c2b322bd5e18de78b6b2dbced",
@@ -36756,7 +36893,7 @@
     {
       "name": "getFishTurnV26FinDimensionWarningSet",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 441,
+      "sourceLine": 460,
       "originalLine": null,
       "characters": 235,
       "sourceHash": "b8fb00528c49f43156765f44e73ac7645300b928ea00f8eba63524cd9ef0c092",
@@ -36765,7 +36902,7 @@
     {
       "name": "fishTurnV26ManifestContainsFinAsset",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 448,
+      "sourceLine": 467,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "2ee7e6225e2fb14fc9ab19cd0049bfca3468ed2d6a097e2931f50a9af6b376d3",
@@ -36777,7 +36914,7 @@
     {
       "name": "loadFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 466,
+      "sourceLine": 485,
       "originalLine": null,
       "characters": 1949,
       "sourceHash": "1abe378d98b9939766d0f9ef1deccc0e8ce26034968beaa4c1ab5739964fa7f8",
@@ -36793,7 +36930,7 @@
     {
       "name": "requestFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 523,
+      "sourceLine": 542,
       "originalLine": null,
       "characters": 1085,
       "sourceHash": "0efe8576c61bc4486774b8ac811c384092cc233587bd031447c17d66621b988e",
@@ -36808,7 +36945,7 @@
     {
       "name": "validateFishTurnV26FinImageDimensions",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 552,
+      "sourceLine": 571,
       "originalLine": null,
       "characters": 1177,
       "sourceHash": "7d2caab9bc47a2030386887a421fdf38479af97acb765c8f2cb434128147aa9b",
@@ -36819,7 +36956,7 @@
     {
       "name": "getReadyFishTurnV26FinOverlay",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 573,
+      "sourceLine": 592,
       "originalLine": null,
       "characters": 962,
       "sourceHash": "a45b1b61790163c3ad68c08eb2ef4babfe28982169929be753e01c809d72fe9a",
@@ -36836,7 +36973,7 @@
     {
       "name": "beginFishTurnV26FinOverlaySession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 603,
+      "sourceLine": 622,
       "originalLine": null,
       "characters": 799,
       "sourceHash": "49fd7cc3278c41bac9ba8ced3ef78180bfc98654d322b880431d8a9badb2493d",
@@ -36850,7 +36987,7 @@
     {
       "name": "getFishTurnV26LatchedFinOverlay",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 624,
+      "sourceLine": 643,
       "originalLine": null,
       "characters": 852,
       "sourceHash": "c8450ee0ca651d6248cc66b42b4f676a74a3857d980448f0be42bdd582fd72fb",
@@ -36864,7 +37001,7 @@
     {
       "name": "buildFishTurnV26MeshData",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 638,
+      "sourceLine": 657,
       "originalLine": null,
       "characters": 1522,
       "sourceHash": "44c4f7822d3420bd250c6dbd4567fdd5e1378a848b363f287fb639c672049bc1",
@@ -36873,7 +37010,7 @@
     {
       "name": "buildFishTurnV26BinaryMask",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 688,
+      "sourceLine": 707,
       "originalLine": null,
       "characters": 542,
       "sourceHash": "6b48bebf893620a07bbdbba1cab6bfa4aa4ea7511a7ed1c2e5fd483d0e3bb7e7",
@@ -36882,7 +37019,7 @@
     {
       "name": "buildFishTurnV26DistanceField",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 699,
+      "sourceLine": 718,
       "originalLine": null,
       "characters": 2367,
       "sourceHash": "bb27f2f8e948617c0d7001b5dcf6156fdfc4b012170b41ea0821be14cb62c729",
@@ -36891,7 +37028,7 @@
     {
       "name": "buildFishTurnV26ColumnMax",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 759,
+      "sourceLine": 778,
       "originalLine": null,
       "characters": 517,
       "sourceHash": "2e1f68474a0a26a40ca098fa4260fedf231194d7e9d8f214cdf37327b0df44ad",
@@ -36900,7 +37037,7 @@
     {
       "name": "sampleFishTurnV26ScalarFieldBilinear",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 773,
+      "sourceLine": 792,
       "originalLine": null,
       "characters": 825,
       "sourceHash": "e6311f37c57938ba9de338cf880363410bb5dfd007c8917de5519cab0ab7bd48",
@@ -36911,7 +37048,7 @@
     {
       "name": "sampleFishTurnV26ColumnMax",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 791,
+      "sourceLine": 810,
       "originalLine": null,
       "characters": 422,
       "sourceHash": "72f3e3364f36f394691f7c9c65ea0f97bf6ff5296a19e4790022c2c07da18f0a",
@@ -36922,7 +37059,7 @@
     {
       "name": "buildFishTurnV26VertexShapeData",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 804,
+      "sourceLine": 823,
       "originalLine": null,
       "characters": 664,
       "sourceHash": "934fde3e6e78e29867ba8973463afeb18dcd55455326fd4c03977aaaaa344010",
@@ -36935,7 +37072,7 @@
     {
       "name": "getFishTurnV26ImageCacheIdentity",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 818,
+      "sourceLine": 837,
       "originalLine": null,
       "characters": 511,
       "sourceHash": "caf754f07f352ea4af66f4336c47cd0ea65075afa5ceaffbcbee6c72bfdd60e4",
@@ -36944,7 +37081,7 @@
     {
       "name": "getFishTurnV26BodyShapeCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 831,
+      "sourceLine": 850,
       "originalLine": null,
       "characters": 203,
       "sourceHash": "6b91c7561ec04337ab1f2b598cd5ea7a482922fc043ea1b606a6856f97aeb65b",
@@ -36953,7 +37090,7 @@
     {
       "name": "preprocessFishTurnV26BodyShape",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 838,
+      "sourceLine": 857,
       "originalLine": null,
       "characters": 2274,
       "sourceHash": "ef19a0b711580e96c7841930f8768fb3578e83ba6865794ce6316ebda75ec5ab",
@@ -36970,7 +37107,7 @@
     {
       "name": "getFishTurnV26FinShapeCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 897,
+      "sourceLine": 916,
       "originalLine": null,
       "characters": 199,
       "sourceHash": "3bf71286dce3c00f5307b0bddb53175ba00c38e132fa94b63c7bd9e88475f761",
@@ -36979,7 +37116,7 @@
     {
       "name": "preprocessFishTurnV26FinShape",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 904,
+      "sourceLine": 923,
       "originalLine": null,
       "characters": 2248,
       "sourceHash": "0253ca48e87c800897edb3261d9cfb03eb30d678bbc33861497f72cdf1082283",
@@ -36996,7 +37133,7 @@
     {
       "name": "getFishTurnV26FinSettings",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 962,
+      "sourceLine": 981,
       "originalLine": null,
       "characters": 821,
       "sourceHash": "b9bb4b5df0e998d6a584552e97e0fb7b4ac8f6ba04af174775398ce8b260a845",
@@ -37008,7 +37145,7 @@
     {
       "name": "computeFishTurnV26FinGap",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 987,
+      "sourceLine": 1006,
       "originalLine": null,
       "characters": 1020,
       "sourceHash": "229bee3449cc9ff1affb724a6459d750a36818eb719eda6f964ffcb3b981ceba",
@@ -37019,7 +37156,7 @@
     {
       "name": "getFishTurnV26SourceDirection",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1013,
+      "sourceLine": 1032,
       "originalLine": null,
       "characters": 176,
       "sourceHash": "fa5b8cce4f096b2de940e1695e78d1d249ddf982d15d5c103d2c917350e43203",
@@ -37028,7 +37165,7 @@
     {
       "name": "normalizeFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1019,
+      "sourceLine": 1038,
       "originalLine": null,
       "characters": 1230,
       "sourceHash": "4242f71efccb0dc95e67d6563da2fbdd856c97a0339614e455529c59ad0be38e",
@@ -37037,7 +37174,7 @@
     {
       "name": "getFishTurnV26StyleOverride",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1052,
+      "sourceLine": 1071,
       "originalLine": null,
       "characters": 117,
       "sourceHash": "3c0eb92753e93fce4bb0be8bb975dbb50de4450a67be829d8e8112840d62846b",
@@ -37048,7 +37185,7 @@
     {
       "name": "setFishTurnV26StyleOverride",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1056,
+      "sourceLine": 1075,
       "originalLine": null,
       "characters": 396,
       "sourceHash": "7ab208a08bd743a4a010bb48a97bf6b834cc46816dff6f8116d7747a9a7d9b1a",
@@ -37060,7 +37197,7 @@
     {
       "name": "getFishTurnV26BehaviorContext",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1070,
+      "sourceLine": 1089,
       "originalLine": null,
       "characters": 4323,
       "sourceHash": "63e4832e64e02bb59c151151ab4ccf9e2fe261edaf3f4e1b17f5651af2453ddb",
@@ -37075,7 +37212,7 @@
     {
       "name": "selectFishTurnV26StyleForContext",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1171,
+      "sourceLine": 1190,
       "originalLine": null,
       "characters": 1828,
       "sourceHash": "3b4927e3f55ffd41f467e7fdbdda92c257b6bf150983ea144d3c4f3711af41ef",
@@ -37088,7 +37225,7 @@
     {
       "name": "resolveFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1220,
+      "sourceLine": 1239,
       "originalLine": null,
       "characters": 598,
       "sourceHash": "88541be05930cc1288e38e591ad70d7344b56d6383855463bb3af3b106d445bf",
@@ -37101,7 +37238,7 @@
     {
       "name": "getFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1235,
+      "sourceLine": 1254,
       "originalLine": null,
       "characters": 480,
       "sourceHash": "c019902cab81dae03cd7ca66c58e020401075f097ae3a94c09ccc11badc12a2e",
@@ -37114,7 +37251,7 @@
     {
       "name": "easeFishTurnV26CubicInOut",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1250,
+      "sourceLine": 1269,
       "originalLine": null,
       "characters": 194,
       "sourceHash": "0db8a2fbd85191b454ae2fb894d3d18d7ecf6df9c2ed0fe5bfdc2161171279bc",
@@ -37125,7 +37262,7 @@
     {
       "name": "easeFishTurnV26Sine",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1257,
+      "sourceLine": 1276,
       "originalLine": null,
       "characters": 130,
       "sourceHash": "74c068619e16df1f931ccec7c1814ff6e7552501d7ea102b535418a727e4105d",
@@ -37136,7 +37273,7 @@
     {
       "name": "getFishTurnV26StyleDefinition",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1262,
+      "sourceLine": 1281,
       "originalLine": null,
       "characters": 1157,
       "sourceHash": "ae270443f1813502b1b3e0a9aa467ef60484c05755884f2cf2bf9aab42918b33",
@@ -37147,7 +37284,7 @@
     {
       "name": "computeFishTurnV26StyleTransform",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1313,
+      "sourceLine": 1332,
       "originalLine": null,
       "characters": 2316,
       "sourceHash": "b4552d51a7ac3afac4bb993b28a0ac58c15fe7273526c1dfe620f2989a0c0adf",
@@ -37162,7 +37299,7 @@
     {
       "name": "computeFishTurnV26SpinePoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1393,
+      "sourceLine": 1412,
       "originalLine": null,
       "characters": 1640,
       "sourceHash": "bbd30edea558d31b6b3608a90cacd28c39900d4b4d42adf0acde38fad37c146e",
@@ -37174,7 +37311,7 @@
     {
       "name": "computeFishTurnV26SpineFrame",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1450,
+      "sourceLine": 1469,
       "originalLine": null,
       "characters": 1107,
       "sourceHash": "1c5071107b2481ef4b266f288beec3f27edfb73f96320ce90d3bd68b55a48584",
@@ -37187,7 +37324,7 @@
     {
       "name": "getFishTurnV26ModelScale",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1499,
+      "sourceLine": 1518,
       "originalLine": null,
       "characters": 548,
       "sourceHash": "c34ccf2c39038706c127493bd9965990636e5ddcf3e029379b581ff73ac6c8c9",
@@ -37198,7 +37335,7 @@
     {
       "name": "getFishTurnV26ThicknessShapeAtUv",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1517,
+      "sourceLine": 1536,
       "originalLine": null,
       "characters": 1939,
       "sourceHash": "6fff47e5f76b3c1b4d20ffb94313b5a8bdcc9dd444dfa7f04585a0f9b8a755f7",
@@ -37212,7 +37349,7 @@
     {
       "name": "projectFishTurnV26UvPoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1567,
+      "sourceLine": 1586,
       "originalLine": null,
       "characters": 3715,
       "sourceHash": "ae44cdc56d79d8142affc110460be564c591d298300f2af89ef0ca4ee6bd88e0",
@@ -37226,13 +37363,14 @@
     {
       "name": "getFishTurnV26VisualAnchorLocalPoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1654,
+      "sourceLine": 1673,
       "originalLine": null,
-      "characters": 1914,
-      "sourceHash": "ca89bceaa652102a4c4c924b59a2db007231f51f3f1edba4a72152c95abf27ea",
+      "characters": 1978,
+      "sourceHash": "5b05cadc6623363def8c16600fc412a237245dc8941920e1d5eb8c23ffb7852c",
       "calls": [
         "canUseFishV26TurnRenderer",
         "computeFishTurnV26StyleTransform",
+        "easeFishTurnV26Continuity",
         "getFishFacingDirection",
         "getFishHorizontalTurnState",
         "getFishTurnRendererBackend",
@@ -37249,7 +37387,7 @@
     {
       "name": "compileFishTurnV26Shader",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1720,
+      "sourceLine": 1740,
       "originalLine": null,
       "characters": 467,
       "sourceHash": "d6f620b63203d4c99e9a481810aac1a9dd196e3fc47f6fe8ff1f1ab82135d7df",
@@ -37258,7 +37396,7 @@
     {
       "name": "createFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1734,
+      "sourceLine": 1754,
       "originalLine": null,
       "characters": 10252,
       "sourceHash": "a66f64f0e135638a544cc8148358683830dc8b9d72a4ab2489ad18b683cdc1af",
@@ -37271,7 +37409,7 @@
     {
       "name": "getFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2011,
+      "sourceLine": 2031,
       "originalLine": null,
       "characters": 369,
       "sourceHash": "a603cada813303c4bd9bf93bff3404de11405b4a96b27a1f3b32ab58944ffb17",
@@ -37282,7 +37420,7 @@
     {
       "name": "disposeFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2022,
+      "sourceLine": 2042,
       "originalLine": null,
       "characters": 1131,
       "sourceHash": "44d752db5addbce30ccda9811762d7a7ee2832cd7b096855f037224ec0dc0284",
@@ -37291,7 +37429,7 @@
     {
       "name": "getFishTurnV26GpuTexture",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2052,
+      "sourceLine": 2072,
       "originalLine": null,
       "characters": 1584,
       "sourceHash": "1add583f3361225cd2f8fd536a8c68a71e22c8be49b2389f7f45a9296f0026e2",
@@ -37302,7 +37440,7 @@
     {
       "name": "getFishTurnV26ActiveTurnCount",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2086,
+      "sourceLine": 2106,
       "originalLine": null,
       "characters": 802,
       "sourceHash": "79d4fb41544b5189c85058f39fe4a5b1bb7ac00273600de05e1aa5f1b84fd71a",
@@ -37315,7 +37453,7 @@
     {
       "name": "getFishTurnV26VolumeLayerCountForActiveTurns",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2105,
+      "sourceLine": 2125,
       "originalLine": null,
       "characters": 411,
       "sourceHash": "f472f5f51069bc5cad799aaac87d5f65f315ccadaee2ada0cc4c4a2531501a9c",
@@ -37324,7 +37462,7 @@
     {
       "name": "getFishTurnV26StressBudget",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2116,
+      "sourceLine": 2136,
       "originalLine": null,
       "characters": 579,
       "sourceHash": "6691d70a648a346917aea44d10e7e2578311164e64dc368453544631dd578123",
@@ -37335,7 +37473,7 @@
     {
       "name": "getFishTurnV26BodyGpuBuffers",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2129,
+      "sourceLine": 2149,
       "originalLine": null,
       "characters": 762,
       "sourceHash": "9d6292862499a72fda240775213c6d7f5e4d53106552f9e7425dc77827d16e88",
@@ -37344,7 +37482,7 @@
     {
       "name": "getFishTurnV26FinGpuBuffer",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2147,
+      "sourceLine": 2167,
       "originalLine": null,
       "characters": 520,
       "sourceHash": "39bed5fc38dd565c2223bd3e83685352dd965313314a6dcdf54ee4119fc8afd3",
@@ -37353,7 +37491,7 @@
     {
       "name": "getFishTurnV26FinRenderSides",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2162,
+      "sourceLine": 2182,
       "originalLine": null,
       "characters": 158,
       "sourceHash": "9eb1a1aaf9b16aae33e5a49231c71dce9894c727668cd47594aeb6fccce039fe",
@@ -37362,7 +37500,7 @@
     {
       "name": "getFishTurnV26LayerCoordinates",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2167,
+      "sourceLine": 2187,
       "originalLine": null,
       "characters": 295,
       "sourceHash": "54ddab0b1c30175deb4051cc6f4343f06be5cf8eedd9257f8c91e2c0e62e8802",
@@ -37371,7 +37509,7 @@
     {
       "name": "getFishTurnV26BodyRenderPasses",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2175,
+      "sourceLine": 2195,
       "originalLine": null,
       "characters": 850,
       "sourceHash": "81f71376dbfc1629a9892b5952e1b5cfc9060f8e3b3b096e553dc76e96731a4e",
@@ -37382,14 +37520,15 @@
     {
       "name": "renderFishTurnV26VolumeCanvas",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2199,
+      "sourceLine": 2219,
       "originalLine": null,
-      "characters": 8770,
-      "sourceHash": "3631bedca2f73a3390d576b231faac9861ddb91b622b9e20d4d34b72150c4774",
+      "characters": 8797,
+      "sourceHash": "88b7c7e336ca10470da06bc59305f89ab86c1462443bdeb8cd946691d3a5270b",
       "calls": [
         "clamp",
         "computeFishTurnV26StyleTransform",
         "disposeFishTurnV26RendererState",
+        "easeFishTurnV26Continuity",
         "getFishHorizontalTurnState",
         "getFishTurnV26ActiveTurnCount",
         "getFishTurnV26BodyGpuBuffers",
@@ -37412,7 +37551,7 @@
     {
       "name": "drawFishTurnV26VolumeMesh",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2377,
+      "sourceLine": 2397,
       "originalLine": null,
       "characters": 1314,
       "sourceHash": "e85f5f37e7ad1ff4395443fe1285463c434c86bc79d18e771c1071b114cce9ff",
@@ -38083,8 +38222,8 @@
       "module": "rendering/tank-and-water.js",
       "sourceLine": 4,
       "originalLine": 52459,
-      "characters": 5062,
-      "sourceHash": "dd02a6720a3d3e14ca5860b4dbc38a9d2a1aba0cfe62ccf4677867d85742d2f3",
+      "characters": 5216,
+      "sourceHash": "b8fd7cd291fcfe3647936604900262858f3dfbb68d5038f9ddfea9ba97c28e02",
       "calls": [
         "beginLightweightCausticMask",
         "clampTankLayer",
@@ -38135,7 +38274,7 @@
     {
       "name": "getProceduralCausticTexture",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 114,
+      "sourceLine": 116,
       "originalLine": null,
       "characters": 1818,
       "sourceHash": "03bfa6502a9af3d11bcf208617a8b57ed8adc89b061b0d17055e172891cee1bf",
@@ -38144,7 +38283,7 @@
     {
       "name": "getProceduralCausticPattern",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 164,
+      "sourceLine": 166,
       "originalLine": null,
       "characters": 333,
       "sourceHash": "274627da0db0f4f31514586c1030e7eb670a059fd63bced05cc046053dd4a42b",
@@ -38155,7 +38294,7 @@
     {
       "name": "getLightweightCausticMask",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 174,
+      "sourceLine": 176,
       "originalLine": null,
       "characters": 431,
       "sourceHash": "1c40346ec73fee81b4dddea50b856039c100448558319c269c99071dae86e01d",
@@ -38164,7 +38303,7 @@
     {
       "name": "beginLightweightCausticMask",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 188,
+      "sourceLine": 190,
       "originalLine": null,
       "characters": 330,
       "sourceHash": "1a5795fbe5686188dab4562119e03dde84374919eaec9c12d7066074de4a096d",
@@ -38176,7 +38315,7 @@
     {
       "name": "setLightweightCausticMaskTransform",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 196,
+      "sourceLine": 198,
       "originalLine": null,
       "characters": 715,
       "sourceHash": "95910f2de746bfbce6ebf60a7553e6ddd468bc0fdc4e0343d3b10855593f6606",
@@ -38187,7 +38326,7 @@
     {
       "name": "markLightweightCausticImage",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 220,
+      "sourceLine": 222,
       "originalLine": null,
       "characters": 367,
       "sourceHash": "a921e9f142b621d46b120897eadbdeec7a711a9d5d9572906431750f73abcaf1",
@@ -38199,7 +38338,7 @@
     {
       "name": "markLightweightCausticDecorImage",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 228,
+      "sourceLine": 230,
       "originalLine": null,
       "characters": 743,
       "sourceHash": "9851d169949c2f7ec5af22fd75ad2231aa8def82535b9dfb119c32018336e7ad",
@@ -38211,7 +38350,7 @@
     {
       "name": "markLightweightCausticFloor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 242,
+      "sourceLine": 244,
       "originalLine": null,
       "characters": 1173,
       "sourceHash": "0cb0127ae5c429bd87b43440f921cca03a1c2d703d06502bcb8764f39e02aed7",
@@ -38226,7 +38365,7 @@
     {
       "name": "drawLightweightCausticOverlay",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 266,
+      "sourceLine": 268,
       "originalLine": null,
       "characters": 2428,
       "sourceHash": "727e9851b17b9523be377bc6b6515562da12a5d88a129d11c89c1c6a77c14323",
@@ -38242,7 +38381,7 @@
     {
       "name": "clearStageDisplaySurfaces",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 323,
+      "sourceLine": 325,
       "originalLine": null,
       "characters": 1314,
       "sourceHash": "01a60ca1e2cea96b7c6aeaec4f397d876df9a33c7e978953b0baf090e8b1ecf8",
@@ -38253,7 +38392,7 @@
     {
       "name": "getDecorEditTankFrameGeometry",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 357,
+      "sourceLine": 359,
       "originalLine": null,
       "characters": 602,
       "sourceHash": "d48b1a1c85285193de9ce78caab243ee35d0c788ef8793483ab87aa7b9ee121e",
@@ -38266,7 +38405,7 @@
     {
       "name": "traceDecorEditRoundedTankPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 376,
+      "sourceLine": 378,
       "originalLine": null,
       "characters": 1021,
       "sourceHash": "a2fe9effaacd8b27dfc381cf2bb6d9704fb42d352a0d5c77d2a2a652b058fe23",
@@ -38277,7 +38416,7 @@
     {
       "name": "drawDecorEditTankBoundary",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 398,
+      "sourceLine": 400,
       "originalLine": null,
       "characters": 2187,
       "sourceHash": "0fca04ee8d09e9676429d8705b8a2deb31bf9b2019e04576840fd62a4501a074",
@@ -38294,7 +38433,7 @@
     {
       "name": "drawDirtyWaterTintToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 445,
+      "sourceLine": 447,
       "originalLine": null,
       "characters": 1002,
       "sourceHash": "05667ad204f4737755e4b154acf295b2528a647d43b43e06516a73cbccc53ce9",
@@ -38306,7 +38445,7 @@
     {
       "name": "drawDirtyWaterTint",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 475,
+      "sourceLine": 477,
       "originalLine": null,
       "characters": 154,
       "sourceHash": "2e298951883ace39cec3edbb71f6eb1d8b3a2e5dc080ab1baf82a0d42a00f430",
@@ -38319,7 +38458,7 @@
     {
       "name": "getScaledTankShellPoints",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 479,
+      "sourceLine": 481,
       "originalLine": 52558,
       "characters": 153,
       "sourceHash": "1ee3b948d3b3657ce18a5d08af4f9b4e0b8ca129b694b12418cf9cd29ea3d565",
@@ -38328,7 +38467,7 @@
     {
       "name": "getTankShellPointSet",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 486,
+      "sourceLine": 488,
       "originalLine": 52565,
       "characters": 235,
       "sourceHash": "1fff058c599e5a2f4686416f8bb3514f33e822dca26c63d06b83692fd7950b42",
@@ -38341,7 +38480,7 @@
     {
       "name": "getPolygonBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 493,
+      "sourceLine": 495,
       "originalLine": 52572,
       "characters": 551,
       "sourceHash": "dbde7714b10d31ad9afe160cc3e2f23dfb639c7bfecf3a93b07374cd5d23530c",
@@ -38350,7 +38489,7 @@
     {
       "name": "tracePolygonPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 521,
+      "sourceLine": 523,
       "originalLine": 52600,
       "characters": 299,
       "sourceHash": "80d2a55a0f71696f039c875311a2d812f957636a4cc59eda6b936005ba4f8398",
@@ -38359,7 +38498,7 @@
     {
       "name": "traceTankShellPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 534,
+      "sourceLine": 536,
       "originalLine": 52613,
       "characters": 706,
       "sourceHash": "26b73fb97ec2aa32494a82edda49fd4f30529d5d9a1ca35a4b1d915aeac6c695",
@@ -38373,7 +38512,7 @@
     {
       "name": "pointInPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 553,
+      "sourceLine": 555,
       "originalLine": 52632,
       "characters": 620,
       "sourceHash": "167fc23c0ef90b05c64b202fe35bc5907d245ed4061b2c41de0ad2af2ca24d24",
@@ -38382,7 +38521,7 @@
     {
       "name": "projectPointIntoPolygon",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 571,
+      "sourceLine": 573,
       "originalLine": 52650,
       "characters": 791,
       "sourceHash": "2b2abe9d9bbd54414f6adf01056dd7dbc07efba086ab0b14c348f899b4540320",
@@ -38394,7 +38533,7 @@
     {
       "name": "constrainPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 609,
+      "sourceLine": 611,
       "originalLine": 52688,
       "characters": 506,
       "sourceHash": "6ab69c3390974258b0d4d46ed2a7fcc11d34ab46eab991205f144aeee7ddf230",
@@ -38408,7 +38547,7 @@
     {
       "name": "constrainNormalizedPointToTankShell",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 626,
+      "sourceLine": 628,
       "originalLine": 52705,
       "characters": 333,
       "sourceHash": "b4875454c7060544fa29cb4bebdce2c38bee742b5ecec71c36b0014fb31fb4ec",
@@ -38419,7 +38558,7 @@
     {
       "name": "getTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 639,
+      "sourceLine": 641,
       "originalLine": 52718,
       "characters": 918,
       "sourceHash": "2760c8d79eb3ef8fb60c45988b023626666163d678953abd0f4b15b5242a18e5",
@@ -38432,7 +38571,7 @@
     {
       "name": "clipToTankShellBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 673,
+      "sourceLine": 675,
       "originalLine": 52752,
       "characters": 386,
       "sourceHash": "37b620c2a788f969e10220906f3df1aa3783db00f16e7dc65cfca772484c19db",
@@ -38447,7 +38586,7 @@
     {
       "name": "drawTankBackdrop",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 684,
+      "sourceLine": 686,
       "originalLine": 52757,
       "characters": 753,
       "sourceHash": "508f1944cc8f7026f577952713ab93e0afab4c02d0d3eff121afccc9b2135882",
@@ -38461,7 +38600,7 @@
     {
       "name": "drawBackground",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 709,
+      "sourceLine": 711,
       "originalLine": 52774,
       "characters": 4072,
       "sourceHash": "ee2fcab62e5f4b4fdda8a8b9387d3c22658ae8a41497d1244801573eb409e69d",
@@ -38481,7 +38620,7 @@
     {
       "name": "drawAmbientBubbles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 796,
+      "sourceLine": 798,
       "originalLine": 52846,
       "characters": 4199,
       "sourceHash": "2284a6d340cd97f6f841bf51ca78b25310703de48dd6991dfb77bea72ef3c052",
@@ -38502,7 +38641,7 @@
     {
       "name": "getAmbientBubbleRenderPass",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 905,
+      "sourceLine": 907,
       "originalLine": 52954,
       "characters": 193,
       "sourceHash": "a2fb8353dfd7ecb1a092eb5125c6cc3a35e26c87fff2dfa09ac4457c5ea017a3",
@@ -38513,7 +38652,7 @@
     {
       "name": "getAmbientBubbleLayerProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 913,
+      "sourceLine": 915,
       "originalLine": 52962,
       "characters": 415,
       "sourceHash": "e6f4b68e80421fc47d438551702a8bb782acdd68b12946d75f2c6f9fde55316e",
@@ -38522,7 +38661,7 @@
     {
       "name": "getWaterParticleVisibleCount",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 923,
+      "sourceLine": 925,
       "originalLine": 53101,
       "characters": 154,
       "sourceHash": "60e89ed6c0a6f6d04ce47727463025a92fb738f8ec76c81cd62b7f6831558e5e",
@@ -38533,7 +38672,7 @@
     {
       "name": "ensureWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 928,
+      "sourceLine": 930,
       "originalLine": 53111,
       "characters": 2116,
       "sourceHash": "b0fefd7ebf180ad1ef8649f8754f46dd458086148cc50e7fb3307b1f4d15d7f9",
@@ -38553,7 +38692,7 @@
     {
       "name": "getWaterParticleDrawColor",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 971,
+      "sourceLine": 973,
       "originalLine": 53151,
       "characters": 229,
       "sourceHash": "2912a7a1c0011b8efdaa6cdafb4e118daee713e11d7bc994f64c84fd363dab47",
@@ -38562,7 +38701,7 @@
     {
       "name": "formatRgb",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 977,
+      "sourceLine": 979,
       "originalLine": 53171,
       "characters": 117,
       "sourceHash": "02811baecb616084daf778efe9f4830df8448f6cfc2e9a9a312f24f5b258ae2e",
@@ -38571,7 +38710,7 @@
     {
       "name": "formatRgba",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 981,
+      "sourceLine": 983,
       "originalLine": 53175,
       "characters": 160,
       "sourceHash": "011537d4df3dc1513654f81959b9f447371285f675f53d34a58b274f1f4163f6",
@@ -38582,7 +38721,7 @@
     {
       "name": "getWaterParticleSpriteBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 985,
+      "sourceLine": 987,
       "originalLine": 53179,
       "characters": 762,
       "sourceHash": "e6efd0be55fc716e777e28df1846bf92fd866c684c9cba5f176e35eefdcbe543",
@@ -38594,7 +38733,7 @@
     {
       "name": "getTintedWaterParticleSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1006,
+      "sourceLine": 1008,
       "originalLine": 53200,
       "characters": 1816,
       "sourceHash": "559a4b5944152687d0e5d5406c4a19b448aa408421e46647fa533dd55c229257",
@@ -38608,7 +38747,7 @@
     {
       "name": "collectBubblerParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1065,
+      "sourceLine": 1067,
       "originalLine": 53259,
       "characters": 2303,
       "sourceHash": "226f46a1c72a7032fbb5300ea339340607d1e16047e164d09b5bb7f9c7c12bd9",
@@ -38628,7 +38767,7 @@
     {
       "name": "applyBubblerForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1112,
+      "sourceLine": 1114,
       "originalLine": 53306,
       "characters": 920,
       "sourceHash": "f7707f33609141e9b87fb582fc606e1af9047251fe03d2186ecb4a9ec07c8ea2",
@@ -38639,7 +38778,7 @@
     {
       "name": "getAmbientBubbleParticleLayers",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1131,
+      "sourceLine": 1133,
       "originalLine": 53325,
       "characters": 166,
       "sourceHash": "6b0de811cc87c926469888fd134092b088aa47051e56e531dbd767471a6b72e3",
@@ -38648,7 +38787,7 @@
     {
       "name": "collectAmbientBubbleParticleFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1141,
+      "sourceLine": 1143,
       "originalLine": 53335,
       "characters": 1528,
       "sourceHash": "7ef37d75f65216dcdc1e9ffc07b413a6d71e51b6af94db2abd0736b049d6144c",
@@ -38666,7 +38805,7 @@
     {
       "name": "applyAmbientBubbleForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1182,
+      "sourceLine": 1184,
       "originalLine": 53375,
       "characters": 775,
       "sourceHash": "de023cc1e0644fd07fc473adabe924f6b0cdbfba8a9bf11053cc12fb51b9aef6",
@@ -38677,7 +38816,7 @@
     {
       "name": "getWaterParticleTankLayer",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1203,
+      "sourceLine": 1205,
       "originalLine": 53396,
       "characters": 277,
       "sourceHash": "f0108e9d9871ebf60b20414034aaddc125604460a4a0ee466e9babc170227d94",
@@ -38689,7 +38828,7 @@
     {
       "name": "getParticleFishFields",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1213,
+      "sourceLine": 1215,
       "originalLine": 53438,
       "characters": 751,
       "sourceHash": "1693df92c68fe81f833ac80880e92f36de07d093656b4dd4b854adf39af60340",
@@ -38704,7 +38843,7 @@
     {
       "name": "applyFishForceToParticle",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1238,
+      "sourceLine": 1240,
       "originalLine": 53463,
       "characters": 933,
       "sourceHash": "a1d17a3a4fa522df5320a4a8a8de1eb1f337c762f6773e50940aa8de7ae5a878",
@@ -38716,7 +38855,7 @@
     {
       "name": "updateWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1264,
+      "sourceLine": 1266,
       "originalLine": 53489,
       "characters": 3277,
       "sourceHash": "c7d4e0bda20e984d9320866b6f03306c08dccf3ec4c918faccf1e14363b671f1",
@@ -38740,7 +38879,7 @@
     {
       "name": "getWaterAtmosphereStreakSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1337,
+      "sourceLine": 1339,
       "originalLine": null,
       "characters": 789,
       "sourceHash": "d96a56cd535b0115930539d8472968c7b107836df0873a1125eb10dbbbd41fcd",
@@ -38749,7 +38888,7 @@
     {
       "name": "drawWaterAtmosphereStreak",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1362,
+      "sourceLine": 1364,
       "originalLine": null,
       "characters": 1246,
       "sourceHash": "10e52a97060fcb37b8b9036904a16353a54157c3532b9521b122ec2bc3e01223",
@@ -38761,7 +38900,7 @@
     {
       "name": "drawWaterParticles",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1403,
+      "sourceLine": 1405,
       "originalLine": 53564,
       "characters": 2837,
       "sourceHash": "1a689ef09fe00dd62ad4b9508b0b4efd946959d3a3414eb710c46074ce9d5ece",
@@ -38782,7 +38921,7 @@
     {
       "name": "drawAutoDispenserButton",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1473,
+      "sourceLine": 1475,
       "originalLine": 53665,
       "characters": 2696,
       "sourceHash": "a89dc4f2a9a7e34def46ddf8a973cd5a62d1496f4201494ce409e368a1d1792c",
@@ -38793,7 +38932,7 @@
     {
       "name": "getAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1536,
+      "sourceLine": 1538,
       "originalLine": 53728,
       "characters": 242,
       "sourceHash": "47d63588814b89a503e7e217884f7d77424685052a411bdc5f03ad7a4946ae41",
@@ -38802,7 +38941,7 @@
     {
       "name": "getAutoDispenserHopperCacheKey",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1546,
+      "sourceLine": 1548,
       "originalLine": 53738,
       "characters": 409,
       "sourceHash": "2d3b52c239f11ce09564058775dfa18c02de7b18f6821ed20420aa15f4250e7f",
@@ -38813,7 +38952,7 @@
     {
       "name": "drawFoodPelletPieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1559,
+      "sourceLine": 1561,
       "originalLine": 53751,
       "characters": 1284,
       "sourceHash": "596531a028ac14859caeaf1ab4c141df13cedfe24ba8d460644bdf41a125e71a",
@@ -38826,7 +38965,7 @@
     {
       "name": "drawFoodSpritePieceToContext",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1594,
+      "sourceLine": 1596,
       "originalLine": 53786,
       "characters": 1215,
       "sourceHash": "5f9474375ff25c9b2c00aa203188e8ff454c4431eea3112d06c37615824aa6d2",
@@ -38841,7 +38980,7 @@
     {
       "name": "buildAutoDispenserHopperPile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1621,
+      "sourceLine": 1623,
       "originalLine": 53807,
       "characters": 1800,
       "sourceHash": "a43ce334c4102195a505999974a667a42c52d53624df781145952c13ce123001",
@@ -38858,7 +38997,7 @@
     {
       "name": "renderAutoDispenserHopperCache",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1670,
+      "sourceLine": 1672,
       "originalLine": 53856,
       "characters": 1593,
       "sourceHash": "377abbcb73cb6cd3c523352fc7dc8d69f678ba0b2f624b742ff786153438beee",
@@ -38874,7 +39013,7 @@
     {
       "name": "drawAutoDispenser",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1706,
+      "sourceLine": 1708,
       "originalLine": 53892,
       "characters": 2219,
       "sourceHash": "b462803ceffa8ade2d6ccbe886ce9da045800bb9d6ccdf3e9557c4ce06e3faf3",
@@ -38894,7 +39033,7 @@
     {
       "name": "drawAutoDispenserStatusLight",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1774,
+      "sourceLine": 1776,
       "originalLine": null,
       "characters": 1528,
       "sourceHash": "a872455095371f53d0c76692b0fad3de7201dcc8e3d0f39daed65987d4d672b1",
@@ -38905,7 +39044,7 @@
     {
       "name": "getTintedFoodPelletSprite",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1812,
+      "sourceLine": 1814,
       "originalLine": 53973,
       "characters": 2084,
       "sourceHash": "e798a796eabeb409cbd42e3012c1007c02c9dfcbffd4a24ed3a53fe2950e4280",
@@ -38918,7 +39057,7 @@
     {
       "name": "drawProceduralFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1870,
+      "sourceLine": 1872,
       "originalLine": 54031,
       "characters": 1077,
       "sourceHash": "01e5495f0d5cc73a1d8c7498180cc03c688ffc35e325c464854c94fa9241ac42",
@@ -38930,7 +39069,7 @@
     {
       "name": "drawFoodPelletPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1900,
+      "sourceLine": 1902,
       "originalLine": 54062,
       "characters": 763,
       "sourceHash": "2551c2cd00bf5ca942facdd4e625fc2553828d66bdbb828858ff0457e47d3959",
@@ -38944,7 +39083,7 @@
     {
       "name": "drawFallbackChumPiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1921,
+      "sourceLine": 1923,
       "originalLine": 54083,
       "characters": 868,
       "sourceHash": "bcdbe6b9f780481629d90c9d01c522b850065e7612a8adbf8fcfdc1e942de4f5",
@@ -38956,7 +39095,7 @@
     {
       "name": "drawFoodSpritePiece",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1947,
+      "sourceLine": 1949,
       "originalLine": 54109,
       "characters": 2308,
       "sourceHash": "672498dc5862e9d7e5bd7d5f0c2affbb036b995966e21cf314bebccf792173a4",
@@ -38971,7 +39110,7 @@
     {
       "name": "drawPellets",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 1994,
+      "sourceLine": 1996,
       "originalLine": 54130,
       "characters": 916,
       "sourceHash": "b9e1595521aa2fe1611eb2b4de579d20a9bd45bb1420c9a2bf7f64a63f3611b2",
@@ -38986,7 +39125,7 @@
     {
       "name": "getTankFloorDrawBounds",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2020,
+      "sourceLine": 2022,
       "originalLine": 54154,
       "characters": 449,
       "sourceHash": "f24215c9f218214d6960c75c6ebdccb67344f878272d876e808cea26ea18772a",
@@ -38998,7 +39137,7 @@
     {
       "name": "getTankFloorMaskSurfaceYAtX",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2039,
+      "sourceLine": 2041,
       "originalLine": 54173,
       "characters": 569,
       "sourceHash": "c7c7fcaa954c09970a22bce5eb71c1c6c1f587ce137cb3409ebd8b332bb356e1",
@@ -39011,7 +39150,7 @@
     {
       "name": "getTankFloorMaskHillProfile",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2049,
+      "sourceLine": 2051,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "667e5a171665fb75306e9ee5ac18851afcd0911f7fcc4fe60852cbe44f358228",
@@ -39022,7 +39161,7 @@
     {
       "name": "traceTankFloorMaskPath",
       "module": "rendering/tank-and-water.js",
-      "sourceLine": 2072,
+      "sourceLine": 2074,
       "originalLine": 54182,
       "characters": 779,
       "sourceHash": "ab210dd26faf0eeaf7a61be1e8e9d443de6cc5a86ac733f2911f1f5417b2fa97",
@@ -47291,8 +47430,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 2754,
       "originalLine": null,
-      "characters": 2571,
-      "sourceHash": "54304546c7bef299bd0b68c75eca60c2a41265d64e0dbce15e9a5b5b11690a43",
+      "characters": 2897,
+      "sourceHash": "ce72bd0139c89b89d53ab25c9f92fa262e9488fd0ee5f18be56a4a41fbe77de9",
       "calls": [
         "clamp",
         "getFishAppearanceVariantKey",
@@ -47307,7 +47446,7 @@
     {
       "name": "renderManagedFishCard",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2815,
+      "sourceLine": 2821,
       "originalLine": 46822,
       "characters": 8736,
       "sourceHash": "e97bda2b3efb4a6160352756e84052eef475465afbe06b0516c6fcd18de397b0",
@@ -47345,7 +47484,7 @@
     {
       "name": "clearFishInspectorDisplayDocking",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2958,
+      "sourceLine": 2964,
       "originalLine": 46999,
       "characters": 362,
       "sourceHash": "ba1fbe45940e5a6e4fd447165f1d2f22ae2229c7066f1255b671c40432df2008",
@@ -47354,7 +47493,7 @@
     {
       "name": "getTankNormStagePoint",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2973,
+      "sourceLine": 2979,
       "originalLine": 47014,
       "characters": 471,
       "sourceHash": "19a0177456d41079b166e0b0b5bd5a8bb10ef2f9b9faeb2f13067f7882ed52e1",
@@ -47366,7 +47505,7 @@
     {
       "name": "holdFishForActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 2984,
+      "sourceLine": 2990,
       "originalLine": 47025,
       "characters": 1483,
       "sourceHash": "84a371f9dc2ecdb84a68a2c55118c3cfa0b5d98d455132b8068b048b96e028c5",
@@ -47389,7 +47528,7 @@
     {
       "name": "releaseFishActionMenuHold",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3031,
+      "sourceLine": 3037,
       "originalLine": 47071,
       "characters": 938,
       "sourceHash": "5f50d0f2980b5dbf5b6593cd79432084e9d66854a683b1ce107f7c2f57a07ff5",
@@ -47401,7 +47540,7 @@
     {
       "name": "updateFishActionMenuHold",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3057,
+      "sourceLine": 3063,
       "originalLine": 47097,
       "characters": 968,
       "sourceHash": "1cc5e2b123427d0c99526226cabe30e809c4adb5cd0dbf9cdf95adf4bf25ae5b",
@@ -47415,7 +47554,7 @@
     {
       "name": "closeFishActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3082,
+      "sourceLine": 3088,
       "originalLine": 47122,
       "characters": 294,
       "sourceHash": "28463f94aa974694a757d441760de303ec6cb2e04214dd698404b0adfdda90b5",
@@ -47428,7 +47567,7 @@
     {
       "name": "closeFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3093,
+      "sourceLine": 3099,
       "originalLine": 47133,
       "characters": 236,
       "sourceHash": "41650267ee93c59600b1c235c6bb8fd4414d55ace090c1f556111f06a6070d48",
@@ -47437,7 +47576,7 @@
     {
       "name": "closeFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3102,
+      "sourceLine": 3108,
       "originalLine": 47142,
       "characters": 248,
       "sourceHash": "8d6013d3f55db61e29e90b2f52597a6b3832c3548a151b7fde4548d72fe66deb",
@@ -47446,7 +47585,7 @@
     {
       "name": "getFishActionCategoryAnchorFromElement",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3111,
+      "sourceLine": 3117,
       "originalLine": 47151,
       "characters": 441,
       "sourceHash": "0948e2261be0eb2e75ea6aabeb2127c472f66f4db5916031dd534176a0503003",
@@ -47457,7 +47596,7 @@
     {
       "name": "openFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3125,
+      "sourceLine": 3131,
       "originalLine": 47166,
       "characters": 858,
       "sourceHash": "c88d47f1e42ed6c557907a2163abde0ee4351faef1d7391b06707d7e34141639",
@@ -47476,7 +47615,7 @@
     {
       "name": "openFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3146,
+      "sourceLine": 3152,
       "originalLine": 47187,
       "characters": 890,
       "sourceHash": "cac95400d203cbe672b8bc0be8f9285bb5c0d06c2b730b4d744a147c1fe865ad",
@@ -47497,7 +47636,7 @@
     {
       "name": "openFishActionMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3169,
+      "sourceLine": 3175,
       "originalLine": 47210,
       "characters": 890,
       "sourceHash": "7970e21e271e51d2741c476a9440d091cd7754dc8893243196ddd6b9b15c50b4",
@@ -47516,7 +47655,7 @@
     {
       "name": "getFishInspectorDockingBounds",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3191,
+      "sourceLine": 3197,
       "originalLine": 47230,
       "characters": 1343,
       "sourceHash": "00d49bfb99f20801fdb67fec32b88829eb688e8681df1d621145f20e491a1e6a",
@@ -47525,7 +47664,7 @@
     {
       "name": "updateFishInspectorDisplayDocking",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3236,
+      "sourceLine": 3242,
       "originalLine": 47275,
       "characters": 2691,
       "sourceHash": "105c86142e67a7e9dbf47b6688ffc59eea81eb159cadd0be31b87d0da085de7f",
@@ -47541,7 +47680,7 @@
     {
       "name": "renderFishActionFlyout",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3306,
+      "sourceLine": 3312,
       "originalLine": 47341,
       "characters": 327,
       "sourceHash": "41571689b24d4086a6e043db21a577fa7bc808a6e0da6c75c8f951d9e3944621",
@@ -47553,7 +47692,7 @@
     {
       "name": "renderFishActionSubmenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3314,
+      "sourceLine": 3320,
       "originalLine": 47437,
       "characters": 2813,
       "sourceHash": "45a6566675681abe362fd4c4dd6c712e7bb51c126557d17aafc89892241a7534",
@@ -47574,7 +47713,7 @@
     {
       "name": "renderFishActionTargetMenu",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3378,
+      "sourceLine": 3384,
       "originalLine": 47501,
       "characters": 3153,
       "sourceHash": "0e8a8876c6523f8241288a16ba8b789ada6201286fece487f3d8b6d5ace6ff44",
@@ -47597,7 +47736,7 @@
     {
       "name": "updateFishActionFlyoutBranchLayout",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3451,
+      "sourceLine": 3457,
       "originalLine": 47574,
       "characters": 1554,
       "sourceHash": "8167de90cedd9d62eff9b7db024f7056276d3a8994e51fdba8a82d770671ee29",
@@ -47606,7 +47745,7 @@
     {
       "name": "renderFishActionQueueDock",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3495,
+      "sourceLine": 3501,
       "originalLine": 47618,
       "characters": 190,
       "sourceHash": "b461cf6952b60778e237aa546ef84dd86ba7d34044be3b4f2fef9759a4ef18b7",
@@ -47615,7 +47754,7 @@
     {
       "name": "renderFishNeedsBars",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3501,
+      "sourceLine": 3507,
       "originalLine": 47692,
       "characters": 1937,
       "sourceHash": "7e8a5566a6aae2db6361eb465af25ed52ab3426b9e6e560e8c621210530bfb5c",
@@ -47631,7 +47770,7 @@
     {
       "name": "getSelectedFishNeedsMoodLabel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3545,
+      "sourceLine": 3551,
       "originalLine": 47736,
       "characters": 148,
       "sourceHash": "a06a4e1bdddbadaed03fe8534ed7e7db2f451b473c8eeb7edd8b22d06763e74e",
@@ -47643,7 +47782,7 @@
     {
       "name": "shouldShowSelectedFishNeedsPanel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3549,
+      "sourceLine": 3555,
       "originalLine": 47760,
       "characters": 403,
       "sourceHash": "39e8b7770984dcec1c05ede2bb0707462c8aaff464b011592e6b29d45307024d",
@@ -47655,7 +47794,7 @@
     {
       "name": "renderSelectedFishNeedsPanel",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3563,
+      "sourceLine": 3569,
       "originalLine": 47773,
       "characters": 365,
       "sourceHash": "93cc582f4c8b189f94c8e7eba6de80a20f1f0a32f445e93692f18828fb5f15ad",
@@ -47666,14 +47805,15 @@
     {
       "name": "renderFishInspector",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3572,
+      "sourceLine": 3578,
       "originalLine": 47801,
-      "characters": 10086,
-      "sourceHash": "73a6cc36fedec77a2fec77a8b9324b818d37ac2d38027546b367e6ecb9200ae8",
+      "characters": 10997,
+      "sourceHash": "6af4cce1ec7278c605ca119121359fda35c1059ccedc4288974c28390a67e0f9",
       "calls": [
         "buildFishIndividualityMarkup",
         "clearFishInspectorDisplayDocking",
         "clearFishNameDraft",
+        "escapeHtml",
         "formatFishBiologicalAge",
         "formatFishConditionLabel",
         "getBaseSpeciesForFish",
@@ -47684,6 +47824,7 @@
         "getFishCorpseStateLabel",
         "getFishHungerLabel",
         "getFishInspectorSpeciesLabel",
+        "getFishManagementProgressionPresentation",
         "getFishMaxHealthUnits",
         "getFishMoodPresentation",
         "getFishNeedsSnapshot",
@@ -47714,7 +47855,7 @@
     {
       "name": "renderBackgroundShopCards",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3802,
+      "sourceLine": 3816,
       "originalLine": null,
       "characters": 1844,
       "sourceHash": "a487c91ecd44362b77ab4580f34439cd114b64ad7b6901172e75d3f34248e9e4",
@@ -47729,7 +47870,7 @@
     {
       "name": "renderSubstrateShopCards",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3839,
+      "sourceLine": 3853,
       "originalLine": null,
       "characters": 1409,
       "sourceHash": "41254e433c2da997d56c956f8be512dec4ca145c2a1967dfb22789497605504b",
@@ -47743,7 +47884,7 @@
     {
       "name": "renderDecorStoreCard",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3853,
+      "sourceLine": 3867,
       "originalLine": null,
       "characters": 2939,
       "sourceHash": "369a1fa3125ebbb0ea1b319d02501539b4c9ea54b13b0cbd92fb2240726b5f43",
@@ -47768,7 +47909,7 @@
     {
       "name": "renderDecorShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3898,
+      "sourceLine": 3912,
       "originalLine": 47981,
       "characters": 4792,
       "sourceHash": "9f7b44959f95387fb4fbe783c1079de8b1e70509a1f4e464818e789ef680727d",
@@ -47800,7 +47941,7 @@
     {
       "name": "renderEquipmentShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3993,
+      "sourceLine": 4007,
       "originalLine": 48072,
       "characters": 5507,
       "sourceHash": "274b02520bb5b1b935b3c6bba00677edf8e7341ef9fe5c4dd13868dde532d536",
@@ -47821,7 +47962,7 @@
     {
       "name": "renderDecorInventory",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 4086,
+      "sourceLine": 4100,
       "originalLine": 48283,
       "characters": 3024,
       "sourceHash": "e86b62f2324491a034f17dcd16008e899dfd7432d3b1bf87b9b7e78b922559ce",
@@ -53602,8 +53743,8 @@
       "module": "ui/tool-modes-and-debug-panels.js",
       "sourceLine": 1883,
       "originalLine": null,
-      "characters": 1591,
-      "sourceHash": "7d856bf413099e2bfa516b6233021ef4302a5ba0ed6b50e83360ae10d41bbe4c",
+      "characters": 2403,
+      "sourceHash": "9056e6cce262517f8d50a06d27a9cd09586e11f308063a1d0e8b54066e0610c4",
       "calls": [
         "getFishBehaviorDebugSnapshot",
         "getFishByIdFast",
@@ -53613,7 +53754,7 @@
     {
       "name": "formatDebugFishBehaviorLogEntry",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1907,
+      "sourceLine": 1911,
       "originalLine": 9811,
       "characters": 330,
       "sourceHash": "4817cbb671eef182f9cc8ebfee7a3fe15aceac2c8c0c52ddf1d63b3aa4c0d920",
@@ -53622,7 +53763,7 @@
     {
       "name": "buildDebugFishBehaviorLogText",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1914,
+      "sourceLine": 1918,
       "originalLine": 9818,
       "characters": 320,
       "sourceHash": "2790637e3327811b1c38fb26a47055de19d968195e60298e776f7e48090194aa",
@@ -53633,7 +53774,7 @@
     {
       "name": "createDebugFishBehaviorLogFilename",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1925,
+      "sourceLine": 1929,
       "originalLine": 9829,
       "characters": 398,
       "sourceHash": "9a9e0d0a47db2c744900af021decfbfb0db9036c850fd8431c5b7b0f0b534192",
@@ -53642,7 +53783,7 @@
     {
       "name": "downloadDebugFishBehaviorLog",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1931,
+      "sourceLine": 1935,
       "originalLine": 9835,
       "characters": 371,
       "sourceHash": "358208997da0d9723fde0122c3a44625fd1fc89529113deeb1403e258ed3084c",
@@ -53657,7 +53798,7 @@
     {
       "name": "toggleAspectRatioLock",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1949,
+      "sourceLine": 1953,
       "originalLine": 9864,
       "characters": 276,
       "sourceHash": "6cfa136557f4767097e7192439471ad5cf0fc33030ee29515e2166e1009c9077",
@@ -53671,7 +53812,7 @@
     {
       "name": "handleHiddenKeySequence",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1957,
+      "sourceLine": 1961,
       "originalLine": 9872,
       "characters": 616,
       "sourceHash": "9e25aebe4770cf511553b1762fe7b0ddfca2fc1aa23b11ff5fe7fc9da5f6ea69",
@@ -53682,7 +53823,7 @@
     {
       "name": "isFocusedTextEntry",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1979,
+      "sourceLine": 1983,
       "originalLine": 9901,
       "characters": 305,
       "sourceHash": "60b82e735b83ed114894a805528c842fedee7f4f9cb879bf3f8f06cf8718d482",
@@ -53691,7 +53832,7 @@
     {
       "name": "getStageRenderDevicePixelRatio",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1991,
+      "sourceLine": 1995,
       "originalLine": 9926,
       "characters": 163,
       "sourceHash": "0ee9c1e2cdfdf4e03d5595516ca7bf98d615ffa4eb7dc6c1844ff68d01ecc730",
@@ -53700,7 +53841,7 @@
     {
       "name": "isStageRenderViewTransitionActive",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 1996,
+      "sourceLine": 2000,
       "originalLine": null,
       "characters": 746,
       "sourceHash": "720a6ee91889056bc0f60c33b0fe04ee7f46610da73699e56437fc0206fa8d72",
@@ -53711,7 +53852,7 @@
     {
       "name": "getEffectiveAnimationFpsLimit",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2017,
+      "sourceLine": 2021,
       "originalLine": 9933,
       "characters": 1044,
       "sourceHash": "bb124d98fa0827f289ed25a90856793f3658f1eb7cb28cc0431e99445a17576e",
@@ -53722,7 +53863,7 @@
     {
       "name": "getWaterParticleTargetCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2043,
+      "sourceLine": 2047,
       "originalLine": 9942,
       "characters": 73,
       "sourceHash": "95d17a9af1fc236185741e9247b018151986064565deeed46e65098e66354852",
@@ -53731,7 +53872,7 @@
     {
       "name": "getWaterParticleCleanVisibleCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2047,
+      "sourceLine": 2051,
       "originalLine": 9948,
       "characters": 93,
       "sourceHash": "00f6d060adf537525f5b118f3ac3b2bfefc60873f368be70057fbe4de5a23cfb",
@@ -53740,7 +53881,7 @@
     {
       "name": "getWaterParticleDirtyVisibleCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2051,
+      "sourceLine": 2055,
       "originalLine": 9954,
       "characters": 93,
       "sourceHash": "6c7c6405527b6345d82b0712f4e1eb4cbffcf510fa5454ca699c8756658452b1",
@@ -53749,7 +53890,7 @@
     {
       "name": "getAmbientBubbleSeedCount",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2055,
+      "sourceLine": 2059,
       "originalLine": 9960,
       "characters": 71,
       "sourceHash": "c9c16cc765c7c5d85a411514e6c6645ad8416a08e67fe3f342217c3e60c150ab",
@@ -53758,7 +53899,7 @@
     {
       "name": "getAmbientBubbleSpeedMultiplier",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2059,
+      "sourceLine": 2063,
       "originalLine": null,
       "characters": 103,
       "sourceHash": "5757d590bc768a7d3c2b3412cb34c153f75483ff1d74fbc73513cb8eaf261d6d",
@@ -53769,7 +53910,7 @@
     {
       "name": "getVisibleAmbientSceneBubbles",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2063,
+      "sourceLine": 2067,
       "originalLine": 9966,
       "characters": 305,
       "sourceHash": "c113e7cb835212a960fb320e6e14a1b9cf69161e23d7a6ed7436349fd2b26b7b",
@@ -53780,7 +53921,7 @@
     {
       "name": "getMaxVisibleBubblerBubblesPerSpout",
       "module": "ui/tool-modes-and-debug-panels.js",
-      "sourceLine": 2073,
+      "sourceLine": 2077,
       "originalLine": 9977,
       "characters": 98,
       "sourceHash": "a216ccf6710ff822e9b1f64cd44f1c7dc7828abfbdacdfd0aca552717414c2f1",

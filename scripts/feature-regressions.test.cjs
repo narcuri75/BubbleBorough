@@ -2129,7 +2129,8 @@ test("fish turnaround uses the production v26 timeline with renderer-neutral loc
   assert.match(bootstrap, /FISH_TURN_V26_REDUCED_QUALITY_MAX_SIMULTANEOUS = 16/);
   assert.doesNotMatch(bootstrap, /FISH_TURN_RIG_/);
   assert.match(meals, /normalizedBackend === "simple"[\s\S]*getSimpleFishTurnDurationMs/);
-  assert.match(meals, /return FISH_TURN_V26_DURATION_MS;/);
+  assert.match(meals, /FISH_TURN_V26_DURATION_MS \* turnDurationScale/);
+  assert.match(meals, /const variation = 0\.9 \+ Math\.random\(\) \* 0\.2/);
   assert.match(v26, /return configured === "simple" \? "simple" : "v26";/);
   assert.match(v26, /normalized === "legacy-complex"[\s\S]*return "v26";/);
   assert.match(rendering, /if \(v26TurnRendererActive\)[\s\S]*drawFishTurnV26VolumeMesh/);

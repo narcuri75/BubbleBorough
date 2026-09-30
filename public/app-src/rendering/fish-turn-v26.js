@@ -145,10 +145,24 @@ function chooseFishTurnV26DepthSign(fish) {
   // The camera is on negative Z, so negative depth reads as toward the camera.
   if (mode === "toward") return -1;
   if (mode === "away") return 1;
+
   const previousDepthSign = Number(fish?.turnV26LastDepthSign);
-  return previousDepthSign === -1 || previousDepthSign === 1
-    ? -previousDepthSign
-    : (Math.random() < 0.5 ? -1 : 1);
+  const repeatCount = Math.max(0, Number(fish?.turnV26DepthRepeatCount) || 0);
+  const depthZ = typeof getFishTankDepthZ === "function"
+    ? Math.max(0, Math.min(1, Number(getFishTankDepthZ(fish)) || 0.5))
+    : 0.5;
+  // Fish near the back have more visual room to turn toward the viewer, while
+  // fish near the front are gently biased away. History resists obvious runs
+  // without creating the old mechanical toward/away/toward alternation.
+  let towardProbability = 0.64 - depthZ * 0.28;
+  if (previousDepthSign === -1) towardProbability -= repeatCount >= 2 ? 0.25 : 0.13;
+  if (previousDepthSign === 1) towardProbability += repeatCount >= 2 ? 0.25 : 0.13;
+  towardProbability = Math.max(0.15, Math.min(0.85, towardProbability));
+  const nextDepthSign = Math.random() < towardProbability ? -1 : 1;
+  if (fish) {
+    fish.turnV26DepthRepeatCount = nextDepthSign === previousDepthSign ? repeatCount + 1 : 0;
+  }
+  return nextDepthSign;
 }
 
 function easeFishTurnV26Continuity(value) {
@@ -163,7 +177,12 @@ function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now())
   const exitStart = clamp(FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS, entryEnd, 0.999);
   const meshIn = easeFishTurnV26Continuity(progress / entryEnd);
   const meshOut = 1 - easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
-  const meshAlpha = turnState.active ? clamp(Math.min(meshIn, meshOut), 0, 1) : 0;
+  // Do not crossfade the flat sprite into the turn mesh. That creates a
+  // visible ghost/dissolve seam at both ends of the reversal. Once a complex
+  // turn starts, the mesh owns the entire active interval; the normal sprite
+  // resumes only after the terminal-frame handshake.
+  const turnVisualActive = turnState.active && progress < 1;
+  const meshAlpha = turnVisualActive ? 1 : 0;
   const current = Number.isFinite(Number(currentTilt)) ? Number(currentTilt) : 0;
   const entry = Number.isFinite(Number(fish?.turnV26EntryTilt))
     ? Number(fish.turnV26EntryTilt)
@@ -171,7 +190,7 @@ function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now())
   const exitBlend = easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
   return {
     meshAlpha,
-    spriteAlpha: 1 - meshAlpha,
+    spriteAlpha: turnVisualActive ? 0 : 1,
     spriteDirection: progress < 0.5 ? turnState.fromDirection : turnState.toDirection,
     tilt: entry + (current - entry) * exitBlend
   };
@@ -1691,9 +1710,10 @@ function getFishTurnV26VisualAnchorLocalPoint(
   }
   const style = getFishTurnV26Style(fish);
   const turnDepthSign = getFishTurnV26DepthSign(fish);
+  const visualProgress = easeFishTurnV26Continuity(turnState.progress);
   const styleTransform = computeFishTurnV26StyleTransform(
     style,
-    turnState.progress,
+    visualProgress,
     sourceDirection,
     turnDepthSign
   );
@@ -1704,7 +1724,7 @@ function getFishTurnV26VisualAnchorLocalPoint(
     u,
     v,
     fishAspect: Number(shapeImage.width) / Math.max(1, Number(shapeImage.height)),
-    turnProgress: turnState.progress,
+    turnProgress: visualProgress,
     sourceDirection,
     turnDepthSign,
     facingDirection: getFishFacingDirection(fish),
@@ -2252,7 +2272,7 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
 
   try {
     const turnState = getFishHorizontalTurnState(fish, now);
-    const turnProgress = clamp(Number(turnState.progress) || 0, 0, 1);
+    const turnProgress = easeFishTurnV26Continuity(clamp(Number(turnState.progress) || 0, 0, 1));
     const sourceDirection = getFishTurnV26SourceDirection();
     const turnStyle = getFishTurnV26Style(fish);
     const turnDepthSign = getFishTurnV26DepthSign(fish);

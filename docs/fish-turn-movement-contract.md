@@ -233,7 +233,7 @@ The Phase 3 v26 backend is intentionally a parity renderer. Its 96 x 48 continuo
 - same canvas filter/tint context
 - no writes to `xNorm`, `yNorm`, tank layer, tank sublayer, collision pose, target, speed, schooling state, or behavior state
 
-The WebGL canvas is composited into the existing 2D tank render pass. During early integration phases, WebGL failure fell back to the legacy complex path; Phase 15 replaces that fallback with the lightweight sprite turn. This fallback is visual only and does not change the active movement contract.
+The WebGL canvas is composited into the existing 2D tank render pass. During early integration phases, WebGL failure fell back to the legacy complex path; complex turning now preserves the live sprite until the mesh can render. This fallback is visual only and does not change the active movement contract.
 
 Phase 3 intentionally does not:
 
@@ -844,7 +844,7 @@ Phase 15 is the production state of the fish-turn system. **v26 is the productio
 
 The segmented 12-slice renderer, its canvas cache, its multi-second renderer-specific timing constants, and its caustic-mask renderer have been removed from the live code path. The renderer-neutral locomotion contract remains unchanged.
 
-If WebGL initialization, preprocessing, texture creation, or a v26 draw fails, the **lightweight sprite turn is the emergency fallback**. The fallback is latched for the rest of that turn so the fish cannot oscillate between rendering systems. It preserves the already-started turn clock and authoritative movement state. The fallback affects only visual orientation/squash and never rewrites `xNorm`, `yNorm`, targets, depth, collision, feeding, cave state, schooling, or behavior ownership.
+If WebGL initialization, preprocessing, texture creation, or a v26 draw fails, the **live sprite remains visible while the mesh recovers**; the lightweight squash-and-flip turn is not reintroduced while complex turning is enabled. This preserves the already-started turn clock and authoritative movement state, and prevents a dark renderer handoff. The visual recovery never rewrites `xNorm`, `yNorm`, targets, depth, collision, feeding, cave state, schooling, or behavior ownership.
 
 Production GPU work is asset-cached. Body and optional fin shape data remain asset-level caches, body/fin vertex buffers are shared by shape cache key, and WebGL body/fin textures are uploaded once per source image identity rather than once per fish per frame. A school of fish using the same artwork therefore reuses the same preprocessing and GPU resources.
 
@@ -910,3 +910,21 @@ This only changes the authoritative free-swim path during an already-approved tu
 An accepted reversal keeps its locomotion arc until the visual turn finishes, even if a moving target crosses back to the source side. Arc distance and vertical intent are latched per turn so target changes cannot abruptly bend the fish in the opposite vertical direction mid-turn. A new turn chooses a fresh arc.
 
 Passive obstacle anticipation samples four positions along the intended path and, when present, the carried velocity path. Its lookahead includes steering response time. This catches obstacles between probe endpoints and obstacles the fish is still coasting toward. Existing collision resolution remains authoritative, and committed detours retain their existing lifetime. An obstacle waypoint bypasses the post-turn forward commitment so that commitment cannot force the fish into an obstacle.
+
+## Phase 24 momentum locomotion overhaul
+
+Phase 24 supersedes the earlier fixed-timing and synthetic-turn-arc assumptions for ordinary living swimming. `FISH_TURN_V26_DURATION_MS = 650` remains the reference baseline, not a universal duration. A v26 turn now scales that baseline by species locomotion, current swimming speed, body scale, urgency, and a small per-turn variation. The lightweight renderer continues to use its existing simple-turn duration path. Once a turn begins, its chosen duration remains latched for that session.
+
+Authoritative reversal travel no longer invents world-space vertical motion merely because a fish is turning. Fish Turn v26 still supplies the toward/away pseudo-3D visual maneuver, while `xNorm` and `yNorm` only carry vertical movement that navigation actually requested. Horizontal momentum still eases through zero and launches into the destination-facing direction, preserving a continuous reversal without forcing an unrelated climb or dive.
+
+Normal swimming now maintains a continuous steering heading and bounded velocity state. Near-vertical destinations retain a meaningful horizontal component, and species may lower the global vertical-steering ceiling further. Behavioral targets remain intent. The locomotion layer applies heading rotation, acceleration, braking, slow speed variation, propulsion push/cruise/coast states, and bounded path wander. Random variation is chosen at low-frequency state transitions and interpolated over time rather than rerolled every frame.
+
+Roaming, feeding, ordinary inspection, and social following increasingly share the same velocity controller. Behavior changes therefore preserve momentum instead of replacing one movement model with another. Urgent or genuinely scripted owners such as tube travel, cave-specific movement, puffer overrides, gravel actions, panic, dragging, and death may still use their dedicated paths.
+
+Toward-camera and away-camera v26 turns remain available, but default `both` mode no longer strictly alternates. Selection is weighted by current tank depth and recent turn history, which discourages visible repetition while retaining both depth hemispheres.
+
+Turnaround commitment now includes species timing, carried speed, and a body-length travel requirement. Ordinary target churn cannot immediately command another reversal before the fish establishes its new course. Safety and explicit movement owners retain their existing bypasses.
+
+Schooling remains a single leader/follower behavior. The leader keeps one bounded rolling path history shared by the school. Followers sample delayed positions along that history, then apply their stable formation offsets as elastic regions rather than exact points. This makes a leader's turn propagate through the school instead of mirroring all slots instantly. Formations breathe with small stable offsets, pause reshaping during major maneuvers, preserve catch-up behavior, and continue to forbid reverse-swimming followers.
+
+Wall and decor anticipation remain steering aids rather than collision replacements. Lookahead now considers species profile, carried speed, and body scale. Wall avoidance prefers a sweeping tangent route before hard boundary correction. Existing collision and cave rules remain authoritative.

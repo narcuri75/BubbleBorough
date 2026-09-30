@@ -497,6 +497,21 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   startleStrength: 1,
   startleRecoveryScale: 1,
   turnDurationScale: 1,
+  accelerationScale: 1,
+  decelerationScale: 1,
+  turnRateScale: 1,
+  turnRadiusScale: 1,
+  verticalSteeringLimit: 0.82,
+  coastBias: 0.42,
+  propulsionFrequency: 1,
+  propulsionAmplitude: 1,
+  pathLookaheadScale: 1,
+  pathWanderStrength: 1,
+  stationKeepingStrength: 1,
+  depthWanderStrength: 1,
+  schoolElasticity: 1,
+  wallComfortDistance: 1,
+  turnCommitBodyLengths: 0.65,
   speedMinBlend: 0.2,
   speedMaxBlend: 0.8,
   dartChance: 0,
@@ -513,7 +528,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
   "green-chromis": createFishLocomotionProfile({ movementPattern: "school-cruise", preferredY: 0.43, verticalSpread: 0.62, targetDistanceMin: 0.2, targetDistanceMax: 0.56, headingPersistence: 0.64, hoverChance: 0.025, schoolStrength: 0.8, schoolSpacingScale: 0.84, schoolDurationScale: 1.45, structureAffinity: 0.88, startleStrength: 1.3, turnDurationScale: 0.82, speedMinBlend: 0.5, speedMaxBlend: 0.94, dartChance: 0.12, targetDurationScale: 0.88 }),
   "banggai-cardinalfish": createFishLocomotionProfile({ movementPattern: "group-hover", preferredY: 0.48, verticalSpread: 0.5, targetDistanceMin: 0.1, targetDistanceMax: 0.3, headingPersistence: 0.38, hoverChance: 0.38, hoverMinMs: 1300, hoverMaxMs: 3300, schoolStrength: 0.52, structureAffinity: 1.34, caveAffinity: 1.1, startleStrength: 1.15, turnDurationScale: 1.28, speedMinBlend: 0.04, speedMaxBlend: 0.42, targetDurationScale: 1.3 }),
   "firefish": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.42, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.24, hoverChance: 0.46, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 1.9, caveAffinity: 2.25, homeRangeStrength: 0.86, homeRangeRadius: 0.14, startleStrength: 1.55, turnDurationScale: 0.8, speedMinBlend: 0.06, speedMaxBlend: 0.54, dartChance: 0.28, targetDurationScale: 1.26 }),
-  "yellow-watchman-goby": createFishLocomotionProfile({ movementPattern: "bottom-stop-go", preferredY: 0.86, verticalSpread: 0.22, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.34, hoverChance: 0.52, hoverMinMs: 1500, hoverMaxMs: 3800, structureAffinity: 2.05, caveAffinity: 2.5, homeRangeStrength: 0.96, homeRangeRadius: 0.12, startleStrength: 1.16, turnDurationScale: 1.35, speedMinBlend: 0.02, speedMaxBlend: 0.36, dartChance: 0.1, targetDurationScale: 1.38 }),
+  "yellow-watchman-goby": createFishLocomotionProfile({ movementPattern: "bottom-stop-go", preferredY: 0.86, verticalSpread: 0.22, targetDistanceMin: 0.04, targetDistanceMax: 0.18, headingPersistence: 0.34, hoverChance: 0.52, hoverMinMs: 1500, hoverMaxMs: 3800, structureAffinity: 2.05, caveAffinity: 2.5, homeRangeStrength: 0.96, homeRangeRadius: 0.12, startleStrength: 1.16, turnDurationScale: 1.35, accelerationScale: 1.12, decelerationScale: 1.3, turnRateScale: 1.08, verticalSteeringLimit: 0.76, coastBias: 0.18, propulsionFrequency: 1.05, stationKeepingStrength: 1.35, pathLookaheadScale: 0.74, wallComfortDistance: 0.88, turnCommitBodyLengths: 0.42, speedMinBlend: 0.02, speedMaxBlend: 0.36, dartChance: 0.1, targetDurationScale: 1.38 }),
   "tailspot-blenny": createFishLocomotionProfile({ movementPattern: "bottom-graze", preferredY: 0.8, verticalSpread: 0.25, targetDistanceMin: 0.04, targetDistanceMax: 0.2, headingPersistence: 0.32, hoverChance: 0.4, hoverMinMs: 1100, hoverMaxMs: 2900, structureAffinity: 2, caveAffinity: 1.1, homeRangeStrength: 0.5, startleStrength: 1.02, turnDurationScale: 1.18, speedMinBlend: 0.06, speedMaxBlend: 0.44, targetDurationScale: 1.24 }),
   "orchid-dottyback": createFishLocomotionProfile({ movementPattern: "cave-hover-dart", preferredY: 0.52, verticalSpread: 0.4, targetDistanceMin: 0.06, targetDistanceMax: 0.2, headingPersistence: 0.26, hoverChance: 0.38, hoverMinMs: 1000, hoverMaxMs: 3000, structureAffinity: 2, caveAffinity: 2.3, homeRangeStrength: 0.9, homeRangeRadius: 0.14, startleStrength: 1.15, turnDurationScale: 0.86, speedMinBlend: 0.06, speedMaxBlend: 0.5, dartChance: 0.24, targetDurationScale: 1.2 }),
   "six-line-wrasse": createFishLocomotionProfile({ movementPattern: "crevice-cruise", preferredY: 0.5, verticalSpread: 0.64, targetDistanceMin: 0.2, targetDistanceMax: 0.52, headingPersistence: 0.58, hoverChance: 0.05, schoolStrength: 0.08, structureAffinity: 1.65, caveAffinity: 1.48, startleStrength: 1.08, turnDurationScale: 0.78, speedMinBlend: 0.5, speedMaxBlend: 0.98, dartChance: 0.18, targetDurationScale: 0.84 }),
@@ -633,8 +648,11 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
     hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
     schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
-    startleStrength: 1.02, turnDurationScale: 1.5, speedMinBlend: 0.04,
-    speedMaxBlend: 0.46, targetDurationScale: 1.22
+    startleStrength: 1.02, turnDurationScale: 1.5, accelerationScale: 0.72,
+    decelerationScale: 0.78, turnRateScale: 0.72, turnRadiusScale: 1.28,
+    verticalSteeringLimit: 0.72, coastBias: 0.68, propulsionFrequency: 0.78,
+    propulsionAmplitude: 0.88, pathLookaheadScale: 1.12, wallComfortDistance: 1.14,
+    turnCommitBodyLengths: 0.82, speedMinBlend: 0.04, speedMaxBlend: 0.46, targetDurationScale: 1.22
   }),
   "discus": createFishLocomotionProfile({
     movementPattern: "group-hover", preferredY: 0.5, verticalSpread: 0.54,
@@ -694,7 +712,10 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.002, schoolStrength: 0.7, schoolSpacingScale: 0.88,
     schoolDurationScale: 1.22, schoolVerticalJitterScale: 0.75, structureAffinity: 0.68,
     caveAffinity: 0.7, startleStrength: 1.28, turnDurationScale: 0.7,
-    speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
+    accelerationScale: 1.34, decelerationScale: 1.22, turnRateScale: 1.36,
+    turnRadiusScale: 0.72, verticalSteeringLimit: 0.88, coastBias: 0.22,
+    propulsionFrequency: 1.28, propulsionAmplitude: 0.92, pathLookaheadScale: 0.82,
+    schoolElasticity: 0.78, turnCommitBodyLengths: 0.46, speedMinBlend: 0.6, speedMaxBlend: 1, targetDurationScale: 0.72
   }),
   "cherry-barb": createFishLocomotionProfile({
     movementPattern: "calm-shoal", preferredY: 0.56, verticalSpread: 0.58,
@@ -833,22 +854,31 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.3, targetDistanceMax: 0.7, headingPersistence: 0.97,
     hoverChance: 0.015, schoolStrength: 0.08, structureAffinity: 0.64,
     caveAffinity: 0.1, startleStrength: 0.72, turnDurationScale: 0.72,
-    speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
+    accelerationScale: 0.66, decelerationScale: 0.62, turnRateScale: 0.58,
+    turnRadiusScale: 1.55, verticalSteeringLimit: 0.68, coastBias: 0.8,
+    propulsionFrequency: 0.66, propulsionAmplitude: 1.16, pathLookaheadScale: 1.5,
+    wallComfortDistance: 1.45, turnCommitBodyLengths: 1.05, speedMinBlend: 0.55, speedMaxBlend: 0.98, targetDurationScale: 1.2
   }),
   "great-white-shark": createFishLocomotionProfile({
     movementPattern: "wide-cruise", preferredY: 0.42, verticalSpread: 0.46,
     targetDistanceMin: 0.38, targetDistanceMax: 0.76, headingPersistence: 0.985,
     hoverChance: 0.006, schoolStrength: 0, structureAffinity: 0.48,
     caveAffinity: 0.04, startleStrength: 0.58, turnDurationScale: 0.62,
-    speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
+    accelerationScale: 0.58, decelerationScale: 0.56, turnRateScale: 0.52,
+    turnRadiusScale: 1.7, verticalSteeringLimit: 0.64, coastBias: 0.86,
+    propulsionFrequency: 0.6, propulsionAmplitude: 1.22, pathLookaheadScale: 1.65,
+    wallComfortDistance: 1.58, turnCommitBodyLengths: 1.18, speedMinBlend: 0.62, speedMaxBlend: 1, targetDurationScale: 1.28
   }),
   "hammerhead-shark": createFishLocomotionProfile({
     movementPattern: "search-cruise", preferredY: 0.5, verticalSpread: 0.62,
     targetDistanceMin: 0.26, targetDistanceMax: 0.62, headingPersistence: 0.95,
     hoverChance: 0.035, schoolStrength: 0.16, schoolSpacingScale: 1.08,
     structureAffinity: 0.72, caveAffinity: 0.16, startleStrength: 0.86,
-    turnDurationScale: 0.76, speedMinBlend: 0.5, speedMaxBlend: 0.92,
-    targetDurationScale: 1.15
+    turnDurationScale: 0.76, accelerationScale: 0.7, decelerationScale: 0.66,
+    turnRateScale: 0.64, turnRadiusScale: 1.48, verticalSteeringLimit: 0.72,
+    coastBias: 0.76, propulsionFrequency: 0.68, propulsionAmplitude: 1.12,
+    pathLookaheadScale: 1.42, wallComfortDistance: 1.38, turnCommitBodyLengths: 1.0,
+    speedMinBlend: 0.5, speedMaxBlend: 0.92, targetDurationScale: 1.15
   }),
   "orca": createFishLocomotionProfile({
     movementPattern: "pod-cruise", preferredY: 0.44, verticalSpread: 0.54,
@@ -907,7 +937,9 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMinBlend: 0.42, speedMaxBlend: 0.94, dartChance: 0.62, dartSpeedMinBlend: 0.9, targetDurationScale: 0.66
   })
 });
-const HIDDEN_FISH_OPTION_IDS = new Set(["loach"]);
+// Temporarily hidden while its attached-glass directional art is separated
+// from purchasable appearance variants.
+const HIDDEN_FISH_OPTION_IDS = new Set(["loach", "otocinclus"]);
 const FISH_BEHAVIOR_GROUP_VARIATIONS = Object.freeze({
   "open-water-cruiser": ["bold", "explorer", "social", "routine-loving", "curious", "greedy"],
   "slow-graceful": ["display", "gentle", "sensitive", "homebody", "territorial", "routine-loving", "curious"],
@@ -2301,7 +2333,7 @@ const WATER_PARTICLE_ASSET_PATHS = Object.freeze(
   Array.from({ length: 10 }, (_, index) => resolveAppUrl(`assets/misc/particle${index + 1}.png`))
 );
 const FISH_DIRECTION_TARGET_DEADZONE_NORM = 0.006;
-const FISH_SWIM_TILT_MAX = Math.PI / 4;
+const FISH_SWIM_TILT_MAX = Math.PI / 2;
 const FISH_SWIM_TILT_RESPONSE_PER_SECOND = 5.2;
 const FISH_SWIM_TILT_MAX_RADIANS_PER_SECOND = 2.35;
 const FISH_SWIM_TILT_SETTLE_EPSILON = 0.001;
@@ -2530,9 +2562,27 @@ const FISH_MOTION_SCALE = 1.62;
 const FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC = 2.65;
 const FISH_PASSIVE_BRAKE_DISTANCE_NORM = 0.12;
 const FISH_PASSIVE_ARRIVAL_EPSILON_NORM = 0.0012;
+// Low-frequency locomotion variation. These values change only at bounded
+// state transitions, never on every frame, so movement stays organic without
+// turning into procedural jitter.
+const FISH_LOCOMOTION_SPEED_BIAS_MIN = 0.94;
+const FISH_LOCOMOTION_SPEED_BIAS_MAX = 1.06;
+const FISH_LOCOMOTION_SPEED_BIAS_MIN_MS = 1800;
+const FISH_LOCOMOTION_SPEED_BIAS_MAX_MS = 4200;
+const FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS = 0.075;
+const FISH_LOCOMOTION_PATH_WANDER_MIN_MS = 2200;
+const FISH_LOCOMOTION_PATH_WANDER_MAX_MS = 5200;
+const FISH_PROPULSION_PUSH_MIN_MS = 520;
+const FISH_PROPULSION_PUSH_MAX_MS = 1150;
+const FISH_PROPULSION_CRUISE_MIN_MS = 900;
+const FISH_PROPULSION_CRUISE_MAX_MS = 2600;
+const FISH_PROPULSION_COAST_MIN_MS = 520;
+const FISH_PROPULSION_COAST_MAX_MS = 1500;
 const FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM = 0.0025;
 const FISH_TRAVERSAL_MAX_VELOCITY_NORM = 0.42;
-const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.52;
+// Climbs and dives may reach a fully vertical heading; steering still eases
+// into that heading using the species' angular response.
+const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 1;
 const FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX = 28;
 const FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX = 64;
 const FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT = 0.18;
@@ -2682,6 +2732,12 @@ const SAME_SPECIES_SCHOOL_SLOT_MAX_MS = 18000;
 const SAME_SPECIES_SCHOOL_TARGET_RESPONSE_PER_SEC = 4.6;
 const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = 1200;
 const SCHOOL_FORMATION_COMMAND_INTERVAL_MS = 180;
+const SCHOOL_PATH_HISTORY_MS = 3600;
+const SCHOOL_PATH_SAMPLE_INTERVAL_MS = 110;
+const SCHOOL_PATH_DELAY_BASE_MS = 140;
+const SCHOOL_PATH_DELAY_PER_SLOT_MS = 72;
+const SCHOOL_PATH_DELAY_MAX_MS = 560;
+const SCHOOL_FORMATION_MANEUVER_LOCK_MS = 1200;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
 const FISH_PASSIVE_TARGET_RESPONSE_PER_SEC = 4.2;
@@ -12596,6 +12652,8 @@ const dom = {
   customGravelPanel: document.querySelector("#customGravelPanel"),
   equipmentCustomGravelPanel: document.querySelector("#equipmentCustomGravelPanel"),
   fishInspector: document.querySelector("#fishInspector"),
+  inspectorProgression: document.querySelector("#inspectorProgression"),
+  inspectorProgressionContent: document.querySelector("#inspectorProgressionContent"),
   fishActionFlyout: document.querySelector("#fishActionFlyout"),
   fishActionFlyoutName: document.querySelector("#fishActionFlyoutName"),
   fishActionFlyoutSettings: document.querySelector("#fishActionFlyoutSettings"),

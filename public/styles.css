@@ -9246,6 +9246,38 @@ button.management-task-row {
   color: rgba(125, 224, 248, 0.8);
 }
 
+.inspector-line-progression {
+  align-items: start;
+}
+
+.fish-inspector-progression {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+  gap: 5px;
+}
+
+.fish-inspector-progression-summary {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px 8px;
+}
+
+.fish-inspector-progression-summary strong {
+  color: var(--ink);
+}
+
+.fish-inspector-progression-summary span {
+  color: var(--muted);
+  font-size: .8rem;
+}
+
+.fish-inspector-xp-track {
+  width: 100%;
+  margin-top: 0;
+}
+
 .fish-status-line {
   color: var(--ink);
   font-weight: 700;

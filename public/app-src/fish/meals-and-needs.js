@@ -67,15 +67,12 @@ function getConfiguredFishTurnAnimationMode(species) {
 }
 
 function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
-  const activeMode = fish?.turnStartedAt && Number(fish.turnDurationMs) > 0
-    ? String(fish.turnAnimationMode || "").trim().toLowerCase()
-    : "";
-  if (["simple", "complex"].includes(activeMode)) {
-    return activeMode;
-  }
   if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
     return "simple";
   }
+  // Complex turning is authoritative whenever the setting is enabled. A stale
+  // per-fish `simple` mode from an older save must not reintroduce the squash-
+  // and-flip path during a complex-renderer session.
   return "complex";
 }
 
@@ -103,7 +100,35 @@ function getComplexFishTurnDurationMs(fish, species, rendererBackend = null) {
   if (normalizedBackend === "simple") {
     return getSimpleFishTurnDurationMs(fish, species);
   }
-  return FISH_TURN_V26_DURATION_MS;
+
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish || species)
+    : null;
+  const turnDurationScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.85);
+  const speedMin = Math.max(0.00001, Number(species?.speedMin) || 0.00001);
+  const speedMax = Math.max(speedMin, Number(species?.speedMax) || speedMin);
+  const currentSpeed = typeof normalizeFishSpeed === "function"
+    ? normalizeFishSpeed(species, Number(fish?.swimSpeed))
+    : Math.max(speedMin, Number(fish?.swimSpeed) || speedMin);
+  const speedBlend = speedMax <= speedMin
+    ? 0.5
+    : clamp((currentSpeed - speedMin) / Math.max(0.00001, speedMax - speedMin), 0, 1);
+  const speedScale = 1.09 - speedBlend * 0.17;
+  const visualSize = typeof getFishVisualSize === "function"
+    ? Number(getFishVisualSize(fish, species)) || 0
+    : 0;
+  const tankWidth = typeof TANK_WIDTH !== "undefined" ? Math.max(1, TANK_WIDTH) : 1600;
+  const bodyScale = visualSize > 0
+    ? clamp(0.9 + visualSize / tankWidth * 1.8, 0.9, 1.24)
+    : 1;
+  const panicActive = Number.isFinite(Number(fish?.panicUntil)) && Date.now() < Number(fish.panicUntil);
+  const urgencyScale = panicActive ? 0.84 : 1;
+  const variation = 0.9 + Math.random() * 0.2;
+  return clamp(
+    FISH_TURN_V26_DURATION_MS * turnDurationScale * speedScale * bodyScale * urgencyScale * variation,
+    420,
+    1120
+  );
 }
 
 function getFishTurnDurationMs(fish, species, animationMode = null, rendererBackend = null) {

@@ -167,10 +167,21 @@ function getFishTurnLocomotionState(fish, now = Date.now()) {
 function beginFishTurnaroundCooldown(fish, direction, now = Date.now()) {
   if (!fish) return;
   const startedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  const turnScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.65, 1.8);
+  const speedRatio = clamp(
+    Math.hypot(Number(fish.traversalVelocityXNorm) || 0, Number(fish.traversalVelocityYNorm) || 0)
+      / Math.max(0.01, Number(fish.swimSpeed) || 0.04),
+    0,
+    1.5
+  );
+  const momentumScale = 0.9 + speedRatio * 0.22;
   fish.turnaroundCooldownDirection = normalizeFishHorizontalDirection(direction, getFishFacingDirection(fish));
   fish.turnaroundCooldownStartedAt = startedAt;
-  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS;
-  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS;
+  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS * turnScale * momentumScale;
+  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS * turnScale * momentumScale;
   fish.turnaroundCooldownStartXNorm = Number(fish.xNorm) || 0.5;
   fish.turnaroundCooldownStartYNorm = Number(fish.yNorm) || 0.5;
 }
@@ -183,13 +194,21 @@ function getFishTurnaroundCooldownState(fish, now = Date.now()) {
     (Number(fish?.xNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartXNorm) || 0.5),
     (Number(fish?.yNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartYNorm) || 0.5)
   );
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  const bodyLengthNorm = typeof getFishVisualSize === "function"
+    ? clamp((Number(getFishVisualSize(fish)) || 0) / Math.max(1, TANK_WIDTH), 0.01, 0.18)
+    : 0;
+  const bodyLengthCommitment = bodyLengthNorm * clamp(Number(locomotionProfile?.turnCommitBodyLengths) || 0.65, 0.3, 1.4);
+  const requiredTravel = Math.max(FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM, bodyLengthCommitment);
   const active = Number(now) < until
-    || (Number(now) < maxUntil && traveled < FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM);
+    || (Number(now) < maxUntil && traveled < requiredTravel);
   if (!active && fish) {
     fish.turnaroundCooldownUntil = 0;
     fish.turnaroundCooldownMaxUntil = 0;
   }
-  return { active, direction, traveled, until, maxUntil };
+  return { active, direction, traveled, requiredTravel, until, maxUntil };
 }
 
 function normalizeAngle(angle) {
@@ -260,7 +279,7 @@ function getFishSwimTiltForVector(deltaXNorm, deltaYNorm) {
   }
 
   return clamp(
-    Math.atan2(deltaYPx, Math.max(0.001, deltaXPx)),
+    Math.atan2(deltaYPx, deltaXPx),
     -FISH_SWIM_TILT_MAX,
     FISH_SWIM_TILT_MAX
   );
@@ -294,24 +313,19 @@ function updateFishSwimTilt(fish, desiredTilt, deltaSeconds) {
 function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
   const dxPx = (Number(deltaXNorm) || 0) * TANK_WIDTH;
   const dyPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  const steeringHeadingX = Number(fish?.steeringHeadingXScreen);
   const traversalHeadingXNorm = Number(fish?.traversalHeadingXNorm);
-  const carriedDirection = Math.abs(traversalHeadingXNorm) > 0.000001
-    ? (traversalHeadingXNorm < 0 ? -1 : 1)
-    : getFishFacingDirection(fish);
-  const lateralClearancePx = clamp(
-    Math.abs(dyPx) * FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT,
-    FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX,
-    FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX
-  );
-  const verticallyDominant = Math.abs(dyPx) > Math.max(10, Math.abs(dxPx) * 1.15);
+  const carriedDirection = Math.abs(steeringHeadingX) > 0.000001
+    ? (steeringHeadingX < 0 ? -1 : 1)
+    : Math.abs(traversalHeadingXNorm) > 0.000001
+      ? (traversalHeadingXNorm < 0 ? -1 : 1)
+      : getFishFacingDirection(fish);
+  // Cave nodes already encode body clearance. Open-water staging can steer
+  // sideways into the roof while trying to reach a nearby docking point.
+  if (fish?.caveState) return Math.abs(dxPx) > 3 ? (dxPx < 0 ? -1 : 1) : carriedDirection;
 
-  // A target almost directly above or below is not permission to alternate
-  // left/right on sub-pixel error. Carry the current heading until the fish
-  // has made enough lateral room to arc back toward the target. This makes a
-  // vertical destination a two-part swimming route instead of a wall press.
-  if (verticallyDominant && Math.abs(dxPx) < lateralClearancePx) {
-    return carriedDirection;
-  }
+  // Vertical travel keeps the last left/right render side without inventing
+  // a sideways destination. Only meaningful horizontal intent requests a turn.
   if (Math.abs(dxPx) > 0.5) {
     return dxPx < 0 ? -1 : 1;
   }
@@ -321,16 +335,28 @@ function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
 function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
   const dx = Number(deltaXNorm) || 0;
   const dy = Number(deltaYNorm) || 0;
+  if (fish?.caveState && !options.turnReversal) {
+    // Confined docking is an explicit precision maneuver. Velocity smoothing
+    // still applies, but the route cannot invent lateral room inside a wall.
+    return { xNorm: dx, yNorm: dy };
+  }
+  const locomotionProfile = typeof getFishLocomotionProfile === "function"
+    ? getFishLocomotionProfile(fish)
+    : null;
+  // Legacy species verticalSteeringLimit values no longer restrict direction.
+  // Species still differ in angular response, acceleration and turn radius.
+  const verticalLimit = FISH_VERTICAL_TRAVERSAL_MAX_RATIO;
+
   if (fish && options.turnReversal) {
-    // A reversal already supplies a continuous heading through zero X.
-    // Ordinary forward-only steering would destroy that midpoint and snap
-    // from source-facing to destination-facing horizontal motion.
+    // The reversal controller owns the heading while the fish crosses through
+    // the turn. Keep any true vertical intent, but never invent extra climb.
     const lengthPx = Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT);
     fish.steeringVerticalRatio = lengthPx > 0.001
-      ? clamp(dy * TANK_HEIGHT / lengthPx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO)
+      ? clamp(dy * TANK_HEIGHT / lengthPx, -verticalLimit, verticalLimit)
       : 0;
     return { xNorm: dx, yNorm: dy };
   }
+
   const distanceNorm = Math.hypot(dx, dy);
   if (!fish || distanceNorm <= 0.000001) {
     if (fish) fish.steeringVerticalRatio = 0;
@@ -340,39 +366,77 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const dxPx = dx * TANK_WIDTH;
   const dyPx = dy * TANK_HEIGHT;
   const distancePx = Math.hypot(dxPx, dyPx);
-  if (distancePx <= 0.001) {
-    return { xNorm: dx, yNorm: dy };
-  }
-
-  const desiredVerticalRatio = clamp(dyPx / distancePx, -FISH_VERTICAL_TRAVERSAL_MAX_RATIO, FISH_VERTICAL_TRAVERSAL_MAX_RATIO);
-  const currentVerticalRatio = Number.isFinite(Number(fish.steeringVerticalRatio))
-    ? clamp(Number(fish.steeringVerticalRatio), -1, 1)
-    : 0;
-  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
-  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
-  const response = 1 - Math.exp(-2.8 * urgency * elapsedSeconds);
-  const responsiveStep = (desiredVerticalRatio - currentVerticalRatio) * response;
-  const maximumStep = 1.45 * urgency * elapsedSeconds;
-  const nextVerticalRatio = clamp(
-    currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
-    -FISH_VERTICAL_TRAVERSAL_MAX_RATIO,
-    FISH_VERTICAL_TRAVERSAL_MAX_RATIO
-  );
-  fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
-    ? desiredVerticalRatio
-    : nextVerticalRatio;
+  if (distancePx <= 0.001) return { xNorm: dx, yNorm: dy };
 
   const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
-  const verticalRatio = fish.steeringVerticalRatio;
-  const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
+  const desiredVerticalRatio = clamp(dyPx / distancePx, -verticalLimit, verticalLimit);
+  const desiredHorizontalRatio = Math.sqrt(Math.max(0, 1 - desiredVerticalRatio * desiredVerticalRatio));
+  let desiredHeadingX = horizontalSign * desiredHorizontalRatio;
+  let desiredHeadingY = desiredVerticalRatio;
 
-  // Convert the smoothed screen-space heading back into normalized tank-space
-  // while preserving the remaining target distance. This bends the path into
-  // climbs and dives instead of instantly snapping to a new diagonal vector.
-  // The vertical component is bounded, so a climb or dive always carries a
-  // visible forward swim rather than reading as an in-place sprite rotation.
-  const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
-  const unitYNorm = verticalRatio / TANK_HEIGHT;
+  const wanderScale = clamp(Number(options.wanderScale) || 0, 0, 1);
+  const maxWanderRadians = typeof FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS !== "undefined"
+    ? FISH_LOCOMOTION_PATH_WANDER_MAX_RADIANS
+    : 0;
+  const wanderRadians = clamp(
+    Number(fish.locomotionPathWanderRadians) || 0,
+    -maxWanderRadians,
+    maxWanderRadians
+  ) * wanderScale;
+  if (Math.abs(wanderRadians) > 0.000001) {
+    const cosine = Math.cos(wanderRadians);
+    const sine = Math.sin(wanderRadians);
+    const rotatedX = desiredHeadingX * cosine - desiredHeadingY * sine;
+    const rotatedY = desiredHeadingX * sine + desiredHeadingY * cosine;
+    if (rotatedX * horizontalSign > 0.05) {
+      desiredHeadingX = rotatedX;
+      desiredHeadingY = clamp(rotatedY, -verticalLimit, verticalLimit);
+    }
+  }
+
+  const desiredAngle = Math.atan2(desiredHeadingY, desiredHeadingX);
+  let currentHeadingX = Number(fish.steeringHeadingXScreen);
+  let currentHeadingY = Number(fish.steeringHeadingYScreen);
+  if (!Number.isFinite(currentHeadingX) || !Number.isFinite(currentHeadingY) || Math.hypot(currentHeadingX, currentHeadingY) < 0.1) {
+    const traversalX = Number(fish.traversalHeadingXNorm) || 0;
+    const traversalY = Number(fish.traversalHeadingYNorm) || 0;
+    const traversalLengthPx = Math.hypot(traversalX * TANK_WIDTH, traversalY * TANK_HEIGHT);
+    if (traversalLengthPx > 0.001) {
+      currentHeadingX = traversalX * TANK_WIDTH / traversalLengthPx;
+      currentHeadingY = traversalY * TANK_HEIGHT / traversalLengthPx;
+    } else {
+      currentHeadingX = getFishFacingDirection(fish);
+      currentHeadingY = 0;
+    }
+  }
+
+  const currentAngle = Math.atan2(currentHeadingY, currentHeadingX);
+  const urgency = clamp(Number(options.urgency) || 1, 0.55, 2.1);
+  const turnRateScale = clamp(Number(locomotionProfile?.turnRateScale) || 1, 0.45, 2.2);
+  const turnRadiusScale = clamp(Number(locomotionProfile?.turnRadiusScale) || 1, 0.55, 1.8);
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  // A broad-bodied cruiser should need more water to redirect than a small
+  // agile fish, even if both are reacting to the same steering intent.
+  const maximumAngularStep = Math.PI * 1.35 * turnRateScale / Math.sqrt(turnRadiusScale) * urgency * elapsedSeconds;
+  const rawAngleDelta = desiredAngle - currentAngle;
+  const angleDelta = Math.atan2(Math.sin(rawAngleDelta), Math.cos(rawAngleDelta));
+  const nextAngle = currentAngle + clamp(angleDelta, -maximumAngularStep, maximumAngularStep);
+
+  let nextHeadingX = Math.cos(nextAngle);
+  let nextHeadingY = Math.sin(nextAngle);
+  // Eliminate floating-point residual sideways drift at exactly +/-90 degrees.
+  if (Math.abs(nextHeadingX) < 1e-10) nextHeadingX = 0;
+  nextHeadingY = clamp(nextHeadingY, -verticalLimit, verticalLimit);
+  const headingLength = Math.hypot(nextHeadingX, nextHeadingY) || 1;
+  nextHeadingX /= headingLength;
+  nextHeadingY /= headingLength;
+
+  fish.steeringHeadingXScreen = nextHeadingX;
+  fish.steeringHeadingYScreen = nextHeadingY;
+  fish.steeringVerticalRatio = nextHeadingY;
+
+  const unitXNorm = nextHeadingX / TANK_WIDTH;
+  const unitYNorm = nextHeadingY / TANK_HEIGHT;
   const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
   return {
     xNorm: unitXNorm / unitNormLength * distanceNorm,

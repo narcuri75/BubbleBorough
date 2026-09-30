@@ -45,8 +45,23 @@ function harness() {
   return { context, scheduler };
 }
 
+test("body pitch can reach exactly straight up/down with smooth acceleration into the pose", () => {
+  const { context: c } = harness();
+  c.FISH_SWIM_TILT_MAX = Math.PI / 2;
+  for (const name of ["getFishSwimTiltForVector", "updateFishSwimTilt"]) vm.runInContext(extract(steering, name), c);
+  for (const sign of [-1, 1]) {
+    const target = c.getFishSwimTiltForVector(0, sign * 0.3);
+    assert.equal(target, sign * Math.PI / 2);
+    const fish = { swimTilt: 0 };
+    const first = c.updateFishSwimTilt(fish, target, 1 / 60);
+    assert.ok(Math.abs(first) > 0 && Math.abs(first) < Math.PI / 2);
+    for (let i = 0; i < 600; i++) c.updateFishSwimTilt(fish, target, 1 / 60);
+    assert.equal(fish.swimTilt, target);
+  }
+});
+
 for (const hz of [15, 30, 60, 120, 144]) {
-  test(`turn arc survives the real steering stage at ${hz} Hz`, () => {
+  test(`turn traversal stays continuous without manufacturing vertical motion at ${hz} Hz`, () => {
     const { context: c } = harness();
     for (const from of [-1, 1]) {
       const f = { turnStartedAt: 1000, turnDurationMs: 1000, turnFromDirection: from,
@@ -63,12 +78,19 @@ for (const hz of [15, 30, 60, 120, 144]) {
       const apex = c.getFishTurnReversalTraversal(f, -from * 0.3, 0, 1500);
       const result = c.getFishGradualSteeringVector(f, apex.xNorm, apex.yNorm, 1 / hz, { turnReversal: true });
       assert.ok(Math.abs(result.xNorm) < 1e-9);
-      assert.ok(result.yNorm > 0.01);
+      assert.ok(Math.abs(result.yNorm) < 1e-9, "a horizontal reversal does not invent world-space Y");
+      const climbingApex = c.getFishTurnReversalTraversal(
+        { turnStartedAt: 2000, turnDurationMs: 1000, turnFromDirection: from, turnToDirection: -from, traversalHeadingXNorm: from, swimSpeed: 0.05 },
+        -from * 0.3,
+        -0.12,
+        2500
+      );
+      assert.ok(climbingApex.yNorm < 0, "real vertical intent is carried through the turn");
     }
     assert.match(motion, /turnReversal: Boolean\(turnReversalTraversal\)/, "production passes the turn ownership flag");
   });
 
-  test(`ordinary climbs remain bounded after settling at ${hz} Hz`, () => {
+  test(`ordinary climbs can settle vertically at ${hz} Hz`, () => {
     const { context: c } = harness();
     for (const sign of [-1, 1]) {
       const f = { traversalHeadingXNorm: sign, displayDirection: sign, steeringVerticalRatio: 0 };
@@ -76,8 +98,10 @@ for (const hz of [15, 30, 60, 120, 144]) {
         const v = c.getFishGradualSteeringVector(f, 0, sign * 0.4, 1 / hz);
         const ratio = Math.abs(v.yNorm * c.TANK_HEIGHT) / Math.hypot(v.xNorm * c.TANK_WIDTH, v.yNorm * c.TANK_HEIGHT);
         assert.ok(ratio <= c.FISH_VERTICAL_TRAVERSAL_MAX_RATIO + 1e-9);
-        assert.ok(v.xNorm * sign > 0);
+        assert.ok(v.xNorm * sign >= -1e-9);
       }
+      assert.equal(f.steeringHeadingXScreen, 0);
+      assert.equal(f.steeringHeadingYScreen, sign);
     }
   });
 

@@ -412,21 +412,26 @@ function isFishInCaveRenderSublayer(fish) {
     return false;
   }
 
-  const frontZ = getFishCaveDepthRegion(fish, "front");
-  const interiorZ = getFishCaveDepthRegion(fish, "interior");
-  const threshold = (frontZ + interiorZ) / 2;
-  const hysteresis = 0.012;
-  const previous = runtime.caveRenderOcclusionByFishId?.get?.(fish.id) === true;
-  const z = getFishTankDepthZ(fish);
-  const isInside = previous
-    ? z <= threshold + hysteresis
-    : z <= threshold - hysteresis;
-  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, isInside);
-  return isInside;
+  // Entry/exit ownership changes only after the body clears a real opening.
+  // Mood-driven depth easing must not move an occupant between draw passes.
+  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, true);
+  return true;
 }
 
 function getFishSameLayerRenderPriority(fish) {
   return isFishInCaveRenderSublayer(fish) ? 1 : 0;
+}
+
+function getFishRenderPassLayer(fish) {
+  if (isFishInCaveRenderSublayer(fish)) {
+    const decor = getCaveBehaviorDecorById(fish.caveDecorId);
+    if (decor) {
+      // Both cave images are painted in the front-layer sandwich, including
+      // legacy caves whose simulation interior still uses another layer.
+      return clampTankLayer(getDecorLayerSpan(decor.decorKey, getDecorTankLayer(decor)).front);
+    }
+  }
+  return clampTankLayer(getFishTankLayer(fish));
 }
 
 function drawFishPebbleTosses(now, layer = null) {
@@ -1343,7 +1348,7 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     if (!pendingTravel) {
       clampFishToMobileViewport(fish, species, now);
     }
-    const layer = clampTankLayer(getFishTankLayer(fish));
+    const layer = getFishRenderPassLayer(fish);
     let record = pool[recordIndex];
     if (!record) {
       record = {};
@@ -1775,10 +1780,10 @@ function drawFish(now, layer = null, options = {}) {
       continue;
     }
     const caveInteriorFish = record.caveInteriorFish;
-    if (!recordsArePreFiltered && options.caveInteriorOnly === true && !caveInteriorFish) {
+    if (options.caveInteriorOnly === true && !caveInteriorFish) {
       continue;
     }
-    if (!recordsArePreFiltered && options.excludeCaveInterior === true && caveInteriorFish) {
+    if (options.excludeCaveInterior === true && caveInteriorFish) {
       continue;
     }
 
@@ -1941,20 +1946,10 @@ function drawFish(now, layer = null, options = {}) {
           }
         );
         if (!renderedByV26) {
-          // A v26 failure is sticky for this turn session. Do not retry WebGL
-          // on later frames or swap complex renderers mid-reversal. Degrade to
-          // the existing lightweight squash/flip visual while movement stays
-          // on the same authoritative turn timeline.
-          markFishTurnRendererFallback(fish, "simple");
-          drawFishLightweightTurnFallbackFrame(
-            tankContext,
-            depthRenderImage,
-            fishDrawX,
-            width,
-            spriteHeight,
-            fish,
-            now
-          );
+          // Never fall back to the lightweight squash/flip renderer while
+          // complex turning is enabled. Keep the live sprite visible until
+          // the volume renderer can draw it, avoiding a dark one-frame swap.
+          tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
         } else {
           // Keep the live swim warp visible under the mesh for a brief overlap
           // at both endpoints. This preserves the current dive/climb and tail
@@ -2134,6 +2129,10 @@ function drawFish(now, layer = null, options = {}) {
     queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
+      // This nested binding intentionally routes the complete selected-fish
+      // card to glassCanvas, which is composited above tankCanvas and grime.
+      // Foreground decor must never occlude the stats overlay.
+      const tankContext = glassContext;
       tankContext.save();
       if (typeof isProteusZombieFish === "function" && isProteusZombieFish(fish)) {
         const fontSize = 10 * stableScale;
@@ -2165,6 +2164,7 @@ function drawFish(now, layer = null, options = {}) {
       } else {
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
       const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Happy");
+      const progression = pose.isDead ? null : getFishManagementProgressionPresentation(fish, species);
       const moodPresentation = pose.isDead
         ? { tone: "danger", color: "#ff627d" }
         : getFishMoodPresentation(moodLabel);
@@ -2175,58 +2175,112 @@ function drawFish(now, layer = null, options = {}) {
       const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
-      const fontSize = 11 * stableScale;
-      const rowHeight = 18 * stableScale;
-      const rowGap = 2 * stableScale;
-      const totalHeight = rowHeight * 4 + rowGap * 3;
-      const radius = 8 * stableScale;
+      const fontSize = 13 * stableScale;
+      const cardHeight = 78 * stableScale;
+      const radius = 16 * stableScale;
       tankContext.font = `700 ${fontSize}px Trebuchet MS`;
       tankContext.textAlign = "center";
       tankContext.textBaseline = "middle";
       const nameWidth = tankContext.measureText(fish.name || "Fish").width;
-      const moodWidth = tankContext.measureText(moodLabel).width;
       const heartWidth = tankContext.measureText(`♥ ${heartLabel}`).width;
-      const mealIconSize = 13 * stableScale;
+      const mealIconSize = 16 * stableScale;
       const mealIconGap = 7 * stableScale;
-      const mealWidth = mealIconSize * 2 + mealIconGap;
-      const labelWidth = Math.max(62 * stableScale, Math.ceil(Math.max(nameWidth, moodWidth, heartWidth, mealWidth) + 18 * stableScale));
-      const labelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
+      const labelWidth = Math.max(236 * stableScale, Math.ceil(Math.max(nameWidth, heartWidth) + 166 * stableScale));
+      const targetLabelX = clamp(anchorX, labelWidth / 2 + 5 * stableScale, TANK_WIDTH - labelWidth / 2 - 5 * stableScale);
       const desiredBottomY = pose.y - height * 0.58;
-      const topY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - totalHeight);
+      const targetTopY = Math.max(topFrameBottomY + 5 * stableScale, desiredBottomY - cardHeight);
+      runtime.fishStatsOverlayAnchorStates ||= new Map();
+      const overlayAnchorKey = String(fish.id || fish.speciesId || "selected-fish");
+      const previousOverlayAnchor = runtime.fishStatsOverlayAnchorStates.get(overlayAnchorKey);
+      const overlayEase = previousOverlayAnchor ? 0.2 : 1;
+      const labelX = previousOverlayAnchor
+        ? previousOverlayAnchor.x + (targetLabelX - previousOverlayAnchor.x) * overlayEase
+        : targetLabelX;
+      const topY = previousOverlayAnchor
+        ? previousOverlayAnchor.y + (targetTopY - previousOverlayAnchor.y) * overlayEase
+        : targetTopY;
+      runtime.fishStatsOverlayAnchorStates.set(overlayAnchorKey, { x: labelX, y: topY });
       const moodStroke = moodPresentation.color || "#59e5cb";
 
-      for (let row = 0; row < 4; row += 1) {
-        const y = topY + row * (rowHeight + rowGap);
-        tankContext.fillStyle = "rgba(5, 25, 38, 0.78)";
-        tankContext.beginPath();
-        tankContext.roundRect(labelX - labelWidth / 2, y, labelWidth, rowHeight, radius);
-        tankContext.fill();
-        tankContext.strokeStyle = row === 3 ? moodStroke : "rgba(94, 220, 239, 0.72)";
-        tankContext.lineWidth = Math.max(1, stableScale);
-        tankContext.stroke();
-      }
+      tankContext.save();
+      tankContext.shadowColor = "rgba(31, 194, 239, 0.28)";
+      tankContext.shadowBlur = 9 * stableScale;
+      const cardGradient = tankContext.createLinearGradient(0, topY, 0, topY + cardHeight);
+      cardGradient.addColorStop(0, "rgba(10, 39, 57, 0.94)");
+      cardGradient.addColorStop(1, "rgba(3, 17, 28, 0.91)");
+      tankContext.fillStyle = cardGradient;
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.82)";
+      tankContext.lineWidth = Math.max(1.25, stableScale);
+      tankContext.beginPath();
+      tankContext.roundRect(labelX - labelWidth / 2, topY, labelWidth, cardHeight, radius);
+      tankContext.fill();
+      tankContext.stroke();
+      tankContext.shadowBlur = 0;
+      tankContext.strokeStyle = "rgba(187, 246, 255, 0.18)";
+      tankContext.lineWidth = Math.max(0.6, stableScale * 0.5);
+      tankContext.beginPath();
+      tankContext.roundRect(labelX - labelWidth / 2 + 2 * stableScale, topY + 2 * stableScale, labelWidth - 4 * stableScale, cardHeight - 4 * stableScale, radius - 2 * stableScale);
+      tankContext.stroke();
+      tankContext.restore();
 
-      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(fish.name || "Fish", labelX, topY + rowHeight / 2 + 0.5);
-
-      const heartCenterY = topY + rowHeight + rowGap + rowHeight / 2 + 0.5;
-      const heartGap = 4 * stableScale;
-      tankContext.fillStyle = "#ff627d";
-      tankContext.textAlign = "right";
-      tankContext.fillText("♥", labelX - heartGap / 2, heartCenterY);
       tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
       tankContext.textAlign = "left";
-      tankContext.fillText(heartLabel, labelX + heartGap / 2, heartCenterY);
+      tankContext.font = `800 ${fontSize * 1.12}px Trebuchet MS`;
+      tankContext.fillText(fish.name || "Fish", labelX - labelWidth / 2 + 14 * stableScale, topY + 16 * stableScale);
+      tankContext.font = `600 ${fontSize}px Trebuchet MS`;
 
-      const mealCenterY = topY + (rowHeight + rowGap) * 2 + rowHeight / 2;
+      const barX = labelX - labelWidth / 2 + 12 * stableScale;
+      const barY = topY + 23 * stableScale;
+      const barWidth = labelWidth * 0.63;
+      const barHeight = 14 * stableScale;
+      tankContext.fillStyle = "rgba(2, 18, 28, 0.82)";
+      tankContext.beginPath();
+      tankContext.roundRect(barX, barY, barWidth, barHeight, 7 * stableScale);
+      tankContext.fill();
+      if (progression && !progression.isMaxLevel) {
+        tankContext.save();
+        tankContext.beginPath();
+        tankContext.roundRect(barX + 2 * stableScale, barY + 2 * stableScale, barWidth - 4 * stableScale, barHeight - 4 * stableScale, 5 * stableScale);
+        tankContext.clip();
+        const xpGradient = tankContext.createLinearGradient(0, barY, 0, barY + barHeight);
+        xpGradient.addColorStop(0, "rgba(119, 241, 111, 0.96)");
+        xpGradient.addColorStop(1, "rgba(36, 186, 73, 0.94)");
+        tankContext.fillStyle = xpGradient;
+        tankContext.fillRect(barX + 2 * stableScale, barY + 2 * stableScale, (barWidth - 4 * stableScale) * progression.xpProgress, barHeight - 4 * stableScale);
+        tankContext.restore();
+      }
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.82)";
+      tankContext.stroke();
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "center";
+      const overlayLevelLabel = progression
+        ? progression.levelLabel.replace(/^Lv\./, "Lvl")
+        : "Level unavailable";
+      tankContext.font = `600 ${fontSize * 1.08}px Trebuchet MS`;
+      tankContext.fillText(overlayLevelLabel, labelX + labelWidth * 0.36, barY + barHeight / 2 + 0.5 * stableScale);
+
+      const heartCenterY = topY + 60 * stableScale;
+      const heartCenterX = labelX - labelWidth * 0.34;
+      const heartGap = 5 * stableScale;
+      tankContext.font = `800 ${fontSize * 1.2}px Trebuchet MS`;
+      tankContext.fillStyle = "#ff627d";
+      tankContext.textAlign = "right";
+      tankContext.fillText("♥", heartCenterX - heartGap / 2, heartCenterY);
+      tankContext.fillStyle = "rgba(244, 251, 255, 0.96)";
+      tankContext.textAlign = "left";
+      tankContext.font = `700 ${fontSize * 1.08}px Trebuchet MS`;
+      tankContext.fillText(heartLabel, heartCenterX + heartGap / 2, heartCenterY);
+
+      const mealCenterY = topY + 60 * stableScale;
+      const mealCenterX = labelX - labelWidth * 0.06;
       const dailyMeals = getFishDailyMealIndicatorState(fish, now);
       const meatIconPath = "assets/icons/meat_icon.png";
       const meatIcon = runtime.images.get(meatIconPath);
       if (!isUsableRuntimeImage(meatIcon)) {
         void preloadImagePath(meatIconPath, { maxAttempts: 2, timeoutMs: 8000, retryDelayMs: 300 });
       } else {
-        const firstX = labelX - mealIconGap / 2 - mealIconSize;
-        const secondX = labelX + mealIconGap / 2;
+        const firstX = mealCenterX - mealIconGap / 2 - mealIconSize;
+        const secondX = mealCenterX + mealIconGap / 2;
         const iconY = mealCenterY - mealIconSize / 2;
         tankContext.save();
         tankContext.filter = dailyMeals.am ? "none" : "grayscale(1) brightness(0.62)";
@@ -2240,9 +2294,22 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.restore();
       }
 
-      tankContext.textAlign = "center";
+      tankContext.textAlign = "left";
       tankContext.fillStyle = moodPresentation.color || "rgba(244, 251, 255, 0.96)";
-      tankContext.fillText(moodLabel, labelX, topY + (rowHeight + rowGap) * 3 + rowHeight / 2 + 0.5);
+      const moodPillWidth = Math.min(labelWidth * 0.3, 68 * stableScale);
+      const moodPillX = labelX + labelWidth / 2 - moodPillWidth - 12 * stableScale;
+      const moodPillY = topY + 50 * stableScale;
+      const moodPillHeight = 18 * stableScale;
+      tankContext.fillStyle = "rgba(3, 20, 31, 0.68)";
+      tankContext.strokeStyle = "rgba(94, 220, 239, 0.62)";
+      tankContext.lineWidth = Math.max(0.75, stableScale * 0.7);
+      tankContext.beginPath();
+      tankContext.roundRect(moodPillX, moodPillY, moodPillWidth, moodPillHeight, 11 * stableScale);
+      tankContext.fill();
+      tankContext.stroke();
+      tankContext.textAlign = "center";
+      tankContext.fillStyle = "rgba(125, 224, 248, 0.96)";
+      tankContext.fillText(moodLabel, moodPillX + moodPillWidth / 2, moodPillY + moodPillHeight / 2 + 0.5 * stableScale);
       tankContext.restore();
       }
     }
@@ -2840,9 +2907,13 @@ function getFishPose(fish, species, now) {
     const useComplexTurn = turnProgress !== null
       && getFishTurnAnimationMode(fish, species) === "complex"
       && getFishTurnRendererBackend(fish, species) === "v26";
+    // Keep the source-facing sprite stable for the entire turn.  Switching the
+    // canvas flip at the midpoint makes the fish visibly snap to the other
+    // direction; the turn squash/mesh carries the visual reversal, and the
+    // destination-facing sprite is only allowed back after the terminal frame.
     const renderDirection = turnProgress === null
       ? getFishFacingDirection(fish)
-      : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
+      : turnFromDirection;
     const scanningGravel = fish.suckerFreeSwimMode === "gravel-scan";
     const noseDownTilt = scanningGravel
       ? clamp(0.18 + Math.abs(targetDy) * 0.28 + Math.sin(wiggleClock * 0.6 + fish.phase * Math.PI) * 0.025, 0.14, 0.28)
@@ -2957,7 +3028,11 @@ function getFishPose(fish, species, now) {
   // only its smoothly changing amplitude reflects the current swim effort.
   const bobClock = now / 1000;
   const movementBlend = clamp(targetDistanceNorm / 0.055, 0, 1);
-  const bobAmplitude = (0.7 + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
+  const settledIdle = targetDistanceNorm < 0.012;
+  // Keep a visible, gentle breathing/bobbing motion even when simulation
+  // motionLevel is intentionally very low for sleepy/resting fish.
+  const idleBobAmplitude = settledIdle ? 1.65 : 0.7;
+  const bobAmplitude = (idleBobAmplitude + motionLevel * (0.8 + movementBlend * 3.2)) * sickMotionBoost;
   const verticalBob = useDepthSwimWarp
     ? 0
     : (Math.sin(bobClock * (0.72 + species.bobSpeed * 0.22) + fish.phase * Math.PI * 2) * bobAmplitude
@@ -2975,9 +3050,14 @@ function getFishPose(fish, species, now) {
   const useComplexTurn = turnProgress !== null
       && getFishTurnAnimationMode(fish, species) === "complex"
       && getFishTurnRendererBackend(fish, species) === "v26";
+  // Do not flip the live sprite halfway through a turn.  That creates a hard
+  // left/right snap in the exact frame where the fish should be rotating.
+  // Keep its source orientation until the completed turn hands off to the
+  // destination orientation; the body squash/complex renderer supplies the
+  // gradual visual transition in between.
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
-    : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
+    : turnFromDirection;
   const turnLean = turnProgress === null || useComplexTurn || useDepthSwimWarp
     ? 0
     : (Number(fish.turnSpinDirection) < 0 ? -1 : 1) * turnAmount * 0.14;
@@ -3067,7 +3147,7 @@ function getFishPose(fish, species, now) {
     wiggle: seahorsePerched ? wholeBodyWiggle * 0.24 : wholeBodyWiggle,
     bodyScaleX,
     bodyScaleY,
-    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (0.7 + motionLevel * 1.55))
+    swayX: (seahorsePerched ? wholeBodyWiggle * 0.12 : wholeBodyWiggle * (settledIdle ? 1.2 : 0.7 + motionLevel * 1.55))
       + turnSway * (entryProgress === null ? 1 : entryRightingEase)
       + (yellowTangGrazing ? Math.sin(now / 260 + fish.phase * Math.PI * 2) * 0.45 + renderDirection * yellowTangPeckPulse * 1.15 : 0)
       + (bettaDisplaying ? Math.sin(now / 180 + fish.phase * Math.PI * 2) * 0.8 : 0)

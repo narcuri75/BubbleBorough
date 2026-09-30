@@ -1491,12 +1491,120 @@ function assignFishSchoolFormationSlot(fish, leader, now = Date.now()) {
   return slot;
 }
 
+function recordFishSchoolLeaderPathHistory(leader, now = Date.now()) {
+  if (!leader) return [];
+  if (!Array.isArray(leader.schoolPathHistory)) leader.schoolPathHistory = [];
+  if (now - (Number(leader.schoolPathHistoryLastSampleAt) || 0) < SCHOOL_PATH_SAMPLE_INTERVAL_MS) {
+    return leader.schoolPathHistory;
+  }
+  const speed = Math.hypot(
+    Number(leader.traversalVelocityXNorm) || 0,
+    Number(leader.traversalVelocityYNorm) || 0
+  );
+  const headingX = speed > 0.000001
+    ? (Number(leader.traversalVelocityXNorm) || 0) / speed
+    : (Number(leader.traversalHeadingXNorm) || (Number(leader.direction) < 0 ? -1 : 1));
+  const headingY = speed > 0.000001
+    ? (Number(leader.traversalVelocityYNorm) || 0) / speed
+    : (Number(leader.traversalHeadingYNorm) || 0);
+  leader.schoolPathHistory.push({
+    time: now,
+    xNorm: Number(leader.xNorm) || 0.5,
+    yNorm: Number(leader.yNorm) || 0.5,
+    z: typeof getFishTankDepthZ === "function" ? getFishTankDepthZ(leader) : 0.5,
+    headingX,
+    headingY,
+    direction: Math.abs(headingX) > 0.02 ? (headingX < 0 ? -1 : 1) : (Number(leader.direction) < 0 ? -1 : 1),
+    speed
+  });
+  leader.schoolPathHistoryLastSampleAt = now;
+  const oldestAllowed = now - SCHOOL_PATH_HISTORY_MS;
+  while (leader.schoolPathHistory.length > 2 && Number(leader.schoolPathHistory[0]?.time) < oldestAllowed) {
+    leader.schoolPathHistory.shift();
+  }
+  const maxSamples = Math.ceil(SCHOOL_PATH_HISTORY_MS / Math.max(1, SCHOOL_PATH_SAMPLE_INTERVAL_MS)) + 4;
+  if (leader.schoolPathHistory.length > maxSamples) {
+    leader.schoolPathHistory.splice(0, leader.schoolPathHistory.length - maxSamples);
+  }
+  return leader.schoolPathHistory;
+}
+
+function getFishSchoolLeaderHistoricalPose(fish, leader, now = Date.now()) {
+  const history = recordFishSchoolLeaderPathHistory(leader, now);
+  const slot = Math.max(0, assignFishSchoolFormationSlot(fish, leader, now));
+  const profile = getFishLocomotionProfile(fish || getSpeciesForFish(fish));
+  const durationScale = clamp(Number(profile?.schoolDurationScale) || 1, 0.7, 1.5);
+  const delayMs = clamp(
+    (SCHOOL_PATH_DELAY_BASE_MS + slot * SCHOOL_PATH_DELAY_PER_SLOT_MS) * durationScale,
+    SCHOOL_PATH_DELAY_BASE_MS,
+    SCHOOL_PATH_DELAY_MAX_MS
+  );
+  const targetTime = now - delayMs;
+  if (!history.length) {
+    return {
+      xNorm: Number(leader.xNorm) || 0.5,
+      yNorm: Number(leader.yNorm) || 0.5,
+      z: typeof getFishTankDepthZ === "function" ? getFishTankDepthZ(leader) : 0.5,
+      headingX: Number(leader.traversalHeadingXNorm) || Number(leader.direction) || 1,
+      headingY: Number(leader.traversalHeadingYNorm) || 0,
+      direction: Number(leader.direction) < 0 ? -1 : 1,
+      speed: Number(leader.traversalSpeedNorm) || 0,
+      delayMs
+    };
+  }
+  if (targetTime <= Number(history[0].time)) return { ...history[0], delayMs };
+  const latest = history[history.length - 1];
+  if (targetTime >= Number(latest.time)) return { ...latest, delayMs };
+  for (let index = 1; index < history.length; index += 1) {
+    const right = history[index];
+    const left = history[index - 1];
+    if (targetTime > Number(right.time)) continue;
+    const span = Math.max(1, Number(right.time) - Number(left.time));
+    const blend = clamp((targetTime - Number(left.time)) / span, 0, 1);
+    const headingX = Number(left.headingX) + (Number(right.headingX) - Number(left.headingX)) * blend;
+    const headingY = Number(left.headingY) + (Number(right.headingY) - Number(left.headingY)) * blend;
+    return {
+      xNorm: Number(left.xNorm) + (Number(right.xNorm) - Number(left.xNorm)) * blend,
+      yNorm: Number(left.yNorm) + (Number(right.yNorm) - Number(left.yNorm)) * blend,
+      z: Number(left.z) + (Number(right.z) - Number(left.z)) * blend,
+      headingX,
+      headingY,
+      direction: Math.abs(headingX) > 0.02
+        ? (headingX < 0 ? -1 : 1)
+        : (blend < 0.5 ? Number(left.direction) : Number(right.direction)),
+      speed: Number(left.speed) + (Number(right.speed) - Number(left.speed)) * blend,
+      delayMs
+    };
+  }
+  return { ...latest, delayMs };
+}
+
 function maybeChooseFishSchoolFormation(fish, leader, now = Date.now()) {
   if (Number(leader.schoolFormationUntil) > now && leader.schoolFormation) {
     fish.schoolFormation = leader.schoolFormation;
     fish.schoolFormationUntil = leader.schoolFormationUntil;
     return leader.schoolFormation;
   }
+
+  const leaderTurning = Number(leader.turnStartedAt) > 0
+    && Number(leader.turnDurationMs) > 0
+    && now < Number(leader.turnStartedAt) + Number(leader.turnDurationMs);
+  const leaderPanicking = Number(leader.panicUntil) > now;
+  const leaderAvoiding = Number(leader.traversalObstacleUntil) > now
+    || Number(leader.wallAvoidUntil) > now;
+  const leaderDepthTransition = Math.abs(getDesiredFishTankDepthZ(leader) - getFishTankDepthZ(leader)) > 0.08;
+  const followerRejoining = getFishSchoolActiveFollowers(leader, now)
+    .some((follower) => follower.schoolState === "rejoining");
+  if (
+    leader.schoolFormation
+    && (leaderTurning || leaderPanicking || leader.caveState || leaderAvoiding || leaderDepthTransition || followerRejoining)
+  ) {
+    leader.schoolFormationUntil = now + SCHOOL_FORMATION_MANEUVER_LOCK_MS;
+    fish.schoolFormation = leader.schoolFormation;
+    fish.schoolFormationUntil = leader.schoolFormationUntil;
+    return leader.schoolFormation;
+  }
+
   const leaderDistance = Math.hypot(
     (Number(leader.targetXNorm) || leader.xNorm) - leader.xNorm,
     (Number(leader.targetYNorm) || leader.yNorm) - leader.yNorm
@@ -1518,6 +1626,7 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
   const species = getSpeciesForFish(fish);
   const locomotionProfile = getFishLocomotionProfile(fish || species);
   const spacingScale = clamp(locomotionProfile.schoolSpacingScale, 0.68, 1.55);
+  const elasticity = clamp(Number(locomotionProfile.schoolElasticity) || 1, 0.55, 1.6);
   const bodySpacingNorm = clamp(
     (Math.max(60, getFishVisualSize(fish)) + Math.max(60, getFishVisualSize(leader))) / TANK_WIDTH * 0.32 * spacingScale,
     SAME_SPECIES_FOLLOW_SPACING_MIN_NORM,
@@ -1554,45 +1663,34 @@ function getFishSchoolFormationOffset(fish, leader, now = Date.now()) {
     distanceMultiplier = 0.68 + row * 0.08;
     laneOffset *= 0.78;
   }
+
+  // Each slot is an elastic region. Stable, low-amplitude phase offsets make
+  // the school breathe without rerolling positions or turning into boids.
+  const phase = (getFishSchoolStableRank(fish) % 4096) / 4096 * Math.PI * 2;
+  const breathe = Math.sin(now / 2100 + phase);
+  const breatheSide = Math.cos(now / 2600 + phase * 0.73);
+  const finalTrailingDistance = trailingDistance * distanceMultiplier * (1 + breatheSide * 0.035 * elasticity);
+  const finalYOffset = clamp(
+    laneOffset + rowOffset + breathe * verticalStep * 0.16 * elasticity,
+    -0.085,
+    0.085
+  );
   return {
-    trailingDistance: trailingDistance * distanceMultiplier,
-    yOffsetNorm: clamp(laneOffset + rowOffset, -0.085, 0.085)
+    trailingDistance: finalTrailingDistance,
+    yOffsetNorm: finalYOffset,
+    toleranceXNorm: clamp(finalTrailingDistance * 0.18 * elasticity, 0.012, 0.036),
+    toleranceYNorm: clamp(verticalStep * 0.62 * elasticity, 0.01, 0.034)
   };
 }
 
 function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
-  if (!fish || !leader) {
-    return null;
-  }
+  if (!fish || !leader) return null;
 
-  // Keep the slot on the side selected when this follow began. The leader's
-  // formation-facing value is latched to the source side for the whole active
-  // reversal, so v26 yaw and midpoint orientation cannot mirror follower slots.
-  const currentLeaderDirection = getFishSchoolLeaderFormationDirection(leader, now);
-  const storedDirection = Number(fish.schoolFormationDirection) < 0 ? -1
-    : Number(fish.schoolFormationDirection) > 0 ? 1
-      : currentLeaderDirection;
-  // A turn is a group event: retain existing positions briefly, then let the
-  // smoothed targets reform behind the new heading.  This prevents an instant
-  // mirror through the leader while still allowing a completed turn to settle.
-  if (currentLeaderDirection !== storedDirection) {
-    fish.schoolTurnStartedAt = Number(fish.schoolTurnStartedAt) || now;
-    if (now - fish.schoolTurnStartedAt >= SCHOOL_FORMATION_HEADING_SETTLE_MS) {
-      fish.schoolFormationDirection = currentLeaderDirection;
-      fish.schoolTurnStartedAt = null;
-    }
-  } else {
-    fish.schoolTurnStartedAt = null;
-  }
-  const leaderDirection = Number(fish.schoolFormationDirection) < 0 ? -1
-    : Number(fish.schoolFormationDirection) > 0 ? 1 : currentLeaderDirection;
+  const historicalPose = getFishSchoolLeaderHistoricalPose(fish, leader, now);
+  const leaderDirection = Number(historicalPose?.direction) < 0 ? -1 : 1;
   const formation = getFishSchoolFormationOffset(fish, leader, now);
-  const leaderTargetX = Number.isFinite(Number(leader.targetXNorm)) ? Number(leader.targetXNorm) : leader.xNorm;
-  const leaderTargetY = Number.isFinite(Number(leader.targetYNorm)) ? Number(leader.targetYNorm) : leader.yNorm;
-  const leaderTargetDistance = Math.hypot(leaderTargetX - leader.xNorm, leaderTargetY - leader.yNorm);
-  const lookAheadBlend = clamp(leaderTargetDistance * 0.7, 0, 0.14);
-  const travelAnchorX = leader.xNorm + (leaderTargetX - leader.xNorm) * lookAheadBlend;
-  const travelAnchorY = leader.yNorm + (leaderTargetY - leader.yNorm) * lookAheadBlend;
+  const travelAnchorX = Number(historicalPose?.xNorm) || Number(leader.xNorm) || 0.5;
+  const travelAnchorY = Number(historicalPose?.yNorm) || Number(leader.yNorm) || 0.5;
   const desiredXNorm = clamp(
     travelAnchorX - leaderDirection * formation.trailingDistance,
     0.08,
@@ -1604,46 +1702,57 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
     0.8
   );
   const depthOffsetZ = getFishSchoolFormationDepthOffset(fish, leader, now);
-  const targetZ = sanitizeTankDepthZ(getDesiredFishTankDepthZ(leader) + depthOffsetZ);
+  const pathDepth = Number.isFinite(Number(historicalPose?.z))
+    ? Number(historicalPose.z)
+    : getDesiredFishTankDepthZ(leader);
+  const targetZ = sanitizeTankDepthZ(pathDepth + depthOffsetZ);
 
   const occupiedFish = [leader, ...getFishSchoolActiveFollowers(leader, now)]
     .filter((otherFish) => otherFish?.id !== fish.id);
   const separation = SCHOOL_FORMATION_MIN_SEPARATION_NORM;
-  const separationCandidates = [
-    { xNorm: desiredXNorm, yNorm: desiredYNorm },
-    { xNorm: desiredXNorm - leaderDirection * separation, yNorm: desiredYNorm },
-    { xNorm: desiredXNorm, yNorm: desiredYNorm + separation },
-    { xNorm: desiredXNorm, yNorm: desiredYNorm - separation },
-    { xNorm: desiredXNorm - leaderDirection * separation * 0.72, yNorm: desiredYNorm + (formation.yOffsetNorm >= 0 ? separation * 0.72 : -separation * 0.72) }
-  ].map((candidate) => ({
-    xNorm: clamp(candidate.xNorm, 0.08, 0.92),
-    yNorm: clamp(candidate.yNorm, 0.14, 0.8)
-  }));
-  const separatedAnchor = separationCandidates.reduce((best, candidate) => {
-    const candidateClearance = occupiedFish.length
-      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(candidate.xNorm - otherFish.xNorm, candidate.yNorm - otherFish.yNorm)))
-      : Number.POSITIVE_INFINITY;
-    const bestClearance = best && occupiedFish.length
-      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(best.xNorm - otherFish.xNorm, best.yNorm - otherFish.yNorm)))
-      : Number.NEGATIVE_INFINITY;
-    return candidateClearance > bestClearance ? candidate : best;
-  }, null) || { xNorm: desiredXNorm, yNorm: desiredYNorm };
+  const desiredClearance = occupiedFish.length
+    ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(desiredXNorm - otherFish.xNorm, desiredYNorm - otherFish.yNorm)))
+    : Number.POSITIVE_INFINITY;
+  let separatedAnchor = { xNorm: desiredXNorm, yNorm: desiredYNorm };
+  // Only correct genuine near-overlap. Choosing the maximum-clearance point on
+  // every refresh made formation slots look rigid and repulsive.
+  if (desiredClearance < separation * 0.72) {
+    const separationCandidates = [
+      { xNorm: desiredXNorm - leaderDirection * separation * 0.68, yNorm: desiredYNorm },
+      { xNorm: desiredXNorm, yNorm: desiredYNorm + separation * 0.72 },
+      { xNorm: desiredXNorm, yNorm: desiredYNorm - separation * 0.72 },
+      { xNorm: desiredXNorm - leaderDirection * separation * 0.52, yNorm: desiredYNorm + (formation.yOffsetNorm >= 0 ? separation * 0.5 : -separation * 0.5) }
+    ].map((candidate) => ({
+      xNorm: clamp(candidate.xNorm, 0.08, 0.92),
+      yNorm: clamp(candidate.yNorm, 0.14, 0.8)
+    }));
+    const valid = separationCandidates
+      .map((candidate) => ({
+        ...candidate,
+        clearance: occupiedFish.length
+          ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(candidate.xNorm - otherFish.xNorm, candidate.yNorm - otherFish.yNorm)))
+          : Number.POSITIVE_INFINITY,
+        displacement: Math.hypot(candidate.xNorm - desiredXNorm, candidate.yNorm - desiredYNorm)
+      }))
+      .filter((candidate) => candidate.clearance >= separation * 0.72)
+      .sort((left, right) => left.displacement - right.displacement);
+    if (valid.length) separatedAnchor = valid[0];
+  }
 
-  // Followers use a stable slot behind one leader. Do not steer from a live
-  // centroid or from every nearby fish. Those continuously moving forces were
-  // causing the school to collapse into a blob and oscillate vertically.
   return {
     xNorm: separatedAnchor.xNorm,
     yNorm: separatedAnchor.yNorm,
-    // Formation depth is expressed through sublayers below. Keep each
-    // follower in its current tank layer so a leader's depth maneuver cannot
-    // pull the whole school across rendered tank strata in one refresh.
     targetLayer: clampTankLayer(getFishTankLayer(fish)),
     targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
     targetZ,
     offsetXNorm: -leaderDirection * formation.trailingDistance,
     offsetYNorm: formation.yOffsetNorm,
-    offsetZ: depthOffsetZ
+    offsetZ: depthOffsetZ,
+    toleranceXNorm: formation.toleranceXNorm,
+    toleranceYNorm: formation.toleranceYNorm,
+    pathDelayMs: Number(historicalPose?.delayMs) || 0,
+    pathDirection: leaderDirection,
+    pathSpeed: Number(historicalPose?.speed) || 0
   };
 }
 
@@ -1786,8 +1895,13 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     }
   }
 
+  // Record the leader independently of follower command cadence. The history
+  // is shared by the whole school and internally rate-limited, so turns can
+  // propagate through followers without storing a duplicate trail per fish.
+  recordFishSchoolLeaderPathHistory(leader, now);
+
   // Changing a fish's navigation endpoint every render frame restarts its
-  // arrival easing and presents as a visible brake/twitch.  Formation intent
+  // arrival easing and presents as a visible brake/twitch. Formation intent
   // is sampled at a short fixed cadence; collision and panic remain higher
   // priority and can still replace this target immediately.
   if (Number(fish.schoolNextTargetRefreshAt) > now) {
@@ -1808,9 +1922,29 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
   } else if (!fish.schoolState || fish.schoolState === "suspended") {
     fish.schoolState = "formation";
   }
+  fish.schoolRejoinActive = fish.schoolState === "rejoining";
+  fish.schoolPathDelayMs = Number(anchor.pathDelayMs) || 0;
   if (fish.schoolState === "rejoining" && species.speedMode === "dynamic") {
     const leaderSpeed = Number(leader.swimSpeed) || normalizeFishSpeed(species, species.speedMin);
     fish.swimSpeed = normalizeFishSpeed(species, leaderSpeed * 1.2);
+  }
+
+  const insideElasticSlot = fish.schoolState !== "rejoining"
+    && Math.abs(anchor.xNorm - fish.xNorm) <= Math.max(0.004, Number(anchor.toleranceXNorm) || 0)
+    && Math.abs(anchor.yNorm - fish.yNorm) <= Math.max(0.004, Number(anchor.toleranceYNorm) || 0);
+  if (insideElasticSlot) {
+    // The follower is already inside its preferred region. Stop issuing tiny
+    // exact-coordinate corrections and let normal momentum/station keeping do
+    // the last few pixels of work until the school genuinely moves away.
+    fish.schoolTargetXNorm = fish.xNorm;
+    fish.schoolTargetYNorm = fish.yNorm;
+    fish.schoolTargetUpdatedAt = now;
+    fish.schoolNextTargetRefreshAt = now + SCHOOL_FORMATION_COMMAND_INTERVAL_MS;
+    fish.targetXNorm = fish.xNorm;
+    fish.targetYNorm = fish.yNorm;
+    fish.targetAt = Math.max(now + 500, fish.followUntil);
+    setFishDesiredTankDepth(fish, anchor.targetZ);
+    return true;
   }
 
   const previousTargetX = Number.isFinite(Number(fish.schoolTargetXNorm))

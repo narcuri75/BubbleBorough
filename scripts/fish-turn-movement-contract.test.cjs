@@ -314,7 +314,7 @@ for (const momentumOnly of [false, true]) {
   });
 }
 
-test("near-vertical targets carry the current heading until there is room to arc back", () => {
+test("vertical targets preserve render facing while horizontal intent can request a turn", () => {
   const context = {
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     TANK_WIDTH: 1500,
@@ -330,18 +330,18 @@ test("near-vertical targets carry the current heading until there is room to arc
   );
   const fish = { traversalHeadingXNorm: 1, displayDirection: 1 };
 
-  assert.equal(getDirection(fish, -0.004, -0.3), 1, "tiny opposite error cannot chatter the heading during a climb");
+  assert.equal(getDirection(fish, 0, -0.3), 1, "vertical travel does not request a left/right reversal");
   assert.equal(getDirection(fish, -0.06, -0.3), -1, "the fish turns back after gaining lateral clearance");
   assert.equal(getDirection(fish, -0.2, -0.02), -1, "ordinary horizontal travel still follows its destination");
   assert.match(motionSource, /requestedHorizontalDirection[\s\S]*getFishSteeringHorizontalDirection\(fish, moveDx, moveDy\)/);
 });
 
-test("vertical steering always retains a meaningful forward component", () => {
+test("vertical steering reaches a fully vertical heading", () => {
   const context = {
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     TANK_WIDTH: 1500,
     TANK_HEIGHT: 1000,
-    FISH_VERTICAL_TRAVERSAL_MAX_RATIO: 0.52,
+    FISH_VERTICAL_TRAVERSAL_MAX_RATIO: 1,
     FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT: 0.18,
     FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX: 28,
     FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX: 64,
@@ -361,9 +361,9 @@ test("vertical steering always retains a meaningful forward component", () => {
     vector = getVector(fish, 0, -0.35, 1 / 60);
   }
 
-  assert.ok(Math.abs(fish.steeringVerticalRatio) <= 0.52 + 1e-12);
-  assert.ok(vector.xNorm > 0.01, "a vertical destination keeps visible forward travel");
-  assert.ok(Math.abs(vector.yNorm * context.TANK_HEIGHT) < Math.abs(vector.xNorm * context.TANK_WIDTH), "the rendered route is more forward than vertical");
+  assert.equal(fish.steeringVerticalRatio, -1);
+  assert.equal(vector.xNorm, 0);
+  assert.ok(vector.yNorm < 0);
 });
 
 test("v26 latches the last rendered tilt and applies it to ordinary fish during the handoff", () => {

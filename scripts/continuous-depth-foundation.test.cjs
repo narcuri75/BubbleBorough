@@ -191,13 +191,15 @@ test('Phase 7 cave occlusion uses a stable continuous-depth threshold', () => {
   };
   const isInside = vm.runInNewContext(`(${extractFunction(fishRendering, 'isFishInCaveRenderSublayer')})`, context);
   const fish = { id: 'cave-fish', caveDecorId: 'cave', caveState: 'enter', z: 0.59 };
-  assert.equal(isInside(fish), false, 'fish remains in front until it clearly crosses the opening threshold');
+  assert.equal(isInside(fish), true, 'committed entry owns the interior render pass');
   fish.z = 0.58;
   assert.equal(isInside(fish), true);
   fish.z = 0.605;
   assert.equal(isInside(fish), true, 'hysteresis avoids flicker near the threshold');
   fish.z = 0.62;
-  assert.equal(isInside(fish), false);
+  assert.equal(isInside(fish), true, 'depth easing cannot change cave ownership');
+  fish.caveState = 'leave';
+  assert.equal(isInside(fish), false, 'physical exit releases the interior pass');
 });
 
 test('Phase 7 treats normalized Z as the fish depth authority', () => {
@@ -275,7 +277,9 @@ test('Passive swimming preserves momentum while braking instead of snapping onto
     clamp,
     FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC: 2.65,
     FISH_PASSIVE_BRAKE_DISTANCE_NORM: 0.12,
-    FISH_PASSIVE_ARRIVAL_EPSILON_NORM: 0.0012
+    FISH_PASSIVE_ARRIVAL_EPSILON_NORM: 0.0012,
+    FISH_LOCOMOTION_SPEED_BIAS_MIN: 0.94,
+    FISH_LOCOMOTION_SPEED_BIAS_MAX: 1.06
   };
   const integrate = vm.runInNewContext(`(${extractFunction(predators, 'integrateFishPassiveMotion')})`, context);
   const fish = { motionVelocityXNorm: 0.05, motionVelocityYNorm: 0 };
@@ -290,7 +294,9 @@ test('Passive swimming settles at an aim point without a forced minimum step', (
     clamp,
     FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC: 2.65,
     FISH_PASSIVE_BRAKE_DISTANCE_NORM: 0.12,
-    FISH_PASSIVE_ARRIVAL_EPSILON_NORM: 0.0012
+    FISH_PASSIVE_ARRIVAL_EPSILON_NORM: 0.0012,
+    FISH_LOCOMOTION_SPEED_BIAS_MIN: 0.94,
+    FISH_LOCOMOTION_SPEED_BIAS_MAX: 1.06
   };
   const integrate = vm.runInNewContext(`(${extractFunction(predators, 'integrateFishPassiveMotion')})`, context);
   const fish = { motionVelocityXNorm: 0.04, motionVelocityYNorm: 0 };
@@ -443,13 +449,17 @@ test('Turn reversal traversal follows a continuous water arc rather than stoppin
     traversalSpeedNorm: 0.04,
     swimSpeed: 0.05
   };
-  const drift = getReversal(fish, -0.3, 0.08, 1100);
+  const drift = getReversal(fish, -0.3, 0, 1100);
   assert.ok(drift.xNorm > 0, 'the first half of a reversal keeps the source-facing drift');
   assert.ok(drift.motionScale > 0, 'a reversal remains real traversal, not an in-place flip');
   const apex = getReversal(fish, -0.3, 0, 1500);
   assert.ok(Math.abs(apex.xNorm) < 1e-9, 'horizontal momentum eases through zero at the turn apex');
-  assert.ok(Math.abs(apex.yNorm) > 0.001, 'the apex carries a water arc instead of a dead stop');
-  const launch = getReversal(fish, -0.3, 0.08, 1800);
+  assert.ok(Math.abs(apex.yNorm) < 1e-9, 'a horizontal reversal does not invent a world-space vertical arc');
+  const climbingFish = { ...fish, turnStartedAt: 2000 };
+  getReversal(climbingFish, -0.3, -0.08, 2100);
+  const climbingApex = getReversal(climbingFish, -0.3, 0, 2500);
+  assert.ok(climbingApex.yNorm < -0.001, 'real vertical intent is preserved through the reversal');
+  const launch = getReversal(fish, -0.3, 0, 1800);
   assert.ok(launch.xNorm < 0, 'after the flip, travel commits toward the destination side');
   assert.ok(launch.motionScale > drift.motionScale, 'the new direction accelerates out of the flip');
 });
@@ -459,6 +469,7 @@ test('A completed turnaround commits to forward travel before another ordinary r
   const context = {
     Math,
     Number,
+    clamp,
     FISH_TURNAROUND_COOLDOWN_MS: 850,
     FISH_TURNAROUND_COOLDOWN_MAX_MS: 1700,
     FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM: 0.045
@@ -522,8 +533,8 @@ test('Boundary anticipation chooses a detour before a fish reaches the tank edge
   const fish = { xNorm: 0.875, yNorm: 0.42 };
   const waypoint = getWaypoint(fish, 0.92, 0.42);
   assert.equal(waypoint.reason, 'right-wall');
-  assert.ok(waypoint.xNorm > fish.xNorm, 'the detour retains a small amount of forward travel');
-  assert.notEqual(waypoint.yNorm, fish.yNorm, 'the detour begins curving before the collision boundary');
+  assert.ok(waypoint.xNorm <= fish.xNorm, 'the wall field stops asking the fish to travel deeper into the glass');
+  assert.notEqual(waypoint.yNorm, fish.yNorm, 'the detour prefers a tangential sweep before the collision boundary');
 });
 
 test('Cruise waypoints carry a roaming fish through an aim point instead of stopping on it', () => {

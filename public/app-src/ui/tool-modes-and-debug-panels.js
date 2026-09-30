@@ -1894,11 +1894,15 @@ function renderFishBehaviorSchedulerReadout(now = Date.now()) {
   const school = snapshot.school ? `${snapshot.school.members.length} followers${snapshot.school.alert ? " alert" : ""}` : "none";
   const performance = snapshot.performance || {};
   const metrics = snapshot.metrics || null;
+  const locomotion = snapshot.locomotion || {};
+  const turnCooldownMs = Math.max(0, Math.round((Number(locomotion.turnCooldownUntil) || 0) - now));
   setTextIfChanged(dom.debugFishBehaviorReadout, [
     `Intention: ${snapshot.intention} / ${snapshot.stage} (${snapshot.tier})`,
     `Scores: ${scores}`,
     `Traits: ${traits}`,
     `Path: ${path} | School: ${school}`,
+    `Locomotion: ${String(locomotion.propulsionState || "cruise")} speed ${Number(locomotion.speed || 0).toFixed(3)} / ${Number(locomotion.swimSpeed || 0).toFixed(3)} bias ${Number(locomotion.speedBias || 1).toFixed(2)} vertical ${Number(locomotion.verticalRatio || 0).toFixed(2)}`,
+    `Heading: ${Number(locomotion.headingX || 0).toFixed(2)},${Number(locomotion.headingY || 0).toFixed(2)} steering ${Number(locomotion.steeringX || 0).toFixed(2)},${Number(locomotion.steeringY || 0).toFixed(2)} wander ${Number(locomotion.pathWanderRadians || 0).toFixed(3)} turn lock ${turnCooldownMs}ms school delay ${Math.round(Number(locomotion.schoolPathDelayMs) || 0)}ms`,
     `AI: ${performance.evaluations || 0} eval, ${performance.queries || 0} local queries, ${performance.deferred || 0} deferred`,
     metrics ? `1s: ${metrics.evaluationsPerSecond.toFixed(1)} eval/s, ${metrics.queriesPerSecond.toFixed(1)} queries/s, avg ${metrics.averageEvaluationMs.toFixed(2)}ms max ${metrics.maximumEvaluationMs.toFixed(2)}ms` : "1s: collecting metrics…"
   ].join("\n"));

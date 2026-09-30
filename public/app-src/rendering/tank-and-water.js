@@ -3,6 +3,9 @@
 
 function renderTank(now) {
   runtime.fishStatsOverlayQueue?.clear();
+  // The selected-fish card is rendered on the dedicated top glass canvas.
+  // Clear it before the scene so the card/effects survive the full tank pass.
+  glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   const dirtiness = getTankDirtiness(now);
   // Resolve every authored support surface before drawing. Free-placed decor
   // may sit above its support in screen space and therefore be painted first;
@@ -90,7 +93,6 @@ function renderTank(now) {
   tankContext.restore();
   drawGrime(dirtiness);
   drawCleaningSparkles(now);
-  glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
   drawDecorEditTankBoundary();
   drawQueuedFishStatsOverlays();

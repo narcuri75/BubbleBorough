@@ -17,8 +17,179 @@ function randomSwimY(layer = DEFAULT_TANK_LAYER, fish = null, species = getSpeci
   return range.min + Math.random() * Math.max(0, range.max - range.min);
 }
 
+function normalizeFishHorizontalDirection(value, fallback = 1) {
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue) && numericValue !== 0) {
+    return numericValue < 0 ? -1 : 1;
+  }
+  return Number(fallback) < 0 ? -1 : 1;
+}
+
 function getFishFacingDirection(fish) {
-  return Number(fish?.displayDirection) < 0 ? -1 : 1;
+  return normalizeFishHorizontalDirection(fish?.displayDirection, 1);
+}
+
+function getFishLogicalDirection(fish) {
+  return normalizeFishHorizontalDirection(fish?.direction, 1);
+}
+
+function getFishHorizontalTurnState(fish, now = Date.now()) {
+  const displayDirection = getFishFacingDirection(fish);
+  const logicalDirection = getFishLogicalDirection(fish);
+  const startedAt = Number(fish?.turnStartedAt);
+  const durationMs = Number(fish?.turnDurationMs);
+  const active = Boolean(fish?.turnStartedAt) && Number.isFinite(durationMs) && durationMs > 0;
+  const fromDirection = active
+    ? normalizeFishHorizontalDirection(fish?.turnFromDirection, 1)
+    : displayDirection;
+  const toDirection = active
+    ? normalizeFishHorizontalDirection(fish?.turnToDirection, 1)
+    : displayDirection;
+  const progress = active
+    ? clamp((Number(now) - startedAt) / Math.max(1, durationMs), 0, 1)
+    : 1;
+
+  return {
+    active,
+    reversing: active && fromDirection !== toDirection,
+    progress,
+    startedAt: active ? startedAt : null,
+    durationMs: active ? durationMs : 0,
+    logicalDirection,
+    displayDirection,
+    fromDirection,
+    toDirection,
+    terminalFrameRendered: Number(fish?.turnFinalFrameRenderedAt) > 0
+      && Number(fish?.turnFinalFrameRenderedForStartedAt) === startedAt
+  };
+}
+
+function markFishTurnFinalFrameRendered(fish, now = Date.now()) {
+  if (!fish) return false;
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active || turnState.progress < 1) return false;
+  fish.turnFinalFrameRenderedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  fish.turnFinalFrameRenderedForStartedAt = turnState.startedAt;
+  return true;
+}
+
+function cancelFishV26TurnForSpecialMovementOwner(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  owner = "special-movement"
+) {
+  if (!fish || !species) return false;
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active) return false;
+
+  // Only v26-origin sessions use this special-owner cancellation path. A v26
+  // session that has fallen back to the lightweight visual is still a v26-origin
+  // session, so the movement owner must clear it the same way.
+  // Imported/debug-created active turns may not have a renderer session yet,
+  // so establish their normal session contract before deciding ownership.
+  if (!isFishTurnRendererSessionCurrent(fish)) {
+    ensureFishTurnRendererSession(fish, species, turnState.startedAt || now);
+  }
+  const v26OriginSession = isFishTurnRendererSessionCurrent(fish)
+    && normalizeFishTurnRendererBackend(fish.turnRendererBackend, "") === "v26";
+  if (!v26OriginSession) return false;
+
+  // A mechanic that owns pose/movement takes priority over the visual turn.
+  // Preserve what the player is currently seeing rather than snapping to the
+  // not-yet-rendered destination side, then let the owner continue unchanged.
+  const preservedDirection = getFishFacingDirection(fish);
+  const preservedAngle = preservedDirection < 0 ? Math.PI : 0;
+  fish.direction = preservedDirection;
+  fish.displayDirection = preservedDirection;
+  fish.displayAngle = preservedAngle;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  fish.turnAnimationMode = null;
+  fish.turnFromDirection = preservedDirection;
+  fish.turnToDirection = preservedDirection;
+  fish.turnFromAngle = preservedAngle;
+  fish.turnToAngle = preservedAngle;
+  fish.turnSpinDirection = preservedDirection < 0 ? 1 : -1;
+  fish.traversalTurnState = "idle";
+  fish.traversalTurnStartedAt = 0;
+  fish.traversalCommittedDirection = preservedDirection;
+  fish.traversalTurnCommittedUntil = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  clearFishTurnRendererSession(fish);
+
+  return true;
+}
+
+function reconcileFishV26TurnWithSpecialMovementOwner(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now()
+) {
+  if (!fish || !species || typeof getFishV26SpecialMovementOwner !== "function") return false;
+  const owner = getFishV26SpecialMovementOwner(fish, species, now);
+  if (!owner) return false;
+  return cancelFishV26TurnForSpecialMovementOwner(fish, species, now, owner);
+}
+
+function getFishTurnLocomotionState(fish, now = Date.now()) {
+  const horizontalTurn = getFishHorizontalTurnState(fish, now);
+  if (!horizontalTurn.active) {
+    return {
+      ...horizontalTurn,
+      holdsPosition: false,
+      releaseProgress: FISH_TURN_LOCOMOTION_RELEASE_PROGRESS,
+      movementBlend: 1,
+      passiveSpeedScale: 1
+    };
+  }
+
+  const movementRaw = clamp(
+    (horizontalTurn.progress - FISH_TURN_LOCOMOTION_RELEASE_PROGRESS)
+      / Math.max(0.001, 1 - FISH_TURN_LOCOMOTION_RELEASE_PROGRESS),
+    0,
+    1
+  );
+  const movementBlend = movementRaw * movementRaw * (3 - 2 * movementRaw);
+  const holdsPosition = !horizontalTurn.reversing
+    && horizontalTurn.progress < FISH_TURN_LOCOMOTION_RELEASE_PROGRESS;
+
+  return {
+    ...horizontalTurn,
+    holdsPosition,
+    releaseProgress: FISH_TURN_LOCOMOTION_RELEASE_PROGRESS,
+    movementBlend,
+    passiveSpeedScale: 0.12 + movementBlend * 0.88
+  };
+}
+
+function beginFishTurnaroundCooldown(fish, direction, now = Date.now()) {
+  if (!fish) return;
+  const startedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  fish.turnaroundCooldownDirection = normalizeFishHorizontalDirection(direction, getFishFacingDirection(fish));
+  fish.turnaroundCooldownStartedAt = startedAt;
+  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS;
+  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS;
+  fish.turnaroundCooldownStartXNorm = Number(fish.xNorm) || 0.5;
+  fish.turnaroundCooldownStartYNorm = Number(fish.yNorm) || 0.5;
+}
+
+function getFishTurnaroundCooldownState(fish, now = Date.now()) {
+  const direction = normalizeFishHorizontalDirection(fish?.turnaroundCooldownDirection, getFishFacingDirection(fish));
+  const until = Number(fish?.turnaroundCooldownUntil) || 0;
+  const maxUntil = Number(fish?.turnaroundCooldownMaxUntil) || 0;
+  const traveled = Math.hypot(
+    (Number(fish?.xNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartXNorm) || 0.5),
+    (Number(fish?.yNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartYNorm) || 0.5)
+  );
+  const active = Number(now) < until
+    || (Number(now) < maxUntil && traveled < FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM);
+  if (!active && fish) {
+    fish.turnaroundCooldownUntil = 0;
+    fish.turnaroundCooldownMaxUntil = 0;
+  }
+  return { active, direction, traveled, until, maxUntil };
 }
 
 function normalizeAngle(angle) {
@@ -147,22 +318,27 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const maximumStep = 1.45 * urgency * elapsedSeconds;
   const nextVerticalRatio = clamp(
     currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
-    -0.96,
-    0.96
+    -FISH_VERTICAL_TRAVERSAL_MAX_RATIO,
+    FISH_VERTICAL_TRAVERSAL_MAX_RATIO
   );
   fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
     ? desiredVerticalRatio
     : nextVerticalRatio;
 
+  const traversalHeadingXNorm = Number(fish.traversalHeadingXNorm);
   const horizontalSign = Math.abs(dxPx) > 0.5
     ? (dxPx >= 0 ? 1 : -1)
-    : getFishFacingDirection(fish);
+    : (Math.abs(traversalHeadingXNorm) > 0.000001
+      ? (traversalHeadingXNorm >= 0 ? 1 : -1)
+      : getFishFacingDirection(fish));
   const verticalRatio = fish.steeringVerticalRatio;
   const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
 
   // Convert the smoothed screen-space heading back into normalized tank-space
   // while preserving the remaining target distance. This bends the path into
   // climbs and dives instead of instantly snapping to a new diagonal vector.
+  // The vertical component is bounded, so a climb or dive always carries a
+  // visible forward swim rather than reading as an in-place sprite rotation.
   const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
   const unitYNorm = verticalRatio / TANK_HEIGHT;
   const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
@@ -175,13 +351,17 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
 function updateFishTurnState(fish, species, now) {
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {
-    const liveDirection = Number(fish.direction) < 0 ? -1 : 1;
-    if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
+    const liveDirection = getFishLogicalDirection(fish);
+    const horizontalTurn = getFishHorizontalTurnState(fish, now);
+    if (!horizontalTurn.active) {
+      fish.traversalTurnState = "idle";
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
@@ -191,30 +371,36 @@ function updateFishTurnState(fish, species, now) {
       return;
     }
 
-    const progress = clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1);
-    const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
-    const toDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex";
+    const progress = horizontalTurn.progress;
+    const fromDirection = horizontalTurn.fromDirection;
+    const toDirection = horizontalTurn.toDirection;
+    fish.traversalTurnState = fromDirection === toDirection ? "turning" : "reversing";
+    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
 
     if (useComplexTurn) {
-      // The segmented rig performs the visible reversal itself, so keep the
-      // normal sprite locked to the source side until its terminal frame has
-      // actually rendered.
+      // The active complex turn renderer owns the visible reversal. Keep the
+      // gameplay-facing sprite state locked to the source side until the
+      // renderer confirms that its terminal frame has actually been drawn.
       fish.displayDirection = fromDirection;
       fish.displayAngle = fromDirection < 0 ? Math.PI : 0;
 
-      if (progress >= 1 && Number(fish.turnFinalFrameRenderedAt) > 0) {
+      if (progress >= 1 && horizontalTurn.terminalFrameRendered) {
+        fish.traversalTurnState = "idle";
         fish.displayDirection = liveDirection;
         fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
         fish.turnStartedAt = null;
         fish.turnDurationMs = 0;
         fish.turnFinalFrameRenderedAt = 0;
+        fish.turnFinalFrameRenderedForStartedAt = 0;
+        clearFishTurnRendererSession(fish);
         fish.turnAnimationMode = null;
         fish.turnFromDirection = fish.displayDirection;
         fish.turnToDirection = fish.displayDirection;
         fish.turnFromAngle = fish.displayAngle;
         fish.turnToAngle = fish.displayAngle;
         fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+        if (fromDirection !== toDirection) beginFishTurnaroundCooldown(fish, liveDirection, now);
       }
       return;
     }
@@ -226,17 +412,21 @@ function updateFishTurnState(fish, species, now) {
     fish.displayAngle = visibleDirection < 0 ? Math.PI : 0;
 
     if (progress >= 1) {
+      fish.traversalTurnState = "idle";
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
       fish.turnToAngle = fish.displayAngle;
       fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+      if (fromDirection !== toDirection) beginFishTurnaroundCooldown(fish, liveDirection, now);
     }
     return;
   }
@@ -244,6 +434,9 @@ function updateFishTurnState(fish, species, now) {
   if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
     fish.displayAngle = getFishFacingAngle(fish);
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     return;
   }
 
@@ -254,6 +447,9 @@ function updateFishTurnState(fish, species, now) {
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.turnAnimationMode = null;
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
@@ -302,13 +498,29 @@ function setFishDirection(fish, desiredDirection, species, now) {
   if (getEffectiveFishBehavior(fish, species) !== "sucker" || freeSwimmingOtocinclus) {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
+    const hasTravelTarget = Math.hypot(
+      (Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5) - (Number(fish.xNorm) || 0.5),
+      (Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5) - (Number(fish.yNorm) || 0.5)
+    ) > FISH_DIRECTION_TARGET_DEADZONE_NORM;
 
-    if (fish.turnStartedAt && fish.turnDurationMs > 0) {
+    if (
+      nextDirection !== currentDisplayDirection
+      && (Number(fish.traversalSpeedNorm) || 0) < FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM
+      && !hasTravelTarget
+    ) {
+      // A cosmetic idle state cannot command a physical reversal. Movement
+      // will start the turn later once there is somewhere to travel.
+      return;
+    }
+
+    const horizontalTurn = getFishHorizontalTurnState(fish, now);
+    if (horizontalTurn.active) {
       // Finish the current turn before accepting another reversal. Moving
       // targets and collision corrections can cross the fish several times
       // per second; cancelling and restarting here created rapid left/right
-      // flip loops even though the fish had barely moved.
-      fish.direction = Number(fish.turnToDirection) < 0 ? -1 : 1;
+      // flip loops even though the fish had barely moved. The latched
+      // destination direction is authoritative until the renderer handoff.
+      fish.direction = horizontalTurn.toDirection;
       return;
     }
 
@@ -319,6 +531,8 @@ function setFishDirection(fish, desiredDirection, species, now) {
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = nextDirection;
       fish.turnToDirection = nextDirection;
@@ -332,13 +546,31 @@ function setFishDirection(fish, desiredDirection, species, now) {
     fish.displayAngle = currentDisplayAngle;
     fish.turnAnimationMode = getFishTurnAnimationMode(fish, species);
     fish.turnStartedAt = now;
-    fish.turnDurationMs = getFishTurnDurationMs(fish, species, fish.turnAnimationMode);
     fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    const turnRendererBackend = beginFishTurnRendererSession(
+      fish,
+      species,
+      now,
+      fish.turnAnimationMode
+    );
+    fish.turnDurationMs = getFishTurnDurationMs(
+      fish,
+      species,
+      fish.turnAnimationMode,
+      turnRendererBackend
+    );
     fish.turnFromDirection = currentDisplayDirection;
     fish.turnToDirection = nextDirection;
     fish.turnFromAngle = currentDisplayAngle;
     fish.turnToAngle = nextDirection < 0 ? Math.PI : 0;
     fish.turnSpinDirection = Math.random() < 0.5 ? -1 : 1;
+    fish.traversalTurnState = "reversing";
+    fish.traversalTurnStartedAt = now;
+    fish.traversalCommittedDirection = nextDirection;
+    fish.traversalTurnCommittedUntil = now + Math.max(FISH_TRAVERSAL_TURN_COMMIT_MIN_MS, fish.turnDurationMs);
+    fish.traversalSteeringTargetXNorm = Number.isFinite(Number(fish.targetXNorm)) ? Number(fish.targetXNorm) : fish.xNorm;
+    fish.traversalSteeringTargetYNorm = Number.isFinite(Number(fish.targetYNorm)) ? Number(fish.targetYNorm) : fish.yNorm;
     return;
   }
 

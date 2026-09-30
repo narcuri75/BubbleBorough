@@ -516,11 +516,21 @@ test("BubbleBodega back restores the prior scroll and focus without resetting se
   assert.equal(c.query(), "danio");
 });
 
+function clearFishTurnRendererSessionForTest(fish) {
+  if (!fish) return;
+  fish.turnRendererBackend = null;
+  fish.turnRendererFallbackBackend = null;
+  fish.turnRendererStartedAt = 0;
+  fish.turnV26StyleActive = null;
+  fish.turnV26StyleStartedAt = 0;
+}
+
 function load(file, names, bindings = {}) {
   const source = fs.readFileSync(path.join(root, file), "utf8");
   const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const context = vm.createContext({
     Math, Number, Date, Set, Map, WeakMap, clamp,
+    clearFishTurnRendererSession: clearFishTurnRendererSessionForTest,
     renderStoreFacetAttributes: () => "",
     hasActiveCandyBoost: (fish, now = Date.now()) => Boolean(fish && fish.activity !== 'dead' && Number(fish.candyBoostUntil) > now),
     isProteusZombieFish: () => false,
@@ -2108,55 +2118,46 @@ test("chum sprite variants are normalized to the same apparent size", () => {
   assert.match(meals, /getChumSpriteVisualScale\(appearance\.spritePath\)/);
 });
 
-test("fish turnaround uses the authored segmented rig timeline", () => {
+test("fish turnaround uses the production v26 timeline with renderer-neutral locomotion", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const meals = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
+  const v26 = fs.readFileSync(path.join(root, "rendering/fish-turn-v26.js"), "utf8");
   const motion = fs.readFileSync(path.join(root, "rendering/fish-motion-and-floor.js"), "utf8");
-  assert.match(bootstrap, /FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1\.08/);
-  assert.match(bootstrap, /FISH_TURN_RIG_TIMELINE_RATE = 0\.24/);
-  assert.match(bootstrap, /FISH_TURN_RIG_PLAYBACK_SPEED = 2\.5/);
-  assert.match(meals, /getFishLocomotionProfile\(species \|\| fish\)/);
-  assert.match(meals, /FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE\[effectiveBehavior\]/);
-  assert.match(meals, /FISH_TURN_RIG_DURATION_MS \* speciesScale \* behaviorScale \* typeScale/);
-  assert.match(
-    rendering,
-    /return\s*\(\s*normalized\s*\*\s*FISH_TURN_RIG_INTERNAL_TIMELINE_MAX\s*\)/,
-  );
-  assert.match(rendering, /const advanceWidth\s*=\s*drawWidth\s*\* packedFactor;[\s\S]*const outerX\s*=\s*innerX\s*\+ drawWidth;/);
-  assert.match(rendering, /innerX \+=\s*advanceWidth/);
-  assert.equal(
-    [...rendering.matchAll(/clamp\(\s*segment\.progress,\s*0,\s*1\s*\)/g)].length,
-    2,
-    "both rebuilt chains must clamp progress with explicit numeric bounds"
-  );
-  assert.doesNotMatch(rendering, /clamp\(\s*segment\.progress\s*\)/);
-  assert.doesNotMatch(rendering, /genericTurnRigScaleCompensation/);
-  assert.match(rendering, /useComplexTurn \? 1 : \(1 - turnAmount \* \(1 - FISH_TURN_MIN_SCALE_X\)\)/);
-  assert.match(rendering, /fish\.turnFinalFrameRenderedAt = now/);
-  assert.match(motion, /progress >= 1 && Number\(fish\.turnFinalFrameRenderedAt\) > 0/);
-  assert.match(motion, /fish\.turnDurationMs = getFishTurnDurationMs\(fish, species, fish\.turnAnimationMode\);\s*fish\.turnFinalFrameRenderedAt = 0/);
+  assert.match(bootstrap, /FISH_TURN_V26_DURATION_MS = 650/);
+  assert.match(bootstrap, /FISH_TURN_V26_FULL_QUALITY_MAX_SIMULTANEOUS = 8/);
+  assert.match(bootstrap, /FISH_TURN_V26_REDUCED_QUALITY_MAX_SIMULTANEOUS = 16/);
+  assert.doesNotMatch(bootstrap, /FISH_TURN_RIG_/);
+  assert.match(meals, /normalizedBackend === "simple"[\s\S]*getSimpleFishTurnDurationMs/);
+  assert.match(meals, /return FISH_TURN_V26_DURATION_MS;/);
+  assert.match(v26, /return configured === "simple" \? "simple" : "v26";/);
+  assert.match(v26, /normalized === "legacy-complex"[\s\S]*return "v26";/);
+  assert.match(rendering, /if \(v26TurnRendererActive\)[\s\S]*drawFishTurnV26VolumeMesh/);
+  assert.match(rendering, /drawFishLightweightTurnFallbackFrame/);
+  assert.doesNotMatch(rendering, /drawFishTurnaroundRig|legacyTurnRigActive/);
+  assert.match(rendering, /markFishTurnFinalFrameRendered\(fish, now\);/);
+  assert.match(motion, /progress >= 1 && horizontalTurn\.terminalFrameRendered/);
+  assert.match(motion, /const turnRendererBackend = beginFishTurnRendererSession\([\s\S]*fish\.turnDurationMs = getFishTurnDurationMs\([\s\S]*turnRendererBackend/);
   const predatorsAndMotion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
-  assert.match(predatorsAndMotion, /const segmentedTurnaroundActive = effectiveBehavior !== "sucker"/);
-  assert.match(predatorsAndMotion, /segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS/);
-  assert.match(predatorsAndMotion, /const turnaroundMovementBlend = turnaroundMovementRaw/);
-  assert.match(predatorsAndMotion, /speedMultiplier \*= 0\.12 \+ turnaroundMovementBlend \* 0\.88/);
+  assert.match(predatorsAndMotion, /const turnLocomotionActive = effectiveBehavior !== "sucker"/);
+  assert.match(predatorsAndMotion, /const turnLocomotionState = getFishTurnLocomotionState\(fish, now\)/);
+  assert.match(motion, /const movementBlend = movementRaw \* movementRaw \* \(3 - 2 \* movementRaw\)/);
+  assert.match(motion, /passiveSpeedScale: 0\.12 \+ movementBlend \* 0\.88/);
+  assert.match(predatorsAndMotion, /speedMultiplier \*= turnLocomotionSpeedScale/);
   assert.match(predatorsAndMotion, /fish\.motionVelocityXNorm = 0;\s*fish\.motionVelocityYNorm = 0/);
-  assert.match(predatorsAndMotion, /if \(moveDistance > 0\.0001 && !turnaroundHoldsPosition\)/);
+  assert.match(predatorsAndMotion, /if \(moveDistance > 0\.0001 && !turnLocomotionHoldsPosition\)/);
 });
 
-test("retired light controls and UV glow passes stay removed while turnaround receives caustics", () => {
+test("retired light controls and legacy turnaround rig stay removed while v26 keeps normal fish effects", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
   const tankRendering = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const v26 = fs.readFileSync(path.join(root, "rendering/fish-turn-v26.js"), "utf8");
   const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
   assert.doesNotMatch(`${bootstrap}\n${rendering}\n${html}`, /uvLight|UvLight|UV_LIGHT|lightsOut|LightsOut|LIGHTS_OUT/);
-  assert.match(rendering, /drawFishTurnaroundRig[\s\S]*markLightweightCausticTurnaroundRig/);
-  assert.match(tankRendering, /function markLightweightCausticTurnaroundRig[\s\S]*drawFishTurnaroundRig/);
-  assert.match(tankRendering, /columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY/);
-  assert.match(tankRendering, /maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS/);
-  assert.match(rendering, /FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY/);
-  assert.match(rendering, /FISH_TURN_RIG_VISIBLE_MAX_COLUMNS/);
+  assert.doesNotMatch(`${bootstrap}\n${rendering}\n${tankRendering}`, /FISH_TURN_RIG_|drawFishTurnaroundRig|markLightweightCausticTurnaroundRig/);
+  assert.match(v26, /function renderFishTurnV26VolumeCanvas/);
+  assert.match(rendering, /drawFishTurnV26VolumeMesh/);
 });
 
 test("free-swimming fish ease toward a new vertical heading instead of snapping", () => {
@@ -2333,7 +2334,7 @@ test("held pebbles wait for a decoded opaque fish-art anchor instead of using im
   assert.match(gravel, /frontX = clamp\(Math\.floor\(bounds\.maxX\)/);
   assert.match(mouthAnchor, /return null;/);
   assert.doesNotMatch(mouthAnchor, /width \* 0\.48/);
-  assert.match(effects, /const mouth = getFishGravelPebbleMouthLocalPoint[\s\S]*if \(!mouth\) \{\s*return;/);
+  assert.match(effects, /const mouth = v26Mouth \|\| getFishGravelPebbleMouthLocalPoint[\s\S]*if \(!mouth\) \{\s*return;/);
 });
 
 test("same-species schooling declares its target refresh interval before using it", () => {
@@ -3513,7 +3514,9 @@ test("debug fish behavior viewer previews every action on a stationary specimen"
   assert.match(bootstrap, /id: "swim"[\s\S]*id: "turn-around"[\s\S]*id: "sick"[\s\S]*id: "dead"/);
   assert.match(debug, /function openDebugFishBehaviorPreview/);
   assert.match(debug, /function renderDebugFishBehaviorPreviewFrame/);
-  assert.match(debug, /drawFishTurnaroundRig\(context, renderImage/);
+  assert.match(debug, /drawFishTurnV26VolumeMesh\(/);
+  assert.match(debug, /drawFishLightweightTurnFallbackFrame\(context, renderImage/);
+  assert.doesNotMatch(debug, /drawFishTurnaroundRig/);
   assert.match(debug, /context\.translate\(viewport\.width \/ 2 \+ pose\.swayX \+ simpleTurnSway, viewport\.height \/ 2 \+ \(Number\(pose\.swayY\) \|\| 0\)\)/);
   assert.match(events, /debugFishBehaviorPreviewButton[\s\S]*openDebugFishBehaviorPreview/);
   assert.match(css, /\.debug-fish-behavior-preview\s*\{[\s\S]*?pointer-events:\s*auto/);
@@ -4091,18 +4094,27 @@ test("WebSurf dark mode supports Auto Yes No and themes first-party WebSurf page
   assert.match(styles, /data-webpage-destination="home"[\s\S]*brightness\(0\) invert\(1\)/);
 });
 
-test("Settings polish keeps simple turns forced, uses atlas icons, and Home can leave Settings directly", () => {
+test("Game Settings exposes Complex Turning and defaults universal v26 turns on", () => {
   const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
+  const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
+  const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
+  const meals = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
   const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
 
-  assert.match(html, /for="simpleTurnAnimationsToggleInput" hidden/);
-  assert.match(bootstrap, /simpleTurnAnimationsOnly:\s*true/);
-  assert.match(persistence, /simpleTurnAnimationsOnly:\s*true/);
+  assert.match(html, /for="complexTurnAnimationsToggleInput"/);
+  assert.match(html, />Complex Turning</);
+  assert.doesNotMatch(html, /for="complexTurnAnimationsToggleInput" hidden/);
+  assert.match(bootstrap, /complexTurnAnimationsEnabled:\s*true/);
+  assert.match(persistence, /complexTurnAnimationsEnabled:\s*source\.complexTurnAnimationsEnabled !== false/);
+  assert.match(events, /setComplexTurnAnimationsEnabled\(event\.currentTarget\?\.checked\)/);
+  assert.match(motion, /function setComplexTurnAnimationsEnabled\(value\)/);
+  assert.match(meals, /function getConfiguredFishTurnAnimationMode\(species\) \{[\s\S]*return "complex";/);
+  assert.match(meals, /function getFishTurnAnimationMode[\s\S]*areSimpleTurnAnimationsForced[\s\S]*return "complex";/);
+  assert.doesNotMatch(styles, /label\[for="complexTurnAnimationsToggleInput"\][\s\S]*display:\s*none !important/);
   assert.match(customization, /function deactivateWebSurfSettingsPage\(\) \{[\s\S]*dom\.settingsOverlay\.hidden = true;[\s\S]*classList\.remove\("is-open"\)/);
-  assert.match(styles, /label\[for="simpleTurnAnimationsToggleInput"\][\s\S]*display:\s*none !important/);
   assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-panel-copy h2[\s\S]*font-size:\s*1\.34rem/);
 });
 
@@ -8117,7 +8129,7 @@ test("Dead Fish Phase 20 gives Borough corpses the same wash and optional eye la
 test("Dead Fish Phase 20 normal corpse pose stays limp, upside down, and free of living turn animation", () => {
   const species = { id: "phase20-species", behavior: "sucker" };
   const fish = { id: "phase20-pose", lifeState: "dead", xNorm: 0.4, yNorm: 0.126, direction: -1, tankLayer: 3, tankSubLayer: 2 };
-  const c = load("rendering/fish-and-effects.js", ["getFishPose", "shouldUseFishTurnRigForSprite"], {
+  const c = load("rendering/fish-and-effects.js", ["getFishPose"], {
     TANK_WIDTH: 1200,
     TANK_HEIGHT: 760,
     isFishBeingConsumedByPiranhas: () => false,
@@ -8134,7 +8146,6 @@ test("Dead Fish Phase 20 normal corpse pose stays limp, upside down, and free of
   assert.equal(pose.bodyScaleX, 1);
   assert.equal(pose.bodyScaleY, 1);
   assert.ok(pose.tilt > Math.PI * 0.95 && pose.tilt < Math.PI * 1.05);
-  assert.equal(c.shouldUseFishTurnRigForSprite(fish, species, "sucker", pose, true, null), false);
 });
 
 test("Dead Fish Phase 21 hard-interrupts every transient living behavior state at death", () => {

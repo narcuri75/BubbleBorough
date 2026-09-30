@@ -2,6 +2,7 @@
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderTank(now) {
+  runtime.fishStatsOverlayQueue?.clear();
   const dirtiness = getTankDirtiness(now);
   // Resolve every authored support surface before drawing. Free-placed decor
   // may sit above its support in screen space and therefore be painted first;
@@ -92,6 +93,7 @@ function renderTank(now) {
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
   drawDecorEditTankBoundary();
+  drawQueuedFishStatsOverlays();
   // Grime textures supply the haze; filtering the moving tank forces a
   // full-surface GPU pass on every frame, especially costly at high DPI.
   const tankCanvasFilter = "none";
@@ -215,21 +217,13 @@ function setLightweightCausticMaskTransform(sourceContext = tankContext) {
   return mask.context;
 }
 
-function markLightweightCausticImage(sourceContext, image, x, y, width, height) {
+function markLightweightCausticImage(sourceContext, image, x, y, width, height, alpha = 1) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
   const context = setLightweightCausticMaskTransform(sourceContext);
+  context.globalAlpha = clamp(Number(alpha) || 0, 0, 1);
   context.drawImage(image, x, y, width, height);
 }
 
-function markLightweightCausticTurnaroundRig(sourceContext, image, x, width, height, fish, now) {
-  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
-  const context = setLightweightCausticMaskTransform(sourceContext);
-  drawFishTurnaroundRig(context, image, x, width, height, fish, now, {
-    columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY,
-    minimumColumns: 1,
-    maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS
-  });
-}
 
 function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion, receivesCaustics = true) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;

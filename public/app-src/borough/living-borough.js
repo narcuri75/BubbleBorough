@@ -514,6 +514,7 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "borough-travel");
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -616,6 +617,7 @@ function beginBoroughTubeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "tube-travel");
   const sourcePoints = getTransitTubeTravelPoints(sourceTube);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -1093,6 +1095,27 @@ function getFishBirthdayHatWorldPose(fish, pose, width, height, now = Date.now()
   const imagePath = getFishDisplayAssetPath(fish, species, now) || species?.asset;
   const mask = imagePath ? getImageAlphaMask(imagePath) : null;
   const anchor = getFishBirthdayHatImageAnchor(mask) || { u: 0.77, v: 0.18 };
+  if (typeof getFishV26VisualUvWorldFrame === "function") {
+    const v26Anchor = getFishV26VisualUvWorldFrame(
+      fish,
+      species,
+      pose,
+      width,
+      height,
+      anchor.u,
+      anchor.v,
+      now,
+      { surface: "near" }
+    );
+    if (v26Anchor) {
+      return {
+        x: v26Anchor.x,
+        y: v26Anchor.y,
+        rotation: v26Anchor.rotation,
+        v26Projected: true
+      };
+    }
+  }
   const bodyScaleX = pose.bodyScaleX || 1;
   const bodyScaleY = pose.bodyScaleY || 1;
   const tilt = pose.tilt || 0;
@@ -1129,8 +1152,13 @@ function drawFishBirthdayHat(fish, pose, width, height, now = Date.now()) {
   const hatWidth = hatHeight * 0.78;
   tankContext.save();
   // Sink the base a few rendered pixels into the first opaque head pixels so
-  // antialiasing and sparse skeleton artwork cannot create a visible gap.
-  tankContext.translate(anchor.x, anchor.y + Math.max(2.5 * stableScale, height * 0.018));
+  // antialiasing and sparse skeleton artwork cannot create a visible gap. A
+  // v26-projected hat sinks along its projected local body-down axis instead
+  // of world Y, so a banked/edge-on fish does not leave the hat behind.
+  const sink = Math.max(2.5 * stableScale, height * 0.018);
+  const sinkX = anchor.v26Projected ? -Math.sin(anchor.rotation) * sink : 0;
+  const sinkY = anchor.v26Projected ? Math.cos(anchor.rotation) * sink : sink;
+  tankContext.translate(anchor.x + sinkX, anchor.y + sinkY);
   tankContext.rotate(anchor.rotation + Math.sin(now / 420 + hashStringToUint32(fish.id)) * 0.025);
   tankContext.fillStyle = "#7ce7ff";
   tankContext.beginPath();

@@ -69,7 +69,7 @@ function renderPlacedDecor() {
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
-            <div class="mini-note">Layer ${getDecorTankLayer(item)}. Current size: ${formatDecorScale(item.scale)}</div>
+            <div class="mini-note">Depth: ${getDecorDepthPlacementLabel(item)}. Current size: ${formatDecorScale(item.scale)}</div>
           </div>
           <div class="mini-card-actions">
             <div class="size-controls">
@@ -1077,19 +1077,19 @@ function renderControls(now) {
   const layerShortcutsDisabled = !hasActiveDecorShortcutTarget;
   const scaleShortcutsDisabled = !hasActiveDecorShortcutTarget;
   const layerShortcutHint = !hasActiveDecorShortcutTarget
-    ? "Select or drag decor to change its layer"
+    ? "Select or drag decor to change its depth"
     : "";
   if (dom.editLayerUpButton) {
     dom.editLayerUpButton.hidden = !runtime.editTankMode;
     dom.editLayerUpButton.disabled = layerShortcutsDisabled;
-    dom.editLayerUpButton.title = layerShortcutsDisabled ? layerShortcutHint : "Next decor layer (Z / Up)";
-    dom.editLayerUpButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Next decor layer (Z / Up)");
+    dom.editLayerUpButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)";
+    dom.editLayerUpButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)");
   }
   if (dom.editLayerDownButton) {
     dom.editLayerDownButton.hidden = !runtime.editTankMode;
     dom.editLayerDownButton.disabled = layerShortcutsDisabled;
-    dom.editLayerDownButton.title = layerShortcutsDisabled ? layerShortcutHint : "Previous decor layer (X / Down)";
-    dom.editLayerDownButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Previous decor layer (X / Down)");
+    dom.editLayerDownButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)";
+    dom.editLayerDownButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)");
   }
   if (dom.editScaleUpButton) {
     dom.editScaleUpButton.hidden = !runtime.editTankMode;
@@ -1129,14 +1129,20 @@ function renderToolCursor() {
   if (!visible) {
     dom.toolCursor.replaceChildren();
     dom.toolCursor.className = "tool-cursor";
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-x");
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-y");
     delete dom.toolCursor.dataset.renderKey;
     return;
   }
 
   const cursorSpec = getActiveToolCursorSpec();
   const renderKey = cursorSpec
-    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || ""].join("|")
+    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || "", cursorSpec.hotspotX, cursorSpec.hotspotY].join("|")
     : "";
+  const hotspotX = Number.isFinite(Number(cursorSpec?.hotspotX)) ? Number(cursorSpec.hotspotX) : 100;
+  const hotspotY = Number.isFinite(Number(cursorSpec?.hotspotY)) ? Number(cursorSpec.hotspotY) : 0;
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-x", `${-hotspotX}%`);
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-y", `${-hotspotY}%`);
 
   // A mode toggle clears the cursor's layers. Rebuild when it is re-enabled
   // even if it uses the same food and therefore has the same render key.
@@ -1182,21 +1188,21 @@ function renderToolCursor() {
 function getActiveToolCursorSpec() {
   if (runtime.medicineModeKey) {
     if (runtime.medicineModeKey === "firstAid") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "waterStress") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "infectionTreatment") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "antiParasite") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "betaBlocker") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum, hotspotX: 50, hotspotY: 50 };
     }
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine, hotspotX: 50, hotspotY: 50 };
   }
 
   if (runtime.feedingModeFoodKey) {
@@ -1205,7 +1211,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
-        variant: "basic-food"
+        variant: "basic-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "frisky") {
@@ -1213,7 +1221,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
-        variant: "frisky-food"
+        variant: "frisky-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "fishFlakes") {
@@ -1221,7 +1231,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.fishFlakes,
-        variant: "fish-flakes"
+        variant: "fish-flakes",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "algaeWafers") {
@@ -1229,7 +1241,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.algaeWafers,
-        variant: "algae-wafers"
+        variant: "algae-wafers",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "brineShrimp") {
@@ -1237,7 +1251,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.brineShrimp,
-        variant: "brine-shrimp"
+        variant: "brine-shrimp",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "carnivore") {
@@ -1245,20 +1261,22 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.carnivore,
-        variant: "carnivore-food"
+        variant: "carnivore-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "chum") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket, hotspotX: 50, hotspotY: 36 };
     }
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed, hotspotX: 50, hotspotY: 50 };
   }
 
   if (runtime.scoopMode) {
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet, hotspotX: 29, hotspotY: 31 };
   }
   if (runtime.cleaningMode) {
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning, hotspotX: 50, hotspotY: 50 };
   }
   return null;
 }

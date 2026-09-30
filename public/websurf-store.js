@@ -489,7 +489,7 @@
 
   function syncSubsidiaryTabs() {
     document.querySelectorAll("#storeOverlay [data-websurf-subsidiary-tab]").forEach((tab) => {
-      tab.hidden = !subsidiaryTabsOpen.has(tab.dataset.websurfSubsidiaryTab);
+      tab.hidden = !subsidiaryTabsOpen.has(tab.dataset.websurfSubsidiaryTab) || tab.dataset.websurfTabClosed === "true";
     });
   }
 
@@ -537,6 +537,7 @@
       tab.tabIndex = active ? 0 : -1;
     });
     proteusSessionTab = tabId;
+    window.updateWebSurfRoute?.(tabId === "home" ? "proteusbiodyne.swim" : `proteusbiodyne.swim/${tabId}`);
     page.querySelector(".proteus-biodyne-scroll")?.scrollTo({ top: restoreScroll ? proteusSessionScrollTop : 0 });
     if (focus) page.querySelector(`[data-proteus-panel="${tabId}"] h1, [data-proteus-panel="${tabId}"] h2`)?.focus?.({ preventScroll: true });
   }
@@ -584,7 +585,7 @@
   function syncProteusDiscovery() {
     const discovered = hasDiscoveredProteus();
     document.querySelectorAll("#storeOverlay [data-proteus-home-link]").forEach((link) => { link.hidden = !discovered; });
-    document.querySelectorAll("#storeOverlay .webpage-tab[data-webpage-destination=\"proteus\"]").forEach((tab) => { tab.hidden = !proteusTabOpen; });
+    document.querySelectorAll("#storeOverlay .webpage-tab[data-webpage-destination=\"proteus\"]").forEach((tab) => { tab.hidden = !proteusTabOpen || tab.dataset.websurfTabClosed === "true"; });
   }
 
   function discoverProteus() {
@@ -648,6 +649,17 @@
 
   window.showProteusBiodynePage = (trigger) => showProteusBiodyne(trigger, { allowDirect: true });
   window.closeProteusBiodynePage = (restoreFocus = false) => closeProteusBiodyne(restoreFocus);
+  window.closeWebSurfSiteTab = (siteId) => {
+    if (siteId === "proteus") {
+      proteusTabOpen = false;
+      closeProteusBiodyne(false);
+      syncProteusDiscovery();
+    }
+    if (["arcadia", "clearwell", "commoncurrent", "tidewell"].includes(siteId)) {
+      subsidiaryTabsOpen.delete(siteId);
+      syncSubsidiaryTabs();
+    }
+  };
   window.syncWebPageTabs = syncWebPageTabs;
   window.hasDiscoveredProteus = hasDiscoveredProteus;
   window.getProteusDiscoveredAt = getProteusDiscoveredAt;
@@ -1331,6 +1343,88 @@
     if (!details.textContent.trim()) details.textContent = `${item.name} for your aquarium.`;
   }
 
+  const TANKAZON_CARE_COPY = Object.freeze({
+    plants: ["Plants recommended", "Plants provide cover and help this fish feel secure."],
+    cave: ["Provide a cave", "A sheltered cave gives this fish a place to settle."],
+    bubbler: ["Add a bubbler", "A bubbler helps keep this fish comfortable."],
+    driftwood: ["Driftwood recommended", "Driftwood creates a more comfortable habitat."],
+    hardscape: ["Add hardscape", "Rocks or other hardscape give this fish useful structure."],
+    seaweed_algae: ["Keep algae or seaweed", "This fish benefits from algae or seaweed in its habitat."],
+    coral: ["Coral recommended", "Coral gives this fish familiar cover and structure."],
+    spooky: ["Spooky decor recommended", "This fish is happiest around spooky decor."],
+    open_water: ["Leave open swimming room", "Keep enough clear water for this fish to move freely."],
+    surface_cover: ["Add surface cover", "Surface cover helps this fish feel secure."],
+    betta_present: ["Avoid bettas", "Bettas may chase or attack this fish."],
+    aggressive_predator: ["Avoid aggressive predators", "This fish can easily become prey."],
+    fin_nipper: ["Avoid fin nippers", "Fin nippers can damage this fish's fins."],
+    large_fish: ["Avoid large fish", "Do not house with fish large enough to intimidate or eat it."],
+    tiny_fish: ["Avoid tiny fish", "This fish may see much smaller tankmates as prey."],
+    same_species: ["Limit same-species tankmates", "This fish may become territorial around its own kind."],
+    tang_present: ["Avoid other tangs", "Tangs may become territorial with one another."],
+    puffer_present: ["Avoid other puffers", "Puffers may become territorial with one another."],
+    surface_crowding: ["Avoid surface crowding", "Keep the surface zone clear for this fish."],
+    overcrowded: ["Avoid overcrowding", "Leave enough room for this fish and its tankmates."],
+    sharp_decor: ["Avoid sharp decor", "Sharp decor can injure this fish."],
+    fast_eater: ["Avoid fast eaters", "Faster tankmates can prevent this fish from feeding."],
+    community_fish: ["Avoid community fish", "This fish is not a safe fit for a typical community tank."],
+    the_cure: ["Avoid The Cure", "This fish has a special compatibility concern." ]
+  });
+
+  function getTankazonFishFitEntries(item) {
+    if (item?.category !== "fish") return null;
+    const profile = typeof window.getBubbleBodegaFishCareProfile === "function"
+      ? window.getBubbleBodegaFishCareProfile(item.id, item.variantKey || "")
+      : null;
+    if (!profile) return null;
+    const needTags = Array.isArray(profile.needs) ? profile.needs : [];
+    const conflictTags = Array.isArray(profile.conflicts) ? profile.conflicts : [];
+    const social = profile.social || null;
+    const waterLabel = profile.waterType === "saltwater" ? "Saltwater" : "Freshwater";
+    const needs = [
+      ["Water type", `${waterLabel} aquarium required.`],
+      ...needTags.map((tag) => {
+        if (tag === "school_2_plus" && social?.socialMinimum > 1) {
+          const groupName = social.socialMode === "pair" ? "pair" : social.socialMode === "pod" ? "pod" : social.socialMode === "shoal" ? "shoal" : "school";
+          return [`Keep with a ${groupName} of ${social.socialMinimum}+`, `This fish is happiest with others of its kind.`];
+        }
+        return TANKAZON_CARE_COPY[tag] || [String(tag), "This fish benefits from this aquarium condition."];
+      })
+    ];
+    const warnings = conflictTags.map((tag) => TANKAZON_CARE_COPY[tag]
+      || ["Compatibility concern", "This condition can make the fish uncomfortable."]);
+    return { needs, warnings: warnings.length ? warnings : [["No known conflicts", "This species has no special compatibility warnings in the current catalog."]] };
+  }
+
+  function renderTankazonItemFit(item) {
+    const section = document.getElementById("tankazonItemFit");
+    const needsList = document.getElementById("tankazonItemNeeds");
+    const warningsList = document.getElementById("tankazonItemWarnings");
+    if (!section || !needsList || !warningsList) return;
+    const entries = getTankazonFishFitEntries(item);
+    section.hidden = !entries;
+    needsList.replaceChildren();
+    warningsList.replaceChildren();
+    if (!entries) return;
+    const appendEntries = (list, values, tone) => values.forEach(([title, copy]) => {
+      const entry = document.createElement("li");
+      entry.className = `tankazon-item-fit-entry is-${tone}`;
+      const icon = document.createElement("span");
+      icon.className = "tankazon-item-fit-entry-icon";
+      icon.setAttribute("aria-hidden", "true");
+      icon.textContent = tone === "warning" ? "!" : "✓";
+      const text = document.createElement("div");
+      const heading = document.createElement("strong");
+      heading.textContent = title;
+      const description = document.createElement("span");
+      description.textContent = copy;
+      text.append(heading, description);
+      entry.append(icon, text);
+      list.append(entry);
+    });
+    appendEntries(needsList, entries.needs, "need");
+    appendEntries(warningsList, entries.warnings, "warning");
+  }
+
   function openTankazonItem(preview) {
     if (completingPurchase) return;
     const card = preview.closest(".shop-card");
@@ -1392,6 +1486,7 @@
       });
     }
     if (!details.textContent.trim()) details.textContent = `${descriptor.name} for your aquarium.`;
+    renderTankazonItemFit(selectedItem);
     document.getElementById("tankazonItemStatus").textContent = "";
     document.getElementById("tankazonItemPage").hidden = false;
     overlay().classList.add("tankazon-item-open");
@@ -1456,6 +1551,7 @@
     selectedItem = applyTankazonCollectionState(selectedItem);
     document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
     renderTankazonFoodSizes(selectedItem);
+    renderTankazonItemFit(selectedItem);
     const available = Boolean(button && !button.disabled && variantExists);
     const price = selectedItem.previewOnly ? "Not for purchase" : selectedItem.cost === 0 ? "Free" : `${selectedItem.cost.toLocaleString()} coins`;
     const discounted = !selectedItem.previewOnly

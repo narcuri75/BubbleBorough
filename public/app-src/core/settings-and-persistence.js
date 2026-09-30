@@ -356,6 +356,19 @@ function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
   return WEBSURF_THEME_MODE_AUTO;
 }
 
+function sanitizeWebSurfChromeThemeSettings(source = {}) {
+  const catalog = Array.isArray(WEBSURF_CHROME_THEME_CATALOG) ? WEBSURF_CHROME_THEME_CATALOG : [];
+  const available = new Set(catalog.map((theme) => theme.id));
+  const ownedSource = Array.isArray(source.webSurfOwnedThemes) ? source.webSurfOwnedThemes : [];
+  const owned = [...new Set(ownedSource.map((theme) => String(theme || "").trim().toLowerCase()).filter((theme) => available.has(theme)))];
+  if (!owned.includes(WEBSURF_CHROME_THEME_DEFAULT)) owned.unshift(WEBSURF_CHROME_THEME_DEFAULT);
+  const requested = String(source.webSurfChromeTheme || WEBSURF_CHROME_THEME_DEFAULT).trim().toLowerCase();
+  return {
+    ownedThemes: owned,
+    activeTheme: owned.includes(requested) ? requested : WEBSURF_CHROME_THEME_DEFAULT
+  };
+}
+
 function normalizeSettingsVolume(value, fallback = 1) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
@@ -418,8 +431,68 @@ function getAmbientBubbleLevelProfile(level = getAmbientBubbleLevel()) {
   return AMBIENT_BUBBLE_LEVEL_PROFILES[normalized] || AMBIENT_BUBBLE_LEVEL_PROFILES[AMBIENT_BUBBLE_LEVEL_DEFAULT];
 }
 
+function sanitizeWebSurfBrowserState(rawState, legacy = {}) {
+  const source = rawState && typeof rawState === "object" ? rawState : {};
+  const migrateSavedWebSurfUrl = (value) => {
+    const raw = String(value || "");
+    const migrations = [
+      [/^(https?:\/\/)?(?:www\.)?bubblebodega\.shop(?=\/|$)/i, "bubblebodega.swim"],
+      [/^(https?:\/\/)?(?:www\.)?tankazon\.shop(?=\/|$)/i, "bubblebodega.swim"],
+      [/^(https?:\/\/)?(?:www\.)?proteus\.bio(?=\/|$)/i, "proteusbiodyne.swim"],
+      [/^(https?:\/\/)?(?:www\.)?arcadia\.aqua(?=\/|$)/i, "arcadia.swim"],
+      [/^(https?:\/\/)?(?:www\.)?clearwell\.labs(?=\/|$)/i, "clearwell.swim"],
+      [/^(https?:\/\/)?(?:www\.)?tidewell\.aqua(?=\/|$)/i, "tidewell.swim"]
+    ];
+    for (const [pattern, replacement] of migrations) {
+      if (pattern.test(raw)) return raw.replace(pattern, (_match, protocol) => `${protocol || ""}${replacement}`);
+    }
+    return raw;
+  };
+  const validUrl = (value) => {
+    const route = typeof resolveWebSurfUrl === "function" ? resolveWebSurfUrl(migrateSavedWebSurfUrl(value)) : null;
+    return route?.status === "ok" ? route : null;
+  };
+  const discoveredSites = source.discoveredSites && typeof source.discoveredSites === "object" ? source.discoveredSites : {};
+  const discovered = Object.fromEntries(Object.entries(discoveredSites)
+    .filter(([domain, time]) => validUrl(domain)?.path === "/" && Number(time) > 0)
+    .slice(0, 80)
+    .map(([domain, time]) => [validUrl(domain).site.domain, Math.max(1, Number(time))]));
+  if (legacy.proteusDiscovered === true) discovered["proteusbiodyne.swim"] ||= Math.max(1, Number(legacy.proteusDiscoveredAt) || Date.now());
+  if (legacy.davyJonesLockerUnlocked === true) discovered["davyjoneslocker.hadal"] ||= Math.max(1, Number(legacy.davyJonesLockerUnlockedAt) || Date.now());
+  const defaultBookmarkUrls = ["bubblebodega.swim", "bubbleborough.swim/bank/account"];
+  const bookmarkDefaultsSeeded = source.bookmarkDefaultsSeeded === true;
+  for (const url of defaultBookmarkUrls) {
+    const route = validUrl(url);
+    if (route?.site?.beginsDiscovered === true) discovered[route.site.domain] ||= Date.now();
+  }
+  const bookmarks = Array.isArray(source.bookmarks) ? source.bookmarks : [];
+  const history = Array.isArray(source.history) ? source.history : [];
+  const normalizedBookmarks = bookmarks.map((entry) => {
+    const route = validUrl(entry?.url);
+    return route?.site.bookmarkable && discovered[route.site.domain] ? { url: route.url, createdAt: Math.max(1, Number(entry.createdAt) || Date.now()) } : null;
+  }).filter(Boolean).slice(0, 80);
+  if (!bookmarkDefaultsSeeded) {
+    for (const url of defaultBookmarkUrls.slice().reverse()) {
+      const route = validUrl(url);
+      if (route?.site.bookmarkable && !normalizedBookmarks.some((entry) => entry.url === route.url)) {
+        normalizedBookmarks.unshift({ url: route.url, createdAt: Date.now() });
+      }
+    }
+  }
+  return {
+    discoveredSites: discovered,
+    bookmarks: normalizedBookmarks.slice(0, 80),
+    bookmarkDefaultsSeeded: true,
+    history: history.map((entry) => {
+      const route = validUrl(entry?.url);
+      return route ? { url: route.url, siteId: route.site.id, title: String(entry?.title || route.site.displayName).slice(0, 100), visitedAt: Math.max(1, Number(entry?.visitedAt) || Date.now()) } : null;
+    }).filter(Boolean).slice(-100)
+  };
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+  const webSurfChromeThemes = sanitizeWebSurfChromeThemeSettings(source);
   const hasTankAmbienceVolume = Object.prototype.hasOwnProperty.call(source, "tankAmbienceVolume");
   const hasSfxVolume = Object.prototype.hasOwnProperty.call(source, "sfxVolume");
   const hasUiSoundVolume = Object.prototype.hasOwnProperty.call(source, "uiSoundVolume");
@@ -435,6 +508,9 @@ function sanitizeUiSettings(rawSettings) {
         ? source.webSurfDarkModeEnabled
         : (typeof source.webSurfDarkMode === "boolean" ? source.webSurfDarkMode : undefined)
     ),
+    webSurfFullscreen: source.webSurfFullscreen === true,
+    webSurfChromeTheme: webSurfChromeThemes.activeTheme,
+    webSurfOwnedThemes: webSurfChromeThemes.ownedThemes,
     displayPosition: DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
@@ -462,7 +538,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
     depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
     backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
-    simpleTurnAnimationsOnly: true,
+    complexTurnAnimationsEnabled: source.complexTurnAnimationsEnabled !== false,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -494,8 +570,12 @@ function areDecorShadowsEnabled() {
   return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
+function areComplexTurnAnimationsEnabled() {
+  return getUiSettings().complexTurnAnimationsEnabled !== false;
+}
+
 function areSimpleTurnAnimationsForced() {
-  return getUiSettings().simpleTurnAnimationsOnly === true;
+  return !areComplexTurnAnimationsEnabled();
 }
 
 function normalizeWallpaperEngineBooleanPropertyValue(propertyValue) {
@@ -1258,6 +1338,46 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v66 establishes continuous perceived depth without changing current
+  // layer-driven behavior. Legacy positions map deterministically so existing
+  // tank layouts retain their visual ordering during the staged migration.
+  if (incomingVersion < 66) {
+    const migrateFishDepth = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish)) return fish;
+      const tankLayer = clampTankLayer(fish.tankLayer);
+      const tankSubLayer = clampTankSubLayer(fish.tankSubLayer);
+      const desiredTankLayer = clampTankLayer(fish.desiredTankLayer ?? tankLayer);
+      const desiredTankSubLayer = clampTankSubLayer(fish.desiredTankSubLayer ?? tankSubLayer);
+      return {
+        ...fish,
+        z: sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(tankLayer, tankSubLayer)),
+        desiredZ: sanitizeTankDepthZ(fish.desiredZ, getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer)),
+        depthRadius: sanitizeTankDepthRadius(fish.depthRadius, DEFAULT_FISH_DEPTH_RADIUS)
+      };
+    };
+    const migrateDecorDepth = (item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+      return {
+        ...item,
+        z: sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(item.tankLayer, DEFAULT_TANK_SUBLAYER)),
+        depthRadius: sanitizeTankDepthRadius(item.depthRadius, DEFAULT_DECOR_DEPTH_RADIUS)
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? {
+              ...tank,
+              fish: Array.isArray(tank.fish) ? tank.fish.map(migrateFishDepth) : tank.fish,
+              placedDecor: Array.isArray(tank.placedDecor) ? tank.placedDecor.map(migrateDecorDepth) : tank.placedDecor
+            }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(migrateFishDepth) : migrated.storedFish
+    };
+  }
+
   return migrated;
 }
 
@@ -1907,6 +2027,7 @@ function reconcileState(rawState) {
     webSurfMailStates: {},
     webSurfSenderStates: {},
     webSurfSentEmails: [],
+    webSurf: sanitizeWebSurfBrowserState(null),
     proteusCorpseDonationDigests: [],
     proteusCorpseDonationCount: 0,
     proteusZombieFishUnlockedAt: 0,
@@ -2070,6 +2191,7 @@ function reconcileState(rawState) {
     webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
     webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
     webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
+    webSurf: sanitizeWebSurfBrowserState(incoming.webSurf, incoming),
     proteusCorpseDonationDigests: sanitizeProteusCorpseDonationDigests(incoming.proteusCorpseDonationDigests),
     proteusCorpseDonationCount: Math.max(
       0,

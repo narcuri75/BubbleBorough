@@ -1589,6 +1589,11 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     : "roam";
   const activeLayer = getFishTankLayer(fish);
   const desiredLayer = getDesiredFishTankLayer(fish);
+  const activeDepthZ = getFishTankDepthZ(fish);
+  const desiredDepthZ = getDesiredFishTankDepthZ(fish);
+  const depthRadius = getFishTankDepthRadius(fish);
+  const depthVolume = getTankDepthVolume(activeDepthZ, depthRadius);
+  const depthBucket = getTankDepthBucket(activeDepthZ);
   const targetX = clamp(Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0, 1);
   const targetY = clamp(Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5, 0, 1);
   const targetBucket = `${Math.round(targetX * 20)},${Math.round(targetY * 20)}`;
@@ -1604,6 +1609,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     effectiveBehavior,
     activity,
     `layer:${activeLayer}>${desiredLayer}`,
+    `depth:${activeDepthZ.toFixed(3)}>${desiredDepthZ.toFixed(3)}@${depthBucket}`,
     isProteusSpecimen ? "vitals:disabled" : `health:${healthUnits}`,
     isProteusSpecimen ? "affect:disabled" : `comfort:${Math.round(comfortValue * 10)}`
   ];
@@ -1660,6 +1666,11 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (caveState) {
     signatureParts.push(`cave:${caveState}`);
   }
+  detailParts.push(
+    `depth ${activeDepthZ.toFixed(3)} -> ${desiredDepthZ.toFixed(3)} `
+    + `span ${depthVolume.min.toFixed(3)}-${depthVolume.max.toFixed(3)} bucket ${depthBucket}`
+    + (Number.isFinite(Number(fish.depthRouteTargetZ)) ? ` route ${Number(fish.depthRouteTargetZ).toFixed(3)}` : "")
+  );
   if (breedingRole) {
     signatureParts.push(`breed:${breedingRole}`);
   }
@@ -1687,6 +1698,13 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   const diseaseState = sanitizeDiseaseState(fish.diseaseState);
   const recentDiseaseSignals = getRecentDiseaseSignals(fish, now);
   const behaviorIntent = getFishBehaviorIntent(fish, now);
+  const brain = getFishBehaviorDebugSnapshot(fish, now);
+  if (brain?.intention) {
+    const scoreText = (brain.scores || []).map((score) => `${score.type}:${score.value.toFixed(2)}`).join(", ");
+    const nextThinkSeconds = Math.max(0, Math.ceil((Number(brain.nextUpdateAt) - now) / 1000));
+    detailParts.unshift(`brain ${brain.intention}/${brain.stage} (${brain.tier}) next ${nextThinkSeconds}s${scoreText ? ` | ${scoreText}` : ""}`);
+    signatureParts.push(`brain:${brain.intention}:${brain.stage}:${Math.round(Number(brain.nextUpdateAt) / 1000)}:${scoreText}`);
+  }
   if (behaviorIntent?.type) {
     detailParts.unshift(`${behaviorIntent.type}${behaviorIntent.cause ? ` | ${behaviorIntent.cause}` : ""}`);
     signatureParts.push(`intent:${behaviorIntent.type}:${behaviorIntent.cause || ""}`);
@@ -1859,6 +1877,31 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
       runtime.debugFishBehaviorSignatures.delete(fishId);
     }
   }
+  renderFishBehaviorSchedulerReadout(now);
+}
+
+function renderFishBehaviorSchedulerReadout(now = Date.now()) {
+  if (!dom.debugFishBehaviorReadout) return;
+  const fish = getFishByIdFast(runtime.selectedFishId);
+  if (!fish) {
+    setTextIfChanged(dom.debugFishBehaviorReadout, "Select a fish to inspect behavior.");
+    return;
+  }
+  const snapshot = getFishBehaviorDebugSnapshot(fish, now);
+  const scores = (snapshot.scores || []).map((score) => `${score.type} ${score.value.toFixed(2)}`).join(" | ") || "pending";
+  const traits = Object.entries(snapshot.traits || {}).map(([key, value]) => `${key} ${Number(value).toFixed(2)}`).join(", ");
+  const path = snapshot.path ? `${snapshot.path.state} age ${Math.max(0, Math.round((now - (snapshot.path.lastProgressAt || now)) / 1000))}s` : "direct";
+  const school = snapshot.school ? `${snapshot.school.members.length} followers${snapshot.school.alert ? " alert" : ""}` : "none";
+  const performance = snapshot.performance || {};
+  const metrics = snapshot.metrics || null;
+  setTextIfChanged(dom.debugFishBehaviorReadout, [
+    `Intention: ${snapshot.intention} / ${snapshot.stage} (${snapshot.tier})`,
+    `Scores: ${scores}`,
+    `Traits: ${traits}`,
+    `Path: ${path} | School: ${school}`,
+    `AI: ${performance.evaluations || 0} eval, ${performance.queries || 0} local queries, ${performance.deferred || 0} deferred`,
+    metrics ? `1s: ${metrics.evaluationsPerSecond.toFixed(1)} eval/s, ${metrics.queriesPerSecond.toFixed(1)} queries/s, avg ${metrics.averageEvaluationMs.toFixed(2)}ms max ${metrics.maximumEvaluationMs.toFixed(2)}ms` : "1s: collecting metrics…"
+  ].join("\n"));
 }
 
 function formatDebugFishBehaviorLogEntry(entry) {

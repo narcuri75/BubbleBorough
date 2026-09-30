@@ -699,6 +699,9 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
       : (typeof reasonText === "string" && reasonText.trim() ? reasonText.trim().slice(0, 80) : "Unknown");
   }
   enterFishDeadState(fish, now);
+  if (!alreadyDead && typeof dispatchFishBehaviorEvent === "function") {
+    dispatchFishBehaviorEvent("FISH_DIED", { fishId: fish.id }, now);
+  }
   fish.decayStage = "fresh";
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
@@ -735,6 +738,9 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
   fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
   fish.turnFromDirection = fish.displayDirection;

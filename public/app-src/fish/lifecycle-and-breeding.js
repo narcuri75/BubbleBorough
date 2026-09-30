@@ -95,6 +95,15 @@ function createFishRecord(speciesId, options = {}) {
   const direction = Number.isFinite(Number(options.direction))
     ? (Number(options.direction) < 0 ? -1 : 1)
     : (Math.random() > 0.5 ? 1 : -1);
+  const initialDesiredDx = initialTarget.xNorm - initialPosition.xNorm;
+  const initialDesiredDy = initialTarget.yNorm - initialPosition.yNorm;
+  const initialDesiredDistance = Math.hypot(initialDesiredDx, initialDesiredDy);
+  const initialDesiredHeadingXNorm = initialDesiredDistance > 0.000001
+    ? initialDesiredDx / initialDesiredDistance
+    : direction;
+  const initialDesiredHeadingYNorm = initialDesiredDistance > 0.000001
+    ? initialDesiredDy / initialDesiredDistance
+    : 0;
   const tankLayer = species.behavior === "sucker"
     ? normalizeSuckerFishGlassLayer(
       Number.isFinite(Number(options.tankLayer))
@@ -126,6 +135,14 @@ function createFishRecord(speciesId, options = {}) {
     Number.isFinite(Number(options.desiredTankSubLayer))
       ? Number(options.desiredTankSubLayer)
       : tankSubLayer
+  );
+  const z = sanitizeTankDepthZ(
+    options.z,
+    getTankDepthZFromLegacyPosition(tankLayer, tankSubLayer)
+  );
+  const desiredZ = sanitizeTankDepthZ(
+    options.desiredZ,
+    getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer)
   );
   const scaleSpeciesId = speciesId;
   const scale = clamp(
@@ -290,6 +307,40 @@ function createFishRecord(speciesId, options = {}) {
       : now + species.targetMinMs + Math.random() * Math.max(200, species.targetMaxMs - species.targetMinMs),
     direction,
     swimSpeed: normalizeFishSpeed(species, Number(options.swimSpeed)),
+    traversalVelocityXNorm: clamp(Number(options.traversalVelocityXNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM),
+    traversalVelocityYNorm: clamp(Number(options.traversalVelocityYNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM),
+    traversalSpeedNorm: 0,
+    traversalAccelerationNorm: 0,
+    traversalHeadingXNorm: direction,
+    traversalHeadingYNorm: 0,
+    traversalDesiredHeadingXNorm: initialDesiredHeadingXNorm,
+    traversalDesiredHeadingYNorm: initialDesiredHeadingYNorm,
+    traversalSteeringTargetXNorm: initialTarget.xNorm,
+    traversalSteeringTargetYNorm: initialTarget.yNorm,
+    traversalState: "idle",
+    traversalTurnState: "idle",
+    traversalTurnStartedAt: 0,
+    traversalTurnCommittedUntil: 0,
+    traversalCommittedDirection: direction,
+    traversalObstacleWaypointXNorm: null,
+    traversalObstacleWaypointYNorm: null,
+    traversalObstacleUntil: 0,
+    traversalCruiseWaypointXNorm: null,
+    traversalCruiseWaypointYNorm: null,
+    traversalCruiseSourceTargetXNorm: null,
+    traversalCruiseSourceTargetYNorm: null,
+    traversalCruiseUntil: 0,
+    traversalDecorApproachWaypointXNorm: null,
+    traversalDecorApproachWaypointYNorm: null,
+    traversalDecorApproachDecorId: null,
+    traversalDecorApproachUntil: 0,
+    turnaroundCooldownDirection: direction,
+    turnaroundCooldownStartedAt: 0,
+    turnaroundCooldownUntil: 0,
+    turnaroundCooldownMaxUntil: 0,
+    turnaroundCooldownStartXNorm: initialTarget.xNorm,
+    turnaroundCooldownStartYNorm: initialTarget.yNorm,
+    traversalLastMovedAt: now,
     phase: Math.random(),
     motionLevel: 0.2,
     wiggleClock: Math.random() * Math.PI * 2,
@@ -317,6 +368,9 @@ function createFishRecord(speciesId, options = {}) {
     desiredTankLayer,
     tankSubLayer,
     desiredTankSubLayer,
+    z,
+    desiredZ,
+    depthRadius: sanitizeTankDepthRadius(options.depthRadius, DEFAULT_FISH_DEPTH_RADIUS),
     drawLayer: tankLayerToLegacy(tankLayer),
     desiredDrawLayer: tankLayerToLegacy(desiredTankLayer),
     hangoutDecorId: null,
@@ -328,6 +382,14 @@ function createFishRecord(speciesId, options = {}) {
     turnStartedAt: null,
     turnDurationMs: 0,
     turnFinalFrameRenderedAt: 0,
+    turnFinalFrameRenderedForStartedAt: 0,
+    turnRendererBackend: null,
+    turnRendererFallbackBackend: null,
+    turnRendererStartedAt: 0,
+    turnV26StyleActive: null,
+    turnV26StyleStartedAt: 0,
+    turnV26LastDepthSign: 0,
+    turnV26ActiveDepthSign: 0,
     turnFromDirection: direction,
     turnToDirection: direction,
     turnFromAngle: direction < 0 ? Math.PI : 0,
@@ -340,6 +402,9 @@ function createFishRecord(speciesId, options = {}) {
     caveSeatId: null,
     caveFrontLayer: null,
     caveBackLayer: null,
+    caveFrontZ: null,
+    caveInteriorZ: null,
+    caveRearZ: null,
     caveReturnSubLayer: null,
     caveApproachXNorm: null,
     caveApproachYNorm: null,

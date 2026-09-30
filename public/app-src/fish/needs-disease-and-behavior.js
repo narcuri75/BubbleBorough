@@ -1462,6 +1462,35 @@ function shouldDrawDiseaseGreenBubble(fish, now = Date.now()) {
 
 function getFishDiseaseBubbleMouthPoint(fish, species, pose, width, height, now = Date.now()) {
   const stableScale = getViewportStableAssetScale();
+  if (typeof getFishV26VisualUvWorldFrame === "function") {
+    const fishAsset = getFishDisplayAssetPath(fish, species, now) || species?.asset;
+    const mask = fishAsset ? getImageAlphaMask(fishAsset) : null;
+    const mouthAnchor = getFishGravelPebbleFrontAnchor(mask);
+    const image = fishAsset ? runtime.images.get(fishAsset) : null;
+    if (mouthAnchor && isUsableRuntimeImage(image)) {
+      const visualWidth = getFishDisplayWidth(fish, species, now);
+      const visualHeight = visualWidth * (image.height / Math.max(1, image.width));
+      const v26Mouth = getFishV26VisualUvWorldFrame(
+        fish,
+        species,
+        pose,
+        visualWidth,
+        visualHeight,
+        mouthAnchor.u,
+        mouthAnchor.v,
+        now,
+        { surface: "near" }
+      );
+      if (v26Mouth) {
+        return {
+          x: v26Mouth.x + v26Mouth.direction * 2.8 * stableScale,
+          y: v26Mouth.y,
+          direction: v26Mouth.direction,
+          stableScale
+        };
+      }
+    }
+  }
   const direction = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
   const mouthOffset = getFishFrontMouthOffsetAtPose(
     fish,
@@ -1574,6 +1603,7 @@ function scheduleMoodBubble(fish, now = Date.now(), delay = null, count = MOOD_B
 }
 
 function triggerGlassTapMoodCheck(now = Date.now()) {
+  if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("GLASS_TAPPED", {}, now);
   const tank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
   if (!tank || now < Number(runtime.glassTapMoodCheckAt || 0)) return false;
   // Flush an emission that is due now before checking whether a fresh burst
@@ -2354,7 +2384,11 @@ function applyDiseaseBehaviorTarget(fish, species, target, now = Date.now()) {
   fish.targetAt = target.targetAt || now + randomBetween(2500, 6500);
   fish.hangoutDecorId = target.hangoutDecorId || null;
   fish.hangoutZoneType = target.hangoutZoneType || null;
-  setFishDesiredTankLayer(fish, Number.isFinite(Number(target.targetLayer)) ? clampTankLayer(Number(target.targetLayer)) : getFishTankLayer(fish));
+  if (Number.isFinite(Number(target.targetZ))) {
+    setFishDesiredTankDepth(fish, Number(target.targetZ));
+  } else {
+    setFishDesiredTankLayer(fish, Number.isFinite(Number(target.targetLayer)) ? clampTankLayer(Number(target.targetLayer)) : getFishTankLayer(fish));
+  }
   fish.swimSpeed = target.speed || normalizeFishSpeed(species);
   recordDiseaseSignal(fish, target.signal || "slow_drift", now);
   return true;
@@ -3037,7 +3071,9 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
   fish.targetAt = target.targetAt || now + randomBetween(species.targetMinMs, species.targetMaxMs);
   fish.hangoutDecorId = target.hangoutDecorId || target.decorId || null;
   fish.hangoutZoneType = target.hangoutZoneType || target.zoneType || null;
-  if (Number.isFinite(Number(target.targetLayer))) {
+  if (Number.isFinite(Number(target.targetZ))) {
+    setFishDesiredTankDepth(fish, Number(target.targetZ));
+  } else if (Number.isFinite(Number(target.targetLayer))) {
     setFishDesiredTankLayer(fish, clampTankLayer(Number(target.targetLayer)));
   }
   if (target.speed) {
@@ -3379,6 +3415,7 @@ function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, n
       xNorm: clamp((rival.xNorm || 0.5) + randomBetween(-0.018, 0.018), 0.08, 0.92),
       yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.012, 0.012), 0.14, 0.82),
       targetLayer: getFishTankLayer(rival),
+      targetZ: getFishTankDepthZ(rival),
       targetAt: now + randomBetween(380, 650),
       intentType: "betta confrontation",
       intentCause: `chasing ${rival.name || "rival"}`,
@@ -3423,6 +3460,7 @@ function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, n
       xNorm: clamp((rival.xNorm || 0.5) + side * 0.085, 0.08, 0.92),
       yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.018, 0.018), 0.14, 0.82),
       targetLayer: getFishTankLayer(rival),
+      targetZ: getFishTankDepthZ(rival),
       targetAt: now + randomBetween(700, 1100),
       intentType: "betta confrontation",
       intentCause: `approaching rival ${rival.name || "Betta"}`,
@@ -4044,6 +4082,7 @@ function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), optio
     xNorm: clamp(midX + side * randomBetween(0.028, 0.05), 0.08, 0.92),
     yNorm: clamp(midY + randomBetween(-0.025, 0.025), 0.16, 0.48),
     targetLayer: getFishTankLayer(partner),
+    targetZ: getFishTankDepthZ(partner),
     targetAt: Math.min(Number(fish.pencilSparUntil) || now + 900, now + randomBetween(550, 900)),
     intentType: "harmless spar",
     intentCause: "display sparring",
@@ -4073,6 +4112,7 @@ function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), o
       xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
       yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
       targetLayer: getFishTankLayer(intruder),
+      targetZ: getFishTankDepthZ(intruder),
       targetAt: now + randomBetween(650, 1200),
       intentType: "territorial warning",
       intentCause: "adult home territory",
@@ -4131,6 +4171,7 @@ function pickBlueRamTerritoryBehaviorTarget(fish, species, now = Date.now()) {
       xNorm: clamp((intruder.xNorm || 0.5) + (centerX - (intruder.xNorm || 0.5)) * 0.18, 0.08, 0.92),
       yNorm: clamp((intruder.yNorm || 0.5) + (centerY - (intruder.yNorm || 0.5)) * 0.18, 0.14, 0.86),
       targetLayer: getFishTankLayer(intruder),
+      targetZ: getFishTankDepthZ(intruder),
       targetAt: now + randomBetween(600, 1100),
       intentType: egg ? "guard egg" : "breeding aggression",
       intentCause: egg ? "egg territory" : "frisky food",
@@ -4181,6 +4222,7 @@ function pickPilotCompanionBehaviorTarget(fish, species, now = Date.now(), optio
     xNorm: clamp((companion.xNorm || 0.5) + randomBetween(-0.08, 0.08), 0.08, 0.92),
     yNorm: clamp((companion.yNorm || 0.5) + randomBetween(-0.05, 0.05), 0.14, 0.82),
     targetLayer: getFishTankLayer(companion),
+    targetZ: getFishTankDepthZ(companion),
     targetAt: now + randomBetween(2600, 5200),
     intentType: "pilot escort",
     intentCause: "large-animal association",
@@ -4292,6 +4334,11 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     fish.behaviorIntent = null;
     return false;
+  }
+  // The central scheduler owns ordinary intentions. Existing specialist
+  // behaviors below remain available as fallbacks and as emergency executors.
+  if (applyScheduledFishBehaviorTarget(fish, species, now)) {
+    return true;
   }
   if (applyDiseaseAvoidanceTarget(fish, species, now)) {
     setFishBehaviorIntent(fish, "avoid", "visible symptoms nearby", now);

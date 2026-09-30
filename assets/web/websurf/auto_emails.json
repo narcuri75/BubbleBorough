@@ -121,7 +121,7 @@
         },
         {
           "type": "guide_section",
-          "icon": "assets/icons/WebSurf_icon.png",
+          "icon": "assets/web/websurf/WebSurf_icon.png",
           "title": "WebSurf",
           "text": "Browse WebSurf to shop at BubbleBodega, manage your Bubble Borough Bank account, and discover new sites."
         }

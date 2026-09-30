@@ -241,6 +241,120 @@ function getFishFoundationBirthAt(fish, species, now = Date.now()) {
   return now - safeStartingAgeDays * DAY_MS;
 }
 
+function sanitizeFishTraversalState(fish, options = {}) {
+  const fallbackDirection = Number(options.displayDirection) < 0 ? -1 : 1;
+  const fallbackHeadingX = fallbackDirection;
+  const fallbackHeadingY = 0;
+  const normalizeHeading = (xValue, yValue, fallbackX, fallbackY) => {
+    const xNorm = Number(xValue);
+    const yNorm = Number(yValue);
+    const magnitude = Math.hypot(xNorm, yNorm);
+    return magnitude > 0.000001 && Number.isFinite(magnitude)
+      ? { xNorm: xNorm / magnitude, yNorm: yNorm / magnitude }
+      : { xNorm: fallbackX, yNorm: fallbackY };
+  };
+  const heading = normalizeHeading(
+    fish.traversalHeadingXNorm,
+    fish.traversalHeadingYNorm,
+    fallbackHeadingX,
+    fallbackHeadingY
+  );
+  const targetDx = Number(options.targetXNorm) - Number(options.xNorm);
+  const targetDy = Number(options.targetYNorm) - Number(options.yNorm);
+  const targetDistance = Math.hypot(targetDx, targetDy);
+  const desiredHeading = normalizeHeading(
+    fish.traversalDesiredHeadingXNorm,
+    fish.traversalDesiredHeadingYNorm,
+    targetDistance > 0.000001 ? targetDx / targetDistance : heading.xNorm,
+    targetDistance > 0.000001 ? targetDy / targetDistance : heading.yNorm
+  );
+  const velocityXNorm = clamp(Number(fish.traversalVelocityXNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const velocityYNorm = clamp(Number(fish.traversalVelocityYNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const speedNorm = clamp(Math.hypot(velocityXNorm, velocityYNorm), 0, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  return {
+    traversalVelocityXNorm: velocityXNorm,
+    traversalVelocityYNorm: velocityYNorm,
+    traversalSpeedNorm: speedNorm,
+    traversalAccelerationNorm: clamp(Number(fish.traversalAccelerationNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8, FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8),
+    traversalHeadingXNorm: heading.xNorm,
+    traversalHeadingYNorm: heading.yNorm,
+    traversalDesiredHeadingXNorm: desiredHeading.xNorm,
+    traversalDesiredHeadingYNorm: desiredHeading.yNorm,
+    traversalSteeringTargetXNorm: clamp(
+      Number.isFinite(Number(fish.traversalSteeringTargetXNorm)) ? Number(fish.traversalSteeringTargetXNorm) : Number(options.targetXNorm),
+      0.08,
+      0.92
+    ),
+    traversalSteeringTargetYNorm: clamp(
+      Number.isFinite(Number(fish.traversalSteeringTargetYNorm)) ? Number(fish.traversalSteeringTargetYNorm) : Number(options.targetYNorm),
+      0.14,
+      0.8
+    ),
+    traversalState: speedNorm >= FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM ? "swimming" : "idle",
+    traversalTurnState: ["idle", "turning", "reversing"].includes(fish.traversalTurnState) ? fish.traversalTurnState : "idle",
+    traversalTurnStartedAt: Number.isFinite(Number(fish.traversalTurnStartedAt)) ? Math.max(0, Number(fish.traversalTurnStartedAt)) : 0,
+    traversalTurnCommittedUntil: Number.isFinite(Number(fish.traversalTurnCommittedUntil)) ? Math.max(0, Number(fish.traversalTurnCommittedUntil)) : 0,
+    traversalCommittedDirection: Number.isFinite(Number(fish.traversalCommittedDirection))
+      ? (Number(fish.traversalCommittedDirection) < 0 ? -1 : 1)
+      : fallbackDirection,
+    traversalObstacleWaypointXNorm: Number.isFinite(Number(fish.traversalObstacleWaypointXNorm))
+      ? clamp(Number(fish.traversalObstacleWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalObstacleWaypointYNorm: Number.isFinite(Number(fish.traversalObstacleWaypointYNorm))
+      ? clamp(Number(fish.traversalObstacleWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalObstacleUntil: Number.isFinite(Number(fish.traversalObstacleUntil)) ? Math.max(0, Number(fish.traversalObstacleUntil)) : 0,
+    traversalCruiseWaypointXNorm: Number.isFinite(Number(fish.traversalCruiseWaypointXNorm))
+      ? clamp(Number(fish.traversalCruiseWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalCruiseWaypointYNorm: Number.isFinite(Number(fish.traversalCruiseWaypointYNorm))
+      ? clamp(Number(fish.traversalCruiseWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalCruiseSourceTargetXNorm: Number.isFinite(Number(fish.traversalCruiseSourceTargetXNorm))
+      ? clamp(Number(fish.traversalCruiseSourceTargetXNorm), 0.08, 0.92)
+      : null,
+    traversalCruiseSourceTargetYNorm: Number.isFinite(Number(fish.traversalCruiseSourceTargetYNorm))
+      ? clamp(Number(fish.traversalCruiseSourceTargetYNorm), 0.14, 0.8)
+      : null,
+    traversalCruiseUntil: Number.isFinite(Number(fish.traversalCruiseUntil)) ? Math.max(0, Number(fish.traversalCruiseUntil)) : 0,
+    traversalDecorApproachWaypointXNorm: Number.isFinite(Number(fish.traversalDecorApproachWaypointXNorm))
+      ? clamp(Number(fish.traversalDecorApproachWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalDecorApproachWaypointYNorm: Number.isFinite(Number(fish.traversalDecorApproachWaypointYNorm))
+      ? clamp(Number(fish.traversalDecorApproachWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalDecorApproachDecorId: typeof fish.traversalDecorApproachDecorId === "string"
+      ? fish.traversalDecorApproachDecorId
+      : null,
+    traversalDecorApproachUntil: Number.isFinite(Number(fish.traversalDecorApproachUntil))
+      ? Math.max(0, Number(fish.traversalDecorApproachUntil))
+      : 0,
+    turnaroundCooldownDirection: Number(fish.turnaroundCooldownDirection) < 0 ? -1 : 1,
+    turnaroundCooldownStartedAt: Number.isFinite(Number(fish.turnaroundCooldownStartedAt))
+      ? Math.max(0, Number(fish.turnaroundCooldownStartedAt))
+      : 0,
+    turnaroundCooldownUntil: Number.isFinite(Number(fish.turnaroundCooldownUntil))
+      ? Math.max(0, Number(fish.turnaroundCooldownUntil))
+      : 0,
+    turnaroundCooldownMaxUntil: Number.isFinite(Number(fish.turnaroundCooldownMaxUntil))
+      ? Math.max(0, Number(fish.turnaroundCooldownMaxUntil))
+      : 0,
+    turnaroundCooldownStartXNorm: Number.isFinite(Number(fish.turnaroundCooldownStartXNorm))
+      ? clamp(Number(fish.turnaroundCooldownStartXNorm), 0.08, 0.92)
+      : clamp(Number(options.xNorm) || 0.5, 0.08, 0.92),
+    turnaroundCooldownStartYNorm: Number.isFinite(Number(fish.turnaroundCooldownStartYNorm))
+      ? clamp(Number(fish.turnaroundCooldownStartYNorm), 0.14, 0.8)
+      : clamp(Number(options.yNorm) || 0.5, 0.14, 0.8),
+    turnV26LastDepthSign: [-1, 1].includes(Number(fish.turnV26LastDepthSign))
+      ? Number(fish.turnV26LastDepthSign)
+      : 0,
+    // A renderer session never survives a save/load; the next session derives
+    // its sign from the persisted previous turn.
+    turnV26ActiveDepthSign: 0,
+    traversalLastMovedAt: Number.isFinite(Number(fish.traversalLastMovedAt)) ? Math.max(0, Number(fish.traversalLastMovedAt)) : (Number(options.now) || Date.now())
+  };
+}
+
 function sanitizeFish(fish, options = {}) {
   if (!fish || !runtime.fishMap.has(fish.speciesId)) {
     return null;
@@ -282,6 +396,10 @@ function sanitizeFish(fish, options = {}) {
   const desiredTankSubLayer = clampTankSubLayer(
     Number.isFinite(Number(fish.desiredTankSubLayer)) ? Number(fish.desiredTankSubLayer) : baseTankSubLayer
   );
+  const z = sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(baseTankLayer, baseTankSubLayer));
+  const desiredZ = dead
+    ? z
+    : sanitizeTankDepthZ(fish.desiredZ, getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer));
   const pickedPersonality = pickFishPersonality(species);
   const storedPersonality = normalizeBehaviorPersonality(fish.personality);
   const storedCoarseActivity = fish.coarseActivity && typeof fish.coarseActivity === "object"
@@ -316,6 +434,16 @@ function sanitizeFish(fish, options = {}) {
   const storageState = options.storageState === "stored" || fish.storageState === "stored" ? "stored" : "tank";
   const lifeStage = getFishLifeStage({ ...fish, id: foundationFishId, birthAt, lifespanMultiplier, storageState }, now);
   const canonicalAppearance = resolveCanonicalFishAppearanceSelection(fish, species);
+  const sanitizedTargetXNorm = clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92);
+  const sanitizedTargetYNorm = clamp(Number(fish.targetYNorm) || randomSwimY(), 0.14, 0.8);
+  const traversal = sanitizeFishTraversalState(fish, {
+    displayDirection,
+    xNorm: spawnX,
+    yNorm: spawnY,
+    targetXNorm: sanitizedTargetXNorm,
+    targetYNorm: sanitizedTargetYNorm,
+    now
+  });
 
   return {
     id: foundationFishId,
@@ -500,11 +628,12 @@ function sanitizeFish(fish, options = {}) {
     glassTapWindowCount: clamp(Math.floor(Number(fish.glassTapWindowCount) || 0), 0, GLASS_TAP_STRESS_TAP_THRESHOLD * GLASS_TAP_STRESS_MAX_STACKS),
     xNorm: spawnX,
     yNorm: spawnY,
-    targetXNorm: clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92),
-    targetYNorm: clamp(Number(fish.targetYNorm) || randomSwimY(), 0.14, 0.8),
+    targetXNorm: sanitizedTargetXNorm,
+    targetYNorm: sanitizedTargetYNorm,
     targetAt: Number.isFinite(fish.targetAt) ? fish.targetAt : Date.now() + species.targetMinMs + Math.random() * (species.targetMaxMs - species.targetMinMs),
     direction: Number(fish.direction) < 0 ? -1 : 1,
     swimSpeed,
+    ...traversal,
     phase: clamp(Number(fish.phase) || Math.random(), 0, 1),
     motionLevel: clamp(Number.isFinite(Number(fish.motionLevel)) ? Number(fish.motionLevel) : 0.18, dead ? 0.02 : 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
@@ -541,6 +670,9 @@ function sanitizeFish(fish, options = {}) {
     desiredTankLayer: dead ? baseTankLayer : desiredTankLayer,
     tankSubLayer: baseTankSubLayer,
     desiredTankSubLayer: dead ? baseTankSubLayer : desiredTankSubLayer,
+    z,
+    desiredZ,
+    depthRadius: sanitizeTankDepthRadius(fish.depthRadius, DEFAULT_FISH_DEPTH_RADIUS),
     drawLayer: tankLayerToLegacy(baseTankLayer),
     desiredDrawLayer: tankLayerToLegacy(dead ? baseTankLayer : desiredTankLayer),
     hangoutDecorId: dead ? null : (typeof fish.hangoutDecorId === "string" ? fish.hangoutDecorId : null),
@@ -572,6 +704,9 @@ function sanitizeFish(fish, options = {}) {
     caveSeatId: dead ? null : (typeof fish.caveSeatId === "string" ? fish.caveSeatId : null),
     caveFrontLayer: Number.isFinite(Number(fish.caveFrontLayer)) ? clampTankLayer(Number(fish.caveFrontLayer)) : null,
     caveBackLayer: Number.isFinite(Number(fish.caveBackLayer)) ? clampTankLayer(Number(fish.caveBackLayer)) : null,
+    caveFrontZ: Number.isFinite(Number(fish.caveFrontZ)) ? sanitizeTankDepthZ(Number(fish.caveFrontZ)) : null,
+    caveInteriorZ: Number.isFinite(Number(fish.caveInteriorZ)) ? sanitizeTankDepthZ(Number(fish.caveInteriorZ)) : null,
+    caveRearZ: Number.isFinite(Number(fish.caveRearZ)) ? sanitizeTankDepthZ(Number(fish.caveRearZ)) : null,
     caveReturnSubLayer: Number.isFinite(Number(fish.caveReturnSubLayer)) ? clampTankSubLayer(Number(fish.caveReturnSubLayer)) : null,
     caveApproachXNorm: Number.isFinite(Number(fish.caveApproachXNorm)) ? clamp(Number(fish.caveApproachXNorm), 0.08, 0.92) : null,
     caveApproachYNorm: Number.isFinite(Number(fish.caveApproachYNorm)) ? clamp(Number(fish.caveApproachYNorm), 0.14, 0.8) : null,
@@ -1169,6 +1304,11 @@ function sanitizePlacedDecor(item) {
     yNorm: clamp(Number(item.yNorm) || 0.86, 0, 1),
     scale: clamp(Number(item.scale) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     tankLayer: clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
+    z: sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(
+      clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
+      DEFAULT_TANK_SUBLAYER
+    )),
+    depthRadius: sanitizeTankDepthRadius(item.depthRadius, DEFAULT_DECOR_DEPTH_RADIUS),
     active: item.active !== false,
     flipped: item.flipped === true,
     flippedY: item.flippedY === true
@@ -1288,6 +1428,93 @@ function clampTankSubLayer(subLayer) {
   const numericSubLayer = Number(subLayer);
   const fallbackSubLayer = subLayer === null || subLayer === undefined || subLayer === "" || !Number.isFinite(numericSubLayer);
   return clamp(Math.round(fallbackSubLayer ? DEFAULT_TANK_SUBLAYER : numericSubLayer), 1, TANK_DEPTH_SUBLAYERS);
+}
+
+function sanitizeTankDepthZ(value, fallback = (TANK_DEPTH_REAR_USABLE_Z + TANK_DEPTH_FRONT_USABLE_Z) / 2) {
+  const numeric = Number(value);
+  const resolved = Number.isFinite(numeric) ? numeric : Number(fallback);
+  return clamp(
+    Number.isFinite(resolved) ? resolved : (TANK_DEPTH_REAR_USABLE_Z + TANK_DEPTH_FRONT_USABLE_Z) / 2,
+    TANK_DEPTH_REAR_USABLE_Z,
+    TANK_DEPTH_FRONT_USABLE_Z
+  );
+}
+
+function sanitizeTankDepthRadius(value, fallback = DEFAULT_DECOR_DEPTH_RADIUS) {
+  const numeric = Number(value);
+  const resolved = Number.isFinite(numeric) ? numeric : Number(fallback);
+  return clamp(Number.isFinite(resolved) ? resolved : DEFAULT_DECOR_DEPTH_RADIUS, 0, 0.45);
+}
+
+function getTankDepthBucket(z, bucketCount = 10) {
+  const count = Math.max(1, Math.round(Number(bucketCount) || 10));
+  const normalized = sanitizeTankDepthZ(z);
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  return clamp(Math.floor(((normalized - TANK_DEPTH_REAR_USABLE_Z) / span) * count), 0, count - 1);
+}
+
+function getPlacedDecorDepthZ(item) {
+  return sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+}
+
+function getPlacedDecorDepthRadius(item) {
+  const scale = Math.max(0.5, Number(item?.scale) || 1);
+  const scaledFallback = DEFAULT_DECOR_DEPTH_RADIUS * scale;
+  const storedRadius = sanitizeTankDepthRadius(item?.depthRadius, scaledFallback);
+  return Math.max(storedRadius, sanitizeTankDepthRadius(scaledFallback, DEFAULT_DECOR_DEPTH_RADIUS));
+}
+
+function getFishTankDepthRadius(fish) {
+  return sanitizeTankDepthRadius(fish?.depthRadius, DEFAULT_FISH_DEPTH_RADIUS);
+}
+
+function getTankDepthVolume(z, radius) {
+  const center = sanitizeTankDepthZ(z);
+  const extent = sanitizeTankDepthRadius(radius, 0);
+  return {
+    min: clamp(center - extent, TANK_DEPTH_REAR_USABLE_Z, TANK_DEPTH_FRONT_USABLE_Z),
+    max: clamp(center + extent, TANK_DEPTH_REAR_USABLE_Z, TANK_DEPTH_FRONT_USABLE_Z)
+  };
+}
+
+function doTankDepthVolumesOverlap(firstZ, firstRadius, secondZ, secondRadius) {
+  const first = getTankDepthVolume(firstZ, firstRadius);
+  const second = getTankDepthVolume(secondZ, secondRadius);
+  return first.min <= second.max && second.min <= first.max;
+}
+
+function getDecorDepthPlacementLabel(item) {
+  const z = sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+  if (z >= 0.8) return "Front";
+  if (z >= 0.6) return "Front middle";
+  if (z >= 0.4) return "Center";
+  if (z >= 0.2) return "Rear middle";
+  return "Back";
+}
+
+// Legacy layer 1 is closest to the player, while normalized Z increases from
+// the rear glass (0) toward the front glass (1). Keeping this conversion in
+// one place makes migration deterministic without making layers authoritative.
+function getTankDepthZFromLegacyPosition(layer = DEFAULT_TANK_LAYER, subLayer = DEFAULT_TANK_SUBLAYER) {
+  const index = getTankDepthPositionIndex(layer, subLayer);
+  const position = TANK_DEPTH_POSITIONS <= 1 ? 0.5 : index / (TANK_DEPTH_POSITIONS - 1);
+  const depth = sanitizeTankDepthZ(
+    TANK_DEPTH_FRONT_USABLE_Z - position * (TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z)
+  );
+  return Math.round(depth * 1000000) / 1000000;
+}
+
+function getLegacyTankDepthPositionFromZ(z) {
+  const normalized = sanitizeTankDepthZ(z);
+  const span = TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z;
+  const position = span > 0 ? (TANK_DEPTH_FRONT_USABLE_Z - normalized) / span : 0.5;
+  return getTankDepthPositionFromIndex(Math.round(position * (TANK_DEPTH_POSITIONS - 1)));
 }
 
 function getTankDepthPositionIndex(layer = DEFAULT_TANK_LAYER, subLayer = DEFAULT_TANK_SUBLAYER) {
@@ -1471,6 +1698,8 @@ function updateSelectedDecorActionButtons() {
   const scaleDownButton = dom.selectedDecorScaleDownButton;
   const layerUpButton = dom.selectedDecorLayerUpButton;
   const layerDownButton = dom.selectedDecorLayerDownButton;
+  const bringToFrontButton = dom.selectedDecorBringToFrontButton;
+  const sendToBackButton = dom.selectedDecorSendToBackButton;
   const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
   const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
   const resizeHandles = dom.selectedDecorResizeHandles;
@@ -1511,10 +1740,13 @@ function updateSelectedDecorActionButtons() {
   const canSell = !isPlacedDecorGrouped(item);
   const canStore = !isPlacedDecorGrouped(item);
   const currentScale = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const layerValue = formatDecorLayerSpanShort(item.decorKey, getDecorTankLayer(item));
-  const canLayerUp = canStepPlacedDecorLayer(item, 1);
-  const canLayerDown = canStepPlacedDecorLayer(item, -1);
-  const layerIsFixed = !canLayerUp && !canLayerDown;
+  const depthValue = getDecorDepthPlacementLabel(item);
+  const currentDepth = sanitizeTankDepthZ(
+    item.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+  const canMoveForward = currentDepth < TANK_DEPTH_FRONT_USABLE_Z;
+  const canMoveBackward = currentDepth > TANK_DEPTH_REAR_USABLE_Z;
   const sizeLabel = formatDecorScale(currentScale);
   const resizingDecor = runtime.decorResizeState?.placedId === item.id;
 
@@ -1523,7 +1755,7 @@ function updateSelectedDecorActionButtons() {
   }
 
   if (dom.selectedDecorLayerValue) {
-    dom.selectedDecorLayerValue.textContent = layerValue;
+    dom.selectedDecorLayerValue.textContent = depthValue;
   }
 
   if (scaleControls) {
@@ -1616,25 +1848,37 @@ function updateSelectedDecorActionButtons() {
   if (layerUpButton) {
     layerUpButton.hidden = false;
     layerUpButton.dataset.layerDecor = item.id;
-    layerUpButton.disabled = !canLayerUp;
-    layerUpButton.title = canLayerUp
-      ? `Move layer up from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its top layer`);
-    layerUpButton.setAttribute("aria-label", canLayerUp
-      ? `Move ${decor.name} layer up from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its top layer`));
+    layerUpButton.disabled = !canMoveForward;
+    layerUpButton.title = canMoveForward
+      ? `Move forward from ${depthValue}`
+      : `${decor.name} is already at the front of the tank`;
+    layerUpButton.setAttribute("aria-label", canMoveForward
+      ? `Move ${decor.name} forward from ${depthValue}`
+      : `${decor.name} is already at the front of the tank`);
   }
 
   if (layerDownButton) {
     layerDownButton.hidden = false;
     layerDownButton.dataset.layerDecor = item.id;
-    layerDownButton.disabled = !canLayerDown;
-    layerDownButton.title = canLayerDown
-      ? `Move layer down from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`);
-    layerDownButton.setAttribute("aria-label", canLayerDown
-      ? `Move ${decor.name} layer down from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`));
+    layerDownButton.disabled = !canMoveBackward;
+    layerDownButton.title = canMoveBackward
+      ? `Move backward from ${depthValue}`
+      : `${decor.name} is already at the back of the tank`;
+    layerDownButton.setAttribute("aria-label", canMoveBackward
+      ? `Move ${decor.name} backward from ${depthValue}`
+      : `${decor.name} is already at the back of the tank`);
+  }
+
+  if (bringToFrontButton) {
+    bringToFrontButton.hidden = false;
+    bringToFrontButton.dataset.depthDecor = item.id;
+    bringToFrontButton.disabled = !canMoveForward;
+  }
+
+  if (sendToBackButton) {
+    sendToBackButton.hidden = false;
+    sendToBackButton.dataset.depthDecor = item.id;
+    sendToBackButton.disabled = !canMoveBackward;
   }
 
   if (flipHorizontalButton) {
@@ -2540,6 +2784,42 @@ function getFishTankDepthIndex(fish) {
   return getTankDepthPositionIndex(getFishTankLayer(fish), getFishTankSubLayer(fish));
 }
 
+function getFishTankDepthZ(fish) {
+  // Legacy transition records may still exist in saves or older helpers, but
+  // the normalized value is now the sole authority for normal fish depth.
+  return sanitizeTankDepthZ(
+    fish?.z,
+    getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish))
+  );
+}
+
+function getDesiredFishTankDepthZ(fish) {
+  return sanitizeTankDepthZ(
+    fish?.desiredZ,
+    getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), getDesiredFishTankSubLayer(fish))
+  );
+}
+
+function getFishContinuousDepthOffset(fish) {
+  const id = String(fish?.id || fish?.speciesId || "fish");
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = ((hash << 5) - hash + id.charCodeAt(index)) | 0;
+  }
+  return (((hash >>> 0) % 1001) / 1000 - 0.5) * 0.05;
+}
+
+function setFishDesiredTankDepth(fish, z) {
+  if (!fish) return null;
+  const resolvedZ = sanitizeTankDepthZ(z, getDesiredFishTankDepthZ(fish));
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(resolvedZ);
+  fish.desiredZ = resolvedZ;
+  fish.desiredTankLayer = compatibilityPosition.layer;
+  fish.desiredTankSubLayer = compatibilityPosition.subLayer;
+  fish.desiredDrawLayer = tankLayerToLegacy(compatibilityPosition.layer);
+  return resolvedZ;
+}
+
 function normalizeSuckerFishGlassLayer(layer) {
   const requestedLayer = clampTankLayer(layer ?? SUCKER_FISH_BACK_GLASS_LAYER);
   return requestedLayer <= SUCKER_FISH_FRONT_GLASS_LAYER
@@ -2649,9 +2929,14 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
 
   fish.tankLayer = nextTankLayer;
   fish.desiredTankLayer = nextDesiredTankLayer;
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(nextTankLayer, previousTankSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(nextDesiredTankLayer, getDesiredFishTankSubLayer(fish));
 
   if (fish.id && nextTankLayer !== previousTankLayer) {
-    const nextScale = getFishLayerDepthScaleForPosition(nextTankLayer, previousTankSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -2679,8 +2964,14 @@ function setFishTankSublayers(fish, tankSubLayer, desiredTankSubLayer = tankSubL
   const changed = getFishTankSubLayer(fish) !== nextTankSubLayer;
   fish.tankSubLayer = nextTankSubLayer;
   fish.desiredTankSubLayer = nextDesiredTankSubLayer;
+  const species = getSpeciesForFish(fish);
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(getFishTankLayer(fish), nextTankSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), nextDesiredTankSubLayer);
   if (fish.id && changed) {
-    const nextScale = getFishLayerDepthScaleForPosition(getFishTankLayer(fish), nextTankSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -2694,6 +2985,14 @@ function setFishTankSublayers(fish, tankSubLayer, desiredTankSubLayer = tankSubL
 
 function setFishDesiredTankSubLayer(fish, desiredTankSubLayer) {
   if (!fish) {
+    return;
+  }
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) !== "sucker" && !fish.caveState) {
+    const resolvedSubLayer = clampTankSubLayer(desiredTankSubLayer);
+    fish.desiredTankSubLayer = resolvedSubLayer;
+    const baseDepth = getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), resolvedSubLayer);
+    setFishDesiredTankDepth(fish, baseDepth + getFishContinuousDepthOffset(fish));
     return;
   }
   setFishTankSublayers(fish, getFishTankSubLayer(fish), desiredTankSubLayer);
@@ -2726,12 +3025,17 @@ function setFishTankDepthPosition(fish, layer, subLayer, desiredLayer = layer, d
   fish.desiredTankLayer = nextDesiredLayer;
   fish.tankSubLayer = nextSubLayer;
   fish.desiredTankSubLayer = nextDesiredSubLayer;
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(nextLayer, nextSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(nextDesiredLayer, nextDesiredSubLayer);
   fish.drawLayer = tankLayerToLegacy(nextLayer);
   fish.desiredDrawLayer = tankLayerToLegacy(nextDesiredLayer);
 
   const changed = previousLayer !== nextLayer || previousSubLayer !== nextSubLayer;
   if (fish.id && changed) {
-    const nextScale = getFishLayerDepthScaleForPosition(nextLayer, nextSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -2750,11 +3054,47 @@ function setFishDesiredTankLayer(fish, desiredTankLayer) {
     return;
   }
 
-  setFishTankLayers(fish, getFishTankLayer(fish), desiredTankLayer);
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) === "sucker" || fish.caveState) {
+    setFishTankLayers(fish, getFishTankLayer(fish), desiredTankLayer);
+    return;
+  }
+
+  const resolvedLayer = clampTankLayer(desiredTankLayer);
+  fish.desiredTankLayer = resolvedLayer;
+  fish.desiredDrawLayer = tankLayerToLegacy(resolvedLayer);
+  const baseDepth = getTankDepthZFromLegacyPosition(resolvedLayer, getDesiredFishTankSubLayer(fish));
+  setFishDesiredTankDepth(fish, baseDepth + getFishContinuousDepthOffset(fish));
 }
 
 function getDecorTankLayer(item) {
   return clampTankLayer(item?.tankLayer ?? DEFAULT_TANK_LAYER);
+}
+
+function setPlacedDecorLegacyLayer(item, layer) {
+  if (!item) {
+    return DEFAULT_TANK_LAYER;
+  }
+  const resolvedLayer = getDecorFrontLayer(item.decorKey, layer);
+  item.tankLayer = resolvedLayer;
+  item.z = getTankDepthZFromLegacyPosition(resolvedLayer, DEFAULT_TANK_SUBLAYER);
+  runtime.decorDepthBucketCache = null;
+  return resolvedLayer;
+}
+
+function setPlacedDecorDepth(item, z) {
+  if (!item) {
+    return null;
+  }
+  const resolvedZ = sanitizeTankDepthZ(
+    z,
+    sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER))
+  );
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(resolvedZ);
+  item.z = resolvedZ;
+  item.tankLayer = getDecorFrontLayer(item.decorKey, compatibilityPosition.layer);
+  runtime.decorDepthBucketCache = null;
+  return resolvedZ;
 }
 
 function normalizeDecorCollisionSubLayers(value) {

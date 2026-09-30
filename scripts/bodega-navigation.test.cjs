@@ -68,7 +68,7 @@ function fixture({ saved = "fish", storageBlocked = false } = {}) {
   let refreshes = 0;
   const context = vm.createContext({
     console: { ...console, debug() {} }, dom, CATEGORY_IDS: categories, TANKAZON_VIEW_STORAGE_KEY: "view",
-    runtime: { storeTab: "fish", storeOverlayOpen: false, webSurfLastPage: "home", bubbleBodegaSessionVisited: false, webSurfPageScroll: {} },
+    runtime: { storeTab: "fish", storeOverlayOpen: false, webSurfLastPage: "home", bubbleBodegaSessionVisited: false, webSurfPageScroll: {}, webSurfThemesOpen: false },
     state: {}, tankazonSession: { view: "home", category: "all", searchQuery: "", searchActive: false, allScrollTop: 0 },
     selectedItem: null, itemReturnPreview: null, itemReturnScrollTop: 0,
     allCategoriesMode: false, tankazonNavigationRevision: 0, tankazonRouteVisible: false,
@@ -104,13 +104,16 @@ function fixture({ saved = "fish", storageBlocked = false } = {}) {
     captureWebSurfSessionState() {}, restoreWebSurfSessionScroll() {}, closeProteusDesignerSession() {},
     clearPrimaryToolModes() {}, closeFishActionMenu() {}, clearGuidanceForModeChange() {},
     clearOverlayPendingState() {},
+    getUiSettings: () => ({ webSurfFullscreen: false }),
+    resetWebSurfToolbarVisibility() {}, syncWebSurfBrowserChrome() {}, updateWebSurfRoute() {},
     syncWebSurfThemePresentation() {}, ensureWebSurfSettingsPageMounted() {}, syncWebSurfUnreadBadge() {},
     renderWebSurfHomePage: () => "WebSurf", renderBubbleBodegaHomePage: () => "Bodega Home", renderBubbleBankPage: () => "Bank",
     setMarkupIfChanged: (key, node, markup) => { node.markup = markup; },
     syncWallpaperEngineStoreScrollControls() {}, syncWebSurfSiteChrome() {},
     normalizeBubbleBankTab: tab => tab,
     getTankazonCategoryTab: category => tabs[categories.indexOf(category)],
-    findTankazonNativePurchaseButton: () => null
+    findTankazonNativePurchaseButton: () => null,
+    renderTankazonItemFit() {}
   });
   loadFunctions(context, shell, ["saveTankazonView", "restoreTankazonView", "prepareBubbleBodegaView", "enterBubbleBodegaHome", "refreshTankazonOpening", "syncWebPageTabs", "syncTankazonNavState", "applySearch", "shouldShowTankazonSectionHeading", "closeTankazonItem", "syncTankazonSearchFromControls", "showAllCategories"]);
   loadFunctions(context, native, ["resolveBubbleBodegaOpeningView", "openStoreOverlay", "openExclusiveOverlay", "resetCompetingOverlayState", "openBubbleBodegaHome", "closeStoreOverlay", "openWebSurfSessionPage", "openBubbleBank"]);

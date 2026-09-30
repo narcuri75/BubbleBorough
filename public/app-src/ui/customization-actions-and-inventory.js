@@ -86,13 +86,6 @@ function renderCustomFishCreationOverlay() {
             ${liveBirth ? "checked" : ""} />
           <span>Live birth instead of eggs</span>
         </label>
-        <label class="cave-colorize-toggle custom-fish-turn-toggle">
-          <input
-            type="checkbox"
-            data-custom-fish-turn-toggle
-            ${complexTurnaround ? "checked" : ""} />
-          <span>Advanced Turn Animation</span>
-        </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
             type="checkbox"
@@ -238,11 +231,6 @@ function renderProteusDesignerWorkspace() {
             <label class="proteus-designer-toggle" title="Off: lays eggs. On: gives birth to live young.">
               <input type="checkbox" data-custom-fish-live-birth-toggle ${liveBirth ? "checked" : ""} ${disabled} />
               <span>Live Birth <small>(off = eggs)</small></span>
-            </label>
-
-            <label class="proteus-designer-toggle">
-              <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
-              <span>Advanced Turn Animation</span>
             </label>
 
             <label class="proteus-designer-toggle">
@@ -621,6 +609,7 @@ function renderSettingsOverlay() {
   if (dom.webSurfThemeModeSelect instanceof HTMLSelectElement) {
     dom.webSurfThemeModeSelect.value = normalizeWebSurfThemeMode(uiSettings.webSurfThemeMode);
   }
+  if (dom.webSurfFullscreenToggle) dom.webSurfFullscreenToggle.checked = uiSettings.webSurfFullscreen === true;
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }
@@ -684,8 +673,8 @@ function renderSettingsOverlay() {
     dom.backgroundDepthHazeToggleInput.checked = uiSettings.backgroundDepthHazeEnabled !== false;
     dom.backgroundDepthHazeToggleInput.disabled = normalizeDepthEffectLevel(uiSettings.depthEffectLevel) <= DEPTH_EFFECT_LEVEL_MIN;
   }
-  if (dom.simpleTurnAnimationsToggleInput) {
-    dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
+  if (dom.complexTurnAnimationsToggleInput) {
+    dom.complexTurnAnimationsToggleInput.checked = uiSettings.complexTurnAnimationsEnabled !== false;
   }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;

@@ -998,6 +998,9 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
   fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
   fish.turnFromDirection = fish.displayDirection;
@@ -1546,8 +1549,459 @@ function submitProteusDesignerSpecimen(button = null) {
   return true;
 }
 
+function getWebSurfSiteRegistry() {
+  return [
+    { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
+    { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.png", beginsDiscovered: false, bookmarkable: true, hidden: true },
+    { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.png", beginsDiscovered: false, bookmarkable: true, hidden: true },
+    { id: "arcadia", domain: "arcadia.swim", aliases: [], homePath: "/", displayName: "Arcadia Home Aquatics", bookmarkIcon: "assets/web/proteus/sub/arcadia_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "clearwell", domain: "clearwell.swim", aliases: [], homePath: "/", displayName: "Clearwell Laboratories", bookmarkIcon: "assets/web/proteus/sub/clearwell_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "commoncurrent", domain: "commoncurrent.swim", aliases: [], homePath: "/", displayName: "Common Current", bookmarkIcon: "assets/web/proteus/sub/common-current_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "tidewell", domain: "tidewell.swim", aliases: [], homePath: "/", displayName: "Tidewell", bookmarkIcon: "assets/web/proteus/sub/tidewell_logo.png", beginsDiscovered: true, bookmarkable: true }
+  ];
+}
+
+function getWebSurfChromeTheme(themeId) {
+  const requested = String(themeId || "").trim().toLowerCase();
+  return WEBSURF_CHROME_THEME_CATALOG.find((theme) => theme.id === requested)
+    || WEBSURF_CHROME_THEME_CATALOG.find((theme) => theme.id === WEBSURF_CHROME_THEME_DEFAULT);
+}
+
+function getWebSurfChromeThemeSettings() {
+  return sanitizeWebSurfChromeThemeSettings(getUiSettings());
+}
+
+function setWebSurfChromeThemeSettings(next = {}) {
+  if (!state) return getWebSurfChromeThemeSettings();
+  state.uiSettings = sanitizeUiSettings({
+    ...getUiSettings(),
+    ...next
+  });
+  return getWebSurfChromeThemeSettings();
+}
+
+function equipWebSurfChromeTheme(themeId) {
+  const theme = getWebSurfChromeTheme(themeId);
+  const settings = getWebSurfChromeThemeSettings();
+  if (!theme || !settings.ownedThemes.includes(theme.id)) return false;
+  if (settings.activeTheme === theme.id) return true;
+  setWebSurfChromeThemeSettings({ webSurfChromeTheme: theme.id });
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function purchaseWebSurfChromeTheme(themeId) {
+  const theme = getWebSurfChromeTheme(themeId);
+  if (!theme) return { ok: false, reason: "unknown-theme" };
+  const settings = getWebSurfChromeThemeSettings();
+  if (settings.ownedThemes.includes(theme.id)) {
+    equipWebSurfChromeTheme(theme.id);
+    return { ok: true, alreadyOwned: true };
+  }
+  const applyTheme = () => {
+    const latest = getWebSurfChromeThemeSettings();
+    if (latest.ownedThemes.includes(theme.id)) return false;
+    setWebSurfChromeThemeSettings({
+      webSurfOwnedThemes: [...latest.ownedThemes, theme.id],
+      webSurfChromeTheme: theme.id
+    });
+    return true;
+  };
+  if (theme.price <= 0) {
+    applyTheme();
+    saveState();
+    renderUi(Date.now(), { full: false });
+    return { ok: true, amount: 0 };
+  }
+  return performCoinTransaction({
+    amount: theme.price,
+    direction: "debit",
+    place: "WebSurf Themes",
+    receiptLabel: `Purchased WebSurf theme: ${theme.name}.`,
+    toast: `${theme.name} is now active.`,
+    apply: applyTheme,
+    render: true,
+    full: false
+  });
+}
+
+function normalizeWebSurfUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw || /[\u0000-\u001f\s]/.test(raw)) return null;
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let parsed;
+  try { parsed = new URL(candidate); } catch { return null; }
+  if (!/^https?:$/i.test(parsed.protocol) || parsed.username || parsed.password || parsed.port || parsed.search || parsed.hash) return null;
+  const domain = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (!domain || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/i.test(domain)) return null;
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (segments.some((segment) => !/^[a-z0-9][a-z0-9._-]*$/i.test(segment))) return null;
+  const path = segments.length ? `/${segments.join("/").toLowerCase()}` : "/";
+  return { domain, path, url: `${domain}${path}` };
+}
+
+function resolveWebSurfUrl(value) {
+  const normalized = normalizeWebSurfUrl(value);
+  if (!normalized) return { status: "address-not-found", url: String(value || "").trim() };
+  const site = getWebSurfSiteRegistry().find((entry) => entry.domain === normalized.domain || entry.aliases.includes(normalized.domain));
+  if (!site) return { status: "address-not-found", url: normalized.url };
+  return { status: "ok", site, ...normalized, url: `${site.domain}${normalized.path}` };
+}
+
+function isWebSurfRouteAllowed(route) {
+  if (route.site.id === "proteus") return state?.proteusDiscovered === true;
+  if (route.site.id === "locker") return state?.davyJonesLockerUnlocked === true;
+  return true;
+}
+
+function showWebSurfRouteError(status, url) {
+  runtime.webSurfRouteError = { status, url: String(url || "") };
+  runtime.webHomeOpen = false;
+  runtime.webSurfThemesOpen = false;
+  runtime.bubbleBodegaHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
+  runtime.settingsOverlayOpen = false;
+  openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true });
+  renderUi(Date.now());
+  return false;
+}
+
+function ensureWebSurfBrowserTab(destination) {
+  const tab = document.querySelector(`#storeOverlay .webpage-tab[data-webpage-destination="${String(destination || "")}"]`);
+  if (!tab) return;
+  delete tab.dataset.websurfTabClosed;
+  tab.hidden = false;
+}
+
+function renderWebSurfRouteErrorPage(error) {
+  const copy = {
+    "address-not-found": ["Address Not Found", "WebSurf couldn't find this address. Check the address and try again."],
+    "page-not-found": ["Page Not Found", "This address exists, but the requested page could not be found."],
+    "access-denied": ["Access Denied", "This address is not available to you yet."],
+    "site-unavailable": ["Site Unavailable", "This WebSurf destination is temporarily unavailable."]
+  }[String(error?.status || "")] || ["WebSurf Error", "WebSurf couldn't open this address."];
+  return `<div class="websurf-home-shell websurf-route-error"><header class="websurf-home-header"><img src="assets/web/websurf/WebSurf_icon.png" alt="" aria-hidden="true" /><div><span>WEBSURF.SWIM</span><h1 tabindex="-1">${escapeHtml(copy[0])}</h1><p>${escapeHtml(copy[1])}</p></div></header><main class="websurf-home-main"><p><strong>Address:</strong> ${escapeHtml(error?.url || "Unknown")}</p><button type="button" class="small-button" data-websurf-route="websurf.swim">Return Home</button></main></div>`;
+}
+
+function navigateWebSurf(value, options = {}) {
+  const route = resolveWebSurfUrl(value);
+  if (route.status !== "ok") return showWebSurfRouteError(route.status, route.url);
+  if (!isWebSurfRouteAllowed(route)) return showWebSurfRouteError("access-denied", route.url);
+  runtime.webSurfRouteError = null;
+  runtime.webSurfThemesOpen = false;
+  updateWebSurfRoute(route.url, options);
+  const path = route.path;
+  if (route.site.id === "home") {
+    if (path === "/settings") return openWebSurfSettingsPage();
+    if (path === "/themes") {
+      if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+      closeProteusDesignerSession();
+      window.closeProteusBiodynePage?.(false);
+      runtime.webHomeOpen = false; runtime.bubbleBankOpen = false; runtime.davyJonesLockerOpen = false; runtime.settingsOverlayOpen = false;
+      runtime.webSurfThemesOpen = true; runtime.webSurfLastPage = "themes";
+      renderUi(Date.now()); restoreWebSurfSessionScroll("themes"); return true;
+    }
+    if (path !== "/") return showWebSurfRouteError("page-not-found", route.url);
+    if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true; runtime.bubbleBankOpen = false; runtime.davyJonesLockerOpen = false; runtime.webSurfLastPage = "home";
+    renderUi(Date.now()); restoreWebSurfSessionScroll("home"); return true;
+  }
+  if (route.site.id === "bodega") {
+    ensureWebSurfBrowserTab("store");
+    const category = path.match(/^\/shop\/(food|pharmacy|fish|decor|equipment)$/)?.[1];
+    if (path !== "/" && !category && path !== "/account/orders") return showWebSurfRouteError("page-not-found", route.url);
+    return category ? openStoreOverlay(category, { forceCategory: true, openHome: false }) : openBubbleBodegaHome();
+  }
+  if (route.site.id === "bank") {
+    ensureWebSurfBrowserTab("bank");
+    const section = path.match(/^\/bank\/(account|rewards|statements)$/)?.[1];
+    return section ? openBubbleBank(section) : showWebSurfRouteError("page-not-found", route.url);
+  }
+  if (route.site.id === "locker") return path === "/" ? openDavyJonesLockerPage() : showWebSurfRouteError("page-not-found", route.url);
+  if (route.site.id === "proteus") {
+    const tab = path === "/" ? "home" : path.slice(1);
+    if (!["home", "about", "research", "specimens", "custom-specimen"].includes(tab)) return showWebSurfRouteError("page-not-found", route.url);
+    if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+    window.showProteusBiodynePage?.(options.trigger || dom.openStoreButton);
+    if (tab !== "home") window.requestAnimationFrame(() => document.querySelector(`[data-proteus-tab="${tab}"]`)?.click());
+    return true;
+  }
+  if (path !== "/") return showWebSurfRouteError("page-not-found", route.url);
+  window.showWebSurfSubsidiaryPage?.(route.site.id, options.trigger || null);
+  return true;
+}
+
+function getWebSurfUrlForDestination(destination) {
+  if (String(destination || "") === "store") {
+    const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    return `bubblebodega.swim/shop/${category}`;
+  }
+  return ({ home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
+}
+
+function closeWebSurfBrowserTab(tab) {
+  if (!(tab instanceof HTMLElement)) return;
+  const tabs = [...document.querySelectorAll("#storeOverlay .webpage-tab[data-webpage-destination]")]
+    .filter((candidate) => !candidate.hidden);
+  const destination = String(tab.dataset.webpageDestination || "");
+  const wasActive = tab.classList.contains("is-active");
+
+  // A browser always has somewhere safe to land. Closing its sole remaining
+  // tab simply returns it to WebSurf Home instead of leaving an empty shell.
+  if (tabs.length <= 1) {
+    tab.hidden = false;
+    navigateWebSurf("websurf.swim", { historyMode: "replace" });
+    return;
+  }
+
+  tab.dataset.websurfTabClosed = "true";
+  tab.hidden = true;
+  if (destination === "settings") deactivateWebSurfSettingsPage();
+  if (destination === "locker") runtime.davyJonesLockerTabOpen = false;
+  if (destination === "designer") closeProteusDesignerSession();
+  window.closeWebSurfSiteTab?.(destination);
+
+  if (!wasActive) return;
+  const next = tabs.find((candidate) => candidate !== tab);
+  const nextUrl = getWebSurfUrlForDestination(next?.dataset.webpageDestination);
+  navigateWebSurf(nextUrl || "websurf.swim", { historyMode: "replace" });
+}
+
+function getWebSurfSessionUrl() {
+  if (runtime.webSurfRouteError?.url) return runtime.webSurfRouteError.url;
+  if (runtime.webSurfRoute) return runtime.webSurfRoute;
+  const page = getActiveWebSurfSessionPage();
+  return getWebSurfUrlForDestination(page) || "websurf.swim";
+}
+
+function getWebSurfNavigationState() {
+  const candidate = runtime.webSurfNavigation;
+  if (!candidate || !Array.isArray(candidate.entries) || !Number.isInteger(candidate.index)) {
+    runtime.webSurfNavigation = { entries: [], index: -1 };
+  }
+  return runtime.webSurfNavigation;
+}
+
+function recordWebSurfNavigation(url, options = {}) {
+  if (options.historyMode === "restore") return;
+  const navigation = getWebSurfNavigationState();
+  const entry = String(url || "");
+  if (!entry) return;
+  if (options.historyMode === "replace" && navigation.index >= 0) {
+    navigation.entries[navigation.index] = entry;
+    return;
+  }
+  if (navigation.entries[navigation.index] === entry) return;
+  navigation.entries.splice(navigation.index + 1);
+  navigation.entries.push(entry);
+  navigation.index = navigation.entries.length - 1;
+}
+
+function updateWebSurfRoute(url, options = {}) {
+  const route = resolveWebSurfUrl(url);
+  if (route.status !== "ok") return false;
+  runtime.webSurfRouteError = null;
+  runtime.webSurfRoute = route.url;
+  recordWebSurfNavigation(route.url, options);
+  recordWebSurfVisit(route, options);
+  syncWebSurfBrowserChrome();
+  return true;
+}
+
+function getWebSurfBrowserState() {
+  if (!state) return { discoveredSites: {}, bookmarks: [], history: [] };
+  state.webSurf = sanitizeWebSurfBrowserState(state.webSurf, state);
+  return state.webSurf;
+}
+
+function recordWebSurfVisit(route, options = {}) {
+  if (!route?.site || options.historyMode === "restore" || options.historyMode === "replace") return false;
+  const browser = getWebSurfBrowserState();
+  const now = Date.now();
+  const domain = route.site.domain;
+  let changed = false;
+  if (!browser.discoveredSites[domain]) {
+    browser.discoveredSites[domain] = now;
+    changed = true;
+  }
+  const previous = browser.history[browser.history.length - 1];
+  if (previous?.url === route.url) {
+    previous.visitedAt = now;
+  } else {
+    browser.history.push({ url: route.url, siteId: route.site.id, title: route.site.displayName, visitedAt: now });
+    if (browser.history.length > 100) browser.history.splice(0, browser.history.length - 100);
+    changed = true;
+  }
+  if (changed) saveState();
+  return changed;
+}
+
+function toggleWebSurfBookmark(url = getWebSurfSessionUrl()) {
+  const route = resolveWebSurfUrl(url);
+  if (route.status !== "ok" || !route.site.bookmarkable || !isWebSurfRouteAllowed(route)) return false;
+  const browser = getWebSurfBrowserState();
+  const index = browser.bookmarks.findIndex((entry) => entry.url === route.url);
+  if (index >= 0) browser.bookmarks.splice(index, 1);
+  else browser.bookmarks.push({ url: route.url, createdAt: Date.now() });
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return index < 0;
+}
+
+function clearWebSurfHistory() {
+  const browser = getWebSurfBrowserState();
+  if (!browser.history.length) return false;
+  browser.history = [];
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function resetWebSurfPreferences() {
+  const uiSettings = getUiSettings();
+  const changed = uiSettings.webSurfThemeMode !== WEBSURF_THEME_MODE_AUTO || uiSettings.webSurfFullscreen === true || uiSettings.webSurfChromeTheme !== WEBSURF_CHROME_THEME_DEFAULT;
+  if (!changed) return false;
+  state.uiSettings = sanitizeUiSettings({
+    ...uiSettings,
+    webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
+    webSurfFullscreen: false,
+    webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT
+  });
+  resetWebSurfToolbarVisibility();
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function syncWebSurfBrowserChrome() {
+  const open = runtime.storeOverlayOpen === true;
+  const navigation = getWebSurfNavigationState();
+  const address = getWebSurfSessionUrl();
+  const route = resolveWebSurfUrl(address);
+  const browser = getWebSurfBrowserState();
+  const currentBookmarkIndex = route.status === "ok" ? browser.bookmarks.findIndex((entry) => entry.url === route.url) : -1;
+  if (dom.webSurfAddressInput && document.activeElement !== dom.webSurfAddressInput) {
+    dom.webSurfAddressInput.value = address;
+  }
+  if (dom.webSurfBackButton) dom.webSurfBackButton.disabled = !open || navigation.index <= 0;
+  if (dom.webSurfForwardButton) dom.webSurfForwardButton.disabled = !open || navigation.index < 0 || navigation.index >= navigation.entries.length - 1;
+  if (dom.webSurfBookmarkButton) {
+    const available = route.status === "ok" && route.site.bookmarkable && isWebSurfRouteAllowed(route);
+    dom.webSurfBookmarkButton.disabled = !open || !available;
+    dom.webSurfBookmarkButton.textContent = currentBookmarkIndex >= 0 ? "★" : "☆";
+    dom.webSurfBookmarkButton.setAttribute("aria-label", currentBookmarkIndex >= 0 ? "Remove current page from bookmarks" : "Bookmark current page");
+    dom.webSurfBookmarkButton.title = currentBookmarkIndex >= 0 ? "Remove bookmark" : "Bookmark current page";
+  }
+  if (dom.webSurfBookmarkBar) {
+    const entries = browser.bookmarks.map((bookmark) => {
+      const savedRoute = resolveWebSurfUrl(bookmark.url);
+      return savedRoute.status === "ok" && isWebSurfRouteAllowed(savedRoute)
+        ? `<button type="button" class="websurf-bookmark-bar-item" data-websurf-bookmark-link="${escapeHtml(savedRoute.url)}" title="Open ${escapeHtml(savedRoute.site.displayName)}"><img src="${escapeHtml(savedRoute.site.bookmarkIcon || "assets/web/websurf/WebSurf_icon.png")}" alt="" aria-hidden="true" /><span>${escapeHtml(savedRoute.site.displayName)}</span></button>`
+        : "";
+    }).filter(Boolean);
+    dom.webSurfBookmarkBar.innerHTML = entries.length ? entries.join("") : '<span class="websurf-bookmark-bar-empty">Add pages with the ☆ button</span>';
+  }
+}
+
+function navigateWebSurfHistory(direction) {
+  const navigation = getWebSurfNavigationState();
+  const nextIndex = navigation.index + Number(direction || 0);
+  if (nextIndex < 0 || nextIndex >= navigation.entries.length) return false;
+  navigation.index = nextIndex;
+  return navigateWebSurf(navigation.entries[nextIndex], { historyMode: "restore" });
+}
+
+function refreshWebSurfRoute() {
+  const navigation = getWebSurfNavigationState();
+  const url = navigation.entries[navigation.index] || getWebSurfSessionUrl();
+  return navigateWebSurf(url, { historyMode: "replace" });
+}
+
+function handleWebSurfBrowserToolbarEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const bookmarkLink = target?.closest("[data-websurf-bookmark-link]");
+  if (bookmarkLink) {
+    event.preventDefault();
+    navigateWebSurf(bookmarkLink.dataset.websurfBookmarkLink, { trigger: bookmarkLink });
+    return;
+  }
+  const action = target?.closest("[data-websurf-browser-action]")?.dataset.websurfBrowserAction;
+  if (!action) return;
+  event.preventDefault();
+  if (action === "back") navigateWebSurfHistory(-1);
+  else if (action === "forward") navigateWebSurfHistory(1);
+  else if (action === "home") navigateWebSurf("websurf.swim");
+  else if (action === "bookmark") toggleWebSurfBookmark();
+  else if (action === "refresh") refreshWebSurfRoute();
+}
+
+function handleWebSurfBrowserToolbarKeyDown(event) {
+  const input = dom.webSurfAddressInput;
+  if (!input || event.target !== input) return;
+  // A focused address field is text-entry territory, never game-hotkey territory.
+  event.stopPropagation();
+  if (event.key === "Enter") {
+    event.preventDefault();
+    navigateWebSurf(input.value);
+    input.blur();
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    input.value = getWebSurfSessionUrl();
+    input.blur();
+  }
+}
+
+function isWebSurfFullscreenActive() {
+  return runtime.storeOverlayOpen === true && getUiSettings().webSurfFullscreen === true;
+}
+
+function clearWebSurfToolbarHideTimer() {
+  if (runtime.webSurfToolbarHideTimer) {
+    window.clearTimeout(runtime.webSurfToolbarHideTimer);
+    runtime.webSurfToolbarHideTimer = 0;
+  }
+}
+
+function revealWebSurfToolbar() {
+  clearWebSurfToolbarHideTimer();
+  if (!isWebSurfFullscreenActive() || runtime.webSurfToolbarHidden !== true) return false;
+  runtime.webSurfToolbarHidden = false;
+  dom.storeOverlay?.classList.remove("is-websurf-toolbar-hidden");
+  return true;
+}
+
+function scheduleWebSurfToolbarHide() {
+  clearWebSurfToolbarHideTimer();
+  // The top browser chrome is intentionally persistent. Keeping it visible
+  // makes the address field and navigation controls predictable in fullscreen.
+  return false;
+}
+
+function handleWebSurfFullscreenPointerMove(event) {
+  if (!isWebSurfFullscreenActive()) return;
+  const overlay = dom.storeOverlay;
+  const toolbar = dom.webSurfBrowserToolbar;
+  if (!overlay || !toolbar) return;
+  const bounds = overlay.getBoundingClientRect();
+  const nearTop = Number(event?.clientY) <= bounds.top + Math.max(42, Math.min(84, bounds.height * 0.09));
+  if (nearTop || toolbar.contains(event.target)) revealWebSurfToolbar();
+  else if (!toolbar.matches(":hover") && !toolbar.contains(document.activeElement)) scheduleWebSurfToolbarHide();
+}
+
+function resetWebSurfToolbarVisibility() {
+  clearWebSurfToolbarHideTimer();
+  runtime.webSurfToolbarHidden = false;
+  dom.storeOverlay?.classList.remove("is-websurf-toolbar-hidden");
+}
+
 function normalizeWebSurfSessionPage(value) {
-  return ["home", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+  return ["home", "themes", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
 }
 
 function getActiveWebSurfSessionPage() {
@@ -1556,6 +2010,7 @@ function getActiveWebSurfSessionPage() {
   if (runtime.proteusDesignerOpen === true) return "designer";
   if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
   if (runtime.davyJonesLockerOpen === true) return "locker";
+  if (runtime.webSurfThemesOpen === true) return "themes";
   if (runtime.webHomeOpen === true) return "home";
   if (runtime.bubbleBankOpen === true) return "bank";
   return "store";
@@ -1563,6 +2018,7 @@ function getActiveWebSurfSessionPage() {
 
 function getWebSurfSessionScrollElement(page) {
   if (page === "home") return dom.webHomePage;
+  if (page === "themes") return dom.webSurfThemesPage;
   if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
   if (page === "locker") return dom.davyJonesLockerPage;
   if (page === "proteus") return document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll");
@@ -1665,9 +2121,10 @@ function restoreWebSurfSessionScroll(page) {
 
 function resetWebSurfSessionState() {
   runtime.webSurfLastPage = "home";
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBodegaHomeOpen = false;
   runtime.bubbleBodegaSessionVisited = false;
-  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
+  runtime.webSurfPageScroll = { home: 0, themes: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
   runtime.webSurfSelectedMailId = "";
   runtime.webSurfSettingsTabOpen = false;
   runtime.webSurfSettingsReturnPage = "home";
@@ -1677,6 +2134,7 @@ function resetWebSurfSessionState() {
   if (runtime.storeOverlayOpen) {
     window.closeProteusBiodynePage?.(false);
     runtime.webHomeOpen = true;
+    runtime.webSurfThemesOpen = false;
     runtime.bubbleBankOpen = false;
     runtime.davyJonesLockerOpen = false;
     runtime.davyJonesLockerTabOpen = false;
@@ -1732,6 +2190,7 @@ function openWebSurfSettingsPage() {
   runtime.webSurfSettingsTabOpen = true;
   runtime.settingsOverlayOpen = true;
   runtime.webHomeOpen = false;
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
   ensureWebSurfSettingsPageMounted();
@@ -1760,6 +2219,10 @@ function closeWebSurfSettingsPage(options = {}) {
 
 function openWebSurfSessionPage() {
   const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "themes") {
+    navigateWebSurf("websurf.swim/themes", { historyMode: "restore" });
+    return;
+  }
   if (page === "bank") {
     if (openBubbleBank(runtime.bubbleBankTab || "account")) restoreWebSurfSessionScroll("bank");
     return;
@@ -1787,6 +2250,7 @@ function openWebSurfSessionPage() {
   }
   if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false })) return;
   runtime.webHomeOpen = true;
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.webSurfLastPage = "home";
   renderUi(Date.now());
@@ -1834,6 +2298,9 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.webSurfLastPage = "store";
     if (["food", "pharmacy", "fish", "decor", "equipment"].includes(view)) tab = view;
     window.prepareBubbleBodegaView?.(view);
+    updateWebSurfRoute(view === "home"
+      ? "bubblebodega.swim"
+      : `bubblebodega.swim/shop/${["food", "pharmacy", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
   }
   // A request made while the window was already open used to remain here until
   // a later reopen, when it could overwrite Home. Navigation is synchronous now.
@@ -1865,6 +2332,7 @@ function openDavyJonesLockerPage() {
   runtime.davyJonesLockerOpen = true;
   runtime.davyJonesLockerTabOpen = true;
   runtime.webSurfLastPage = "locker";
+  updateWebSurfRoute("davyjoneslocker.hadal");
   renderUi(Date.now());
   restoreWebSurfSessionScroll("locker");
   return true;
@@ -1878,6 +2346,7 @@ function openBubbleBank(tab = "account", options = {}) {
   runtime.bubbleBankOpen = true;
   runtime.webSurfLastPage = "bank";
   runtime.bubbleBankTab = normalizeBubbleBankTab(tab);
+  updateWebSurfRoute(`bubbleborough.swim/bank/${runtime.bubbleBankTab}`);
   runtime.bubbleBankTargetId = String(options.targetId || "");
   renderUi(Date.now());
   return true;
@@ -1885,6 +2354,12 @@ function openBubbleBank(tab = "account", options = {}) {
 
 function handleWebPageNavigation(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  const routeLink = target?.closest("[data-websurf-route]");
+  if (routeLink) {
+    event?.preventDefault?.();
+    navigateWebSurf(routeLink.dataset.websurfRoute, { trigger: routeLink });
+    return;
+  }
   // The Bodega shell owns the aggregate catalogue, but this click must first
   // leave the internal Home route. Its capture listener then mounts the full
   // listing over this freshly visible native catalogue.
@@ -2033,6 +2508,30 @@ function handleWebPageNavigation(event) {
     if (destination === "store") openStoreOverlay(section);
     return;
   }
+  if (target?.closest("[data-websurf-clear-history]")) {
+    event?.preventDefault?.();
+    clearWebSurfHistory();
+    return;
+  }
+  if (target?.closest("[data-websurf-reset-preferences]")) {
+    event?.preventDefault?.();
+    resetWebSurfPreferences();
+    return;
+  }
+  if (target?.closest("[data-websurf-open-themes]")) {
+    event?.preventDefault?.();
+    navigateWebSurf("websurf.swim/themes");
+    return;
+  }
+  const themeButton = target?.closest("[data-websurf-theme-action]");
+  if (themeButton instanceof HTMLButtonElement) {
+    event?.preventDefault?.();
+    if (themeButton.disabled) return;
+    themeButton.disabled = true;
+    const result = purchaseWebSurfChromeTheme(themeButton.dataset.websurfThemeAction || "");
+    if (!result?.ok) themeButton.disabled = false;
+    return;
+  }
   const emailAction = target?.closest("[data-websurf-email-action]");
   if (emailAction) {
     event?.preventDefault?.();
@@ -2055,9 +2554,22 @@ function handleWebPageNavigation(event) {
     closeStoreOverlay({ preserveWebSurfSession: true });
     return;
   }
+  const closeTab = target?.closest("[data-webpage-tab-close]");
+  if (closeTab) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    closeWebSurfBrowserTab(closeTab.closest("[data-webpage-destination]"));
+    return;
+  }
   const tab = target?.closest("[data-webpage-destination]");
   if (!tab) return;
   const destination = String(tab.dataset.webpageDestination || "");
+  const routeUrl = getWebSurfUrlForDestination(destination);
+  if (routeUrl) {
+    event?.preventDefault?.();
+    navigateWebSurf(routeUrl, { trigger: tab });
+    return;
+  }
   if (destination === "settings") {
     openSettingsOverlay();
     return;
@@ -2130,6 +2642,7 @@ function closeStoreOverlay(options = {}) {
   }
 
   if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
+  resetWebSurfToolbarVisibility();
   window.closeProteusBiodynePage?.(false);
   window.closeWebSurfSubsidiaryPage?.(true);
   if (runtime.proteusDesignerOpen === true || runtime.proteusDesignerCompleting === true) closeProteusDesignerSession();
@@ -2238,7 +2751,7 @@ function resetSelectedDecorSettings() {
     setDecorGroupLayer(item, defaultLayer, false);
   } else {
     item.scale = defaultScale;
-    item.tankLayer = defaultLayer;
+    setPlacedDecorLegacyLayer(item, defaultLayer);
     const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
     item.xNorm = placement.xNorm;
     item.yNorm = placement.yNorm;
@@ -3467,12 +3980,12 @@ function setDecorGroupLayer(item, nextLayer, save = false) {
   for (const groupItem of groupItems) {
     const currentLayer = getDecorLayerSelectValue(groupItem);
     const resolvedLayer = getDecorFrontLayer(groupItem.decorKey, currentLayer + layerOffset);
-    groupItem.tankLayer = currentLayer;
+    setPlacedDecorLegacyLayer(groupItem, currentLayer);
     if (resolvedLayer === currentLayer) {
       continue;
     }
 
-    groupItem.tankLayer = resolvedLayer;
+    setPlacedDecorLegacyLayer(groupItem, resolvedLayer);
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -3509,9 +4022,9 @@ function updateSelectedDecorSetting(setting, value) {
     const groupLayer = isPlacedDecorGrouped(item) ? setDecorGroupLayer(item, nextLayer, false) : null;
     if (groupLayer === null) {
       const currentLayer = getDecorLayerSelectValue(item);
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (nextLayer !== currentLayer) {
-        item.tankLayer = nextLayer;
+        setPlacedDecorLegacyLayer(item, nextLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;

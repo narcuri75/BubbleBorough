@@ -251,6 +251,109 @@ function drawFishEggs(now, layer = null) {
   }
 }
 
+function getFishV26VisualUvLocalPoint(fish, species, pose, width, height, u, v, now = Date.now(), options = {}) {
+  if (!fish || !species || !pose || pose.isDead) return null;
+  if (typeof getFishTurnV26VisualAnchorLocalPoint !== "function") return null;
+  const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
+  const image = imagePath ? runtime.images.get(imagePath) : null;
+  if (!isUsableRuntimeImage(image)) return null;
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  const suckerFreeSwimming = effectiveBehavior === "sucker"
+    ? isSuckerFishFreeSwimming(fish, species, now)
+    : false;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior,
+    suckerFreeSwimming
+  });
+  const depthLayer = getFishTankLayer(fish);
+  const visualWiggle = (pose.wiggle || 0) * getTankDepthMovementMultiplier(depthLayer);
+  const drawX = -width / 2 + (useDepthSwimWarp ? 0 : visualWiggle * width * 0.018);
+  return getFishTurnV26VisualAnchorLocalPoint(
+    fish,
+    image,
+    drawX,
+    width,
+    height,
+    u,
+    v,
+    now,
+    { ...options, species }
+  );
+}
+
+function transformFishV26VisualLocalPointToWorld(fish, pose, localPoint) {
+  if (!fish || !pose || !localPoint) return null;
+  const depthLayer = getFishTankLayer(fish);
+  const visualSwayX = (pose.swayX || 0) * getTankDepthMovementMultiplier(depthLayer);
+  const bodyScaleX = Number.isFinite(Number(pose.bodyScaleX)) ? Number(pose.bodyScaleX) : 1;
+  const bodyScaleY = Number.isFinite(Number(pose.bodyScaleY)) ? Number(pose.bodyScaleY) : 1;
+  const tilt = Number(pose.tilt) || 0;
+  const scaledX = localPoint.x * bodyScaleX;
+  const scaledY = localPoint.y * bodyScaleY;
+  const cosTilt = Math.cos(tilt);
+  const sinTilt = Math.sin(tilt);
+  return {
+    ...localPoint,
+    x: pose.x + visualSwayX + cosTilt * scaledX - sinTilt * scaledY,
+    y: pose.y + sinTilt * scaledX + cosTilt * scaledY
+  };
+}
+
+function getFishV26VisualUvWorldFrame(fish, species, pose, width, height, u, v, now = Date.now(), options = {}) {
+  const anchorLocal = getFishV26VisualUvLocalPoint(fish, species, pose, width, height, u, v, now, options);
+  if (!anchorLocal) return null;
+  const anchorWorld = transformFishV26VisualLocalPointToWorld(fish, pose, anchorLocal);
+  if (!anchorWorld) return null;
+
+  const sourceDirection = typeof getFishTurnV26SourceDirection === "function"
+    ? getFishTurnV26SourceDirection()
+    : 1;
+  const verticalSampleV = clamp(Number(v) - 0.018, 0, 1);
+  const verticalLocal = getFishV26VisualUvLocalPoint(
+    fish,
+    species,
+    pose,
+    width,
+    height,
+    u,
+    verticalSampleV,
+    now,
+    options
+  );
+  const verticalWorld = verticalLocal
+    ? transformFishV26VisualLocalPointToWorld(fish, pose, verticalLocal)
+    : null;
+  const behindU = clamp(Number(u) - 0.03 * sourceDirection, 0, 1);
+  const behindLocal = getFishV26VisualUvLocalPoint(
+    fish,
+    species,
+    pose,
+    width,
+    height,
+    behindU,
+    v,
+    now,
+    options
+  );
+  const behindWorld = behindLocal
+    ? transformFishV26VisualLocalPointToWorld(fish, pose, behindLocal)
+    : null;
+
+  let rotation = Number(pose.tilt) || 0;
+  if (verticalWorld && Math.hypot(verticalWorld.x - anchorWorld.x, verticalWorld.y - anchorWorld.y) > 0.001) {
+    rotation = Math.atan2(verticalWorld.y - anchorWorld.y, verticalWorld.x - anchorWorld.x) + Math.PI / 2;
+  }
+  let direction = getFishFacingDirection(fish);
+  if (behindWorld && Math.abs(anchorWorld.x - behindWorld.x) > 0.001) {
+    direction = anchorWorld.x >= behindWorld.x ? 1 : -1;
+  }
+  return {
+    ...anchorWorld,
+    rotation,
+    direction
+  };
+}
+
 function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   const action = getFishGravelPebbleAction(fish);
   if (!action || action.stage !== "carry") {
@@ -266,7 +369,23 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   const size = (Number.isFinite(action.holdSizePx) ? action.holdSizePx : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * getViewportStableAssetScale();
   const drawWidth = aspect >= 1 ? size : size * aspect;
   const drawHeight = aspect >= 1 ? size / aspect : size;
-  const mouth = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
+  const fishAsset = getFishDisplayAssetPath(fish, species, now) || species?.asset;
+  const fishMask = fishAsset ? getImageAlphaMask(fishAsset) : null;
+  const mouthAnchor = getFishGravelPebbleFrontAnchor(fishMask);
+  const v26Mouth = mouthAnchor
+    ? getFishV26VisualUvLocalPoint(
+      fish,
+      species,
+      pose,
+      width,
+      height,
+      mouthAnchor.u,
+      mouthAnchor.v,
+      now,
+      { surface: "near" }
+    )
+    : null;
+  const mouth = v26Mouth || getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
   if (!mouth) {
     return;
   }
@@ -284,10 +403,26 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
 }
 
 function isFishInCaveRenderSublayer(fish) {
-  return Boolean(
+  const activeCaveTravel = Boolean(
     fish?.caveDecorId
     && ["enter", "inside", "exit", "depart"].includes(fish.caveState)
   );
+  if (!activeCaveTravel) {
+    if (fish?.id) runtime.caveRenderOcclusionByFishId?.delete?.(fish.id);
+    return false;
+  }
+
+  const frontZ = getFishCaveDepthRegion(fish, "front");
+  const interiorZ = getFishCaveDepthRegion(fish, "interior");
+  const threshold = (frontZ + interiorZ) / 2;
+  const hysteresis = 0.012;
+  const previous = runtime.caveRenderOcclusionByFishId?.get?.(fish.id) === true;
+  const z = getFishTankDepthZ(fish);
+  const isInside = previous
+    ? z <= threshold + hysteresis
+    : z <= threshold - hysteresis;
+  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, isInside);
+  return isInside;
 }
 
 function getFishSameLayerRenderPriority(fish) {
@@ -343,7 +478,7 @@ function fitDebugFishBehaviorLine(text, maxWidth) {
   return `${value.slice(0, Math.max(1, end))}${suffix}`;
 }
 
-function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
+function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now(), context = tankContext) {
   if (!isDebugModeEnabled()) {
     return;
   }
@@ -359,16 +494,16 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   const paddingY = 5 * stableScale;
   const maxTextWidth = 220 * stableScale;
 
-  tankContext.save();
-  tankContext.font = `700 ${fontSize}px Trebuchet MS, sans-serif`;
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
+  context.save();
+  context.font = `700 ${fontSize}px Trebuchet MS, sans-serif`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
 
   const lines = snapshot.labelLines
     .filter((line) => String(line || "").trim())
     .slice(0, 5)
     .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
-  const textWidth = Math.max(...lines.map((line) => tankContext.measureText(line).width), 1);
+  const textWidth = Math.max(...lines.map((line) => context.measureText(line).width), 1);
   const labelWidth = Math.ceil(textWidth + paddingX * 2);
   const labelHeight = Math.ceil(lines.length * lineHeight + paddingY * 2);
   const centerX = clamp(
@@ -381,25 +516,64 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   const left = centerX - labelWidth / 2;
   const top = centerY - labelHeight / 2;
 
-  tankContext.fillStyle = "rgba(4, 16, 24, 0.78)";
-  tankContext.strokeStyle = "rgba(255, 220, 92, 0.72)";
-  tankContext.lineWidth = Math.max(1, stableScale);
-  tankContext.beginPath();
-  tankContext.roundRect(left, top, labelWidth, labelHeight, 7 * stableScale);
-  tankContext.fill();
-  tankContext.stroke();
+  context.fillStyle = "rgba(4, 16, 24, 0.78)";
+  context.strokeStyle = "rgba(255, 220, 92, 0.72)";
+  context.lineWidth = Math.max(1, stableScale);
+  context.beginPath();
+  context.roundRect(left, top, labelWidth, labelHeight, 7 * stableScale);
+  context.fill();
+  context.stroke();
 
   lines.forEach((line, index) => {
-    tankContext.fillStyle = index === 0
+    context.fillStyle = index === 0
       ? "rgba(255, 235, 150, 0.98)"
       : "rgba(232, 250, 255, 0.94)";
-    tankContext.fillText(
+    context.fillText(
       line,
       centerX,
       top + paddingY + lineHeight * index + lineHeight / 2
     );
   });
-  tankContext.restore();
+  const depthSpan = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const depthVolume = getTankDepthVolume(getFishTankDepthZ(fish), getFishTankDepthRadius(fish));
+  const barWidth = Math.min(labelWidth - paddingX * 2, 72 * stableScale);
+  const barY = top + labelHeight - Math.max(4, paddingY * 0.55);
+  const toBarX = (z) => left + paddingX + ((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / depthSpan) * barWidth;
+  context.strokeStyle = "rgba(143, 230, 255, 0.7)";
+  context.lineWidth = Math.max(1, stableScale);
+  context.beginPath();
+  context.moveTo(left + paddingX, barY);
+  context.lineTo(left + paddingX + barWidth, barY);
+  context.stroke();
+  context.strokeStyle = "rgba(255, 210, 93, 0.96)";
+  context.lineWidth = Math.max(2, stableScale * 2);
+  context.beginPath();
+  context.moveTo(toBarX(depthVolume.min), barY);
+  context.lineTo(toBarX(depthVolume.max), barY);
+  context.stroke();
+  context.fillStyle = "rgba(255, 245, 174, 1)";
+  context.beginPath();
+  context.arc(toBarX(getFishTankDepthZ(fish)), barY, Math.max(2, stableScale * 1.8), 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
+  if (!isDebugModeEnabled() || !fish?.id) return;
+  runtime.fishStatsOverlayQueue ||= new Map();
+  runtime.fishStatsOverlayQueue.set(fish.id, { fish, species, pose, width, height, topFrameBottomY, stableScale, now });
+}
+
+function drawQueuedFishStatsOverlays() {
+  const queue = runtime.fishStatsOverlayQueue;
+  if (!(queue instanceof Map) || !queue.size) return;
+  for (const entry of queue.values()) {
+    drawDebugFishBehaviorBroadcast(
+      entry.fish, entry.species, entry.pose, entry.width, entry.height,
+      entry.topFrameBottomY, entry.stableScale, entry.now, glassContext
+    );
+  }
+  queue.clear();
 }
 
 function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
@@ -1053,6 +1227,10 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
 }
 
 function compareFishRenderRecords(left, right) {
+  const depthDelta = left.depthZ - right.depthZ;
+  if (depthDelta) {
+    return depthDelta;
+  }
   const subLayerDelta = right.subLayer - left.subLayer;
   if (subLayerDelta) {
     return subLayerDelta;
@@ -1178,6 +1356,7 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     record.priority = getFishSameLayerRenderPriority(fish);
     record.subLayer = getFishTankSubLayer(fish);
     record.depthIndex = getFishTankDepthIndex(fish);
+    record.depthZ = getFishTankDepthZ(fish);
     record.yNorm = Number(fish.yNorm) || 0;
     buckets[layer].push(record);
     recordIndex += 1;
@@ -1248,1212 +1427,41 @@ function prepareFishRenderFrameCache(now = Date.now()) {
 }
 
 
-function getFishTurnRigCanvas(image, mirrored = false) {
-  if (!isUsableRuntimeImage(image)) {
-    return null;
-  }
+// Phase 15 retired the segmented complex-turn renderer. Complex horizontal
+// reversals are rendered by v26, with the lightweight sprite turn retained as
+// the only emergency fallback when WebGL is unavailable.
 
-  let entry = fishTurnRigCanvasCache.get(image);
-
-  if (
-    !entry
-    || entry.width !== image.width
-    || entry.height !== image.height
-  ) {
-    const original = document.createElement("canvas");
-    original.width = image.width;
-    original.height = image.height;
-
-    const originalContext = original.getContext("2d");
-    originalContext.clearRect(
-      0,
-      0,
-      original.width,
-      original.height
-    );
-    originalContext.drawImage(image, 0, 0);
-
-    const flipped = document.createElement("canvas");
-    flipped.width = image.width;
-    flipped.height = image.height;
-
-    const flippedContext = flipped.getContext("2d");
-    flippedContext.clearRect(
-      0,
-      0,
-      flipped.width,
-      flipped.height
-    );
-
-    flippedContext.translate(
-      flipped.width,
-      0
-    );
-
-    flippedContext.scale(
-      -1,
-      1
-    );
-
-    flippedContext.drawImage(
-      image,
-      0,
-      0
-    );
-
-    entry = {
-      width: image.width,
-      height: image.height,
-      original,
-      mirrored: flipped,
-      sliceWidth:
-        image.width
-        / FISH_TURN_RIG_SEGMENTS
-    };
-
-    fishTurnRigCanvasCache.set(
-      image,
-      entry
-    );
-  }
-
-  return mirrored
-    ? entry.mirrored
-    : entry.original;
-}
-
-function shouldUseFishTurnRigForSprite(
-  fish,
-  species,
-  effectiveBehavior,
-  pose,
-  suckerFreeSwimming,
-  suckerViewTransition
-) {
-  if (
-    !fish
-    || !species
-    || !pose
-    || pose.isDead
-  ) {
-    return false;
-  }
-
-  if (suckerViewTransition) {
-    return false;
-  }
-
-  if (
-    effectiveBehavior === "sucker"
-    && !suckerFreeSwimming
-  ) {
-    return false;
-  }
-
-  if (
-    !fish.turnStartedAt
-    || Number(fish.turnDurationMs) <= 0
-    || getFishTurnAnimationMode(fish, species) !== "complex"
-  ) {
-    return false;
-  }
-
-  const fromDirection =
-    Number(fish.turnFromDirection) < 0
-      ? -1
-      : 1;
-
-  const toDirection =
-    Number(fish.turnToDirection) < 0
-      ? -1
-      : 1;
-
-  return fromDirection !== toDirection;
-}
-
-function getFishTurnRigProgress(
-  fish,
-  now
-) {
-  if (
-    !fish?.turnStartedAt
-    || Number(fish.turnDurationMs) <= 0
-  ) {
-    return null;
-  }
-
-  const normalized =
-    clamp(
-      (
-        now
-        - Number(fish.turnStartedAt)
-      )
-      / Math.max(
-        1,
-        Number(fish.turnDurationMs)
-      ),
-      0,
-      1
-    );
-
-  return (
-    normalized
-    * FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
-  );
-}
-
-function getFishTurnRigState(
-  fish,
-  now
-) {
-  const progress =
-    getFishTurnRigProgress(
-      fish,
-      now
-    );
-
-  if (progress === null) {
-    return null;
-  }
-
+function getFishLightweightTurnFallbackVisualState(fish, now = Date.now()) {
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active || !turnState.reversing) return null;
+  const progress = clamp(Number(turnState.progress) || 0, 0, 1);
+  const turnAmount = Math.sin(progress * Math.PI);
   return {
     progress,
-
-    fromDirection:
-      Number(fish.turnFromDirection) < 0
-        ? -1
-        : 1,
-
-    toDirection:
-      Number(fish.turnToDirection) < 0
-        ? -1
-        : 1
+    direction: progress < 0.5 ? turnState.fromDirection : turnState.toDirection,
+    scaleX: 1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X),
+    scaleY: 1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)
   };
 }
 
-function getFishTurnRigPhaseProgress(
-  timelineProgress,
-  start,
-  duration
-) {
-  const raw =
-    clamp(
-      (
-        timelineProgress
-        - start
-      )
-      / Math.max(
-        0.0001,
-        duration
-      ),
-      0,
-      1
-    );
-
-  return (
-    raw
-    * raw
-    * (
-      3
-      - 2 * raw
-    )
-  );
-}
-function getFishTurnRigCollapseProgress(
-  turnProgress,
-  originalIndex
-) {
-  let start =
-    (
-      11
-      - originalIndex
-    )
-    * FISH_TURN_RIG_COLLAPSE_STEP
-    * FISH_TURN_RIG_FOLLOWER_LAG;
-
-  if (originalIndex <= 5) {
-    start +=
-      FISH_TURN_RIG_TAIL_START_DELAY;
-  }
-
-  return getFishTurnRigPhaseProgress(
-    turnProgress,
-    start,
-    FISH_TURN_RIG_COLLAPSE_DURATION
-  );
-}
-
-function getFishTurnRigRebuildProgress(
-  turnProgress,
-  originalIndex
-) {
-  const start =
-    FISH_TURN_RIG_REBUILD_OVERLAP
-    + (
-      11
-      - originalIndex
-    )
-    * FISH_TURN_RIG_REBUILD_STEP;
-
-  return getFishTurnRigPhaseProgress(
-    turnProgress,
-    start,
-    FISH_TURN_RIG_REBUILD_DURATION
-  );
-}
-
-function buildFishTurnRigOriginalBody(
-  turnProgress
-) {
-  const segments = [];
-
-  for (
-    let index = 0;
-    index < FISH_TURN_RIG_SEGMENTS;
-    index += 1
-  ) {
-    const progress =
-      getFishTurnRigCollapseProgress(
-        turnProgress,
-        index
-      );
-
-    segments.push({
-      widthScale:
-        1
-        - progress,
-
-      sizeScale:
-        index >= 6
-          ? (
-            1
-            - FISH_TURN_RIG_FRONT_SHRINK
-            * progress
-          )
-          : (
-            1
-            + FISH_TURN_RIG_TAIL_SWELL
-            * progress
-          )
-    });
-  }
-
-  return segments;
-}
-
-function buildFishTurnRigEmergingHead(
-  turnProgress
-) {
-  const segments = [];
-
-  const order = [
-    6,
-    7,
-    8,
-    9,
-    10,
-    11
-  ];
-
-  for (
-    const originalIndex
-    of order
-  ) {
-    const start =
-      FISH_TURN_RIG_REBUILD_OVERLAP
-      + (
-        11
-        - originalIndex
-      )
-      * FISH_TURN_RIG_REBUILD_STEP
-      * FISH_TURN_RIG_HEAD_STAGGER;
-
-    const progress =
-      getFishTurnRigPhaseProgress(
-        turnProgress,
-        start,
-        FISH_TURN_RIG_REBUILD_DURATION
-      );
-
-    segments.push({
-      widthScale:
-        progress,
-
-      sizeScale:
-        1
-        + FISH_TURN_RIG_FRONT_SHRINK
-        * (
-          1
-          - progress
-        )
-        * 0.9,
-
-      progress
-    });
-  }
-
-  return segments;
-}
-
-function buildFishTurnRigEmergingTail(
-  turnProgress
-) {
-  const segments = [];
-
-  const order = [
-    5,
-    4,
-    3,
-    2,
-    1,
-    0
-  ];
-
-  for (
-    const originalIndex
-    of order
-  ) {
-    const progress =
-      getFishTurnRigRebuildProgress(
-        turnProgress,
-        originalIndex
-      );
-
-    segments.push({
-      widthScale:
-        progress,
-
-      sizeScale:
-        (
-          1
-          + FISH_TURN_RIG_TAIL_SWELL
-        )
-        - FISH_TURN_RIG_TAIL_SWELL
-        * progress,
-
-      progress
-    });
-  }
-
-  return segments;
-}
-
-function withFishTurnRigBodyScales(
-  segments
-) {
-  const boundaries = [
-    segments[0]?.sizeScale
-    || 1
-  ];
-
-  for (
-    let index = 1;
-    index < segments.length;
-    index += 1
-  ) {
-    boundaries[index] =
-      (
-        segments[
-          index - 1
-        ].sizeScale
-        + segments[
-          index
-        ].sizeScale
-      )
-      * 0.5;
-  }
-
-  boundaries[
-    segments.length
-  ] =
-    segments[
-      segments.length - 1
-    ]?.sizeScale
-    || 1;
-
-  return segments.map(
-    (
-      segment,
-      index
-    ) => ({
-      ...segment,
-
-      leftScale:
-        boundaries[index],
-
-      rightScale:
-        boundaries[
-          index + 1
-        ]
-    })
-  );
-}
-
-function withFishTurnRigChainScales(
-  segments,
-  centerScale = 1
-) {
-  const boundaries =
-    new Array(
-      segments.length + 1
-    );
-
-  boundaries[0] =
-    centerScale;
-
-  for (
-    let index = 1;
-    index < segments.length;
-    index += 1
-  ) {
-    boundaries[index] =
-      (
-        segments[
-          index - 1
-        ].sizeScale
-        + segments[
-          index
-        ].sizeScale
-      )
-      * 0.5;
-  }
-
-  boundaries[
-    segments.length
-  ] =
-    segments[
-      segments.length - 1
-    ]?.sizeScale
-    || centerScale;
-
-  return segments.map(
-    (
-      segment,
-      index
-    ) => ({
-      ...segment,
-
-      innerScale:
-        boundaries[index],
-
-      outerScale:
-        boundaries[
-          index + 1
-        ]
-    })
-  );
-}
-
-function measureFishTurnRigOriginalLayout(
-  segments,
-  centerX,
-  targetWidth
-) {
-  const welded =
-    withFishTurnRigBodyScales(
-      segments
-    );
-
-  const widths =
-    welded.map(
-      (segment) =>
-        (
-          targetWidth
-          / FISH_TURN_RIG_SEGMENTS
-        )
-        * segment.widthScale
-    );
-
-  const totalWidth =
-    widths.reduce(
-      (
-        sum,
-        width
-      ) =>
-        sum
-        + width,
-      0
-    );
-
-  const x0 =
-    centerX
-    - totalWidth / 2;
-
-  let seamX =
-    x0;
-
-  for (
-    let index = 0;
-    index < 6;
-    index += 1
-  ) {
-    seamX +=
-      widths[index];
-  }
-
-  return {
-    welded,
-    widths,
-    totalWidth,
-    x0,
-    seamX
-  };
-}
-
-function drawFishTurnRigTextureSegment(
-  context,
-  fullSource,
-  srcX0,
-  srcX1,
-  x0,
-  x1,
-  centerY,
-  targetHeight,
-  leftScale,
-  rightScale,
-  renderOptions = {}
-) {
-  if (!fullSource) {
-    return;
-  }
-
-  const paddedSrcX0 =
-    Math.max(
-      0,
-      srcX0
-      - FISH_TURN_RIG_EDGE_SOFTEN_SRC
-    );
-
-  const paddedSrcX1 =
-    Math.min(
-      fullSource.width,
-      srcX1
-      + FISH_TURN_RIG_EDGE_SOFTEN_SRC
-    );
-
-  const paddedDestX0 =
-    x0
-    - FISH_TURN_RIG_EDGE_SOFTEN_DEST;
-
-  const paddedDestX1 =
-    x1
-    + FISH_TURN_RIG_EDGE_SOFTEN_DEST;
-
-  const destWidth =
-    paddedDestX1
-    - paddedDestX0;
-
-  const srcWidth =
-    paddedSrcX1
-    - paddedSrcX0;
-
-  if (
-    Math.abs(destWidth) <= 0.001
-    || Math.abs(srcWidth) <= 0.001
-  ) {
-    return;
-  }
-
-  const minimumColumns = Math.max(1, Math.floor(Number(renderOptions.minimumColumns) || 4));
-  const maximumColumns = Math.max(
-    minimumColumns,
-    Math.floor(Number(renderOptions.maximumColumns) || FISH_TURN_RIG_VISIBLE_MAX_COLUMNS)
-  );
-  const columnDensity = Math.max(
-    0.01,
-    Number(renderOptions.columnDensity) || FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY
-  );
-  const steps = clamp(
-    Math.ceil(Math.abs(destWidth) * columnDensity),
-    minimumColumns,
-    maximumColumns
-  );
-
-  for (
-    let column = 0;
-    column < steps;
-    column += 1
-  ) {
-    const u0 =
-      column
-      / steps;
-
-    const u1 =
-      (
-        column + 1
-      )
-      / steps;
-
-    const umRaw =
-      (
-        u0
-        + u1
-      )
-      * 0.5;
-
-    const um =
-      umRaw
-      * umRaw
-      * (
-        3
-        - 2 * umRaw
-      );
-
-    const sx0 =
-      paddedSrcX0
-      + srcWidth
-      * u0;
-
-    const sx1 =
-      paddedSrcX0
-      + srcWidth
-      * u1;
-
-    const dx0 =
-      paddedDestX0
-      + destWidth
-      * u0;
-
-    const dx1 =
-      paddedDestX0
-      + destWidth
-      * u1;
-
-    const scale =
-      leftScale
-      + (
-        rightScale
-        - leftScale
-      )
-      * um;
-
-    const drawHeight =
-      targetHeight
-      * scale;
-
-    const drawY =
-      centerY
-      - drawHeight / 2;
-
-    const sx =
-      Math.min(
-        sx0,
-        sx1
-      );
-
-    const sw =
-      Math.max(
-        0.85,
-        Math.abs(
-          sx1
-          - sx0
-        )
-        + 0.9
-      );
-
-    const dx =
-      Math.min(
-        dx0,
-        dx1
-      )
-      - FISH_TURN_RIG_CONTINUOUS_OVERLAP
-      * 0.5;
-
-    const dw =
-      Math.abs(
-        dx1
-        - dx0
-      )
-      + FISH_TURN_RIG_CONTINUOUS_OVERLAP;
-
-    context.drawImage(
-      fullSource,
-      sx,
-      0,
-      sw,
-      fullSource.height,
-      dx,
-      drawY,
-      dw,
-      drawHeight
-    );
-  }
-}
-
-function drawFishTurnRigOriginal(
-  context,
-  fullSource,
-  layout,
-  centerY,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  let x =
-    layout.x0;
-
-  for (
-    let index = 0;
-    index < FISH_TURN_RIG_SEGMENTS;
-    index += 1
-  ) {
-    const segment =
-      layout.welded[index];
-
-    const drawWidth =
-      layout.widths[index];
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const srcX0 =
-      index
-      * sliceWidth;
-
-    const srcX1 =
-      (
-        index + 1
-      )
-      * sliceWidth;
-
-    drawFishTurnRigTextureSegment(
-      context,
-      fullSource,
-      srcX0,
-      srcX1,
-      x,
-      x + drawWidth,
-      centerY,
-      targetHeight,
-      segment.leftScale,
-      segment.rightScale,
-      renderOptions
-    );
-
-    x +=
-      drawWidth;
-  }
-}
-
-function drawFishTurnRigLeftChain(
-  context,
-  mirroredSource,
-  chain,
-  seamX,
-  centerY,
-  slotWidth,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  const welded =
-    withFishTurnRigChainScales(
-      chain,
-      FISH_TURN_RIG_CENTER_SEAM_SCALE
-    );
-
-  let innerX =
-    seamX;
-
-  const handoff =
-    0.46;
-
-  for (
-    let chainIndex = 0;
-    chainIndex < welded.length;
-    chainIndex += 1
-  ) {
-    const segment =
-      welded[
-        chainIndex
-      ];
-
-    const drawWidth =
-      slotWidth
-      * segment.widthScale;
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const pullEase =
-      1
-      - Math.pow(
-        clamp(
-          segment.progress,
-          0,
-          1
-        ),
-        FISH_TURN_RIG_RELEASE_CURVE
-      );
-
-    const packedFactor =
-      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
-        ? (
-          1
-          + FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        )
-        : (
-          1
-          - FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        );
-
-    const pulledWidth =
-      drawWidth
-      * packedFactor;
-
-    const outerX =
-      innerX
-      - pulledWidth;
-
-    const sourceSlot =
-      5
-      - chainIndex;
-
-    const slotLeft =
-      sourceSlot
-      * sliceWidth;
-
-    const slotRight =
-      (
-        sourceSlot + 1
-      )
-      * sliceWidth;
-
-    let srcX0 =
-      slotLeft;
-
-    let srcX1 =
-      slotRight;
-
-    if (
-      segment.progress
-      < handoff
-    ) {
-      const reveal =
-        clamp(
-          segment.progress
-          / handoff
-        );
-
-      srcX0 =
-        slotRight
-        - sliceWidth
-        * reveal;
-    }
-
-    drawFishTurnRigTextureSegment(
-      context,
-      mirroredSource,
-      srcX0,
-      srcX1,
-      outerX,
-      innerX,
-      centerY,
-      targetHeight,
-      segment.outerScale,
-      segment.innerScale,
-      renderOptions
-    );
-
-    innerX =
-      outerX;
-  }
-}
-
-function drawFishTurnRigRightChain(
-  context,
-  mirroredSource,
-  chain,
-  seamX,
-  centerY,
-  slotWidth,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  const welded =
-    withFishTurnRigChainScales(
-      chain,
-      FISH_TURN_RIG_CENTER_SEAM_SCALE
-    );
-
-  let innerX =
-    seamX;
-
-  const handoff =
-    0.48;
-
-  for (
-    let chainIndex = 0;
-    chainIndex < welded.length;
-    chainIndex += 1
-  ) {
-    const segment =
-      welded[
-        chainIndex
-      ];
-
-    const drawWidth =
-      slotWidth
-      * segment.widthScale;
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const pullEase =
-      1
-      - Math.pow(
-        clamp(
-          segment.progress,
-          0,
-          1
-        ),
-        FISH_TURN_RIG_RELEASE_CURVE
-      );
-
-    const packedFactor =
-      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
-        ? (
-          1
-          + FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        )
-        : (
-          1
-          - FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        );
-
-    const advanceWidth =
-      drawWidth
-      * packedFactor;
-
-    const outerX =
-      innerX
-      + drawWidth;
-
-    const sourceSlot =
-      6
-      + chainIndex;
-
-    const slotLeft =
-      sourceSlot
-      * sliceWidth;
-
-    const slotRight =
-      (
-        sourceSlot + 1
-      )
-      * sliceWidth;
-
-    let srcX0 =
-      slotLeft;
-
-    let srcX1 =
-      slotRight;
-
-    if (
-      segment.progress
-      < handoff
-    ) {
-      const reveal =
-        clamp(
-          segment.progress
-          / handoff
-        );
-
-      srcX1 =
-        slotLeft
-        + sliceWidth
-        * reveal;
-    }
-
-    drawFishTurnRigTextureSegment(
-      context,
-      mirroredSource,
-      srcX0,
-      srcX1,
-      innerX,
-      outerX,
-      centerY,
-      targetHeight,
-      segment.innerScale,
-      segment.outerScale,
-      renderOptions
-    );
-
-    innerX +=
-      advanceWidth;
-  }
-}
-
-function drawFishTurnaroundRig(
-  context,
-  image,
-  drawX,
-  drawWidth,
-  drawHeight,
-  fish,
-  now,
-  renderOptions = {}
-) {
-  const turnState =
-    getFishTurnRigState(
-      fish,
-      now
-    );
-
-  if (!turnState) {
-    context.drawImage(
-      image,
-      drawX,
-      -drawHeight / 2,
-      drawWidth,
-      drawHeight
-    );
-
+function drawFishLightweightTurnFallbackFrame(context, image, drawX, drawWidth, drawHeight, fish, now = Date.now()) {
+  if (!context || !image) return false;
+  const visual = getFishLightweightTurnFallbackVisualState(fish, now);
+  if (!visual) {
+    context.drawImage(image, drawX, -drawHeight / 2, drawWidth, drawHeight);
     return false;
   }
-
-  const originalSource =
-    getFishTurnRigCanvas(
-      image,
-      false
-    );
-
-  const mirroredSource =
-    getFishTurnRigCanvas(
-      image,
-      true
-    );
-
-  if (
-    !originalSource
-    || !mirroredSource
-  ) {
-    context.drawImage(
-      image,
-      drawX,
-      -drawHeight / 2,
-      drawWidth,
-      drawHeight
-    );
-
-    return false;
-  }
-
-  const centerX =
-    drawX
-    + drawWidth / 2;
-
-  const centerY =
-    0;
-
-  const slotWidth =
-    drawWidth
-    / FISH_TURN_RIG_SEGMENTS;
-
-  const sourceSliceWidth =
-    originalSource.width
-    / FISH_TURN_RIG_SEGMENTS;
-
-  const originalBody =
-    buildFishTurnRigOriginalBody(
-      turnState.progress
-    );
-
-  const emergingHead =
-    buildFishTurnRigEmergingHead(
-      turnState.progress
-    );
-
-  const emergingTail =
-    buildFishTurnRigEmergingTail(
-      turnState.progress
-    );
-
-  const originalLayout =
-    measureFishTurnRigOriginalLayout(
-      originalBody,
-      centerX,
-      drawWidth
-    );
-
-  const seamX =
-    originalLayout.seamX;
-
+  const centerX = drawX + drawWidth / 2;
   context.save();
-
-  if (
-    turnState.fromDirection < 0
-  ) {
-    context.translate(
-      centerX,
-      0
-    );
-
-    context.scale(
-      -1,
-      1
-    );
-
-    context.translate(
-      -centerX,
-      0
-    );
+  context.translate(centerX, 0);
+  context.scale(visual.direction * visual.scaleX, visual.scaleY);
+  context.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+  if (typeof markLightweightCausticImage === "function") {
+    markLightweightCausticImage(context, image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   }
-
-  drawFishTurnRigLeftChain(
-    context,
-    mirroredSource,
-    emergingHead,
-    seamX,
-    centerY,
-    slotWidth,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
-  drawFishTurnRigOriginal(
-    context,
-    originalSource,
-    originalLayout,
-    centerY,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
-  drawFishTurnRigRightChain(
-    context,
-    mirroredSource,
-    emergingTail,
-    seamX,
-    centerY,
-    slotWidth,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
   context.restore();
-
   return true;
 }
-
-
 
 function getDeadFishEyeAnchorFromMask(mask) {
   if (!mask?.alpha?.length || !mask.width || !mask.height) {
@@ -2792,14 +1800,21 @@ function drawFish(now, layer = null, options = {}) {
       suckerFacePivotX, suckerFacePivotY
     } = prepared;
 
-    const genericTurnRigActive = shouldUseFishTurnRigForSprite(
+    const pendingTravel = record.pendingTravel;
+    const v26TurnRendererActive = shouldUseFishTurnV26RendererForSprite(
       fish,
       species,
       effectiveBehavior,
       pose,
       suckerFreeSwimming,
-      suckerViewTransition
+      suckerViewTransition,
+      now,
+      pendingTravel
     );
+    const complexTurnRendererActive = v26TurnRendererActive;
+    const v26VisualContinuity = v26TurnRendererActive
+      ? getFishTurnV26VisualContinuity(fish, pose.tilt, now)
+      : null;
 
     if (!pose.isDead && effectiveBehavior !== "sucker") {
       drawCasterShadowOnDecorSurfaces({
@@ -2819,16 +1834,15 @@ function drawFish(now, layer = null, options = {}) {
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
     tankContext.translate(pose.x + visualSwayX, pose.y);
-    tankContext.scale(genericTurnRigActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
+    tankContext.scale(complexTurnRendererActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
       tankContext.translate(suckerFacePivotX, suckerFacePivotY);
-      tankContext.rotate(pose.tilt);
+      tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
       tankContext.translate(-suckerFacePivotX, -suckerFacePivotY);
     } else {
       tankContext.rotate(pose.tilt);
     }
 
-    const pendingTravel = record.pendingTravel;
     const tubeTravel = pendingTravel?.mode === "tube";
     let tubeCompression = 1;
     if (tubeTravel) {
@@ -2902,12 +1916,84 @@ function drawFish(now, layer = null, options = {}) {
       }
       const depthRenderImage = getTankDepthTreatedImage(sprite.renderImage, depthLayer) || sprite.renderImage;
       tankContext.filter = layerMotion?.preserveColor ? fishLighting.filter : fishRenderFilter;
-      if (genericTurnRigActive) {
-        drawFishTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
-        if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
-          fish.turnFinalFrameRenderedAt = now;
+      if (v26TurnRendererActive) {
+        const renderedByV26 = drawFishTurnV26VolumeMesh(
+          tankContext,
+          depthRenderImage,
+          image,
+          fishDrawX,
+          width,
+          spriteHeight,
+          fish,
+          now,
+          {
+            species,
+            baseAssetPath: imagePath,
+            includeFinOverlay: layerMotion?.v26FinBasePass === true,
+            alpha: v26VisualContinuity?.meshAlpha ?? 1,
+            // This callback runs while drawFishTurnV26VolumeMesh has applied
+            // the same fish-facing transform used for the visible canvas.
+            // The receiver mask therefore follows the actual WebGL silhouette
+            // and padded trajectory instead of the old flat source rectangle.
+            onRenderedVolumeCanvas: ({ canvas, drawX, drawY, drawWidth, drawHeight, alpha }) => {
+              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha);
+            }
+          }
+        );
+        if (!renderedByV26) {
+          // A v26 failure is sticky for this turn session. Do not retry WebGL
+          // on later frames or swap complex renderers mid-reversal. Degrade to
+          // the existing lightweight squash/flip visual while movement stays
+          // on the same authoritative turn timeline.
+          markFishTurnRendererFallback(fish, "simple");
+          drawFishLightweightTurnFallbackFrame(
+            tankContext,
+            depthRenderImage,
+            fishDrawX,
+            width,
+            spriteHeight,
+            fish,
+            now
+          );
+        } else {
+          // Keep the live swim warp visible under the mesh for a brief overlap
+          // at both endpoints. This preserves the current dive/climb and tail
+          // phase while v26 takes ownership, then reveals the destination pose
+          // before the terminal-frame handoff returns to the normal path.
+          if ((v26VisualContinuity?.spriteAlpha || 0) > 0.001) {
+            tankContext.save();
+            tankContext.globalAlpha *= v26VisualContinuity.spriteAlpha;
+            tankContext.scale(v26VisualContinuity.spriteDirection, 1);
+            const continuityWarped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
+              tankContext,
+              depthRenderImage,
+              fishDrawX,
+              -spriteHeight / 2,
+              width,
+              spriteHeight,
+              fish,
+              species,
+              now,
+              { imagePath, effectiveBehavior, suckerFreeSwimming }
+            );
+            if (!continuityWarped) {
+              tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+            }
+            markLightweightCausticImage(
+              tankContext,
+              depthRenderImage,
+              fishDrawX,
+              -spriteHeight / 2,
+              width,
+              spriteHeight,
+              v26VisualContinuity.spriteAlpha
+            );
+            tankContext.restore();
+          }
+          if (getFishHorizontalTurnState(fish, now).progress >= 1) {
+            markFishTurnFinalFrameRendered(fish, now);
+          }
         }
-        markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
         const warped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
           tankContext,
@@ -2927,7 +2013,7 @@ function drawFish(now, layer = null, options = {}) {
         markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !genericTurnRigActive && layerMotion?.preserveColor !== true) {
+      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true) {
         drawFishTopLightOverlay(
           tankContext,
           sprite.sourceImage,
@@ -2995,7 +2081,12 @@ function drawFish(now, layer = null, options = {}) {
           });
         }
       }
-      drawFishSpriteLayer({ sourceImage: image, renderImage }, 1, 1);
+      drawFishSpriteLayer(
+        { sourceImage: image, renderImage },
+        1,
+        1,
+        { v26FinBasePass: true }
+      );
       if (!pose.isDead) {
         const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now);
         if (symptomOverlay) {
@@ -3040,7 +2131,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.restore();
     }
 
-    drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
+    queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
@@ -3746,7 +2837,9 @@ function getFishPose(fish, species, now) {
     const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
     const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
     const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-    const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
+    const useComplexTurn = turnProgress !== null
+      && getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
     const renderDirection = turnProgress === null
       ? getFishFacingDirection(fish)
       : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
@@ -3879,7 +2972,9 @@ function getFishPose(fish, species, now) {
   const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
   const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
   const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-  const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
+  const useComplexTurn = turnProgress !== null
+      && getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
     : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));

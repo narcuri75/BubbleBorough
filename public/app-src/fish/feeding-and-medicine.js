@@ -284,6 +284,10 @@ function assignPelletToFish(fish, pellet, now = Date.now()) {
   fish.targetAt = now + 4 * 60 * 1000;
   fish.targetXNorm = pellet.xNorm;
   fish.targetYNorm = pellet.yNorm;
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) !== "sucker") {
+    setFishDesiredTankDepth(fish, sanitizeTankDepthZ(pellet.z, getFishTankDepthZ(fish)));
+  }
   recordFishFeedingMemory(fish, pellet, now);
   if (["greedy", "routine-loving", "curious"].includes(getFishPersonality(fish))) {
     setFishBehaviorIntent(fish, pellet.dropStartXNorm != null ? "feeder memory" : "feeding memory", getFishPersonality(fish), now, {
@@ -1118,6 +1122,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   }
   if (createdPellets.length) {
     state.floatingPellets.push(...createdPellets);
+    if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("FOOD_ADDED", { count: createdPellets.length }, now);
     assignFloatingPelletsToHungryFish(now);
     stageHungryFishTravelToFoodTank(getCurrentTank(), now);
   }

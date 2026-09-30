@@ -10,7 +10,7 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 65;
+const STATE_VERSION = 66;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -218,7 +218,7 @@ const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
   { id: "swim", group: "Core renderer", label: "Normal Swim", description: "The standard live-tank swim pose, body flex, bob, and tail rhythm." },
   { id: "turn-around", group: "Core renderer", label: "Turn Around (Configured)", description: "The fish's configured turnaround animation, played at its real duration." },
   { id: "turn-simple", group: "Core renderer", label: "Turn Around (Simple)", description: "The lightweight squash-and-flip turnaround used by simple turn mode." },
-  { id: "turn-complex", group: "Core renderer", label: "Turn Around (Complex)", description: "The segmented authored turnaround rig used by complex turn mode." },
+  { id: "turn-complex", group: "Core renderer", label: "Turn Around (Complex)", description: "The v26 pseudo-3D flexible turnaround used by complex turn mode." },
   { id: "entry", group: "Core renderer", label: "New Fish Entry / Drop", description: "The nose-down settling animation used when a fish first enters the tank." },
   { id: "feeding-swim", group: "Core renderer", label: "Feeding Swim", description: "The higher-effort movement profile used while chasing food." },
   { id: "panic", group: "Core renderer", label: "Glass Tap Panic", description: "The fast startled movement profile triggered by glass tapping and nearby threats." },
@@ -399,6 +399,16 @@ const BEHAVIOR_SIGNAL_COOLDOWN_MS = 4 * MINUTE_MS;
 const BEHAVIOR_INTENT_LINGER_MS = 12 * 1000;
 const FOOD_REFUSAL_RETARGET_MS = 80 * 1000;
 const BEHAVIOR_RELATIONSHIP_CHECK_MS = 2 * MINUTE_MS;
+// Optional, data-driven behavior gates. New species can add a record here
+// without branching the scheduler or paying for irrelevant modules.
+const FISH_BEHAVIOR_CAPABILITY_OVERRIDES = Object.freeze({
+  betta: Object.freeze({ school: false, territorial: true, modules: ["territorial-display"] }),
+  piranha: Object.freeze({ school: true, territorial: true, modules: ["schooling", "predator"] }),
+  lionfish: Object.freeze({ school: false, explore: false, modules: ["predator", "ambush"] }),
+  loach: Object.freeze({ hide: true, rest: true, modules: ["night-activity", "substrate"] }),
+  otocinclus: Object.freeze({ school: false, feed: false, modules: ["grazing", "night-activity"] }),
+  "turbo-snail": Object.freeze({ school: false, explore: false, modules: ["grazing"] })
+});
 const FISH_FRIENDSHIP_THRESHOLD = 40;
 const FISH_FRIENDSHIP_PASSIVE_INTERVAL_MS = 2 * MINUTE_MS;
 const FISH_FRIENDSHIP_PROXIMITY_NORM = 0.16;
@@ -491,7 +501,9 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   speedMaxBlend: 0.8,
   dartChance: 0,
   dartSpeedMinBlend: 0.72,
-  targetDurationScale: 1
+  targetDurationScale: 1,
+  cruiseContinuation: true,
+  cruiseWaypointScale: 1
 });
 const createFishLocomotionProfile = (overrides = {}) => Object.freeze({
   ...FISH_LOCOMOTION_PROFILE_DEFAULT,
@@ -551,7 +563,8 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, structureAffinity: 0.82, caveAffinity: 0.3,
     startleStrength: 1.25, startleRecoveryScale: 1.08, turnDurationScale: 0.9,
-    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88
+    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88,
+    cruiseWaypointScale: 1.24
   }),
   "yellow-tang": createFishLocomotionProfile({
     movementPattern: "patrol-graze", preferredY: 0.54, verticalSpread: 0.72,
@@ -566,14 +579,15 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
     schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
     startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
-    speedMaxBlend: 1, targetDurationScale: 0.82
+    speedMaxBlend: 1, targetDurationScale: 0.82, cruiseWaypointScale: 1.2
   }),
   "swordtail": createFishLocomotionProfile({
     movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
     targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
     structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
-    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9
+    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9,
+    cruiseWaypointScale: 1.16
   }),
   "molly": createFishLocomotionProfile({
     movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
@@ -850,7 +864,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.34, hoverMinMs: 1500, hoverMaxMs: 4200, schoolStrength: 0.02,
     structureAffinity: 0.82, caveAffinity: 0.08, startleStrength: 0.48,
     startleRecoveryScale: 1.32, turnDurationScale: 1.6, speedMinBlend: 0.02,
-    speedMaxBlend: 0.28, targetDurationScale: 1.42
+    speedMaxBlend: 0.28, targetDurationScale: 1.42, cruiseWaypointScale: 0.64
   }),
   "seahorse": createFishLocomotionProfile({
     movementPattern: "vertical-hover", preferredY: 0.56, verticalSpread: 0.42,
@@ -858,7 +872,8 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.48, hoverMinMs: 1200, hoverMaxMs: 3600, schoolStrength: 0.04,
     structureAffinity: 1.74, caveAffinity: 0.78, homeRangeStrength: 0.58,
     homeRangeRadius: 0.14, startleStrength: 0.7, startleRecoveryScale: 1.2,
-    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36
+    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36,
+    cruiseContinuation: false
   }),
   "pilot-fish": createFishLocomotionProfile({
     movementPattern: "companion-cruise", preferredY: 0.44, verticalSpread: 0.66,
@@ -1685,6 +1700,21 @@ const WEBSURF_THEME_MODES = Object.freeze([
   WEBSURF_THEME_MODE_YES,
   WEBSURF_THEME_MODE_NO
 ]);
+const WEBSURF_CHROME_THEME_DEFAULT = "default";
+const WEBSURF_CHROME_THEME_CATALOG = Object.freeze([
+  { id: "default", name: "Default", description: "The familiar WebSurf chrome.", price: 0, tone: "default" },
+  { id: "minimal", name: "Minimal", description: "Pale gray tabs, soft graphite controls, and no loud accents.", price: 0, tone: "minimal" },
+  { id: "aquarium", name: "Aquarium", description: "Deep-teal chrome with mint glass borders and seafoam controls.", price: 0, tone: "aquarium" },
+  { id: "retro", name: "Retro Terminal", description: "Charcoal terminal chrome lit by amber phosphor rails and controls.", price: 120, tone: "retro" },
+  { id: "corporate", name: "Corporate Blue", description: "Office-navy chrome with crisp blue dividers and polished white tabs.", price: 180, tone: "corporate" },
+  { id: "matte-black", name: "Matte Black", description: "True matte-black chrome with restrained graphite buttons and edges.", price: 90, tone: "matte-black" },
+  { id: "black-light", name: "Black Light", description: "Near-black chrome edged in ultraviolet purple with cyan highlights.", price: 140, tone: "black-light" },
+  { id: "rainbow", name: "Rainbow", description: "A dark chrome frame crossed by a bright full-spectrum color band.", price: 260, tone: "rainbow" },
+  { id: "gold", name: "Gold", description: "Ink-black chrome with brushed-gold rails, borders, and controls.", price: 220, tone: "gold" },
+  { id: "atomic-purple", name: "Atomic Purple", description: "Deep violet chrome charged with bright atomic-purple glow lines.", price: 170, tone: "atomic-purple" },
+  { id: "red-velvet", name: "Red Velvet", description: "Theater-dark crimson chrome with warm velvet-red trim and controls.", price: 160, tone: "red-velvet" },
+  { id: "burnt-titanium", name: "Burnt Titanium", description: "Gunmetal chrome with heat-treated copper, bronze, and blue-steel rails.", price: 210, tone: "burnt-titanium" }
+]);
 const WEBSURF_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
@@ -1694,6 +1724,9 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
   webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
+  webSurfFullscreen: false,
+  webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT,
+  webSurfOwnedThemes: [WEBSURF_CHROME_THEME_DEFAULT],
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1715,7 +1748,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   decorShadowsEnabled: true,
   depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
   backgroundDepthHazeEnabled: true,
-  simpleTurnAnimationsOnly: true,
+  complexTurnAnimationsEnabled: true,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -2037,6 +2070,15 @@ const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
 const TANK_DEPTH_SUBLAYERS = 3;
 const TANK_DEPTH_POSITIONS = TANK_DEPTH_LAYERS * TANK_DEPTH_SUBLAYERS;
+// Perceived depth is authoritative for new simulation work. The legacy layer
+// constants remain while the existing movement and rendering migrate in stages.
+const TANK_DEPTH_REAR_USABLE_Z = 0.05;
+const TANK_DEPTH_FRONT_USABLE_Z = 0.95;
+const DEFAULT_DECOR_DEPTH_RADIUS = 0.04;
+const DEFAULT_FISH_DEPTH_RADIUS = 0.025;
+// Editor nudges are intentionally much finer than the legacy compatibility
+// positions. They operate on the continuous Z value, not on a layer index.
+const DECOR_DEPTH_EDITOR_STEP = 0.02;
 const TANK_SUBLAYER_FRONT = 1;
 const TANK_SUBLAYER_MIDDLE = 2;
 const TANK_SUBLAYER_BACK = 3;
@@ -2267,46 +2309,112 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
-// The segmented turnaround rig is authored on a 0..1.08 second timeline.
-// Keep the gameplay turn alive for that entire sequence instead of squeezing
-// it into the legacy 130-210ms sprite-flip window.
-const FISH_TURN_RIG_SEGMENTS = 12;
-const FISH_TURN_RIG_COLLAPSE_DURATION = 0.12;
-const FISH_TURN_RIG_COLLAPSE_STEP = 0.055;
-const FISH_TURN_RIG_REBUILD_DURATION = 0.15;
-const FISH_TURN_RIG_REBUILD_STEP = 0.05;
-const FISH_TURN_RIG_FRONT_SHRINK = 0.18;
-const FISH_TURN_RIG_TAIL_SWELL = 0.12;
-const FISH_TURN_RIG_FOLLOWER_LAG = 0.9;
-const FISH_TURN_RIG_TAIL_START_DELAY = 0;
-const FISH_TURN_RIG_REBUILD_OVERLAP = 0.35;
-const FISH_TURN_RIG_EXIT_PULL = 0.58;
-const FISH_TURN_RIG_RELEASE_CURVE = 0.5;
-const FISH_TURN_RIG_HEAD_STAGGER = 1;
-const FISH_TURN_RIG_REVERSE_EMERGENCE_PULL = false;
-const FISH_TURN_RIG_CENTER_SEAM_SCALE = 1;
-const FISH_TURN_RIG_SEAM_BRIDGE = 0;
-const FISH_TURN_RIG_CONTINUOUS_OVERLAP = 0.85;
-const FISH_TURN_RIG_EDGE_SOFTEN_SRC = 1.25;
-const FISH_TURN_RIG_EDGE_SOFTEN_DEST = 1.15;
-const FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1.08;
-const FISH_TURN_RIG_TIMELINE_RATE = 0.24;
-const FISH_TURN_RIG_PLAYBACK_SPEED = 2.5;
-const FISH_TURN_RIG_DURATION_MS = (
-  FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
-  / (FISH_TURN_RIG_TIMELINE_RATE * FISH_TURN_RIG_PLAYBACK_SPEED)
-) * 1000;
-const FISH_TURN_RIG_MIN_DURATION_MS = 1000;
-const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
-const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
-  piranha: 0.86,
-  sucker: 1.08,
-});
-const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
-const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
-const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
-const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
-const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+// Fish Turn Lab v26 is the production complex-turn backend. Its geometry and
+// active-session timing use the approved v26 defaults below.
+const FISH_TURN_V26_MESH_COLUMNS = 96;
+const FISH_TURN_V26_MESH_ROWS = 48;
+const FISH_TURN_V26_ALPHA_CUTOFF = 7;
+const FISH_TURN_V26_PROCESSING_MAX_DIM = 512;
+const FISH_TURN_V26_VOLUME_LAYERS = 5;
+const FISH_TURN_V26_THICKNESS = 43;
+const FISH_TURN_V26_FACE_HEAD_THICKNESS = 200;
+const FISH_TURN_V26_TURN_DEPTH_MODE = "both";
+const FISH_TURN_V26_DURATION_MS = 650;
+const FISH_TURN_V26_Z_AXIS_BODY_FLEX = 92;
+const FISH_TURN_V26_TAIL_FOLLOW_THROUGH = 48;
+const FISH_TURN_V26_SPINE_EPSILON = 0.010;
+// Optional same-canvas fin overlay defaults from Fish Turn Lab v26.
+// These values affect visual depth only and never gameplay anchors or depth.
+const FISH_TURN_V26_FIN_DISTANCE = 18;
+const FISH_TURN_V26_FIN_FRONT_ATTACHMENT_DISTANCE = 34;
+const FISH_TURN_V26_FIN_TAPER = 72;
+// Phase 6 installs the four approved Fish Turn Lab v26 motion profiles.
+// Phase 9 keeps the four approved profiles visual-only but chooses among them
+// centrally from existing movement context. Individual behaviors never hardcode
+// renderer style names, and explicit debug/per-fish overrides still win.
+const FISH_TURN_V26_DEFAULT_STYLE = "head-led";
+const FISH_TURN_V26_TRAJECTORY_UNIT_SCALE = 210;
+// Long/narrow source canvases can otherwise rotate through the -5.2 camera
+// plane at midpoint. Cap only the internal 3D model scale, then compensate
+// in projection so the endpoint sprite footprint remains unchanged.
+const FISH_TURN_V26_MAX_MODEL_SCALE = 2.2;
+const FISH_TURN_V26_RENDER_MAX_DIM = 1024;
+// Simultaneous v26 turns share the same geometry and asset caches. If a rare
+// burst exceeds the full-quality budget, reduce translucent interior volume
+// layers first. The outer skins, 96x48 mesh, edge closure, flex, and fin passes
+// remain unchanged.
+const FISH_TURN_V26_FULL_QUALITY_MAX_SIMULTANEOUS = 8;
+const FISH_TURN_V26_REDUCED_QUALITY_MAX_SIMULTANEOUS = 16;
+const FISH_TURN_V26_REDUCED_VOLUME_LAYERS = 3;
+const FISH_TURN_V26_STRESS_VOLUME_LAYERS = 2;
+const FISH_TURN_V26_RENDER_PADDING_X = 2.75;
+const FISH_TURN_V26_RENDER_PADDING_Y = 3.5;
+// The mesh owns the middle of a complex reversal, but the ordinary swim pose
+// owns its endpoints. These short overlap windows prevent a climb, dive, or
+// body wave from disappearing the instant the v26 canvas takes over.
+const FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS = 0.14;
+const FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS = 0.82;
+const FISH_TURN_V26_EDGE_CLOSURE = 100;
+const FISH_TURN_V26_EDGE_REACH = 26;
+const FISH_TURN_V26_EDGE_ROUNDNESS = 68;
+const FISH_TURN_V26_END_THINNING = 100;
+const FISH_TURN_V26_MID_BODY_FULLNESS = 100;
+const FISH_TURN_V26_CROSS_SECTION = 100;
+const FISH_TURN_V26_INTERIOR_ALPHA = 0.16;
+const FISH_TURN_V26_FOV_DEGREES = 42;
+const FISH_TURN_V26_CAMERA_Z = -5.2;
+const FISH_TURN_V26_NEAR = 0.1;
+const FISH_TURN_V26_FAR = 100;
+// Phase 15 productionizes the v26 complex-turn backend. The retired
+// segmented renderer no longer owns timing, geometry, caustic masks, or caches.
+// Renderer-neutral locomotion policy for an active horizontal turn. These
+// values govern authoritative travel only. They must not depend on whether
+// the visible turn is drawn by v26 or the lightweight emergency fallback.
+const FISH_TURN_LOCOMOTION_RELEASE_PROGRESS = 0.62;
+const FISH_TURN_TRAVERSAL_ARC_APEX_PROGRESS = 0.5;
+const FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE = 0.2;
+const FISH_TURN_TRAVERSAL_DRIFT_MAX_SCALE = 0.52;
+const FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE = 0.2;
+const FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO = 0.26;
+const FISH_TURNAROUND_COOLDOWN_MS = 850;
+const FISH_TURNAROUND_COOLDOWN_MAX_MS = 1700;
+const FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM = 0.045;
+const FISH_TURNAROUND_COOLDOWN_MIN_FORWARD_NORM = 0.032;
+const FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO = 0.42;
+const FISH_TRAVERSAL_TARGET_RESPONSE_PER_SEC = 3.4;
+const FISH_TRAVERSAL_TARGET_MAX_STEP_NORM = 0.032;
+const FISH_TRAVERSAL_TURN_COMMIT_MIN_MS = 360;
+const FISH_OBSTACLE_LOOKAHEAD_MIN_NORM = 0.045;
+const FISH_OBSTACLE_LOOKAHEAD_MAX_NORM = 0.11;
+const FISH_OBSTACLE_WAYPOINT_MS = 720;
+const FISH_BOUNDARY_ANTICIPATION_INSET_NORM = 0.05;
+const FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM = 0.07;
+const FISH_CRUISE_WAYPOINT_EXTENSION_NORM = 0.085;
+const FISH_CRUISE_WAYPOINT_REACH_NORM = 0.028;
+const FISH_CRUISE_WAYPOINT_MS = 1150;
+// Decor targets are points of interest, not instructions to climb vertically
+// through the water column. Route a fish through a short forward approach
+// first, then let ordinary steering complete the local arrival.
+const FISH_DECOR_APPROACH_MIN_DISTANCE_NORM = 0.065;
+const FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM = 0.085;
+const FISH_DECOR_APPROACH_MAX_HORIZONTAL_LEAD_NORM = 0.16;
+const FISH_DECOR_APPROACH_MAX_VERTICAL_RATIO = 0.48;
+const FISH_DECOR_APPROACH_WAYPOINT_REACH_NORM = 0.024;
+const FISH_DECOR_APPROACH_WAYPOINT_MS = 1100;
+const FISH_CRUISE_ENDPOINT_PATTERNS = new Set([
+  "attached-grazer",
+  "bottom-stop-go",
+  "bottom-graze",
+  "cave-hover-dart",
+  "deliberate-hover",
+  "group-hover",
+  "home-hover",
+  "perch-dart",
+  "precision-hover",
+  "substrate-crawl",
+  "surface-ambush",
+  "vertical-hover"
+]);
 
 // Living side-view fish are rendered as narrow vertical slices that bend along
 // a smooth depth-sweep centerline. World movement remains authoritative; these
@@ -2381,7 +2489,6 @@ const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
   swayResponsePerSecond: 13.0
 });
 
-const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
   "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.png",
@@ -2420,6 +2527,12 @@ const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 // Normal aquarium travel should leave room for fish to feel observably alive.
 // Emergency behavior stacks its own multiplier on top of this base pace.
 const FISH_MOTION_SCALE = 1.62;
+const FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC = 2.65;
+const FISH_PASSIVE_BRAKE_DISTANCE_NORM = 0.12;
+const FISH_PASSIVE_ARRIVAL_EPSILON_NORM = 0.0012;
+const FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM = 0.0025;
+const FISH_TRAVERSAL_MAX_VELOCITY_NORM = 0.42;
+const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
 // Phase 16: the fifteen depth positions form one contiguous travel track. Each
@@ -2568,6 +2681,9 @@ const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = 1200;
 const SCHOOL_FORMATION_COMMAND_INTERVAL_MS = 180;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
+const FISH_PASSIVE_TARGET_RESPONSE_PER_SEC = 4.2;
+const FISH_PASSIVE_TARGET_MAX_STEP_NORM = 0.026;
+const SCHOOL_FORMATION_MIN_SEPARATION_NORM = 0.052;
 const SCHOOL_MAX_FOLLOWERS = 5;
 const SCHOOL_FORMATION_MIN_MS = 20000;
 const SCHOOL_FORMATION_MAX_MS = 60000;
@@ -2578,6 +2694,11 @@ const SCHOOL_REJOIN_SETTLE_DISTANCE_NORM = 0.07;
 // brake while trying to occupy a mathematically exact point.
 const SOCIAL_FORMATION_POSITION_DEADZONE_NORM = 0.012;
 const SOCIAL_FORMATION_TURN_DEADZONE_NORM = 0.024;
+// After a school leader completes a visible reversal, keep the existing
+// formation side briefly before reforming behind the new heading. This is
+// renderer-neutral and begins only after the leader's turn lifecycle has
+// actually handed off to the destination-facing sprite.
+const SCHOOL_FORMATION_HEADING_SETTLE_MS = 420;
 // A social formation needs a short heading commitment after a real reversal.
 // Without it a follower can complete one turn and immediately accept the
 // opposite request from a moving leader or a freshly released detour.
@@ -12277,6 +12398,7 @@ const dom = {
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
+  debugFishBehaviorReadout: document.querySelector("#debugFishBehaviorReadout"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayBackground: document.querySelector("#loadingOverlayBackground"),
   loadingOverlayUnderwater: document.querySelector("#loadingOverlayUnderwater"),
@@ -12312,6 +12434,7 @@ const dom = {
   notificationBellBadge: document.querySelector("#notificationBellBadge"),
   placementHint: document.querySelector("#placementHint"),
   placementHintContainer: document.querySelector(".tank-overlay-hints"),
+  decorDepthIndicator: document.querySelector("#decorDepthIndicator"),
   careTaskPane: document.querySelector("#careTaskPane"),
   careTaskList: document.querySelector("#careTaskList"),
   editQuickRef: document.querySelector("#editQuickRef"),
@@ -12374,7 +12497,15 @@ const dom = {
   equipmentShop: document.querySelector("#equipmentShop"),
   storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
+  webSurfRouteErrorPage: document.querySelector("#webSurfRouteErrorPage"),
+  webSurfAddressInput: document.querySelector("#webSurfAddressInput"),
+  webSurfBackButton: document.querySelector("#webSurfBackButton"),
+  webSurfForwardButton: document.querySelector("#webSurfForwardButton"),
+  webSurfBookmarkButton: document.querySelector("#webSurfBookmarkButton"),
+  webSurfBookmarkBar: document.querySelector("#webSurfBookmarkBar"),
+  webSurfBrowserToolbar: document.querySelector(".websurf-browser-toolbar"),
   webHomePage: document.querySelector("#webHomePage"),
+  webSurfThemesPage: document.querySelector("#webSurfThemesPage"),
   bubbleBodegaHomePage: document.querySelector("#bubbleBodegaHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
   webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
@@ -12396,6 +12527,7 @@ const dom = {
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
   layoutRatioLockFrameToggleInput: document.querySelector("#layoutRatioLockFrameToggleInput"),
   webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
+  webSurfFullscreenToggle: document.querySelector("#webSurfFullscreenToggle"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -12445,7 +12577,7 @@ const dom = {
   depthEffectLevelInput: document.querySelector("#depthEffectLevelInput"),
   depthEffectLevelOutput: document.querySelector("#depthEffectLevelOutput"),
   backgroundDepthHazeToggleInput: document.querySelector("#backgroundDepthHazeToggleInput"),
-  simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
+  complexTurnAnimationsToggleInput: document.querySelector("#complexTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
@@ -12489,6 +12621,8 @@ const dom = {
   selectedDecorSizeValue: document.querySelector("#selectedDecorSizeValue"),
   selectedDecorLayerUpButton: document.querySelector("#selectedDecorLayerUpButton"),
   selectedDecorLayerDownButton: document.querySelector("#selectedDecorLayerDownButton"),
+  selectedDecorBringToFrontButton: document.querySelector("#selectedDecorBringToFrontButton"),
+  selectedDecorSendToBackButton: document.querySelector("#selectedDecorSendToBackButton"),
   selectedDecorLayerValue: document.querySelector("#selectedDecorLayerValue"),
   inspectorBuyAnotherFish: document.querySelector("#inspectorBuyAnotherFish"),
   inspectorSellFish: document.querySelector("#inspectorSellFish"),
@@ -12542,7 +12676,15 @@ const runtime = {
   activeTab: "overview",
   storeOverlayOpen: false,
   webHomeOpen: false,
+  webSurfThemesOpen: false,
   webSurfLastPage: "home",
+  // Canonical, internal-only WebSurf location. Phase 1 keeps the existing
+  // page sessions alive while the router becomes their single entry point.
+  webSurfRoute: "websurf.swim",
+  webSurfRouteError: null,
+  webSurfNavigation: { entries: [], index: -1 },
+  webSurfToolbarHidden: false,
+  webSurfToolbarHideTimer: 0,
   webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 },
   webSurfSelectedMailId: "",
   webSurfSettingsTabOpen: false,
@@ -12740,6 +12882,9 @@ const runtime = {
   fishRenderRecordPool: [],
   fishRenderLayerBuckets: null,
   fishRenderPassBuckets: null,
+  fishStatsOverlayQueue: new Map(),
+  decorRenderOrderCache: null,
+  decorDepthBucketCache: null,
   fishSwimAnimationStates: new Map(),
   fishVisualPoseSmoothingStates: new Map(),
   fishSwimSliceProfileCache: new Map(),
@@ -12945,6 +13090,7 @@ const runtime = {
   fishShadowPlaneCache: new Map(),
   fishLayerDepthScaleTransitions: new Map(),
   fishLayerTravelStepTransitions: new Map(),
+  caveRenderOcclusionByFishId: new Map(),
   fishCollisionAvoidanceById: new Map(),
   fishNavigationMemoryById: new Map(),
   fishRightOfWayByPair: new Map(),

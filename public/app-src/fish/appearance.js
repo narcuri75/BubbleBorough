@@ -89,12 +89,20 @@ function getFishLayerDepthScaleForPosition(layer, subLayer = DEFAULT_TANK_SUBLAY
   return majorScale + subLayerOffset;
 }
 
+function getFishDepthScaleForZ(z) {
+  const rearScale = getFishLayerDepthScaleForPosition(TANK_DEPTH_LAYERS, TANK_SUBLAYER_BACK);
+  const frontScale = getFishLayerDepthScaleForPosition(1, TANK_SUBLAYER_FRONT);
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const progress = (sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span;
+  return rearScale + (frontScale - rearScale) * progress;
+}
+
 function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
   if (!fish) {
     return 1;
   }
 
-  const targetScale = getFishLayerDepthScaleForPosition(getFishTankLayer(fish), getFishTankSubLayer(fish));
+  const targetScale = getFishDepthScaleForZ(getFishTankDepthZ(fish));
   const transition = fish.id ? runtime.fishLayerDepthScaleTransitions.get(fish.id) : null;
   if (!transition) {
     return targetScale;

@@ -60,14 +60,10 @@ function normalizeFishSpeed(species, explicitValue) {
 }
 
 function getConfiguredFishTurnAnimationMode(species) {
-  const explicitMode = String(species?.turnAnimation || "").trim().toLowerCase();
-  if (["simple", "complex"].includes(explicitMode)) {
-    return explicitMode;
-  }
-  const speciesType = typeof getFishSpeciesType === "function"
-    ? getFishSpeciesType(species)
-    : String(species?.type || "").trim().toLowerCase();
-  return ["shark", "whale"].includes(speciesType) ? "complex" : "simple";
+  // v26 is the universal production turnaround for every normal fish.
+  // Legacy species-level `turnAnimation` values are retained in asset data for
+  // compatibility only and no longer choose the production renderer.
+  return "complex";
 }
 
 function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
@@ -80,11 +76,7 @@ function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
   if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
     return "simple";
   }
-  const fishPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
-  if (["simple", "complex"].includes(fishPreference)) {
-    return fishPreference;
-  }
-  return getConfiguredFishTurnAnimationMode(species);
+  return "complex";
 }
 
 function getSimpleFishTurnDurationMs(fish, species) {
@@ -106,29 +98,20 @@ function getSimpleFishTurnDurationMs(fish, species) {
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
 }
 
-function getComplexFishTurnDurationMs(fish, species) {
-  const locomotionProfile = getFishLocomotionProfile(species || fish);
-  const speciesScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.65);
-  const effectiveBehavior = getEffectiveFishBehavior(fish || species) || "steady";
-  const behaviorScale = FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE[effectiveBehavior] || 1;
-  const typeScale = species?.type === "shark" || String(species?.type || "").toLowerCase() === "shark"
-    ? 0.86
-    : String(species?.type || "").toLowerCase() === "whale"
-      ? 1.16
-      : 1;
-  return clamp(
-    FISH_TURN_RIG_DURATION_MS * speciesScale * behaviorScale * typeScale,
-    FISH_TURN_RIG_MIN_DURATION_MS,
-    FISH_TURN_RIG_MAX_DURATION_MS
-  );
+function getComplexFishTurnDurationMs(fish, species, rendererBackend = null) {
+  const normalizedBackend = normalizeFishTurnRendererBackend(rendererBackend, "v26");
+  if (normalizedBackend === "simple") {
+    return getSimpleFishTurnDurationMs(fish, species);
+  }
+  return FISH_TURN_V26_DURATION_MS;
 }
 
-function getFishTurnDurationMs(fish, species, animationMode = null) {
+function getFishTurnDurationMs(fish, species, animationMode = null, rendererBackend = null) {
   const mode = ["simple", "complex"].includes(String(animationMode || "").trim().toLowerCase())
     ? String(animationMode).trim().toLowerCase()
     : getFishTurnAnimationMode(fish, species);
   return mode === "complex"
-    ? getComplexFishTurnDurationMs(fish, species)
+    ? getComplexFishTurnDurationMs(fish, species, rendererBackend)
     : getSimpleFishTurnDurationMs(fish, species);
 }
 

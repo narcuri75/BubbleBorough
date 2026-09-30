@@ -1122,6 +1122,28 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   return chooseNextAction();
 }
 
+function getCaveDepthRegions(plan) {
+  const frontLayer = clampTankLayer(plan?.frontLayer ?? DEFAULT_TANK_LAYER);
+  const backLayer = clampTankLayer(plan?.backLayer ?? frontLayer);
+  const front = getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
+  const interior = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
+  const rear = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
+  return { front, interior, rear };
+}
+
+function getFishCaveDepthRegion(fish, region = "interior") {
+  const key = region === "front" || region === "rear" ? region : "interior";
+  const field = key === "front" ? "caveFrontZ" : (key === "rear" ? "caveRearZ" : "caveInteriorZ");
+  const fallbackLayer = key === "front" ? fish?.caveFrontLayer : fish?.caveBackLayer;
+  const fallbackSubLayer = key === "front"
+    ? TANK_SUBLAYER_FRONT
+    : (key === "rear" ? TANK_SUBLAYER_BACK : TANK_SUBLAYER_MIDDLE);
+  return sanitizeTankDepthZ(
+    fish?.[field],
+    getTankDepthZFromLegacyPosition(fallbackLayer ?? DEFAULT_TANK_LAYER, fallbackSubLayer)
+  );
+}
+
 function beginFishCaveBehavior(fish, plan, now = Date.now()) {
   if (!fish || !plan) {
     return false;
@@ -1135,6 +1157,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     ? getDebugCaveSeatSequence(decorItem, fish, species, now, plan.inside || plan.mouth || plan.approach)
     : [];
 
+  const depthRegions = getCaveDepthRegions(plan);
   runtime.activeFishCavePlans.set(fish.id, {
     decorId: plan.decorId,
     portalId: plan.portalId,
@@ -1147,6 +1170,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),
     backLayer: clampTankLayer(plan.backLayer),
+    depthRegions,
     approach: { ...plan.approach },
     mouth: { ...plan.mouth },
     inside: { ...plan.inside },
@@ -1188,6 +1212,9 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
   fish.caveSeatId = null;
   fish.caveFrontLayer = clampTankLayer(plan.frontLayer);
   fish.caveBackLayer = clampTankLayer(plan.backLayer);
+  fish.caveFrontZ = depthRegions.front;
+  fish.caveInteriorZ = depthRegions.interior;
+  fish.caveRearZ = depthRegions.rear;
   fish.caveApproachXNorm = plan.approach.xNorm;
   fish.caveApproachYNorm = plan.approach.yNorm;
   fish.caveEntryXNorm = plan.mouth.xNorm;
@@ -2351,6 +2378,51 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null, options
   };
 }
 
+function getPlacedDecorDepthBuckets() {
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const cached = runtime.decorDepthBucketCache;
+  if (cached?.source === placedDecor && cached.length === placedDecor.length) {
+    return cached.buckets;
+  }
+
+  const bucketCount = 10;
+  const buckets = Array.from({ length: bucketCount }, () => []);
+  for (const item of placedDecor) {
+    if (!item) continue;
+    const volume = getTankDepthVolume(getPlacedDecorDepthZ(item), getPlacedDecorDepthRadius(item));
+    const firstBucket = getTankDepthBucket(volume.min, bucketCount);
+    const lastBucket = getTankDepthBucket(volume.max, bucketCount);
+    for (let bucket = firstBucket; bucket <= lastBucket; bucket += 1) {
+      buckets[bucket].push(item);
+    }
+  }
+  runtime.decorDepthBucketCache = { source: placedDecor, length: placedDecor.length, buckets };
+  return buckets;
+}
+
+function getNearbyPlacedDecorByDepth(z, radius) {
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("depthBucketQueries");
+  }
+  const buckets = getPlacedDecorDepthBuckets();
+  const volume = getTankDepthVolume(z, radius);
+  const firstBucket = getTankDepthBucket(volume.min, buckets.length);
+  const lastBucket = getTankDepthBucket(volume.max, buckets.length);
+  const candidates = [];
+  const seen = new Set();
+  for (let bucket = firstBucket; bucket <= lastBucket; bucket += 1) {
+    for (const item of buckets[bucket]) {
+      if (seen.has(item)) continue;
+      seen.add(item);
+      candidates.push(item);
+    }
+  }
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("depthBucketCandidates", candidates.length);
+  }
+  return candidates;
+}
+
 function getOverlappingDecorForFish(fish, species, now, poseOverride = null, options = null) {
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride, {
     depthLayer: options?.depthLayer,
@@ -2365,13 +2437,27 @@ function getOverlappingDecorForFish(fish, species, now, poseOverride = null, opt
   const targetSubLayer = Number.isFinite(Number(options?.depthSubLayer))
     ? clampTankSubLayer(options.depthSubLayer)
     : getFishTankSubLayer(fish);
+  const fishDepthZ = Number.isFinite(Number(options?.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(
+      Number.isFinite(Number(options?.depthLayer)) ? options.depthLayer : getFishTankLayer(fish),
+      targetSubLayer
+    );
   const overlaps = [];
-  for (const item of state.placedDecor) {
+  for (const item of getNearbyPlacedDecorByDepth(fishDepthZ, getFishTankDepthRadius(fish))) {
     const itemLayer = getDecorTankLayer(item);
     if (itemLayer < minLayer || itemLayer > maxLayer) {
       continue;
     }
     if (!doesDecorBlockTankSubLayer(item, targetSubLayer)) {
+      continue;
+    }
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getPlacedDecorDepthZ(item),
+      getPlacedDecorDepthRadius(item)
+    )) {
       continue;
     }
 
@@ -2417,6 +2503,12 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
   if (!fishDescriptor) {
     return [];
   }
+  const fishDepthZ = Number.isFinite(Number(options?.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(
+      Number.isFinite(Number(options?.depthLayer)) ? options.depthLayer : getFishTankLayer(fish),
+      targetSubLayer
+    );
 
   const minLayer = Number.isFinite(options?.minLayer) ? clampTankLayer(options.minLayer) : 1;
   const maxLayer = Number.isFinite(options?.maxLayer) ? clampTankLayer(options.maxLayer) : TANK_DEPTH_LAYERS;
@@ -2431,7 +2523,12 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
     if (otherLayer < minLayer || otherLayer > maxLayer) {
       continue;
     }
-    if (getFishTankSubLayer(otherFish) !== targetSubLayer) {
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getFishTankDepthZ(otherFish),
+      getFishTankDepthRadius(otherFish)
+    )) {
       continue;
     }
 
@@ -3032,15 +3129,7 @@ function tryFishNavigationAdjacentMajorLayerEscape(fish, species, now = Date.now
   for (const targetLayer of candidateLayers) {
     const firstStep = getAdjacentTankDepthPosition(layer, subLayer, targetLayer, subLayer);
     if (!canFishChangeToDepthPosition(fish, species, now, firstStep)) continue;
-    setFishTankDepthPosition(fish, layer, subLayer, targetLayer, subLayer);
-    if (fish.id) {
-      runtime.fishLayerTravelStepTransitions.set(fish.id, {
-        targetDepthIndex: getTankDepthPositionIndex(targetLayer, subLayer),
-        targetLayer,
-        targetSubLayer: subLayer,
-        nextStepAt: now
-      });
-    }
+    setFishDesiredTankDepth(fish, getTankDepthZFromLegacyPosition(targetLayer, subLayer));
     return true;
   }
   return false;
@@ -3107,12 +3196,20 @@ function findFishBodyCollisionAtPose(fish, species, now, xNorm, yNorm, options =
   if (!fishDescriptor) {
     return null;
   }
+  const fishDepthZ = Number.isFinite(Number(options.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(layer, subLayer);
 
   for (const otherFish of state.fish) {
     if (!otherFish || otherFish.id === fish.id || !shouldFishParticipateInLivingCollision(otherFish)) {
       continue;
     }
-    if (getFishTankLayer(otherFish) !== layer || getFishTankSubLayer(otherFish) !== subLayer) {
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getFishTankDepthZ(otherFish),
+      getFishTankDepthRadius(otherFish)
+    )) {
       continue;
     }
 
@@ -3385,14 +3482,7 @@ function tryFishNavigationDepthEscape(fish, species, now = Date.now(), options =
   if (!target) return false;
   if (!noteFishNavigationDepthEscapeTarget(fish, target.index, now, { reason: options.reason || "obstacle" })) return false;
 
-  if (fish.id) {
-    runtime.fishLayerTravelStepTransitions.set(fish.id, {
-      targetDepthIndex: target.index,
-      targetLayer: target.layer,
-      targetSubLayer: target.subLayer,
-      nextStepAt: now
-    });
-  }
+  setFishDesiredTankDepth(fish, getTankDepthZFromLegacyPosition(target.layer, target.subLayer));
   return true;
 }
 
@@ -3401,8 +3491,6 @@ function tryFishSubLayerPass(fish, species, now = Date.now(), options = {}) {
   const layer = getFishTankLayer(fish);
   const currentSubLayer = getFishTankSubLayer(fish);
   const currentDepthIndex = getFishTankDepthIndex(fish);
-  const originalDesiredLayer = getDesiredFishTankLayer(fish);
-  const originalDesiredSubLayer = getDesiredFishTankSubLayer(fish);
   const currentPose = getFishPose(fish, species, now);
   const targetXNorm = Number.isFinite(Number(options.xNorm)) ? Number(options.xNorm) : fish.xNorm;
   const targetYNorm = Number.isFinite(Number(options.yNorm)) ? Number(options.yNorm) : fish.yNorm;
@@ -3445,13 +3533,8 @@ function tryFishSubLayerPass(fish, species, now = Date.now(), options = {}) {
 
     // Preserve the fish's eventual depth destination. The lane change is a
     // temporary local pass, not a replacement for the route it was following.
-    setFishTankDepthPosition(
-      fish,
-      layer,
-      candidate,
-      originalDesiredLayer,
-      originalDesiredSubLayer
-    );
+    fish.depthRouteTargetZ = getTankDepthZFromLegacyPosition(layer, candidate);
+    fish.depthRouteUntil = now + FISH_NAV_SUBLAYER_COMMIT_MS;
     noteFishNavigationSubLayerCommit(fish, currentDepthIndex, candidateDepthIndex, now);
     noteFishNavigationDepthEscapeTarget(fish, candidateDepthIndex, now, {
       reason: options.reason || "sublayer-pass",
@@ -3818,6 +3901,72 @@ function getFishDepthPositionBlockingFish(fish, species, now, targetPosition, po
   )?.fish || null;
 }
 
+function canFishOccupyContinuousDepth(fish, species, now, pose, z) {
+  const collisionOptions = {
+    depthZ: z,
+    minLayer: 1,
+    maxLayer: TANK_DEPTH_LAYERS,
+    depthSubLayer: getFishTankSubLayer(fish)
+  };
+  return getOverlappingDecorForFish(fish, species, now, pose, collisionOptions).length === 0
+    && getOverlappingFishForLayerChange(fish, species, now, pose, collisionOptions).length === 0;
+}
+
+function findFishContinuousDepthEscape(fish, species, now, pose, currentZ, preferredDirection) {
+  const directions = preferredDirection >= 0 ? [1, -1] : [-1, 1];
+  for (const distance of [0.08, 0.14, 0.2]) {
+    for (const direction of directions) {
+      const candidate = sanitizeTankDepthZ(currentZ + direction * distance);
+      if (Math.abs(candidate - currentZ) < 0.001) continue;
+      if (canFishOccupyContinuousDepth(fish, species, now, pose, candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+function syncFishContinuousDepth(fish, species, now) {
+  const currentZ = sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish)));
+  const routeTargetZ = Number(fish.depthRouteTargetZ);
+  const usingDepthRoute = Number.isFinite(routeTargetZ) && Number(fish.depthRouteUntil) > now;
+  if (!usingDepthRoute) {
+    fish.depthRouteTargetZ = null;
+    fish.depthRouteUntil = 0;
+  }
+  const desiredZ = usingDepthRoute ? sanitizeTankDepthZ(routeTargetZ) : getDesiredFishTankDepthZ(fish);
+  const difference = desiredZ - currentZ;
+  if (Math.abs(difference) < 0.001) {
+    fish.z = desiredZ;
+    if (usingDepthRoute) {
+      fish.depthRouteTargetZ = null;
+      fish.depthRouteUntil = 0;
+    }
+    return;
+  }
+
+  const previousAt = Number(fish.depthMotionUpdatedAt) || now;
+  const elapsedSeconds = clamp((now - previousAt) / 1000, 0, 0.12);
+  fish.depthMotionUpdatedAt = now;
+  const candidateZ = currentZ + Math.sign(difference) * Math.min(Math.abs(difference), Math.max(0.002, elapsedSeconds * 0.18));
+  const pose = getFishPose(fish, species, now);
+  if (!canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ)) {
+    fish.depthMotionBlockedAt = now;
+    if (!usingDepthRoute) {
+      const escapeZ = findFishContinuousDepthEscape(fish, species, now, pose, currentZ, Math.sign(difference));
+      if (escapeZ !== null) {
+        fish.depthRouteTargetZ = escapeZ;
+        fish.depthRouteUntil = now + 1800;
+      }
+    }
+    return;
+  }
+
+  fish.z = candidateZ;
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(candidateZ);
+  fish.tankLayer = compatibilityPosition.layer;
+  fish.tankSubLayer = compatibilityPosition.subLayer;
+  fish.drawLayer = tankLayerToLegacy(compatibilityPosition.layer);
+}
+
 function syncFishDrawLayer(fish, species, now) {
   // Dead Fish Phase 23: corpse depth is owned by corpse motion. Never let a
   // direct/late living depth-sync call advance the 15-position travel system.
@@ -3841,9 +3990,29 @@ function syncFishDrawLayer(fish, species, now) {
       ? clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER)
       : getFishActiveCaveInsideLayer(fish, DEFAULT_TANK_LAYER);
     setFishTankLayers(fish, lockedLayer, lockedLayer);
+    const caveRegion = ["approach", "align", "leave"].includes(fish.caveState)
+      ? "front"
+      : "interior";
+    const targetZ = getFishCaveDepthRegion(fish, caveRegion);
+    const currentZ = sanitizeTankDepthZ(
+      fish.z,
+      getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish))
+    );
+    const elapsedSeconds = clamp((now - (Number(fish.caveDepthUpdatedAt) || now)) / 1000, 0, 0.12);
+    fish.caveDepthUpdatedAt = now;
+    const maxStep = Math.max(0.002, elapsedSeconds * 0.2);
+    fish.z = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    fish.desiredZ = targetZ;
     if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;
   }
+
+  // Ordinary fish now travel through normalized depth continuously. Legacy
+  // layer fields mirror the nearest compatibility position for older systems
+  // that have not yet migrated, but do not drive this motion.
+  if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
+  syncFishContinuousDepth(fish, species, now);
+  return;
 
   const currentLayer = getFishTankLayer(fish);
   const currentSubLayer = getFishTankSubLayer(fish);
@@ -3985,6 +4154,7 @@ function syncFishDrawLayer(fish, species, now) {
       targetSubLayer: desiredSubLayer,
       fromDepthIndex: currentDepthIndex,
       toDepthIndex: nextPosition.index,
+      startedAt: now,
       nextStepAt: now + FISH_DEPTH_TRAVEL_STEP_INTERVAL_MS
     });
   }

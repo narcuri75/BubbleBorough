@@ -1574,34 +1574,69 @@ function getDecorSameLayerRenderPriority(item) {
   return canConfigureDecorBubbler(item) ? 1 : 0;
 }
 
+function getDecorRenderDepthZ(item) {
+  return sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+}
+
 function comparePlacedDecorDrawOrder(left, right) {
+  const depthDelta = getDecorRenderDepthZ(left) - getDecorRenderDepthZ(right);
+  if (depthDelta) {
+    return depthDelta;
+  }
+
   const priorityDelta = getDecorSameLayerRenderPriority(left) - getDecorSameLayerRenderPriority(right);
   if (priorityDelta) {
     return priorityDelta;
   }
 
-  return left.yNorm - right.yNorm;
+  const yDelta = left.yNorm - right.yNorm;
+  if (yDelta) {
+    return yDelta;
+  }
+
+  const leftId = String(left?.id || "");
+  const rightId = String(right?.id || "");
+  return leftId === rightId ? 0 : (leftId < rightId ? -1 : 1);
 }
 
 function comparePlacedDecorHitOrder(left, right) {
-  const layerDelta = getDecorTankLayer(left) - getDecorTankLayer(right);
-  if (layerDelta) {
-    return layerDelta;
+  return comparePlacedDecorDrawOrder(right, left);
+}
+
+function getPlacedDecorRenderOrder() {
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const key = placedDecor.map((item) => [
+    item?.id || "",
+    item?.decorKey || "",
+    getDecorRenderDepthZ(item).toFixed(6),
+    Number(item?.yNorm || 0).toFixed(4),
+    getDecorSameLayerRenderPriority(item)
+  ].join(":"))
+    .join("|");
+  const cached = runtime.decorRenderOrderCache;
+  if (cached?.source === placedDecor && cached.key === key) {
+    return cached.items;
   }
 
-  const priorityDelta = getDecorSameLayerRenderPriority(right) - getDecorSameLayerRenderPriority(left);
-  if (priorityDelta) {
-    return priorityDelta;
-  }
+  const items = [...placedDecor].sort(comparePlacedDecorDrawOrder);
+  runtime.decorRenderOrderCache = { source: placedDecor, key, items };
+  return items;
+}
 
-  return right.yNorm - left.yNorm;
+function getDecorDepthScaleForZ(z) {
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const progress = clamp((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span, 0, 1);
+  return 0.94 + progress * 0.06;
 }
 
 function drawDecor(layer = null, now = Date.now(), options = {}) {
   const pass = options.pass === "cave-front"
     ? "cave-front"
     : (options.pass === "cave-back" ? "cave-back" : "base");
-  const sorted = [...state.placedDecor]
+  const sorted = getPlacedDecorRenderOrder()
     .filter((item) => {
       if (layer === null) {
         return true;
@@ -1666,7 +1701,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
       continue;
     }
 
-    const width = getDecorDisplayWidth(decor, item);
+    const width = getDecorDisplayWidth(decor, item) * getDecorDepthScaleForZ(getDecorRenderDepthZ(item));
     const height = width * (image.height / image.width);
     const x = item.xNorm * TANK_WIDTH;
     const y = item.yNorm * TANK_HEIGHT;
@@ -1823,11 +1858,16 @@ function drawDecorPreview() {
     return;
   }
 
-  const width = getDecorDisplayWidth(decor, Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key));
+  const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
+  const previewZ = sanitizeTankDepthZ(
+    runtime.placementMode.z,
+    getTankDepthZFromLegacyPosition(previewLayer, DEFAULT_TANK_SUBLAYER)
+  );
+  const width = getDecorDisplayWidth(decor, Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key))
+    * getDecorDepthScaleForZ(previewZ);
   const height = width * (image.height / image.width);
   const x = runtime.placementPreview.xNorm * TANK_WIDTH;
   const y = runtime.placementPreview.yNorm * TANK_HEIGHT;
-  const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
 
   const previewItem = {
     id: "placement-preview",
@@ -1836,6 +1876,7 @@ function drawDecorPreview() {
     yNorm: runtime.placementPreview.yNorm,
     scale: Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key),
     tankLayer: previewLayer,
+    z: previewZ,
     flipped: Boolean(runtime.placementMode.flipped),
     flippedY: Boolean(runtime.placementMode.flippedY)
   };

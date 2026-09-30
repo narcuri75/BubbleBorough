@@ -325,6 +325,7 @@ function updateDebugFrameProfilerOverlay(force = false) {
     `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
     `swim ${counterAverage("fishSwimSliceDraws").toFixed(0)} slices | ${counterAverage("fishSwimWarpPasses").toFixed(1)} passes/frame | highlight ${counterAverage("fishSwimHighlightSliceDraws").toFixed(0)}`,
     `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
+    `depth buckets ${counterAverage("depthBucketQueries").toFixed(1)} queries | ${counterAverage("depthBucketCandidates").toFixed(1)} candidates/frame`,
     `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
     `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
     `last save ${runtime.frameProfilerLastSaveMs.toFixed(2)} | last full UI ${runtime.frameProfilerLastUiRenderMs.toFixed(2)}`,
@@ -872,6 +873,9 @@ function clearRevivedFishCorpseState(fish, now = Date.now()) {
   fish.turnSpinDirection = livingDirection < 0 ? 1 : -1;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.swimTilt = 0;
   fish.motionLevel = 0.18;
   fish.wiggleClock = 0;
@@ -951,6 +955,9 @@ function reviveFishForDebug(fish, now = Date.now()) {
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.sharkLastAttackAt = 0;
 
   clearPiranhaAttackState(fish);
@@ -2660,9 +2667,17 @@ function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehavio
     || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
 }
 
+function getDebugFishBehaviorPreviewTurnDurationMs(fish, species) {
+  const animationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
+    ? "simple"
+    : "complex";
+  const rendererBackend = resolveFishTurnRendererBackend(fish, species, animationMode);
+  return getFishTurnDurationMs(fish, species, animationMode, rendererBackend);
+}
+
 function getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species) {
   if (behaviorId === "turn-around") {
-    return Math.max(900, Number(fish?.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species)) + 720;
+    return Math.max(900, getDebugFishBehaviorPreviewTurnDurationMs(fish, species)) + 720;
   }
   if (behaviorId === "death-animation") {
     return 5600;
@@ -2738,7 +2753,7 @@ function createDebugFishBehaviorPreviewFish(speciesId) {
   fish.turnDurationMs = 0;
   fish.turnFromDirection = 1;
   fish.turnToDirection = -1;
-  fish.debugPreviewTurnDurationMs = getFishTurnDurationMs(fish, species);
+  fish.debugPreviewTurnDurationMs = null;
   fish.direction = 1;
   fish.deadAt = null;
   fish.healthUnits = getSpeciesMaxHealthUnits(species);
@@ -3110,12 +3125,17 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   if (behaviorId === "turn-around") {
     fish.turnAnimationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
       ? "simple"
-      : getConfiguredFishTurnAnimationMode(species);
-    const durationMs = Math.max(120, Number(fish.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species, fish.turnAnimationMode));
+      : "complex";
+    const durationMs = Math.max(120, getDebugFishBehaviorPreviewTurnDurationMs(fish, species));
     phase = clamp(cycleElapsed / durationMs, 0, 1);
     turnActive = cycleElapsed <= durationMs;
     fish.turnDurationMs = durationMs;
     fish.turnStartedAt = renderNow - phase * durationMs;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    if (!isFishTurnRendererSessionCurrent(fish)) {
+      beginFishTurnRendererSession(fish, species, fish.turnStartedAt, fish.turnAnimationMode);
+    }
     fish.turnFromDirection = 1;
     fish.turnToDirection = -1;
     fish.turnSpinDirection = -1;
@@ -3146,16 +3166,20 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   const previewTurnMode = behaviorId === "turn-around"
     ? getFishTurnAnimationMode(fish, species)
     : "simple";
-  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const previewTurnBackend = behaviorId === "turn-around" && turnActive
+    ? getFishTurnRendererBackend(fish, species)
+    : "simple";
+  const previewUsesLightweightTurn = previewTurnMode === "simple" || previewTurnBackend === "simple";
+  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? Math.sin(phase * Math.PI)
     : 0;
   const simpleTurnDirection = phase < 0.5 ? 1 : -1;
   const simpleTurnScaleX = 1 - simpleTurnAmount * (1 - FISH_TURN_MIN_SCALE_X);
   const simpleTurnScaleY = 1 + simpleTurnAmount * (FISH_TURN_MAX_SCALE_Y - 1);
-  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? -simpleTurnAmount * 0.14
     : 0;
-  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? -simpleTurnAmount * 0.8
     : 0;
 
@@ -3163,13 +3187,27 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2 + (Number(pose.swayY) || 0));
   context.rotate(pose.tilt + simpleTurnLean);
   context.scale(behaviorId === "turn-around"
-    ? (previewTurnMode === "simple" ? simpleTurnDirection : 1)
+    ? (previewUsesLightweightTurn ? simpleTurnDirection : 1)
     : fish.direction, 1);
   context.scale(pose.bodyScaleX * simpleTurnScaleX, pose.bodyScaleY * simpleTurnScaleY);
   context.globalAlpha = pose.alpha;
   context.filter = fishFilter;
-  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
-    drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex" && previewTurnBackend === "v26") {
+    const renderedByV26 = drawFishTurnV26VolumeMesh(
+      context,
+      renderImage,
+      sourceImage,
+      drawX,
+      drawWidth,
+      drawHeight,
+      fish,
+      renderNow,
+      { species, baseAssetPath: imagePath, includeFinOverlay: true }
+    );
+    if (!renderedByV26) {
+      markFishTurnRendererFallback(fish, "simple");
+      drawFishLightweightTurnFallbackFrame(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+    }
   } else {
     const warped = typeof drawFishSwimDepthWarpImage === "function"
       && drawFishSwimDepthWarpImage(

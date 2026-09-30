@@ -614,6 +614,7 @@ function clearFishCaveBehavior(fish) {
   }
 
   runtime.activeFishCavePlans.delete(fish.id);
+  runtime.caveRenderOcclusionByFishId?.delete?.(fish.id);
   fish.caveState = null;
   fish.caveDecorId = null;
   fish.cavePortalId = null;
@@ -621,6 +622,9 @@ function clearFishCaveBehavior(fish) {
   fish.caveSeatId = null;
   fish.caveFrontLayer = null;
   fish.caveBackLayer = null;
+  fish.caveFrontZ = null;
+  fish.caveInteriorZ = null;
+  fish.caveRearZ = null;
   fish.caveReturnSubLayer = null;
   fish.caveApproachXNorm = null;
   fish.caveApproachYNorm = null;

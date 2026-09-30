@@ -340,6 +340,7 @@ function sanitizePellet(pellet) {
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
   const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating || pellet.foodKey === "fishFlakes");
+  const depthSeed = clamp(Number(pellet.sway) || 0.5, 0, 1);
   const yNorm = surfaceFloating
     ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
     : settled
@@ -355,6 +356,7 @@ function sanitizePellet(pellet) {
     surfaceFloating,
     settledAt: settled && Number.isFinite(Number(pellet.settledAt)) ? Number(pellet.settledAt) : null,
     sway: clamp(Number(pellet.sway) || Math.random(), 0, 1),
+    z: sanitizeTankDepthZ(pellet.z, 0.5 + (depthSeed - 0.5) * 0.12),
     targetFishId: typeof pellet.targetFishId === "string" ? pellet.targetFishId : "",
     diseaseRefusalFishId: typeof pellet.diseaseRefusalFishId === "string" ? pellet.diseaseRefusalFishId : "",
     refusalPrecheckedFishId: typeof pellet.refusalPrecheckedFishId === "string" ? pellet.refusalPrecheckedFishId : "",

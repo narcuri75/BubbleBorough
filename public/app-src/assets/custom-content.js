@@ -749,6 +749,13 @@ function bindEvents() {
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
   document.addEventListener("click", handleWebPageNavigation);
+  document.addEventListener("click", handleWebSurfBrowserToolbarEvent);
+  document.addEventListener("keydown", handleWebSurfBrowserToolbarKeyDown, true);
+  dom.storeOverlay?.addEventListener("pointermove", handleWebSurfFullscreenPointerMove);
+  dom.webSurfBrowserToolbar?.addEventListener("pointerenter", revealWebSurfToolbar);
+  dom.webSurfBrowserToolbar?.addEventListener("pointerleave", scheduleWebSurfToolbarHide);
+  dom.webSurfBrowserToolbar?.addEventListener("focusin", revealWebSurfToolbar);
+  dom.webSurfBrowserToolbar?.addEventListener("focusout", scheduleWebSurfToolbarHide);
   document.addEventListener("input", handleProteusDesignerInputEvent);
   document.addEventListener("change", handleProteusDesignerChangeEvent);
   dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
@@ -1688,6 +1695,9 @@ function bindEvents() {
   dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
     setWebSurfThemeMode(event.currentTarget?.value);
   });
+  dom.webSurfFullscreenToggle?.addEventListener("change", (event) => {
+    setWebSurfFullscreen(event.currentTarget?.checked === true);
+  });
   dom.toolbarTileColorInput?.addEventListener("input", (event) => {
     const color = normalizeToolbarTileColor(event.currentTarget?.value);
     document.documentElement.style.setProperty("--toolbar-tile-color", color);
@@ -1723,8 +1733,8 @@ function bindEvents() {
   dom.backgroundDepthHazeToggleInput?.addEventListener("change", (event) => {
     setBackgroundDepthHazeEnabled(event.currentTarget?.checked);
   });
-  dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
-    setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
+  dom.complexTurnAnimationsToggleInput?.addEventListener("change", (event) => {
+    setComplexTurnAnimationsEnabled(event.currentTarget?.checked);
   });
   dom.halloweenModeSelect?.addEventListener("change", (event) => {
     setHalloweenMode(event.currentTarget?.value);
@@ -3205,6 +3215,23 @@ function bindEvents() {
 
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
+  dom.tankStage.addEventListener("wheel", (event) => {
+    if (!runtime.editTankMode || !getActiveDecorShortcutTarget()) return;
+    if (event.target.closest("button, input, select, textarea, [data-scrollable]")) return;
+
+    event.preventDefault();
+    const now = Date.now();
+    const elapsed = now - (runtime.decorDepthWheelAt || 0);
+    runtime.decorDepthWheelAt = now;
+    const precision = event.shiftKey ? 0.35 : 1;
+    const acceleration = event.ctrlKey || event.metaKey ? 2.4 : (elapsed < 120 ? 1.65 : 1);
+    const direction = event.deltaY < 0 ? -1 : 1;
+    const result = stepActiveDecorDepth(direction, precision * acceleration);
+    if (result.changed) {
+      showToast("Decoration moved through depth.", { durationMs: 900, key: "decor-depth-wheel" });
+    }
+  }, { passive: false });
+
   dom.tankStage.addEventListener("mousedown", (event) => {
     if (shouldCaptureTankDesktopInput(event.target)) {
       event.preventDefault();
@@ -3494,7 +3521,11 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.cleaningMode && isTankOverlayTarget(event.target)) {
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (toolCursorActive && isTankOverlayTarget(event.target)) {
       runtime.pointerStagePx = null;
       runtime.lastScrubPoint = null;
       resetScrubWipeSoundState();
@@ -3587,7 +3618,7 @@ function bindEvents() {
       || runtime.scoopMode
       || Boolean(runtime.feedingModeFoodKey)
       || Boolean(runtime.medicineModeKey);
-    if (!toolCursorActive) runtime.pointerStagePx = null;
+    if (!runtime.pointerDown) runtime.pointerStagePx = null;
     runtime.lastScrubPoint = null;
     resetScrubWipeSoundState();
     renderToolCursor();
@@ -3711,6 +3742,20 @@ function bindEvents() {
       setSelectedDecor(placedId);
     }
     performDecorEditShortcutAction("layer-down");
+  });
+  dom.selectedDecorBringToFrontButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorBringToFrontButton?.dataset.depthDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
+    performDecorEditShortcutAction("bring-to-front");
+  });
+  dom.selectedDecorSendToBackButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorSendToBackButton?.dataset.depthDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
+    performDecorEditShortcutAction("send-to-back");
   });
   dom.selectedDecorBuyAnotherButton?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -3924,10 +3969,17 @@ function bindEvents() {
       || Boolean(runtime.feedingModeFoodKey)
       || Boolean(runtime.medicineModeKey);
     if (toolCursorActive) {
-      const stagePoint = getTankStageClientPointInLayoutSpace(event);
-      if (stagePoint) {
-        runtime.pointerStagePx = { x: stagePoint.x, y: stagePoint.y };
+      const target = event.target instanceof Element ? event.target : null;
+      const isTankSurface = Boolean(target && dom.tankStage?.contains(target) && !isTankOverlayTarget(target));
+      if (!isTankSurface) {
+        runtime.pointerStagePx = null;
         renderToolCursor();
+      } else {
+        const stagePoint = getTankStageClientPointInLayoutSpace(event);
+        if (stagePoint) {
+          runtime.pointerStagePx = { x: stagePoint.x, y: stagePoint.y };
+          renderToolCursor();
+        }
       }
     }
     if (!runtime.decorResizeState) {

@@ -234,6 +234,9 @@ function syncCurrentTankState(now, options = {}) {
   // Resolve expired pellets and feeding targets before advancing offscreen fish.
   if (!detailedSimulation) {
     changed = advanceCoarseFishActivities(now, targetTank) || changed;
+    for (const fish of targetTank.fish || []) {
+      changed = advanceFishBehaviorBrainOffline(fish, now) || changed;
+    }
   }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 

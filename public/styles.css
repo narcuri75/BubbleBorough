@@ -1751,7 +1751,7 @@ html[data-layout-ratio-lock="true"] body {
   line-height: 1;
   text-align: center;
   text-shadow: 0 2px 8px rgba(0, 0, 0, 0.42);
-  white-space: nowrap;
+  white-space: normal;
 }
 
 .decor-side-control-title {
@@ -1789,6 +1789,12 @@ html[data-layout-ratio-lock="true"] body {
     box-shadow var(--transition),
     opacity var(--transition),
     background var(--transition);
+}
+
+.decor-depth-jump-button {
+  height: 28px;
+  font-size: 0.6rem;
+  letter-spacing: 0;
 }
 
 .decor-side-control-button:hover,
@@ -2577,6 +2583,49 @@ html[data-layout-ratio-lock="true"] body {
   color: var(--ink);
   text-align: center;
   box-shadow: 0 14px 32px rgba(0, 0, 0, 0.22);
+}
+
+.decor-depth-indicator {
+  --depth-position: 50%;
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  z-index: 9;
+  display: grid;
+  grid-template-columns: auto minmax(110px, 180px) auto;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border: 1px solid rgba(156, 241, 255, 0.52);
+  border-radius: 8px;
+  color: rgba(235, 250, 255, 0.96);
+  background: rgba(3, 12, 20, 0.82);
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.3);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0;
+  pointer-events: none;
+  transform: translateX(-50%);
+}
+
+.decor-depth-indicator-track {
+  position: relative;
+  height: 4px;
+  border-radius: 4px;
+  background: rgba(156, 241, 255, 0.28);
+}
+
+.decor-depth-indicator-track i {
+  position: absolute;
+  top: 50%;
+  left: var(--depth-position);
+  width: 11px;
+  height: 11px;
+  border: 2px solid #dffbff;
+  border-radius: 50%;
+  background: #45d7f2;
+  box-shadow: 0 0 0 3px rgba(69, 215, 242, 0.18);
+  transform: translate(-50%, -50%);
 }
 
 .care-task-pane {
@@ -3810,7 +3859,9 @@ html[data-layout-ratio-lock="true"] body {
   min-height: 0;
   pointer-events: none;
   z-index: 8;
-  transform: translate(-50%, -50%);
+  /* Each tool supplies its own calibrated visual hotspot. The pointer and
+     the game action always share that same point. */
+  transform: translate(var(--tool-cursor-offset-x, -100%), var(--tool-cursor-offset-y, 0%));
   filter: drop-shadow(0 8px 10px rgba(0, 0, 0, 0.28));
   line-height: 1;
   display: block;
@@ -3928,6 +3979,11 @@ html[data-layout-ratio-lock="true"] body {
 .tankazon-store.is-web-home-open .tankazon-account-page,
 .tankazon-store.is-web-home-open .tankazon-body,
 .tankazon-store.is-web-home-open .store-scroll-controls { display: none !important; }
+.tankazon-store.is-websurf-themes-open .tankazon-header,
+.tankazon-store.is-websurf-themes-open .tankazon-promo-strip,
+.tankazon-store.is-websurf-themes-open .tankazon-account-page,
+.tankazon-store.is-websurf-themes-open .tankazon-body,
+.tankazon-store.is-websurf-themes-open .store-scroll-controls { display: none !important; }
 .web-home-page { grid-row: 2; min-width: 0; min-height: 0; overflow-y: auto; color: #173b59; background: radial-gradient(circle at 50% 0, rgba(94, 176, 230, .2), transparent 31%), linear-gradient(180deg, #f8fcff, #eaf4f9); font-family: system-ui, sans-serif; }
 .web-home-page[hidden] { display: none !important; }
 .websurf-home-header { display: flex; align-items: center; justify-content: center; gap: 18px; min-height: 154px; padding: 24px 40px 18px; text-align: left; }
@@ -18960,6 +19016,23 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .tankazon-item-details .shop-stat-value { color: #0f1111; }
 .tankazon-store .tankazon-item-details .shop-comfort-profile { color: #565959; }
 .tankazon-store .tankazon-item-details .comfort-chip { color: #254d57; background: #eaf3f5; border-color: #cadfe3; }
+.tankazon-item-fit { margin-top: 30px; padding: 20px 22px; border: 1px solid #0d74a7; border-radius: 8px; background: #f0f8fc; }
+.tankazon-item-fit[hidden] { display: none; }
+.tankazon-item-fit-header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
+.tankazon-item-fit-icon { display: grid; place-items: center; flex: 0 0 auto; width: 34px; height: 34px; border-radius: 50%; background: #147eb5; color: #fff; font: 700 24px/1 Arial, sans-serif; }
+.tankazon-item-fit-header h2 { margin: 0; color: #0f1111; font-size: 22px; line-height: 1.2; }
+.tankazon-item-fit-header p { margin: 3px 0 0; color: #44545a; font-size: 14px; }
+.tankazon-item-fit-columns { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.tankazon-item-fit-group + .tankazon-item-fit-group { padding-left: 20px; border-left: 1px solid #9ec7d8; }
+.tankazon-item-fit-group h3 { margin: 0 0 10px; color: #14714c; font-size: 16px; }
+.tankazon-item-fit-warnings h3 { color: #9b6500; }
+.tankazon-item-fit-list { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
+.tankazon-item-fit-entry { display: grid; grid-template-columns: 30px minmax(0, 1fr); align-items: center; gap: 9px; padding: 9px 11px; border: 1px solid #9ec7d8; border-radius: 8px; background: #fff; }
+.tankazon-item-fit-entry-icon { display: grid; place-items: center; width: 28px; height: 28px; border-radius: 50%; background: #38a86f; color: #fff; font: 700 18px/1 Arial, sans-serif; }
+.tankazon-item-fit-entry.is-warning .tankazon-item-fit-entry-icon { background: #e7a328; color: #18222a; }
+.tankazon-item-fit-entry strong, .tankazon-item-fit-entry span:not(.tankazon-item-fit-entry-icon) { display: block; overflow-wrap: anywhere; }
+.tankazon-item-fit-entry strong { color: #18222a; font-size: 14px; line-height: 1.2; }
+.tankazon-item-fit-entry span:not(.tankazon-item-fit-entry-icon) { margin-top: 2px; color: #485961; font-size: 13px; line-height: 1.35; }
 .tankazon-item-buybox { display: grid; gap: 12px; padding: 20px; border: 1px solid #d5d9d9; border-radius: 9px; }
 .tankazon-item-availability { color: #007600; font-size: 18px; margin: 4px 0 0; }
 .tankazon-item-delivery { margin: 0 0 4px; color: #565959; font-size: 13px; }
@@ -18987,6 +19060,9 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   .tankazon-item-gallery { grid-row: auto; }
   .tankazon-item-image { min-height: 180px; }
   .tankazon-store .tankazon-item-art { height: 220px; }
+  .tankazon-item-fit { padding: 16px; }
+  .tankazon-item-fit-columns { grid-template-columns: minmax(0, 1fr); gap: 16px; }
+  .tankazon-item-fit-group + .tankazon-item-fit-group { padding: 16px 0 0; border-top: 1px solid #9ec7d8; border-left: 0; }
 }
 .decor-history-controls {
   display: flex;
@@ -19794,7 +19870,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 #settingsOverlay .settings-graphics-card .settings-toggle-row,
 #settingsOverlay .settings-audio-card .settings-toggle-row {
-  min-height: 52px;
+  min-height: 104px;
 }
 
 #settingsOverlay .settings-graphics-card {
@@ -22675,6 +22751,154 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 
 
 /* WebSurf Phase 2: temporary Bubble Borough Settings tab */
+.tankazon-store .tankazon-panel {
+  grid-template-rows: auto auto minmax(0, 1fr);
+}
+
+.websurf-browser-toolbar {
+  display: grid;
+  grid-template-rows: 40px minmax(0, 1fr);
+  align-items: stretch;
+  gap: 4px;
+  height: 104px;
+  min-height: 104px;
+  min-width: 0;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--ws-border-soft, #b8c8d3);
+  background: var(--ws-browser-surface, #e8f0f4);
+}
+
+.websurf-navigation-row {
+  display: grid;
+  grid-template-columns: repeat(3, 32px) minmax(0, 1fr) repeat(2, 32px);
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* WebSurf fullscreen is an in-game layout mode only. It deliberately never
+   requests browser or operating-system fullscreen. */
+.tankazon-store.is-websurf-fullscreen {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100dvh;
+  z-index: 30;
+  padding: 0;
+  place-items: stretch;
+}
+
+.tankazon-store.is-websurf-fullscreen .tankazon-panel {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  max-height: none;
+  padding: 0;
+  gap: 0;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.tankazon-store.is-websurf-fullscreen .webpage-tab-strip { padding-inline: 14px; }
+.tankazon-store.is-websurf-fullscreen .websurf-browser-toolbar { padding-inline: 14px; }
+
+.tankazon-store.is-websurf-fullscreen .websurf-browser-toolbar {
+  max-height: 104px;
+  overflow: hidden;
+  transition: max-height 150ms ease, padding 150ms ease, opacity 120ms ease, border-color 120ms ease;
+}
+
+.tankazon-store.is-websurf-fullscreen.is-websurf-toolbar-hidden .websurf-browser-toolbar {
+  max-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-bottom-color: transparent;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.websurf-browser-toolbar button {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid #9cadba;
+  border-radius: 7px;
+  color: #18394f;
+  background: rgba(255, 255, 255, .7);
+  cursor: pointer;
+}
+
+.websurf-browser-toolbar button:hover:not(:disabled) { background: #fff; }
+.websurf-browser-toolbar button:disabled { opacity: .45; cursor: default; }
+.websurf-browser-toolbar button:focus-visible,
+.websurf-address-field input:focus-visible { outline: 2px solid #147593; outline-offset: 1px; }
+
+.websurf-address-field { display: flex; align-items: center; height: 32px; min-width: 0; }
+.websurf-address-field input {
+  box-sizing: border-box;
+  width: 100%;
+  height: 32px;
+  min-width: 0;
+  padding: 0 9px;
+  border: 1px solid #9cadba;
+  border-radius: 7px;
+  color: #18394f;
+  background: #fff;
+  font: 600 .78rem/1 system-ui, sans-serif;
+}
+
+.websurf-bookmark-bar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  overflow-x: auto;
+  padding: 4px 0 0;
+  border-top: 1px solid color-mix(in srgb, var(--ws-chrome-divider, var(--ws-border-soft, #b8c8d3)) 72%, transparent);
+  scrollbar-width: thin;
+}
+
+.websurf-bookmark-bar-item,
+.websurf-bookmark-bar-empty {
+  flex: 0 0 auto;
+  min-width: 0;
+  height: 29px;
+  padding: 0 10px;
+  overflow: hidden;
+  border: 1px solid var(--ws-browser-button-border, #9cadba);
+  border-radius: 7px;
+  color: var(--ws-browser-button-text, #18394f);
+  background: var(--ws-browser-button-bg, rgba(255,255,255,.7));
+  font: 700 .7rem/29px system-ui, sans-serif;
+  white-space: nowrap;
+}
+
+.websurf-browser-toolbar .websurf-bookmark-bar-item { display: inline-flex; align-items: center; width: max-content; padding-inline: 10px; cursor: pointer; }
+.websurf-bookmark-bar-item:hover { background: var(--ws-browser-button-hover, #fff); }
+.websurf-bookmark-bar-item img { width: 17px; height: 17px; margin-right: 7px; object-fit: contain; }
+.websurf-bookmark-bar-item span { line-height: 1; }
+.websurf-bookmark-bar-empty { border-style: dashed; color: var(--ws-chrome-muted, var(--ws-text-secondary, #587184)); background: transparent; }
+
+/* The aquarium dock is not browser chrome. In WebSurf fullscreen it leaves
+   the game viewport, while WebSurf's own top navigation remains available. */
+/* Both overlay and dock live in the tank stage, but the overlay is nested
+   inside its host panel. Use the stage state rather than a sibling selector
+   so this remains true regardless of the overlay's markup depth. */
+.tank-stage:has(#storeOverlay.is-websurf-fullscreen) .tank-bottom-dock {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(18px);
+  transition: opacity 140ms ease, transform 140ms ease;
+}
+
+@media (max-width: 560px) {
+  .websurf-browser-toolbar { min-height: 104px; padding: 8px; }
+  .websurf-navigation-row { grid-template-columns: repeat(3, 30px) minmax(0, 1fr) repeat(2, 30px); gap: 4px; }
+  .websurf-browser-toolbar button { width: 30px; height: 30px; }
+  .websurf-address-field input { height: 30px; font-size: .7rem; }
+}
+
 .webpage-tab-strip {
   grid-template-columns: minmax(0, 1fr) auto auto;
 }
@@ -22714,7 +22938,19 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 }
 
 .tankazon-store.is-web-settings-open .tankazon-panel {
-  grid-template-rows: auto minmax(0, 1fr) !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+}
+
+/* Browser controls are deliberately above every WebSurf page. Several older
+   site shells declared two-row grids before the address bar existed. */
+.tankazon-store.is-web-home-open .tankazon-panel,
+.tankazon-store.is-websurf-themes-open .tankazon-panel,
+.tankazon-store.is-bubble-bank-open .tankazon-panel,
+.tankazon-store.is-davy-jones-locker-open .tankazon-panel,
+.tankazon-store.proteus-biodyne-open .tankazon-panel,
+.tankazon-store.is-proteus-designer-open .tankazon-panel,
+.tankazon-store.tankazon-account-open .tankazon-panel {
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
 }
 
 .tankazon-store.is-web-settings-open .tankazon-header,
@@ -22991,6 +23227,29 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 #settingsOverlay.websurf-settings-page .settings-peaceful-mode-row {
   border-color: #d4e3ec;
   background: var(--ws-settings-row);
+}
+
+#settingsOverlay.websurf-settings-page .settings-game-settings-divider {
+  display: grid;
+  gap: 2px;
+  margin: 16px 0 6px;
+  padding-top: 14px;
+  border-top: 1px solid #cbdde8;
+}
+
+#settingsOverlay.websurf-settings-page .settings-game-settings-divider span {
+  color: #153d62;
+  font-size: 0.72rem;
+  font-weight: 850;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+#settingsOverlay.websurf-settings-page .settings-game-settings-divider p {
+  margin: 0;
+  color: #587184;
+  font-size: 0.7rem;
+  line-height: 1.25;
 }
 
 #settingsOverlay.websurf-settings-page .settings-toggle-copy {
@@ -23460,6 +23719,8 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
   --ws-accent: #2e7bd0;
   --ws-focus: #147593;
   --ws-input-bg: #f7fbfe;
+  --ws-input-text: #18394f;
+  --ws-chrome-text: #163750;
 }
 
 .tankazon-store[data-websurf-theme="dark"] {
@@ -23510,6 +23771,28 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
   color: var(--ws-tab-active-text);
   background: var(--ws-tab-active-bg);
 }
+.tankazon-store .webpage-tab.is-active[data-webpage-destination="home"] img,
+.tankazon-store .webpage-tab.is-active[data-webpage-destination="settings"] img {
+  /* Active tabs use a deliberately pale surface in every chrome theme. */
+  filter: none !important;
+}
+.tankazon-store .webpage-tab-close {
+  display: grid;
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+  margin-left: 3px;
+  place-items: center;
+  border-radius: 4px;
+  color: currentColor;
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1;
+  opacity: .78;
+  cursor: pointer;
+}
+.tankazon-store .webpage-tab-close:hover { background: color-mix(in srgb, currentColor 16%, transparent); opacity: 1; }
+.tankazon-store .webpage-tab-close:focus-visible { outline: 2px solid var(--ws-focus); outline-offset: 1px; opacity: 1; }
 .tankazon-store .webpage-tab:focus-visible,
 .tankazon-store .webpage-browser-settings:focus-visible,
 .tankazon-store .webpage-browser-close:focus-visible { outline-color: var(--ws-focus); }
@@ -23528,6 +23811,10 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .tankazon-store[data-websurf-theme="dark"] .webpage-tab[data-webpage-destination="settings"] img,
 .tankazon-store[data-websurf-theme="dark"] .webpage-browser-settings img {
   filter: brightness(0) invert(1) opacity(.9);
+}
+.tankazon-store[data-websurf-theme="dark"] .webpage-tab.is-active[data-webpage-destination="home"] img,
+.tankazon-store[data-websurf-theme="dark"] .webpage-tab.is-active[data-webpage-destination="settings"] img {
+  filter: none !important;
 }
 
 /* WebSurf Home + mail client dark theme. */
@@ -23752,6 +24039,148 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
   background: var(--ws-settings-row);
   box-shadow: inset 0 1px 0 rgba(255,255,255,.025);
 }
+
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-game-settings-divider {
+  border-color: #33414b;
+}
+
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-game-settings-divider span {
+  color: #d3e6f4;
+}
+
+.tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-game-settings-divider p {
+  color: #9ab2c4;
+}
+
+/* WebSurf theme catalog and chrome-only theme skins. Individual sites retain
+   their authored palettes; these variables are consumed by browser chrome. */
+.websurf-themes-main { display: grid; gap: 16px; }
+.websurf-themes-balance { display: flex; align-items: baseline; justify-content: space-between; padding: 12px 14px; border: 1px solid var(--ws-border, #c8d8e2); border-radius: 12px; background: var(--ws-panel-bg, #fff); color: var(--ws-text-secondary, #587184); }
+.websurf-themes-balance strong { color: var(--ws-text-strong, #153d62); font-size: 1.2rem; }
+.websurf-theme-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+.websurf-theme-card { display: grid; gap: 10px; padding: 11px; border: 1px solid var(--ws-border, #c8d8e2); border-radius: 12px; background: var(--ws-panel-bg, #fff); box-shadow: 0 4px 12px rgba(28, 67, 91, .08); }
+.websurf-theme-card.is-equipped { border-color: #3c94b4; box-shadow: 0 0 0 2px rgba(60, 148, 180, .16); }
+.websurf-theme-card-copy { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 8px; }
+.websurf-theme-card h2 { margin: 0; color: var(--ws-text-strong, #153d62); font-size: .9rem; }
+.websurf-theme-card p, .websurf-theme-card small { margin: 3px 0 0; color: var(--ws-text-secondary, #587184); font-size: .72rem; line-height: 1.3; }
+.websurf-theme-preview { position: relative; height: 64px; overflow: hidden; border-radius: 8px; border: 1px solid rgba(18, 53, 75, .2); background: linear-gradient(180deg, #dbe7ef 0 30%, #f7fbfd 30%); }
+.websurf-theme-preview span, .websurf-theme-preview i, .websurf-theme-preview b { position: absolute; display: block; border-radius: 99px; }
+.websurf-theme-preview span { left: 9px; top: 9px; width: 20px; height: 8px; background: rgba(21, 61, 98, .55); }
+.websurf-theme-preview i { left: 9px; right: 9px; bottom: 10px; height: 12px; background: rgba(30, 83, 115, .18); }
+.websurf-theme-preview b { right: 11px; top: 10px; width: 9px; height: 9px; background: #3c94b4; }
+.websurf-theme-preview-minimal { background: linear-gradient(180deg, #e5e7e8 0 30%, #fafafa 30%); filter: saturate(.45); }
+.websurf-theme-preview-aquarium { background: linear-gradient(180deg, #0d6270 0 30%, #d9fbf4 30%); }
+.websurf-theme-preview-aquarium i { background: rgba(21, 161, 151, .24); }.websurf-theme-preview-aquarium b { background: #7ee8d2; }
+.websurf-theme-preview-retro { background: linear-gradient(180deg, #2c251c 0 30%, #171913 30%); }.websurf-theme-preview-retro span, .websurf-theme-preview-retro i { background: rgba(245, 186, 84, .48); }.websurf-theme-preview-retro b { background: #ffd067; }
+.websurf-theme-preview-corporate { background: linear-gradient(180deg, #173d72 0 30%, #edf4ff 30%); }.websurf-theme-preview-corporate b { background: #55a6f5; }
+.websurf-theme-preview-matte-black { background: linear-gradient(180deg, #151719 0 30%, #262a2d 30%); }.websurf-theme-preview-matte-black span, .websurf-theme-preview-matte-black i { background: rgba(223, 231, 234, .28); }.websurf-theme-preview-matte-black b { background: #aab4ba; }
+.websurf-theme-preview-black-light { background: linear-gradient(180deg, #100c1b 0 30%, #171220 30%); }.websurf-theme-preview-black-light span, .websurf-theme-preview-black-light i { background: rgba(173, 93, 255, .44); }.websurf-theme-preview-black-light b { background: #69f5e7; box-shadow: 0 0 8px #69f5e7; }
+.websurf-theme-preview-rainbow { background: linear-gradient(100deg, #ff5e78 0 12%, #ffb657 12% 25%, #f7ed5d 25% 38%, #55d89b 38% 51%, #55b8ff 51% 64%, #9474ff 64% 77%, #e86cea 77% 100%) 0 0 / 100% 30% no-repeat, #191b27; }.websurf-theme-preview-rainbow span, .websurf-theme-preview-rainbow i { background: rgba(245, 248, 255, .23); }.websurf-theme-preview-rainbow b { background: #fff; box-shadow: 0 0 7px #fff; }
+.websurf-theme-preview-gold { background: linear-gradient(180deg, #352910 0 30%, #17140f 30%); }.websurf-theme-preview-gold span, .websurf-theme-preview-gold i { background: rgba(255, 207, 93, .34); }.websurf-theme-preview-gold b { background: #f5c54f; }
+.websurf-theme-preview-atomic-purple { background: linear-gradient(180deg, #291244 0 30%, #181023 30%); }.websurf-theme-preview-atomic-purple span, .websurf-theme-preview-atomic-purple i { background: rgba(215, 133, 255, .35); }.websurf-theme-preview-atomic-purple b { background: #d96cff; box-shadow: 0 0 8px #d96cff; }
+.websurf-theme-preview-red-velvet { background: linear-gradient(180deg, #4a0f1c 0 30%, #220d14 30%); }.websurf-theme-preview-red-velvet span, .websurf-theme-preview-red-velvet i { background: rgba(255, 177, 186, .3); }.websurf-theme-preview-red-velvet b { background: #e44c61; }
+.websurf-theme-preview-burnt-titanium { background: linear-gradient(180deg, #30241e 0 30%, #202327 30%); }.websurf-theme-preview-burnt-titanium span, .websurf-theme-preview-burnt-titanium i { background: rgba(219, 145, 94, .3); }.websurf-theme-preview-burnt-titanium b { background: #d47b4f; }
+
+.tankazon-store[data-websurf-chrome-theme="minimal"] { --ws-chrome-top: #e1e4e5; --ws-chrome-bottom: #eff1f2; --ws-chrome-border: #c8ced2; --ws-tab-bg-top: #f5f6f6; --ws-tab-bg-bottom: #e1e4e5; --ws-browser-button-bg: #fafafa; --ws-browser-button-border: #bfc5c8; --ws-browser-button-text: #3f4b52; --ws-chrome-surface: #eef0f1; --ws-chrome-divider: #c8ced2; }
+.tankazon-store[data-websurf-chrome-theme="aquarium"] { --ws-chrome-top: #0d6270; --ws-chrome-bottom: #084c5b; --ws-chrome-border: #36a99c; --ws-tab-bg-top: #147883; --ws-tab-bg-bottom: #0b5865; --ws-tab-border: #42b6a8; --ws-tab-text: #effffb; --ws-tab-hover: #198995; --ws-tab-active-bg: #d8fff6; --ws-tab-active-text: #075c62; --ws-browser-button-bg: #0a5663; --ws-browser-button-hover: #167582; --ws-browser-button-border: #36a99c; --ws-browser-button-text: #effffb; --ws-chrome-surface: #063f4a; --ws-chrome-divider: #247f7b; --ws-chrome-focus: #6ff5df; }
+.tankazon-store[data-websurf-chrome-theme="retro"] { --ws-chrome-top: #30291d; --ws-chrome-bottom: #201b13; --ws-chrome-border: #b88a40; --ws-tab-bg-top: #413623; --ws-tab-bg-bottom: #282216; --ws-tab-border: #8f7039; --ws-tab-text: #ffe2a5; --ws-tab-hover: #504328; --ws-tab-active-bg: #16150f; --ws-tab-active-text: #ffd36c; --ws-browser-button-bg: #2a2418; --ws-browser-button-hover: #3b311e; --ws-browser-button-border: #b88a40; --ws-browser-button-text: #ffe2a5; --ws-chrome-surface: #241f16; --ws-chrome-divider: #4c412b; --ws-chrome-focus: #ffd067; }
+.tankazon-store[data-websurf-chrome-theme="corporate"] { --ws-chrome-top: #173d72; --ws-chrome-bottom: #0e2c58; --ws-chrome-border: #4a8fd2; --ws-tab-bg-top: #21518e; --ws-tab-bg-bottom: #133a6f; --ws-tab-border: #5d9fdd; --ws-tab-text: #edf6ff; --ws-tab-hover: #2a619f; --ws-tab-active-bg: #edf5ff; --ws-tab-active-text: #143d73; --ws-browser-button-bg: #123565; --ws-browser-button-hover: #1c4b80; --ws-browser-button-border: #4a8fd2; --ws-browser-button-text: #edf6ff; --ws-chrome-surface: #0b2851; --ws-chrome-divider: #316ba8; --ws-chrome-focus: #71c2ff; }
+.tankazon-store[data-websurf-chrome-theme="matte-black"] { --ws-chrome-top: #151719; --ws-chrome-bottom: #0d0f10; --ws-chrome-border: #444b50; --ws-tab-bg-top: #24282b; --ws-tab-bg-bottom: #171a1c; --ws-tab-border: #50585d; --ws-tab-text: #edf1f2; --ws-tab-hover: #2e3438; --ws-tab-active-bg: #f0f3f4; --ws-tab-active-text: #202427; --ws-browser-button-bg: #252a2d; --ws-browser-button-hover: #343a3e; --ws-browser-button-border: #596168; --ws-browser-button-text: #eef2f3; --ws-input-bg: #f4f6f6; --ws-chrome-surface: #1b1f21; --ws-chrome-divider: #343b40; --ws-chrome-focus: #dce5e8; }
+.tankazon-store[data-websurf-chrome-theme="black-light"] { --ws-chrome-top: #110b1c; --ws-chrome-bottom: #08070d; --ws-chrome-border: #7138b4; --ws-tab-bg-top: #221438; --ws-tab-bg-bottom: #140c22; --ws-tab-border: #864bd0; --ws-tab-text: #f3eaff; --ws-tab-hover: #321d50; --ws-tab-active-bg: #f5efff; --ws-tab-active-text: #381168; --ws-browser-button-bg: #1e1232; --ws-browser-button-hover: #321d52; --ws-browser-button-border: #8d52de; --ws-browser-button-text: #f4ebff; --ws-input-bg: #f8f4ff; --ws-chrome-surface: #160d24; --ws-chrome-divider: #3b2857; --ws-chrome-focus: #69f5e7; }
+.tankazon-store[data-websurf-chrome-theme="rainbow"] { --ws-chrome-top: #222633; --ws-chrome-bottom: #11131b; --ws-chrome-border: #c387e8; --ws-tab-bg-top: #373d51; --ws-tab-bg-bottom: #202431; --ws-tab-border: #7585c8; --ws-tab-text: #f8f9ff; --ws-tab-hover: #48506b; --ws-tab-active-bg: #fff; --ws-tab-active-text: #252a3c; --ws-browser-button-bg: #2c3142; --ws-browser-button-hover: #454d68; --ws-browser-button-border: #9ba7e6; --ws-browser-button-text: #fff; --ws-input-bg: #fbfbff; --ws-chrome-surface: #1f2330; --ws-chrome-divider: #444d70; --ws-chrome-focus: #ff9acb; }
+.tankazon-store[data-websurf-chrome-theme="gold"] { --ws-chrome-top: #382a0e; --ws-chrome-bottom: #17120a; --ws-chrome-border: #bc8b29; --ws-tab-bg-top: #503b14; --ws-tab-bg-bottom: #2d220c; --ws-tab-border: #d1a23f; --ws-tab-text: #ffefc8; --ws-tab-hover: #654b18; --ws-tab-active-bg: #fff6df; --ws-tab-active-text: #543a08; --ws-browser-button-bg: #3b2c0f; --ws-browser-button-hover: #594117; --ws-browser-button-border: #c89733; --ws-browser-button-text: #ffefc4; --ws-input-bg: #fffaf0; --ws-chrome-surface: #21190d; --ws-chrome-divider: #503d1d; --ws-chrome-focus: #f7d66e; }
+.tankazon-store[data-websurf-chrome-theme="atomic-purple"] { --ws-chrome-top: #2c1149; --ws-chrome-bottom: #14081f; --ws-chrome-border: #a64fe2; --ws-tab-bg-top: #441c6a; --ws-tab-bg-bottom: #251039; --ws-tab-border: #bf6cf2; --ws-tab-text: #faedff; --ws-tab-hover: #592581; --ws-tab-active-bg: #fff1ff; --ws-tab-active-text: #4d126c; --ws-browser-button-bg: #32134f; --ws-browser-button-hover: #4d2074; --ws-browser-button-border: #bc64ec; --ws-browser-button-text: #faedff; --ws-input-bg: #fff7ff; --ws-chrome-surface: #21102f; --ws-chrome-divider: #4c2e65; --ws-chrome-focus: #e7a2ff; }
+.tankazon-store[data-websurf-chrome-theme="red-velvet"] { --ws-chrome-top: #4b0f1c; --ws-chrome-bottom: #21080e; --ws-chrome-border: #b43e52; --ws-tab-bg-top: #661526; --ws-tab-bg-bottom: #350a13; --ws-tab-border: #cf586a; --ws-tab-text: #ffedf0; --ws-tab-hover: #7a1c30; --ws-tab-active-bg: #fff0f1; --ws-tab-active-text: #741326; --ws-browser-button-bg: #57111f; --ws-browser-button-hover: #751a2d; --ws-browser-button-border: #ca4c61; --ws-browser-button-text: #ffeef1; --ws-input-bg: #fff8f8; --ws-chrome-surface: #290b13; --ws-chrome-divider: #54222d; --ws-chrome-focus: #ff9dab; }
+.tankazon-store[data-websurf-chrome-theme="burnt-titanium"] { --ws-chrome-top: #342720; --ws-chrome-bottom: #17191c; --ws-chrome-border: #a76546; --ws-tab-bg-top: #49342a; --ws-tab-bg-bottom: #29272a; --ws-tab-border: #bd7a56; --ws-tab-text: #f9eee8; --ws-tab-hover: #604235; --ws-tab-active-bg: #fff4ed; --ws-tab-active-text: #573023; --ws-browser-button-bg: #372e2b; --ws-browser-button-hover: #504038; --ws-browser-button-border: #b36f4e; --ws-browser-button-text: #f9eee9; --ws-input-bg: #fffaf7; --ws-chrome-surface: #222426; --ws-chrome-divider: #493f3b; --ws-chrome-focus: #f0ad83; }
+
+/* Every catalogue chrome skin uses a light address surface. Keep its text
+   deliberately dark, while the surrounding toolbar and bookmark row retain
+   the high-contrast light ink intended for their darker surfaces. */
+.tankazon-store[data-websurf-chrome-theme="minimal"],
+.tankazon-store[data-websurf-chrome-theme="aquarium"],
+.tankazon-store[data-websurf-chrome-theme="retro"],
+.tankazon-store[data-websurf-chrome-theme="corporate"],
+.tankazon-store[data-websurf-chrome-theme="matte-black"],
+.tankazon-store[data-websurf-chrome-theme="black-light"],
+.tankazon-store[data-websurf-chrome-theme="rainbow"],
+.tankazon-store[data-websurf-chrome-theme="gold"],
+.tankazon-store[data-websurf-chrome-theme="atomic-purple"],
+.tankazon-store[data-websurf-chrome-theme="red-velvet"],
+.tankazon-store[data-websurf-chrome-theme="burnt-titanium"] {
+  --ws-input-text: #1d2730;
+  --ws-chrome-text: #f5f9fb;
+  --ws-chrome-muted: #cdd6dc;
+}
+
+/* The toolbar uses the soft panel token, so give the legacy catalogue skins
+   their own surface instead of inheriting the default pale blue. */
+.tankazon-store[data-websurf-chrome-theme="minimal"] {
+  --ws-chrome-text: #2f3b42;
+  --ws-chrome-muted: #64737a;
+}
+.tankazon-store[data-websurf-chrome-theme="aquarium"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="retro"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="corporate"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="aquarium"] .websurf-browser-toolbar,
+.tankazon-store[data-websurf-chrome-theme="retro"] .websurf-browser-toolbar,
+.tankazon-store[data-websurf-chrome-theme="corporate"] .websurf-browser-toolbar { color: #eefbff; }
+.tankazon-store .websurf-browser-toolbar { border-bottom-color: var(--ws-chrome-divider, var(--ws-border-soft)); background: var(--ws-chrome-surface, var(--ws-panel-soft)); }
+.tankazon-store .websurf-browser-toolbar { color: var(--ws-chrome-text); }
+.tankazon-store .websurf-browser-toolbar button { border-color: var(--ws-browser-button-border); color: var(--ws-browser-button-text); background: var(--ws-browser-button-bg); }
+.tankazon-store .websurf-browser-toolbar button:hover:not(:disabled) { background: var(--ws-browser-button-hover); }
+.tankazon-store .websurf-address-field input { border-color: var(--ws-browser-button-border); color: var(--ws-input-text); background: var(--ws-input-bg); }
+.tankazon-store .websurf-browser-toolbar button:focus-visible,
+.tankazon-store .websurf-address-field input:focus-visible { outline-color: var(--ws-chrome-focus, var(--ws-focus)); }
+.tankazon-store[data-websurf-chrome-theme="retro"] .webpage-browser-settings img,
+.tankazon-store[data-websurf-chrome-theme="corporate"] .webpage-browser-settings img,
+.tankazon-store[data-websurf-chrome-theme="aquarium"] .webpage-browser-settings img { filter: brightness(0) invert(1); }
+
+/* The premium chrome themes need a visible signature in the frame itself.
+   These are deliberately limited to tabs and browser controls; site pages
+   continue to render with their own authored color systems. */
+.tankazon-store[data-websurf-chrome-theme="aquarium"] .webpage-tab-strip {
+  background: linear-gradient(180deg, #117d87, #063f4a);
+  box-shadow: inset 0 -2px 0 rgba(111, 245, 223, .46);
+}
+.tankazon-store[data-websurf-chrome-theme="retro"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="retro"] .websurf-browser-toolbar {
+  background: linear-gradient(180deg, #332a1b, #201b13);
+  box-shadow: inset 0 -2px 0 rgba(255, 208, 103, .52);
+}
+.tankazon-store[data-websurf-chrome-theme="corporate"] .webpage-tab-strip {
+  background: linear-gradient(180deg, #225292, #0b2851);
+  box-shadow: inset 0 -2px 0 rgba(113, 194, 255, .52);
+}
+.tankazon-store[data-websurf-chrome-theme="black-light"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="black-light"] .websurf-browser-toolbar {
+  background: linear-gradient(180deg, #1f1035, #0b0813);
+  box-shadow: inset 0 -2px 0 #69f5e7, inset 0 2px 0 rgba(186, 99, 255, .56);
+}
+.tankazon-store[data-websurf-chrome-theme="rainbow"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="rainbow"] .websurf-browser-toolbar {
+  background: linear-gradient(90deg, #ff5e78 0%, #ffb657 18%, #f7ed5d 34%, #55d89b 50%, #55b8ff 66%, #9474ff 82%, #e86cea 100%) top / 100% 5px no-repeat, linear-gradient(180deg, #2b3042, #171a25);
+  box-shadow: inset 0 -1px 0 rgba(255,255,255,.16);
+}
+.tankazon-store[data-websurf-chrome-theme="gold"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="gold"] .websurf-browser-toolbar {
+  background: linear-gradient(180deg, #4b3710, #1d160a);
+  box-shadow: inset 0 -2px 0 #e8bd50, inset 0 2px 0 rgba(255, 226, 143, .22);
+}
+.tankazon-store[data-websurf-chrome-theme="atomic-purple"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="atomic-purple"] .websurf-browser-toolbar {
+  background: radial-gradient(circle at 52% -90%, rgba(233, 145, 255, .65), transparent 58%), linear-gradient(180deg, #3e185f, #170824);
+  box-shadow: inset 0 -2px 0 #d96cff, 0 0 16px rgba(217, 108, 255, .16);
+}
+.tankazon-store[data-websurf-chrome-theme="red-velvet"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="red-velvet"] .websurf-browser-toolbar {
+  background: radial-gradient(circle at 50% -120%, rgba(186, 47, 70, .7), transparent 60%), linear-gradient(180deg, #5b1021, #25080f);
+  box-shadow: inset 0 -2px 0 #dd5367;
+}
+.tankazon-store[data-websurf-chrome-theme="burnt-titanium"] .webpage-tab-strip,
+.tankazon-store[data-websurf-chrome-theme="burnt-titanium"] .websurf-browser-toolbar {
+  background: linear-gradient(112deg, #4c3026 0%, #28313a 32%, #1a1d21 57%, #5a3528 100%);
+  box-shadow: inset 0 -2px 0 #d98256, inset 0 2px 0 rgba(122, 167, 189, .42);
+}
 .tankazon-store[data-websurf-theme="dark"] #settingsOverlay.websurf-settings-page .settings-debug-toggle {
   border-color: var(--ws-settings-border);
   background: #20282f;
@@ -23855,9 +24284,11 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
 .tankazon-store .tankazon-panel {
   width: min(1600px, calc(100vw - 18px));
   height: min(97dvh, 1040px);
-  grid-template-rows: 40px auto auto minmax(0, 1fr);
+  grid-template-rows: 40px auto auto auto minmax(0, 1fr);
 }
 .tankazon-store .webpage-tab-strip { height: 40px; min-height: 40px; max-height: 40px; padding-top: 3px; }
+.tankazon-store .webpage-tab-strip { grid-row: 1; }
+.tankazon-store .websurf-browser-toolbar { grid-row: 2; }
 .tankazon-store .webpage-tab { height: 34px; padding-inline: 12px; }
 .tankazon-store .webpage-tab.is-active { height: 36px; }
 .tankazon-store .webpage-browser-settings,
@@ -24044,6 +24475,22 @@ html[data-layout-ratio-lock="true"] .tankazon-store .tankazon-panel {
   border-radius: 12px;
 }
 
+/* Ratio Lock owns the outer composition box, but fullscreen must still occupy
+   that entire box instead of inheriting the compact modal inset. */
+html[data-layout-ratio-lock="true"] .store-overlay.tankazon-store.is-websurf-fullscreen {
+  inset: 0;
+  width: auto;
+  height: auto;
+  padding: 0;
+  place-items: stretch;
+}
+
+html[data-layout-ratio-lock="true"] .tankazon-store.is-websurf-fullscreen .tankazon-panel {
+  width: 100%;
+  height: 100%;
+  border-radius: 0;
+}
+
 /* Viewport-based clamp() values otherwise shrink once from the physical browser
    width and then a second time from the Ratio Lock transform. Keep the desktop
    typography inside the locked composition and let the app-shell transform do
@@ -24182,13 +24629,6 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .sett
   margin-top: 2px;
   font-size: 0.76rem;
   line-height: 1.18;
-}
-
-/* Simple turns are now an always-on implementation detail, not a user-facing
-   graphics preference. Keep the legacy control hidden in case older code still
-   resolves its DOM id. */
-#settingsOverlay.websurf-settings-page label[for="simpleTurnAnimationsToggleInput"] {
-  display: none !important;
 }
 
 /* Give Reset Password enough room to stay readable at the saved desktop ratio. */
@@ -25757,9 +26197,24 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
 .shop-water-filter-control { display: none !important; }
 
 /* Keep the store body, including short catalogues, stretched to the browser.
-   The active Bodega shell has exactly three visible rows: browser tabs,
-   Bodega header, then its catalogue/body. */
-.tankazon-store .tankazon-panel { grid-template-rows: 40px auto minmax(0, 1fr) !important; }
+   The browser shell is tabs, persistent navigation, then site content. */
+.tankazon-store .tankazon-panel { grid-template-rows: 40px auto auto auto minmax(0, 1fr) !important; }
+.tankazon-store .webpage-tab-strip { grid-row: 1 !important; grid-column: 1 / -1; }
+.tankazon-store .websurf-browser-toolbar { grid-row: 2 !important; grid-column: 1 / -1; }
+.tankazon-store.is-web-home-open .tankazon-panel,
+.tankazon-store.is-websurf-themes-open .tankazon-panel,
+.tankazon-store.is-bubble-bank-open .tankazon-panel,
+.tankazon-store.is-davy-jones-locker-open .tankazon-panel,
+.tankazon-store.proteus-biodyne-open .tankazon-panel,
+.tankazon-store.is-proteus-designer-open .tankazon-panel,
+.tankazon-store.is-web-settings-open .tankazon-panel,
+.tankazon-store.tankazon-account-open .tankazon-panel { grid-template-rows: 40px auto minmax(0, 1fr) !important; }
+.tankazon-store .web-home-page,
+.tankazon-store .bubble-bank-page,
+.tankazon-store .davy-jones-locker-page,
+.tankazon-store .proteus-biodyne-page,
+.tankazon-store .proteus-designer-route,
+.tankazon-store .tankazon-account-page { grid-row: 3 !important; grid-column: 1 / -1; }
 .tankazon-store .tankazon-body { min-height: 0 !important; height: 100% !important; }
 .tankazon-store:not(.tankazon-cart-open) .tankazon-body { grid-template-columns: minmax(0, 1fr) !important; }
 .tankazon-store:not(.tankazon-cart-open) .tankazon-cart { display: none !important; }
@@ -25875,8 +26330,8 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
 .tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-product-card .bubblebodega-home-reason { color: #a7c2d0; }
 .tankazon-store[data-websurf-theme="dark"] .bubblebodega-home-empty { color: var(--ws-text-secondary); background: var(--ws-panel-bg); }
 
-/* Cart is a compact icon control.  `store.png` occupies [200, 100, 100, 100]
-   in assets/icons/Icons.webp (see assets/icons/Icons.json). */
+/* The cart uses the generated `store.png` delivery image, rather than a
+   hand-cropped atlas coordinate that can become stale after an icon export. */
 .tankazon-cart-toggle {
   position: relative;
   display: inline-grid;
@@ -25897,7 +26352,7 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   display: block;
   width: 20px;
   height: 20px;
-  background: url("../assets/icons/Icons.webp") -40px -20px / 80px 100px no-repeat;
+  background: url("../assets/generated/sprites/icons/icons/store.png.thumb.webp?v=b46abd0da7b0") center / contain no-repeat;
 }
 .tankazon-cart-toggle #tankazonCartHeaderCount {
   position: absolute;
@@ -26483,6 +26938,13 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   border-color: #496373;
   background: #10232c;
 }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit { border-color: #247eaa; background: #102b38; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-header h2,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-entry strong { color: var(--bodega-dark-text); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-header p,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-entry span:not(.tankazon-item-fit-entry-icon) { color: var(--bodega-dark-muted); }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-group + .tankazon-item-fit-group { border-color: #3d6477; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-fit-entry { border-color: #3d6477; background: #173946; }
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-seller,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-brand,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-details .shop-stat-row {

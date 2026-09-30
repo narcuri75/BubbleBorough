@@ -277,7 +277,7 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
 }
 
 function findPlacedDecorAtPoint(x, y) {
-  const sorted = [...state.placedDecor].sort(comparePlacedDecorHitOrder);
+  const sorted = [...getPlacedDecorRenderOrder()].reverse();
   for (const item of sorted) {
     if (isCustomBubblerDecorKey(item.decorKey)) {
       const hitBounds = getCustomBubblerHitBounds(item);

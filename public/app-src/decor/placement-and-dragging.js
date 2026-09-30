@@ -162,6 +162,11 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     yNorm: placement.yNorm,
     scale: scaleBase,
     tankLayer: finalLayer,
+    z: sanitizeTankDepthZ(
+      runtime.placementMode?.z,
+      getTankDepthZFromLegacyPosition(finalLayer, DEFAULT_TANK_SUBLAYER)
+    ),
+    depthRadius: DEFAULT_DECOR_DEPTH_RADIUS,
     active: typeof getPlacedDecorWaterActiveState === "function"
       ? getPlacedDecorWaterActiveState({ decorKey }, getCurrentTank())
       : true,
@@ -182,6 +187,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   updatePlacedDecorResizeAnchor(placedItem);
 
   state.placedDecor.push(placedItem);
+  runtime.decorDepthBucketCache = null;
+  if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("DECOR_CHANGED", { decorId: placedItem.id }, Date.now());
   applyDecorGravelInsertion(placedItem);
   return { decor, placedItem };
 }
@@ -318,11 +325,11 @@ function stepDecorGroupLayer(item, step, save = false) {
   for (const groupItem of groupItems) {
     const currentLayer = getDecorFrontLayer(groupItem.decorKey, groupItem.tankLayer ?? DEFAULT_TANK_LAYER);
     const itemLayer = getDecorFrontLayer(groupItem.decorKey, currentLayer + step);
-    groupItem.tankLayer = currentLayer;
+    setPlacedDecorLegacyLayer(groupItem, currentLayer);
     if (itemLayer === currentLayer) {
       continue;
     }
-    groupItem.tankLayer = itemLayer;
+    setPlacedDecorLegacyLayer(groupItem, itemLayer);
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -461,10 +468,10 @@ function stepActiveDecorLayer(direction) {
       currentLayer = getDecorFrontLayer(item.decorKey, runtime.dragState.tankLayer ?? item.tankLayer ?? DEFAULT_TANK_LAYER);
       const itemLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
       runtime.dragState.tankLayer = currentLayer;
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (itemLayer !== currentLayer) {
         runtime.dragState.tankLayer = itemLayer;
-        item.tankLayer = itemLayer;
+        setPlacedDecorLegacyLayer(item, itemLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;
@@ -484,9 +491,9 @@ function stepActiveDecorLayer(direction) {
       decorKey = item.decorKey;
       currentLayer = getDecorFrontLayer(item.decorKey, item.tankLayer ?? DEFAULT_TANK_LAYER);
       const itemLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (itemLayer !== currentLayer) {
-        item.tankLayer = itemLayer;
+        setPlacedDecorLegacyLayer(item, itemLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;
@@ -514,6 +521,94 @@ function stepActiveDecorLayer(direction) {
   }
   renderUi(Date.now());
   return { changed: true, layer: nextLayer, atLimit: false };
+}
+
+function showDecorDepthIndicator(z) {
+  if (!dom.decorDepthIndicator) return;
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const percentage = clamp((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span, 0, 1) * 100;
+  dom.decorDepthIndicator.style.setProperty("--depth-position", `${percentage}%`);
+  dom.decorDepthIndicator.hidden = false;
+  clearTimeout(runtime.decorDepthIndicatorTimeout);
+  runtime.decorDepthIndicatorTimeout = setTimeout(() => {
+    if (dom.decorDepthIndicator) dom.decorDepthIndicator.hidden = true;
+  }, 1400);
+}
+
+function stepActiveDecorDepth(direction, multiplier = 1) {
+  const step = Math.sign(Number(direction) || 0);
+  const activeTarget = getActiveDecorShortcutTarget();
+  if (!step || !activeTarget) return { changed: false, atLimit: false };
+  const delta = step * DECOR_DEPTH_EDITOR_STEP * clamp(Number(multiplier) || 1, 0.2, 3);
+  const applyDepth = (item) => {
+    const previous = sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER));
+    const next = sanitizeTankDepthZ(previous + delta);
+    if (Math.abs(next - previous) < 0.0001) return false;
+    setPlacedDecorDepth(item, next);
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+    return true;
+  };
+
+  if (activeTarget.mode === "placement") {
+    const mode = runtime.placementMode;
+    const previous = sanitizeTankDepthZ(mode.z, getTankDepthZFromLegacyPosition(mode.tankLayer, DEFAULT_TANK_SUBLAYER));
+    const next = sanitizeTankDepthZ(previous + delta);
+    if (Math.abs(next - previous) < 0.0001) return { changed: false, atLimit: true };
+    mode.z = next;
+    mode.tankLayer = getLegacyTankDepthPositionFromZ(next).layer;
+    runtime.decorPlacementLayer = mode.tankLayer;
+    showDecorDepthIndicator(next);
+    return { changed: true, z: next };
+  }
+
+  const items = getDecorGroupTransformItems(activeTarget.item);
+  const targets = items.length > 1 ? items : [activeTarget.item];
+  const changed = targets.map(applyDepth).some(Boolean);
+  if (changed && activeTarget.mode !== "drag") saveState();
+  if (changed) {
+    const previewItem = targets.find((item) => item?.z !== undefined) || activeTarget.item;
+    showDecorDepthIndicator(getPlacedDecorDepthZ(previewItem));
+  }
+  renderUi(Date.now());
+  return { changed, atLimit: !changed };
+}
+
+function moveActiveDecorToDepth(targetZ) {
+  const activeTarget = getActiveDecorShortcutTarget();
+  if (!activeTarget) return { changed: false, atLimit: false };
+  const depth = sanitizeTankDepthZ(targetZ);
+
+  if (activeTarget.mode === "placement") {
+    const mode = runtime.placementMode;
+    if (Math.abs(sanitizeTankDepthZ(mode.z) - depth) < 0.0001) return { changed: false, atLimit: true };
+    mode.z = depth;
+    mode.tankLayer = getLegacyTankDepthPositionFromZ(depth).layer;
+    runtime.decorPlacementLayer = mode.tankLayer;
+    showDecorDepthIndicator(depth);
+    renderUi(Date.now());
+    return { changed: true, z: depth };
+  }
+
+  const items = getDecorGroupTransformItems(activeTarget.item);
+  const targets = items.length > 1 ? items : [activeTarget.item];
+  let changed = false;
+  for (const item of targets) {
+    const previous = sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER));
+    if (Math.abs(previous - depth) < 0.0001) continue;
+    setPlacedDecorDepth(item, depth);
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+    changed = true;
+  }
+  if (changed && activeTarget.mode !== "drag") saveState();
+  if (changed) showDecorDepthIndicator(depth);
+  renderUi(Date.now());
+  return { changed, atLimit: !changed, z: depth };
 }
 
 function stepActiveDecorScale(direction) {
@@ -662,12 +757,14 @@ function performDecorEditShortcutAction(action) {
   }
 
   if (action === "layer-up" || action === "layer-down") {
-    const result = stepActiveDecorLayer(action === "layer-up" ? 1 : -1);
+    // Screen-space up means farther back into the aquarium; screen-space down
+    // means toward the viewer. Z itself increases from rear to front.
+    const result = stepActiveDecorDepth(action === "layer-up" ? -1 : 1);
     if (result.changed) {
       showToast(
         isTutorialDecorDoneStep()
-          ? getTutorialDecorDoneToastText(`Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`)
-          : `Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`,
+          ? getTutorialDecorDoneToastText("Decoration moved through depth.")
+          : "Decoration moved through depth.",
         {
           durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
           key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
@@ -676,7 +773,18 @@ function performDecorEditShortcutAction(action) {
       return true;
     }
     if (result.atLimit) {
-      triggerLayerLimitPulse(result.layer);
+      triggerLayerLimitPulse(runtime.decorPlacementLayer);
+    }
+    return false;
+  }
+
+  if (action === "bring-to-front" || action === "send-to-back") {
+    const result = moveActiveDecorToDepth(
+      action === "bring-to-front" ? TANK_DEPTH_FRONT_USABLE_Z : TANK_DEPTH_REAR_USABLE_Z
+    );
+    if (result.changed) {
+      showToast(action === "bring-to-front" ? "Decoration moved to the front." : "Decoration moved to the back.");
+      return true;
     }
     return false;
   }
@@ -747,7 +855,7 @@ function getPlacementHintState() {
     return {
       owner: "hint:decor-drag",
       text: !isCaveDecorKey(runtime.dragState.decorKey)
-        ? "Press [z]/[x] or [up]/[down] to change layer."
+        ? "Press [z]/[x] or [up]/[down] to move through depth."
         : ""
     };
   }
@@ -1549,6 +1657,7 @@ function beginFishDrag(fish, point, pointerId) {
   }
 
   const now = Date.now();
+  cancelFishV26TurnForSpecialMovementOwner(fish, species, now, "drag");
   fish.activity = "roam";
   fish.feedingPelletId = null;
   clearFishCaveBehavior(fish);
@@ -1992,6 +2101,9 @@ function storeFish(fishId, options = {}) {
     fish.entrySplashTriggered = false;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
     fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
     fish.turnFromDirection = fish.displayDirection;
@@ -2339,6 +2451,9 @@ function restoreFishToTank(fishId) {
     fish.nextDetritusSnackAt = now + (returnSpecies?.cleanupMinMs || 12 * 60 * 1000);
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
     fish.turnFromAngle = fish.displayAngle;

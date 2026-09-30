@@ -113,7 +113,8 @@ test('old whole-fish living wobble is neutralized while turning and death remain
   assert.match(fishRenderer, /const turnSway = turnProgress === null \|\| useComplexTurn \|\| useDepthSwimWarp/);
   assert.match(fishRenderer, /const useOtocinclusDepthSwimWarp = shouldUseFishSwimDepthWarp/);
   assert.match(fishRenderer, /const subtleBob = useOtocinclusDepthSwimWarp\s*\? 0/);
-  assert.match(fishRenderer, /if \(genericTurnRigActive\)[\s\S]*drawFishTurnaroundRig/);
+  assert.match(fishRenderer, /if \(v26TurnRendererActive\)[\s\S]*drawFishTurnV26VolumeMesh[\s\S]*drawFishLightweightTurnFallbackFrame/);
+  assert.doesNotMatch(fishRenderer, /legacyTurnRigActive|drawFishTurnaroundRig/);
   assert.match(fishRenderer, /function shouldUseFishSwimDepthWarp\([\s\S]*if \(!fish \|\| !species \|\| isFishDead\(fish\)\) return false/);
   assert.match(fishRenderer, /\["snail", "shrimp", "crab"\]\.includes\(String\(effectiveBehavior/);
 });
@@ -159,7 +160,7 @@ test('Phase 16 performance pass cuts duplicate slice work without changing tuner
   assert.match(fishRenderer, /const collectDebugMetrics = Boolean\([\s\S]*isDebugModeEnabled\(\)/);
   assert.match(fishRenderer, /context\.filter = swimOptions\?\.fish \? "none" : "blur\(0\.22px\)"/);
   assert.match(fishRenderer, /\{ \.\.\.swimOptions, quality: "highlight" \}/);
-  assert.match(fishRenderer, /!pose\.isDead && !genericTurnRigActive && layerMotion\?\.preserveColor !== true/);
+  assert.match(fishRenderer, /!pose\.isDead && !complexTurnRendererActive && layerMotion\?\.preserveColor !== true/);
 
   const oldHealthyMediumDraws = 82 * 2;
   const newHealthyMediumDraws = 70 + 16;

@@ -13,7 +13,7 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 65;
+const STATE_VERSION = 66;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -221,7 +221,7 @@ const DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS = Object.freeze([
   { id: "swim", group: "Core renderer", label: "Normal Swim", description: "The standard live-tank swim pose, body flex, bob, and tail rhythm." },
   { id: "turn-around", group: "Core renderer", label: "Turn Around (Configured)", description: "The fish's configured turnaround animation, played at its real duration." },
   { id: "turn-simple", group: "Core renderer", label: "Turn Around (Simple)", description: "The lightweight squash-and-flip turnaround used by simple turn mode." },
-  { id: "turn-complex", group: "Core renderer", label: "Turn Around (Complex)", description: "The segmented authored turnaround rig used by complex turn mode." },
+  { id: "turn-complex", group: "Core renderer", label: "Turn Around (Complex)", description: "The v26 pseudo-3D flexible turnaround used by complex turn mode." },
   { id: "entry", group: "Core renderer", label: "New Fish Entry / Drop", description: "The nose-down settling animation used when a fish first enters the tank." },
   { id: "feeding-swim", group: "Core renderer", label: "Feeding Swim", description: "The higher-effort movement profile used while chasing food." },
   { id: "panic", group: "Core renderer", label: "Glass Tap Panic", description: "The fast startled movement profile triggered by glass tapping and nearby threats." },
@@ -402,6 +402,16 @@ const BEHAVIOR_SIGNAL_COOLDOWN_MS = 4 * MINUTE_MS;
 const BEHAVIOR_INTENT_LINGER_MS = 12 * 1000;
 const FOOD_REFUSAL_RETARGET_MS = 80 * 1000;
 const BEHAVIOR_RELATIONSHIP_CHECK_MS = 2 * MINUTE_MS;
+// Optional, data-driven behavior gates. New species can add a record here
+// without branching the scheduler or paying for irrelevant modules.
+const FISH_BEHAVIOR_CAPABILITY_OVERRIDES = Object.freeze({
+  betta: Object.freeze({ school: false, territorial: true, modules: ["territorial-display"] }),
+  piranha: Object.freeze({ school: true, territorial: true, modules: ["schooling", "predator"] }),
+  lionfish: Object.freeze({ school: false, explore: false, modules: ["predator", "ambush"] }),
+  loach: Object.freeze({ hide: true, rest: true, modules: ["night-activity", "substrate"] }),
+  otocinclus: Object.freeze({ school: false, feed: false, modules: ["grazing", "night-activity"] }),
+  "turbo-snail": Object.freeze({ school: false, explore: false, modules: ["grazing"] })
+});
 const FISH_FRIENDSHIP_THRESHOLD = 40;
 const FISH_FRIENDSHIP_PASSIVE_INTERVAL_MS = 2 * MINUTE_MS;
 const FISH_FRIENDSHIP_PROXIMITY_NORM = 0.16;
@@ -494,7 +504,9 @@ const FISH_LOCOMOTION_PROFILE_DEFAULT = Object.freeze({
   speedMaxBlend: 0.8,
   dartChance: 0,
   dartSpeedMinBlend: 0.72,
-  targetDurationScale: 1
+  targetDurationScale: 1,
+  cruiseContinuation: true,
+  cruiseWaypointScale: 1
 });
 const createFishLocomotionProfile = (overrides = {}) => Object.freeze({
   ...FISH_LOCOMOTION_PROFILE_DEFAULT,
@@ -554,7 +566,8 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, structureAffinity: 0.82, caveAffinity: 0.3,
     startleStrength: 1.25, startleRecoveryScale: 1.08, turnDurationScale: 0.9,
-    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88
+    speedMinBlend: 0.62, speedMaxBlend: 0.98, targetDurationScale: 0.88,
+    cruiseWaypointScale: 1.24
   }),
   "yellow-tang": createFishLocomotionProfile({
     movementPattern: "patrol-graze", preferredY: 0.54, verticalSpread: 0.72,
@@ -569,14 +582,15 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
     schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
     startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
-    speedMaxBlend: 1, targetDurationScale: 0.82
+    speedMaxBlend: 1, targetDurationScale: 0.82, cruiseWaypointScale: 1.2
   }),
   "swordtail": createFishLocomotionProfile({
     movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
     targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
     structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
-    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9
+    speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9,
+    cruiseWaypointScale: 1.16
   }),
   "molly": createFishLocomotionProfile({
     movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
@@ -853,7 +867,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.34, hoverMinMs: 1500, hoverMaxMs: 4200, schoolStrength: 0.02,
     structureAffinity: 0.82, caveAffinity: 0.08, startleStrength: 0.48,
     startleRecoveryScale: 1.32, turnDurationScale: 1.6, speedMinBlend: 0.02,
-    speedMaxBlend: 0.28, targetDurationScale: 1.42
+    speedMaxBlend: 0.28, targetDurationScale: 1.42, cruiseWaypointScale: 0.64
   }),
   "seahorse": createFishLocomotionProfile({
     movementPattern: "vertical-hover", preferredY: 0.56, verticalSpread: 0.42,
@@ -861,7 +875,8 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     hoverChance: 0.48, hoverMinMs: 1200, hoverMaxMs: 3600, schoolStrength: 0.04,
     structureAffinity: 1.74, caveAffinity: 0.78, homeRangeStrength: 0.58,
     homeRangeRadius: 0.14, startleStrength: 0.7, startleRecoveryScale: 1.2,
-    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36
+    turnDurationScale: 1.5, speedMinBlend: 0, speedMaxBlend: 0.28, targetDurationScale: 1.36,
+    cruiseContinuation: false
   }),
   "pilot-fish": createFishLocomotionProfile({
     movementPattern: "companion-cruise", preferredY: 0.44, verticalSpread: 0.66,
@@ -1688,6 +1703,21 @@ const WEBSURF_THEME_MODES = Object.freeze([
   WEBSURF_THEME_MODE_YES,
   WEBSURF_THEME_MODE_NO
 ]);
+const WEBSURF_CHROME_THEME_DEFAULT = "default";
+const WEBSURF_CHROME_THEME_CATALOG = Object.freeze([
+  { id: "default", name: "Default", description: "The familiar WebSurf chrome.", price: 0, tone: "default" },
+  { id: "minimal", name: "Minimal", description: "Pale gray tabs, soft graphite controls, and no loud accents.", price: 0, tone: "minimal" },
+  { id: "aquarium", name: "Aquarium", description: "Deep-teal chrome with mint glass borders and seafoam controls.", price: 0, tone: "aquarium" },
+  { id: "retro", name: "Retro Terminal", description: "Charcoal terminal chrome lit by amber phosphor rails and controls.", price: 120, tone: "retro" },
+  { id: "corporate", name: "Corporate Blue", description: "Office-navy chrome with crisp blue dividers and polished white tabs.", price: 180, tone: "corporate" },
+  { id: "matte-black", name: "Matte Black", description: "True matte-black chrome with restrained graphite buttons and edges.", price: 90, tone: "matte-black" },
+  { id: "black-light", name: "Black Light", description: "Near-black chrome edged in ultraviolet purple with cyan highlights.", price: 140, tone: "black-light" },
+  { id: "rainbow", name: "Rainbow", description: "A dark chrome frame crossed by a bright full-spectrum color band.", price: 260, tone: "rainbow" },
+  { id: "gold", name: "Gold", description: "Ink-black chrome with brushed-gold rails, borders, and controls.", price: 220, tone: "gold" },
+  { id: "atomic-purple", name: "Atomic Purple", description: "Deep violet chrome charged with bright atomic-purple glow lines.", price: 170, tone: "atomic-purple" },
+  { id: "red-velvet", name: "Red Velvet", description: "Theater-dark crimson chrome with warm velvet-red trim and controls.", price: 160, tone: "red-velvet" },
+  { id: "burnt-titanium", name: "Burnt Titanium", description: "Gunmetal chrome with heat-treated copper, bronze, and blue-steel rails.", price: 210, tone: "burnt-titanium" }
+]);
 const WEBSURF_COLOR_SCHEME_QUERY = "(prefers-color-scheme: dark)";
 const DEFAULT_CONTENT_SETTINGS = Object.freeze({
   violenceAndGoreEnabled: false,
@@ -1697,6 +1727,9 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
   webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
+  webSurfFullscreen: false,
+  webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT,
+  webSurfOwnedThemes: [WEBSURF_CHROME_THEME_DEFAULT],
   displayPosition: "top-left",
   toolbarCollapsed: false,
   displayCollapsed: false,
@@ -1718,7 +1751,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   decorShadowsEnabled: true,
   depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT,
   backgroundDepthHazeEnabled: true,
-  simpleTurnAnimationsOnly: true,
+  complexTurnAnimationsEnabled: true,
   halloweenMode: HALLOWEEN_MODE_AUTOMATIC,
   editOverlayMode: "fish"
 });
@@ -2040,6 +2073,15 @@ const AMBIENT_BUBBLE_DEPTH_LAYERS = 5;
 const TANK_DEPTH_LAYERS = 5;
 const TANK_DEPTH_SUBLAYERS = 3;
 const TANK_DEPTH_POSITIONS = TANK_DEPTH_LAYERS * TANK_DEPTH_SUBLAYERS;
+// Perceived depth is authoritative for new simulation work. The legacy layer
+// constants remain while the existing movement and rendering migrate in stages.
+const TANK_DEPTH_REAR_USABLE_Z = 0.05;
+const TANK_DEPTH_FRONT_USABLE_Z = 0.95;
+const DEFAULT_DECOR_DEPTH_RADIUS = 0.04;
+const DEFAULT_FISH_DEPTH_RADIUS = 0.025;
+// Editor nudges are intentionally much finer than the legacy compatibility
+// positions. They operate on the continuous Z value, not on a layer index.
+const DECOR_DEPTH_EDITOR_STEP = 0.02;
 const TANK_SUBLAYER_FRONT = 1;
 const TANK_SUBLAYER_MIDDLE = 2;
 const TANK_SUBLAYER_BACK = 3;
@@ -2270,46 +2312,112 @@ const FISH_TURN_MIN_SCALE_X = 0.42;
 const FISH_TURN_MAX_SCALE_Y = 1.12;
 const FISH_TURN_MIN_MS = 130;
 const FISH_TURN_MAX_MS = 210;
-// The segmented turnaround rig is authored on a 0..1.08 second timeline.
-// Keep the gameplay turn alive for that entire sequence instead of squeezing
-// it into the legacy 130-210ms sprite-flip window.
-const FISH_TURN_RIG_SEGMENTS = 12;
-const FISH_TURN_RIG_COLLAPSE_DURATION = 0.12;
-const FISH_TURN_RIG_COLLAPSE_STEP = 0.055;
-const FISH_TURN_RIG_REBUILD_DURATION = 0.15;
-const FISH_TURN_RIG_REBUILD_STEP = 0.05;
-const FISH_TURN_RIG_FRONT_SHRINK = 0.18;
-const FISH_TURN_RIG_TAIL_SWELL = 0.12;
-const FISH_TURN_RIG_FOLLOWER_LAG = 0.9;
-const FISH_TURN_RIG_TAIL_START_DELAY = 0;
-const FISH_TURN_RIG_REBUILD_OVERLAP = 0.35;
-const FISH_TURN_RIG_EXIT_PULL = 0.58;
-const FISH_TURN_RIG_RELEASE_CURVE = 0.5;
-const FISH_TURN_RIG_HEAD_STAGGER = 1;
-const FISH_TURN_RIG_REVERSE_EMERGENCE_PULL = false;
-const FISH_TURN_RIG_CENTER_SEAM_SCALE = 1;
-const FISH_TURN_RIG_SEAM_BRIDGE = 0;
-const FISH_TURN_RIG_CONTINUOUS_OVERLAP = 0.85;
-const FISH_TURN_RIG_EDGE_SOFTEN_SRC = 1.25;
-const FISH_TURN_RIG_EDGE_SOFTEN_DEST = 1.15;
-const FISH_TURN_RIG_INTERNAL_TIMELINE_MAX = 1.08;
-const FISH_TURN_RIG_TIMELINE_RATE = 0.24;
-const FISH_TURN_RIG_PLAYBACK_SPEED = 2.5;
-const FISH_TURN_RIG_DURATION_MS = (
-  FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
-  / (FISH_TURN_RIG_TIMELINE_RATE * FISH_TURN_RIG_PLAYBACK_SPEED)
-) * 1000;
-const FISH_TURN_RIG_MIN_DURATION_MS = 1000;
-const FISH_TURN_RIG_MAX_DURATION_MS = 3200;
-const FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE = Object.freeze({
-  piranha: 0.86,
-  sucker: 1.08,
-});
-const FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY = 0.55;
-const FISH_TURN_RIG_VISIBLE_MAX_COLUMNS = 48;
-const FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY = 0.08;
-const FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS = 4;
-const FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS = 0.62;
+// Fish Turn Lab v26 is the production complex-turn backend. Its geometry and
+// active-session timing use the approved v26 defaults below.
+const FISH_TURN_V26_MESH_COLUMNS = 96;
+const FISH_TURN_V26_MESH_ROWS = 48;
+const FISH_TURN_V26_ALPHA_CUTOFF = 7;
+const FISH_TURN_V26_PROCESSING_MAX_DIM = 512;
+const FISH_TURN_V26_VOLUME_LAYERS = 5;
+const FISH_TURN_V26_THICKNESS = 43;
+const FISH_TURN_V26_FACE_HEAD_THICKNESS = 200;
+const FISH_TURN_V26_TURN_DEPTH_MODE = "both";
+const FISH_TURN_V26_DURATION_MS = 650;
+const FISH_TURN_V26_Z_AXIS_BODY_FLEX = 92;
+const FISH_TURN_V26_TAIL_FOLLOW_THROUGH = 48;
+const FISH_TURN_V26_SPINE_EPSILON = 0.010;
+// Optional same-canvas fin overlay defaults from Fish Turn Lab v26.
+// These values affect visual depth only and never gameplay anchors or depth.
+const FISH_TURN_V26_FIN_DISTANCE = 18;
+const FISH_TURN_V26_FIN_FRONT_ATTACHMENT_DISTANCE = 34;
+const FISH_TURN_V26_FIN_TAPER = 72;
+// Phase 6 installs the four approved Fish Turn Lab v26 motion profiles.
+// Phase 9 keeps the four approved profiles visual-only but chooses among them
+// centrally from existing movement context. Individual behaviors never hardcode
+// renderer style names, and explicit debug/per-fish overrides still win.
+const FISH_TURN_V26_DEFAULT_STYLE = "head-led";
+const FISH_TURN_V26_TRAJECTORY_UNIT_SCALE = 210;
+// Long/narrow source canvases can otherwise rotate through the -5.2 camera
+// plane at midpoint. Cap only the internal 3D model scale, then compensate
+// in projection so the endpoint sprite footprint remains unchanged.
+const FISH_TURN_V26_MAX_MODEL_SCALE = 2.2;
+const FISH_TURN_V26_RENDER_MAX_DIM = 1024;
+// Simultaneous v26 turns share the same geometry and asset caches. If a rare
+// burst exceeds the full-quality budget, reduce translucent interior volume
+// layers first. The outer skins, 96x48 mesh, edge closure, flex, and fin passes
+// remain unchanged.
+const FISH_TURN_V26_FULL_QUALITY_MAX_SIMULTANEOUS = 8;
+const FISH_TURN_V26_REDUCED_QUALITY_MAX_SIMULTANEOUS = 16;
+const FISH_TURN_V26_REDUCED_VOLUME_LAYERS = 3;
+const FISH_TURN_V26_STRESS_VOLUME_LAYERS = 2;
+const FISH_TURN_V26_RENDER_PADDING_X = 2.75;
+const FISH_TURN_V26_RENDER_PADDING_Y = 3.5;
+// The mesh owns the middle of a complex reversal, but the ordinary swim pose
+// owns its endpoints. These short overlap windows prevent a climb, dive, or
+// body wave from disappearing the instant the v26 canvas takes over.
+const FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS = 0.14;
+const FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS = 0.82;
+const FISH_TURN_V26_EDGE_CLOSURE = 100;
+const FISH_TURN_V26_EDGE_REACH = 26;
+const FISH_TURN_V26_EDGE_ROUNDNESS = 68;
+const FISH_TURN_V26_END_THINNING = 100;
+const FISH_TURN_V26_MID_BODY_FULLNESS = 100;
+const FISH_TURN_V26_CROSS_SECTION = 100;
+const FISH_TURN_V26_INTERIOR_ALPHA = 0.16;
+const FISH_TURN_V26_FOV_DEGREES = 42;
+const FISH_TURN_V26_CAMERA_Z = -5.2;
+const FISH_TURN_V26_NEAR = 0.1;
+const FISH_TURN_V26_FAR = 100;
+// Phase 15 productionizes the v26 complex-turn backend. The retired
+// segmented renderer no longer owns timing, geometry, caustic masks, or caches.
+// Renderer-neutral locomotion policy for an active horizontal turn. These
+// values govern authoritative travel only. They must not depend on whether
+// the visible turn is drawn by v26 or the lightweight emergency fallback.
+const FISH_TURN_LOCOMOTION_RELEASE_PROGRESS = 0.62;
+const FISH_TURN_TRAVERSAL_ARC_APEX_PROGRESS = 0.5;
+const FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE = 0.2;
+const FISH_TURN_TRAVERSAL_DRIFT_MAX_SCALE = 0.52;
+const FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE = 0.2;
+const FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO = 0.26;
+const FISH_TURNAROUND_COOLDOWN_MS = 850;
+const FISH_TURNAROUND_COOLDOWN_MAX_MS = 1700;
+const FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM = 0.045;
+const FISH_TURNAROUND_COOLDOWN_MIN_FORWARD_NORM = 0.032;
+const FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO = 0.42;
+const FISH_TRAVERSAL_TARGET_RESPONSE_PER_SEC = 3.4;
+const FISH_TRAVERSAL_TARGET_MAX_STEP_NORM = 0.032;
+const FISH_TRAVERSAL_TURN_COMMIT_MIN_MS = 360;
+const FISH_OBSTACLE_LOOKAHEAD_MIN_NORM = 0.045;
+const FISH_OBSTACLE_LOOKAHEAD_MAX_NORM = 0.11;
+const FISH_OBSTACLE_WAYPOINT_MS = 720;
+const FISH_BOUNDARY_ANTICIPATION_INSET_NORM = 0.05;
+const FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM = 0.07;
+const FISH_CRUISE_WAYPOINT_EXTENSION_NORM = 0.085;
+const FISH_CRUISE_WAYPOINT_REACH_NORM = 0.028;
+const FISH_CRUISE_WAYPOINT_MS = 1150;
+// Decor targets are points of interest, not instructions to climb vertically
+// through the water column. Route a fish through a short forward approach
+// first, then let ordinary steering complete the local arrival.
+const FISH_DECOR_APPROACH_MIN_DISTANCE_NORM = 0.065;
+const FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM = 0.085;
+const FISH_DECOR_APPROACH_MAX_HORIZONTAL_LEAD_NORM = 0.16;
+const FISH_DECOR_APPROACH_MAX_VERTICAL_RATIO = 0.48;
+const FISH_DECOR_APPROACH_WAYPOINT_REACH_NORM = 0.024;
+const FISH_DECOR_APPROACH_WAYPOINT_MS = 1100;
+const FISH_CRUISE_ENDPOINT_PATTERNS = new Set([
+  "attached-grazer",
+  "bottom-stop-go",
+  "bottom-graze",
+  "cave-hover-dart",
+  "deliberate-hover",
+  "group-hover",
+  "home-hover",
+  "perch-dart",
+  "precision-hover",
+  "substrate-crawl",
+  "surface-ambush",
+  "vertical-hover"
+]);
 
 // Living side-view fish are rendered as narrow vertical slices that bend along
 // a smooth depth-sweep centerline. World movement remains authoritative; these
@@ -2384,7 +2492,6 @@ const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
   swayResponsePerSecond: 13.0
 });
 
-const fishTurnRigCanvasCache = new WeakMap();
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.png",
   "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.png",
@@ -2423,6 +2530,12 @@ const AUTO_DISPENSER_TOP_MOUNT_OVERHANG_PX = 18;
 // Normal aquarium travel should leave room for fish to feel observably alive.
 // Emergency behavior stacks its own multiplier on top of this base pace.
 const FISH_MOTION_SCALE = 1.62;
+const FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC = 2.65;
+const FISH_PASSIVE_BRAKE_DISTANCE_NORM = 0.12;
+const FISH_PASSIVE_ARRIVAL_EPSILON_NORM = 0.0012;
+const FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM = 0.0025;
+const FISH_TRAVERSAL_MAX_VELOCITY_NORM = 0.42;
+const FISH_VERTICAL_TRAVERSAL_MAX_RATIO = 0.62;
 const FISH_SHADOW_LAYER_EASE_MS = 420;
 const FISH_LAYER_DEPTH_SCALE_EASE_MS = 520;
 // Phase 16: the fifteen depth positions form one contiguous travel track. Each
@@ -2571,6 +2684,9 @@ const SAME_SPECIES_SCHOOL_TARGET_REFRESH_MS = 1200;
 const SCHOOL_FORMATION_COMMAND_INTERVAL_MS = 180;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_X_NORM = 0.022;
 const SAME_SPECIES_SCHOOL_TARGET_MAX_STEP_Y_NORM = 0.012;
+const FISH_PASSIVE_TARGET_RESPONSE_PER_SEC = 4.2;
+const FISH_PASSIVE_TARGET_MAX_STEP_NORM = 0.026;
+const SCHOOL_FORMATION_MIN_SEPARATION_NORM = 0.052;
 const SCHOOL_MAX_FOLLOWERS = 5;
 const SCHOOL_FORMATION_MIN_MS = 20000;
 const SCHOOL_FORMATION_MAX_MS = 60000;
@@ -2581,6 +2697,11 @@ const SCHOOL_REJOIN_SETTLE_DISTANCE_NORM = 0.07;
 // brake while trying to occupy a mathematically exact point.
 const SOCIAL_FORMATION_POSITION_DEADZONE_NORM = 0.012;
 const SOCIAL_FORMATION_TURN_DEADZONE_NORM = 0.024;
+// After a school leader completes a visible reversal, keep the existing
+// formation side briefly before reforming behind the new heading. This is
+// renderer-neutral and begins only after the leader's turn lifecycle has
+// actually handed off to the destination-facing sprite.
+const SCHOOL_FORMATION_HEADING_SETTLE_MS = 420;
 // A social formation needs a short heading commitment after a real reversal.
 // Without it a follower can complete one turn and immediately accept the
 // opposite request from a moving leader or a freshly released detour.
@@ -12280,6 +12401,7 @@ const dom = {
   debugCaveButton: document.querySelector("#debugCaveButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
+  debugFishBehaviorReadout: document.querySelector("#debugFishBehaviorReadout"),
   loadingOverlay: document.querySelector("#loadingOverlay"),
   loadingOverlayBackground: document.querySelector("#loadingOverlayBackground"),
   loadingOverlayUnderwater: document.querySelector("#loadingOverlayUnderwater"),
@@ -12315,6 +12437,7 @@ const dom = {
   notificationBellBadge: document.querySelector("#notificationBellBadge"),
   placementHint: document.querySelector("#placementHint"),
   placementHintContainer: document.querySelector(".tank-overlay-hints"),
+  decorDepthIndicator: document.querySelector("#decorDepthIndicator"),
   careTaskPane: document.querySelector("#careTaskPane"),
   careTaskList: document.querySelector("#careTaskList"),
   editQuickRef: document.querySelector("#editQuickRef"),
@@ -12377,7 +12500,15 @@ const dom = {
   equipmentShop: document.querySelector("#equipmentShop"),
   storeScrollControls: document.querySelector("#storeScrollControls"),
   storeOverlay: document.querySelector("#storeOverlay"),
+  webSurfRouteErrorPage: document.querySelector("#webSurfRouteErrorPage"),
+  webSurfAddressInput: document.querySelector("#webSurfAddressInput"),
+  webSurfBackButton: document.querySelector("#webSurfBackButton"),
+  webSurfForwardButton: document.querySelector("#webSurfForwardButton"),
+  webSurfBookmarkButton: document.querySelector("#webSurfBookmarkButton"),
+  webSurfBookmarkBar: document.querySelector("#webSurfBookmarkBar"),
+  webSurfBrowserToolbar: document.querySelector(".websurf-browser-toolbar"),
   webHomePage: document.querySelector("#webHomePage"),
+  webSurfThemesPage: document.querySelector("#webSurfThemesPage"),
   bubbleBodegaHomePage: document.querySelector("#bubbleBodegaHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
   webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
@@ -12399,6 +12530,7 @@ const dom = {
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
   layoutRatioLockFrameToggleInput: document.querySelector("#layoutRatioLockFrameToggleInput"),
   webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
+  webSurfFullscreenToggle: document.querySelector("#webSurfFullscreenToggle"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -12448,7 +12580,7 @@ const dom = {
   depthEffectLevelInput: document.querySelector("#depthEffectLevelInput"),
   depthEffectLevelOutput: document.querySelector("#depthEffectLevelOutput"),
   backgroundDepthHazeToggleInput: document.querySelector("#backgroundDepthHazeToggleInput"),
-  simpleTurnAnimationsToggleInput: document.querySelector("#simpleTurnAnimationsToggleInput"),
+  complexTurnAnimationsToggleInput: document.querySelector("#complexTurnAnimationsToggleInput"),
   mouseLockSettingsRow: document.querySelector("#mouseLockSettingsRow"),
   halloweenModeSelect: document.querySelector("#halloweenModeSelect"),
   tankMouseLockToggleInput: document.querySelector("#tankMouseLockToggleInput"),
@@ -12492,6 +12624,8 @@ const dom = {
   selectedDecorSizeValue: document.querySelector("#selectedDecorSizeValue"),
   selectedDecorLayerUpButton: document.querySelector("#selectedDecorLayerUpButton"),
   selectedDecorLayerDownButton: document.querySelector("#selectedDecorLayerDownButton"),
+  selectedDecorBringToFrontButton: document.querySelector("#selectedDecorBringToFrontButton"),
+  selectedDecorSendToBackButton: document.querySelector("#selectedDecorSendToBackButton"),
   selectedDecorLayerValue: document.querySelector("#selectedDecorLayerValue"),
   inspectorBuyAnotherFish: document.querySelector("#inspectorBuyAnotherFish"),
   inspectorSellFish: document.querySelector("#inspectorSellFish"),
@@ -12545,7 +12679,15 @@ const runtime = {
   activeTab: "overview",
   storeOverlayOpen: false,
   webHomeOpen: false,
+  webSurfThemesOpen: false,
   webSurfLastPage: "home",
+  // Canonical, internal-only WebSurf location. Phase 1 keeps the existing
+  // page sessions alive while the router becomes their single entry point.
+  webSurfRoute: "websurf.swim",
+  webSurfRouteError: null,
+  webSurfNavigation: { entries: [], index: -1 },
+  webSurfToolbarHidden: false,
+  webSurfToolbarHideTimer: 0,
   webSurfPageScroll: { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 },
   webSurfSelectedMailId: "",
   webSurfSettingsTabOpen: false,
@@ -12743,6 +12885,9 @@ const runtime = {
   fishRenderRecordPool: [],
   fishRenderLayerBuckets: null,
   fishRenderPassBuckets: null,
+  fishStatsOverlayQueue: new Map(),
+  decorRenderOrderCache: null,
+  decorDepthBucketCache: null,
   fishSwimAnimationStates: new Map(),
   fishVisualPoseSmoothingStates: new Map(),
   fishSwimSliceProfileCache: new Map(),
@@ -12948,6 +13093,7 @@ const runtime = {
   fishShadowPlaneCache: new Map(),
   fishLayerDepthScaleTransitions: new Map(),
   fishLayerTravelStepTransitions: new Map(),
+  caveRenderOcclusionByFishId: new Map(),
   fishCollisionAvoidanceById: new Map(),
   fishNavigationMemoryById: new Map(),
   fishRightOfWayByPair: new Map(),
@@ -14989,6 +15135,7 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "borough-travel");
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -15091,6 +15238,7 @@ function beginBoroughTubeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "tube-travel");
   const sourcePoints = getTransitTubeTravelPoints(sourceTube);
   fish.activity = "roam";
   fish.feedingPelletId = null;
@@ -15568,6 +15716,27 @@ function getFishBirthdayHatWorldPose(fish, pose, width, height, now = Date.now()
   const imagePath = getFishDisplayAssetPath(fish, species, now) || species?.asset;
   const mask = imagePath ? getImageAlphaMask(imagePath) : null;
   const anchor = getFishBirthdayHatImageAnchor(mask) || { u: 0.77, v: 0.18 };
+  if (typeof getFishV26VisualUvWorldFrame === "function") {
+    const v26Anchor = getFishV26VisualUvWorldFrame(
+      fish,
+      species,
+      pose,
+      width,
+      height,
+      anchor.u,
+      anchor.v,
+      now,
+      { surface: "near" }
+    );
+    if (v26Anchor) {
+      return {
+        x: v26Anchor.x,
+        y: v26Anchor.y,
+        rotation: v26Anchor.rotation,
+        v26Projected: true
+      };
+    }
+  }
   const bodyScaleX = pose.bodyScaleX || 1;
   const bodyScaleY = pose.bodyScaleY || 1;
   const tilt = pose.tilt || 0;
@@ -15604,8 +15773,13 @@ function drawFishBirthdayHat(fish, pose, width, height, now = Date.now()) {
   const hatWidth = hatHeight * 0.78;
   tankContext.save();
   // Sink the base a few rendered pixels into the first opaque head pixels so
-  // antialiasing and sparse skeleton artwork cannot create a visible gap.
-  tankContext.translate(anchor.x, anchor.y + Math.max(2.5 * stableScale, height * 0.018));
+  // antialiasing and sparse skeleton artwork cannot create a visible gap. A
+  // v26-projected hat sinks along its projected local body-down axis instead
+  // of world Y, so a banked/edge-on fish does not leave the hat behind.
+  const sink = Math.max(2.5 * stableScale, height * 0.018);
+  const sinkX = anchor.v26Projected ? -Math.sin(anchor.rotation) * sink : 0;
+  const sinkY = anchor.v26Projected ? Math.cos(anchor.rotation) * sink : sink;
+  tankContext.translate(anchor.x + sinkX, anchor.y + sinkY);
   tankContext.rotate(anchor.rotation + Math.sin(now / 420 + hashStringToUint32(fish.id)) * 0.025);
   tankContext.fillStyle = "#7ce7ff";
   tankContext.beginPath();
@@ -19204,6 +19378,9 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
   fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
   fish.turnFromDirection = fish.displayDirection;
@@ -19752,8 +19929,459 @@ function submitProteusDesignerSpecimen(button = null) {
   return true;
 }
 
+function getWebSurfSiteRegistry() {
+  return [
+    { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
+    { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.png", beginsDiscovered: false, bookmarkable: true, hidden: true },
+    { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.png", beginsDiscovered: false, bookmarkable: true, hidden: true },
+    { id: "arcadia", domain: "arcadia.swim", aliases: [], homePath: "/", displayName: "Arcadia Home Aquatics", bookmarkIcon: "assets/web/proteus/sub/arcadia_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "clearwell", domain: "clearwell.swim", aliases: [], homePath: "/", displayName: "Clearwell Laboratories", bookmarkIcon: "assets/web/proteus/sub/clearwell_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "commoncurrent", domain: "commoncurrent.swim", aliases: [], homePath: "/", displayName: "Common Current", bookmarkIcon: "assets/web/proteus/sub/common-current_logo.png", beginsDiscovered: true, bookmarkable: true },
+    { id: "tidewell", domain: "tidewell.swim", aliases: [], homePath: "/", displayName: "Tidewell", bookmarkIcon: "assets/web/proteus/sub/tidewell_logo.png", beginsDiscovered: true, bookmarkable: true }
+  ];
+}
+
+function getWebSurfChromeTheme(themeId) {
+  const requested = String(themeId || "").trim().toLowerCase();
+  return WEBSURF_CHROME_THEME_CATALOG.find((theme) => theme.id === requested)
+    || WEBSURF_CHROME_THEME_CATALOG.find((theme) => theme.id === WEBSURF_CHROME_THEME_DEFAULT);
+}
+
+function getWebSurfChromeThemeSettings() {
+  return sanitizeWebSurfChromeThemeSettings(getUiSettings());
+}
+
+function setWebSurfChromeThemeSettings(next = {}) {
+  if (!state) return getWebSurfChromeThemeSettings();
+  state.uiSettings = sanitizeUiSettings({
+    ...getUiSettings(),
+    ...next
+  });
+  return getWebSurfChromeThemeSettings();
+}
+
+function equipWebSurfChromeTheme(themeId) {
+  const theme = getWebSurfChromeTheme(themeId);
+  const settings = getWebSurfChromeThemeSettings();
+  if (!theme || !settings.ownedThemes.includes(theme.id)) return false;
+  if (settings.activeTheme === theme.id) return true;
+  setWebSurfChromeThemeSettings({ webSurfChromeTheme: theme.id });
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function purchaseWebSurfChromeTheme(themeId) {
+  const theme = getWebSurfChromeTheme(themeId);
+  if (!theme) return { ok: false, reason: "unknown-theme" };
+  const settings = getWebSurfChromeThemeSettings();
+  if (settings.ownedThemes.includes(theme.id)) {
+    equipWebSurfChromeTheme(theme.id);
+    return { ok: true, alreadyOwned: true };
+  }
+  const applyTheme = () => {
+    const latest = getWebSurfChromeThemeSettings();
+    if (latest.ownedThemes.includes(theme.id)) return false;
+    setWebSurfChromeThemeSettings({
+      webSurfOwnedThemes: [...latest.ownedThemes, theme.id],
+      webSurfChromeTheme: theme.id
+    });
+    return true;
+  };
+  if (theme.price <= 0) {
+    applyTheme();
+    saveState();
+    renderUi(Date.now(), { full: false });
+    return { ok: true, amount: 0 };
+  }
+  return performCoinTransaction({
+    amount: theme.price,
+    direction: "debit",
+    place: "WebSurf Themes",
+    receiptLabel: `Purchased WebSurf theme: ${theme.name}.`,
+    toast: `${theme.name} is now active.`,
+    apply: applyTheme,
+    render: true,
+    full: false
+  });
+}
+
+function normalizeWebSurfUrl(value) {
+  const raw = String(value || "").trim();
+  if (!raw || /[\u0000-\u001f\s]/.test(raw)) return null;
+  const candidate = /^[a-z][a-z0-9+.-]*:\/\//i.test(raw) ? raw : `https://${raw}`;
+  let parsed;
+  try { parsed = new URL(candidate); } catch { return null; }
+  if (!/^https?:$/i.test(parsed.protocol) || parsed.username || parsed.password || parsed.port || parsed.search || parsed.hash) return null;
+  const domain = parsed.hostname.toLowerCase().replace(/^www\./, "");
+  if (!domain || !/^[a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+$/i.test(domain)) return null;
+  const segments = parsed.pathname.split("/").filter(Boolean);
+  if (segments.some((segment) => !/^[a-z0-9][a-z0-9._-]*$/i.test(segment))) return null;
+  const path = segments.length ? `/${segments.join("/").toLowerCase()}` : "/";
+  return { domain, path, url: `${domain}${path}` };
+}
+
+function resolveWebSurfUrl(value) {
+  const normalized = normalizeWebSurfUrl(value);
+  if (!normalized) return { status: "address-not-found", url: String(value || "").trim() };
+  const site = getWebSurfSiteRegistry().find((entry) => entry.domain === normalized.domain || entry.aliases.includes(normalized.domain));
+  if (!site) return { status: "address-not-found", url: normalized.url };
+  return { status: "ok", site, ...normalized, url: `${site.domain}${normalized.path}` };
+}
+
+function isWebSurfRouteAllowed(route) {
+  if (route.site.id === "proteus") return state?.proteusDiscovered === true;
+  if (route.site.id === "locker") return state?.davyJonesLockerUnlocked === true;
+  return true;
+}
+
+function showWebSurfRouteError(status, url) {
+  runtime.webSurfRouteError = { status, url: String(url || "") };
+  runtime.webHomeOpen = false;
+  runtime.webSurfThemesOpen = false;
+  runtime.bubbleBodegaHomeOpen = false;
+  runtime.bubbleBankOpen = false;
+  runtime.davyJonesLockerOpen = false;
+  runtime.settingsOverlayOpen = false;
+  openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true });
+  renderUi(Date.now());
+  return false;
+}
+
+function ensureWebSurfBrowserTab(destination) {
+  const tab = document.querySelector(`#storeOverlay .webpage-tab[data-webpage-destination="${String(destination || "")}"]`);
+  if (!tab) return;
+  delete tab.dataset.websurfTabClosed;
+  tab.hidden = false;
+}
+
+function renderWebSurfRouteErrorPage(error) {
+  const copy = {
+    "address-not-found": ["Address Not Found", "WebSurf couldn't find this address. Check the address and try again."],
+    "page-not-found": ["Page Not Found", "This address exists, but the requested page could not be found."],
+    "access-denied": ["Access Denied", "This address is not available to you yet."],
+    "site-unavailable": ["Site Unavailable", "This WebSurf destination is temporarily unavailable."]
+  }[String(error?.status || "")] || ["WebSurf Error", "WebSurf couldn't open this address."];
+  return `<div class="websurf-home-shell websurf-route-error"><header class="websurf-home-header"><img src="assets/web/websurf/WebSurf_icon.png" alt="" aria-hidden="true" /><div><span>WEBSURF.SWIM</span><h1 tabindex="-1">${escapeHtml(copy[0])}</h1><p>${escapeHtml(copy[1])}</p></div></header><main class="websurf-home-main"><p><strong>Address:</strong> ${escapeHtml(error?.url || "Unknown")}</p><button type="button" class="small-button" data-websurf-route="websurf.swim">Return Home</button></main></div>`;
+}
+
+function navigateWebSurf(value, options = {}) {
+  const route = resolveWebSurfUrl(value);
+  if (route.status !== "ok") return showWebSurfRouteError(route.status, route.url);
+  if (!isWebSurfRouteAllowed(route)) return showWebSurfRouteError("access-denied", route.url);
+  runtime.webSurfRouteError = null;
+  runtime.webSurfThemesOpen = false;
+  updateWebSurfRoute(route.url, options);
+  const path = route.path;
+  if (route.site.id === "home") {
+    if (path === "/settings") return openWebSurfSettingsPage();
+    if (path === "/themes") {
+      if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+      closeProteusDesignerSession();
+      window.closeProteusBiodynePage?.(false);
+      runtime.webHomeOpen = false; runtime.bubbleBankOpen = false; runtime.davyJonesLockerOpen = false; runtime.settingsOverlayOpen = false;
+      runtime.webSurfThemesOpen = true; runtime.webSurfLastPage = "themes";
+      renderUi(Date.now()); restoreWebSurfSessionScroll("themes"); return true;
+    }
+    if (path !== "/") return showWebSurfRouteError("page-not-found", route.url);
+    if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+    closeProteusDesignerSession();
+    window.closeProteusBiodynePage?.(false);
+    runtime.webHomeOpen = true; runtime.bubbleBankOpen = false; runtime.davyJonesLockerOpen = false; runtime.webSurfLastPage = "home";
+    renderUi(Date.now()); restoreWebSurfSessionScroll("home"); return true;
+  }
+  if (route.site.id === "bodega") {
+    ensureWebSurfBrowserTab("store");
+    const category = path.match(/^\/shop\/(food|pharmacy|fish|decor|equipment)$/)?.[1];
+    if (path !== "/" && !category && path !== "/account/orders") return showWebSurfRouteError("page-not-found", route.url);
+    return category ? openStoreOverlay(category, { forceCategory: true, openHome: false }) : openBubbleBodegaHome();
+  }
+  if (route.site.id === "bank") {
+    ensureWebSurfBrowserTab("bank");
+    const section = path.match(/^\/bank\/(account|rewards|statements)$/)?.[1];
+    return section ? openBubbleBank(section) : showWebSurfRouteError("page-not-found", route.url);
+  }
+  if (route.site.id === "locker") return path === "/" ? openDavyJonesLockerPage() : showWebSurfRouteError("page-not-found", route.url);
+  if (route.site.id === "proteus") {
+    const tab = path === "/" ? "home" : path.slice(1);
+    if (!["home", "about", "research", "specimens", "custom-specimen"].includes(tab)) return showWebSurfRouteError("page-not-found", route.url);
+    if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+    window.showProteusBiodynePage?.(options.trigger || dom.openStoreButton);
+    if (tab !== "home") window.requestAnimationFrame(() => document.querySelector(`[data-proteus-tab="${tab}"]`)?.click());
+    return true;
+  }
+  if (path !== "/") return showWebSurfRouteError("page-not-found", route.url);
+  window.showWebSurfSubsidiaryPage?.(route.site.id, options.trigger || null);
+  return true;
+}
+
+function getWebSurfUrlForDestination(destination) {
+  if (String(destination || "") === "store") {
+    const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    return `bubblebodega.swim/shop/${category}`;
+  }
+  return ({ home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
+}
+
+function closeWebSurfBrowserTab(tab) {
+  if (!(tab instanceof HTMLElement)) return;
+  const tabs = [...document.querySelectorAll("#storeOverlay .webpage-tab[data-webpage-destination]")]
+    .filter((candidate) => !candidate.hidden);
+  const destination = String(tab.dataset.webpageDestination || "");
+  const wasActive = tab.classList.contains("is-active");
+
+  // A browser always has somewhere safe to land. Closing its sole remaining
+  // tab simply returns it to WebSurf Home instead of leaving an empty shell.
+  if (tabs.length <= 1) {
+    tab.hidden = false;
+    navigateWebSurf("websurf.swim", { historyMode: "replace" });
+    return;
+  }
+
+  tab.dataset.websurfTabClosed = "true";
+  tab.hidden = true;
+  if (destination === "settings") deactivateWebSurfSettingsPage();
+  if (destination === "locker") runtime.davyJonesLockerTabOpen = false;
+  if (destination === "designer") closeProteusDesignerSession();
+  window.closeWebSurfSiteTab?.(destination);
+
+  if (!wasActive) return;
+  const next = tabs.find((candidate) => candidate !== tab);
+  const nextUrl = getWebSurfUrlForDestination(next?.dataset.webpageDestination);
+  navigateWebSurf(nextUrl || "websurf.swim", { historyMode: "replace" });
+}
+
+function getWebSurfSessionUrl() {
+  if (runtime.webSurfRouteError?.url) return runtime.webSurfRouteError.url;
+  if (runtime.webSurfRoute) return runtime.webSurfRoute;
+  const page = getActiveWebSurfSessionPage();
+  return getWebSurfUrlForDestination(page) || "websurf.swim";
+}
+
+function getWebSurfNavigationState() {
+  const candidate = runtime.webSurfNavigation;
+  if (!candidate || !Array.isArray(candidate.entries) || !Number.isInteger(candidate.index)) {
+    runtime.webSurfNavigation = { entries: [], index: -1 };
+  }
+  return runtime.webSurfNavigation;
+}
+
+function recordWebSurfNavigation(url, options = {}) {
+  if (options.historyMode === "restore") return;
+  const navigation = getWebSurfNavigationState();
+  const entry = String(url || "");
+  if (!entry) return;
+  if (options.historyMode === "replace" && navigation.index >= 0) {
+    navigation.entries[navigation.index] = entry;
+    return;
+  }
+  if (navigation.entries[navigation.index] === entry) return;
+  navigation.entries.splice(navigation.index + 1);
+  navigation.entries.push(entry);
+  navigation.index = navigation.entries.length - 1;
+}
+
+function updateWebSurfRoute(url, options = {}) {
+  const route = resolveWebSurfUrl(url);
+  if (route.status !== "ok") return false;
+  runtime.webSurfRouteError = null;
+  runtime.webSurfRoute = route.url;
+  recordWebSurfNavigation(route.url, options);
+  recordWebSurfVisit(route, options);
+  syncWebSurfBrowserChrome();
+  return true;
+}
+
+function getWebSurfBrowserState() {
+  if (!state) return { discoveredSites: {}, bookmarks: [], history: [] };
+  state.webSurf = sanitizeWebSurfBrowserState(state.webSurf, state);
+  return state.webSurf;
+}
+
+function recordWebSurfVisit(route, options = {}) {
+  if (!route?.site || options.historyMode === "restore" || options.historyMode === "replace") return false;
+  const browser = getWebSurfBrowserState();
+  const now = Date.now();
+  const domain = route.site.domain;
+  let changed = false;
+  if (!browser.discoveredSites[domain]) {
+    browser.discoveredSites[domain] = now;
+    changed = true;
+  }
+  const previous = browser.history[browser.history.length - 1];
+  if (previous?.url === route.url) {
+    previous.visitedAt = now;
+  } else {
+    browser.history.push({ url: route.url, siteId: route.site.id, title: route.site.displayName, visitedAt: now });
+    if (browser.history.length > 100) browser.history.splice(0, browser.history.length - 100);
+    changed = true;
+  }
+  if (changed) saveState();
+  return changed;
+}
+
+function toggleWebSurfBookmark(url = getWebSurfSessionUrl()) {
+  const route = resolveWebSurfUrl(url);
+  if (route.status !== "ok" || !route.site.bookmarkable || !isWebSurfRouteAllowed(route)) return false;
+  const browser = getWebSurfBrowserState();
+  const index = browser.bookmarks.findIndex((entry) => entry.url === route.url);
+  if (index >= 0) browser.bookmarks.splice(index, 1);
+  else browser.bookmarks.push({ url: route.url, createdAt: Date.now() });
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return index < 0;
+}
+
+function clearWebSurfHistory() {
+  const browser = getWebSurfBrowserState();
+  if (!browser.history.length) return false;
+  browser.history = [];
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function resetWebSurfPreferences() {
+  const uiSettings = getUiSettings();
+  const changed = uiSettings.webSurfThemeMode !== WEBSURF_THEME_MODE_AUTO || uiSettings.webSurfFullscreen === true || uiSettings.webSurfChromeTheme !== WEBSURF_CHROME_THEME_DEFAULT;
+  if (!changed) return false;
+  state.uiSettings = sanitizeUiSettings({
+    ...uiSettings,
+    webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
+    webSurfFullscreen: false,
+    webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT
+  });
+  resetWebSurfToolbarVisibility();
+  saveState();
+  renderUi(Date.now(), { full: false });
+  return true;
+}
+
+function syncWebSurfBrowserChrome() {
+  const open = runtime.storeOverlayOpen === true;
+  const navigation = getWebSurfNavigationState();
+  const address = getWebSurfSessionUrl();
+  const route = resolveWebSurfUrl(address);
+  const browser = getWebSurfBrowserState();
+  const currentBookmarkIndex = route.status === "ok" ? browser.bookmarks.findIndex((entry) => entry.url === route.url) : -1;
+  if (dom.webSurfAddressInput && document.activeElement !== dom.webSurfAddressInput) {
+    dom.webSurfAddressInput.value = address;
+  }
+  if (dom.webSurfBackButton) dom.webSurfBackButton.disabled = !open || navigation.index <= 0;
+  if (dom.webSurfForwardButton) dom.webSurfForwardButton.disabled = !open || navigation.index < 0 || navigation.index >= navigation.entries.length - 1;
+  if (dom.webSurfBookmarkButton) {
+    const available = route.status === "ok" && route.site.bookmarkable && isWebSurfRouteAllowed(route);
+    dom.webSurfBookmarkButton.disabled = !open || !available;
+    dom.webSurfBookmarkButton.textContent = currentBookmarkIndex >= 0 ? "★" : "☆";
+    dom.webSurfBookmarkButton.setAttribute("aria-label", currentBookmarkIndex >= 0 ? "Remove current page from bookmarks" : "Bookmark current page");
+    dom.webSurfBookmarkButton.title = currentBookmarkIndex >= 0 ? "Remove bookmark" : "Bookmark current page";
+  }
+  if (dom.webSurfBookmarkBar) {
+    const entries = browser.bookmarks.map((bookmark) => {
+      const savedRoute = resolveWebSurfUrl(bookmark.url);
+      return savedRoute.status === "ok" && isWebSurfRouteAllowed(savedRoute)
+        ? `<button type="button" class="websurf-bookmark-bar-item" data-websurf-bookmark-link="${escapeHtml(savedRoute.url)}" title="Open ${escapeHtml(savedRoute.site.displayName)}"><img src="${escapeHtml(savedRoute.site.bookmarkIcon || "assets/web/websurf/WebSurf_icon.png")}" alt="" aria-hidden="true" /><span>${escapeHtml(savedRoute.site.displayName)}</span></button>`
+        : "";
+    }).filter(Boolean);
+    dom.webSurfBookmarkBar.innerHTML = entries.length ? entries.join("") : '<span class="websurf-bookmark-bar-empty">Add pages with the ☆ button</span>';
+  }
+}
+
+function navigateWebSurfHistory(direction) {
+  const navigation = getWebSurfNavigationState();
+  const nextIndex = navigation.index + Number(direction || 0);
+  if (nextIndex < 0 || nextIndex >= navigation.entries.length) return false;
+  navigation.index = nextIndex;
+  return navigateWebSurf(navigation.entries[nextIndex], { historyMode: "restore" });
+}
+
+function refreshWebSurfRoute() {
+  const navigation = getWebSurfNavigationState();
+  const url = navigation.entries[navigation.index] || getWebSurfSessionUrl();
+  return navigateWebSurf(url, { historyMode: "replace" });
+}
+
+function handleWebSurfBrowserToolbarEvent(event) {
+  const target = event?.target instanceof Element ? event.target : null;
+  const bookmarkLink = target?.closest("[data-websurf-bookmark-link]");
+  if (bookmarkLink) {
+    event.preventDefault();
+    navigateWebSurf(bookmarkLink.dataset.websurfBookmarkLink, { trigger: bookmarkLink });
+    return;
+  }
+  const action = target?.closest("[data-websurf-browser-action]")?.dataset.websurfBrowserAction;
+  if (!action) return;
+  event.preventDefault();
+  if (action === "back") navigateWebSurfHistory(-1);
+  else if (action === "forward") navigateWebSurfHistory(1);
+  else if (action === "home") navigateWebSurf("websurf.swim");
+  else if (action === "bookmark") toggleWebSurfBookmark();
+  else if (action === "refresh") refreshWebSurfRoute();
+}
+
+function handleWebSurfBrowserToolbarKeyDown(event) {
+  const input = dom.webSurfAddressInput;
+  if (!input || event.target !== input) return;
+  // A focused address field is text-entry territory, never game-hotkey territory.
+  event.stopPropagation();
+  if (event.key === "Enter") {
+    event.preventDefault();
+    navigateWebSurf(input.value);
+    input.blur();
+  } else if (event.key === "Escape") {
+    event.preventDefault();
+    input.value = getWebSurfSessionUrl();
+    input.blur();
+  }
+}
+
+function isWebSurfFullscreenActive() {
+  return runtime.storeOverlayOpen === true && getUiSettings().webSurfFullscreen === true;
+}
+
+function clearWebSurfToolbarHideTimer() {
+  if (runtime.webSurfToolbarHideTimer) {
+    window.clearTimeout(runtime.webSurfToolbarHideTimer);
+    runtime.webSurfToolbarHideTimer = 0;
+  }
+}
+
+function revealWebSurfToolbar() {
+  clearWebSurfToolbarHideTimer();
+  if (!isWebSurfFullscreenActive() || runtime.webSurfToolbarHidden !== true) return false;
+  runtime.webSurfToolbarHidden = false;
+  dom.storeOverlay?.classList.remove("is-websurf-toolbar-hidden");
+  return true;
+}
+
+function scheduleWebSurfToolbarHide() {
+  clearWebSurfToolbarHideTimer();
+  // The top browser chrome is intentionally persistent. Keeping it visible
+  // makes the address field and navigation controls predictable in fullscreen.
+  return false;
+}
+
+function handleWebSurfFullscreenPointerMove(event) {
+  if (!isWebSurfFullscreenActive()) return;
+  const overlay = dom.storeOverlay;
+  const toolbar = dom.webSurfBrowserToolbar;
+  if (!overlay || !toolbar) return;
+  const bounds = overlay.getBoundingClientRect();
+  const nearTop = Number(event?.clientY) <= bounds.top + Math.max(42, Math.min(84, bounds.height * 0.09));
+  if (nearTop || toolbar.contains(event.target)) revealWebSurfToolbar();
+  else if (!toolbar.matches(":hover") && !toolbar.contains(document.activeElement)) scheduleWebSurfToolbarHide();
+}
+
+function resetWebSurfToolbarVisibility() {
+  clearWebSurfToolbarHideTimer();
+  runtime.webSurfToolbarHidden = false;
+  dom.storeOverlay?.classList.remove("is-websurf-toolbar-hidden");
+}
+
 function normalizeWebSurfSessionPage(value) {
-  return ["home", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+  return ["home", "themes", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
 }
 
 function getActiveWebSurfSessionPage() {
@@ -19762,6 +20390,7 @@ function getActiveWebSurfSessionPage() {
   if (runtime.proteusDesignerOpen === true) return "designer";
   if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
   if (runtime.davyJonesLockerOpen === true) return "locker";
+  if (runtime.webSurfThemesOpen === true) return "themes";
   if (runtime.webHomeOpen === true) return "home";
   if (runtime.bubbleBankOpen === true) return "bank";
   return "store";
@@ -19769,6 +20398,7 @@ function getActiveWebSurfSessionPage() {
 
 function getWebSurfSessionScrollElement(page) {
   if (page === "home") return dom.webHomePage;
+  if (page === "themes") return dom.webSurfThemesPage;
   if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
   if (page === "locker") return dom.davyJonesLockerPage;
   if (page === "proteus") return document.querySelector("#proteusBiodynePage .proteus-biodyne-scroll");
@@ -19871,9 +20501,10 @@ function restoreWebSurfSessionScroll(page) {
 
 function resetWebSurfSessionState() {
   runtime.webSurfLastPage = "home";
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBodegaHomeOpen = false;
   runtime.bubbleBodegaSessionVisited = false;
-  runtime.webSurfPageScroll = { home: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
+  runtime.webSurfPageScroll = { home: 0, themes: 0, store: 0, bank: 0, locker: 0, designer: 0, settings: 0 };
   runtime.webSurfSelectedMailId = "";
   runtime.webSurfSettingsTabOpen = false;
   runtime.webSurfSettingsReturnPage = "home";
@@ -19883,6 +20514,7 @@ function resetWebSurfSessionState() {
   if (runtime.storeOverlayOpen) {
     window.closeProteusBiodynePage?.(false);
     runtime.webHomeOpen = true;
+    runtime.webSurfThemesOpen = false;
     runtime.bubbleBankOpen = false;
     runtime.davyJonesLockerOpen = false;
     runtime.davyJonesLockerTabOpen = false;
@@ -19938,6 +20570,7 @@ function openWebSurfSettingsPage() {
   runtime.webSurfSettingsTabOpen = true;
   runtime.settingsOverlayOpen = true;
   runtime.webHomeOpen = false;
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.davyJonesLockerOpen = false;
   ensureWebSurfSettingsPageMounted();
@@ -19966,6 +20599,10 @@ function closeWebSurfSettingsPage(options = {}) {
 
 function openWebSurfSessionPage() {
   const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "themes") {
+    navigateWebSurf("websurf.swim/themes", { historyMode: "restore" });
+    return;
+  }
   if (page === "bank") {
     if (openBubbleBank(runtime.bubbleBankTab || "account")) restoreWebSurfSessionScroll("bank");
     return;
@@ -19993,6 +20630,7 @@ function openWebSurfSessionPage() {
   }
   if (!openStoreOverlay(runtime.storeTab || "food", { render: false, rememberWebSurfPage: false })) return;
   runtime.webHomeOpen = true;
+  runtime.webSurfThemesOpen = false;
   runtime.bubbleBankOpen = false;
   runtime.webSurfLastPage = "home";
   renderUi(Date.now());
@@ -20040,6 +20678,9 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.webSurfLastPage = "store";
     if (["food", "pharmacy", "fish", "decor", "equipment"].includes(view)) tab = view;
     window.prepareBubbleBodegaView?.(view);
+    updateWebSurfRoute(view === "home"
+      ? "bubblebodega.swim"
+      : `bubblebodega.swim/shop/${["food", "pharmacy", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
   }
   // A request made while the window was already open used to remain here until
   // a later reopen, when it could overwrite Home. Navigation is synchronous now.
@@ -20071,6 +20712,7 @@ function openDavyJonesLockerPage() {
   runtime.davyJonesLockerOpen = true;
   runtime.davyJonesLockerTabOpen = true;
   runtime.webSurfLastPage = "locker";
+  updateWebSurfRoute("davyjoneslocker.hadal");
   renderUi(Date.now());
   restoreWebSurfSessionScroll("locker");
   return true;
@@ -20084,6 +20726,7 @@ function openBubbleBank(tab = "account", options = {}) {
   runtime.bubbleBankOpen = true;
   runtime.webSurfLastPage = "bank";
   runtime.bubbleBankTab = normalizeBubbleBankTab(tab);
+  updateWebSurfRoute(`bubbleborough.swim/bank/${runtime.bubbleBankTab}`);
   runtime.bubbleBankTargetId = String(options.targetId || "");
   renderUi(Date.now());
   return true;
@@ -20091,6 +20734,12 @@ function openBubbleBank(tab = "account", options = {}) {
 
 function handleWebPageNavigation(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  const routeLink = target?.closest("[data-websurf-route]");
+  if (routeLink) {
+    event?.preventDefault?.();
+    navigateWebSurf(routeLink.dataset.websurfRoute, { trigger: routeLink });
+    return;
+  }
   // The Bodega shell owns the aggregate catalogue, but this click must first
   // leave the internal Home route. Its capture listener then mounts the full
   // listing over this freshly visible native catalogue.
@@ -20239,6 +20888,30 @@ function handleWebPageNavigation(event) {
     if (destination === "store") openStoreOverlay(section);
     return;
   }
+  if (target?.closest("[data-websurf-clear-history]")) {
+    event?.preventDefault?.();
+    clearWebSurfHistory();
+    return;
+  }
+  if (target?.closest("[data-websurf-reset-preferences]")) {
+    event?.preventDefault?.();
+    resetWebSurfPreferences();
+    return;
+  }
+  if (target?.closest("[data-websurf-open-themes]")) {
+    event?.preventDefault?.();
+    navigateWebSurf("websurf.swim/themes");
+    return;
+  }
+  const themeButton = target?.closest("[data-websurf-theme-action]");
+  if (themeButton instanceof HTMLButtonElement) {
+    event?.preventDefault?.();
+    if (themeButton.disabled) return;
+    themeButton.disabled = true;
+    const result = purchaseWebSurfChromeTheme(themeButton.dataset.websurfThemeAction || "");
+    if (!result?.ok) themeButton.disabled = false;
+    return;
+  }
   const emailAction = target?.closest("[data-websurf-email-action]");
   if (emailAction) {
     event?.preventDefault?.();
@@ -20261,9 +20934,22 @@ function handleWebPageNavigation(event) {
     closeStoreOverlay({ preserveWebSurfSession: true });
     return;
   }
+  const closeTab = target?.closest("[data-webpage-tab-close]");
+  if (closeTab) {
+    event?.preventDefault?.();
+    event?.stopPropagation?.();
+    closeWebSurfBrowserTab(closeTab.closest("[data-webpage-destination]"));
+    return;
+  }
   const tab = target?.closest("[data-webpage-destination]");
   if (!tab) return;
   const destination = String(tab.dataset.webpageDestination || "");
+  const routeUrl = getWebSurfUrlForDestination(destination);
+  if (routeUrl) {
+    event?.preventDefault?.();
+    navigateWebSurf(routeUrl, { trigger: tab });
+    return;
+  }
   if (destination === "settings") {
     openSettingsOverlay();
     return;
@@ -20336,6 +21022,7 @@ function closeStoreOverlay(options = {}) {
   }
 
   if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
+  resetWebSurfToolbarVisibility();
   window.closeProteusBiodynePage?.(false);
   window.closeWebSurfSubsidiaryPage?.(true);
   if (runtime.proteusDesignerOpen === true || runtime.proteusDesignerCompleting === true) closeProteusDesignerSession();
@@ -20444,7 +21131,7 @@ function resetSelectedDecorSettings() {
     setDecorGroupLayer(item, defaultLayer, false);
   } else {
     item.scale = defaultScale;
-    item.tankLayer = defaultLayer;
+    setPlacedDecorLegacyLayer(item, defaultLayer);
     const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
     item.xNorm = placement.xNorm;
     item.yNorm = placement.yNorm;
@@ -21673,12 +22360,12 @@ function setDecorGroupLayer(item, nextLayer, save = false) {
   for (const groupItem of groupItems) {
     const currentLayer = getDecorLayerSelectValue(groupItem);
     const resolvedLayer = getDecorFrontLayer(groupItem.decorKey, currentLayer + layerOffset);
-    groupItem.tankLayer = currentLayer;
+    setPlacedDecorLegacyLayer(groupItem, currentLayer);
     if (resolvedLayer === currentLayer) {
       continue;
     }
 
-    groupItem.tankLayer = resolvedLayer;
+    setPlacedDecorLegacyLayer(groupItem, resolvedLayer);
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -21715,9 +22402,9 @@ function updateSelectedDecorSetting(setting, value) {
     const groupLayer = isPlacedDecorGrouped(item) ? setDecorGroupLayer(item, nextLayer, false) : null;
     if (groupLayer === null) {
       const currentLayer = getDecorLayerSelectValue(item);
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (nextLayer !== currentLayer) {
-        item.tankLayer = nextLayer;
+        setPlacedDecorLegacyLayer(item, nextLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;
@@ -25836,6 +26523,11 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     : "roam";
   const activeLayer = getFishTankLayer(fish);
   const desiredLayer = getDesiredFishTankLayer(fish);
+  const activeDepthZ = getFishTankDepthZ(fish);
+  const desiredDepthZ = getDesiredFishTankDepthZ(fish);
+  const depthRadius = getFishTankDepthRadius(fish);
+  const depthVolume = getTankDepthVolume(activeDepthZ, depthRadius);
+  const depthBucket = getTankDepthBucket(activeDepthZ);
   const targetX = clamp(Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0, 1);
   const targetY = clamp(Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5, 0, 1);
   const targetBucket = `${Math.round(targetX * 20)},${Math.round(targetY * 20)}`;
@@ -25851,6 +26543,7 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
     effectiveBehavior,
     activity,
     `layer:${activeLayer}>${desiredLayer}`,
+    `depth:${activeDepthZ.toFixed(3)}>${desiredDepthZ.toFixed(3)}@${depthBucket}`,
     isProteusSpecimen ? "vitals:disabled" : `health:${healthUnits}`,
     isProteusSpecimen ? "affect:disabled" : `comfort:${Math.round(comfortValue * 10)}`
   ];
@@ -25907,6 +26600,11 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   if (caveState) {
     signatureParts.push(`cave:${caveState}`);
   }
+  detailParts.push(
+    `depth ${activeDepthZ.toFixed(3)} -> ${desiredDepthZ.toFixed(3)} `
+    + `span ${depthVolume.min.toFixed(3)}-${depthVolume.max.toFixed(3)} bucket ${depthBucket}`
+    + (Number.isFinite(Number(fish.depthRouteTargetZ)) ? ` route ${Number(fish.depthRouteTargetZ).toFixed(3)}` : "")
+  );
   if (breedingRole) {
     signatureParts.push(`breed:${breedingRole}`);
   }
@@ -25934,6 +26632,13 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
   const diseaseState = sanitizeDiseaseState(fish.diseaseState);
   const recentDiseaseSignals = getRecentDiseaseSignals(fish, now);
   const behaviorIntent = getFishBehaviorIntent(fish, now);
+  const brain = getFishBehaviorDebugSnapshot(fish, now);
+  if (brain?.intention) {
+    const scoreText = (brain.scores || []).map((score) => `${score.type}:${score.value.toFixed(2)}`).join(", ");
+    const nextThinkSeconds = Math.max(0, Math.ceil((Number(brain.nextUpdateAt) - now) / 1000));
+    detailParts.unshift(`brain ${brain.intention}/${brain.stage} (${brain.tier}) next ${nextThinkSeconds}s${scoreText ? ` | ${scoreText}` : ""}`);
+    signatureParts.push(`brain:${brain.intention}:${brain.stage}:${Math.round(Number(brain.nextUpdateAt) / 1000)}:${scoreText}`);
+  }
   if (behaviorIntent?.type) {
     detailParts.unshift(`${behaviorIntent.type}${behaviorIntent.cause ? ` | ${behaviorIntent.cause}` : ""}`);
     signatureParts.push(`intent:${behaviorIntent.type}:${behaviorIntent.cause || ""}`);
@@ -26106,6 +26811,31 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
       runtime.debugFishBehaviorSignatures.delete(fishId);
     }
   }
+  renderFishBehaviorSchedulerReadout(now);
+}
+
+function renderFishBehaviorSchedulerReadout(now = Date.now()) {
+  if (!dom.debugFishBehaviorReadout) return;
+  const fish = getFishByIdFast(runtime.selectedFishId);
+  if (!fish) {
+    setTextIfChanged(dom.debugFishBehaviorReadout, "Select a fish to inspect behavior.");
+    return;
+  }
+  const snapshot = getFishBehaviorDebugSnapshot(fish, now);
+  const scores = (snapshot.scores || []).map((score) => `${score.type} ${score.value.toFixed(2)}`).join(" | ") || "pending";
+  const traits = Object.entries(snapshot.traits || {}).map(([key, value]) => `${key} ${Number(value).toFixed(2)}`).join(", ");
+  const path = snapshot.path ? `${snapshot.path.state} age ${Math.max(0, Math.round((now - (snapshot.path.lastProgressAt || now)) / 1000))}s` : "direct";
+  const school = snapshot.school ? `${snapshot.school.members.length} followers${snapshot.school.alert ? " alert" : ""}` : "none";
+  const performance = snapshot.performance || {};
+  const metrics = snapshot.metrics || null;
+  setTextIfChanged(dom.debugFishBehaviorReadout, [
+    `Intention: ${snapshot.intention} / ${snapshot.stage} (${snapshot.tier})`,
+    `Scores: ${scores}`,
+    `Traits: ${traits}`,
+    `Path: ${path} | School: ${school}`,
+    `AI: ${performance.evaluations || 0} eval, ${performance.queries || 0} local queries, ${performance.deferred || 0} deferred`,
+    metrics ? `1s: ${metrics.evaluationsPerSecond.toFixed(1)} eval/s, ${metrics.queriesPerSecond.toFixed(1)} queries/s, avg ${metrics.averageEvaluationMs.toFixed(2)}ms max ${metrics.maximumEvaluationMs.toFixed(2)}ms` : "1s: collecting metrics…"
+  ].join("\n"));
 }
 
 function formatDebugFishBehaviorLogEntry(entry) {
@@ -27031,6 +27761,13 @@ function bindEvents() {
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
   document.addEventListener("click", handleWebPageNavigation);
+  document.addEventListener("click", handleWebSurfBrowserToolbarEvent);
+  document.addEventListener("keydown", handleWebSurfBrowserToolbarKeyDown, true);
+  dom.storeOverlay?.addEventListener("pointermove", handleWebSurfFullscreenPointerMove);
+  dom.webSurfBrowserToolbar?.addEventListener("pointerenter", revealWebSurfToolbar);
+  dom.webSurfBrowserToolbar?.addEventListener("pointerleave", scheduleWebSurfToolbarHide);
+  dom.webSurfBrowserToolbar?.addEventListener("focusin", revealWebSurfToolbar);
+  dom.webSurfBrowserToolbar?.addEventListener("focusout", scheduleWebSurfToolbarHide);
   document.addEventListener("input", handleProteusDesignerInputEvent);
   document.addEventListener("change", handleProteusDesignerChangeEvent);
   dom.toolbarWallet?.addEventListener("click", toggleWalletTransactionMenu);
@@ -27970,6 +28707,9 @@ function bindEvents() {
   dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
     setWebSurfThemeMode(event.currentTarget?.value);
   });
+  dom.webSurfFullscreenToggle?.addEventListener("change", (event) => {
+    setWebSurfFullscreen(event.currentTarget?.checked === true);
+  });
   dom.toolbarTileColorInput?.addEventListener("input", (event) => {
     const color = normalizeToolbarTileColor(event.currentTarget?.value);
     document.documentElement.style.setProperty("--toolbar-tile-color", color);
@@ -28005,8 +28745,8 @@ function bindEvents() {
   dom.backgroundDepthHazeToggleInput?.addEventListener("change", (event) => {
     setBackgroundDepthHazeEnabled(event.currentTarget?.checked);
   });
-  dom.simpleTurnAnimationsToggleInput?.addEventListener("change", (event) => {
-    setSimpleTurnAnimationsOnly(event.currentTarget?.checked);
+  dom.complexTurnAnimationsToggleInput?.addEventListener("change", (event) => {
+    setComplexTurnAnimationsEnabled(event.currentTarget?.checked);
   });
   dom.halloweenModeSelect?.addEventListener("change", (event) => {
     setHalloweenMode(event.currentTarget?.value);
@@ -29487,6 +30227,23 @@ function bindEvents() {
 
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
+  dom.tankStage.addEventListener("wheel", (event) => {
+    if (!runtime.editTankMode || !getActiveDecorShortcutTarget()) return;
+    if (event.target.closest("button, input, select, textarea, [data-scrollable]")) return;
+
+    event.preventDefault();
+    const now = Date.now();
+    const elapsed = now - (runtime.decorDepthWheelAt || 0);
+    runtime.decorDepthWheelAt = now;
+    const precision = event.shiftKey ? 0.35 : 1;
+    const acceleration = event.ctrlKey || event.metaKey ? 2.4 : (elapsed < 120 ? 1.65 : 1);
+    const direction = event.deltaY < 0 ? -1 : 1;
+    const result = stepActiveDecorDepth(direction, precision * acceleration);
+    if (result.changed) {
+      showToast("Decoration moved through depth.", { durationMs: 900, key: "decor-depth-wheel" });
+    }
+  }, { passive: false });
+
   dom.tankStage.addEventListener("mousedown", (event) => {
     if (shouldCaptureTankDesktopInput(event.target)) {
       event.preventDefault();
@@ -29776,7 +30533,11 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.cleaningMode && isTankOverlayTarget(event.target)) {
+    const toolCursorActive = runtime.cleaningMode
+      || runtime.scoopMode
+      || Boolean(runtime.feedingModeFoodKey)
+      || Boolean(runtime.medicineModeKey);
+    if (toolCursorActive && isTankOverlayTarget(event.target)) {
       runtime.pointerStagePx = null;
       runtime.lastScrubPoint = null;
       resetScrubWipeSoundState();
@@ -29869,7 +30630,7 @@ function bindEvents() {
       || runtime.scoopMode
       || Boolean(runtime.feedingModeFoodKey)
       || Boolean(runtime.medicineModeKey);
-    if (!toolCursorActive) runtime.pointerStagePx = null;
+    if (!runtime.pointerDown) runtime.pointerStagePx = null;
     runtime.lastScrubPoint = null;
     resetScrubWipeSoundState();
     renderToolCursor();
@@ -29993,6 +30754,20 @@ function bindEvents() {
       setSelectedDecor(placedId);
     }
     performDecorEditShortcutAction("layer-down");
+  });
+  dom.selectedDecorBringToFrontButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorBringToFrontButton?.dataset.depthDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
+    performDecorEditShortcutAction("bring-to-front");
+  });
+  dom.selectedDecorSendToBackButton?.addEventListener("click", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    const placedId = dom.selectedDecorSendToBackButton?.dataset.depthDecor;
+    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
+    performDecorEditShortcutAction("send-to-back");
   });
   dom.selectedDecorBuyAnotherButton?.addEventListener("click", (event) => {
     event.preventDefault();
@@ -30206,10 +30981,17 @@ function bindEvents() {
       || Boolean(runtime.feedingModeFoodKey)
       || Boolean(runtime.medicineModeKey);
     if (toolCursorActive) {
-      const stagePoint = getTankStageClientPointInLayoutSpace(event);
-      if (stagePoint) {
-        runtime.pointerStagePx = { x: stagePoint.x, y: stagePoint.y };
+      const target = event.target instanceof Element ? event.target : null;
+      const isTankSurface = Boolean(target && dom.tankStage?.contains(target) && !isTankOverlayTarget(target));
+      if (!isTankSurface) {
+        runtime.pointerStagePx = null;
         renderToolCursor();
+      } else {
+        const stagePoint = getTankStageClientPointInLayoutSpace(event);
+        if (stagePoint) {
+          runtime.pointerStagePx = { x: stagePoint.x, y: stagePoint.y };
+          renderToolCursor();
+        }
       }
     }
     if (!runtime.decorResizeState) {
@@ -34911,6 +35693,35 @@ function shouldDrawDiseaseGreenBubble(fish, now = Date.now()) {
 
 function getFishDiseaseBubbleMouthPoint(fish, species, pose, width, height, now = Date.now()) {
   const stableScale = getViewportStableAssetScale();
+  if (typeof getFishV26VisualUvWorldFrame === "function") {
+    const fishAsset = getFishDisplayAssetPath(fish, species, now) || species?.asset;
+    const mask = fishAsset ? getImageAlphaMask(fishAsset) : null;
+    const mouthAnchor = getFishGravelPebbleFrontAnchor(mask);
+    const image = fishAsset ? runtime.images.get(fishAsset) : null;
+    if (mouthAnchor && isUsableRuntimeImage(image)) {
+      const visualWidth = getFishDisplayWidth(fish, species, now);
+      const visualHeight = visualWidth * (image.height / Math.max(1, image.width));
+      const v26Mouth = getFishV26VisualUvWorldFrame(
+        fish,
+        species,
+        pose,
+        visualWidth,
+        visualHeight,
+        mouthAnchor.u,
+        mouthAnchor.v,
+        now,
+        { surface: "near" }
+      );
+      if (v26Mouth) {
+        return {
+          x: v26Mouth.x + v26Mouth.direction * 2.8 * stableScale,
+          y: v26Mouth.y,
+          direction: v26Mouth.direction,
+          stableScale
+        };
+      }
+    }
+  }
   const direction = pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1);
   const mouthOffset = getFishFrontMouthOffsetAtPose(
     fish,
@@ -35023,6 +35834,7 @@ function scheduleMoodBubble(fish, now = Date.now(), delay = null, count = MOOD_B
 }
 
 function triggerGlassTapMoodCheck(now = Date.now()) {
+  if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("GLASS_TAPPED", {}, now);
   const tank = typeof getCurrentTank === "function" ? getCurrentTank() : null;
   if (!tank || now < Number(runtime.glassTapMoodCheckAt || 0)) return false;
   // Flush an emission that is due now before checking whether a fresh burst
@@ -35803,7 +36615,11 @@ function applyDiseaseBehaviorTarget(fish, species, target, now = Date.now()) {
   fish.targetAt = target.targetAt || now + randomBetween(2500, 6500);
   fish.hangoutDecorId = target.hangoutDecorId || null;
   fish.hangoutZoneType = target.hangoutZoneType || null;
-  setFishDesiredTankLayer(fish, Number.isFinite(Number(target.targetLayer)) ? clampTankLayer(Number(target.targetLayer)) : getFishTankLayer(fish));
+  if (Number.isFinite(Number(target.targetZ))) {
+    setFishDesiredTankDepth(fish, Number(target.targetZ));
+  } else {
+    setFishDesiredTankLayer(fish, Number.isFinite(Number(target.targetLayer)) ? clampTankLayer(Number(target.targetLayer)) : getFishTankLayer(fish));
+  }
   fish.swimSpeed = target.speed || normalizeFishSpeed(species);
   recordDiseaseSignal(fish, target.signal || "slow_drift", now);
   return true;
@@ -36486,7 +37302,9 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
   fish.targetAt = target.targetAt || now + randomBetween(species.targetMinMs, species.targetMaxMs);
   fish.hangoutDecorId = target.hangoutDecorId || target.decorId || null;
   fish.hangoutZoneType = target.hangoutZoneType || target.zoneType || null;
-  if (Number.isFinite(Number(target.targetLayer))) {
+  if (Number.isFinite(Number(target.targetZ))) {
+    setFishDesiredTankDepth(fish, Number(target.targetZ));
+  } else if (Number.isFinite(Number(target.targetLayer))) {
     setFishDesiredTankLayer(fish, clampTankLayer(Number(target.targetLayer)));
   }
   if (target.speed) {
@@ -36828,6 +37646,7 @@ function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, n
       xNorm: clamp((rival.xNorm || 0.5) + randomBetween(-0.018, 0.018), 0.08, 0.92),
       yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.012, 0.012), 0.14, 0.82),
       targetLayer: getFishTankLayer(rival),
+      targetZ: getFishTankDepthZ(rival),
       targetAt: now + randomBetween(380, 650),
       intentType: "betta confrontation",
       intentCause: `chasing ${rival.name || "rival"}`,
@@ -36872,6 +37691,7 @@ function pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, n
       xNorm: clamp((rival.xNorm || 0.5) + side * 0.085, 0.08, 0.92),
       yNorm: clamp((rival.yNorm || 0.5) + randomBetween(-0.018, 0.018), 0.14, 0.82),
       targetLayer: getFishTankLayer(rival),
+      targetZ: getFishTankDepthZ(rival),
       targetAt: now + randomBetween(700, 1100),
       intentType: "betta confrontation",
       intentCause: `approaching rival ${rival.name || "Betta"}`,
@@ -37493,6 +38313,7 @@ function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), optio
     xNorm: clamp(midX + side * randomBetween(0.028, 0.05), 0.08, 0.92),
     yNorm: clamp(midY + randomBetween(-0.025, 0.025), 0.16, 0.48),
     targetLayer: getFishTankLayer(partner),
+    targetZ: getFishTankDepthZ(partner),
     targetAt: Math.min(Number(fish.pencilSparUntil) || now + 900, now + randomBetween(550, 900)),
     intentType: "harmless spar",
     intentCause: "display sparring",
@@ -37522,6 +38343,7 @@ function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), o
       xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
       yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
       targetLayer: getFishTankLayer(intruder),
+      targetZ: getFishTankDepthZ(intruder),
       targetAt: now + randomBetween(650, 1200),
       intentType: "territorial warning",
       intentCause: "adult home territory",
@@ -37580,6 +38402,7 @@ function pickBlueRamTerritoryBehaviorTarget(fish, species, now = Date.now()) {
       xNorm: clamp((intruder.xNorm || 0.5) + (centerX - (intruder.xNorm || 0.5)) * 0.18, 0.08, 0.92),
       yNorm: clamp((intruder.yNorm || 0.5) + (centerY - (intruder.yNorm || 0.5)) * 0.18, 0.14, 0.86),
       targetLayer: getFishTankLayer(intruder),
+      targetZ: getFishTankDepthZ(intruder),
       targetAt: now + randomBetween(600, 1100),
       intentType: egg ? "guard egg" : "breeding aggression",
       intentCause: egg ? "egg territory" : "frisky food",
@@ -37630,6 +38453,7 @@ function pickPilotCompanionBehaviorTarget(fish, species, now = Date.now(), optio
     xNorm: clamp((companion.xNorm || 0.5) + randomBetween(-0.08, 0.08), 0.08, 0.92),
     yNorm: clamp((companion.yNorm || 0.5) + randomBetween(-0.05, 0.05), 0.14, 0.82),
     targetLayer: getFishTankLayer(companion),
+    targetZ: getFishTankDepthZ(companion),
     targetAt: now + randomBetween(2600, 5200),
     intentType: "pilot escort",
     intentCause: "large-animal association",
@@ -37741,6 +38565,11 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     fish.behaviorIntent = null;
     return false;
+  }
+  // The central scheduler owns ordinary intentions. Existing specialist
+  // behaviors below remain available as fallbacks and as emergency executors.
+  if (applyScheduledFishBehaviorTarget(fish, species, now)) {
+    return true;
   }
   if (applyDiseaseAvoidanceTarget(fish, species, now)) {
     setFishBehaviorIntent(fish, "avoid", "visible symptoms nearby", now);
@@ -37944,6 +38773,363 @@ function getRuntimeImageSourceKey(sourceImage) {
 }
 // </bundle-source>
 
+// <bundle-source path="fish/behavior-scheduler.js">
+// Source fragment: fish/behavior-scheduler.js
+// A deliberately small, shared decision layer. Movement, collision, cave and
+// feeding executors remain in their established modules; this owns only the
+// fish's long-lived intention and its cheap, local perception snapshot.
+
+function getFishBehaviorScheduler() {
+  if (!runtime.fishBehaviorScheduler) {
+    runtime.fishBehaviorScheduler = {
+      cursor: 0,
+      spatial: new Map(),
+      spatialAt: 0,
+      spatialCellSize: 0.22,
+      environment: { signature: "", checkedAt: 0, zones: { cover: [], rest: [], open: [], substrate: [] } },
+      events: [],
+      urgentFishIds: new Set(),
+      pathQueue: [],
+      metrics: { startedAt: 0, evaluations: 0, queries: 0, deferred: 0, totalEvalMs: 0, maxEvalMs: 0, last: null },
+      counters: { evaluations: 0, queries: 0, deferred: 0, maxMs: 0, frameAt: 0 }
+    };
+  }
+  return runtime.fishBehaviorScheduler;
+}
+
+function getFishBehaviorSimulationTier(fish, now = Date.now()) {
+  if (fish?.caveState || (Number(fish?.restUntil) || 0) > now) return "background";
+  if ((Number(fish?.panicUntil) || 0) > now || fish?.activity === "feeding" || fish?.schoolLeaderId) return "active";
+  return "normal";
+}
+
+function getFishBehaviorCapabilities(fishOrSpecies) {
+  const species = fishOrSpecies?.speciesId ? getSpeciesForFish(fishOrSpecies) : fishOrSpecies;
+  const locomotion = getFishLocomotionProfile(fishOrSpecies || species);
+  const profile = getFishBehaviorProfile(fishOrSpecies || species);
+  const defaults = {
+    school: locomotion.schoolStrength > 0.25,
+    feed: !["sucker"].includes(species?.behavior),
+    hide: locomotion.caveAffinity > 0.35,
+    rest: locomotion.hoverChance > 0.08 || profile.slowGraceful,
+    explore: !profile.detritusDiet,
+    territorial: (getFishPersonality(fishOrSpecies) || "") === "territorial" || profile.group === "special-predator",
+    modules: [locomotion.schoolStrength > 0.25 ? "schooling" : "", profile.detritusDiet ? "grazing" : "", profile.nightActive ? "night-activity" : "", profile.predatorDiet ? "predator" : ""].filter(Boolean)
+  };
+  const override = FISH_BEHAVIOR_CAPABILITY_OVERRIDES[species?.id] || {};
+  return { ...defaults, ...override, modules: override.modules || defaults.modules };
+}
+
+function processFishBehaviorPathQueue(now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  const request = scheduler.pathQueue.shift();
+  if (!request) return;
+  const fish = getFishByIdFast(request.fishId);
+  const brain = fish?.behaviorBrain;
+  if (!fish || !brain?.path || brain.path.state !== "queued") return;
+  // The established navigation executor owns actual obstacle routing. This
+  // capped handoff asks it for one fresh target without allowing a stampede.
+  fish.targetAt = now;
+  brain.path.state = "recovering";
+  brain.path.lastRequestAt = now;
+}
+
+function updateFishBehaviorSchoolStates(now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  const schools = new Map();
+  for (const fish of state?.fish || []) {
+    const leader = getFishSchoolFollowLeader(fish);
+    if (!leader || !Number.isFinite(Number(fish.followUntil)) || fish.followUntil <= now) continue;
+    const group = schools.get(leader.id) || { leaderId: leader.id, leaderTarget: { xNorm: leader.targetXNorm, yNorm: leader.targetYNorm }, members: [], alert: false, updatedAt: now };
+    group.members.push(fish.id);
+    group.alert ||= (Number(fish.panicUntil) || 0) > now;
+    schools.set(leader.id, group);
+  }
+  scheduler.schools = schools;
+  return schools;
+}
+
+function updateFishBehaviorPathStatus(fish, brain, now = Date.now()) {
+  if (!brain.target || !Number.isFinite(Number(brain.target.xNorm))) return;
+  const distanceSq = (fish.xNorm - brain.target.xNorm) ** 2 + (fish.yNorm - brain.target.yNorm) ** 2;
+  const path = brain.path || (brain.path = { lastDistanceSq: distanceSq, lastProgressAt: now, state: "direct" });
+  if (distanceSq + 0.0008 < path.lastDistanceSq) path.lastProgressAt = now;
+  path.lastDistanceSq = distanceSq;
+  if (now - path.lastProgressAt > 5000 && distanceSq > 0.004) {
+    path.state = "queued";
+    path.lastProgressAt = now;
+    const scheduler = getFishBehaviorScheduler();
+    if (!scheduler.pathQueue.some((request) => request.fishId === fish.id)) scheduler.pathQueue.push({ fishId: fish.id, queuedAt: now });
+  } else if (path.state === "recovering" && distanceSq < 0.004) {
+    path.state = "arrived";
+  }
+}
+
+function getFishBehaviorEnvironmentCache(now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  const tank = getCurrentTank();
+  const decor = Array.isArray(tank?.placedDecor) ? tank.placedDecor : [];
+  if (now - scheduler.environment.checkedAt < 2000) return scheduler.environment.zones;
+  const signature = decor.map((item) => `${item.id}:${item.xNorm}:${item.yNorm}:${item.decorKey}`).join("|");
+  scheduler.environment.checkedAt = now;
+  if (signature === scheduler.environment.signature) return scheduler.environment.zones;
+  const zones = { cover: [], rest: [], open: [], substrate: [{ xNorm: 0.5, yNorm: 0.86, zoneType: "substrate" }] };
+  for (const item of decor) {
+    const meta = getDecorFishBehaviorMeta(item) || {};
+    const zoneType = String(meta.zoneType || meta.behaviorType || "").toLowerCase();
+    const point = { xNorm: clamp(Number(item.xNorm) || 0.5, 0.08, 0.92), yNorm: clamp(Number(item.yNorm) || 0.6, 0.14, 0.9), decorId: item.id, zoneType };
+    if (/hide|cave|plant|hardscape|shelter/.test(zoneType)) zones.cover.push(point);
+    if (/rest|plant|cave|hardscape/.test(zoneType)) zones.rest.push(point);
+  }
+  zones.open.push({ xNorm: 0.5, yNorm: 0.48, zoneType: "open" });
+  scheduler.environment.signature = signature;
+  scheduler.environment.zones = zones;
+  return zones;
+}
+
+function dispatchFishBehaviorEvent(type, payload = {}, now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  scheduler.events.push({ type: String(type || ""), payload, at: now });
+  if (scheduler.events.length > 32) scheduler.events.splice(0, scheduler.events.length - 32);
+}
+
+function deliverFishBehaviorEvents(now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  if (!scheduler.events.length) return;
+  const events = scheduler.events.splice(0);
+  for (const event of events) for (const fish of state?.fish || []) {
+    if (!fish || isFishDead(fish)) continue;
+    const brain = ensureFishBehaviorBrain(fish, now);
+    if (event.type === "GLASS_TAPPED") {
+      brain.memory.disturbanceAt = event.at;
+      brain.nextThinkAt = Math.min(brain.nextThinkAt, now + 20);
+      scheduler.urgentFishIds.add(fish.id);
+    } else if (event.type === "FOOD_ADDED") {
+      brain.memory.foodAt = event.at;
+      brain.nextThinkAt = Math.min(brain.nextThinkAt, now + 60);
+    } else if (event.type === "DECOR_CHANGED") {
+      getFishBehaviorScheduler().environment.checkedAt = 0;
+    } else if (event.type === "AGGRESSIVE_DAMAGE" && event.payload.fishId === fish.id) {
+      brain.memory.attackedAt = event.at;
+      brain.nextThinkAt = Math.min(brain.nextThinkAt, now + 20);
+      scheduler.urgentFishIds.add(fish.id);
+    } else if (event.type === "FISH_DIED") {
+      brain.memory.deathSeenAt = event.at;
+    } else if (event.type === "LIGHT_STATE_CHANGED") {
+      brain.memory.lightChangedAt = event.at;
+      brain.nextThinkAt = Math.min(brain.nextThinkAt, now + 200);
+    }
+  }
+}
+
+function createFishBehaviorBrain(fish, now = Date.now()) {
+  const personality = getFishPersonality(fish) || "curious";
+  const trait = (name) => clamp(0.5 + (personality === name ? 0.14 : 0) + (Math.random() - 0.5) * 0.16, 0.25, 0.75);
+  return {
+    traits: { curiosity: trait("curious"), social: trait("social"), confidence: trait("bold"), activity: trait("explorer"), territorial: trait("territorial") },
+    intention: "cruise",
+    stage: "travel",
+    target: null,
+    startedAt: now,
+    commitUntil: now + 1800 + Math.random() * 1800,
+    nextThinkAt: now + Math.random() * 700,
+    lastBiologyAt: now,
+    memory: {},
+    history: {},
+    scores: []
+  };
+}
+
+function ensureFishBehaviorBrain(fish, now = Date.now()) {
+  if (!fish.behaviorBrain || typeof fish.behaviorBrain !== "object") fish.behaviorBrain = createFishBehaviorBrain(fish, now);
+  return fish.behaviorBrain;
+}
+
+function advanceFishBehaviorBrainOffline(fish, now = Date.now()) {
+  if (!fish?.behaviorBrain || typeof fish.behaviorBrain !== "object") return false;
+  const brain = ensureFishBehaviorBrain(fish, now);
+  const elapsedMs = Math.max(0, now - (Number(brain.lastBiologyAt) || now));
+  if (!elapsedMs) return false;
+  // Slow state is already advanced by the tank simulation. The brain only
+  // decays temporary knowledge and resumes with a fresh, non-synchronized
+  // thinking offset when the tank is shown again.
+  for (const [key, value] of Object.entries(brain.memory || {})) {
+    if (/At$/.test(key) && now - Number(value) > 12 * 60 * 1000) delete brain.memory[key];
+  }
+  if (now >= (Number(brain.commitUntil) || 0)) {
+    brain.intention = "cruise";
+    brain.stage = "resume";
+    brain.target = null;
+  }
+  brain.lastBiologyAt = now;
+  brain.nextThinkAt = now + 250 + Math.random() * 900;
+  return true;
+}
+
+function rebuildFishBehaviorSpatialHash(now = Date.now()) {
+  const scheduler = getFishBehaviorScheduler();
+  if (scheduler.spatialAt === now) return scheduler;
+  scheduler.spatial.clear();
+  const size = scheduler.spatialCellSize;
+  for (const fish of state?.fish || []) {
+    if (!fish || isFishDead(fish)) continue;
+    const key = `${Math.floor((fish.xNorm || 0) / size)}:${Math.floor((fish.yNorm || 0) / size)}`;
+    const bucket = scheduler.spatial.get(key);
+    if (bucket) bucket.push(fish); else scheduler.spatial.set(key, [fish]);
+  }
+  scheduler.spatialAt = now;
+  return scheduler;
+}
+
+function getFishBehaviorLocalPerception(fish, now = Date.now()) {
+  const scheduler = rebuildFishBehaviorSpatialHash(now);
+  const size = scheduler.spatialCellSize;
+  const cellX = Math.floor((fish.xNorm || 0) / size);
+  const cellY = Math.floor((fish.yNorm || 0) / size);
+  const nearby = [];
+  for (let y = cellY - 1; y <= cellY + 1; y += 1) for (let x = cellX - 1; x <= cellX + 1; x += 1) {
+    for (const other of scheduler.spatial.get(`${x}:${y}`) || []) if (other !== fish) nearby.push(other);
+  }
+  scheduler.counters.queries += 1;
+  return nearby;
+}
+
+function scoreFishBehaviorIntentions(fish, species, brain, nearby, now = Date.now()) {
+  const hunger = 1 - clamp(getFishNeedValue(fish, "hunger", now) / 100, 0, 1);
+  const socialNeed = 1 - clamp(getFishNeedValue(fish, "social", now) / 100, 0, 1);
+  const energy = clamp(getFishNeedValue(fish, "energy", now) / 100, 0, 1);
+  const fear = Math.max((Number(fish.panicUntil) || 0) > now ? 1 : 0, getFishDisposition(fish, now)?.mood === "Panicked" ? 0.85 : 0);
+  const profile = getFishLocomotionProfile(fish || species);
+  const capabilities = getFishBehaviorCapabilities(fish);
+  const food = (getCurrentTank()?.floatingPellets || []).length;
+  const schoolmates = nearby.reduce((count, other) => count + (getFishSchoolingCompatibilityId(other) === getFishSchoolingCompatibilityId(fish) ? 1 : 0), 0);
+  const cooldown = (key) => Math.max(0, 1 - Math.min(1, (now - (Number(brain.history[key]) || 0)) / 9000));
+  const scores = [
+    ["flee", fear * 1.2],
+    ["feed", capabilities.feed && food ? hunger * (0.65 + brain.traits.activity * 0.2) * (1 - fear) : 0],
+    ["school", capabilities.school ? Math.min(1, profile.schoolStrength * (0.4 + socialNeed + schoolmates * 0.12) * (1 - fear * 0.25)) : 0],
+    ["rest", capabilities.rest ? (1 - energy) * (0.5 + (profile.hoverChance || 0)) : 0],
+    ["explore", capabilities.explore ? brain.traits.curiosity * (0.25 + energy * 0.35) * (1 - cooldown("explore")) : 0],
+    ["cruise", 0.3 + brain.traits.activity * 0.25]
+  ].map(([type, value]) => ({ type, value: clamp(value, 0, 1) }));
+  scores.sort((a, b) => b.value - a.value);
+  return scores;
+}
+
+function selectFishBehaviorTarget(fish, species, intention, nearby, now = Date.now()) {
+  if (intention === "flee") {
+    const threat = nearby[0];
+    return threat ? getAvoidanceEscapeTarget(fish, species, threat) : null;
+  }
+  const zones = getFishBehaviorEnvironmentCache(now);
+  if (intention === "explore") return pickPersonalityDecorBehaviorTarget(fish, species, now) || zones.open[0] || null;
+  if (intention === "rest") return zones.rest[0] || pickDecorHangoutTarget(species, fish, now, { allowedZoneTypes: ["hide", "plant", "hardscape"], chanceMultiplier: 1.25, lingerMultiplier: 1.8 });
+  return null;
+}
+
+function runFishBehaviorScheduler(now = Date.now()) {
+  if (!state?.fish?.length || runtime.boroughOverviewOpen) return;
+  const scheduler = getFishBehaviorScheduler();
+  const metrics = scheduler.metrics;
+  if (!metrics.startedAt) metrics.startedAt = now;
+  if (now - metrics.startedAt >= 1000) {
+    const elapsedSeconds = Math.max(0.001, (now - metrics.startedAt) / 1000);
+    metrics.last = {
+      evaluationsPerSecond: metrics.evaluations / elapsedSeconds,
+      queriesPerSecond: metrics.queries / elapsedSeconds,
+      deferredPerSecond: metrics.deferred / elapsedSeconds,
+      averageEvaluationMs: metrics.evaluations ? metrics.totalEvalMs / metrics.evaluations : 0,
+      maximumEvaluationMs: metrics.maxEvalMs
+    };
+    metrics.startedAt = now;
+    metrics.evaluations = 0;
+    metrics.queries = 0;
+    metrics.deferred = 0;
+    metrics.totalEvalMs = 0;
+    metrics.maxEvalMs = 0;
+  }
+  const pelletCount = (getCurrentTank()?.floatingPellets || []).length;
+  if (Number.isFinite(scheduler.lastPelletCount) && pelletCount > scheduler.lastPelletCount) {
+    dispatchFishBehaviorEvent("FOOD_ADDED", { count: pelletCount - scheduler.lastPelletCount }, now);
+  }
+  scheduler.lastPelletCount = pelletCount;
+  if (scheduler.counters.frameAt !== now) scheduler.counters = { evaluations: 0, queries: 0, deferred: 0, maxMs: 0, frameAt: now };
+  rebuildFishBehaviorSpatialHash(now);
+  getFishBehaviorEnvironmentCache(now);
+  deliverFishBehaviorEvents(now);
+  processFishBehaviorPathQueue(now);
+  updateFishBehaviorSchoolStates(now);
+  const fishList = state.fish;
+  const loadScale = clamp(fishList.length / 40, 1, 4);
+  const budget = Math.max(2, Math.min(10, Math.ceil(fishList.length / 8)));
+  for (let scanned = 0; scanned < fishList.length && scheduler.counters.evaluations < budget; scanned += 1) {
+    const urgentId = scheduler.urgentFishIds.values().next().value;
+    if (urgentId) scheduler.urgentFishIds.delete(urgentId);
+    const fish = urgentId ? getFishByIdFast(urgentId) : fishList[scheduler.cursor++ % fishList.length];
+    if (!fish || isFishDead(fish) || fish.caveState || fish.activity === "feeding") continue;
+    const brain = ensureFishBehaviorBrain(fish, now);
+    const leader = getFishSchoolFollowLeader(fish);
+    if (leader && Number(fish.followUntil) > now && (Number(fish.panicUntil) || 0) <= now) {
+      brain.intention = "school";
+      brain.stage = fish.schoolState || "formation";
+      brain.nextThinkAt = now + 1800 + Math.random() * 1200;
+      continue;
+    }
+    if (now < brain.nextThinkAt) continue;
+    const startedAt = performance.now();
+    const species = getSpeciesForFish(fish);
+    if (!species) continue;
+    const nearby = getFishBehaviorLocalPerception(fish, now);
+    const scores = scoreFishBehaviorIntentions(fish, species, brain, nearby, now);
+    const winner = scores[0];
+    const current = scores.find((score) => score.type === brain.intention);
+    const emergency = winner.type === "flee" && winner.value > 0.7;
+    if (emergency || now >= brain.commitUntil || winner.value > (current?.value || 0) + 0.18) {
+      brain.intention = winner.type;
+      brain.stage = winner.type === "rest" ? "approach" : "travel";
+      brain.target = selectFishBehaviorTarget(fish, species, winner.type, nearby, now);
+      brain.startedAt = now;
+      brain.commitUntil = now + (winner.type === "flee" ? 1200 : 2600 + Math.random() * 3600);
+      brain.history[winner.type] = now;
+      setFishBehaviorIntent(fish, winner.type, `score ${winner.value.toFixed(2)}`, now, { durationMs: brain.commitUntil - now + 600 });
+    }
+    brain.scores = scores.slice(0, 4);
+    brain.memory.nearbyFish = nearby.slice(0, 8).map((other) => other.id);
+    const tier = getFishBehaviorSimulationTier(fish, now);
+    // Scale only background/ordinary thought under load. Emergency movement,
+    // feeding and active schools retain responsive cadence.
+    const normalDelayScale = tier === "normal" ? loadScale : 1;
+    const backgroundDelayScale = tier === "background" ? loadScale : 1;
+    brain.nextThinkAt = now + (emergency ? 280 : tier === "active" ? 420 + Math.random() * 380 : tier === "background" ? (2800 + Math.random() * 1800) * backgroundDelayScale : (650 + Math.random() * 750) * normalDelayScale);
+    updateFishBehaviorPathStatus(fish, brain, now);
+    scheduler.counters.evaluations += 1;
+    const evaluationMs = performance.now() - startedAt;
+    scheduler.counters.maxMs = Math.max(scheduler.counters.maxMs, evaluationMs);
+    metrics.evaluations += 1;
+    metrics.queries += 1;
+    metrics.totalEvalMs += evaluationMs;
+    metrics.maxEvalMs = Math.max(metrics.maxEvalMs, evaluationMs);
+  }
+  if (scheduler.counters.evaluations >= budget) {
+    const deferred = Math.max(0, fishList.length - scheduler.counters.evaluations);
+    scheduler.counters.deferred += deferred;
+    metrics.deferred += deferred;
+  }
+}
+
+function applyScheduledFishBehaviorTarget(fish, species, now = Date.now()) {
+  const brain = fish?.behaviorBrain;
+  if (!brain || now >= brain.commitUntil || !brain.target || ["school", "feed"].includes(brain.intention)) return false;
+  return applyBehaviorTarget(fish, species, { ...brain.target, intentType: brain.intention, intentCause: "central behavior scheduler" }, now);
+}
+
+function getFishBehaviorDebugSnapshot(fish, now = Date.now()) {
+  const brain = ensureFishBehaviorBrain(fish, now);
+  const scheduler = getFishBehaviorScheduler();
+  return { intention: brain.intention, stage: brain.stage, nextUpdateAt: brain.nextThinkAt, traits: brain.traits, scores: brain.scores, memory: brain.memory, path: brain.path || null, pathQueueSize: scheduler.pathQueue.length, capabilities: getFishBehaviorCapabilities(fish), school: scheduler.schools?.get(getFishSchoolFollowLeader(fish)?.id) || null, tier: getFishBehaviorSimulationTier(fish, now), performance: scheduler.counters, metrics: scheduler.metrics.last };
+}
+// </bundle-source>
+
 // <bundle-source path="fish/appearance.js">
 // Source fragment: fish/appearance.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
@@ -38036,12 +39222,20 @@ function getFishLayerDepthScaleForPosition(layer, subLayer = DEFAULT_TANK_SUBLAY
   return majorScale + subLayerOffset;
 }
 
+function getFishDepthScaleForZ(z) {
+  const rearScale = getFishLayerDepthScaleForPosition(TANK_DEPTH_LAYERS, TANK_SUBLAYER_BACK);
+  const frontScale = getFishLayerDepthScaleForPosition(1, TANK_SUBLAYER_FRONT);
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const progress = (sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span;
+  return rearScale + (frontScale - rearScale) * progress;
+}
+
 function getFishLayerDepthScaleMultiplier(fish, now = Date.now()) {
   if (!fish) {
     return 1;
   }
 
-  const targetScale = getFishLayerDepthScaleForPosition(getFishTankLayer(fish), getFishTankSubLayer(fish));
+  const targetScale = getFishDepthScaleForZ(getFishTankDepthZ(fish));
   const transition = fish.id ? runtime.fishLayerDepthScaleTransitions.get(fish.id) : null;
   if (!transition) {
     return targetScale;
@@ -39345,6 +40539,19 @@ function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
   return WEBSURF_THEME_MODE_AUTO;
 }
 
+function sanitizeWebSurfChromeThemeSettings(source = {}) {
+  const catalog = Array.isArray(WEBSURF_CHROME_THEME_CATALOG) ? WEBSURF_CHROME_THEME_CATALOG : [];
+  const available = new Set(catalog.map((theme) => theme.id));
+  const ownedSource = Array.isArray(source.webSurfOwnedThemes) ? source.webSurfOwnedThemes : [];
+  const owned = [...new Set(ownedSource.map((theme) => String(theme || "").trim().toLowerCase()).filter((theme) => available.has(theme)))];
+  if (!owned.includes(WEBSURF_CHROME_THEME_DEFAULT)) owned.unshift(WEBSURF_CHROME_THEME_DEFAULT);
+  const requested = String(source.webSurfChromeTheme || WEBSURF_CHROME_THEME_DEFAULT).trim().toLowerCase();
+  return {
+    ownedThemes: owned,
+    activeTheme: owned.includes(requested) ? requested : WEBSURF_CHROME_THEME_DEFAULT
+  };
+}
+
 function normalizeSettingsVolume(value, fallback = 1) {
   const numeric = Number(value);
   if (!Number.isFinite(numeric)) {
@@ -39407,8 +40614,68 @@ function getAmbientBubbleLevelProfile(level = getAmbientBubbleLevel()) {
   return AMBIENT_BUBBLE_LEVEL_PROFILES[normalized] || AMBIENT_BUBBLE_LEVEL_PROFILES[AMBIENT_BUBBLE_LEVEL_DEFAULT];
 }
 
+function sanitizeWebSurfBrowserState(rawState, legacy = {}) {
+  const source = rawState && typeof rawState === "object" ? rawState : {};
+  const migrateSavedWebSurfUrl = (value) => {
+    const raw = String(value || "");
+    const migrations = [
+      [/^(https?:\/\/)?(?:www\.)?bubblebodega\.shop(?=\/|$)/i, "bubblebodega.swim"],
+      [/^(https?:\/\/)?(?:www\.)?tankazon\.shop(?=\/|$)/i, "bubblebodega.swim"],
+      [/^(https?:\/\/)?(?:www\.)?proteus\.bio(?=\/|$)/i, "proteusbiodyne.swim"],
+      [/^(https?:\/\/)?(?:www\.)?arcadia\.aqua(?=\/|$)/i, "arcadia.swim"],
+      [/^(https?:\/\/)?(?:www\.)?clearwell\.labs(?=\/|$)/i, "clearwell.swim"],
+      [/^(https?:\/\/)?(?:www\.)?tidewell\.aqua(?=\/|$)/i, "tidewell.swim"]
+    ];
+    for (const [pattern, replacement] of migrations) {
+      if (pattern.test(raw)) return raw.replace(pattern, (_match, protocol) => `${protocol || ""}${replacement}`);
+    }
+    return raw;
+  };
+  const validUrl = (value) => {
+    const route = typeof resolveWebSurfUrl === "function" ? resolveWebSurfUrl(migrateSavedWebSurfUrl(value)) : null;
+    return route?.status === "ok" ? route : null;
+  };
+  const discoveredSites = source.discoveredSites && typeof source.discoveredSites === "object" ? source.discoveredSites : {};
+  const discovered = Object.fromEntries(Object.entries(discoveredSites)
+    .filter(([domain, time]) => validUrl(domain)?.path === "/" && Number(time) > 0)
+    .slice(0, 80)
+    .map(([domain, time]) => [validUrl(domain).site.domain, Math.max(1, Number(time))]));
+  if (legacy.proteusDiscovered === true) discovered["proteusbiodyne.swim"] ||= Math.max(1, Number(legacy.proteusDiscoveredAt) || Date.now());
+  if (legacy.davyJonesLockerUnlocked === true) discovered["davyjoneslocker.hadal"] ||= Math.max(1, Number(legacy.davyJonesLockerUnlockedAt) || Date.now());
+  const defaultBookmarkUrls = ["bubblebodega.swim", "bubbleborough.swim/bank/account"];
+  const bookmarkDefaultsSeeded = source.bookmarkDefaultsSeeded === true;
+  for (const url of defaultBookmarkUrls) {
+    const route = validUrl(url);
+    if (route?.site?.beginsDiscovered === true) discovered[route.site.domain] ||= Date.now();
+  }
+  const bookmarks = Array.isArray(source.bookmarks) ? source.bookmarks : [];
+  const history = Array.isArray(source.history) ? source.history : [];
+  const normalizedBookmarks = bookmarks.map((entry) => {
+    const route = validUrl(entry?.url);
+    return route?.site.bookmarkable && discovered[route.site.domain] ? { url: route.url, createdAt: Math.max(1, Number(entry.createdAt) || Date.now()) } : null;
+  }).filter(Boolean).slice(0, 80);
+  if (!bookmarkDefaultsSeeded) {
+    for (const url of defaultBookmarkUrls.slice().reverse()) {
+      const route = validUrl(url);
+      if (route?.site.bookmarkable && !normalizedBookmarks.some((entry) => entry.url === route.url)) {
+        normalizedBookmarks.unshift({ url: route.url, createdAt: Date.now() });
+      }
+    }
+  }
+  return {
+    discoveredSites: discovered,
+    bookmarks: normalizedBookmarks.slice(0, 80),
+    bookmarkDefaultsSeeded: true,
+    history: history.map((entry) => {
+      const route = validUrl(entry?.url);
+      return route ? { url: route.url, siteId: route.site.id, title: String(entry?.title || route.site.displayName).slice(0, 100), visitedAt: Math.max(1, Number(entry?.visitedAt) || Date.now()) } : null;
+    }).filter(Boolean).slice(-100)
+  };
+}
+
 function sanitizeUiSettings(rawSettings) {
   const source = rawSettings && typeof rawSettings === "object" ? rawSettings : {};
+  const webSurfChromeThemes = sanitizeWebSurfChromeThemeSettings(source);
   const hasTankAmbienceVolume = Object.prototype.hasOwnProperty.call(source, "tankAmbienceVolume");
   const hasSfxVolume = Object.prototype.hasOwnProperty.call(source, "sfxVolume");
   const hasUiSoundVolume = Object.prototype.hasOwnProperty.call(source, "uiSoundVolume");
@@ -39424,6 +40691,9 @@ function sanitizeUiSettings(rawSettings) {
         ? source.webSurfDarkModeEnabled
         : (typeof source.webSurfDarkMode === "boolean" ? source.webSurfDarkMode : undefined)
     ),
+    webSurfFullscreen: source.webSurfFullscreen === true,
+    webSurfChromeTheme: webSurfChromeThemes.activeTheme,
+    webSurfOwnedThemes: webSurfChromeThemes.ownedThemes,
     displayPosition: DEFAULT_UI_SETTINGS.displayPosition,
     toolbarCollapsed: source.toolbarCollapsed === true,
     displayCollapsed: source.displayCollapsed === true,
@@ -39451,7 +40721,7 @@ function sanitizeUiSettings(rawSettings) {
     decorShadowsEnabled: DECOR_SHADOWS_SETTING_ENABLED && source.decorShadowsEnabled !== false,
     depthEffectLevel: getSavedDepthEffectLevelPreference() ?? normalizeDepthEffectLevel(source.depthEffectLevel, source.depthEffectsEnabled),
     backgroundDepthHazeEnabled: source.backgroundDepthHazeEnabled !== false,
-    simpleTurnAnimationsOnly: true,
+    complexTurnAnimationsEnabled: source.complexTurnAnimationsEnabled !== false,
     halloweenMode: "automatic",
     editOverlayMode: ["fish", "decor", "equipment", "tank", "background", "gravel"].includes(String(source.editOverlayMode || "").trim())
       ? (String(source.editOverlayMode).trim() === "tank" ? "background" : String(source.editOverlayMode).trim())
@@ -39483,8 +40753,12 @@ function areDecorShadowsEnabled() {
   return DECOR_SHADOWS_SETTING_ENABLED && getUiSettings().decorShadowsEnabled;
 }
 
+function areComplexTurnAnimationsEnabled() {
+  return getUiSettings().complexTurnAnimationsEnabled !== false;
+}
+
 function areSimpleTurnAnimationsForced() {
-  return getUiSettings().simpleTurnAnimationsOnly === true;
+  return !areComplexTurnAnimationsEnabled();
 }
 
 function normalizeWallpaperEngineBooleanPropertyValue(propertyValue) {
@@ -40247,6 +41521,46 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v66 establishes continuous perceived depth without changing current
+  // layer-driven behavior. Legacy positions map deterministically so existing
+  // tank layouts retain their visual ordering during the staged migration.
+  if (incomingVersion < 66) {
+    const migrateFishDepth = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish)) return fish;
+      const tankLayer = clampTankLayer(fish.tankLayer);
+      const tankSubLayer = clampTankSubLayer(fish.tankSubLayer);
+      const desiredTankLayer = clampTankLayer(fish.desiredTankLayer ?? tankLayer);
+      const desiredTankSubLayer = clampTankSubLayer(fish.desiredTankSubLayer ?? tankSubLayer);
+      return {
+        ...fish,
+        z: sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(tankLayer, tankSubLayer)),
+        desiredZ: sanitizeTankDepthZ(fish.desiredZ, getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer)),
+        depthRadius: sanitizeTankDepthRadius(fish.depthRadius, DEFAULT_FISH_DEPTH_RADIUS)
+      };
+    };
+    const migrateDecorDepth = (item) => {
+      if (!item || typeof item !== "object" || Array.isArray(item)) return item;
+      return {
+        ...item,
+        z: sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(item.tankLayer, DEFAULT_TANK_SUBLAYER)),
+        depthRadius: sanitizeTankDepthRadius(item.depthRadius, DEFAULT_DECOR_DEPTH_RADIUS)
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? {
+              ...tank,
+              fish: Array.isArray(tank.fish) ? tank.fish.map(migrateFishDepth) : tank.fish,
+              placedDecor: Array.isArray(tank.placedDecor) ? tank.placedDecor.map(migrateDecorDepth) : tank.placedDecor
+            }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(migrateFishDepth) : migrated.storedFish
+    };
+  }
+
   return migrated;
 }
 
@@ -40896,6 +42210,7 @@ function reconcileState(rawState) {
     webSurfMailStates: {},
     webSurfSenderStates: {},
     webSurfSentEmails: [],
+    webSurf: sanitizeWebSurfBrowserState(null),
     proteusCorpseDonationDigests: [],
     proteusCorpseDonationCount: 0,
     proteusZombieFishUnlockedAt: 0,
@@ -41059,6 +42374,7 @@ function reconcileState(rawState) {
     webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
     webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
     webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
+    webSurf: sanitizeWebSurfBrowserState(incoming.webSurf, incoming),
     proteusCorpseDonationDigests: sanitizeProteusCorpseDonationDigests(incoming.proteusCorpseDonationDigests),
     proteusCorpseDonationCount: Math.max(
       0,
@@ -42140,6 +43456,120 @@ function getFishFoundationBirthAt(fish, species, now = Date.now()) {
   return now - safeStartingAgeDays * DAY_MS;
 }
 
+function sanitizeFishTraversalState(fish, options = {}) {
+  const fallbackDirection = Number(options.displayDirection) < 0 ? -1 : 1;
+  const fallbackHeadingX = fallbackDirection;
+  const fallbackHeadingY = 0;
+  const normalizeHeading = (xValue, yValue, fallbackX, fallbackY) => {
+    const xNorm = Number(xValue);
+    const yNorm = Number(yValue);
+    const magnitude = Math.hypot(xNorm, yNorm);
+    return magnitude > 0.000001 && Number.isFinite(magnitude)
+      ? { xNorm: xNorm / magnitude, yNorm: yNorm / magnitude }
+      : { xNorm: fallbackX, yNorm: fallbackY };
+  };
+  const heading = normalizeHeading(
+    fish.traversalHeadingXNorm,
+    fish.traversalHeadingYNorm,
+    fallbackHeadingX,
+    fallbackHeadingY
+  );
+  const targetDx = Number(options.targetXNorm) - Number(options.xNorm);
+  const targetDy = Number(options.targetYNorm) - Number(options.yNorm);
+  const targetDistance = Math.hypot(targetDx, targetDy);
+  const desiredHeading = normalizeHeading(
+    fish.traversalDesiredHeadingXNorm,
+    fish.traversalDesiredHeadingYNorm,
+    targetDistance > 0.000001 ? targetDx / targetDistance : heading.xNorm,
+    targetDistance > 0.000001 ? targetDy / targetDistance : heading.yNorm
+  );
+  const velocityXNorm = clamp(Number(fish.traversalVelocityXNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const velocityYNorm = clamp(Number(fish.traversalVelocityYNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const speedNorm = clamp(Math.hypot(velocityXNorm, velocityYNorm), 0, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  return {
+    traversalVelocityXNorm: velocityXNorm,
+    traversalVelocityYNorm: velocityYNorm,
+    traversalSpeedNorm: speedNorm,
+    traversalAccelerationNorm: clamp(Number(fish.traversalAccelerationNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8, FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8),
+    traversalHeadingXNorm: heading.xNorm,
+    traversalHeadingYNorm: heading.yNorm,
+    traversalDesiredHeadingXNorm: desiredHeading.xNorm,
+    traversalDesiredHeadingYNorm: desiredHeading.yNorm,
+    traversalSteeringTargetXNorm: clamp(
+      Number.isFinite(Number(fish.traversalSteeringTargetXNorm)) ? Number(fish.traversalSteeringTargetXNorm) : Number(options.targetXNorm),
+      0.08,
+      0.92
+    ),
+    traversalSteeringTargetYNorm: clamp(
+      Number.isFinite(Number(fish.traversalSteeringTargetYNorm)) ? Number(fish.traversalSteeringTargetYNorm) : Number(options.targetYNorm),
+      0.14,
+      0.8
+    ),
+    traversalState: speedNorm >= FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM ? "swimming" : "idle",
+    traversalTurnState: ["idle", "turning", "reversing"].includes(fish.traversalTurnState) ? fish.traversalTurnState : "idle",
+    traversalTurnStartedAt: Number.isFinite(Number(fish.traversalTurnStartedAt)) ? Math.max(0, Number(fish.traversalTurnStartedAt)) : 0,
+    traversalTurnCommittedUntil: Number.isFinite(Number(fish.traversalTurnCommittedUntil)) ? Math.max(0, Number(fish.traversalTurnCommittedUntil)) : 0,
+    traversalCommittedDirection: Number.isFinite(Number(fish.traversalCommittedDirection))
+      ? (Number(fish.traversalCommittedDirection) < 0 ? -1 : 1)
+      : fallbackDirection,
+    traversalObstacleWaypointXNorm: Number.isFinite(Number(fish.traversalObstacleWaypointXNorm))
+      ? clamp(Number(fish.traversalObstacleWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalObstacleWaypointYNorm: Number.isFinite(Number(fish.traversalObstacleWaypointYNorm))
+      ? clamp(Number(fish.traversalObstacleWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalObstacleUntil: Number.isFinite(Number(fish.traversalObstacleUntil)) ? Math.max(0, Number(fish.traversalObstacleUntil)) : 0,
+    traversalCruiseWaypointXNorm: Number.isFinite(Number(fish.traversalCruiseWaypointXNorm))
+      ? clamp(Number(fish.traversalCruiseWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalCruiseWaypointYNorm: Number.isFinite(Number(fish.traversalCruiseWaypointYNorm))
+      ? clamp(Number(fish.traversalCruiseWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalCruiseSourceTargetXNorm: Number.isFinite(Number(fish.traversalCruiseSourceTargetXNorm))
+      ? clamp(Number(fish.traversalCruiseSourceTargetXNorm), 0.08, 0.92)
+      : null,
+    traversalCruiseSourceTargetYNorm: Number.isFinite(Number(fish.traversalCruiseSourceTargetYNorm))
+      ? clamp(Number(fish.traversalCruiseSourceTargetYNorm), 0.14, 0.8)
+      : null,
+    traversalCruiseUntil: Number.isFinite(Number(fish.traversalCruiseUntil)) ? Math.max(0, Number(fish.traversalCruiseUntil)) : 0,
+    traversalDecorApproachWaypointXNorm: Number.isFinite(Number(fish.traversalDecorApproachWaypointXNorm))
+      ? clamp(Number(fish.traversalDecorApproachWaypointXNorm), 0.08, 0.92)
+      : null,
+    traversalDecorApproachWaypointYNorm: Number.isFinite(Number(fish.traversalDecorApproachWaypointYNorm))
+      ? clamp(Number(fish.traversalDecorApproachWaypointYNorm), 0.14, 0.8)
+      : null,
+    traversalDecorApproachDecorId: typeof fish.traversalDecorApproachDecorId === "string"
+      ? fish.traversalDecorApproachDecorId
+      : null,
+    traversalDecorApproachUntil: Number.isFinite(Number(fish.traversalDecorApproachUntil))
+      ? Math.max(0, Number(fish.traversalDecorApproachUntil))
+      : 0,
+    turnaroundCooldownDirection: Number(fish.turnaroundCooldownDirection) < 0 ? -1 : 1,
+    turnaroundCooldownStartedAt: Number.isFinite(Number(fish.turnaroundCooldownStartedAt))
+      ? Math.max(0, Number(fish.turnaroundCooldownStartedAt))
+      : 0,
+    turnaroundCooldownUntil: Number.isFinite(Number(fish.turnaroundCooldownUntil))
+      ? Math.max(0, Number(fish.turnaroundCooldownUntil))
+      : 0,
+    turnaroundCooldownMaxUntil: Number.isFinite(Number(fish.turnaroundCooldownMaxUntil))
+      ? Math.max(0, Number(fish.turnaroundCooldownMaxUntil))
+      : 0,
+    turnaroundCooldownStartXNorm: Number.isFinite(Number(fish.turnaroundCooldownStartXNorm))
+      ? clamp(Number(fish.turnaroundCooldownStartXNorm), 0.08, 0.92)
+      : clamp(Number(options.xNorm) || 0.5, 0.08, 0.92),
+    turnaroundCooldownStartYNorm: Number.isFinite(Number(fish.turnaroundCooldownStartYNorm))
+      ? clamp(Number(fish.turnaroundCooldownStartYNorm), 0.14, 0.8)
+      : clamp(Number(options.yNorm) || 0.5, 0.14, 0.8),
+    turnV26LastDepthSign: [-1, 1].includes(Number(fish.turnV26LastDepthSign))
+      ? Number(fish.turnV26LastDepthSign)
+      : 0,
+    // A renderer session never survives a save/load; the next session derives
+    // its sign from the persisted previous turn.
+    turnV26ActiveDepthSign: 0,
+    traversalLastMovedAt: Number.isFinite(Number(fish.traversalLastMovedAt)) ? Math.max(0, Number(fish.traversalLastMovedAt)) : (Number(options.now) || Date.now())
+  };
+}
+
 function sanitizeFish(fish, options = {}) {
   if (!fish || !runtime.fishMap.has(fish.speciesId)) {
     return null;
@@ -42181,6 +43611,10 @@ function sanitizeFish(fish, options = {}) {
   const desiredTankSubLayer = clampTankSubLayer(
     Number.isFinite(Number(fish.desiredTankSubLayer)) ? Number(fish.desiredTankSubLayer) : baseTankSubLayer
   );
+  const z = sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(baseTankLayer, baseTankSubLayer));
+  const desiredZ = dead
+    ? z
+    : sanitizeTankDepthZ(fish.desiredZ, getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer));
   const pickedPersonality = pickFishPersonality(species);
   const storedPersonality = normalizeBehaviorPersonality(fish.personality);
   const storedCoarseActivity = fish.coarseActivity && typeof fish.coarseActivity === "object"
@@ -42215,6 +43649,16 @@ function sanitizeFish(fish, options = {}) {
   const storageState = options.storageState === "stored" || fish.storageState === "stored" ? "stored" : "tank";
   const lifeStage = getFishLifeStage({ ...fish, id: foundationFishId, birthAt, lifespanMultiplier, storageState }, now);
   const canonicalAppearance = resolveCanonicalFishAppearanceSelection(fish, species);
+  const sanitizedTargetXNorm = clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92);
+  const sanitizedTargetYNorm = clamp(Number(fish.targetYNorm) || randomSwimY(), 0.14, 0.8);
+  const traversal = sanitizeFishTraversalState(fish, {
+    displayDirection,
+    xNorm: spawnX,
+    yNorm: spawnY,
+    targetXNorm: sanitizedTargetXNorm,
+    targetYNorm: sanitizedTargetYNorm,
+    now
+  });
 
   return {
     id: foundationFishId,
@@ -42399,11 +43843,12 @@ function sanitizeFish(fish, options = {}) {
     glassTapWindowCount: clamp(Math.floor(Number(fish.glassTapWindowCount) || 0), 0, GLASS_TAP_STRESS_TAP_THRESHOLD * GLASS_TAP_STRESS_MAX_STACKS),
     xNorm: spawnX,
     yNorm: spawnY,
-    targetXNorm: clamp(Number(fish.targetXNorm) || randomSwimX(), 0.08, 0.92),
-    targetYNorm: clamp(Number(fish.targetYNorm) || randomSwimY(), 0.14, 0.8),
+    targetXNorm: sanitizedTargetXNorm,
+    targetYNorm: sanitizedTargetYNorm,
     targetAt: Number.isFinite(fish.targetAt) ? fish.targetAt : Date.now() + species.targetMinMs + Math.random() * (species.targetMaxMs - species.targetMinMs),
     direction: Number(fish.direction) < 0 ? -1 : 1,
     swimSpeed,
+    ...traversal,
     phase: clamp(Number(fish.phase) || Math.random(), 0, 1),
     motionLevel: clamp(Number.isFinite(Number(fish.motionLevel)) ? Number(fish.motionLevel) : 0.18, dead ? 0.02 : 0.04, 1),
     wiggleClock: Number.isFinite(fish.wiggleClock) ? fish.wiggleClock : Math.random() * Math.PI * 2,
@@ -42440,6 +43885,9 @@ function sanitizeFish(fish, options = {}) {
     desiredTankLayer: dead ? baseTankLayer : desiredTankLayer,
     tankSubLayer: baseTankSubLayer,
     desiredTankSubLayer: dead ? baseTankSubLayer : desiredTankSubLayer,
+    z,
+    desiredZ,
+    depthRadius: sanitizeTankDepthRadius(fish.depthRadius, DEFAULT_FISH_DEPTH_RADIUS),
     drawLayer: tankLayerToLegacy(baseTankLayer),
     desiredDrawLayer: tankLayerToLegacy(dead ? baseTankLayer : desiredTankLayer),
     hangoutDecorId: dead ? null : (typeof fish.hangoutDecorId === "string" ? fish.hangoutDecorId : null),
@@ -42471,6 +43919,9 @@ function sanitizeFish(fish, options = {}) {
     caveSeatId: dead ? null : (typeof fish.caveSeatId === "string" ? fish.caveSeatId : null),
     caveFrontLayer: Number.isFinite(Number(fish.caveFrontLayer)) ? clampTankLayer(Number(fish.caveFrontLayer)) : null,
     caveBackLayer: Number.isFinite(Number(fish.caveBackLayer)) ? clampTankLayer(Number(fish.caveBackLayer)) : null,
+    caveFrontZ: Number.isFinite(Number(fish.caveFrontZ)) ? sanitizeTankDepthZ(Number(fish.caveFrontZ)) : null,
+    caveInteriorZ: Number.isFinite(Number(fish.caveInteriorZ)) ? sanitizeTankDepthZ(Number(fish.caveInteriorZ)) : null,
+    caveRearZ: Number.isFinite(Number(fish.caveRearZ)) ? sanitizeTankDepthZ(Number(fish.caveRearZ)) : null,
     caveReturnSubLayer: Number.isFinite(Number(fish.caveReturnSubLayer)) ? clampTankSubLayer(Number(fish.caveReturnSubLayer)) : null,
     caveApproachXNorm: Number.isFinite(Number(fish.caveApproachXNorm)) ? clamp(Number(fish.caveApproachXNorm), 0.08, 0.92) : null,
     caveApproachYNorm: Number.isFinite(Number(fish.caveApproachYNorm)) ? clamp(Number(fish.caveApproachYNorm), 0.14, 0.8) : null,
@@ -43068,6 +44519,11 @@ function sanitizePlacedDecor(item) {
     yNorm: clamp(Number(item.yNorm) || 0.86, 0, 1),
     scale: clamp(Number(item.scale) || resolveDecorBaseScale(decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     tankLayer: clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
+    z: sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(
+      clampTankLayer(Number(item.tankLayer) || DEFAULT_TANK_LAYER),
+      DEFAULT_TANK_SUBLAYER
+    )),
+    depthRadius: sanitizeTankDepthRadius(item.depthRadius, DEFAULT_DECOR_DEPTH_RADIUS),
     active: item.active !== false,
     flipped: item.flipped === true,
     flippedY: item.flippedY === true
@@ -43187,6 +44643,93 @@ function clampTankSubLayer(subLayer) {
   const numericSubLayer = Number(subLayer);
   const fallbackSubLayer = subLayer === null || subLayer === undefined || subLayer === "" || !Number.isFinite(numericSubLayer);
   return clamp(Math.round(fallbackSubLayer ? DEFAULT_TANK_SUBLAYER : numericSubLayer), 1, TANK_DEPTH_SUBLAYERS);
+}
+
+function sanitizeTankDepthZ(value, fallback = (TANK_DEPTH_REAR_USABLE_Z + TANK_DEPTH_FRONT_USABLE_Z) / 2) {
+  const numeric = Number(value);
+  const resolved = Number.isFinite(numeric) ? numeric : Number(fallback);
+  return clamp(
+    Number.isFinite(resolved) ? resolved : (TANK_DEPTH_REAR_USABLE_Z + TANK_DEPTH_FRONT_USABLE_Z) / 2,
+    TANK_DEPTH_REAR_USABLE_Z,
+    TANK_DEPTH_FRONT_USABLE_Z
+  );
+}
+
+function sanitizeTankDepthRadius(value, fallback = DEFAULT_DECOR_DEPTH_RADIUS) {
+  const numeric = Number(value);
+  const resolved = Number.isFinite(numeric) ? numeric : Number(fallback);
+  return clamp(Number.isFinite(resolved) ? resolved : DEFAULT_DECOR_DEPTH_RADIUS, 0, 0.45);
+}
+
+function getTankDepthBucket(z, bucketCount = 10) {
+  const count = Math.max(1, Math.round(Number(bucketCount) || 10));
+  const normalized = sanitizeTankDepthZ(z);
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  return clamp(Math.floor(((normalized - TANK_DEPTH_REAR_USABLE_Z) / span) * count), 0, count - 1);
+}
+
+function getPlacedDecorDepthZ(item) {
+  return sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+}
+
+function getPlacedDecorDepthRadius(item) {
+  const scale = Math.max(0.5, Number(item?.scale) || 1);
+  const scaledFallback = DEFAULT_DECOR_DEPTH_RADIUS * scale;
+  const storedRadius = sanitizeTankDepthRadius(item?.depthRadius, scaledFallback);
+  return Math.max(storedRadius, sanitizeTankDepthRadius(scaledFallback, DEFAULT_DECOR_DEPTH_RADIUS));
+}
+
+function getFishTankDepthRadius(fish) {
+  return sanitizeTankDepthRadius(fish?.depthRadius, DEFAULT_FISH_DEPTH_RADIUS);
+}
+
+function getTankDepthVolume(z, radius) {
+  const center = sanitizeTankDepthZ(z);
+  const extent = sanitizeTankDepthRadius(radius, 0);
+  return {
+    min: clamp(center - extent, TANK_DEPTH_REAR_USABLE_Z, TANK_DEPTH_FRONT_USABLE_Z),
+    max: clamp(center + extent, TANK_DEPTH_REAR_USABLE_Z, TANK_DEPTH_FRONT_USABLE_Z)
+  };
+}
+
+function doTankDepthVolumesOverlap(firstZ, firstRadius, secondZ, secondRadius) {
+  const first = getTankDepthVolume(firstZ, firstRadius);
+  const second = getTankDepthVolume(secondZ, secondRadius);
+  return first.min <= second.max && second.min <= first.max;
+}
+
+function getDecorDepthPlacementLabel(item) {
+  const z = sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+  if (z >= 0.8) return "Front";
+  if (z >= 0.6) return "Front middle";
+  if (z >= 0.4) return "Center";
+  if (z >= 0.2) return "Rear middle";
+  return "Back";
+}
+
+// Legacy layer 1 is closest to the player, while normalized Z increases from
+// the rear glass (0) toward the front glass (1). Keeping this conversion in
+// one place makes migration deterministic without making layers authoritative.
+function getTankDepthZFromLegacyPosition(layer = DEFAULT_TANK_LAYER, subLayer = DEFAULT_TANK_SUBLAYER) {
+  const index = getTankDepthPositionIndex(layer, subLayer);
+  const position = TANK_DEPTH_POSITIONS <= 1 ? 0.5 : index / (TANK_DEPTH_POSITIONS - 1);
+  const depth = sanitizeTankDepthZ(
+    TANK_DEPTH_FRONT_USABLE_Z - position * (TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z)
+  );
+  return Math.round(depth * 1000000) / 1000000;
+}
+
+function getLegacyTankDepthPositionFromZ(z) {
+  const normalized = sanitizeTankDepthZ(z);
+  const span = TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z;
+  const position = span > 0 ? (TANK_DEPTH_FRONT_USABLE_Z - normalized) / span : 0.5;
+  return getTankDepthPositionFromIndex(Math.round(position * (TANK_DEPTH_POSITIONS - 1)));
 }
 
 function getTankDepthPositionIndex(layer = DEFAULT_TANK_LAYER, subLayer = DEFAULT_TANK_SUBLAYER) {
@@ -43370,6 +44913,8 @@ function updateSelectedDecorActionButtons() {
   const scaleDownButton = dom.selectedDecorScaleDownButton;
   const layerUpButton = dom.selectedDecorLayerUpButton;
   const layerDownButton = dom.selectedDecorLayerDownButton;
+  const bringToFrontButton = dom.selectedDecorBringToFrontButton;
+  const sendToBackButton = dom.selectedDecorSendToBackButton;
   const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
   const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
   const resizeHandles = dom.selectedDecorResizeHandles;
@@ -43410,10 +44955,13 @@ function updateSelectedDecorActionButtons() {
   const canSell = !isPlacedDecorGrouped(item);
   const canStore = !isPlacedDecorGrouped(item);
   const currentScale = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const layerValue = formatDecorLayerSpanShort(item.decorKey, getDecorTankLayer(item));
-  const canLayerUp = canStepPlacedDecorLayer(item, 1);
-  const canLayerDown = canStepPlacedDecorLayer(item, -1);
-  const layerIsFixed = !canLayerUp && !canLayerDown;
+  const depthValue = getDecorDepthPlacementLabel(item);
+  const currentDepth = sanitizeTankDepthZ(
+    item.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+  const canMoveForward = currentDepth < TANK_DEPTH_FRONT_USABLE_Z;
+  const canMoveBackward = currentDepth > TANK_DEPTH_REAR_USABLE_Z;
   const sizeLabel = formatDecorScale(currentScale);
   const resizingDecor = runtime.decorResizeState?.placedId === item.id;
 
@@ -43422,7 +44970,7 @@ function updateSelectedDecorActionButtons() {
   }
 
   if (dom.selectedDecorLayerValue) {
-    dom.selectedDecorLayerValue.textContent = layerValue;
+    dom.selectedDecorLayerValue.textContent = depthValue;
   }
 
   if (scaleControls) {
@@ -43515,25 +45063,37 @@ function updateSelectedDecorActionButtons() {
   if (layerUpButton) {
     layerUpButton.hidden = false;
     layerUpButton.dataset.layerDecor = item.id;
-    layerUpButton.disabled = !canLayerUp;
-    layerUpButton.title = canLayerUp
-      ? `Move layer up from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its top layer`);
-    layerUpButton.setAttribute("aria-label", canLayerUp
-      ? `Move ${decor.name} layer up from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its top layer`));
+    layerUpButton.disabled = !canMoveForward;
+    layerUpButton.title = canMoveForward
+      ? `Move forward from ${depthValue}`
+      : `${decor.name} is already at the front of the tank`;
+    layerUpButton.setAttribute("aria-label", canMoveForward
+      ? `Move ${decor.name} forward from ${depthValue}`
+      : `${decor.name} is already at the front of the tank`);
   }
 
   if (layerDownButton) {
     layerDownButton.hidden = false;
     layerDownButton.dataset.layerDecor = item.id;
-    layerDownButton.disabled = !canLayerDown;
-    layerDownButton.title = canLayerDown
-      ? `Move layer down from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`);
-    layerDownButton.setAttribute("aria-label", canLayerDown
-      ? `Move ${decor.name} layer down from ${layerValue}`
-      : (layerIsFixed ? `${decor.name} is fixed at layer ${layerValue}` : `${decor.name} is already at its bottom layer`));
+    layerDownButton.disabled = !canMoveBackward;
+    layerDownButton.title = canMoveBackward
+      ? `Move backward from ${depthValue}`
+      : `${decor.name} is already at the back of the tank`;
+    layerDownButton.setAttribute("aria-label", canMoveBackward
+      ? `Move ${decor.name} backward from ${depthValue}`
+      : `${decor.name} is already at the back of the tank`);
+  }
+
+  if (bringToFrontButton) {
+    bringToFrontButton.hidden = false;
+    bringToFrontButton.dataset.depthDecor = item.id;
+    bringToFrontButton.disabled = !canMoveForward;
+  }
+
+  if (sendToBackButton) {
+    sendToBackButton.hidden = false;
+    sendToBackButton.dataset.depthDecor = item.id;
+    sendToBackButton.disabled = !canMoveBackward;
   }
 
   if (flipHorizontalButton) {
@@ -44439,6 +45999,42 @@ function getFishTankDepthIndex(fish) {
   return getTankDepthPositionIndex(getFishTankLayer(fish), getFishTankSubLayer(fish));
 }
 
+function getFishTankDepthZ(fish) {
+  // Legacy transition records may still exist in saves or older helpers, but
+  // the normalized value is now the sole authority for normal fish depth.
+  return sanitizeTankDepthZ(
+    fish?.z,
+    getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish))
+  );
+}
+
+function getDesiredFishTankDepthZ(fish) {
+  return sanitizeTankDepthZ(
+    fish?.desiredZ,
+    getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), getDesiredFishTankSubLayer(fish))
+  );
+}
+
+function getFishContinuousDepthOffset(fish) {
+  const id = String(fish?.id || fish?.speciesId || "fish");
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = ((hash << 5) - hash + id.charCodeAt(index)) | 0;
+  }
+  return (((hash >>> 0) % 1001) / 1000 - 0.5) * 0.05;
+}
+
+function setFishDesiredTankDepth(fish, z) {
+  if (!fish) return null;
+  const resolvedZ = sanitizeTankDepthZ(z, getDesiredFishTankDepthZ(fish));
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(resolvedZ);
+  fish.desiredZ = resolvedZ;
+  fish.desiredTankLayer = compatibilityPosition.layer;
+  fish.desiredTankSubLayer = compatibilityPosition.subLayer;
+  fish.desiredDrawLayer = tankLayerToLegacy(compatibilityPosition.layer);
+  return resolvedZ;
+}
+
 function normalizeSuckerFishGlassLayer(layer) {
   const requestedLayer = clampTankLayer(layer ?? SUCKER_FISH_BACK_GLASS_LAYER);
   return requestedLayer <= SUCKER_FISH_FRONT_GLASS_LAYER
@@ -44548,9 +46144,14 @@ function setFishTankLayers(fish, tankLayer, desiredTankLayer = tankLayer) {
 
   fish.tankLayer = nextTankLayer;
   fish.desiredTankLayer = nextDesiredTankLayer;
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(nextTankLayer, previousTankSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(nextDesiredTankLayer, getDesiredFishTankSubLayer(fish));
 
   if (fish.id && nextTankLayer !== previousTankLayer) {
-    const nextScale = getFishLayerDepthScaleForPosition(nextTankLayer, previousTankSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -44578,8 +46179,14 @@ function setFishTankSublayers(fish, tankSubLayer, desiredTankSubLayer = tankSubL
   const changed = getFishTankSubLayer(fish) !== nextTankSubLayer;
   fish.tankSubLayer = nextTankSubLayer;
   fish.desiredTankSubLayer = nextDesiredTankSubLayer;
+  const species = getSpeciesForFish(fish);
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(getFishTankLayer(fish), nextTankSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), nextDesiredTankSubLayer);
   if (fish.id && changed) {
-    const nextScale = getFishLayerDepthScaleForPosition(getFishTankLayer(fish), nextTankSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -44593,6 +46200,14 @@ function setFishTankSublayers(fish, tankSubLayer, desiredTankSubLayer = tankSubL
 
 function setFishDesiredTankSubLayer(fish, desiredTankSubLayer) {
   if (!fish) {
+    return;
+  }
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) !== "sucker" && !fish.caveState) {
+    const resolvedSubLayer = clampTankSubLayer(desiredTankSubLayer);
+    fish.desiredTankSubLayer = resolvedSubLayer;
+    const baseDepth = getTankDepthZFromLegacyPosition(getDesiredFishTankLayer(fish), resolvedSubLayer);
+    setFishDesiredTankDepth(fish, baseDepth + getFishContinuousDepthOffset(fish));
     return;
   }
   setFishTankSublayers(fish, getFishTankSubLayer(fish), desiredTankSubLayer);
@@ -44625,12 +46240,17 @@ function setFishTankDepthPosition(fish, layer, subLayer, desiredLayer = layer, d
   fish.desiredTankLayer = nextDesiredLayer;
   fish.tankSubLayer = nextSubLayer;
   fish.desiredTankSubLayer = nextDesiredSubLayer;
+  const preserveContinuousDepth = getEffectiveFishBehavior(fish, species) !== "sucker";
+  if (!preserveContinuousDepth) {
+    fish.z = getTankDepthZFromLegacyPosition(nextLayer, nextSubLayer);
+  }
+  fish.desiredZ = getTankDepthZFromLegacyPosition(nextDesiredLayer, nextDesiredSubLayer);
   fish.drawLayer = tankLayerToLegacy(nextLayer);
   fish.desiredDrawLayer = tankLayerToLegacy(nextDesiredLayer);
 
   const changed = previousLayer !== nextLayer || previousSubLayer !== nextSubLayer;
   if (fish.id && changed) {
-    const nextScale = getFishLayerDepthScaleForPosition(nextLayer, nextSubLayer);
+    const nextScale = getFishDepthScaleForZ(fish.z);
     if (Math.abs(nextScale - previousVisualScale) > 0.0001) {
       runtime.fishLayerDepthScaleTransitions.set(fish.id, {
         fromScale: previousVisualScale,
@@ -44649,11 +46269,47 @@ function setFishDesiredTankLayer(fish, desiredTankLayer) {
     return;
   }
 
-  setFishTankLayers(fish, getFishTankLayer(fish), desiredTankLayer);
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) === "sucker" || fish.caveState) {
+    setFishTankLayers(fish, getFishTankLayer(fish), desiredTankLayer);
+    return;
+  }
+
+  const resolvedLayer = clampTankLayer(desiredTankLayer);
+  fish.desiredTankLayer = resolvedLayer;
+  fish.desiredDrawLayer = tankLayerToLegacy(resolvedLayer);
+  const baseDepth = getTankDepthZFromLegacyPosition(resolvedLayer, getDesiredFishTankSubLayer(fish));
+  setFishDesiredTankDepth(fish, baseDepth + getFishContinuousDepthOffset(fish));
 }
 
 function getDecorTankLayer(item) {
   return clampTankLayer(item?.tankLayer ?? DEFAULT_TANK_LAYER);
+}
+
+function setPlacedDecorLegacyLayer(item, layer) {
+  if (!item) {
+    return DEFAULT_TANK_LAYER;
+  }
+  const resolvedLayer = getDecorFrontLayer(item.decorKey, layer);
+  item.tankLayer = resolvedLayer;
+  item.z = getTankDepthZFromLegacyPosition(resolvedLayer, DEFAULT_TANK_SUBLAYER);
+  runtime.decorDepthBucketCache = null;
+  return resolvedLayer;
+}
+
+function setPlacedDecorDepth(item, z) {
+  if (!item) {
+    return null;
+  }
+  const resolvedZ = sanitizeTankDepthZ(
+    z,
+    sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER))
+  );
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(resolvedZ);
+  item.z = resolvedZ;
+  item.tankLayer = getDecorFrontLayer(item.decorKey, compatibilityPosition.layer);
+  runtime.decorDepthBucketCache = null;
+  return resolvedZ;
 }
 
 function normalizeDecorCollisionSubLayers(value) {
@@ -45504,6 +47160,7 @@ function clearFishCaveBehavior(fish) {
   }
 
   runtime.activeFishCavePlans.delete(fish.id);
+  runtime.caveRenderOcclusionByFishId?.delete?.(fish.id);
   fish.caveState = null;
   fish.caveDecorId = null;
   fish.cavePortalId = null;
@@ -45511,6 +47168,9 @@ function clearFishCaveBehavior(fish) {
   fish.caveSeatId = null;
   fish.caveFrontLayer = null;
   fish.caveBackLayer = null;
+  fish.caveFrontZ = null;
+  fish.caveInteriorZ = null;
+  fish.caveRearZ = null;
   fish.caveReturnSubLayer = null;
   fish.caveApproachXNorm = null;
   fish.caveApproachYNorm = null;
@@ -46689,6 +48349,7 @@ function sanitizePellet(pellet) {
   const floorYNorm = clamp(getPelletFloorYNormAtX(xNorm), 0.18, 0.96);
   const settled = Boolean(pellet.settled);
   const surfaceFloating = Boolean(pellet.surfaceFloating || foodMeta?.surfaceFloating || pellet.foodKey === "fishFlakes");
+  const depthSeed = clamp(Number(pellet.sway) || 0.5, 0, 1);
   const yNorm = surfaceFloating
     ? clamp(WATER_SURFACE_Y / TANK_HEIGHT + 0.012, 0.09, 0.24)
     : settled
@@ -46704,6 +48365,7 @@ function sanitizePellet(pellet) {
     surfaceFloating,
     settledAt: settled && Number.isFinite(Number(pellet.settledAt)) ? Number(pellet.settledAt) : null,
     sway: clamp(Number(pellet.sway) || Math.random(), 0, 1),
+    z: sanitizeTankDepthZ(pellet.z, 0.5 + (depthSeed - 0.5) * 0.12),
     targetFishId: typeof pellet.targetFishId === "string" ? pellet.targetFishId : "",
     diseaseRefusalFishId: typeof pellet.diseaseRefusalFishId === "string" ? pellet.diseaseRefusalFishId : "",
     refusalPrecheckedFishId: typeof pellet.refusalPrecheckedFishId === "string" ? pellet.refusalPrecheckedFishId : "",
@@ -49383,6 +51045,9 @@ function syncCurrentTankState(now, options = {}) {
   // Resolve expired pellets and feeding targets before advancing offscreen fish.
   if (!detailedSimulation) {
     changed = advanceCoarseFishActivities(now, targetTank) || changed;
+    for (const fish of targetTank.fish || []) {
+      changed = advanceFishBehaviorBrainOffline(fish, now) || changed;
+    }
   }
   changed = changed || pelletMotionChanged || pelletsBefore !== state.floatingPellets.length;
 
@@ -53286,6 +54951,10 @@ function assignPelletToFish(fish, pellet, now = Date.now()) {
   fish.targetAt = now + 4 * 60 * 1000;
   fish.targetXNorm = pellet.xNorm;
   fish.targetYNorm = pellet.yNorm;
+  const species = getSpeciesForFish(fish);
+  if (getEffectiveFishBehavior(fish, species) !== "sucker") {
+    setFishDesiredTankDepth(fish, sanitizeTankDepthZ(pellet.z, getFishTankDepthZ(fish)));
+  }
   recordFishFeedingMemory(fish, pellet, now);
   if (["greedy", "routine-loving", "curious"].includes(getFishPersonality(fish))) {
     setFishBehaviorIntent(fish, pellet.dropStartXNorm != null ? "feeder memory" : "feeding memory", getFishPersonality(fish), now, {
@@ -54120,6 +55789,7 @@ function dropSelectedFoodAtPoint(point, now = Date.now(), options = {}) {
   }
   if (createdPellets.length) {
     state.floatingPellets.push(...createdPellets);
+    if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("FOOD_ADDED", { count: createdPellets.length }, now);
     assignFloatingPelletsToHungryFish(now);
     stageHungryFishTravelToFoodTank(getCurrentTank(), now);
   }
@@ -54445,6 +56115,15 @@ function createFishRecord(speciesId, options = {}) {
   const direction = Number.isFinite(Number(options.direction))
     ? (Number(options.direction) < 0 ? -1 : 1)
     : (Math.random() > 0.5 ? 1 : -1);
+  const initialDesiredDx = initialTarget.xNorm - initialPosition.xNorm;
+  const initialDesiredDy = initialTarget.yNorm - initialPosition.yNorm;
+  const initialDesiredDistance = Math.hypot(initialDesiredDx, initialDesiredDy);
+  const initialDesiredHeadingXNorm = initialDesiredDistance > 0.000001
+    ? initialDesiredDx / initialDesiredDistance
+    : direction;
+  const initialDesiredHeadingYNorm = initialDesiredDistance > 0.000001
+    ? initialDesiredDy / initialDesiredDistance
+    : 0;
   const tankLayer = species.behavior === "sucker"
     ? normalizeSuckerFishGlassLayer(
       Number.isFinite(Number(options.tankLayer))
@@ -54476,6 +56155,14 @@ function createFishRecord(speciesId, options = {}) {
     Number.isFinite(Number(options.desiredTankSubLayer))
       ? Number(options.desiredTankSubLayer)
       : tankSubLayer
+  );
+  const z = sanitizeTankDepthZ(
+    options.z,
+    getTankDepthZFromLegacyPosition(tankLayer, tankSubLayer)
+  );
+  const desiredZ = sanitizeTankDepthZ(
+    options.desiredZ,
+    getTankDepthZFromLegacyPosition(desiredTankLayer, desiredTankSubLayer)
   );
   const scaleSpeciesId = speciesId;
   const scale = clamp(
@@ -54640,6 +56327,40 @@ function createFishRecord(speciesId, options = {}) {
       : now + species.targetMinMs + Math.random() * Math.max(200, species.targetMaxMs - species.targetMinMs),
     direction,
     swimSpeed: normalizeFishSpeed(species, Number(options.swimSpeed)),
+    traversalVelocityXNorm: clamp(Number(options.traversalVelocityXNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM),
+    traversalVelocityYNorm: clamp(Number(options.traversalVelocityYNorm) || 0, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM),
+    traversalSpeedNorm: 0,
+    traversalAccelerationNorm: 0,
+    traversalHeadingXNorm: direction,
+    traversalHeadingYNorm: 0,
+    traversalDesiredHeadingXNorm: initialDesiredHeadingXNorm,
+    traversalDesiredHeadingYNorm: initialDesiredHeadingYNorm,
+    traversalSteeringTargetXNorm: initialTarget.xNorm,
+    traversalSteeringTargetYNorm: initialTarget.yNorm,
+    traversalState: "idle",
+    traversalTurnState: "idle",
+    traversalTurnStartedAt: 0,
+    traversalTurnCommittedUntil: 0,
+    traversalCommittedDirection: direction,
+    traversalObstacleWaypointXNorm: null,
+    traversalObstacleWaypointYNorm: null,
+    traversalObstacleUntil: 0,
+    traversalCruiseWaypointXNorm: null,
+    traversalCruiseWaypointYNorm: null,
+    traversalCruiseSourceTargetXNorm: null,
+    traversalCruiseSourceTargetYNorm: null,
+    traversalCruiseUntil: 0,
+    traversalDecorApproachWaypointXNorm: null,
+    traversalDecorApproachWaypointYNorm: null,
+    traversalDecorApproachDecorId: null,
+    traversalDecorApproachUntil: 0,
+    turnaroundCooldownDirection: direction,
+    turnaroundCooldownStartedAt: 0,
+    turnaroundCooldownUntil: 0,
+    turnaroundCooldownMaxUntil: 0,
+    turnaroundCooldownStartXNorm: initialTarget.xNorm,
+    turnaroundCooldownStartYNorm: initialTarget.yNorm,
+    traversalLastMovedAt: now,
     phase: Math.random(),
     motionLevel: 0.2,
     wiggleClock: Math.random() * Math.PI * 2,
@@ -54667,6 +56388,9 @@ function createFishRecord(speciesId, options = {}) {
     desiredTankLayer,
     tankSubLayer,
     desiredTankSubLayer,
+    z,
+    desiredZ,
+    depthRadius: sanitizeTankDepthRadius(options.depthRadius, DEFAULT_FISH_DEPTH_RADIUS),
     drawLayer: tankLayerToLegacy(tankLayer),
     desiredDrawLayer: tankLayerToLegacy(desiredTankLayer),
     hangoutDecorId: null,
@@ -54678,6 +56402,14 @@ function createFishRecord(speciesId, options = {}) {
     turnStartedAt: null,
     turnDurationMs: 0,
     turnFinalFrameRenderedAt: 0,
+    turnFinalFrameRenderedForStartedAt: 0,
+    turnRendererBackend: null,
+    turnRendererFallbackBackend: null,
+    turnRendererStartedAt: 0,
+    turnV26StyleActive: null,
+    turnV26StyleStartedAt: 0,
+    turnV26LastDepthSign: 0,
+    turnV26ActiveDepthSign: 0,
     turnFromDirection: direction,
     turnToDirection: direction,
     turnFromAngle: direction < 0 ? Math.PI : 0,
@@ -54690,6 +56422,9 @@ function createFishRecord(speciesId, options = {}) {
     caveSeatId: null,
     caveFrontLayer: null,
     caveBackLayer: null,
+    caveFrontZ: null,
+    caveInteriorZ: null,
+    caveRearZ: null,
     caveReturnSubLayer: null,
     caveApproachXNorm: null,
     caveApproachYNorm: null,
@@ -59691,6 +61426,11 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     yNorm: placement.yNorm,
     scale: scaleBase,
     tankLayer: finalLayer,
+    z: sanitizeTankDepthZ(
+      runtime.placementMode?.z,
+      getTankDepthZFromLegacyPosition(finalLayer, DEFAULT_TANK_SUBLAYER)
+    ),
+    depthRadius: DEFAULT_DECOR_DEPTH_RADIUS,
     active: typeof getPlacedDecorWaterActiveState === "function"
       ? getPlacedDecorWaterActiveState({ decorKey }, getCurrentTank())
       : true,
@@ -59711,6 +61451,8 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
   updatePlacedDecorResizeAnchor(placedItem);
 
   state.placedDecor.push(placedItem);
+  runtime.decorDepthBucketCache = null;
+  if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("DECOR_CHANGED", { decorId: placedItem.id }, Date.now());
   applyDecorGravelInsertion(placedItem);
   return { decor, placedItem };
 }
@@ -59847,11 +61589,11 @@ function stepDecorGroupLayer(item, step, save = false) {
   for (const groupItem of groupItems) {
     const currentLayer = getDecorFrontLayer(groupItem.decorKey, groupItem.tankLayer ?? DEFAULT_TANK_LAYER);
     const itemLayer = getDecorFrontLayer(groupItem.decorKey, currentLayer + step);
-    groupItem.tankLayer = currentLayer;
+    setPlacedDecorLegacyLayer(groupItem, currentLayer);
     if (itemLayer === currentLayer) {
       continue;
     }
-    groupItem.tankLayer = itemLayer;
+    setPlacedDecorLegacyLayer(groupItem, itemLayer);
     const placement = clampDecorPlacement(groupItem.xNorm, groupItem.yNorm, { item: groupItem, applyGravity: true });
     groupItem.xNorm = placement.xNorm;
     groupItem.yNorm = placement.yNorm;
@@ -59990,10 +61732,10 @@ function stepActiveDecorLayer(direction) {
       currentLayer = getDecorFrontLayer(item.decorKey, runtime.dragState.tankLayer ?? item.tankLayer ?? DEFAULT_TANK_LAYER);
       const itemLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
       runtime.dragState.tankLayer = currentLayer;
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (itemLayer !== currentLayer) {
         runtime.dragState.tankLayer = itemLayer;
-        item.tankLayer = itemLayer;
+        setPlacedDecorLegacyLayer(item, itemLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;
@@ -60013,9 +61755,9 @@ function stepActiveDecorLayer(direction) {
       decorKey = item.decorKey;
       currentLayer = getDecorFrontLayer(item.decorKey, item.tankLayer ?? DEFAULT_TANK_LAYER);
       const itemLayer = getDecorFrontLayer(item.decorKey, currentLayer + step);
-      item.tankLayer = currentLayer;
+      setPlacedDecorLegacyLayer(item, currentLayer);
       if (itemLayer !== currentLayer) {
-        item.tankLayer = itemLayer;
+        setPlacedDecorLegacyLayer(item, itemLayer);
         const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
         item.xNorm = placement.xNorm;
         item.yNorm = placement.yNorm;
@@ -60043,6 +61785,94 @@ function stepActiveDecorLayer(direction) {
   }
   renderUi(Date.now());
   return { changed: true, layer: nextLayer, atLimit: false };
+}
+
+function showDecorDepthIndicator(z) {
+  if (!dom.decorDepthIndicator) return;
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const percentage = clamp((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span, 0, 1) * 100;
+  dom.decorDepthIndicator.style.setProperty("--depth-position", `${percentage}%`);
+  dom.decorDepthIndicator.hidden = false;
+  clearTimeout(runtime.decorDepthIndicatorTimeout);
+  runtime.decorDepthIndicatorTimeout = setTimeout(() => {
+    if (dom.decorDepthIndicator) dom.decorDepthIndicator.hidden = true;
+  }, 1400);
+}
+
+function stepActiveDecorDepth(direction, multiplier = 1) {
+  const step = Math.sign(Number(direction) || 0);
+  const activeTarget = getActiveDecorShortcutTarget();
+  if (!step || !activeTarget) return { changed: false, atLimit: false };
+  const delta = step * DECOR_DEPTH_EDITOR_STEP * clamp(Number(multiplier) || 1, 0.2, 3);
+  const applyDepth = (item) => {
+    const previous = sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER));
+    const next = sanitizeTankDepthZ(previous + delta);
+    if (Math.abs(next - previous) < 0.0001) return false;
+    setPlacedDecorDepth(item, next);
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+    return true;
+  };
+
+  if (activeTarget.mode === "placement") {
+    const mode = runtime.placementMode;
+    const previous = sanitizeTankDepthZ(mode.z, getTankDepthZFromLegacyPosition(mode.tankLayer, DEFAULT_TANK_SUBLAYER));
+    const next = sanitizeTankDepthZ(previous + delta);
+    if (Math.abs(next - previous) < 0.0001) return { changed: false, atLimit: true };
+    mode.z = next;
+    mode.tankLayer = getLegacyTankDepthPositionFromZ(next).layer;
+    runtime.decorPlacementLayer = mode.tankLayer;
+    showDecorDepthIndicator(next);
+    return { changed: true, z: next };
+  }
+
+  const items = getDecorGroupTransformItems(activeTarget.item);
+  const targets = items.length > 1 ? items : [activeTarget.item];
+  const changed = targets.map(applyDepth).some(Boolean);
+  if (changed && activeTarget.mode !== "drag") saveState();
+  if (changed) {
+    const previewItem = targets.find((item) => item?.z !== undefined) || activeTarget.item;
+    showDecorDepthIndicator(getPlacedDecorDepthZ(previewItem));
+  }
+  renderUi(Date.now());
+  return { changed, atLimit: !changed };
+}
+
+function moveActiveDecorToDepth(targetZ) {
+  const activeTarget = getActiveDecorShortcutTarget();
+  if (!activeTarget) return { changed: false, atLimit: false };
+  const depth = sanitizeTankDepthZ(targetZ);
+
+  if (activeTarget.mode === "placement") {
+    const mode = runtime.placementMode;
+    if (Math.abs(sanitizeTankDepthZ(mode.z) - depth) < 0.0001) return { changed: false, atLimit: true };
+    mode.z = depth;
+    mode.tankLayer = getLegacyTankDepthPositionFromZ(depth).layer;
+    runtime.decorPlacementLayer = mode.tankLayer;
+    showDecorDepthIndicator(depth);
+    renderUi(Date.now());
+    return { changed: true, z: depth };
+  }
+
+  const items = getDecorGroupTransformItems(activeTarget.item);
+  const targets = items.length > 1 ? items : [activeTarget.item];
+  let changed = false;
+  for (const item of targets) {
+    const previous = sanitizeTankDepthZ(item.z, getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER));
+    if (Math.abs(previous - depth) < 0.0001) continue;
+    setPlacedDecorDepth(item, depth);
+    const placement = clampDecorPlacement(item.xNorm, item.yNorm, { item, applyGravity: true });
+    item.xNorm = placement.xNorm;
+    item.yNorm = placement.yNorm;
+    updatePlacedDecorResizeAnchor(item);
+    changed = true;
+  }
+  if (changed && activeTarget.mode !== "drag") saveState();
+  if (changed) showDecorDepthIndicator(depth);
+  renderUi(Date.now());
+  return { changed, atLimit: !changed, z: depth };
 }
 
 function stepActiveDecorScale(direction) {
@@ -60191,12 +62021,14 @@ function performDecorEditShortcutAction(action) {
   }
 
   if (action === "layer-up" || action === "layer-down") {
-    const result = stepActiveDecorLayer(action === "layer-up" ? 1 : -1);
+    // Screen-space up means farther back into the aquarium; screen-space down
+    // means toward the viewer. Z itself increases from rear to front.
+    const result = stepActiveDecorDepth(action === "layer-up" ? -1 : 1);
     if (result.changed) {
       showToast(
         isTutorialDecorDoneStep()
-          ? getTutorialDecorDoneToastText(`Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`)
-          : `Layer ${result.layer} of ${TANK_DEPTH_LAYERS}.`,
+          ? getTutorialDecorDoneToastText("Decoration moved through depth.")
+          : "Decoration moved through depth.",
         {
           durationMs: isTutorialDecorDoneStep() ? 120000 : undefined,
           key: isTutorialDecorDoneStep() ? TUTORIAL_TOAST_DECOR_DONE : ""
@@ -60205,7 +62037,18 @@ function performDecorEditShortcutAction(action) {
       return true;
     }
     if (result.atLimit) {
-      triggerLayerLimitPulse(result.layer);
+      triggerLayerLimitPulse(runtime.decorPlacementLayer);
+    }
+    return false;
+  }
+
+  if (action === "bring-to-front" || action === "send-to-back") {
+    const result = moveActiveDecorToDepth(
+      action === "bring-to-front" ? TANK_DEPTH_FRONT_USABLE_Z : TANK_DEPTH_REAR_USABLE_Z
+    );
+    if (result.changed) {
+      showToast(action === "bring-to-front" ? "Decoration moved to the front." : "Decoration moved to the back.");
+      return true;
     }
     return false;
   }
@@ -60276,7 +62119,7 @@ function getPlacementHintState() {
     return {
       owner: "hint:decor-drag",
       text: !isCaveDecorKey(runtime.dragState.decorKey)
-        ? "Press [z]/[x] or [up]/[down] to change layer."
+        ? "Press [z]/[x] or [up]/[down] to move through depth."
         : ""
     };
   }
@@ -61078,6 +62921,7 @@ function beginFishDrag(fish, point, pointerId) {
   }
 
   const now = Date.now();
+  cancelFishV26TurnForSpecialMovementOwner(fish, species, now, "drag");
   fish.activity = "roam";
   fish.feedingPelletId = null;
   clearFishCaveBehavior(fish);
@@ -61521,6 +63365,9 @@ function storeFish(fishId, options = {}) {
     fish.entrySplashTriggered = false;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
     fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
     fish.turnFromDirection = fish.displayDirection;
@@ -61868,6 +63715,9 @@ function restoreFishToTank(fishId) {
     fish.nextDetritusSnackAt = now + (returnSpecies?.cleanupMinMs || 12 * 60 * 1000);
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
     fish.turnFromAngle = fish.displayAngle;
@@ -62647,6 +64497,9 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
       : (typeof reasonText === "string" && reasonText.trim() ? reasonText.trim().slice(0, 80) : "Unknown");
   }
   enterFishDeadState(fish, now);
+  if (!alreadyDead && typeof dispatchFishBehaviorEvent === "function") {
+    dispatchFishBehaviorEvent("FISH_DIED", { fishId: fish.id }, now);
+  }
   fish.decayStage = "fresh";
   fish.piranhaAttackStartedAt = null;
   fish.piranhaLastDamageAt = null;
@@ -62683,6 +64536,9 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
   fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
   fish.turnFromDirection = fish.displayDirection;
@@ -64017,6 +65873,23 @@ function getFishPebbleTossPose(toss, now = Date.now()) {
   };
 }
 
+function getFishSchoolLeaderFormationDirection(leader, now = Date.now()) {
+  const visibleDirection = getFishFacingDirection(leader);
+  if (!leader || typeof getFishHorizontalTurnState !== "function") {
+    return visibleDirection;
+  }
+
+  const turnState = getFishHorizontalTurnState(leader, now);
+  if (turnState?.active && turnState.reversing) {
+    // Schooling follows the committed visible side, never renderer yaw. This
+    // keeps v26's edge-on midpoint and render-space trajectory invisible to
+    // formation logic, and also prevents lightweight turns from moving the
+    // formation anchor before their reversal lifecycle is actually complete.
+    return Number(turnState.fromDirection) < 0 ? -1 : 1;
+  }
+  return visibleDirection;
+}
+
 function getFishSchoolFollowLeader(fish) {
   if (!fish?.followFishId) {
     return null;
@@ -64150,6 +66023,12 @@ function getFishSchoolFormationSubLayer(fish, leader, now = Date.now()) {
   return clampTankSubLayer(pattern[slot % pattern.length]);
 }
 
+function getFishSchoolFormationDepthOffset(fish, leader, now = Date.now()) {
+  const slot = assignFishSchoolFormationDepthSlot(fish, leader, now);
+  const offsets = [0, -0.024, 0.024];
+  return offsets[slot % offsets.length];
+}
+
 function getFishSchoolActiveFollowers(leader, now = Date.now()) {
   if (!leader?.id) {
     return [];
@@ -64192,7 +66071,7 @@ function requestFishSchoolingRelationship(fish, leader, now = Date.now(), option
   leader.schoolFormationUntil = Number(leader.schoolFormationUntil) || now + randomBetween(SCHOOL_FORMATION_MIN_MS, SCHOOL_FORMATION_MAX_MS);
   fish.schoolFormation = leader.schoolFormation;
   fish.schoolFormationUntil = leader.schoolFormationUntil;
-  fish.schoolFormationDirection = Number(fish.schoolFormationDirection) || getFishFacingDirection(leader);
+  fish.schoolFormationDirection = Number(fish.schoolFormationDirection) || getFishSchoolLeaderFormationDirection(leader, now);
   fish.followDepthSlot = Number.isInteger(Number(fish.followDepthSlot)) ? fish.followDepthSlot : null;
   fish.followFormationSlot = Number.isInteger(Number(fish.followFormationSlot)) ? fish.followFormationSlot : null;
   assignFishSchoolFormationDepthSlot(fish, leader, now);
@@ -64311,11 +66190,10 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
     return null;
   }
 
-  // Keep the slot on the side selected when this follow began. A leader's
-  // rendered facing changes instantly at a turnaround; using it live moves a
-  // trailing slot across the leader by two spacing widths and forces a serial
-  // left/right reversal in every follower.
-  const currentLeaderDirection = getFishFacingDirection(leader);
+  // Keep the slot on the side selected when this follow began. The leader's
+  // formation-facing value is latched to the source side for the whole active
+  // reversal, so v26 yaw and midpoint orientation cannot mirror follower slots.
+  const currentLeaderDirection = getFishSchoolLeaderFormationDirection(leader, now);
   const storedDirection = Number(fish.schoolFormationDirection) < 0 ? -1
     : Number(fish.schoolFormationDirection) > 0 ? 1
       : currentLeaderDirection;
@@ -64324,7 +66202,7 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
   // mirror through the leader while still allowing a completed turn to settle.
   if (currentLeaderDirection !== storedDirection) {
     fish.schoolTurnStartedAt = Number(fish.schoolTurnStartedAt) || now;
-    if (now - fish.schoolTurnStartedAt >= 420) {
+    if (now - fish.schoolTurnStartedAt >= SCHOOL_FORMATION_HEADING_SETTLE_MS) {
       fish.schoolFormationDirection = currentLeaderDirection;
       fish.schoolTurnStartedAt = null;
     }
@@ -64350,17 +66228,47 @@ function getFishSchoolFollowAnchor(fish, leader, now = Date.now()) {
     0.14,
     0.8
   );
+  const depthOffsetZ = getFishSchoolFormationDepthOffset(fish, leader, now);
+  const targetZ = sanitizeTankDepthZ(getDesiredFishTankDepthZ(leader) + depthOffsetZ);
+
+  const occupiedFish = [leader, ...getFishSchoolActiveFollowers(leader, now)]
+    .filter((otherFish) => otherFish?.id !== fish.id);
+  const separation = SCHOOL_FORMATION_MIN_SEPARATION_NORM;
+  const separationCandidates = [
+    { xNorm: desiredXNorm, yNorm: desiredYNorm },
+    { xNorm: desiredXNorm - leaderDirection * separation, yNorm: desiredYNorm },
+    { xNorm: desiredXNorm, yNorm: desiredYNorm + separation },
+    { xNorm: desiredXNorm, yNorm: desiredYNorm - separation },
+    { xNorm: desiredXNorm - leaderDirection * separation * 0.72, yNorm: desiredYNorm + (formation.yOffsetNorm >= 0 ? separation * 0.72 : -separation * 0.72) }
+  ].map((candidate) => ({
+    xNorm: clamp(candidate.xNorm, 0.08, 0.92),
+    yNorm: clamp(candidate.yNorm, 0.14, 0.8)
+  }));
+  const separatedAnchor = separationCandidates.reduce((best, candidate) => {
+    const candidateClearance = occupiedFish.length
+      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(candidate.xNorm - otherFish.xNorm, candidate.yNorm - otherFish.yNorm)))
+      : Number.POSITIVE_INFINITY;
+    const bestClearance = best && occupiedFish.length
+      ? Math.min(...occupiedFish.map((otherFish) => Math.hypot(best.xNorm - otherFish.xNorm, best.yNorm - otherFish.yNorm)))
+      : Number.NEGATIVE_INFINITY;
+    return candidateClearance > bestClearance ? candidate : best;
+  }, null) || { xNorm: desiredXNorm, yNorm: desiredYNorm };
 
   // Followers use a stable slot behind one leader. Do not steer from a live
   // centroid or from every nearby fish. Those continuously moving forces were
   // causing the school to collapse into a blob and oscillate vertically.
   return {
-    xNorm: desiredXNorm,
-    yNorm: desiredYNorm,
-    targetLayer: clampTankLayer(getFishTankLayer(leader) + ([0, -1, 1][assignFishSchoolFormationDepthSlot(fish, leader, now) % 3])),
+    xNorm: separatedAnchor.xNorm,
+    yNorm: separatedAnchor.yNorm,
+    // Formation depth is expressed through sublayers below. Keep each
+    // follower in its current tank layer so a leader's depth maneuver cannot
+    // pull the whole school across rendered tank strata in one refresh.
+    targetLayer: clampTankLayer(getFishTankLayer(fish)),
     targetSubLayer: getFishSchoolFormationSubLayer(fish, leader, now),
+    targetZ,
     offsetXNorm: -leaderDirection * formation.trailingDistance,
-    offsetYNorm: formation.yOffsetNorm
+    offsetYNorm: formation.yOffsetNorm,
+    offsetZ: depthOffsetZ
   };
 }
 
@@ -64396,15 +66304,17 @@ function getFishSchoolFollowFacingDirection(fish, species, now = Date.now(), fal
       0.8
     );
     fish.targetAt = Math.max(now + 900, Number(leader.caveInsideUntil) || now + 900);
-    setFishDesiredTankLayer(fish, getFishTankLayer(leader));
-    setFishDesiredTankSubLayer(fish, getFishSchoolFormationSubLayer(fish, leader, now));
+    setFishDesiredTankDepth(
+      fish,
+      getFishCaveDepthRegion(leader, "front") + getFishSchoolFormationDepthOffset(fish, leader, now)
+    );
     return true;
   }
   if (!isFishSchoolLeaderAvailable(fish, leader, species, now)) {
     return null;
   }
 
-  const leaderDirection = getFishFacingDirection(leader);
+  const leaderDirection = getFishSchoolLeaderFormationDirection(leader, now);
   const targetXNorm = Number.isFinite(Number(fish.targetXNorm))
     ? Number(fish.targetXNorm)
     : fish.xNorm;
@@ -64575,8 +66485,7 @@ function updateFishSchoolFollowTarget(fish, species, now = Date.now()) {
     fish.targetYNorm = nextTargetY;
   }
   fish.targetAt = Math.max(now + 500, fish.followUntil);
-  setFishDesiredTankLayer(fish, anchor.targetLayer);
-  setFishDesiredTankSubLayer(fish, anchor.targetSubLayer);
+  setFishDesiredTankDepth(fish, anchor.targetZ);
   return true;
 }
 
@@ -66229,18 +68138,14 @@ function updateInspectorFishReadouts(fish) {
   const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
   const activeColor = getFishColorSetting(fish);
   const species = getSpeciesForFish(fish);
-  const storedTurnPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
-  const preferredTurnMode = ["simple", "complex"].includes(storedTurnPreference)
-    ? storedTurnPreference
-    : getConfiguredFishTurnAnimationMode(species);
+  const preferredTurnMode = areSimpleTurnAnimationsForced() ? "simple" : "complex";
   setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
   setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
   setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
   if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
     dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
-    dom.inspectorFishTurnAnimationInput.title = areSimpleTurnAnimationsForced()
-      ? "Graphics settings currently force Simple turns for all fish. This preference will apply when that override is disabled."
-      : "Use the complex segmented turnaround for this fish.";
+    dom.inspectorFishTurnAnimationInput.disabled = true;
+    dom.inspectorFishTurnAnimationInput.title = "Turn animation is controlled globally in Game Settings.";
   }
   setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
   if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {
@@ -67128,6 +69033,7 @@ function updateDebugFrameProfilerOverlay(force = false) {
     `tank ${sectionAverage("tankRender").toFixed(2)} | fish ${sectionAverage("fishDraw").toFixed(2)} | prep ${sectionAverage("fishPrep").toFixed(2)}`,
     `swim ${counterAverage("fishSwimSliceDraws").toFixed(0)} slices | ${counterAverage("fishSwimWarpPasses").toFixed(1)} passes/frame | highlight ${counterAverage("fishSwimHighlightSliceDraws").toFixed(0)}`,
     `caves ${sectionAverage("caveCollision").toFixed(2)} | strict ${counterAverage("caveStrictChecks").toFixed(1)}/frame`,
+    `depth buckets ${counterAverage("depthBucketQueries").toFixed(1)} queries | ${counterAverage("depthBucketCandidates").toFixed(1)} candidates/frame`,
     `UI ${sectionAverage("uiRender").toFixed(2)} | save ${sectionAverage("saveState").toFixed(2)}`,
     `last tick ${runtime.frameProfilerLastTickMs.toFixed(2)} | deferred UI ${runtime.frameProfilerLastDeferredUiMs.toFixed(2)}`,
     `last save ${runtime.frameProfilerLastSaveMs.toFixed(2)} | last full UI ${runtime.frameProfilerLastUiRenderMs.toFixed(2)}`,
@@ -67675,6 +69581,9 @@ function clearRevivedFishCorpseState(fish, now = Date.now()) {
   fish.turnSpinDirection = livingDirection < 0 ? 1 : -1;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.swimTilt = 0;
   fish.motionLevel = 0.18;
   fish.wiggleClock = 0;
@@ -67754,6 +69663,9 @@ function reviveFishForDebug(fish, now = Date.now()) {
   fish.entrySplashTriggered = false;
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.sharkLastAttackAt = 0;
 
   clearPiranhaAttackState(fish);
@@ -69463,9 +71375,17 @@ function getDebugFishBehaviorPreviewOption(behaviorId = runtime.debugFishBehavio
     || DEBUG_FISH_BEHAVIOR_PREVIEW_OPTIONS[0];
 }
 
+function getDebugFishBehaviorPreviewTurnDurationMs(fish, species) {
+  const animationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
+    ? "simple"
+    : "complex";
+  const rendererBackend = resolveFishTurnRendererBackend(fish, species, animationMode);
+  return getFishTurnDurationMs(fish, species, animationMode, rendererBackend);
+}
+
 function getDebugFishBehaviorPreviewCycleMs(behaviorId, fish, species) {
   if (behaviorId === "turn-around") {
-    return Math.max(900, Number(fish?.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species)) + 720;
+    return Math.max(900, getDebugFishBehaviorPreviewTurnDurationMs(fish, species)) + 720;
   }
   if (behaviorId === "death-animation") {
     return 5600;
@@ -69541,7 +71461,7 @@ function createDebugFishBehaviorPreviewFish(speciesId) {
   fish.turnDurationMs = 0;
   fish.turnFromDirection = 1;
   fish.turnToDirection = -1;
-  fish.debugPreviewTurnDurationMs = getFishTurnDurationMs(fish, species);
+  fish.debugPreviewTurnDurationMs = null;
   fish.direction = 1;
   fish.deadAt = null;
   fish.healthUnits = getSpeciesMaxHealthUnits(species);
@@ -69913,12 +71833,17 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   if (behaviorId === "turn-around") {
     fish.turnAnimationMode = (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced())
       ? "simple"
-      : getConfiguredFishTurnAnimationMode(species);
-    const durationMs = Math.max(120, Number(fish.debugPreviewTurnDurationMs) || getFishTurnDurationMs(fish, species, fish.turnAnimationMode));
+      : "complex";
+    const durationMs = Math.max(120, getDebugFishBehaviorPreviewTurnDurationMs(fish, species));
     phase = clamp(cycleElapsed / durationMs, 0, 1);
     turnActive = cycleElapsed <= durationMs;
     fish.turnDurationMs = durationMs;
     fish.turnStartedAt = renderNow - phase * durationMs;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    if (!isFishTurnRendererSessionCurrent(fish)) {
+      beginFishTurnRendererSession(fish, species, fish.turnStartedAt, fish.turnAnimationMode);
+    }
     fish.turnFromDirection = 1;
     fish.turnToDirection = -1;
     fish.turnSpinDirection = -1;
@@ -69949,16 +71874,20 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   const previewTurnMode = behaviorId === "turn-around"
     ? getFishTurnAnimationMode(fish, species)
     : "simple";
-  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const previewTurnBackend = behaviorId === "turn-around" && turnActive
+    ? getFishTurnRendererBackend(fish, species)
+    : "simple";
+  const previewUsesLightweightTurn = previewTurnMode === "simple" || previewTurnBackend === "simple";
+  const simpleTurnAmount = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? Math.sin(phase * Math.PI)
     : 0;
   const simpleTurnDirection = phase < 0.5 ? 1 : -1;
   const simpleTurnScaleX = 1 - simpleTurnAmount * (1 - FISH_TURN_MIN_SCALE_X);
   const simpleTurnScaleY = 1 + simpleTurnAmount * (FISH_TURN_MAX_SCALE_Y - 1);
-  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const simpleTurnLean = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? -simpleTurnAmount * 0.14
     : 0;
-  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewTurnMode === "simple"
+  const simpleTurnSway = behaviorId === "turn-around" && turnActive && previewUsesLightweightTurn
     ? -simpleTurnAmount * 0.8
     : 0;
 
@@ -69966,13 +71895,27 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   context.translate(viewport.width / 2 + pose.swayX + simpleTurnSway, viewport.height / 2 + (Number(pose.swayY) || 0));
   context.rotate(pose.tilt + simpleTurnLean);
   context.scale(behaviorId === "turn-around"
-    ? (previewTurnMode === "simple" ? simpleTurnDirection : 1)
+    ? (previewUsesLightweightTurn ? simpleTurnDirection : 1)
     : fish.direction, 1);
   context.scale(pose.bodyScaleX * simpleTurnScaleX, pose.bodyScaleY * simpleTurnScaleY);
   context.globalAlpha = pose.alpha;
   context.filter = fishFilter;
-  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex") {
-    drawFishTurnaroundRig(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+  if (behaviorId === "turn-around" && turnActive && previewTurnMode === "complex" && previewTurnBackend === "v26") {
+    const renderedByV26 = drawFishTurnV26VolumeMesh(
+      context,
+      renderImage,
+      sourceImage,
+      drawX,
+      drawWidth,
+      drawHeight,
+      fish,
+      renderNow,
+      { species, baseAssetPath: imagePath, includeFinOverlay: true }
+    );
+    if (!renderedByV26) {
+      markFishTurnRendererFallback(fish, "simple");
+      drawFishLightweightTurnFallbackFrame(context, renderImage, drawX, drawWidth, drawHeight, fish, renderNow);
+    }
   } else {
     const warped = typeof drawFishSwimDepthWarpImage === "function"
       && drawFishSwimDepthWarpImage(
@@ -75325,6 +77268,7 @@ function renderUi(now, options = {}) {
     window.beginEngineeredAquaticSpecimenDesign = beginEngineeredAquaticSpecimenDesign;
     window.getProteusSaveDiscovery = getProteusSaveDiscovery;
     window.markProteusDiscoveredInSave = markProteusDiscoveredInSave;
+    window.updateWebSurfRoute = updateWebSurfRoute;
     window.showProteusDesignerPage = () => openProteusDesignerPage();
     window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
     window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
@@ -75332,6 +77276,22 @@ function renderUi(now, options = {}) {
       id: String(getCurrentTank()?.id || ""),
       waterType: getActiveStoreWaterType()
     });
+    // The BubbleBodega shell is a regular script while this application is an
+    // ES module. Keep its product-fit view data-only and narrowly scoped.
+    window.getBubbleBodegaFishCareProfile = (speciesId, appearanceVariantKey = "") => {
+      const species = runtime.fishMap.get(String(speciesId || ""));
+      if (!species) return null;
+      const social = getFishSocialProfile(species);
+      return {
+        waterType: getFishVariantWaterType(species, appearanceVariantKey),
+        needs: getSpeciesNeedTags(species),
+        conflicts: getSpeciesConflictTags(species),
+        social: {
+          socialMode: social.socialMode,
+          socialMinimum: social.socialMinimum
+        }
+      };
+    };
   }
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   state.coins = clamp(Math.floor(Number(state.coins) || 0), 0, MAX_WALLET_COINS);
@@ -76113,16 +78073,21 @@ async function handleDavyJonesLockerPageClick(event) {
 
 function renderStoreOverlay() {
   syncWebSurfThemePresentation();
+  resetWebSurfToolbarVisibility();
+  syncWebSurfBrowserChrome();
+  const routeError = runtime.webSurfRouteError;
+  const showingRouteError = Boolean(routeError);
   const showingHome = runtime.webHomeOpen === true;
+  const showingThemes = runtime.webSurfThemesOpen === true;
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
   const showingSettings = runtime.settingsOverlayOpen === true;
   const showingBodegaHome = runtime.bubbleBodegaHomeOpen === true
-    && !showingHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings;
+    && !showingHome && !showingThemes && !showingBank && !showingLocker && !showingDesigner && !showingSettings;
   const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
-  if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true;
-  if (dom.webSurfSettingsTab) dom.webSurfSettingsTab.hidden = runtime.webSurfSettingsTabOpen !== true;
+  if (davyLockerTab) davyLockerTab.hidden = runtime.davyJonesLockerTabOpen !== true || davyLockerTab.dataset.websurfTabClosed === "true";
+  if (dom.webSurfSettingsTab) dom.webSurfSettingsTab.hidden = runtime.webSurfSettingsTabOpen !== true || dom.webSurfSettingsTab.dataset.websurfTabClosed === "true";
   ensureWebSurfSettingsPageMounted();
   const allowedTabs = getTutorialAllowedStoreTabs();
   if (runtime.storeOverlayOpen && !showingBank && !showingDesigner && !showingSettings && allowedTabs && !allowedTabs.has(runtime.storeTab)) {
@@ -76137,11 +78102,13 @@ function renderStoreOverlay() {
   const searchOwnsBubbleBodegaCatalog = Boolean(
     runtime.storeOverlayOpen
     && !showingHome
+    && !showingThemes
     && !showingBodegaHome
     && !showingBank
     && !showingLocker
     && !showingDesigner
     && !showingSettings
+    && !showingRouteError
     && (bubbleBodegaSearchView?.active === true || bubbleBodegaSearchView?.allCategories === true)
   );
   const categoryTabOwnsBubbleBodegaCatalog = bubbleBodegaSearchView?.allCategories !== true;
@@ -76157,36 +78124,52 @@ function renderStoreOverlay() {
 
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
+  dom.storeOverlay.classList.toggle("is-websurf-fullscreen", runtime.storeOverlayOpen && getUiSettings().webSurfFullscreen === true);
+  dom.storeOverlay.classList.toggle("is-websurf-toolbar-hidden", runtime.storeOverlayOpen && runtime.webSurfToolbarHidden === true && getUiSettings().webSurfFullscreen === true);
   dom.storeOverlay.classList.toggle("is-web-home-open", runtime.storeOverlayOpen && showingHome);
+  dom.storeOverlay.classList.toggle("is-websurf-themes-open", runtime.storeOverlayOpen && showingThemes);
   dom.storeOverlay.classList.toggle("is-bubblebodega-home-open", runtime.storeOverlayOpen && showingBodegaHome);
   dom.storeOverlay.classList.toggle("is-bubble-bank-open", runtime.storeOverlayOpen && showingBank);
   dom.storeOverlay.classList.toggle("is-davy-jones-locker-open", runtime.storeOverlayOpen && showingLocker);
   dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
   dom.storeOverlay.classList.toggle("is-web-settings-open", runtime.storeOverlayOpen && showingSettings);
-  dom.storeOverlay.setAttribute("aria-label", showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  dom.storeOverlay.classList.toggle("is-websurf-route-error", runtime.storeOverlayOpen && showingRouteError);
+  dom.storeOverlay.setAttribute("aria-label", routeError ? "WebSurf address error" : showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingThemes ? "WebSurf Themes Store" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  if (dom.webSurfRouteErrorPage) {
+    dom.webSurfRouteErrorPage.hidden = !runtime.storeOverlayOpen || !routeError;
+    if (runtime.storeOverlayOpen && routeError) {
+      setMarkupIfChanged("websurf-route-error-page", dom.webSurfRouteErrorPage, renderWebSurfRouteErrorPage(routeError));
+    }
+  }
   if (dom.webHomePage) {
-    dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome;
+    dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome || Boolean(routeError);
     syncWebSurfUnreadBadge();
     if (runtime.storeOverlayOpen && showingHome) {
       setMarkupIfChanged("websurf-home-page", dom.webHomePage, renderWebSurfHomePage());
       window.syncProteusDiscovery?.();
     }
   }
+  if (dom.webSurfThemesPage) {
+    dom.webSurfThemesPage.hidden = !runtime.storeOverlayOpen || !showingThemes || Boolean(routeError);
+    if (runtime.storeOverlayOpen && showingThemes) {
+      setMarkupIfChanged("websurf-themes-page", dom.webSurfThemesPage, renderWebSurfThemesPage());
+    }
+  }
   if (dom.bubbleBodegaHomePage) {
-    dom.bubbleBodegaHomePage.hidden = !runtime.storeOverlayOpen || !showingBodegaHome;
+    dom.bubbleBodegaHomePage.hidden = !runtime.storeOverlayOpen || !showingBodegaHome || Boolean(routeError);
     if (runtime.storeOverlayOpen && showingBodegaHome) {
       setMarkupIfChanged("bubblebodega-home-page", dom.bubbleBodegaHomePage, renderBubbleBodegaHomePage());
       window.dispatchEvent(new CustomEvent("bubbleborough:bodega-home-state", { detail: { open: true } }));
     }
   }
   if (dom.bubbleBankPage) {
-    dom.bubbleBankPage.hidden = !runtime.storeOverlayOpen || !showingBank;
+    dom.bubbleBankPage.hidden = !runtime.storeOverlayOpen || !showingBank || Boolean(routeError);
     if (runtime.storeOverlayOpen && showingBank) {
       setMarkupIfChanged("bubble-bank-page", dom.bubbleBankPage, renderBubbleBankPage());
     }
   }
   if (dom.davyJonesLockerPage) {
-    dom.davyJonesLockerPage.hidden = !runtime.storeOverlayOpen || !showingLocker;
+    dom.davyJonesLockerPage.hidden = !runtime.storeOverlayOpen || !showingLocker || Boolean(routeError);
     if (runtime.storeOverlayOpen && showingLocker) renderDavyJonesLockerInventory();
   }
   const designerRoute = document.getElementById("proteusDesignerRoute");
@@ -76220,7 +78203,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingThemes && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -76238,19 +78221,19 @@ function renderStoreOverlay() {
 
   if (!searchOwnsBubbleBodegaCatalog) {
     if (dom.foodShop) {
-      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
+      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
     }
     if (dom.pharmacyShop) {
-      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
+      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
     }
-    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
-    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
+    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
+    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
     if (dom.equipmentShop) {
-      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingHome || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
+      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
     }
   }
   const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
-  const fallbackStandardWebPage = showingProteus ? "proteus" : showingHome ? "home" : showingBank ? "bank" : "store";
+  const fallbackStandardWebPage = showingProteus ? "proteus" : showingThemes ? "themes" : showingHome ? "home" : showingBank ? "bank" : "store";
   const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
   const activeWebPage = showingSettings ? "settings" : showingDesigner ? "designer" : activeStandardWebPage;
   window.syncWebPageTabs?.(activeWebPage);
@@ -81027,6 +83010,10 @@ function renderWebSurfAutoEmailBody(message) {
       const destination = String(block.destination || template.action?.destination || "");
       const label = String(block.label || template.action?.label || "Open");
       const prefix = renderWebSurfEmailInlineText(block.text || "", data);
+      const route = resolveWebSurfUrl(block.route || "");
+      if (route?.status === "ok") {
+        return `<p>${prefix}<button type="button" class="websurf-email-hyperlink" data-websurf-route="${escapeHtml(route.url)}">${escapeHtml(label)}</button></p>`;
+      }
       if (destination === "davy-locker-unlock") {
         return `<p>${prefix}<a class="websurf-email-hyperlink" href="#davyjoneslocker.hadal" data-websurf-email-action="${escapeHtml(message.id)}">${escapeHtml(label)}</a></p>`;
       }
@@ -81277,6 +83264,29 @@ function formatWebSurfMailStorage(messages) {
   return megabytes < 0.01 ? `${Math.max(1, Math.ceil(bytes / 1024))} KB` : `${megabytes.toFixed(2)} MB`;
 }
 
+function renderWebSurfThemesPage() {
+  const settings = getWebSurfChromeThemeSettings();
+  const cards = WEBSURF_CHROME_THEME_CATALOG.map((theme) => {
+    const owned = settings.ownedThemes.includes(theme.id);
+    const equipped = settings.activeTheme === theme.id;
+    const affordable = state.coins >= theme.price;
+    const action = equipped ? "Equipped" : (owned ? "Use Theme" : (theme.price ? `Buy · ${theme.price} coins` : "Get Free Theme"));
+    return `<article class="websurf-theme-card ${equipped ? "is-equipped" : ""}">
+      <div class="websurf-theme-preview websurf-theme-preview-${escapeHtml(theme.tone)}" aria-hidden="true"><span></span><i></i><b></b></div>
+      <div class="websurf-theme-card-copy"><div><h2>${escapeHtml(theme.name)}</h2><p>${escapeHtml(theme.description)}</p></div><small>${theme.price ? `${theme.price} Fish Coins` : "Free"}</small></div>
+      <button type="button" class="small-button ${equipped ? "alt" : ""}" data-websurf-theme-action="${escapeHtml(theme.id)}" ${equipped || (!owned && !affordable) ? "disabled" : ""}>${escapeHtml(action)}</button>
+    </article>`;
+  }).join("");
+  return `<header class="websurf-home-header websurf-themes-header">
+    <img ${assetImageAttributes("assets/web/websurf/WebSurf_icon.png")} alt="WebSurf" />
+    <div><span>WEBSURF.SWIM / THEMES</span><h1 tabindex="-1">Themes Store</h1><p>Customize WebSurf's browser chrome. Sites keep their own identity.</p></div>
+  </header>
+  <main class="websurf-home-main websurf-themes-main">
+    <div class="websurf-themes-balance"><span>Fish Coins</span><strong>${escapeHtml(String(state.coins))}</strong></div>
+    <section class="websurf-theme-grid" aria-label="WebSurf themes">${cards}</section>
+  </main>`;
+}
+
 function renderWebSurfHomePage() {
   const profile = sanitizeAccountProfile(state?.accountProfile);
   const username = profile.username || getAccountUsernameForUser(profile.userId);
@@ -81286,6 +83296,15 @@ function renderWebSurfHomePage() {
   const deletableCount = messages.filter((message) => !isWebSurfMailStarred(message)).length;
   const proteusDiscovered = state?.proteusDiscovered === true;
   const davyLockerUnlocked = state?.davyJonesLockerUnlocked === true;
+  const browser = getWebSurfBrowserState();
+  const playerBookmarks = browser.bookmarks.map((bookmark) => {
+    const route = resolveWebSurfUrl(bookmark.url);
+    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+  }).join("");
+  const recentPages = browser.history.slice(-5).reverse().map((entry) => {
+    const route = resolveWebSurfUrl(entry.url);
+    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(entry.title || route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+  }).join("");
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
     const mailState = ensureWebSurfMailState(message);
@@ -81319,11 +83338,14 @@ function renderWebSurfHomePage() {
         <div class="websurf-bookmark-row">
           <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/web/bodega/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
+          <button type="button" class="websurf-bookmark" data-websurf-route="websurf.swim/themes"><span aria-hidden="true">✦</span><span><strong>Themes Store</strong><small>Customize the WebSurf browser</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
           ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue · davyjoneslocker.hadal</small></span></button>` : ""}
+          ${playerBookmarks}
           <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
         </div>
       </section>
+      ${recentPages ? `<section class="websurf-bookmarks" aria-labelledby="websurfRecentTitle"><div class="websurf-bookmarks-heading"><h2 id="websurfRecentTitle">Recent Pages</h2><button type="button" class="small-button alt" data-websurf-clear-history>Clear History</button></div><div class="websurf-bookmark-row">${recentPages}</div></section>` : ""}
       <div class="websurf-dashboard-grid">
         <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
           <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
@@ -82639,13 +84661,6 @@ function renderCustomFishCreationOverlay() {
             ${liveBirth ? "checked" : ""} />
           <span>Live birth instead of eggs</span>
         </label>
-        <label class="cave-colorize-toggle custom-fish-turn-toggle">
-          <input
-            type="checkbox"
-            data-custom-fish-turn-toggle
-            ${complexTurnaround ? "checked" : ""} />
-          <span>Advanced Turn Animation</span>
-        </label>
         <label class="cave-colorize-toggle custom-fish-flip-toggle">
           <input
             type="checkbox"
@@ -82791,11 +84806,6 @@ function renderProteusDesignerWorkspace() {
             <label class="proteus-designer-toggle" title="Off: lays eggs. On: gives birth to live young.">
               <input type="checkbox" data-custom-fish-live-birth-toggle ${liveBirth ? "checked" : ""} ${disabled} />
               <span>Live Birth <small>(off = eggs)</small></span>
-            </label>
-
-            <label class="proteus-designer-toggle">
-              <input type="checkbox" data-custom-fish-turn-toggle ${complexTurnaround ? "checked" : ""} ${disabled} />
-              <span>Advanced Turn Animation</span>
             </label>
 
             <label class="proteus-designer-toggle">
@@ -83174,6 +85184,7 @@ function renderSettingsOverlay() {
   if (dom.webSurfThemeModeSelect instanceof HTMLSelectElement) {
     dom.webSurfThemeModeSelect.value = normalizeWebSurfThemeMode(uiSettings.webSurfThemeMode);
   }
+  if (dom.webSurfFullscreenToggle) dom.webSurfFullscreenToggle.checked = uiSettings.webSurfFullscreen === true;
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }
@@ -83237,8 +85248,8 @@ function renderSettingsOverlay() {
     dom.backgroundDepthHazeToggleInput.checked = uiSettings.backgroundDepthHazeEnabled !== false;
     dom.backgroundDepthHazeToggleInput.disabled = normalizeDepthEffectLevel(uiSettings.depthEffectLevel) <= DEPTH_EFFECT_LEVEL_MIN;
   }
-  if (dom.simpleTurnAnimationsToggleInput) {
-    dom.simpleTurnAnimationsToggleInput.checked = uiSettings.simpleTurnAnimationsOnly === true;
+  if (dom.complexTurnAnimationsToggleInput) {
+    dom.complexTurnAnimationsToggleInput.checked = uiSettings.complexTurnAnimationsEnabled !== false;
   }
   if (dom.halloweenModeSelect instanceof HTMLSelectElement) {
     dom.halloweenModeSelect.value = uiSettings.halloweenMode;
@@ -86787,7 +88798,7 @@ function renderPlacedDecor() {
           <div>
             <strong>${decor.name}</strong>
             <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
-            <div class="mini-note">Layer ${getDecorTankLayer(item)}. Current size: ${formatDecorScale(item.scale)}</div>
+            <div class="mini-note">Depth: ${getDecorDepthPlacementLabel(item)}. Current size: ${formatDecorScale(item.scale)}</div>
           </div>
           <div class="mini-card-actions">
             <div class="size-controls">
@@ -87795,19 +89806,19 @@ function renderControls(now) {
   const layerShortcutsDisabled = !hasActiveDecorShortcutTarget;
   const scaleShortcutsDisabled = !hasActiveDecorShortcutTarget;
   const layerShortcutHint = !hasActiveDecorShortcutTarget
-    ? "Select or drag decor to change its layer"
+    ? "Select or drag decor to change its depth"
     : "";
   if (dom.editLayerUpButton) {
     dom.editLayerUpButton.hidden = !runtime.editTankMode;
     dom.editLayerUpButton.disabled = layerShortcutsDisabled;
-    dom.editLayerUpButton.title = layerShortcutsDisabled ? layerShortcutHint : "Next decor layer (Z / Up)";
-    dom.editLayerUpButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Next decor layer (Z / Up)");
+    dom.editLayerUpButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)";
+    dom.editLayerUpButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)");
   }
   if (dom.editLayerDownButton) {
     dom.editLayerDownButton.hidden = !runtime.editTankMode;
     dom.editLayerDownButton.disabled = layerShortcutsDisabled;
-    dom.editLayerDownButton.title = layerShortcutsDisabled ? layerShortcutHint : "Previous decor layer (X / Down)";
-    dom.editLayerDownButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Previous decor layer (X / Down)");
+    dom.editLayerDownButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)";
+    dom.editLayerDownButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)");
   }
   if (dom.editScaleUpButton) {
     dom.editScaleUpButton.hidden = !runtime.editTankMode;
@@ -87847,14 +89858,20 @@ function renderToolCursor() {
   if (!visible) {
     dom.toolCursor.replaceChildren();
     dom.toolCursor.className = "tool-cursor";
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-x");
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-y");
     delete dom.toolCursor.dataset.renderKey;
     return;
   }
 
   const cursorSpec = getActiveToolCursorSpec();
   const renderKey = cursorSpec
-    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || ""].join("|")
+    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || "", cursorSpec.hotspotX, cursorSpec.hotspotY].join("|")
     : "";
+  const hotspotX = Number.isFinite(Number(cursorSpec?.hotspotX)) ? Number(cursorSpec.hotspotX) : 100;
+  const hotspotY = Number.isFinite(Number(cursorSpec?.hotspotY)) ? Number(cursorSpec.hotspotY) : 0;
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-x", `${-hotspotX}%`);
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-y", `${-hotspotY}%`);
 
   // A mode toggle clears the cursor's layers. Rebuild when it is re-enabled
   // even if it uses the same food and therefore has the same render key.
@@ -87900,21 +89917,21 @@ function renderToolCursor() {
 function getActiveToolCursorSpec() {
   if (runtime.medicineModeKey) {
     if (runtime.medicineModeKey === "firstAid") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "waterStress") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "infectionTreatment") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "antiParasite") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite, hotspotX: 50, hotspotY: 50 };
     }
     if (runtime.medicineModeKey === "betaBlocker") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum, hotspotX: 50, hotspotY: 50 };
     }
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine, hotspotX: 50, hotspotY: 50 };
   }
 
   if (runtime.feedingModeFoodKey) {
@@ -87923,7 +89940,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
-        variant: "basic-food"
+        variant: "basic-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "frisky") {
@@ -87931,7 +89950,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
-        variant: "frisky-food"
+        variant: "frisky-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "fishFlakes") {
@@ -87939,7 +89960,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.fishFlakes,
-        variant: "fish-flakes"
+        variant: "fish-flakes",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "algaeWafers") {
@@ -87947,7 +89970,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.algaeWafers,
-        variant: "algae-wafers"
+        variant: "algae-wafers",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "brineShrimp") {
@@ -87955,7 +89980,9 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.brineShrimp,
-        variant: "brine-shrimp"
+        variant: "brine-shrimp",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "carnivore") {
@@ -87963,20 +89990,22 @@ function getActiveToolCursorSpec() {
         type: "layered-food",
         base: TOOL_CURSOR_ICON_PATHS.foodScoop,
         overlay: TOOL_CURSOR_ICON_PATHS.carnivore,
-        variant: "carnivore-food"
+        variant: "carnivore-food",
+        hotspotX: 50,
+        hotspotY: 36
       };
     }
     if (runtime.feedingModeFoodKey === "chum") {
-      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket };
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket, hotspotX: 50, hotspotY: 36 };
     }
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed, hotspotX: 50, hotspotY: 50 };
   }
 
   if (runtime.scoopMode) {
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet, hotspotX: 29, hotspotY: 31 };
   }
   if (runtime.cleaningMode) {
-    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning };
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning, hotspotX: 50, hotspotY: 50 };
   }
   return null;
 }
@@ -89329,6 +91358,8 @@ function startPufferInflation(fish, species, now = Date.now()) {
   fish.turnStartedAt = null;
   fish.turnDurationMs = 0;
   fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  clearFishTurnRendererSession(fish);
   fish.targetXNorm = fish.xNorm;
   fish.targetYNorm = fish.yNorm;
   fish.motionVelocityXNorm = 0;
@@ -89567,9 +91598,13 @@ function getEffectiveWebSurfTheme(mode = getUiSettings().webSurfThemeMode) {
 function syncWebSurfThemePresentation() {
   const mode = normalizeWebSurfThemeMode(getUiSettings().webSurfThemeMode);
   const theme = getEffectiveWebSurfTheme(mode);
+  const chromeTheme = typeof getWebSurfChromeThemeSettings === "function"
+    ? getWebSurfChromeThemeSettings().activeTheme
+    : WEBSURF_CHROME_THEME_DEFAULT;
   if (dom.storeOverlay instanceof HTMLElement) {
     dom.storeOverlay.dataset.websurfThemeMode = mode;
     dom.storeOverlay.dataset.websurfTheme = theme;
+    dom.storeOverlay.dataset.websurfChromeTheme = chromeTheme;
   }
   return theme;
 }
@@ -89597,6 +91632,18 @@ function setWebSurfThemeMode(value, options = {}) {
       : (nextSettings.webSurfThemeMode === WEBSURF_THEME_MODE_YES ? "Yes" : "No");
     showToast(`WebSurf Dark Mode: ${label}.`);
   }
+  return true;
+}
+
+function setWebSurfFullscreen(enabled, options = {}) {
+  if (!state) return false;
+  const currentSettings = getUiSettings();
+  const nextEnabled = enabled === true;
+  if (currentSettings.webSurfFullscreen === nextEnabled) return false;
+  state.uiSettings = sanitizeUiSettings({ ...currentSettings, webSurfFullscreen: nextEnabled });
+  if (options.save !== false) saveState();
+  if (options.render !== false) renderUi(Date.now(), { full: false });
+  if (options.showToast !== false) showToast(`WebSurf Fullscreen: ${nextEnabled ? "On" : "Off"}.`);
   return true;
 }
 
@@ -89842,6 +91889,7 @@ function setCausticLightingEnabled(value) {
   }
 
   state.uiSettings = nextSettings;
+  if (typeof dispatchFishBehaviorEvent === "function") dispatchFishBehaviorEvent("LIGHT_STATE_CHANGED", { enabled: nextSettings.causticLightingEnabled }, Date.now());
   saveState();
   renderUi(Date.now(), { full: false });
   showToast(nextSettings.causticLightingEnabled ? "Caustic lighting on." : "Caustic lighting off.");
@@ -89925,7 +91973,7 @@ function setBackgroundDepthHazeEnabled(value) {
     : "Background depth haze off.");
 }
 
-function setSimpleTurnAnimationsOnly(value) {
+function setComplexTurnAnimationsEnabled(value) {
   if (!state) {
     return;
   }
@@ -89933,9 +91981,9 @@ function setSimpleTurnAnimationsOnly(value) {
   const currentSettings = getUiSettings();
   const nextSettings = sanitizeUiSettings({
     ...currentSettings,
-    simpleTurnAnimationsOnly: Boolean(value)
+    complexTurnAnimationsEnabled: Boolean(value)
   });
-  if (currentSettings.simpleTurnAnimationsOnly === nextSettings.simpleTurnAnimationsOnly) {
+  if (currentSettings.complexTurnAnimationsEnabled === nextSettings.complexTurnAnimationsEnabled) {
     return;
   }
 
@@ -89943,10 +91991,16 @@ function setSimpleTurnAnimationsOnly(value) {
   saveState();
   renderUi(Date.now(), { full: false });
   showToast(
-    nextSettings.simpleTurnAnimationsOnly
-      ? "Simple turn animations enabled for all fish."
-      : "Species turn animations restored."
+    nextSettings.complexTurnAnimationsEnabled
+      ? "Complex turning enabled for all fish."
+      : "Complex turning disabled. Using lightweight turns."
   );
+}
+
+// Compatibility shim for any older internal caller. The visible setting is now
+// the positive Complex Turning switch.
+function setSimpleTurnAnimationsOnly(value) {
+  setComplexTurnAnimationsEnabled(!Boolean(value));
 }
 
 function clearTankMouseInteractionState() {
@@ -90262,9 +92316,6 @@ function updatePiranhaSwarmTargets(now = Date.now()) {
     return;
   }
 
-  const preyLayer = isFishDead(prey)
-    ? clampTankLayer(Math.min(getFishTankLayer(prey), 2))
-    : clampTankLayer(Math.max(1, Math.min(TANK_DEPTH_LAYERS - 1, getFishTankLayer(prey))));
   const orbitRadius = isFishBeingConsumedByPiranhas(prey, now) ? 0.022 : 0.05;
 
   piranhas.forEach((piranha, index) => {
@@ -90282,7 +92333,7 @@ function updatePiranhaSwarmTargets(now = Date.now()) {
     piranha.targetYNorm = clamp(prey.yNorm + Math.sin(angle) * orbitRadius * 0.65, 0.14, 0.8);
     piranha.targetAt = now + PIRANHA_TARGET_REFRESH_MS;
     piranha.hangoutDecorId = null;
-    setFishDesiredTankLayer(piranha, preyLayer);
+    setFishDesiredTankDepth(piranha, getFishTankDepthZ(prey));
     piranha.swimSpeed = normalizeFishSpeed(
       species,
       randomBetween(Math.max(species.speedMin, species.speedMax * 0.82), species.speedMax)
@@ -91006,6 +93057,9 @@ function drawMedicineClouds(now) {
 }
 
 function makeFishScurryFromAttack(victim, attacker, now) {
+  if (typeof dispatchFishBehaviorEvent === "function") {
+    dispatchFishBehaviorEvent("AGGRESSIVE_DAMAGE", { fishId: victim?.id || "", attackerId: attacker?.id || "" }, now);
+  }
   if (!victim || !attacker || isFishDead(victim)) {
     return;
   }
@@ -91058,6 +93112,15 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   if (!blockedX && !blockedY) {
     return;
   }
+
+  // Start a recovery from the pose that actually survived collision testing.
+  // A previous free-swim velocity otherwise carries into the detour and turns
+  // an obstacle into a visible elastic tether.
+  fish.motionVelocityXNorm = 0;
+  fish.motionVelocityYNorm = 0;
+  fish.motionTargetXNorm = fish.xNorm;
+  fish.motionTargetYNorm = fish.yNorm;
+  fish.motionTargetUpdatedAt = now;
 
   // A failed local move is a temporary separation, not a reason to dissolve a
   // school. Preserve membership and let the follower rejoin after its short
@@ -91841,7 +93904,7 @@ function maybeAssignDavyMutationReactionTarget(fish, species, now = Date.now()) 
     fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
     fish.hangoutDecorId = null;
     fish.hangoutZoneType = null;
-    setFishDesiredTankLayer(fish, getFishTankLayer(siren.fish));
+    setFishDesiredTankDepth(fish, getFishTankDepthZ(siren.fish));
     setFishBehaviorIntent(fish, "investigating lure", personality, now, { durationMs: 6500, targetName: siren.fish.name });
     return true;
   }
@@ -92022,7 +94085,7 @@ function assignDavyMutationSwimTarget(fish, species, now = Date.now()) {
       fish.targetYNorm = placement.yNorm;
       fish.targetAt = now + randomBetween(2200, 4400);
       fish.swimSpeed = normalizeFishSpeed(species, randomBetween(species.speedMin, Math.max(species.speedMin, species.speedMax * 0.58)));
-      setFishDesiredTankLayer(fish, getFishTankLayer(companion.fish));
+      setFishDesiredTankDepth(fish, getFishTankDepthZ(companion.fish));
       setFishBehaviorIntent(fish, "following", "companion", now, { durationMs: fish.targetAt - now, targetName: companion.fish.name });
       return true;
     }
@@ -92348,6 +94411,504 @@ function updateProteusZombieFishAggression(fish, species, now = Date.now(), delt
   return true;
 }
 
+function stabilizeFishPassiveMotionTarget(fish, now, deltaSeconds, options = null) {
+  options ||= {};
+  if (!fish || options.urgent || fish.activity !== "roam" || fish.caveState) {
+    fish.motionTargetXNorm = null;
+    fish.motionTargetYNorm = null;
+    fish.motionTargetUpdatedAt = now;
+    return {
+      xNorm: Number(fish?.targetXNorm) || Number(fish?.xNorm) || 0.5,
+      yNorm: Number(fish?.targetYNorm) || Number(fish?.yNorm) || 0.5
+    };
+  }
+  const requestedX = clamp(Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const requestedY = clamp(Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5, 0.14, 0.84);
+  const previousX = Number.isFinite(Number(fish.motionTargetXNorm)) ? Number(fish.motionTargetXNorm) : requestedX;
+  const previousY = Number.isFinite(Number(fish.motionTargetYNorm)) ? Number(fish.motionTargetYNorm) : requestedY;
+  const elapsedSeconds = clamp((now - (Number(fish.motionTargetUpdatedAt) || now)) / 1000, 0, Math.max(0.016, deltaSeconds));
+  const response = 1 - Math.exp(-FISH_PASSIVE_TARGET_RESPONSE_PER_SEC * elapsedSeconds);
+  const nextX = previousX + clamp((requestedX - previousX) * response, -FISH_PASSIVE_TARGET_MAX_STEP_NORM, FISH_PASSIVE_TARGET_MAX_STEP_NORM);
+  const nextY = previousY + clamp((requestedY - previousY) * response, -FISH_PASSIVE_TARGET_MAX_STEP_NORM, FISH_PASSIVE_TARGET_MAX_STEP_NORM);
+  fish.motionTargetXNorm = nextX;
+  fish.motionTargetYNorm = nextY;
+  fish.motionTargetUpdatedAt = now;
+  // Target coordinates are behavioral intent. Do not replace them with a
+  // filtered intermediate point: doing so makes the filter treat its own last
+  // output as the destination on the next frame and strands fish short of it.
+  return { xNorm: nextX, yNorm: nextY };
+}
+
+function integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds) {
+  const distance = Math.hypot(moveDx, moveDy);
+  const previousVelocityX = Number(fish.motionVelocityXNorm) || 0;
+  const previousVelocityY = Number(fish.motionVelocityYNorm) || 0;
+  const previousSpeed = Math.hypot(previousVelocityX, previousVelocityY);
+  if (distance <= FISH_PASSIVE_ARRIVAL_EPSILON_NORM) {
+    const settle = Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC * 2.6);
+    fish.motionVelocityXNorm = previousVelocityX * settle;
+    fish.motionVelocityYNorm = previousVelocityY * settle;
+    if (previousSpeed <= FISH_PASSIVE_ARRIVAL_EPSILON_NORM) {
+      fish.motionVelocityXNorm = 0;
+      fish.motionVelocityYNorm = 0;
+    }
+    return { x: 0, y: 0, distance: 0 };
+  }
+
+  const directionX = distance > 0.000001 ? moveDx / distance : 0;
+  const directionY = distance > 0.000001 ? moveDy / distance : 0;
+  const brakeDistance = Math.max(
+    FISH_PASSIVE_BRAKE_DISTANCE_NORM,
+    previousSpeed * 0.72
+  );
+  const arrival = clamp(distance / brakeDistance, 0, 1);
+  const desiredSpeed = speed * (0.035 + arrival * 0.965);
+  const response = 1 - Math.exp(-deltaSeconds * FISH_PASSIVE_VELOCITY_RESPONSE_PER_SEC);
+  const velocityX = previousVelocityX + (directionX * desiredSpeed - previousVelocityX) * response;
+  const velocityY = previousVelocityY + (directionY * desiredSpeed - previousVelocityY) * response;
+  const candidateX = velocityX * deltaSeconds;
+  const candidateY = velocityY * deltaSeconds;
+  const candidateDistance = Math.hypot(candidateX, candidateY);
+
+  // A target is an aim point, never a place to ping-pong through. Reaching it
+  // can consume the remaining tiny step, but never injects a minimum movement
+  // that repeatedly pushes a fish back into its own target or a world bound.
+  const brakingRatio = candidateDistance > distance && candidateDistance > 0.000001
+    ? clamp(distance / candidateDistance, 0, 1)
+    : 1;
+  const stepX = candidateX * brakingRatio;
+  const stepY = candidateY * brakingRatio;
+  const retainedVelocity = brakingRatio < 1 ? 0.28 : 1;
+  fish.motionVelocityXNorm = velocityX * retainedVelocity;
+  fish.motionVelocityYNorm = velocityY * retainedVelocity;
+  return { x: stepX, y: stepY, distance: Math.hypot(stepX, stepY) };
+}
+
+function reconcileFishPassiveMotion(fish, requestedStepX, requestedStepY, actualStepX, actualStepY, deltaSeconds) {
+  const requestedDistance = Math.hypot(requestedStepX, requestedStepY);
+  if (requestedDistance <= 0.000001) return;
+  const actualDistance = Math.hypot(actualStepX, actualStepY);
+  const blockedRatio = actualDistance / requestedDistance;
+  if (blockedRatio >= 0.82) return;
+
+  // Collision and viewport clamps are authoritative. Retaining the velocity
+  // from a rejected step makes a fish visibly press into a wall every frame.
+  // Preserve only the portion that truly happened so a grazing slide remains
+  // smooth, while a full block starts its detour with a clean velocity state.
+  const actualVelocityX = actualStepX / Math.max(0.001, deltaSeconds);
+  const actualVelocityY = actualStepY / Math.max(0.001, deltaSeconds);
+  const retained = clamp(blockedRatio, 0, 0.45);
+  fish.motionVelocityXNorm = actualVelocityX * retained;
+  fish.motionVelocityYNorm = actualVelocityY * retained;
+}
+
+function syncFishTraversalStateFromMove(fish, previousXNorm, previousYNorm, now, deltaSeconds) {
+  if (!fish) return;
+  const elapsedSeconds = Math.max(0.001, Number(deltaSeconds) || 0.001);
+  const movedXNorm = (Number(fish.xNorm) || 0) - (Number(previousXNorm) || 0);
+  const movedYNorm = (Number(fish.yNorm) || 0) - (Number(previousYNorm) || 0);
+  const velocityXNorm = clamp(movedXNorm / elapsedSeconds, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const velocityYNorm = clamp(movedYNorm / elapsedSeconds, -FISH_TRAVERSAL_MAX_VELOCITY_NORM, FISH_TRAVERSAL_MAX_VELOCITY_NORM);
+  const speedNorm = Math.hypot(velocityXNorm, velocityYNorm);
+  const previousSpeedNorm = Math.max(0, Number(fish.traversalSpeedNorm) || 0);
+  const desiredXNorm = (Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5) - (Number(fish.xNorm) || 0.5);
+  const desiredYNorm = (Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5) - (Number(fish.yNorm) || 0.5);
+  const desiredDistance = Math.hypot(desiredXNorm, desiredYNorm);
+
+  fish.traversalVelocityXNorm = velocityXNorm;
+  fish.traversalVelocityYNorm = velocityYNorm;
+  fish.traversalSpeedNorm = speedNorm;
+  fish.traversalAccelerationNorm = clamp(
+    (speedNorm - previousSpeedNorm) / elapsedSeconds,
+    -FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8,
+    FISH_TRAVERSAL_MAX_VELOCITY_NORM * 8
+  );
+  if (desiredDistance > 0.000001) {
+    fish.traversalDesiredHeadingXNorm = desiredXNorm / desiredDistance;
+    fish.traversalDesiredHeadingYNorm = desiredYNorm / desiredDistance;
+  }
+
+  // The traversal heading belongs to successful travel, not target churn or
+  // an idle sprite animation. Future turn phases can safely consult it knowing
+  // that a stationary fish never silently acquired a new physical heading.
+  if (speedNorm >= FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM) {
+    fish.traversalHeadingXNorm = velocityXNorm / speedNorm;
+    fish.traversalHeadingYNorm = velocityYNorm / speedNorm;
+    fish.traversalState = "swimming";
+    fish.traversalLastMovedAt = now;
+  } else {
+    fish.traversalState = "idle";
+  }
+  if (!["idle", "turning", "reversing"].includes(fish.traversalTurnState)) {
+    fish.traversalTurnState = "idle";
+  }
+}
+
+function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now) {
+  if (!fish || !fish.turnStartedAt || !(Number(fish.turnDurationMs) > 0)) return null;
+  const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
+  const toDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
+  if (fromDirection === toDirection) return null;
+  const progress = clamp((now - Number(fish.turnStartedAt)) / Number(fish.turnDurationMs), 0, 1);
+  const apexProgress = FISH_TURN_TRAVERSAL_ARC_APEX_PROGRESS;
+  const relativeSpeed = clamp(
+    (Number(fish.traversalSpeedNorm) || 0) / Math.max(0.008, Number(fish.swimSpeed) || 0.04),
+    0,
+    1
+  );
+  const sourcePhase = clamp(progress / Math.max(0.001, apexProgress), 0, 1);
+  const destinationPhase = clamp((progress - apexProgress) / Math.max(0.001, 1 - apexProgress), 0, 1);
+  const motionScale = progress < apexProgress
+    ? FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE
+      + (FISH_TURN_TRAVERSAL_DRIFT_MAX_SCALE - FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE)
+        * (1 - sourcePhase) * (0.5 + relativeSpeed * 0.5)
+    : FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE
+      + (1 - FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE) * destinationPhase * destinationPhase;
+  const requestedDistance = Math.hypot(requestedXNorm, requestedYNorm);
+  const horizontalDistance = Math.max(0.018, Math.abs(Number(requestedXNorm) || 0), requestedDistance * 0.45);
+  // A fish does not reverse its velocity on one simulation frame. Rotate the
+  // forward travel vector continuously through a small vertical arc: X eases
+  // through zero at the apex while Y carries it through the water. This keeps
+  // the physical path aligned with the visual turn rather than looking like a
+  // stationary sprite that flips into its new direction.
+  const turnAngle = progress < apexProgress
+    ? (Math.PI * 0.5) * sourcePhase
+    : (Math.PI * 0.5) + (Math.PI * 0.5) * destinationPhase;
+  const horizontalMomentum = Math.cos(turnAngle);
+  const arcAmount = Math.sin(turnAngle);
+  const requestedVertical = (Number(requestedYNorm) || 0) * 0.35;
+  const arcDirection = Math.abs(requestedVertical) > 0.0001
+    ? Math.sign(requestedVertical)
+    : (Number(fish.turnSpinDirection) < 0 ? -1 : 1);
+  const arcVertical = arcAmount * horizontalDistance * FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO * arcDirection;
+  const travelDirection = horizontalMomentum < -0.0001 ? toDirection : fromDirection;
+  return {
+    xNorm: fromDirection * horizontalDistance * horizontalMomentum,
+    yNorm: requestedVertical + arcVertical,
+    motionScale,
+    progress,
+    travelDirection
+  };
+}
+
+function stabilizeFishTraversalTarget(fish, now, deltaSeconds, options = {}) {
+  if (!fish || options.urgent || fish.activity !== "roam" || fish.caveState) {
+    fish.traversalSteeringTargetXNorm = null;
+    fish.traversalSteeringTargetYNorm = null;
+    return {
+      xNorm: Number(fish?.targetXNorm) || Number(fish?.xNorm) || 0.5,
+      yNorm: Number(fish?.targetYNorm) || Number(fish?.yNorm) || 0.5
+    };
+  }
+
+  const requestedXNorm = clamp(Number(options.targetXNorm) || Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const requestedYNorm = clamp(Number(options.targetYNorm) || Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  const previousXNorm = Number.isFinite(Number(fish.traversalSteeringTargetXNorm))
+    ? Number(fish.traversalSteeringTargetXNorm)
+    : requestedXNorm;
+  const previousYNorm = Number.isFinite(Number(fish.traversalSteeringTargetYNorm))
+    ? Number(fish.traversalSteeringTargetYNorm)
+    : requestedYNorm;
+  const committedDirection = Number(fish.traversalCommittedDirection) < 0 ? -1 : 1;
+  const requestedDirection = Math.abs(requestedXNorm - fish.xNorm) > FISH_DIRECTION_TARGET_DEADZONE_NORM
+    ? (requestedXNorm >= fish.xNorm ? 1 : -1)
+    : 0;
+  const commitmentActive = Number(fish.traversalTurnCommittedUntil) > now;
+  const blocksTargetReversal = commitmentActive
+    && requestedDirection !== 0
+    && requestedDirection !== committedDirection;
+  const elapsedSeconds = clamp(Number(deltaSeconds) || 0, 0, 0.1);
+  const response = 1 - Math.exp(-FISH_TRAVERSAL_TARGET_RESPONSE_PER_SEC * elapsedSeconds);
+  const nextXNorm = blocksTargetReversal
+    ? previousXNorm
+    : previousXNorm + clamp(
+      (requestedXNorm - previousXNorm) * response,
+      -FISH_TRAVERSAL_TARGET_MAX_STEP_NORM,
+      FISH_TRAVERSAL_TARGET_MAX_STEP_NORM
+    );
+  const nextYNorm = blocksTargetReversal
+    ? previousYNorm
+    : previousYNorm + clamp(
+      (requestedYNorm - previousYNorm) * response,
+      -FISH_TRAVERSAL_TARGET_MAX_STEP_NORM,
+      FISH_TRAVERSAL_TARGET_MAX_STEP_NORM
+    );
+  fish.traversalSteeringTargetXNorm = nextXNorm;
+  fish.traversalSteeringTargetYNorm = nextYNorm;
+  return { xNorm: nextXNorm, yNorm: nextYNorm };
+}
+
+function getFishBoundaryAnticipationWaypoint(fish, targetXNorm, targetYNorm) {
+  if (!fish) return null;
+  const dx = Number(targetXNorm) - Number(fish.xNorm);
+  const dy = Number(targetYNorm) - Number(fish.yNorm);
+  const inset = FISH_BOUNDARY_ANTICIPATION_INSET_NORM;
+  const left = 0.08 + inset;
+  const right = 0.92 - inset;
+  const top = 0.14 + inset;
+  const bottom = 0.8 - inset;
+  const chooseVerticalDetour = () => (Number(fish.yNorm) <= 0.47 ? 1 : -1);
+  const chooseHorizontalDetour = () => (Number(fish.xNorm) <= 0.5 ? 1 : -1);
+
+  if (dx > 0 && fish.xNorm >= right) {
+    return { xNorm: Math.min(0.91, fish.xNorm + 0.018), yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.1, 0.14, 0.8), reason: "right-wall" };
+  }
+  if (dx < 0 && fish.xNorm <= left) {
+    return { xNorm: Math.max(0.09, fish.xNorm - 0.018), yNorm: clamp(fish.yNorm + chooseVerticalDetour() * 0.1, 0.14, 0.8), reason: "left-wall" };
+  }
+  if (dy < 0 && fish.yNorm <= top) {
+    return { xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.08, 0.08, 0.92), yNorm: Math.max(0.15, fish.yNorm - 0.014), reason: "top-wall" };
+  }
+  if (dy > 0 && fish.yNorm >= bottom) {
+    return { xNorm: clamp(fish.xNorm + chooseHorizontalDetour() * 0.08, 0.08, 0.92), yNorm: Math.min(0.79, fish.yNorm + 0.014), reason: "bottom-wall" };
+  }
+  return null;
+}
+
+function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetYNorm, now) {
+  if (!fish || !species || species.behavior === "sucker" || fish.caveState) return null;
+  const existingXNorm = Number(fish.traversalObstacleWaypointXNorm);
+  const existingYNorm = Number(fish.traversalObstacleWaypointYNorm);
+  if (
+    Number(fish.traversalObstacleUntil) > now
+    && Number.isFinite(existingXNorm)
+    && Number.isFinite(existingYNorm)
+    && Math.hypot(existingXNorm - fish.xNorm, existingYNorm - fish.yNorm) > 0.016
+  ) {
+    return { xNorm: existingXNorm, yNorm: existingYNorm, reason: "committed-detour" };
+  }
+  fish.traversalObstacleWaypointXNorm = null;
+  fish.traversalObstacleWaypointYNorm = null;
+  fish.traversalObstacleUntil = 0;
+
+  const boundaryWaypoint = getFishBoundaryAnticipationWaypoint(fish, targetXNorm, targetYNorm);
+  if (boundaryWaypoint) {
+    fish.traversalObstacleWaypointXNorm = boundaryWaypoint.xNorm;
+    fish.traversalObstacleWaypointYNorm = boundaryWaypoint.yNorm;
+    fish.traversalObstacleUntil = now + FISH_OBSTACLE_WAYPOINT_MS;
+    return boundaryWaypoint;
+  }
+
+  const dx = Number(targetXNorm) - Number(fish.xNorm);
+  const dy = Number(targetYNorm) - Number(fish.yNorm);
+  const targetDistance = Math.hypot(dx, dy);
+  if (targetDistance <= 0.02) return null;
+  const lookahead = clamp(
+    Math.max(Number(fish.traversalSpeedNorm) || 0, FISH_OBSTACLE_LOOKAHEAD_MIN_NORM),
+    FISH_OBSTACLE_LOOKAHEAD_MIN_NORM,
+    FISH_OBSTACLE_LOOKAHEAD_MAX_NORM
+  );
+  const probeXNorm = clampFishXNormToMobileViewport(fish.xNorm + dx / targetDistance * lookahead, fish, species, now);
+  const probeYNorm = clamp(fish.yNorm + dy / targetDistance * lookahead, 0.14, 0.8);
+  const layer = getFishTankLayer(fish);
+  const direction = Math.abs(probeXNorm - fish.xNorm) > 0.0001
+    ? (probeXNorm >= fish.xNorm ? 1 : -1)
+    : (fish.direction || 1);
+  const pose = getFishCollisionPose(fish, species, now, probeXNorm, probeYNorm, direction);
+  const blockingCave = findBlockingCaveForFishPose(fish, species, now, pose, layer);
+  const blockingDecor = !blockingCave
+    ? getOverlappingDecorForFish(fish, species, now, pose, {
+      minLayer: layer,
+      maxLayer: layer,
+      depthLayer: layer,
+      depthSubLayer: getFishTankSubLayer(fish)
+    }).find(({ item }) => !isCaveDecorKey(item?.decorKey))
+    : null;
+  const blocker = blockingCave?.item || blockingDecor?.item || null;
+  if (!blocker) return null;
+  const slide = findFishObstacleSlideMove(fish, species, fish.xNorm, fish.yNorm, probeXNorm, probeYNorm, now, layer, blocker);
+  if (!slide) return null;
+  fish.traversalObstacleWaypointXNorm = slide.xNorm;
+  fish.traversalObstacleWaypointYNorm = slide.yNorm;
+  fish.traversalObstacleUntil = now + FISH_OBSTACLE_WAYPOINT_MS;
+  return { ...slide, reason: blockingCave ? "cave" : "decor" };
+}
+
+function clearFishCruiseWaypoint(fish) {
+  if (!fish) return;
+  fish.traversalCruiseWaypointXNorm = null;
+  fish.traversalCruiseWaypointYNorm = null;
+  fish.traversalCruiseSourceTargetXNorm = null;
+  fish.traversalCruiseSourceTargetYNorm = null;
+  fish.traversalCruiseUntil = 0;
+}
+
+function clearFishDecorApproachWaypoint(fish) {
+  if (!fish) return;
+  fish.traversalDecorApproachWaypointXNorm = null;
+  fish.traversalDecorApproachWaypointYNorm = null;
+  fish.traversalDecorApproachDecorId = null;
+  fish.traversalDecorApproachUntil = 0;
+}
+
+function getFishDecorApproachWaypoint(fish, targetXNorm, targetYNorm, now) {
+  if (!fish?.hangoutDecorId) {
+    clearFishDecorApproachWaypoint(fish);
+    return null;
+  }
+  const targetX = clamp(Number(targetXNorm) || Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const targetY = clamp(Number(targetYNorm) || Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  const dx = targetX - fish.xNorm;
+  const dy = targetY - fish.yNorm;
+  const targetDistance = Math.hypot(dx, dy);
+  if (targetDistance <= FISH_DECOR_APPROACH_MIN_DISTANCE_NORM) {
+    clearFishDecorApproachWaypoint(fish);
+    return null;
+  }
+
+  const existingX = Number(fish.traversalDecorApproachWaypointXNorm);
+  const existingY = Number(fish.traversalDecorApproachWaypointYNorm);
+  const existingDistance = Math.hypot(existingX - fish.xNorm, existingY - fish.yNorm);
+  if (
+    Number(fish.traversalDecorApproachUntil) > now
+    && fish.traversalDecorApproachDecorId === fish.hangoutDecorId
+    && Number.isFinite(existingX)
+    && Number.isFinite(existingY)
+    && existingDistance > FISH_DECOR_APPROACH_WAYPOINT_REACH_NORM
+  ) {
+    return { xNorm: existingX, yNorm: existingY, reason: "decor-approach" };
+  }
+
+  clearFishDecorApproachWaypoint(fish);
+  const minimumHorizontal = Math.max(
+    FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM,
+    Math.abs(dy) * FISH_DECOR_APPROACH_MAX_VERTICAL_RATIO
+  );
+  if (Math.abs(dx) >= minimumHorizontal) {
+    return null;
+  }
+
+  const headingX = Number(fish.traversalHeadingXNorm);
+  const forwardDirection = Math.abs(headingX) > 0.000001
+    ? (headingX < 0 ? -1 : 1)
+    : (Number(fish.direction) < 0 ? -1 : 1);
+  const lead = clamp(
+    Math.max(minimumHorizontal, FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM),
+    FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM,
+    FISH_DECOR_APPROACH_MAX_HORIZONTAL_LEAD_NORM
+  );
+  let waypointX = clamp(fish.xNorm + forwardDirection * lead, 0.09, 0.91);
+  if (Math.abs(waypointX - fish.xNorm) < FISH_DECOR_APPROACH_MIN_HORIZONTAL_LEAD_NORM * 0.55) {
+    waypointX = clamp(fish.xNorm - forwardDirection * lead, 0.09, 0.91);
+  }
+  const actualLead = Math.max(0.001, Math.abs(waypointX - fish.xNorm));
+  const waypointY = clamp(
+    fish.yNorm + clamp(
+      dy,
+      -actualLead * FISH_DECOR_APPROACH_MAX_VERTICAL_RATIO,
+      actualLead * FISH_DECOR_APPROACH_MAX_VERTICAL_RATIO
+    ),
+    0.15,
+    0.79
+  );
+  fish.traversalDecorApproachWaypointXNorm = waypointX;
+  fish.traversalDecorApproachWaypointYNorm = waypointY;
+  fish.traversalDecorApproachDecorId = fish.hangoutDecorId;
+  fish.traversalDecorApproachUntil = now + FISH_DECOR_APPROACH_WAYPOINT_MS;
+  return { xNorm: waypointX, yNorm: waypointY, reason: "decor-approach" };
+}
+
+function getFishTraversalCruiseProfile(fish, species) {
+  const profile = getFishLocomotionProfile(fish || species);
+  const pattern = String(profile?.movementPattern || "");
+  const enabled = profile?.cruiseContinuation !== false
+    && !FISH_CRUISE_ENDPOINT_PATTERNS.has(pattern)
+    && !["snail", "shrimp", "sucker"].includes(species?.behavior);
+  let waypointScale = clamp(Number(profile?.cruiseWaypointScale) || 1, 0.55, 1.35);
+  if (/^(?:wide|open-water|fast-school|strong|tight-school|pod|companion)-cruise$/.test(pattern)) {
+    waypointScale = Math.max(waypointScale, 1.14);
+  } else if (pattern === "gentle-drift" || pattern === "graceful-cruise") {
+    waypointScale = Math.min(waypointScale, 0.78);
+  } else if (pattern === "cautious-shoal" || pattern === "reef-browse") {
+    waypointScale = Math.min(waypointScale, 0.9);
+  }
+  return { enabled, waypointScale };
+}
+
+function getFishCruiseContinuationWaypoint(fish, species, targetXNorm, targetYNorm, now) {
+  if (!fish) return null;
+  const cruiseProfile = getFishTraversalCruiseProfile(fish, species);
+  if (!cruiseProfile.enabled) {
+    clearFishCruiseWaypoint(fish);
+    return null;
+  }
+  const targetX = clamp(Number(targetXNorm) || Number(fish.xNorm) || 0.5, 0.08, 0.92);
+  const targetY = clamp(Number(targetYNorm) || Number(fish.yNorm) || 0.5, 0.14, 0.8);
+  const existingX = Number(fish.traversalCruiseWaypointXNorm);
+  const existingY = Number(fish.traversalCruiseWaypointYNorm);
+  const sourceX = Number(fish.traversalCruiseSourceTargetXNorm);
+  const sourceY = Number(fish.traversalCruiseSourceTargetYNorm);
+  const sourceChanged = !Number.isFinite(sourceX)
+    || !Number.isFinite(sourceY)
+    || Math.hypot(sourceX - targetX, sourceY - targetY) > FISH_CRUISE_WAYPOINT_REACH_NORM * 1.5;
+  const existingDistance = Math.hypot(existingX - fish.xNorm, existingY - fish.yNorm);
+  const hasExistingWaypoint = Number(fish.traversalCruiseUntil) > now
+    && Number.isFinite(existingX)
+    && Number.isFinite(existingY)
+    && !sourceChanged
+    && existingDistance > FISH_CRUISE_WAYPOINT_REACH_NORM;
+  if (hasExistingWaypoint) {
+    return { xNorm: existingX, yNorm: existingY, reason: "cruise-chain" };
+  }
+
+  const targetDx = targetX - fish.xNorm;
+  const targetDy = targetY - fish.yNorm;
+  const targetDistance = Math.hypot(targetDx, targetDy);
+  const currentHeadingDistance = Math.hypot(Number(fish.traversalHeadingXNorm) || 0, Number(fish.traversalHeadingYNorm) || 0);
+  const headingX = currentHeadingDistance > 0.000001 ? Number(fish.traversalHeadingXNorm) / currentHeadingDistance : 0;
+  const headingY = currentHeadingDistance > 0.000001 ? Number(fish.traversalHeadingYNorm) / currentHeadingDistance : 0;
+  let directionX = targetDistance > 0.000001 ? targetDx / targetDistance : headingX;
+  let directionY = targetDistance > 0.000001 ? targetDy / targetDistance : headingY;
+
+  // Once a waypoint has been reached, physical travel wins over the already
+  // passed aim point. That is what turns an endpoint into a smooth chain
+  // rather than a stop-and-reverse command.
+  if (!sourceChanged && currentHeadingDistance > 0.000001) {
+    const targetDotHeading = directionX * headingX + directionY * headingY;
+    if (targetDistance < FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM || targetDotHeading < -0.15) {
+      directionX = headingX;
+      directionY = headingY;
+    }
+  }
+  if (Math.hypot(directionX, directionY) <= 0.000001) {
+    directionX = Number(fish.direction) < 0 ? -1 : 1;
+    directionY = 0;
+  }
+
+  const forwardDistance = Math.max(
+    FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM * cruiseProfile.waypointScale,
+    Math.min(
+      targetDistance + FISH_CRUISE_WAYPOINT_EXTENSION_NORM * cruiseProfile.waypointScale,
+      (FISH_CRUISE_WAYPOINT_MIN_DISTANCE_NORM + FISH_CRUISE_WAYPOINT_EXTENSION_NORM) * cruiseProfile.waypointScale
+    )
+  );
+  const unrestrictedX = fish.xNorm + directionX * forwardDistance;
+  const unrestrictedY = fish.yNorm + directionY * forwardDistance;
+  let waypointX = clamp(unrestrictedX, 0.09, 0.91);
+  let waypointY = clamp(unrestrictedY, 0.15, 0.79);
+  let reason = "cruise-chain";
+  if (unrestrictedX > 0.91 || unrestrictedX < 0.09) {
+    const wallDirection = unrestrictedX > 0.91 ? 1 : -1;
+    // Never clamp a forward waypoint directly onto the wall. Leave a small
+    // inward component and start the vertical bend now, before collision code
+    // has to reject repeated horizontal steps.
+    waypointX = clamp(fish.xNorm - wallDirection * 0.018, 0.09, 0.91);
+    waypointY = clamp(fish.yNorm + (fish.yNorm <= 0.47 ? 0.1 : -0.1), 0.15, 0.79);
+    reason = "cruise-boundary";
+  } else if (unrestrictedY > 0.79 || unrestrictedY < 0.15) {
+    const wallDirection = unrestrictedY > 0.79 ? 1 : -1;
+    waypointX = clamp(fish.xNorm + (fish.xNorm <= 0.5 ? 0.08 : -0.08), 0.09, 0.91);
+    waypointY = clamp(fish.yNorm - wallDirection * 0.014, 0.15, 0.79);
+    reason = "cruise-boundary";
+  }
+  fish.traversalCruiseWaypointXNorm = waypointX;
+  fish.traversalCruiseWaypointYNorm = waypointY;
+  fish.traversalCruiseSourceTargetXNorm = targetX;
+  fish.traversalCruiseSourceTargetYNorm = targetY;
+  fish.traversalCruiseUntil = now + FISH_CRUISE_WAYPOINT_MS;
+  return { xNorm: waypointX, yNorm: waypointY, reason };
+}
+
 function updateFishMotion(now, deltaSeconds) {
   if (!state?.fish.length) {
     if (typeof pruneDeadFishCorpseMotionStates === "function") pruneDeadFishCorpseMotionStates();
@@ -92362,6 +94923,7 @@ function updateFishMotion(now, deltaSeconds) {
     return;
   }
   rebuildFishFrameLookup();
+  runFishBehaviorScheduler(now);
   pruneFishGravelPebbleRuntimeState(now);
   const fishActionsProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   processFishActionQueues(now);
@@ -92400,6 +94962,14 @@ function updateFishMotion(now, deltaSeconds) {
     let pelletPose = null;
     let pelletBounds = null;
 
+    // Special movement/pose owners must never compete with an already-active
+    // v26 turn. Reconcile before any owner can early-return from this fish's
+    // simulation step, so stale v26 state cannot survive underneath dragging,
+    // tank entry, Borough travel, puffer pose ownership, or sucker transitions.
+    if (!fishDead) {
+      reconcileFishV26TurnWithSpecialMovementOwner(fish, species, now);
+    }
+
     if (!fishDead && fish.id === activelyDraggedFishId) {
       if (isWhaleBreathActive(fish, species)) {
         clearWhaleBreathState(fish, now);
@@ -92436,6 +95006,9 @@ function updateFishMotion(now, deltaSeconds) {
       fish.entrySplashTriggered = false;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
+      fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.displayDirection = Number(fish.direction) < 0 ? -1 : 1;
       fish.displayAngle = fish.displayDirection < 0 ? Math.PI : 0;
       fish.turnFromDirection = fish.displayDirection;
@@ -92455,33 +95028,17 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     updateFishTurnState(fish, species, now);
-    const segmentedTurnaroundActive = effectiveBehavior !== "sucker"
-      && Boolean(fish.turnStartedAt && fish.turnDurationMs > 0);
-    const segmentedTurnaroundProgress = segmentedTurnaroundActive
-      ? clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1)
+    const turnLocomotionState = getFishTurnLocomotionState(fish, now);
+    // Attached sucker fish use their own arbitrary-angle locomotion. Preserve
+    // that legacy exception while keeping the horizontal-turn policy itself
+    // independent of whichever renderer is drawing the turn.
+    const turnLocomotionActive = effectiveBehavior !== "sucker"
+      && turnLocomotionState.active;
+    const turnLocomotionHoldsPosition = turnLocomotionActive
+      && turnLocomotionState.holdsPosition;
+    const turnLocomotionSpeedScale = turnLocomotionActive
+      ? turnLocomotionState.passiveSpeedScale
       : 1;
-    const turnaroundHoldsPosition = segmentedTurnaroundActive
-      && segmentedTurnaroundProgress < FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS;
-    const turnaroundMovementRaw = segmentedTurnaroundActive
-      ? clamp(
-        (segmentedTurnaroundProgress - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS)
-        / Math.max(0.001, 1 - FISH_TURN_RIG_MOVEMENT_RELEASE_PROGRESS),
-        0,
-        1
-      )
-      : 1;
-    const turnaroundMovementBlend = turnaroundMovementRaw
-      * turnaroundMovementRaw
-      * (3 - 2 * turnaroundMovementRaw);
-    if (turnaroundHoldsPosition) {
-      // The authored turnaround is an in-place action. Clear passive momentum
-      // so the fish cannot travel toward its new target while still visibly
-      // facing its old direction. Once the rebuilt head reads clearly, release
-      // the hold and blend into travel while the remaining sections finish.
-      fish.motionVelocityXNorm = 0;
-      fish.motionVelocityYNorm = 0;
-    }
-
     if (!piranhaLockedOnPrey && !zombieAggressionOwnsMovement && !isProteusZombieFish(fish) && !breedingRole && isFishCriticallyLowHealth(fish) && fish.activity === "roam" && Math.random() < deltaSeconds * 0.35) {
       fish.panicUntil = now + randomBetween(1600, 3200);
       fish.panicSpeedBoost = randomBetween(1.45, 2.15);
@@ -92769,17 +95326,89 @@ function updateFishMotion(now, deltaSeconds) {
       }
     }
 
+    // These controllers are shared by the remainder of this fish's frame.
+    // Keep them outside the feeding/roam branch so later motion code cannot
+    // enter a temporal dead zone by referring to a branch-local declaration.
+    const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
     const pufferInflatedOwnsMovement = isPufferPuffVisualActive(fish, now);
     if (pufferInflatedOwnsMovement) {
       updatePufferInflationMotionTarget(fish, species, now);
     }
+    const activeQueuedFishAction = !fish.caveState
+      ? getActiveFishActionQueueItem(fish, now)
+      : null;
+    const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
+      ? getActiveDebugBehaviorSteering(fish, now)
+      : null;
+    const activeFishActionSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
+      ? getActiveFishActionSteering(fish, now)
+      : null;
 
     if (!pendingTravel) {
       applyFishCollisionAvoidanceSteering(fish, species, now);
     }
 
-    let moveDx = fish.targetXNorm - fish.xNorm;
-    let moveDy = fish.targetYNorm - fish.yNorm;
+    const passiveMotionEligible = fish.activity === "roam"
+      && !pendingTravel
+      && !panicOwnsMovement
+      && !pufferInflatedOwnsMovement
+      && !fish.caveState
+      && !activeQueuedFishAction
+      && !activeDebugSteering
+      && !activeFishActionSteering
+      && !(Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil))
+      && !(Number.isFinite(Number(fish.wallAvoidUntil)) && now < Number(fish.wallAvoidUntil))
+      && !getActiveFishCollisionAvoidance(fish, now);
+    const behaviorOwnsArrival = Boolean(
+      fish.behaviorBrain?.target
+      && !["cruise", "school", "feed"].includes(fish.behaviorBrain.intention)
+      && Number(fish.behaviorBrain.commitUntil) > now
+    );
+    const passiveTarget = stabilizeFishPassiveMotionTarget(fish, now, deltaSeconds, {
+      urgent: !passiveMotionEligible || behaviorOwnsArrival
+    });
+    const traversalTargetUrgent = fish.activity !== "roam"
+      || pendingTravel
+      || panicOwnsMovement
+      || pufferInflatedOwnsMovement
+      || whaleBreathOwnsMovement
+      || fish.caveState
+      || Boolean(activeQueuedFishAction)
+      || Boolean(activeDebugSteering)
+      || Boolean(activeFishActionSteering)
+      || behaviorOwnsArrival
+      || (Number.isFinite(Number(fish.followUntil)) && now < Number(fish.followUntil))
+      || (Number.isFinite(Number(fish.wallAvoidUntil)) && now < Number(fish.wallAvoidUntil))
+      || Boolean(getActiveFishCollisionAvoidance(fish, now));
+    const traversalTarget = stabilizeFishTraversalTarget(fish, now, deltaSeconds, {
+      urgent: traversalTargetUrgent,
+      targetXNorm: passiveTarget.xNorm,
+      targetYNorm: passiveTarget.yNorm
+    });
+    const cruiseWaypoint = passiveMotionEligible && !behaviorOwnsArrival
+      ? getFishCruiseContinuationWaypoint(fish, species, traversalTarget.xNorm, traversalTarget.yNorm, now)
+      : (clearFishCruiseWaypoint(fish), null);
+    const decorApproachEligible = fish.activity === "roam"
+      && Boolean(fish.hangoutDecorId)
+      && !pendingTravel
+      && !panicOwnsMovement
+      && !pufferInflatedOwnsMovement
+      && !fish.caveState
+      && !activeQueuedFishAction
+      && !activeDebugSteering
+      && !activeFishActionSteering
+      && !getActiveFishCollisionAvoidance(fish, now);
+    const decorApproachWaypoint = decorApproachEligible
+      ? getFishDecorApproachWaypoint(fish, traversalTarget.xNorm, traversalTarget.yNorm, now)
+      : (clearFishDecorApproachWaypoint(fish), null);
+    const intendedTraversalTarget = decorApproachWaypoint || cruiseWaypoint || traversalTarget;
+    const obstacleWaypoint = traversalTargetUrgent
+      ? null
+      : getFishAnticipatoryObstacleWaypoint(fish, species, intendedTraversalTarget.xNorm, intendedTraversalTarget.yNorm, now);
+    const steeringTargetXNorm = obstacleWaypoint?.xNorm ?? intendedTraversalTarget.xNorm;
+    const steeringTargetYNorm = obstacleWaypoint?.yNorm ?? intendedTraversalTarget.yNorm;
+    let moveDx = steeringTargetXNorm - fish.xNorm;
+    let moveDy = steeringTargetYNorm - fish.yNorm;
     let handledDirectionThisFrame = false;
     const socialActionSteering = runtime.fishActionSteeringByFishId?.get(fish.id) || null;
     const socialDebugSteering = runtime.debugBehaviorSteeringByFishId?.get(fish.id) || null;
@@ -92812,22 +95441,73 @@ function updateFishMotion(now, deltaSeconds) {
       && Number(fish.socialTurnCommittedDirection) !== 0
       && requestedHorizontalDirection !== 0
       && requestedHorizontalDirection !== Number(fish.socialTurnCommittedDirection);
+    const activeTurnReversalTraversal = canUseHorizontalFacing
+      && fish.turnStartedAt
+      && Number(fish.turnDurationMs) > 0
+      && Number(fish.turnFromDirection) !== Number(fish.turnToDirection)
+      && requestedHorizontalDirection !== 0
+      && requestedHorizontalDirection === (Number(fish.turnToDirection) < 0 ? -1 : 1);
+    let turnReversalTraversal = activeTurnReversalTraversal
+      ? getFishTurnReversalTraversal(fish, moveDx, moveDy, now)
+      : null;
+    const turnaroundCooldownBypass = panicOwnsMovement
+      || zombieAggressionOwnsMovement
+      || pufferInflatedOwnsMovement
+      || whaleBreathOwnsMovement
+      || pendingTravel
+      || Boolean(activeQueuedFishAction)
+      || Boolean(activeDebugSteering)
+      || Boolean(activeFishActionSteering)
+      || Boolean(getActiveFishCollisionAvoidance(fish, now));
+    const turnaroundCooldown = canUseHorizontalFacing && !turnaroundCooldownBypass
+      ? getFishTurnaroundCooldownState(fish, now)
+      : { active: false };
+    if (
+      turnaroundCooldown.active
+      && requestedHorizontalDirection !== 0
+      && requestedHorizontalDirection !== turnaroundCooldown.direction
+      && !turnReversalTraversal
+    ) {
+      // A completed reversal has momentum. Keep its new heading alive for a
+      // short, shallow arc instead of accepting another opposite turn on the
+      // very next steering refresh.
+      const forwardMagnitude = Math.max(
+        FISH_TURNAROUND_COOLDOWN_MIN_FORWARD_NORM,
+        Math.abs(moveDx)
+      );
+      moveDx = turnaroundCooldown.direction * forwardMagnitude;
+      moveDy = clamp(
+        moveDy,
+        -forwardMagnitude * FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO,
+        forwardMagnitude * FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO
+      );
+      handledDirectionThisFrame = true;
+    }
     if (
       canUseHorizontalFacing
       && requestedHorizontalDirection !== 0
       && requestedHorizontalDirection !== renderedFacingDirection
       && !pufferInflatedOwnsMovement
       && !socialTurnCommitActive
+      && !turnaroundCooldown.active
     ) {
       setFishDirection(fish, requestedHorizontalDirection, species, now);
       if (socialFormationActive) {
         fish.socialTurnCommittedDirection = requestedHorizontalDirection;
         fish.socialTurnCommitUntil = now + SOCIAL_FORMATION_TURN_COMMIT_MS;
       }
-      fish.motionVelocityXNorm = 0;
-      fish.motionVelocityYNorm = 0;
-      moveDx = 0;
-      moveDy = 0;
+      turnReversalTraversal = getFishTurnReversalTraversal(fish, moveDx, moveDy, now);
+      if (turnReversalTraversal) {
+        moveDx = turnReversalTraversal.xNorm;
+        moveDy = turnReversalTraversal.yNorm;
+      } else {
+        moveDx = 0;
+        moveDy = 0;
+      }
+      handledDirectionThisFrame = true;
+    } else if (turnReversalTraversal) {
+      moveDx = turnReversalTraversal.xNorm;
+      moveDy = turnReversalTraversal.yNorm;
       handledDirectionThisFrame = true;
     } else if (socialTurnCommitActive) {
       // Do not let a newly crossed formation endpoint command an immediate
@@ -92859,16 +95539,6 @@ function updateFishMotion(now, deltaSeconds) {
     }
 
     const moveDistance = Math.hypot(moveDx, moveDy);
-    const panicOwnsMovement = Number.isFinite(fish.panicUntil) && now < fish.panicUntil;
-    const activeDebugSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
-      ? getActiveDebugBehaviorSteering(fish, now)
-      : null;
-    const activeFishActionSteering = !panicOwnsMovement && !pufferInflatedOwnsMovement && fish.activity === "roam" && !fish.caveState
-      ? getActiveFishActionSteering(fish, now)
-      : null;
-    const activeQueuedFishAction = !fish.caveState
-      ? getActiveFishActionQueueItem(fish, now)
-      : null;
     const isDirectedSwim = panicOwnsMovement
       || zombieAggressionOwnsMovement
       || pufferInflatedOwnsMovement
@@ -92878,7 +95548,8 @@ function updateFishMotion(now, deltaSeconds) {
       || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
       || Boolean(activeQueuedFishAction)
       || Boolean(activeFishActionSteering)
-      || Boolean(activeDebugSteering);
+      || Boolean(activeDebugSteering)
+      || Boolean(turnReversalTraversal);
     let motionTarget = fish.activity === "feeding"
       ? 1
       : whaleBreathOwnsMovement
@@ -92929,10 +95600,10 @@ function updateFishMotion(now, deltaSeconds) {
     } else if (activeDebugSteering?.type === "anticipate-food") {
       motionTarget = Math.max(motionTarget, 0.16);
     }
-    if (turnaroundHoldsPosition) {
+    if (turnLocomotionHoldsPosition) {
       motionTarget = Math.min(motionTarget, 0.08);
     }
-    if (moveDistance > 0.0001 && !turnaroundHoldsPosition) {
+    if (moveDistance > 0.0001 && !turnLocomotionHoldsPosition) {
       const manuallyChasingFood = fish.activity === "feeding" && pellet && pellet.dropStartXNorm == null;
       let speedMultiplier = fish.activity === "feeding"
         ? (manuallyChasingFood ? 1 : FEED_CHASE_MULTIPLIER)
@@ -93056,8 +95727,11 @@ function updateFishMotion(now, deltaSeconds) {
       // feeding and collision avoidance) deliberately slow so it never reads
       // like a fish suddenly darting along the substrate.
       if (species.behavior === "snail") speedMultiplier *= 0.12;
-      if (segmentedTurnaroundActive) {
-        speedMultiplier *= 0.12 + turnaroundMovementBlend * 0.88;
+      if (turnLocomotionActive && !turnReversalTraversal) {
+        speedMultiplier *= turnLocomotionSpeedScale;
+      }
+      if (turnReversalTraversal) {
+        speedMultiplier *= turnReversalTraversal.motionScale;
       }
       if (manuallyChasingFood) {
         // Manual feeding should redirect normal swimming, not turn it into a
@@ -93072,48 +95746,31 @@ function updateFishMotion(now, deltaSeconds) {
       // visibly snap at the end of every little movement. Keep responsive,
       // direct movement for urgent work, but give passive swimming a small
       // velocity state so it accelerates, coasts, and settles naturally.
-      const usesPassiveMotion = fish.activity === "roam"
-        && !pendingTravel
-        && !panicOwnsMovement
+      const usesPassiveMotion = passiveMotionEligible
         && !whaleBreathOwnsMovement
-        && !fish.caveState
-        && !activeQueuedFishAction
-        && !activeDebugSteering
-        && (!activeFishActionSteering || ["inspect", "follow"].includes(activeFishActionSteering.type));
+        && !turnReversalTraversal;
       let step;
       let stepXNorm;
       let stepYNorm;
       if (usesPassiveMotion) {
-        const arrival = clamp(moveDistance / 0.09, 0, 1);
-        const arrivalEase = arrival * arrival * (3 - 2 * arrival);
-        const desiredSpeed = speed * (0.1 + arrivalEase * 0.9);
-        const desiredVelocityX = (moveDx / moveDistance) * desiredSpeed;
-        const desiredVelocityY = (moveDy / moveDistance) * desiredSpeed;
-        const response = 1 - Math.exp(-deltaSeconds * 5.6);
-        const velocityX = (Number(fish.motionVelocityXNorm) || 0) + (desiredVelocityX - (Number(fish.motionVelocityXNorm) || 0)) * response;
-        const velocityY = (Number(fish.motionVelocityYNorm) || 0) + (desiredVelocityY - (Number(fish.motionVelocityYNorm) || 0)) * response;
-        const candidateStepX = velocityX * deltaSeconds;
-        const candidateStepY = velocityY * deltaSeconds;
-        const candidateStep = Math.hypot(candidateStepX, candidateStepY);
-        if (candidateStep >= moveDistance || moveDistance <= 0.00055) {
-          stepXNorm = moveDx;
-          stepYNorm = moveDy;
-          step = moveDistance;
-          fish.motionVelocityXNorm = 0;
-          fish.motionVelocityYNorm = 0;
-        } else {
-          stepXNorm = candidateStepX;
-          stepYNorm = candidateStepY;
-          step = candidateStep;
-          fish.motionVelocityXNorm = velocityX;
-          fish.motionVelocityYNorm = velocityY;
-        }
+        const passiveStep = integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds);
+        stepXNorm = passiveStep.x;
+        stepYNorm = passiveStep.y;
+        step = passiveStep.distance;
       } else {
         step = Math.min(moveDistance, speed * deltaSeconds);
         stepXNorm = (moveDx / moveDistance) * step;
         stepYNorm = (moveDy / moveDistance) * step;
-        fish.motionVelocityXNorm = 0;
-        fish.motionVelocityYNorm = 0;
+        if (turnReversalTraversal) {
+          // Keep a bounded piece of the turn's launch velocity. The next
+          // normal-swim frame feeds it into the passive integrator so the fish
+          // coasts out of the turn instead of pausing to restart its motion.
+          fish.motionVelocityXNorm = stepXNorm / Math.max(0.001, deltaSeconds) * 0.72;
+          fish.motionVelocityYNorm = stepYNorm / Math.max(0.001, deltaSeconds) * 0.72;
+        } else {
+          fish.motionVelocityXNorm = 0;
+          fish.motionVelocityYNorm = 0;
+        }
       }
       const previousXNorm = fish.xNorm;
       const previousYNorm = fish.yNorm;
@@ -93205,6 +95862,19 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
 
+      if (usesPassiveMotion) {
+        reconcileFishPassiveMotion(
+          fish,
+          stepXNorm,
+          stepYNorm,
+          fish.xNorm - previousXNorm,
+          fish.yNorm - previousYNorm,
+          deltaSeconds
+        );
+      }
+
+      syncFishTraversalStateFromMove(fish, previousXNorm, previousYNorm, now, deltaSeconds);
+
       if (!pendingTravel) {
         updateFishNavigationProgress(fish, now);
       }
@@ -93249,7 +95919,11 @@ function updateFishMotion(now, deltaSeconds) {
             setFishDirection(fish, moveDx >= 0 ? 1 : -1, species, now);
           }
         } else {
-          setSuckerFishAngle(fish, Math.atan2(moveDy, moveDx), now);
+          const traveledXNorm = fish.xNorm - previousXNorm;
+          const traveledYNorm = fish.yNorm - previousYNorm;
+          if (Math.hypot(traveledXNorm, traveledYNorm) >= FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM * deltaSeconds) {
+            setSuckerFishAngle(fish, Math.atan2(traveledYNorm, traveledXNorm), now);
+          }
         }
       } else if (!handledDirectionThisFrame && !pufferInflatedOwnsMovement) {
         const debugFaceDirection = panicOwnsMovement ? null : getDebugBehaviorFacingDirection(fish, now);
@@ -93263,7 +95937,7 @@ function updateFishMotion(now, deltaSeconds) {
           ? pelletPose.xNorm - fish.xNorm
           : socialFormationActive
             ? moveDx
-            : fish.targetXNorm - fish.xNorm;
+            : steeringTargetXNorm - fish.xNorm;
         const schoolFollowFacing = !panicOwnsMovement && fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
@@ -93299,10 +95973,11 @@ function updateFishMotion(now, deltaSeconds) {
     const signatureBehaviorFacingAtRest = !panicOwnsMovement && !pufferInflatedOwnsMovement && !handledDirectionThisFrame && !socialFormationActive
       ? getFishSignatureBehaviorFacingDirection(fish, species, now)
       : null;
-    if (debugFaceDirectionAtRest !== null && fish.activity === "roam" && !fish.caveState) {
+    const canTurnFromIdlePose = (Number(fish.traversalSpeedNorm) || 0) >= FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM;
+    if (debugFaceDirectionAtRest !== null && canTurnFromIdlePose && fish.activity === "roam" && !fish.caveState) {
       setFishDirection(fish, debugFaceDirectionAtRest, species, now);
       handledDirectionThisFrame = true;
-    } else if (signatureBehaviorFacingAtRest !== null && fish.activity === "roam" && !fish.caveState) {
+    } else if (signatureBehaviorFacingAtRest !== null && canTurnFromIdlePose && fish.activity === "roam" && !fish.caveState) {
       setFishDirection(fish, signatureBehaviorFacingAtRest, species, now);
       handledDirectionThisFrame = true;
     }
@@ -93797,6 +96472,16 @@ function assignSpeciesRoamTarget(fish, species, now) {
     );
   }
 
+  // Ordinary roaming picks a true continuous depth target. The compatibility
+  // layer is still used for Y-range and collision queries, but it no longer
+  // limits normal motion to fifteen fixed depth stops.
+  const baseRoamDepthZ = hoverTarget
+    ? getFishTankDepthZ(fish)
+    : getTankDepthZFromLegacyPosition(targetLayer, DEFAULT_TANK_SUBLAYER);
+  const targetRoamDepthZ = hoverTarget
+    ? baseRoamDepthZ
+    : sanitizeTankDepthZ(baseRoamDepthZ + randomBetween(-0.072, 0.072), baseRoamDepthZ);
+
   fish.targetXNorm = placement.xNorm;
   fish.targetYNorm = placement.yNorm;
   if (hoverTarget) {
@@ -93807,7 +96492,7 @@ function assignSpeciesRoamTarget(fish, species, now) {
     const durationScale = clamp(profile.targetDurationScale, 0.5, 1.8);
     fish.targetAt = now + randomBetween(species.targetMinMs, species.targetMaxMs) * durationScale;
   }
-  setFishDesiredTankLayer(fish, targetLayer);
+  setFishDesiredTankDepth(fish, targetRoamDepthZ);
   fish.hangoutDecorId = null;
   fish.hangoutZoneType = null;
   fish.swimSpeed = isFishCriticallyLowHealth(fish)
@@ -93838,7 +96523,7 @@ function assignGobyPistolSharedBurrowTarget(fish, species, now) {
     fish.targetXNorm = placement.xNorm;
     fish.targetYNorm = placement.yNorm;
     fish.targetAt = now + randomBetween(3600, 6800);
-    setFishDesiredTankLayer(fish, getFishTankLayer(partner));
+    setFishDesiredTankDepth(fish, getFishTankDepthZ(partner));
     fish.hangoutDecorId = partner.hangoutDecorId || null;
     fish.hangoutZoneType = partner.hangoutZoneType || "shared-burrow";
     fish.swimSpeed = getFishProfileRoamSpeed(species, getFishLocomotionProfile(fish || species));
@@ -95642,6 +98327,7 @@ function drawContinuousTankDepthSubstrateTreatment(context, bounds) {
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
 function renderTank(now) {
+  runtime.fishStatsOverlayQueue?.clear();
   const dirtiness = getTankDirtiness(now);
   // Resolve every authored support surface before drawing. Free-placed decor
   // may sit above its support in screen space and therefore be painted first;
@@ -95732,6 +98418,7 @@ function renderTank(now) {
   glassContext.clearRect(0, 0, TANK_WIDTH, TANK_HEIGHT);
   drawGlassTapEffects(now);
   drawDecorEditTankBoundary();
+  drawQueuedFishStatsOverlays();
   // Grime textures supply the haze; filtering the moving tank forces a
   // full-surface GPU pass on every frame, especially costly at high DPI.
   const tankCanvasFilter = "none";
@@ -95855,21 +98542,13 @@ function setLightweightCausticMaskTransform(sourceContext = tankContext) {
   return mask.context;
 }
 
-function markLightweightCausticImage(sourceContext, image, x, y, width, height) {
+function markLightweightCausticImage(sourceContext, image, x, y, width, height, alpha = 1) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
   const context = setLightweightCausticMaskTransform(sourceContext);
+  context.globalAlpha = clamp(Number(alpha) || 0, 0, 1);
   context.drawImage(image, x, y, width, height);
 }
 
-function markLightweightCausticTurnaroundRig(sourceContext, image, x, width, height, fish, now) {
-  if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
-  const context = setLightweightCausticMaskTransform(sourceContext);
-  drawFishTurnaroundRig(context, image, x, width, height, fish, now, {
-    columnDensity: FISH_TURN_RIG_CAUSTIC_COLUMN_DENSITY,
-    minimumColumns: 1,
-    maximumColumns: FISH_TURN_RIG_CAUSTIC_MAX_COLUMNS
-  });
-}
 
 function markLightweightCausticDecorImage(sourceContext, image, drawX, drawY, width, height, item, now, motion, receivesCaustics = true) {
   if (!runtime.lightweightCausticFrameEnabled || sourceContext !== tankContext || !image) return;
@@ -100910,34 +103589,69 @@ function getDecorSameLayerRenderPriority(item) {
   return canConfigureDecorBubbler(item) ? 1 : 0;
 }
 
+function getDecorRenderDepthZ(item) {
+  return sanitizeTankDepthZ(
+    item?.z,
+    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
+  );
+}
+
 function comparePlacedDecorDrawOrder(left, right) {
+  const depthDelta = getDecorRenderDepthZ(left) - getDecorRenderDepthZ(right);
+  if (depthDelta) {
+    return depthDelta;
+  }
+
   const priorityDelta = getDecorSameLayerRenderPriority(left) - getDecorSameLayerRenderPriority(right);
   if (priorityDelta) {
     return priorityDelta;
   }
 
-  return left.yNorm - right.yNorm;
+  const yDelta = left.yNorm - right.yNorm;
+  if (yDelta) {
+    return yDelta;
+  }
+
+  const leftId = String(left?.id || "");
+  const rightId = String(right?.id || "");
+  return leftId === rightId ? 0 : (leftId < rightId ? -1 : 1);
 }
 
 function comparePlacedDecorHitOrder(left, right) {
-  const layerDelta = getDecorTankLayer(left) - getDecorTankLayer(right);
-  if (layerDelta) {
-    return layerDelta;
+  return comparePlacedDecorDrawOrder(right, left);
+}
+
+function getPlacedDecorRenderOrder() {
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const key = placedDecor.map((item) => [
+    item?.id || "",
+    item?.decorKey || "",
+    getDecorRenderDepthZ(item).toFixed(6),
+    Number(item?.yNorm || 0).toFixed(4),
+    getDecorSameLayerRenderPriority(item)
+  ].join(":"))
+    .join("|");
+  const cached = runtime.decorRenderOrderCache;
+  if (cached?.source === placedDecor && cached.key === key) {
+    return cached.items;
   }
 
-  const priorityDelta = getDecorSameLayerRenderPriority(right) - getDecorSameLayerRenderPriority(left);
-  if (priorityDelta) {
-    return priorityDelta;
-  }
+  const items = [...placedDecor].sort(comparePlacedDecorDrawOrder);
+  runtime.decorRenderOrderCache = { source: placedDecor, key, items };
+  return items;
+}
 
-  return right.yNorm - left.yNorm;
+function getDecorDepthScaleForZ(z) {
+  const span = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const progress = clamp((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / span, 0, 1);
+  return 0.94 + progress * 0.06;
 }
 
 function drawDecor(layer = null, now = Date.now(), options = {}) {
   const pass = options.pass === "cave-front"
     ? "cave-front"
     : (options.pass === "cave-back" ? "cave-back" : "base");
-  const sorted = [...state.placedDecor]
+  const sorted = getPlacedDecorRenderOrder()
     .filter((item) => {
       if (layer === null) {
         return true;
@@ -101002,7 +103716,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
       continue;
     }
 
-    const width = getDecorDisplayWidth(decor, item);
+    const width = getDecorDisplayWidth(decor, item) * getDecorDepthScaleForZ(getDecorRenderDepthZ(item));
     const height = width * (image.height / image.width);
     const x = item.xNorm * TANK_WIDTH;
     const y = item.yNorm * TANK_HEIGHT;
@@ -101159,11 +103873,16 @@ function drawDecorPreview() {
     return;
   }
 
-  const width = getDecorDisplayWidth(decor, Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key));
+  const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
+  const previewZ = sanitizeTankDepthZ(
+    runtime.placementMode.z,
+    getTankDepthZFromLegacyPosition(previewLayer, DEFAULT_TANK_SUBLAYER)
+  );
+  const width = getDecorDisplayWidth(decor, Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key))
+    * getDecorDepthScaleForZ(previewZ);
   const height = width * (image.height / image.width);
   const x = runtime.placementPreview.xNorm * TANK_WIDTH;
   const y = runtime.placementPreview.yNorm * TANK_HEIGHT;
-  const previewLayer = runtime.placementMode.tankLayer || runtime.decorPlacementLayer;
 
   const previewItem = {
     id: "placement-preview",
@@ -101172,6 +103891,7 @@ function drawDecorPreview() {
     yNorm: runtime.placementPreview.yNorm,
     scale: Number(runtime.placementMode.scale) || getDecorScaleDefault(decor.key),
     tankLayer: previewLayer,
+    z: previewZ,
     flipped: Boolean(runtime.placementMode.flipped),
     flippedY: Boolean(runtime.placementMode.flippedY)
   };
@@ -101472,6 +104192,2420 @@ function drawDecorLayerBadge(x, y, layer, decorKey = "") {
 }
 // </bundle-source>
 
+// <bundle-source path="rendering/fish-turn-v26.js">
+// Source fragment: rendering/fish-turn-v26.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function normalizeFishTurnRendererBackend(value, fallback = "v26") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (["simple", "v26"].includes(normalized)) {
+    return normalized;
+  }
+  // Phase 15 retired the segmented complex renderer. Treat any stale debug or
+  // saved preference for it as v26 rather than reviving a removed backend.
+  if (normalized === "legacy-complex") {
+    return "v26";
+  }
+  return fallback;
+}
+
+function getFishTurnRendererBackendOverride() {
+  return normalizeFishTurnRendererBackend(runtime?.fishTurnRendererBackendOverride, "");
+}
+
+function setFishTurnRendererBackendOverride(value = "") {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (!normalized) {
+    delete runtime.fishTurnRendererBackendOverride;
+    return "";
+  }
+  const next = normalizeFishTurnRendererBackend(normalized, "");
+  if (!["simple", "v26"].includes(next)) {
+    return getFishTurnRendererBackendOverride();
+  }
+  runtime.fishTurnRendererBackendOverride = next;
+  return next;
+}
+
+function resolveFishTurnRendererBackend(
+  fish,
+  species = getSpeciesForFish(fish),
+  animationModeOverride = null
+) {
+  const normalizedOverride = String(animationModeOverride || "").trim().toLowerCase();
+  const animationMode = ["simple", "complex"].includes(normalizedOverride)
+    ? normalizedOverride
+    : getFishTurnAnimationMode(fish, species);
+  if (animationMode !== "complex") {
+    return "simple";
+  }
+
+  const override = getFishTurnRendererBackendOverride();
+  if (["simple", "v26"].includes(override)) {
+    return override;
+  }
+
+  const configuredRaw = species?.turnRenderer || species?.turnRendererBackend || fish?.turnRendererPreference;
+  const configured = normalizeFishTurnRendererBackend(configuredRaw, "v26");
+  return configured === "simple" ? "simple" : "v26";
+}
+
+function isFishTurnRendererSessionCurrent(fish) {
+  const turnStartedAt = Number(fish?.turnStartedAt);
+  const rendererStartedAt = Number(fish?.turnRendererStartedAt);
+  return Boolean(fish?.turnStartedAt)
+    && Number.isFinite(turnStartedAt)
+    && Number.isFinite(rendererStartedAt)
+    && rendererStartedAt === turnStartedAt;
+}
+
+function getFishTurnRendererBackend(fish, species = getSpeciesForFish(fish)) {
+  if (isFishTurnRendererSessionCurrent(fish)) {
+    const fallback = normalizeFishTurnRendererBackend(fish?.turnRendererFallbackBackend, "");
+    if (["simple", "v26"].includes(fallback)) {
+      return fallback;
+    }
+    const latched = normalizeFishTurnRendererBackend(fish?.turnRendererBackend, "");
+    if (["simple", "v26"].includes(latched)) {
+      return latched;
+    }
+  }
+  return resolveFishTurnRendererBackend(fish, species);
+}
+
+function clearFishTurnRendererSession(fish) {
+  if (!fish) return;
+  fish.turnRendererBackend = null;
+  fish.turnRendererFallbackBackend = null;
+  fish.turnRendererStartedAt = 0;
+  fish.turnV26StyleActive = null;
+  fish.turnV26StyleStartedAt = 0;
+  fish.turnV26EntryTilt = null;
+  fish.turnV26ActiveDepthSign = 0;
+  clearFishTurnV26FinOverlaySession(fish);
+}
+
+function beginFishTurnRendererSession(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  animationModeOverride = null
+) {
+  if (!fish) return "simple";
+  const startedAt = Number.isFinite(Number(fish.turnStartedAt))
+    ? Number(fish.turnStartedAt)
+    : (Number.isFinite(Number(now)) ? Number(now) : Date.now());
+  const backend = resolveFishTurnRendererBackend(fish, species, animationModeOverride);
+  fish.turnRendererBackend = backend;
+  fish.turnRendererFallbackBackend = null;
+  fish.turnRendererStartedAt = startedAt;
+  if (backend === "v26") {
+    // The visual pose can change on the same simulation tick that requests a
+    // reversal. Latch its pre-turn steering tilt so the mesh starts from what
+    // the player was actually seeing, rather than the newly selected target.
+    fish.turnV26EntryTilt = Number.isFinite(Number(fish.swimTilt))
+      ? Number(fish.swimTilt)
+      : 0;
+    fish.turnV26ActiveDepthSign = chooseFishTurnV26DepthSign(fish);
+    fish.turnV26LastDepthSign = fish.turnV26ActiveDepthSign;
+    fish.turnV26StyleActive = resolveFishTurnV26Style(fish, species, startedAt);
+    fish.turnV26StyleStartedAt = startedAt;
+    beginFishTurnV26FinOverlaySession(fish, species, startedAt, now);
+  } else {
+    fish.turnV26StyleActive = null;
+    fish.turnV26StyleStartedAt = 0;
+    fish.turnV26ActiveDepthSign = 0;
+    clearFishTurnV26FinOverlaySession(fish);
+  }
+  return backend;
+}
+
+function getFishTurnV26DepthSign(fish) {
+  return Number(fish?.turnV26ActiveDepthSign) < 0 ? -1 : 1;
+}
+
+function getFishTurnV26TurnDepthMode() {
+  const requested = String(runtime?.fishTurnV26TurnDepthModeOverride || FISH_TURN_V26_TURN_DEPTH_MODE)
+    .trim()
+    .toLowerCase();
+  return ["both", "toward", "away"].includes(requested) ? requested : "both";
+}
+
+function chooseFishTurnV26DepthSign(fish) {
+  const mode = getFishTurnV26TurnDepthMode();
+  // The camera is on negative Z, so negative depth reads as toward the camera.
+  if (mode === "toward") return -1;
+  if (mode === "away") return 1;
+  const previousDepthSign = Number(fish?.turnV26LastDepthSign);
+  return previousDepthSign === -1 || previousDepthSign === 1
+    ? -previousDepthSign
+    : (Math.random() < 0.5 ? -1 : 1);
+}
+
+function easeFishTurnV26Continuity(value) {
+  const t = clamp(Number(value) || 0, 0, 1);
+  return t * t * (3 - 2 * t);
+}
+
+function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now()) {
+  const turnState = getFishHorizontalTurnState(fish, now);
+  const progress = clamp(Number(turnState.progress) || 0, 0, 1);
+  const entryEnd = Math.max(0.001, FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS);
+  const exitStart = clamp(FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS, entryEnd, 0.999);
+  const meshIn = easeFishTurnV26Continuity(progress / entryEnd);
+  const meshOut = 1 - easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
+  const meshAlpha = turnState.active ? clamp(Math.min(meshIn, meshOut), 0, 1) : 0;
+  const current = Number.isFinite(Number(currentTilt)) ? Number(currentTilt) : 0;
+  const entry = Number.isFinite(Number(fish?.turnV26EntryTilt))
+    ? Number(fish.turnV26EntryTilt)
+    : current;
+  const exitBlend = easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
+  return {
+    meshAlpha,
+    spriteAlpha: 1 - meshAlpha,
+    spriteDirection: progress < 0.5 ? turnState.fromDirection : turnState.toDirection,
+    tilt: entry + (current - entry) * exitBlend
+  };
+}
+
+function markFishTurnRendererFallback(fish, backend = "simple") {
+  if (!fish || !isFishTurnRendererSessionCurrent(fish)) return false;
+  const latched = normalizeFishTurnRendererBackend(fish.turnRendererBackend, "");
+  const fallback = normalizeFishTurnRendererBackend(backend, "");
+  if (latched !== "v26" || fallback !== "simple") return false;
+  fish.turnRendererFallbackBackend = fallback;
+  return true;
+}
+
+function ensureFishTurnRendererSession(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  if (!fish) return "simple";
+  if (isFishTurnRendererSessionCurrent(fish)) {
+    return getFishTurnRendererBackend(fish, species);
+  }
+  if (!fish.turnStartedAt || !(Number(fish.turnDurationMs) > 0)) {
+    return resolveFishTurnRendererBackend(fish, species);
+  }
+  return beginFishTurnRendererSession(fish, species, Number(fish.turnStartedAt) || now);
+}
+
+function isFishComplexTurnRendererEligible(
+  fish,
+  species,
+  effectiveBehavior,
+  pose,
+  suckerFreeSwimming,
+  suckerViewTransition
+) {
+  if (!fish || !species || !pose || pose.isDead) {
+    return false;
+  }
+  if (suckerViewTransition) {
+    return false;
+  }
+  if (effectiveBehavior === "sucker" && !suckerFreeSwimming) {
+    return false;
+  }
+  if (
+    !fish.turnStartedAt
+    || Number(fish.turnDurationMs) <= 0
+    || getFishTurnAnimationMode(fish, species) !== "complex"
+  ) {
+    return false;
+  }
+
+  const turnState = getFishHorizontalTurnState(fish);
+  if (!turnState.active || !turnState.reversing) {
+    return false;
+  }
+  // Imported/debug-created active turns may predate the live reversal gateway.
+  // Establish the same stable renderer session before v26 is allowed to own a frame.
+  ensureFishTurnRendererSession(fish, species, turnState.startedAt);
+  return true;
+}
+
+function getFishV26SpecialMovementOwner(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  options = null
+) {
+  if (!fish || !species) return "invalid";
+  const ownerOptions = options || Object.create(null);
+
+  const pose = ownerOptions.pose || null;
+  if (pose?.isDead || (typeof isFishDead === "function" && isFishDead(fish))) {
+    return "dead";
+  }
+
+  if (runtime?.fishDragState?.fishId === fish.id) {
+    return "drag";
+  }
+
+  const pendingTravel = Object.prototype.hasOwnProperty.call(ownerOptions, "pendingTravel")
+    ? ownerOptions.pendingTravel
+    : runtime?.pendingNeighborhoodTravel?.get?.(fish.id);
+  if (pendingTravel) {
+    return pendingTravel.mode === "tube" ? "tube-travel" : "borough-travel";
+  }
+
+  if (typeof getFishEntryProgress === "function" && getFishEntryProgress(fish, now) !== null) {
+    return "tank-entry";
+  }
+
+  if (typeof isPufferPuffVisualActive === "function" && isPufferPuffVisualActive(fish, now)) {
+    return "puffer-puff";
+  }
+
+  const effectiveBehavior = ownerOptions.effectiveBehavior || (
+    typeof getEffectiveFishBehavior === "function"
+      ? getEffectiveFishBehavior(fish, species)
+      : species.behavior
+  );
+  if (effectiveBehavior === "sucker") {
+    const suckerViewTransition = Object.prototype.hasOwnProperty.call(ownerOptions, "suckerViewTransition")
+      ? ownerOptions.suckerViewTransition
+      : (typeof getSuckerFishViewTransitionState === "function"
+        ? getSuckerFishViewTransitionState(fish, now)
+        : null);
+    if (suckerViewTransition) {
+      return "sucker-view-transition";
+    }
+    const suckerFreeSwimming = Object.prototype.hasOwnProperty.call(ownerOptions, "suckerFreeSwimming")
+      ? Boolean(ownerOptions.suckerFreeSwimming)
+      : (typeof isSuckerFishFreeSwimming === "function"
+        ? isSuckerFishFreeSwimming(fish, species, now)
+        : false);
+    if (!suckerFreeSwimming) {
+      return "sucker-attached";
+    }
+  }
+
+  return null;
+}
+
+function canUseFishV26TurnRenderer(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  options = {}
+) {
+  return getFishV26SpecialMovementOwner(fish, species, now, options) === null;
+}
+
+function shouldUseFishTurnV26RendererForSprite(
+  fish,
+  species,
+  effectiveBehavior,
+  pose,
+  suckerFreeSwimming,
+  suckerViewTransition,
+  now = Date.now(),
+  pendingTravel = undefined
+) {
+  return (
+    isFishComplexTurnRendererEligible(
+      fish,
+      species,
+      effectiveBehavior,
+      pose,
+      suckerFreeSwimming,
+      suckerViewTransition
+    )
+    && getFishTurnRendererBackend(fish, species) === "v26"
+    && canUseFishV26TurnRenderer(fish, species, now, {
+      effectiveBehavior,
+      pose,
+      suckerFreeSwimming,
+      suckerViewTransition,
+      pendingTravel
+    })
+  );
+}
+
+function clearFishTurnV26FinOverlaySession(fish) {
+  if (!fish) return;
+  fish.turnV26FinOverlayEnabled = false;
+  fish.turnV26FinOverlayPath = null;
+  fish.turnV26FinOverlayCacheKey = null;
+  fish.turnV26FinOverlayStartedAt = 0;
+}
+
+function stripFishTurnV26AssetQuery(path) {
+  return String(path || "").trim().split(/[?#]/, 1)[0];
+}
+
+function normalizeFishTurnV26AssetLookupPath(path) {
+  return stripFishTurnV26AssetQuery(path).replace(/^\/+/, "");
+}
+
+function getFishTurnV26CompanionFinAssetPath(baseAssetPath) {
+  const source = String(baseAssetPath || "").trim();
+  if (!source || /^(?:data|blob):/i.test(source)) return null;
+  const match = source.match(/^(.*?)(\.[^./?#]+)([?#].*)?$/);
+  if (!match) return null;
+  return `${match[1]}_fin${match[2]}${match[3] || ""}`;
+}
+
+function getFishTurnV26ExplicitFinAssetPath(fish, species = getSpeciesForFish(fish)) {
+  const candidates = [
+    fish?.finOverlayAsset,
+    fish?.finAsset,
+    species?.finOverlayAsset,
+    species?.finAsset
+  ];
+  return candidates.find((value) => typeof value === "string" && value.trim())?.trim() || null;
+}
+
+function getFishTurnV26SpriteFrameSpec(baseAssetPath) {
+  if (!baseAssetPath || typeof getSpriteAssetFrame !== "function") return null;
+  const frame = getSpriteAssetFrame(baseAssetPath);
+  if (!frame?.sheet?.path || !Array.isArray(frame.rect) || frame.rect.length < 4) return null;
+  const rect = frame.rect.slice(0, 4).map((value) => Math.max(0, Math.round(Number(value) || 0)));
+  if (rect[2] <= 0 || rect[3] <= 0) return null;
+  return {
+    name: String(frame.name || ""),
+    rect,
+    sheetPath: String(frame.sheet.path || "")
+  };
+}
+
+function getFishTurnV26FinCandidateCacheKey(candidate) {
+  if (!candidate?.path) return "";
+  const frame = candidate.spriteFrame;
+  const frameKey = frame
+    ? `|${frame.sheetPath || ""}|${frame.name || ""}|${frame.rect.join(",")}`
+    : "";
+  return `${candidate.explicit ? "explicit" : "companion"}|${candidate.path}${frameKey}`;
+}
+
+function cropFishTurnV26FinSpriteFrame(sheetImage, spriteFrame) {
+  if (!spriteFrame) return sheetImage || null;
+  if (!sheetImage || typeof document === "undefined") return null;
+  const sourceWidth = Math.max(0, Math.round(Number(sheetImage.naturalWidth || sheetImage.width) || 0));
+  const sourceHeight = Math.max(0, Math.round(Number(sheetImage.naturalHeight || sheetImage.height) || 0));
+  const rect = Array.isArray(spriteFrame.rect)
+    ? spriteFrame.rect.slice(0, 4).map((value) => Math.max(0, Math.round(Number(value) || 0)))
+    : null;
+  if (!rect || rect[2] <= 0 || rect[3] <= 0 || rect[0] + rect[2] > sourceWidth || rect[1] + rect[3] > sourceHeight) {
+    return null;
+  }
+  const canvas = document.createElement("canvas");
+  canvas.width = rect[2];
+  canvas.height = rect[3];
+  canvas.complete = true;
+  const context = canvas.getContext("2d");
+  if (!context) return null;
+  context.clearRect(0, 0, canvas.width, canvas.height);
+  context.drawImage(sheetImage, rect[0], rect[1], rect[2], rect[3], 0, 0, rect[2], rect[3]);
+  return canvas;
+}
+
+function resolveFishTurnV26FinAssetCandidate(
+  fish,
+  species = getSpeciesForFish(fish),
+  baseAssetPath = null
+) {
+  const resolvedBasePath = baseAssetPath || (
+    typeof getFishDisplayAssetPath === "function"
+      ? getFishDisplayAssetPath(fish, species, Date.now())
+      : null
+  );
+  const spriteFrame = getFishTurnV26SpriteFrameSpec(resolvedBasePath);
+  const explicitPath = getFishTurnV26ExplicitFinAssetPath(fish, species);
+  if (explicitPath) {
+    return { path: explicitPath, explicit: true, spriteFrame };
+  }
+  // Sprite-sheet fish use a parallel _fin atlas. The original fish frame rect
+  // is authoritative for the fin crop as well, so no second fin JSON is needed.
+  const companionBasePath = spriteFrame?.sheetPath || resolvedBasePath;
+  const companionPath = getFishTurnV26CompanionFinAssetPath(companionBasePath);
+  return companionPath ? { path: companionPath, explicit: false, spriteFrame } : null;
+}
+
+function getFishTurnV26FinDiscoveryCache() {
+  if (!(runtime.fishTurnV26FinDiscoveryCache instanceof Map)) {
+    runtime.fishTurnV26FinDiscoveryCache = new Map();
+  }
+  return runtime.fishTurnV26FinDiscoveryCache;
+}
+
+function getFishTurnV26FinDimensionWarningSet() {
+  if (!(runtime.fishTurnV26FinDimensionWarningSet instanceof Set)) {
+    runtime.fishTurnV26FinDimensionWarningSet = new Set();
+  }
+  return runtime.fishTurnV26FinDimensionWarningSet;
+}
+
+async function fishTurnV26ManifestContainsFinAsset(path) {
+  if (typeof fetchAssetManifest !== "function") return false;
+  const candidate = normalizeFishTurnV26AssetLookupPath(path);
+  if (!candidate) return false;
+  try {
+    const manifest = await fetchAssetManifest();
+    const fishAssets = Array.isArray(manifest?.fish) ? manifest.fish : [];
+    return fishAssets.some((entry) => {
+      const manifestPath = normalizeFishTurnV26AssetLookupPath(entry?.path);
+      if (manifestPath === candidate) return true;
+      const key = String(entry?.key || "").trim();
+      return key && `assets/fish/${key}` === candidate;
+    });
+  } catch (_error) {
+    return false;
+  }
+}
+
+async function loadFishTurnV26FinAssetCandidate(candidate) {
+  if (!candidate?.path || typeof preloadImagePath !== "function") return null;
+  const cache = getFishTurnV26FinDiscoveryCache();
+  const cacheKey = getFishTurnV26FinCandidateCacheKey(candidate);
+  const existing = cache.get(cacheKey);
+  if (existing?.status === "ready") return existing;
+  if (existing?.status === "absent" || existing?.status === "invalid") return null;
+  if (existing?.promise) return existing.promise;
+
+  const state = existing || {
+    path: candidate.path,
+    explicit: Boolean(candidate.explicit),
+    spriteFrame: candidate.spriteFrame || null,
+    status: "pending"
+  };
+  const promise = (async () => {
+    if (!candidate.explicit) {
+      const exists = await fishTurnV26ManifestContainsFinAsset(candidate.path);
+      if (!exists) {
+        state.status = "absent";
+        state.promise = null;
+        return null;
+      }
+    }
+    const result = await preloadImagePath(candidate.path, {
+      maxAttempts: 1,
+      timeoutMs: 8000,
+      retryDelayMs: 0
+    });
+    const sourceImage = runtime?.images?.get?.(candidate.path);
+    const image = candidate.spriteFrame
+      ? cropFishTurnV26FinSpriteFrame(sourceImage, candidate.spriteFrame)
+      : sourceImage;
+    if (result?.loaded && typeof isUsableRuntimeImage === "function" && isUsableRuntimeImage(image)) {
+      state.status = "ready";
+      state.image = image;
+      state.sourceImage = candidate.spriteFrame ? sourceImage : null;
+      state.promise = null;
+      return state;
+    }
+    state.status = result?.loaded && candidate.spriteFrame ? "invalid" : "absent";
+    state.image = null;
+    state.sourceImage = null;
+    state.promise = null;
+    return null;
+  })().catch(() => {
+    state.status = "absent";
+    state.image = null;
+    state.sourceImage = null;
+    state.promise = null;
+    return null;
+  });
+  state.promise = promise;
+  cache.set(cacheKey, state);
+  return promise;
+}
+
+function requestFishTurnV26FinAssetCandidate(candidate) {
+  if (!candidate?.path) return;
+  const cache = getFishTurnV26FinDiscoveryCache();
+  const cacheKey = getFishTurnV26FinCandidateCacheKey(candidate);
+  const existing = cache.get(cacheKey);
+  if (existing?.status === "ready" || existing?.status === "absent" || existing?.status === "invalid" || existing?.promise) {
+    return;
+  }
+  const sourceImage = runtime?.images?.get?.(candidate.path);
+  if (typeof isUsableRuntimeImage === "function" && isUsableRuntimeImage(sourceImage)) {
+    const image = candidate.spriteFrame
+      ? cropFishTurnV26FinSpriteFrame(sourceImage, candidate.spriteFrame)
+      : sourceImage;
+    if (isUsableRuntimeImage(image)) {
+      cache.set(cacheKey, {
+        path: candidate.path,
+        explicit: Boolean(candidate.explicit),
+        spriteFrame: candidate.spriteFrame || null,
+        status: "ready",
+        image,
+        sourceImage: candidate.spriteFrame ? sourceImage : null,
+        promise: null
+      });
+      return;
+    }
+  }
+  void loadFishTurnV26FinAssetCandidate(candidate);
+}
+
+function validateFishTurnV26FinImageDimensions(finImage, bodyImage, finPath = "") {
+  if (!finImage || !bodyImage) return false;
+  const finWidth = Math.max(0, Math.round(Number(finImage.naturalWidth || finImage.width) || 0));
+  const finHeight = Math.max(0, Math.round(Number(finImage.naturalHeight || finImage.height) || 0));
+  const bodyWidth = Math.max(0, Math.round(Number(bodyImage.naturalWidth || bodyImage.width) || 0));
+  const bodyHeight = Math.max(0, Math.round(Number(bodyImage.naturalHeight || bodyImage.height) || 0));
+  const valid = finWidth > 0 && finHeight > 0 && finWidth === bodyWidth && finHeight === bodyHeight;
+  if (!valid && finWidth > 0 && finHeight > 0 && bodyWidth > 0 && bodyHeight > 0) {
+    const warningKey = `${finPath}|${finWidth}x${finHeight}|${bodyWidth}x${bodyHeight}`;
+    const warnings = getFishTurnV26FinDimensionWarningSet();
+    if (!warnings.has(warningKey)) {
+      warnings.add(warningKey);
+      console.warn(
+        `Fish Turn v26 ignored fin overlay with mismatched dimensions: ${finPath || "fin asset"} `
+        + `(${finWidth}x${finHeight}) must match body (${bodyWidth}x${bodyHeight}).`
+      );
+    }
+  }
+  return valid;
+}
+
+function getReadyFishTurnV26FinOverlay(
+  fish,
+  species = getSpeciesForFish(fish),
+  baseAssetPath = null,
+  bodyImage = null
+) {
+  const candidate = resolveFishTurnV26FinAssetCandidate(fish, species, baseAssetPath);
+  if (!candidate?.path) return null;
+  const cacheKey = getFishTurnV26FinCandidateCacheKey(candidate);
+  const cache = getFishTurnV26FinDiscoveryCache();
+  let state = cache.get(cacheKey);
+  if (state?.status !== "ready") {
+    requestFishTurnV26FinAssetCandidate(candidate);
+    state = cache.get(cacheKey);
+  }
+  const finImage = state?.status === "ready" ? state.image : null;
+  if (typeof isUsableRuntimeImage === "function" && isUsableRuntimeImage(finImage)) {
+    if (!bodyImage || !validateFishTurnV26FinImageDimensions(finImage, bodyImage, candidate.path)) {
+      return null;
+    }
+    return {
+      path: candidate.path,
+      image: finImage,
+      explicit: Boolean(candidate.explicit),
+      cacheKey
+    };
+  }
+  return null;
+}
+
+function beginFishTurnV26FinOverlaySession(
+  fish,
+  species = getSpeciesForFish(fish),
+  startedAt = Number(fish?.turnStartedAt) || Date.now(),
+  now = Date.now()
+) {
+  clearFishTurnV26FinOverlaySession(fish);
+  if (!fish || !species) return false;
+  fish.turnV26FinOverlayStartedAt = Number(startedAt) || 0;
+  const baseAssetPath = typeof getFishDisplayAssetPath === "function"
+    ? getFishDisplayAssetPath(fish, species, now)
+    : null;
+  const bodyImage = baseAssetPath ? runtime?.images?.get?.(baseAssetPath) : null;
+  const ready = getReadyFishTurnV26FinOverlay(fish, species, baseAssetPath, bodyImage);
+  if (!ready) return false;
+  fish.turnV26FinOverlayEnabled = true;
+  fish.turnV26FinOverlayPath = ready.path;
+  fish.turnV26FinOverlayCacheKey = ready.cacheKey || null;
+  return true;
+}
+
+function getFishTurnV26LatchedFinOverlay(fish, bodyImage = null) {
+  if (!fish?.turnV26FinOverlayEnabled) return null;
+  if (!isFishTurnRendererSessionCurrent(fish)) return null;
+  if (Number(fish.turnV26FinOverlayStartedAt) !== Number(fish.turnStartedAt)) return null;
+  const path = String(fish.turnV26FinOverlayPath || "").trim();
+  if (!path) return null;
+  const cacheKey = String(fish.turnV26FinOverlayCacheKey || "").trim();
+  const cached = cacheKey ? getFishTurnV26FinDiscoveryCache().get(cacheKey) : null;
+  const image = cached?.status === "ready" ? cached.image : runtime?.images?.get?.(path);
+  if (typeof isUsableRuntimeImage !== "function" || !isUsableRuntimeImage(image)) return null;
+  if (bodyImage && !validateFishTurnV26FinImageDimensions(image, bodyImage, path)) return null;
+  return { path, image, cacheKey: cacheKey || null };
+}
+
+function buildFishTurnV26MeshData(
+  columns = FISH_TURN_V26_MESH_COLUMNS,
+  rows = FISH_TURN_V26_MESH_ROWS
+) {
+  const safeColumns = Math.max(1, Math.floor(Number(columns) || FISH_TURN_V26_MESH_COLUMNS));
+  const safeRows = Math.max(1, Math.floor(Number(rows) || FISH_TURN_V26_MESH_ROWS));
+  const vertexCount = (safeColumns + 1) * (safeRows + 1);
+  const uv = new Float32Array(vertexCount * 2);
+  let uvOffset = 0;
+
+  for (let row = 0; row <= safeRows; row += 1) {
+    const v = row / safeRows;
+    for (let column = 0; column <= safeColumns; column += 1) {
+      const u = column / safeColumns;
+      uv[uvOffset] = u;
+      uv[uvOffset + 1] = v;
+      uvOffset += 2;
+    }
+  }
+
+  const indexCount = safeColumns * safeRows * 6;
+  const indices = new Uint16Array(indexCount);
+  let indexOffset = 0;
+  const stride = safeColumns + 1;
+  for (let row = 0; row < safeRows; row += 1) {
+    for (let column = 0; column < safeColumns; column += 1) {
+      const topLeft = row * stride + column;
+      const topRight = topLeft + 1;
+      const bottomLeft = topLeft + stride;
+      const bottomRight = bottomLeft + 1;
+      indices[indexOffset] = topLeft;
+      indices[indexOffset + 1] = bottomLeft;
+      indices[indexOffset + 2] = topRight;
+      indices[indexOffset + 3] = topRight;
+      indices[indexOffset + 4] = bottomLeft;
+      indices[indexOffset + 5] = bottomRight;
+      indexOffset += 6;
+    }
+  }
+
+  return {
+    columns: safeColumns,
+    rows: safeRows,
+    vertexCount,
+    indexCount,
+    uv,
+    indices
+  };
+}
+
+function buildFishTurnV26BinaryMask(rgba, width, height, alphaCutoff = FISH_TURN_V26_ALPHA_CUTOFF) {
+  const safeWidth = Math.max(1, Math.floor(Number(width) || 1));
+  const safeHeight = Math.max(1, Math.floor(Number(height) || 1));
+  const mask = new Uint8Array(safeWidth * safeHeight);
+  const cutoff = Number.isFinite(Number(alphaCutoff)) ? Number(alphaCutoff) : FISH_TURN_V26_ALPHA_CUTOFF;
+  for (let index = 0; index < mask.length; index += 1) {
+    mask[index] = Number(rgba?.[index * 4 + 3] || 0) > cutoff ? 1 : 0;
+  }
+  return mask;
+}
+
+function buildFishTurnV26DistanceField(mask, width, height) {
+  const safeWidth = Math.max(1, Math.floor(Number(width) || 1));
+  const safeHeight = Math.max(1, Math.floor(Number(height) || 1));
+  const count = safeWidth * safeHeight;
+  const distance = new Float32Array(count);
+  const diagonalCost = Math.SQRT2;
+  const infinity = 1000000;
+
+  for (let y = 0; y < safeHeight; y += 1) {
+    for (let x = 0; x < safeWidth; x += 1) {
+      const index = y * safeWidth + x;
+      if (!mask[index]) {
+        distance[index] = 0;
+        continue;
+      }
+      let boundary = x === 0 || y === 0 || x === safeWidth - 1 || y === safeHeight - 1;
+      if (!boundary) {
+        for (let oy = -1; oy <= 1 && !boundary; oy += 1) {
+          for (let ox = -1; ox <= 1; ox += 1) {
+            if (ox === 0 && oy === 0) continue;
+            if (!mask[(y + oy) * safeWidth + (x + ox)]) {
+              boundary = true;
+              break;
+            }
+          }
+        }
+      }
+      distance[index] = boundary ? 0 : infinity;
+    }
+  }
+
+  for (let y = 0; y < safeHeight; y += 1) {
+    for (let x = 0; x < safeWidth; x += 1) {
+      const index = y * safeWidth + x;
+      if (!mask[index] || distance[index] === 0) continue;
+      let best = distance[index];
+      if (x > 0) best = Math.min(best, distance[index - 1] + 1);
+      if (y > 0) best = Math.min(best, distance[index - safeWidth] + 1);
+      if (x > 0 && y > 0) best = Math.min(best, distance[index - safeWidth - 1] + diagonalCost);
+      if (x + 1 < safeWidth && y > 0) best = Math.min(best, distance[index - safeWidth + 1] + diagonalCost);
+      distance[index] = best;
+    }
+  }
+
+  for (let y = safeHeight - 1; y >= 0; y -= 1) {
+    for (let x = safeWidth - 1; x >= 0; x -= 1) {
+      const index = y * safeWidth + x;
+      if (!mask[index] || distance[index] === 0) continue;
+      let best = distance[index];
+      if (x + 1 < safeWidth) best = Math.min(best, distance[index + 1] + 1);
+      if (y + 1 < safeHeight) best = Math.min(best, distance[index + safeWidth] + 1);
+      if (x + 1 < safeWidth && y + 1 < safeHeight) best = Math.min(best, distance[index + safeWidth + 1] + diagonalCost);
+      if (x > 0 && y + 1 < safeHeight) best = Math.min(best, distance[index + safeWidth - 1] + diagonalCost);
+      distance[index] = Number.isFinite(best) ? Math.min(256, best) : 0;
+    }
+  }
+
+  return distance;
+}
+
+function buildFishTurnV26ColumnMax(distanceField, width, height) {
+  const safeWidth = Math.max(1, Math.floor(Number(width) || 1));
+  const safeHeight = Math.max(1, Math.floor(Number(height) || 1));
+  const columnMax = new Float32Array(safeWidth);
+  for (let x = 0; x < safeWidth; x += 1) {
+    let maximum = 0;
+    for (let y = 0; y < safeHeight; y += 1) {
+      maximum = Math.max(maximum, Number(distanceField[y * safeWidth + x]) || 0);
+    }
+    columnMax[x] = Math.max(maximum, 0.0001);
+  }
+  return columnMax;
+}
+
+function sampleFishTurnV26ScalarFieldBilinear(field, width, height, u, v) {
+  const safeWidth = Math.max(1, Math.floor(Number(width) || 1));
+  const safeHeight = Math.max(1, Math.floor(Number(height) || 1));
+  const x = clamp(Number(u) || 0, 0, 1) * Math.max(0, safeWidth - 1);
+  const y = clamp(Number(v) || 0, 0, 1) * Math.max(0, safeHeight - 1);
+  const x0 = Math.floor(x);
+  const y0 = Math.floor(y);
+  const x1 = Math.min(safeWidth - 1, x0 + 1);
+  const y1 = Math.min(safeHeight - 1, y0 + 1);
+  const tx = x - x0;
+  const ty = y - y0;
+  const top = (Number(field[y0 * safeWidth + x0]) || 0) * (1 - tx)
+    + (Number(field[y0 * safeWidth + x1]) || 0) * tx;
+  const bottom = (Number(field[y1 * safeWidth + x0]) || 0) * (1 - tx)
+    + (Number(field[y1 * safeWidth + x1]) || 0) * tx;
+  return top * (1 - ty) + bottom * ty;
+}
+
+function sampleFishTurnV26ColumnMax(columnMax, width, u) {
+  const safeWidth = Math.max(1, Math.floor(Number(width) || 1));
+  const x = clamp(Number(u) || 0, 0, 1) * Math.max(0, safeWidth - 1);
+  const x0 = Math.floor(x);
+  const x1 = Math.min(safeWidth - 1, x0 + 1);
+  const tx = x - x0;
+  return Math.max(
+    0.0001,
+    (Number(columnMax[x0]) || 0.0001) * (1 - tx)
+      + (Number(columnMax[x1]) || 0.0001) * tx
+  );
+}
+
+function buildFishTurnV26VertexShapeData(distanceField, columnMax, width, height, mesh) {
+  const bodyDistance = new Float32Array(mesh.vertexCount);
+  const bodyLocal = new Float32Array(mesh.vertexCount);
+  for (let vertex = 0; vertex < mesh.vertexCount; vertex += 1) {
+    const u = mesh.uv[vertex * 2];
+    const v = mesh.uv[vertex * 2 + 1];
+    const aDist = sampleFishTurnV26ScalarFieldBilinear(distanceField, width, height, u, v);
+    const localMaximum = sampleFishTurnV26ColumnMax(columnMax, width, u);
+    bodyDistance[vertex] = aDist;
+    bodyLocal[vertex] = clamp(aDist / Math.max(localMaximum, 0.0001), 0, 1);
+  }
+  return { bodyDistance, bodyLocal };
+}
+
+function getFishTurnV26ImageCacheIdentity(image) {
+  const source = String(image?.currentSrc || image?.src || "").trim();
+  if (source) return source;
+  if (!runtime.fishTurnV26ImageIdentity) {
+    runtime.fishTurnV26ImageIdentity = new WeakMap();
+    runtime.fishTurnV26NextImageIdentity = 1;
+  }
+  if (!runtime.fishTurnV26ImageIdentity.has(image)) {
+    runtime.fishTurnV26ImageIdentity.set(image, `image-${runtime.fishTurnV26NextImageIdentity++}`);
+  }
+  return runtime.fishTurnV26ImageIdentity.get(image);
+}
+
+function getFishTurnV26BodyShapeCache() {
+  if (!(runtime.fishTurnV26BodyShapeCache instanceof Map)) {
+    runtime.fishTurnV26BodyShapeCache = new Map();
+  }
+  return runtime.fishTurnV26BodyShapeCache;
+}
+
+function preprocessFishTurnV26BodyShape(
+  image,
+  mesh = buildFishTurnV26MeshData(),
+  alphaCutoff = FISH_TURN_V26_ALPHA_CUTOFF
+) {
+  if (!image || Number(image.width) <= 0 || Number(image.height) <= 0 || typeof document === "undefined") {
+    return null;
+  }
+  const imageWidth = Math.max(1, Math.round(Number(image.width) || 1));
+  const imageHeight = Math.max(1, Math.round(Number(image.height) || 1));
+  const scale = Math.min(1, FISH_TURN_V26_PROCESSING_MAX_DIM / Math.max(imageWidth, imageHeight));
+  const width = Math.max(2, Math.round(imageWidth * scale));
+  const height = Math.max(2, Math.round(imageHeight * scale));
+  const cacheKey = [
+    getFishTurnV26ImageCacheIdentity(image),
+    `${imageWidth}x${imageHeight}`,
+    `process:${width}x${height}`,
+    `alpha:${Number(alphaCutoff)}`,
+    `mesh:${mesh.columns}x${mesh.rows}`
+  ].join("|");
+  const cache = getFishTurnV26BodyShapeCache();
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  try {
+    const processingCanvas = document.createElement("canvas");
+    processingCanvas.width = width;
+    processingCanvas.height = height;
+    const context = processingCanvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height).data;
+    const mask = buildFishTurnV26BinaryMask(pixels, width, height, alphaCutoff);
+    const distanceField = buildFishTurnV26DistanceField(mask, width, height);
+    const columnMax = buildFishTurnV26ColumnMax(distanceField, width, height);
+    const vertexShape = buildFishTurnV26VertexShapeData(distanceField, columnMax, width, height, mesh);
+    const result = {
+      cacheKey,
+      imageWidth,
+      imageHeight,
+      processingWidth: width,
+      processingHeight: height,
+      processingScale: scale,
+      alphaCutoff: Number(alphaCutoff),
+      distanceField,
+      columnMax,
+      bodyDistance: vertexShape.bodyDistance,
+      bodyLocal: vertexShape.bodyLocal
+    };
+    cache.set(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.warn("Fish Turn v26 body preprocessing failed; using the lightweight turn fallback.", error);
+    return null;
+  }
+}
+
+function getFishTurnV26FinShapeCache() {
+  if (!(runtime.fishTurnV26FinShapeCache instanceof Map)) {
+    runtime.fishTurnV26FinShapeCache = new Map();
+  }
+  return runtime.fishTurnV26FinShapeCache;
+}
+
+function preprocessFishTurnV26FinShape(
+  image,
+  mesh = buildFishTurnV26MeshData(),
+  alphaCutoff = FISH_TURN_V26_ALPHA_CUTOFF
+) {
+  if (!image || Number(image.width) <= 0 || Number(image.height) <= 0 || typeof document === "undefined") {
+    return null;
+  }
+  const imageWidth = Math.max(1, Math.round(Number(image.width) || 1));
+  const imageHeight = Math.max(1, Math.round(Number(image.height) || 1));
+  const scale = Math.min(1, FISH_TURN_V26_PROCESSING_MAX_DIM / Math.max(imageWidth, imageHeight));
+  const width = Math.max(2, Math.round(imageWidth * scale));
+  const height = Math.max(2, Math.round(imageHeight * scale));
+  const cacheKey = [
+    getFishTurnV26ImageCacheIdentity(image),
+    `${imageWidth}x${imageHeight}`,
+    `fin-process:${width}x${height}`,
+    `alpha:${Number(alphaCutoff)}`,
+    `mesh:${mesh.columns}x${mesh.rows}`
+  ].join("|");
+  const cache = getFishTurnV26FinShapeCache();
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  try {
+    const processingCanvas = document.createElement("canvas");
+    processingCanvas.width = width;
+    processingCanvas.height = height;
+    const context = processingCanvas.getContext("2d", { willReadFrequently: true });
+    if (!context) return null;
+    context.clearRect(0, 0, width, height);
+    context.drawImage(image, 0, 0, width, height);
+    const pixels = context.getImageData(0, 0, width, height).data;
+    const mask = buildFishTurnV26BinaryMask(pixels, width, height, alphaCutoff);
+    const finDistanceField = buildFishTurnV26DistanceField(mask, width, height);
+    const finColMax = buildFishTurnV26ColumnMax(finDistanceField, width, height);
+    const vertexShape = buildFishTurnV26VertexShapeData(finDistanceField, finColMax, width, height, mesh);
+    const result = {
+      cacheKey,
+      imageWidth,
+      imageHeight,
+      processingWidth: width,
+      processingHeight: height,
+      processingScale: scale,
+      alphaCutoff: Number(alphaCutoff),
+      finDistanceField,
+      finColMax,
+      finLocal: vertexShape.bodyLocal
+    };
+    cache.set(cacheKey, result);
+    return result;
+  } catch (error) {
+    console.warn("Fish Turn v26 fin preprocessing failed; rendering this turn without the fin overlay.", error);
+    return null;
+  }
+}
+
+function getFishTurnV26FinSettings(fish, species = getSpeciesForFish(fish)) {
+  const finiteOrDefault = (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback;
+  return {
+    distance: clamp(
+      finiteOrDefault(fish?.finDistance ?? species?.finDistance, FISH_TURN_V26_FIN_DISTANCE),
+      0,
+      450
+    ),
+    frontAttachmentDistance: clamp(
+      finiteOrDefault(
+        fish?.frontAttachmentDistance ?? fish?.finFrontAttachmentDistance
+          ?? species?.frontAttachmentDistance ?? species?.finFrontAttachmentDistance,
+        FISH_TURN_V26_FIN_FRONT_ATTACHMENT_DISTANCE
+      ),
+      0,
+      100
+    ),
+    taper: clamp(
+      finiteOrDefault(fish?.finTapering ?? fish?.finTaper ?? species?.finTapering ?? species?.finTaper, FISH_TURN_V26_FIN_TAPER),
+      0,
+      100
+    )
+  };
+}
+
+function computeFishTurnV26FinGap(
+  finLocal,
+  sourceHorizontal,
+  finDistance = FISH_TURN_V26_FIN_DISTANCE,
+  frontAttachmentDistance = FISH_TURN_V26_FIN_FRONT_ATTACHMENT_DISTANCE,
+  finTaper = FISH_TURN_V26_FIN_TAPER
+) {
+  const h = clamp(Number(sourceHorizontal) || 0, -1, 1);
+  const aFinLocal = clamp(Number(finLocal) || 0, 0, 1);
+  const uFinGap = Math.max(0, Number(finDistance) || 0) / 450;
+  const uFinAttach = clamp((Number(frontAttachmentDistance) || 0) / 100, 0, 1);
+  const uFinTaper = clamp((Number(finTaper) || 0) / 100, 0, 1);
+  const front01 = clamp((h + 1) * 0.5, 0, 1);
+  const attachStart = 1 - uFinAttach;
+  const frontAttached = uFinAttach <= 0.001
+    ? 0
+    : (() => {
+      const x = clamp((front01 - attachStart) / Math.max(0.0001, 1 - attachStart), 0, 1);
+      return x * x * (3 - 2 * x);
+    })();
+  const attachMask = 1 - frontAttached;
+  const finPower = 0.55 + (2.40 - 0.55) * uFinTaper;
+  const finProfile = Math.pow(aFinLocal, finPower);
+  return uFinGap * finProfile * attachMask;
+}
+
+function getFishTurnV26SourceDirection() {
+  return String(FISH_SWIM_ANIMATION?.sourceOrientation || "right-facing").trim().toLowerCase().startsWith("left")
+    ? -1
+    : 1;
+}
+
+function normalizeFishTurnV26Style(value, fallback = FISH_TURN_V26_DEFAULT_STYLE) {
+  const normalized = String(value || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+  const aliases = {
+    "2": "banked-flex",
+    "#2": "banked-flex",
+    "tester-2": "banked-flex",
+    "banked": "banked-flex",
+    "banked-flex-turn": "banked-flex",
+    "banked-flex": "banked-flex",
+    "3": "tail-loaded-c-turn",
+    "#3": "tail-loaded-c-turn",
+    "tester-3": "tail-loaded-c-turn",
+    "tail-loaded": "tail-loaded-c-turn",
+    "c-turn": "tail-loaded-c-turn",
+    "tail-loaded-c-turn": "tail-loaded-c-turn",
+    "4": "head-led",
+    "#4": "head-led",
+    "tester-4": "head-led",
+    "head-led-turn": "head-led",
+    "head-led": "head-led",
+    "9": "wide-fluid-u-turn",
+    "#9": "wide-fluid-u-turn",
+    "tester-9": "wide-fluid-u-turn",
+    "wide-u-turn": "wide-fluid-u-turn",
+    "wide-fluid": "wide-fluid-u-turn",
+    "wide-fluid-u-turn": "wide-fluid-u-turn"
+  };
+  const fallbackNormalized = String(fallback || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
+  if (aliases[normalized]) return aliases[normalized];
+  if (aliases[fallbackNormalized]) return aliases[fallbackNormalized];
+  return fallbackNormalized ? "head-led" : "";
+}
+
+function getFishTurnV26StyleOverride() {
+  return normalizeFishTurnV26Style(runtime?.fishTurnV26StyleOverride, "");
+}
+
+function setFishTurnV26StyleOverride(value = "") {
+  const normalizedRaw = String(value || "").trim();
+  if (!normalizedRaw) {
+    delete runtime.fishTurnV26StyleOverride;
+    return "";
+  }
+  const normalized = normalizeFishTurnV26Style(normalizedRaw, "");
+  if (!normalized) {
+    return getFishTurnV26StyleOverride();
+  }
+  runtime.fishTurnV26StyleOverride = normalized;
+  return normalized;
+}
+
+function getFishTurnV26BehaviorContext(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  const activity = String(fish?.activity || "").trim().toLowerCase();
+  const intent = fish?.behaviorIntent && (!Number(fish.behaviorIntent.expiresAt) || Number(fish.behaviorIntent.expiresAt) > now)
+    ? fish.behaviorIntent
+    : null;
+  const intentText = `${String(intent?.type || "")} ${String(intent?.cause || "")}`.trim().toLowerCase();
+  const queue = typeof getFishActionQueueState === "function" && fish?.id
+    ? getFishActionQueueState(fish.id)
+    : null;
+  const activeAction = String(queue?.active?.action || "").trim().toLowerCase();
+  const actionSteering = runtime?.fishActionSteeringByFishId instanceof Map && fish?.id
+    ? runtime.fishActionSteeringByFishId.get(fish.id)
+    : null;
+  const debugSteering = runtime?.debugBehaviorSteeringByFishId instanceof Map && fish?.id
+    ? runtime.debugBehaviorSteeringByFishId.get(fish.id)
+    : null;
+  const steeringType = String(actionSteering?.type || debugSteering?.type || "").trim().toLowerCase();
+  const breedingSequence = runtime?.fishBreedingSequence || runtime?.debugBreedingSequence || null;
+  const breedingActive = Boolean(
+    fish?.id
+    && breedingSequence
+    && (breedingSequence.leftFishId === fish.id || breedingSequence.rightFishId === fish.id)
+  );
+  const collisionAvoidanceActive = typeof getActiveFishCollisionAvoidance === "function"
+    ? Boolean(getActiveFishCollisionAvoidance(fish, now))
+    : false;
+  const schoolLeading = Boolean(
+    typeof getFishSchoolActiveFollowers === "function"
+    && getFishSchoolActiveFollowers(fish, now).length > 0
+  );
+  const schoolFollowing = Boolean(
+    (Number(fish?.followUntil) || 0) > now
+    || fish?.schoolRole === "follower"
+    || fish?.schoolSource === "schooling"
+    || steeringType === "follow"
+  );
+  const schoolFormationActive = schoolLeading || schoolFollowing;
+  const panicActive = (Number(fish?.panicUntil) || 0) > now;
+  const speedMin = Math.max(0, Number(species?.speedMin) || 0);
+  const speedMax = Math.max(speedMin + 0.000001, Number(species?.speedMax) || speedMin + 1);
+  const currentSpeed = Math.max(0, Number(fish?.swimSpeed) || Number(fish?.traversalSpeedNorm) || speedMin);
+  const speedRatio = clamp((currentSpeed - speedMin) / Math.max(0.000001, speedMax - speedMin), 0, 1);
+  const xNorm = clamp(Number(fish?.xNorm) || 0.5, 0, 1);
+  const yNorm = clamp(Number(fish?.yNorm) || 0.5, 0, 1);
+  const targetXNorm = Number.isFinite(Number(fish?.targetXNorm)) ? Number(fish.targetXNorm) : xNorm;
+  const targetYNorm = Number.isFinite(Number(fish?.targetYNorm)) ? Number(fish.targetYNorm) : yNorm;
+  const targetDistance = Math.hypot(targetXNorm - xNorm, targetYNorm - yNorm);
+  const edgeClearance = Math.min(xNorm, 1 - xNorm, yNorm, 1 - yNorm);
+  const actionText = `${activity} ${activeAction} ${steeringType} ${intentText}`;
+  const precisionInteraction = Boolean(
+    fish?.caveState
+    || breedingActive
+    || activity === "feeding"
+    || activity === FISH_GRAVEL_DIG_ACTIVITY
+    || activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+    || /\b(eat|feed|food|dig|pebble|mate|breed|inspect|service|visit|hide|rest|sleep)\b/.test(actionText)
+  );
+  const forceful = Boolean(
+    panicActive
+    || (Number(fish?.panicSpeedBoost) || 0) > 1.15
+    || /\b(attack|chase|strike|striking|lunge|pounce|pouncing|ambush|flee|avoid|retreat|startled|dart|zoomies|burst|high-speed|confrontation|yield)\b/.test(actionText)
+  );
+  const constrained = Boolean(
+    collisionAvoidanceActive
+    || edgeClearance < 0.115
+    || targetDistance < 0.055
+    || fish?.caveState
+  );
+  const relaxedCruise = Boolean(
+    !precisionInteraction
+    && !forceful
+    && !schoolFormationActive
+    && !collisionAvoidanceActive
+    && activity === "roam"
+    && edgeClearance >= 0.14
+    && targetDistance >= 0.10
+    && speedRatio <= 0.78
+    && (!intentText || /\b(cruise|wander|patrol|roam|companion|explor|open-water)\b/.test(intentText))
+  );
+
+  return {
+    activity,
+    intentText,
+    activeAction,
+    steeringType,
+    breedingActive,
+    collisionAvoidanceActive,
+    schoolLeading,
+    schoolFollowing,
+    schoolFormationActive,
+    panicActive,
+    precisionInteraction,
+    forceful,
+    constrained,
+    relaxedCruise,
+    speedRatio,
+    targetDistance,
+    edgeClearance
+  };
+}
+
+function selectFishTurnV26StyleForContext(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  randomValue = Math.random()
+) {
+  const context = getFishTurnV26BehaviorContext(fish, species, now);
+  const roll = clamp(Number(randomValue) || 0, 0, 0.999999);
+
+  // Fast threat responses and forceful reversals should read as decisive.
+  if (context.forceful) {
+    return "tail-loaded-c-turn";
+  }
+
+  // Precision mechanics keep the visual body close to the authoritative pose.
+  // A constrained precision turn banks; otherwise the deliberate head-led turn
+  // keeps feeding, gravel, breeding, cave, and decor interactions visually tight.
+  if (context.precisionInteraction) {
+    return context.constrained ? "banked-flex" : "head-led";
+  }
+
+  // An active school is one visual group. Leaders and followers both stay on
+  // compact paths so a leader cannot visually U-turn far away from followers
+  // whose authoritative formation anchors still surround its gameplay pose.
+  if (context.schoolFormationActive) {
+    return context.constrained ? "banked-flex" : "head-led";
+  }
+
+  // Collision recovery, tank-edge corrections, and very short target changes
+  // use the compact banked turn instead of a wide render-space arc.
+  if (context.constrained) {
+    return "banked-flex";
+  }
+
+  // Relaxed open-water reversals use the wide U-turn most often, with a small
+  // amount of head-led variation so cruising fish do not repeat one animation.
+  if (context.relaxedCruise) {
+    return roll < 0.76 ? "wide-fluid-u-turn" : "head-led";
+  }
+
+  // Faster non-panic movement can still justify an energetic C-turn, but the
+  // neutral head-led style remains the ordinary deliberate fallback.
+  if (context.speedRatio >= 0.82) {
+    return roll < 0.58 ? "tail-loaded-c-turn" : "head-led";
+  }
+
+  return "head-led";
+}
+
+function resolveFishTurnV26Style(fish, species = getSpeciesForFish(fish), now = Date.now()) {
+  const overrideRaw = String(runtime?.fishTurnV26StyleOverride || "").trim();
+  if (overrideRaw) {
+    return normalizeFishTurnV26Style(overrideRaw);
+  }
+  const explicitStyle = fish?.turnV26Style || fish?.turnStyle || species?.turnV26Style;
+  if (String(explicitStyle || "").trim()) {
+    return normalizeFishTurnV26Style(explicitStyle, FISH_TURN_V26_DEFAULT_STYLE);
+  }
+  return normalizeFishTurnV26Style(
+    selectFishTurnV26StyleForContext(fish, species, now),
+    FISH_TURN_V26_DEFAULT_STYLE
+  );
+}
+
+function getFishTurnV26Style(fish) {
+  const turnStartedAt = Number(fish?.turnStartedAt);
+  const styleStartedAt = Number(fish?.turnV26StyleStartedAt);
+  if (
+    Boolean(fish?.turnStartedAt)
+    && Number.isFinite(turnStartedAt)
+    && Number.isFinite(styleStartedAt)
+    && styleStartedAt === turnStartedAt
+    && fish?.turnV26StyleActive
+  ) {
+    return normalizeFishTurnV26Style(fish.turnV26StyleActive);
+  }
+  return resolveFishTurnV26Style(fish, getSpeciesForFish(fish));
+}
+
+function easeFishTurnV26CubicInOut(t) {
+  const clamped = clamp(Number(t) || 0, 0, 1);
+  return clamped < 0.5
+    ? 4 * clamped * clamped * clamped
+    : 1 - Math.pow(-2 * clamped + 2, 3) / 2;
+}
+
+function easeFishTurnV26Sine(t) {
+  const clamped = clamp(Number(t) || 0, 0, 1);
+  return (1 - Math.cos(Math.PI * clamped)) / 2;
+}
+
+function getFishTurnV26StyleDefinition(styleValue) {
+  const style = normalizeFishTurnV26Style(styleValue);
+  switch (style) {
+    case "banked-flex":
+      return {
+        id: "banked-flex",
+        testerId: 2,
+        name: "Banked Flex Turn",
+        bendScale: 1.05,
+        bias: 0,
+        waveScale: 0.36,
+        waveSpeed: 1.45,
+        yawEase: "cubic"
+      };
+    case "tail-loaded-c-turn":
+      return {
+        id: "tail-loaded-c-turn",
+        testerId: 3,
+        name: "Tail-loaded C-turn",
+        bendScale: 1.22,
+        bias: -0.22,
+        waveScale: 0.62,
+        waveSpeed: 1.85,
+        yawEase: "sine"
+      };
+    case "wide-fluid-u-turn":
+      return {
+        id: "wide-fluid-u-turn",
+        testerId: 9,
+        name: "Wide Fluid U-turn",
+        bendScale: 1.05,
+        bias: 0,
+        waveScale: 0.36,
+        waveSpeed: 1.45,
+        yawEase: "sine"
+      };
+    case "head-led":
+    default:
+      return {
+        id: "head-led",
+        testerId: 4,
+        name: "Head-led Turn",
+        bendScale: 1.10,
+        bias: 0.22,
+        waveScale: 0.28,
+        waveSpeed: 1.15,
+        yawEase: "sine"
+      };
+  }
+}
+
+function computeFishTurnV26StyleTransform(
+  styleValue,
+  turnProgress,
+  sourceDirection = getFishTurnV26SourceDirection(),
+  turnDepthSign = 1
+) {
+  const style = getFishTurnV26StyleDefinition(styleValue);
+  const t = clamp(Number(turnProgress) || 0, 0, 1);
+  const d = Number(sourceDirection) < 0 ? -1 : 1;
+  const depthSign = Number(turnDepthSign) < 0 ? -1 : 1;
+  const B = Math.sin(Math.PI * t);
+  const doubleSine = Math.sin(2 * Math.PI * t);
+  const sineEase = easeFishTurnV26Sine(t);
+  const cubicEase = easeFishTurnV26CubicInOut(t);
+  let motionX = 0;
+  let motionY = 0;
+  let motionZ = 0;
+  let rotationXDegrees = 0;
+  let rotationYDegrees = 0;
+  let rotationZDegrees = 0;
+
+  switch (style.id) {
+    case "banked-flex":
+      motionX = 35 * Math.sin(Math.PI * t) * d;
+      motionY = -20 * B;
+      motionZ = 0.10 * B;
+      rotationXDegrees = -6 * B;
+      rotationYDegrees = 180 * cubicEase * d;
+      rotationZDegrees = 16 * doubleSine * d;
+      break;
+    case "tail-loaded-c-turn":
+      motionX = 55 * B * d;
+      motionY = -12 * B;
+      motionZ = 0.12 * B;
+      rotationXDegrees = 0;
+      rotationYDegrees = 180 * sineEase * d;
+      rotationZDegrees = 10 * B * d;
+      break;
+    case "wide-fluid-u-turn":
+      motionX = 150 * Math.sin(Math.PI * t) * d;
+      motionY = -68 * B;
+      motionZ = 0.18 * B;
+      rotationXDegrees = -6 * B;
+      rotationYDegrees = 180 * sineEase * d;
+      rotationZDegrees = 18 * doubleSine * d;
+      break;
+    case "head-led":
+    default:
+      motionX = -35 * B * d;
+      motionY = 10 * B;
+      motionZ = 0.08 * B;
+      rotationXDegrees = 3 * B;
+      rotationYDegrees = 180 * sineEase * d;
+      rotationZDegrees = -8 * B * d;
+      break;
+  }
+
+  motionZ *= depthSign;
+  rotationYDegrees *= depthSign;
+  const degreesToRadians = Math.PI / 180;
+  return {
+    style,
+    turnDepthSign: depthSign,
+    t,
+    bendEnvelope: B,
+    motionX,
+    motionY,
+    motionZ,
+    translationX: motionX / FISH_TURN_V26_TRAJECTORY_UNIT_SCALE,
+    translationY: -motionY / FISH_TURN_V26_TRAJECTORY_UNIT_SCALE,
+    translationZ: motionZ,
+    rotationXDegrees,
+    rotationYDegrees,
+    rotationZDegrees,
+    rotationX: rotationXDegrees * degreesToRadians,
+    rotationY: rotationYDegrees * degreesToRadians,
+    rotationZ: rotationZDegrees * degreesToRadians
+  };
+}
+
+function computeFishTurnV26SpinePoint(
+  sourceX,
+  turnProgress,
+  sourceDirection = getFishTurnV26SourceDirection(),
+  bendScale = 1,
+  bias = 0,
+  waveScale = 1,
+  waveSpeed = 1,
+  turnDepthSign = 1
+) {
+  const clampedSourceX = clamp(Number(sourceX) || 0, -1, 1);
+  const t = clamp(Number(turnProgress) || 0, 0, 1);
+  const d = Number(sourceDirection) < 0 ? -1 : 1;
+  const safeBendScale = Number.isFinite(Number(bendScale)) ? Number(bendScale) : 1;
+  const safeBias = Number.isFinite(Number(bias)) ? Number(bias) : 0;
+  const safeWaveScale = Number.isFinite(Number(waveScale)) ? Number(waveScale) : 1;
+  const safeWaveSpeed = Number.isFinite(Number(waveSpeed)) ? Number(waveSpeed) : 1;
+  const depthSign = Number(turnDepthSign) < 0 ? -1 : 1;
+  const h = clampedSourceX * d;
+  const tailWeight = (1 - h) * 0.5;
+  const B = Math.sin(Math.PI * t);
+  const bodyFlex = FISH_TURN_V26_Z_AXIS_BODY_FLEX / 100;
+  const tailFlex = FISH_TURN_V26_TAIL_FOLLOW_THROUGH / 100;
+  const A = -1.95 * bodyFlex * B * safeBendScale * d * depthSign;
+  const aa = Math.max(Math.abs(A), 0.0001);
+  const signedA = A < 0 ? -aa : aa;
+  const halfA = 0.5 * signedA;
+
+  let xHead;
+  let zArc;
+  if (Math.abs(A) < 0.002) {
+    xHead = h;
+    zArc = 0;
+  } else {
+    xHead = 2 * Math.sin(halfA * h) / signedA;
+    zArc = 2 * (1 - Math.cos(halfA * h)) / signedA;
+  }
+  zArc *= 1 + safeBias * h;
+
+  const wave = 0.165
+    * tailFlex
+    * B
+    * safeWaveScale
+    * Math.sin(Math.PI * (h * 0.92 - t * safeWaveSpeed))
+    * (-tailWeight)
+    * depthSign;
+
+  return {
+    x: xHead * d,
+    z: zArc + wave,
+    h,
+    bendEnvelope: B,
+    bendAmount: A,
+    wave
+  };
+}
+
+function computeFishTurnV26SpineFrame(
+  sourceX,
+  turnProgress,
+  sourceDirection = getFishTurnV26SourceDirection(),
+  bendScale = 1,
+  bias = 0,
+  waveScale = 1,
+  waveSpeed = 1,
+  turnDepthSign = 1
+) {
+  const epsilon = FISH_TURN_V26_SPINE_EPSILON;
+  const center = computeFishTurnV26SpinePoint(
+    sourceX,
+    turnProgress,
+    sourceDirection,
+    bendScale,
+    bias,
+    waveScale,
+    waveSpeed,
+    turnDepthSign
+  );
+  const plus = computeFishTurnV26SpinePoint(
+    clamp(Number(sourceX) + epsilon, -1, 1),
+    turnProgress,
+    sourceDirection,
+    bendScale,
+    bias,
+    waveScale,
+    waveSpeed,
+    turnDepthSign
+  );
+  const minus = computeFishTurnV26SpinePoint(
+    clamp(Number(sourceX) - epsilon, -1, 1),
+    turnProgress,
+    sourceDirection,
+    bendScale,
+    bias,
+    waveScale,
+    waveSpeed,
+    turnDepthSign
+  );
+  const dx = plus.x - minus.x;
+  const dz = plus.z - minus.z;
+  const length = Math.max(Math.hypot(dx, dz), 0.000001);
+  const tangent = { x: dx / length, z: dz / length };
+  const normal = { x: -tangent.z, z: tangent.x };
+  return { center, tangent, normal };
+}
+
+function getFishTurnV26ModelScale(fishAspect) {
+  const safeAspect = Math.max(0.0001, Number(fishAspect) || 1);
+  const fovRadians = FISH_TURN_V26_FOV_DEGREES * Math.PI / 180;
+  const uncappedModelScale = safeAspect
+    * Math.abs(FISH_TURN_V26_CAMERA_Z)
+    * Math.tan(fovRadians * 0.5);
+  const modelScale = Math.min(FISH_TURN_V26_MAX_MODEL_SCALE, uncappedModelScale);
+  return {
+    uncappedModelScale,
+    modelScale,
+    projectionCompensation: clamp(
+      modelScale / Math.max(uncappedModelScale, 0.0001),
+      0.0001,
+      1
+    )
+  };
+}
+
+function getFishTurnV26ThicknessShapeAtUv(bodyShape, u, v, sourceDirection = getFishTurnV26SourceDirection()) {
+  if (!bodyShape?.distanceField || !bodyShape?.columnMax) {
+    return null;
+  }
+  const safeU = clamp(Number(u) || 0, 0, 1);
+  const safeV = clamp(Number(v) || 0, 0, 1);
+  const sourceX = (safeU - 0.5) * 2;
+  const d = Number(sourceDirection) < 0 ? -1 : 1;
+  const h = sourceX * d;
+  const aDist = sampleFishTurnV26ScalarFieldBilinear(
+    bodyShape.distanceField,
+    bodyShape.processingWidth,
+    bodyShape.processingHeight,
+    safeU,
+    safeV
+  );
+  const columnMaximum = sampleFishTurnV26ColumnMax(
+    bodyShape.columnMax,
+    bodyShape.processingWidth,
+    safeU
+  );
+  const aLocal = clamp(aDist / Math.max(columnMaximum, 0.0001), 0, 1);
+  const edge01 = clamp(aDist / Math.max(FISH_TURN_V26_EDGE_REACH, 0.001), 0, 1);
+  const edgePower = 2.6 + (0.42 - 2.6) * (FISH_TURN_V26_EDGE_ROUNDNESS / 100);
+  const roundedEdge = Math.pow(edge01, edgePower);
+  const edgeShape = 1 + (roundedEdge - 1) * (FISH_TURN_V26_EDGE_CLOSURE / 100);
+  const localPower = 1.55 + (0.50 - 1.55) * (FISH_TURN_V26_CROSS_SECTION / 100);
+  const crossShape = Math.pow(clamp(aLocal, 0, 1), localPower);
+  const center = clamp(1 - Math.abs(h), 0, 1);
+  const lengthPower = 1.95 + (0.75 - 1.95) * (FISH_TURN_V26_MID_BODY_FULLNESS / 100);
+  const lengthShape = Math.pow(center, lengthPower);
+  const baseBodyShape = 1 + (lengthShape - 1) * (FISH_TURN_V26_END_THINNING / 100);
+  const faceRaw = clamp((h - 0.10) / 0.80, 0, 1);
+  const faceMask = faceRaw * faceRaw * (3 - 2 * faceRaw);
+  const faceBoost = 1 + 1.25 * (FISH_TURN_V26_FACE_HEAD_THICKNESS / 100) * faceMask;
+  const bodyShapeValue = Math.min(baseBodyShape * faceBoost, 1.35);
+  return {
+    aDist,
+    aLocal,
+    sourceX,
+    h,
+    edgeShape,
+    crossShape,
+    faceMask,
+    faceBoost,
+    bodyShape: bodyShapeValue,
+    thicknessShape: edgeShape * crossShape * bodyShapeValue
+  };
+}
+
+function projectFishTurnV26UvPoint(options) {
+  options = options || {};
+  const safeU = clamp(Number(options.u) || 0, 0, 1);
+  const safeV = clamp(Number(options.v) || 0, 0, 1);
+  const fishAspect = Math.max(0.0001, Number(options.fishAspect) || 1);
+  const turnProgress = clamp(Number(options.turnProgress) || 0, 0, 1);
+  const sourceDirection = Number(options.sourceDirection) < 0 ? -1 : 1;
+  const turnDepthSign = Number(options.turnDepthSign) < 0 ? -1 : 1;
+  const facingDirection = Number(options.facingDirection) < 0 ? -1 : 1;
+  const layer = Number.isFinite(Number(options.layer)) ? Number(options.layer) : 0;
+  const drawWidth = Math.max(0.0001, Number(options.drawWidth) || 1);
+  const drawHeight = Math.max(0.0001, Number(options.drawHeight) || (drawWidth / fishAspect));
+  const drawX = Number.isFinite(Number(options.drawX)) ? Number(options.drawX) : -drawWidth / 2;
+  const thicknessShape = clamp(Number(options.thicknessShape) || 0, 0, 1);
+  const styleTransform = computeFishTurnV26StyleTransform(
+    options.styleValue || FISH_TURN_V26_DEFAULT_STYLE,
+    turnProgress,
+    sourceDirection,
+    turnDepthSign
+  );
+  const sourceX = (safeU - 0.5) * 2;
+  const spineFrame = computeFishTurnV26SpineFrame(
+    sourceX,
+    turnProgress,
+    sourceDirection,
+    styleTransform.style.bendScale,
+    styleTransform.style.bias,
+    styleTransform.style.waveScale,
+    styleTransform.style.waveSpeed,
+    turnDepthSign
+  );
+  const depth = layer * (FISH_TURN_V26_THICKNESS / 450) * thicknessShape;
+  const surfaceX = spineFrame.center.x + spineFrame.normal.x * depth;
+  const surfaceZ = spineFrame.center.z + spineFrame.normal.z * depth;
+  const sourceY = (0.5 - safeV) * (2 / fishAspect);
+  const modelScaleState = getFishTurnV26ModelScale(fishAspect);
+  let x = surfaceX * modelScaleState.modelScale;
+  let y = sourceY * modelScaleState.modelScale;
+  let z = surfaceZ * modelScaleState.modelScale;
+
+  const cosX = Math.cos(styleTransform.rotationX);
+  const sinX = Math.sin(styleTransform.rotationX);
+  [y, z] = [cosX * y - sinX * z, sinX * y + cosX * z];
+
+  const cosY = Math.cos(styleTransform.rotationY);
+  const sinY = Math.sin(styleTransform.rotationY);
+  [x, z] = [cosY * x + sinY * z, -sinY * x + cosY * z];
+
+  const cosZ = Math.cos(styleTransform.rotationZ);
+  const sinZ = Math.sin(styleTransform.rotationZ);
+  [x, y] = [cosZ * x - sinZ * y, sinZ * x + cosZ * y];
+
+  x += styleTransform.translationX;
+  y += styleTransform.translationY;
+  z += styleTransform.translationZ;
+
+  const projectionCompensation = Math.max(modelScaleState.projectionCompensation, 0.0001);
+  x = (x - styleTransform.translationX) / projectionCompensation + styleTransform.translationX;
+  y = (y - styleTransform.translationY) / projectionCompensation + styleTransform.translationY;
+  z += FISH_TURN_V26_CAMERA_Z;
+
+  const fovRadians = FISH_TURN_V26_FOV_DEGREES * Math.PI / 180;
+  const f = 1 / Math.tan(fovRadians * 0.5);
+  const clipW = -z;
+  if (!(clipW > 0.0001)) {
+    return null;
+  }
+  const ndcX = (x * f / fishAspect / FISH_TURN_V26_RENDER_PADDING_X) / clipW;
+  const ndcY = (y * f / FISH_TURN_V26_RENDER_PADDING_Y) / clipW;
+  const paddedDrawWidth = drawWidth * FISH_TURN_V26_RENDER_PADDING_X;
+  const paddedDrawHeight = drawHeight * FISH_TURN_V26_RENDER_PADDING_Y;
+  const paddedDrawX = drawX - (paddedDrawWidth - drawWidth) / 2;
+  const paddedDrawY = -drawHeight / 2 - (paddedDrawHeight - drawHeight) / 2;
+  const canvasX = paddedDrawX + ((ndcX + 1) * 0.5) * paddedDrawWidth;
+  const canvasY = paddedDrawY + ((1 - ndcY) * 0.5) * paddedDrawHeight;
+  return {
+    x: canvasX * facingDirection,
+    y: canvasY,
+    ndcX,
+    ndcY,
+    depth,
+    layer,
+    turnProgress,
+    style: styleTransform.style.id
+  };
+}
+
+function getFishTurnV26VisualAnchorLocalPoint(
+  fish,
+  shapeImage,
+  drawX,
+  drawWidth,
+  drawHeight,
+  u,
+  v,
+  now = Date.now(),
+  options = {}
+) {
+  if (!fish || !shapeImage || Number(shapeImage.width) <= 0 || Number(shapeImage.height) <= 0) {
+    return null;
+  }
+  const species = options.species || getSpeciesForFish(fish);
+  if (getFishTurnRendererBackend(fish, species) !== "v26") {
+    return null;
+  }
+  if (typeof canUseFishV26TurnRenderer === "function" && !canUseFishV26TurnRenderer(fish, species, now)) {
+    return null;
+  }
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active || !turnState.reversing) {
+    return null;
+  }
+  const renderer = getFishTurnV26RendererState();
+  if (!renderer) {
+    return null;
+  }
+  const bodyShape = preprocessFishTurnV26BodyShape(shapeImage, renderer.mesh);
+  if (!bodyShape) {
+    return null;
+  }
+  const sourceDirection = getFishTurnV26SourceDirection();
+  const thickness = getFishTurnV26ThicknessShapeAtUv(bodyShape, u, v, sourceDirection);
+  if (!thickness) {
+    return null;
+  }
+  const style = getFishTurnV26Style(fish);
+  const turnDepthSign = getFishTurnV26DepthSign(fish);
+  const styleTransform = computeFishTurnV26StyleTransform(
+    style,
+    turnState.progress,
+    sourceDirection,
+    turnDepthSign
+  );
+  const nearSide = Math.cos(styleTransform.rotationY) >= 0 ? 1 : -1;
+  const requestedSurface = String(options.surface || "near").trim().toLowerCase();
+  const layer = requestedSurface === "center" ? 0 : nearSide;
+  return projectFishTurnV26UvPoint({
+    u,
+    v,
+    fishAspect: Number(shapeImage.width) / Math.max(1, Number(shapeImage.height)),
+    turnProgress: turnState.progress,
+    sourceDirection,
+    turnDepthSign,
+    facingDirection: getFishFacingDirection(fish),
+    layer,
+    thicknessShape: thickness.thicknessShape,
+    styleValue: style,
+    drawX,
+    drawWidth,
+    drawHeight
+  });
+}
+
+function compileFishTurnV26Shader(gl, type, source) {
+  const shader = gl.createShader(type);
+  if (!shader) return null;
+  gl.shaderSource(shader, source);
+  gl.compileShader(shader);
+  if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+    const message = gl.getShaderInfoLog(shader) || "Unknown shader compile error.";
+    gl.deleteShader(shader);
+    console.warn("Fish Turn v26 shader compilation failed.", message);
+    return null;
+  }
+  return shader;
+}
+
+function createFishTurnV26RendererState() {
+  if (typeof document === "undefined") return null;
+
+  const canvas = document.createElement("canvas");
+  const gl = canvas.getContext("webgl", {
+    alpha: true,
+    antialias: false,
+    depth: true,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: true
+  }) || canvas.getContext("experimental-webgl", {
+    alpha: true,
+    antialias: false,
+    depth: true,
+    premultipliedAlpha: false,
+    preserveDrawingBuffer: true
+  });
+  if (!gl) return null;
+
+  const vertexShader = compileFishTurnV26Shader(gl, gl.VERTEX_SHADER, `
+    precision highp float;
+    attribute vec2 a_uv;
+    attribute float a_bodyDist;
+    attribute float a_bodyLocal;
+    attribute float a_finLocal;
+    uniform float u_layer;
+    uniform float u_thickness;
+    uniform float u_edgeReach;
+    uniform float u_edgeClosure;
+    uniform float u_edgeRoundness;
+    uniform float u_endThinning;
+    uniform float u_midBodyFullness;
+    uniform float u_crossSection;
+    uniform float u_faceThickness;
+    uniform float u_finMode;
+    uniform float u_finGap;
+    uniform float u_finAttach;
+    uniform float u_finTaper;
+    uniform float u_finSideSign;
+    uniform float u_fishAspect;
+    uniform float u_turnProgress;
+    uniform float u_sourceDirection;
+    uniform float u_turnDepthSign;
+    uniform float u_bodyFlex;
+    uniform float u_tailFlex;
+    uniform float u_spineEpsilon;
+    uniform float u_bendScale;
+    uniform float u_bias;
+    uniform float u_waveScale;
+    uniform float u_waveSpeed;
+    uniform float u_modelScale;
+    uniform float u_rotationX;
+    uniform float u_rotationY;
+    uniform float u_rotationZ;
+    uniform float u_translationX;
+    uniform float u_translationY;
+    uniform float u_translationZ;
+    uniform float u_renderPaddingX;
+    uniform float u_renderPaddingY;
+    uniform float u_projectionCompensation;
+    uniform float u_cameraZ;
+    uniform float u_fovRadians;
+    uniform float u_near;
+    uniform float u_far;
+    varying vec2 v_uv;
+    const float FISH_TURN_PI = 3.14159265358979323846;
+
+    vec2 fishTurnV26Spine(float sourceX) {
+      float t = clamp(u_turnProgress, 0.0, 1.0);
+      float h = sourceX * u_sourceDirection;
+      float tailWeight = (1.0 - h) * 0.5;
+      float B = sin(FISH_TURN_PI * t);
+      float A = -1.95 * u_bodyFlex * B * u_bendScale * u_sourceDirection * u_turnDepthSign;
+      float aa = max(abs(A), 0.0001);
+      float signedA = A < 0.0 ? -aa : aa;
+      float halfA = 0.5 * signedA;
+      float xHead;
+      float zArc;
+      if (abs(A) < 0.002) {
+        xHead = h;
+        zArc = 0.0;
+      } else {
+        xHead = 2.0 * sin(halfA * h) / signedA;
+        zArc = 2.0 * (1.0 - cos(halfA * h)) / signedA;
+      }
+      zArc *= 1.0 + u_bias * h;
+      float wave = 0.165
+        * u_tailFlex
+        * B
+        * u_waveScale
+        * sin(FISH_TURN_PI * (h * 0.92 - t * u_waveSpeed))
+        * (-tailWeight)
+        * u_turnDepthSign;
+      return vec2(xHead * u_sourceDirection, zArc + wave);
+    }
+
+    void main() {
+      v_uv = a_uv;
+      float sourceX = (a_uv.x - 0.5) * 2.0;
+      float h = sourceX * u_sourceDirection;
+
+      float edge01 = clamp(a_bodyDist / max(u_edgeReach, 0.001), 0.0, 1.0);
+      float edgePower = mix(2.6, 0.42, u_edgeRoundness);
+      float roundedEdge = pow(edge01, edgePower);
+      float edgeShape = mix(1.0, roundedEdge, u_edgeClosure);
+
+      float localPower = mix(1.55, 0.50, u_crossSection);
+      float crossShape = pow(clamp(a_bodyLocal, 0.0, 1.0), localPower);
+
+      float center = clamp(1.0 - abs(h), 0.0, 1.0);
+      float lengthShape = pow(center, mix(1.95, 0.75, u_midBodyFullness));
+      float bodyShape = mix(1.0, lengthShape, u_endThinning);
+      float faceMask = smoothstep(0.10, 0.90, h);
+      float faceBoost = 1.0 + 1.25 * u_faceThickness * faceMask;
+      bodyShape = min(bodyShape * faceBoost, 1.35);
+      float thicknessShape = edgeShape * crossShape * bodyShape;
+      float depth = u_layer * u_thickness * thicknessShape;
+      if (u_finMode > 0.5) {
+        float front01 = clamp((h + 1.0) * 0.5, 0.0, 1.0);
+        float attachStart = 1.0 - u_finAttach;
+        float frontAttached = u_finAttach <= 0.001
+          ? 0.0
+          : smoothstep(attachStart, 1.0, front01);
+        float attachMask = 1.0 - frontAttached;
+        float finPower = mix(0.55, 2.40, u_finTaper);
+        float finProfile = pow(clamp(a_finLocal, 0.0, 1.0), finPower);
+        float finGap = u_finGap * finProfile * attachMask;
+        depth += u_finSideSign * finGap;
+      }
+
+      vec2 spinePosition = fishTurnV26Spine(sourceX);
+      vec2 pPlus = fishTurnV26Spine(clamp(sourceX + u_spineEpsilon, -1.0, 1.0));
+      vec2 pMinus = fishTurnV26Spine(clamp(sourceX - u_spineEpsilon, -1.0, 1.0));
+      vec2 tangent = normalize(pPlus - pMinus);
+      vec2 localNormal = vec2(-tangent.y, tangent.x);
+      vec2 surface = spinePosition + localNormal * depth;
+
+      float y = (0.5 - a_uv.y) * (2.0 / max(u_fishAspect, 0.0001));
+      vec3 position = vec3(surface.x, y, surface.y);
+
+      // Approved model order: Translation * RotationZ * RotationY * RotationX * Scale.
+      // In vertex-operation order that is scale, X rotation, Y rotation, Z rotation, translation.
+      position *= u_modelScale;
+
+      float cosX = cos(u_rotationX);
+      float sinX = sin(u_rotationX);
+      position = vec3(
+        position.x,
+        cosX * position.y - sinX * position.z,
+        sinX * position.y + cosX * position.z
+      );
+
+      float cosY = cos(u_rotationY);
+      float sinY = sin(u_rotationY);
+      position = vec3(
+        cosY * position.x + sinY * position.z,
+        position.y,
+        -sinY * position.x + cosY * position.z
+      );
+
+      float cosZ = cos(u_rotationZ);
+      float sinZ = sin(u_rotationZ);
+      position = vec3(
+        cosZ * position.x - sinZ * position.y,
+        sinZ * position.x + cosZ * position.y,
+        position.z
+      );
+
+      position += vec3(u_translationX, u_translationY, u_translationZ);
+
+      // Camera-safety normalization is projection-only: preserve the exact
+      // approved translation while restoring the endpoint sprite footprint
+      // after capping the internal 3D model scale for very long fish.
+      float projectionCompensation = max(u_projectionCompensation, 0.0001);
+      position.x = (position.x - u_translationX) / projectionCompensation + u_translationX;
+      position.y = (position.y - u_translationY) / projectionCompensation + u_translationY;
+      position.z += u_cameraZ;
+
+      float f = 1.0 / tan(u_fovRadians * 0.5);
+      float projectionAspect = max(u_fishAspect, 0.0001);
+      float clipX = position.x * f / projectionAspect / max(u_renderPaddingX, 1.0);
+      float clipY = position.y * f / max(u_renderPaddingY, 1.0);
+      float clipZ = ((u_far + u_near) / (u_near - u_far)) * position.z
+        + ((2.0 * u_far * u_near) / (u_near - u_far));
+      float clipW = -position.z;
+      gl_Position = vec4(clipX, clipY, clipZ, clipW);
+    }
+  `);
+  const fragmentShader = compileFishTurnV26Shader(gl, gl.FRAGMENT_SHADER, `
+    precision mediump float;
+    uniform sampler2D u_texture;
+    uniform float u_layerAlpha;
+    uniform float u_rgbMultiplier;
+    varying vec2 v_uv;
+    void main() {
+      vec4 c = texture2D(u_texture, v_uv);
+      float edgeFeather = smoothstep(0.02, 0.22, c.a);
+      if (edgeFeather < 0.01) discard;
+      float finalAlpha = c.a * u_layerAlpha * edgeFeather;
+      gl_FragColor = vec4(c.rgb * u_rgbMultiplier, finalAlpha);
+    }
+  `);
+  if (!vertexShader || !fragmentShader) return null;
+
+  const program = gl.createProgram();
+  if (!program) return null;
+  gl.attachShader(program, vertexShader);
+  gl.attachShader(program, fragmentShader);
+  gl.linkProgram(program);
+  gl.deleteShader(vertexShader);
+  gl.deleteShader(fragmentShader);
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    const message = gl.getProgramInfoLog(program) || "Unknown shader link error.";
+    gl.deleteProgram(program);
+    console.warn("Fish Turn v26 shader linking failed.", message);
+    return null;
+  }
+
+  const mesh = buildFishTurnV26MeshData();
+  const uvBuffer = gl.createBuffer();
+  const indexBuffer = gl.createBuffer();
+  if (!uvBuffer || !indexBuffer) return null;
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, mesh.uv, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+  gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
+
+  const uniformNames = [
+    "u_texture", "u_layer", "u_thickness", "u_edgeReach", "u_edgeClosure",
+    "u_edgeRoundness", "u_endThinning", "u_midBodyFullness", "u_crossSection", "u_faceThickness",
+    "u_finMode", "u_finGap", "u_finAttach", "u_finTaper", "u_finSideSign",
+    "u_fishAspect", "u_turnProgress", "u_sourceDirection", "u_turnDepthSign", "u_bodyFlex",
+    "u_tailFlex", "u_spineEpsilon", "u_bendScale", "u_bias", "u_waveScale", "u_waveSpeed",
+    "u_modelScale", "u_rotationX", "u_rotationY", "u_rotationZ",
+    "u_translationX", "u_translationY", "u_translationZ", "u_renderPaddingX", "u_renderPaddingY",
+    "u_projectionCompensation", "u_cameraZ", "u_fovRadians", "u_near", "u_far",
+    "u_layerAlpha", "u_rgbMultiplier"
+  ];
+  const uniforms = Object.fromEntries(
+    uniformNames.map((name) => [name, gl.getUniformLocation(program, name)])
+  );
+
+  const renderer = {
+    canvas,
+    gl,
+    program,
+    mesh,
+    uvBuffer,
+    indexBuffer,
+    bodyGpuBuffers: new Map(),
+    finGpuBuffers: new Map(),
+    bodyGpuTextures: new Map(),
+    finGpuTextures: new Map(),
+    uvLocation: gl.getAttribLocation(program, "a_uv"),
+    bodyDistanceLocation: gl.getAttribLocation(program, "a_bodyDist"),
+    bodyLocalLocation: gl.getAttribLocation(program, "a_bodyLocal"),
+    finLocalLocation: gl.getAttribLocation(program, "a_finLocal"),
+    uniforms,
+    failed: false
+  };
+
+  if (typeof canvas.addEventListener === "function") {
+    canvas.addEventListener("webglcontextlost", (event) => {
+      event?.preventDefault?.();
+      disposeFishTurnV26RendererState(renderer, true);
+    });
+    canvas.addEventListener("webglcontextrestored", () => {
+      if (runtime.fishTurnV26RendererState?.failed) {
+        runtime.fishTurnV26RendererState = null;
+      }
+    });
+  }
+
+  return renderer;
+}
+
+function getFishTurnV26RendererState() {
+  if (runtime.fishTurnV26RendererState?.failed) return null;
+  if (!runtime.fishTurnV26RendererState) {
+    const state = createFishTurnV26RendererState();
+    runtime.fishTurnV26RendererState = state || { failed: true };
+  }
+  return runtime.fishTurnV26RendererState?.failed
+    ? null
+    : runtime.fishTurnV26RendererState;
+}
+
+function disposeFishTurnV26RendererState(renderer = runtime?.fishTurnV26RendererState, markFailed = false) {
+  if (!renderer || !renderer.gl) return false;
+  const gl = renderer.gl;
+  for (const buffers of renderer.bodyGpuBuffers?.values?.() || []) {
+    gl.deleteBuffer?.(buffers?.distanceBuffer);
+    gl.deleteBuffer?.(buffers?.localBuffer);
+  }
+  for (const buffer of renderer.finGpuBuffers?.values?.() || []) {
+    gl.deleteBuffer?.(buffer);
+  }
+  for (const texture of renderer.bodyGpuTextures?.values?.() || []) {
+    gl.deleteTexture?.(texture);
+  }
+  for (const texture of renderer.finGpuTextures?.values?.() || []) {
+    gl.deleteTexture?.(texture);
+  }
+  renderer.bodyGpuBuffers?.clear?.();
+  renderer.finGpuBuffers?.clear?.();
+  renderer.bodyGpuTextures?.clear?.();
+  renderer.finGpuTextures?.clear?.();
+  gl.deleteBuffer?.(renderer.uvBuffer);
+  gl.deleteBuffer?.(renderer.indexBuffer);
+  gl.deleteProgram?.(renderer.program);
+  renderer.failed = Boolean(markFailed);
+  if (runtime.fishTurnV26RendererState === renderer) {
+    runtime.fishTurnV26RendererState = markFailed ? { failed: true } : null;
+  }
+  return true;
+}
+
+function getFishTurnV26GpuTexture(renderer, image, kind = "body") {
+  if (!renderer?.gl || !image) return null;
+  const cache = kind === "fin" ? renderer.finGpuTextures : renderer.bodyGpuTextures;
+  if (!(cache instanceof Map)) return null;
+  const width = Math.max(1, Math.round(Number(image.naturalWidth || image.width) || 1));
+  const height = Math.max(1, Math.round(Number(image.naturalHeight || image.height) || 1));
+  const cacheKey = `${getFishTurnV26ImageCacheIdentity(image)}|${width}x${height}`;
+  if (cache.has(cacheKey)) {
+    return cache.get(cacheKey);
+  }
+
+  const gl = renderer.gl;
+  const texture = gl.createTexture();
+  if (!texture) return null;
+  try {
+    gl.bindTexture(gl.TEXTURE_2D, texture);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    // Bubble Borough fish UVs use v=0 at the TOP of the source sprite.
+    // DOM image uploads already preserve that top-row-at-v=0 convention for this mesh,
+    // so flipping during upload turns the entire fish upside down the instant v26 takes over.
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    cache.set(cacheKey, texture);
+    return texture;
+  } catch (error) {
+    gl.deleteTexture?.(texture);
+    return null;
+  }
+}
+
+function getFishTurnV26ActiveTurnCount(now = Date.now()) {
+  const frameKey = Number(now) || 0;
+  if (runtime.fishTurnV26ActiveCountFrame === frameKey) {
+    return Number(runtime.fishTurnV26ActiveCount) || 0;
+  }
+  const fishList = typeof state !== "undefined" && Array.isArray(state?.fish) ? state.fish : [];
+  let count = 0;
+  for (const fish of fishList) {
+    if (!fish?.turnStartedAt || !(Number(fish.turnDurationMs) > 0)) continue;
+    const species = getSpeciesForFish(fish);
+    if (!species || getFishTurnRendererBackend(fish, species) !== "v26") continue;
+    const turnState = getFishHorizontalTurnState(fish, now);
+    if (turnState.active && turnState.reversing) count += 1;
+  }
+  runtime.fishTurnV26ActiveCountFrame = frameKey;
+  runtime.fishTurnV26ActiveCount = count;
+  return count;
+}
+
+function getFishTurnV26VolumeLayerCountForActiveTurns(activeTurnCount) {
+  const count = Math.max(0, Math.floor(Number(activeTurnCount) || 0));
+  if (count > FISH_TURN_V26_REDUCED_QUALITY_MAX_SIMULTANEOUS) {
+    return FISH_TURN_V26_STRESS_VOLUME_LAYERS;
+  }
+  if (count > FISH_TURN_V26_FULL_QUALITY_MAX_SIMULTANEOUS) {
+    return FISH_TURN_V26_REDUCED_VOLUME_LAYERS;
+  }
+  return FISH_TURN_V26_VOLUME_LAYERS;
+}
+
+function getFishTurnV26StressBudget(activeTurnCount, withFinOverlay = false) {
+  const volumeLayers = getFishTurnV26VolumeLayerCountForActiveTurns(activeTurnCount);
+  const trianglesPerPass = FISH_TURN_V26_MESH_COLUMNS * FISH_TURN_V26_MESH_ROWS * 2;
+  const passesPerFish = volumeLayers + (withFinOverlay ? 2 : 0);
+  return {
+    activeTurnCount: Math.max(0, Math.floor(Number(activeTurnCount) || 0)),
+    volumeLayers,
+    trianglesPerPass,
+    passesPerFish,
+    trianglesPerFrame: Math.max(0, Math.floor(Number(activeTurnCount) || 0)) * passesPerFish * trianglesPerPass
+  };
+}
+
+function getFishTurnV26BodyGpuBuffers(renderer, bodyShape) {
+  if (!renderer || !bodyShape) return null;
+  if (renderer.bodyGpuBuffers.has(bodyShape.cacheKey)) {
+    return renderer.bodyGpuBuffers.get(bodyShape.cacheKey);
+  }
+  const { gl } = renderer;
+  const distanceBuffer = gl.createBuffer();
+  const localBuffer = gl.createBuffer();
+  if (!distanceBuffer || !localBuffer) return null;
+  gl.bindBuffer(gl.ARRAY_BUFFER, distanceBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, bodyShape.bodyDistance, gl.STATIC_DRAW);
+  gl.bindBuffer(gl.ARRAY_BUFFER, localBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, bodyShape.bodyLocal, gl.STATIC_DRAW);
+  const buffers = { distanceBuffer, localBuffer };
+  renderer.bodyGpuBuffers.set(bodyShape.cacheKey, buffers);
+  return buffers;
+}
+
+function getFishTurnV26FinGpuBuffer(renderer, finShape) {
+  if (!renderer || !finShape) return null;
+  if (renderer.finGpuBuffers.has(finShape.cacheKey)) {
+    return renderer.finGpuBuffers.get(finShape.cacheKey);
+  }
+  const { gl } = renderer;
+  const localBuffer = gl.createBuffer();
+  if (!localBuffer) return null;
+  gl.bindBuffer(gl.ARRAY_BUFFER, localBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, finShape.finLocal, gl.STATIC_DRAW);
+  renderer.finGpuBuffers.set(finShape.cacheKey, localBuffer);
+  return localBuffer;
+}
+
+
+function getFishTurnV26FinRenderSides(turnYaw) {
+  const nearSide = Math.cos(Number(turnYaw) || 0) >= 0 ? 1 : -1;
+  return { nearSide, farSide: -nearSide };
+}
+
+function getFishTurnV26LayerCoordinates(layerCount = FISH_TURN_V26_VOLUME_LAYERS) {
+  const safeCount = Math.max(1, Math.floor(Number(layerCount) || 1));
+  if (safeCount === 1) return [0];
+  return Array.from({ length: safeCount }, (_, index) => (
+    (index / (safeCount - 1) - 0.5) * 2
+  ));
+}
+
+function getFishTurnV26BodyRenderPasses(turnYaw, layerCount = FISH_TURN_V26_VOLUME_LAYERS) {
+  const layers = getFishTurnV26LayerCoordinates(layerCount);
+  if (layers.length === 1) {
+    return [{ layer: 0, alpha: 1, shade: 1, depthWrite: true, outer: true }];
+  }
+  const nearSide = Math.cos(turnYaw) >= 0 ? 1 : -1;
+  const farSide = -nearSide;
+  const interiors = layers
+    .filter((layer) => Math.abs(layer) < 0.999)
+    .sort((a, b) => (a * nearSide) - (b * nearSide))
+    .map((layer) => ({
+      layer,
+      alpha: FISH_TURN_V26_INTERIOR_ALPHA,
+      shade: 0.74 + (0.90 - 0.74) * (1 - Math.abs(layer)),
+      depthWrite: false,
+      outer: false
+    }));
+  return [
+    { layer: farSide, alpha: 1, shade: 1, depthWrite: true, outer: true },
+    ...interiors,
+    { layer: nearSide, alpha: 1, shade: 1, depthWrite: true, outer: true }
+  ];
+}
+
+function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Date.now(), options = {}) {
+  if (
+    !textureImage || Number(textureImage.width) <= 0 || Number(textureImage.height) <= 0
+    || !shapeImage || Number(shapeImage.width) <= 0 || Number(shapeImage.height) <= 0
+  ) {
+    return null;
+  }
+  const renderer = getFishTurnV26RendererState();
+  if (!renderer) return null;
+  const bodyShape = preprocessFishTurnV26BodyShape(shapeImage, renderer.mesh);
+  if (!bodyShape) return null;
+  const bodyGpuBuffers = getFishTurnV26BodyGpuBuffers(renderer, bodyShape);
+  if (!bodyGpuBuffers) return null;
+
+  let finOverlay = null;
+  let finShape = null;
+  let finGpuBuffer = null;
+  if (options?.includeFinOverlay === true) {
+    finOverlay = getFishTurnV26LatchedFinOverlay(fish, shapeImage);
+    if (finOverlay) {
+      finShape = preprocessFishTurnV26FinShape(finOverlay.image, renderer.mesh);
+      finGpuBuffer = finShape ? getFishTurnV26FinGpuBuffer(renderer, finShape) : null;
+      if (!finShape || !finGpuBuffer) {
+        finOverlay = null;
+        finShape = null;
+        finGpuBuffer = null;
+      }
+    }
+  }
+
+  const { canvas, gl, program, mesh, uvBuffer, indexBuffer, uniforms } = renderer;
+  const bodyTexture = getFishTurnV26GpuTexture(renderer, textureImage, "body");
+  if (!bodyTexture) return null;
+  const finTexture = finOverlay ? getFishTurnV26GpuTexture(renderer, finOverlay.image, "fin") : null;
+  if (finOverlay && !finTexture) {
+    finOverlay = null;
+    finShape = null;
+    finGpuBuffer = null;
+  }
+  const sourceWidth = Math.max(1, Math.round(Number(textureImage.width) || 1));
+  const sourceHeight = Math.max(1, Math.round(Number(textureImage.height) || 1));
+  const renderScale = Math.min(
+    1,
+    FISH_TURN_V26_RENDER_MAX_DIM / Math.max(sourceWidth, sourceHeight)
+  );
+  const baseRenderWidth = Math.max(2, Math.round(sourceWidth * renderScale));
+  const baseRenderHeight = Math.max(2, Math.round(sourceHeight * renderScale));
+  const width = Math.max(1, Math.ceil(baseRenderWidth * FISH_TURN_V26_RENDER_PADDING_X));
+  const height = Math.max(1, Math.ceil(baseRenderHeight * FISH_TURN_V26_RENDER_PADDING_Y));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  try {
+    const turnState = getFishHorizontalTurnState(fish, now);
+    const turnProgress = clamp(Number(turnState.progress) || 0, 0, 1);
+    const sourceDirection = getFishTurnV26SourceDirection();
+    const turnStyle = getFishTurnV26Style(fish);
+    const turnDepthSign = getFishTurnV26DepthSign(fish);
+    const styleTransform = computeFishTurnV26StyleTransform(turnStyle, turnProgress, sourceDirection, turnDepthSign);
+    const fishAspect = Math.max(0.0001, Number(shapeImage.width) / Math.max(1, Number(shapeImage.height)));
+    const fovRadians = FISH_TURN_V26_FOV_DEGREES * Math.PI / 180;
+    const modelScaleState = getFishTurnV26ModelScale(fishAspect);
+    const modelScale = modelScaleState.modelScale;
+    const finSides = getFishTurnV26FinRenderSides(styleTransform.rotationY);
+
+    gl.viewport(0, 0, width, height);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+    gl.disable(gl.CULL_FACE);
+    gl.enable(gl.DEPTH_TEST);
+    gl.depthFunc(gl.LEQUAL);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clearDepth(1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.useProgram(program);
+
+    gl.bindBuffer(gl.ARRAY_BUFFER, uvBuffer);
+    gl.enableVertexAttribArray(renderer.uvLocation);
+    gl.vertexAttribPointer(renderer.uvLocation, 2, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bodyGpuBuffers.distanceBuffer);
+    gl.enableVertexAttribArray(renderer.bodyDistanceLocation);
+    gl.vertexAttribPointer(renderer.bodyDistanceLocation, 1, gl.FLOAT, false, 0, 0);
+    gl.bindBuffer(gl.ARRAY_BUFFER, bodyGpuBuffers.localBuffer);
+    gl.enableVertexAttribArray(renderer.bodyLocalLocation);
+    gl.vertexAttribPointer(renderer.bodyLocalLocation, 1, gl.FLOAT, false, 0, 0);
+    gl.disableVertexAttribArray(renderer.finLocalLocation);
+    gl.vertexAttrib1f(renderer.finLocalLocation, 0);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, bodyTexture);
+    gl.uniform1i(uniforms.u_texture, 0);
+    gl.uniform1f(uniforms.u_thickness, FISH_TURN_V26_THICKNESS / 450);
+    gl.uniform1f(uniforms.u_edgeReach, FISH_TURN_V26_EDGE_REACH);
+    gl.uniform1f(uniforms.u_edgeClosure, FISH_TURN_V26_EDGE_CLOSURE / 100);
+    gl.uniform1f(uniforms.u_edgeRoundness, FISH_TURN_V26_EDGE_ROUNDNESS / 100);
+    gl.uniform1f(uniforms.u_endThinning, FISH_TURN_V26_END_THINNING / 100);
+    gl.uniform1f(uniforms.u_midBodyFullness, FISH_TURN_V26_MID_BODY_FULLNESS / 100);
+    gl.uniform1f(uniforms.u_crossSection, FISH_TURN_V26_CROSS_SECTION / 100);
+    gl.uniform1f(uniforms.u_faceThickness, FISH_TURN_V26_FACE_HEAD_THICKNESS / 100);
+    const finSettings = getFishTurnV26FinSettings(fish, options?.species);
+    gl.uniform1f(uniforms.u_finGap, finSettings.distance / 450);
+    gl.uniform1f(uniforms.u_finAttach, finSettings.frontAttachmentDistance / 100);
+    gl.uniform1f(uniforms.u_finTaper, finSettings.taper / 100);
+    gl.uniform1f(uniforms.u_fishAspect, fishAspect);
+    gl.uniform1f(uniforms.u_turnProgress, turnProgress);
+    gl.uniform1f(uniforms.u_sourceDirection, sourceDirection);
+    gl.uniform1f(uniforms.u_turnDepthSign, turnDepthSign);
+    gl.uniform1f(uniforms.u_bodyFlex, FISH_TURN_V26_Z_AXIS_BODY_FLEX / 100);
+    gl.uniform1f(uniforms.u_tailFlex, FISH_TURN_V26_TAIL_FOLLOW_THROUGH / 100);
+    gl.uniform1f(uniforms.u_spineEpsilon, FISH_TURN_V26_SPINE_EPSILON);
+    gl.uniform1f(uniforms.u_bendScale, styleTransform.style.bendScale);
+    gl.uniform1f(uniforms.u_bias, styleTransform.style.bias);
+    gl.uniform1f(uniforms.u_waveScale, styleTransform.style.waveScale);
+    gl.uniform1f(uniforms.u_waveSpeed, styleTransform.style.waveSpeed);
+    gl.uniform1f(uniforms.u_modelScale, modelScale);
+    gl.uniform1f(uniforms.u_rotationX, styleTransform.rotationX);
+    gl.uniform1f(uniforms.u_rotationY, styleTransform.rotationY);
+    gl.uniform1f(uniforms.u_rotationZ, styleTransform.rotationZ);
+    gl.uniform1f(uniforms.u_translationX, styleTransform.translationX);
+    gl.uniform1f(uniforms.u_translationY, styleTransform.translationY);
+    gl.uniform1f(uniforms.u_translationZ, styleTransform.translationZ);
+    gl.uniform1f(uniforms.u_renderPaddingX, FISH_TURN_V26_RENDER_PADDING_X);
+    gl.uniform1f(uniforms.u_renderPaddingY, FISH_TURN_V26_RENDER_PADDING_Y);
+    gl.uniform1f(uniforms.u_projectionCompensation, modelScaleState.projectionCompensation);
+    gl.uniform1f(uniforms.u_cameraZ, FISH_TURN_V26_CAMERA_Z);
+    gl.uniform1f(uniforms.u_fovRadians, fovRadians);
+    gl.uniform1f(uniforms.u_near, FISH_TURN_V26_NEAR);
+    gl.uniform1f(uniforms.u_far, FISH_TURN_V26_FAR);
+
+    const drawFinPass = (sideSign) => {
+      if (!finOverlay || !finGpuBuffer) return;
+      gl.bindTexture(gl.TEXTURE_2D, finTexture);
+      gl.bindBuffer(gl.ARRAY_BUFFER, finGpuBuffer);
+      gl.enableVertexAttribArray(renderer.finLocalLocation);
+      gl.vertexAttribPointer(renderer.finLocalLocation, 1, gl.FLOAT, false, 0, 0);
+      gl.depthMask(true);
+      gl.uniform1f(uniforms.u_finMode, 1);
+      gl.uniform1f(uniforms.u_finSideSign, sideSign);
+      gl.uniform1f(uniforms.u_layer, sideSign);
+      gl.uniform1f(uniforms.u_layerAlpha, 1);
+      gl.uniform1f(uniforms.u_rgbMultiplier, 1);
+      gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_SHORT, 0);
+    };
+
+    // v26 draw order is deliberate: far fin, full body volume, near fin.
+    drawFinPass(finSides.farSide);
+
+    gl.bindTexture(gl.TEXTURE_2D, bodyTexture);
+    gl.uniform1f(uniforms.u_finMode, 0);
+    gl.uniform1f(uniforms.u_finSideSign, 0);
+    const volumeLayerCount = getFishTurnV26VolumeLayerCountForActiveTurns(
+      getFishTurnV26ActiveTurnCount(now)
+    );
+    for (const pass of getFishTurnV26BodyRenderPasses(styleTransform.rotationY, volumeLayerCount)) {
+      gl.depthMask(pass.depthWrite);
+      gl.uniform1f(uniforms.u_layer, pass.layer);
+      gl.uniform1f(uniforms.u_layerAlpha, pass.alpha);
+      gl.uniform1f(uniforms.u_rgbMultiplier, pass.shade);
+      gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_SHORT, 0);
+    }
+
+    drawFinPass(finSides.nearSide);
+    gl.disableVertexAttribArray(renderer.finLocalLocation);
+    gl.vertexAttrib1f(renderer.finLocalLocation, 0);
+    gl.uniform1f(uniforms.u_finMode, 0);
+    gl.depthMask(true);
+    gl.flush();
+    return canvas;
+  } catch (error) {
+    disposeFishTurnV26RendererState(renderer, true);
+    console.warn("Fish Turn v26 volume renderer failed; using the lightweight turn fallback.", error);
+    return null;
+  }
+}
+
+function drawFishTurnV26VolumeMesh(
+  context,
+  textureImage,
+  shapeImage,
+  drawX,
+  drawWidth,
+  drawHeight,
+  fish,
+  now = Date.now(),
+  options = {}
+) {
+  const volumeCanvas = renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now, options);
+  if (!volumeCanvas) {
+    return false;
+  }
+
+  const facingDirection = getFishFacingDirection(fish);
+  const paddedDrawWidth = drawWidth * FISH_TURN_V26_RENDER_PADDING_X;
+  const paddedDrawHeight = drawHeight * FISH_TURN_V26_RENDER_PADDING_Y;
+  const paddedDrawX = drawX - (paddedDrawWidth - drawWidth) / 2;
+  const paddedDrawY = -drawHeight / 2 - (paddedDrawHeight - drawHeight) / 2;
+  context.save();
+  const requestedAlpha = Number(options.alpha);
+  context.globalAlpha *= Number.isFinite(requestedAlpha) ? clamp(requestedAlpha, 0, 1) : 1;
+  context.scale(facingDirection, 1);
+  context.drawImage(volumeCanvas, paddedDrawX, paddedDrawY, paddedDrawWidth, paddedDrawHeight);
+  if (typeof options.onRenderedVolumeCanvas === "function") {
+    options.onRenderedVolumeCanvas({
+      canvas: volumeCanvas,
+      drawX: paddedDrawX,
+      drawY: paddedDrawY,
+      drawWidth: paddedDrawWidth,
+      drawHeight: paddedDrawHeight,
+      alpha: Number.isFinite(requestedAlpha) ? clamp(requestedAlpha, 0, 1) : 1
+    });
+  }
+  context.restore();
+  return true;
+}
+// </bundle-source>
+
 // <bundle-source path="rendering/fish-and-effects.js">
 function drawPoops(now, layer = null) {
   const targetLayer = Number.isFinite(Number(layer)) ? clampTankLayer(layer) : null;
@@ -101726,6 +106860,109 @@ function drawFishEggs(now, layer = null) {
   }
 }
 
+function getFishV26VisualUvLocalPoint(fish, species, pose, width, height, u, v, now = Date.now(), options = {}) {
+  if (!fish || !species || !pose || pose.isDead) return null;
+  if (typeof getFishTurnV26VisualAnchorLocalPoint !== "function") return null;
+  const imagePath = getFishDisplayAssetPath(fish, species, now) || species.asset;
+  const image = imagePath ? runtime.images.get(imagePath) : null;
+  if (!isUsableRuntimeImage(image)) return null;
+  const effectiveBehavior = getEffectiveFishBehavior(fish, species);
+  const suckerFreeSwimming = effectiveBehavior === "sucker"
+    ? isSuckerFishFreeSwimming(fish, species, now)
+    : false;
+  const useDepthSwimWarp = shouldUseFishSwimDepthWarp(fish, species, now, {
+    effectiveBehavior,
+    suckerFreeSwimming
+  });
+  const depthLayer = getFishTankLayer(fish);
+  const visualWiggle = (pose.wiggle || 0) * getTankDepthMovementMultiplier(depthLayer);
+  const drawX = -width / 2 + (useDepthSwimWarp ? 0 : visualWiggle * width * 0.018);
+  return getFishTurnV26VisualAnchorLocalPoint(
+    fish,
+    image,
+    drawX,
+    width,
+    height,
+    u,
+    v,
+    now,
+    { ...options, species }
+  );
+}
+
+function transformFishV26VisualLocalPointToWorld(fish, pose, localPoint) {
+  if (!fish || !pose || !localPoint) return null;
+  const depthLayer = getFishTankLayer(fish);
+  const visualSwayX = (pose.swayX || 0) * getTankDepthMovementMultiplier(depthLayer);
+  const bodyScaleX = Number.isFinite(Number(pose.bodyScaleX)) ? Number(pose.bodyScaleX) : 1;
+  const bodyScaleY = Number.isFinite(Number(pose.bodyScaleY)) ? Number(pose.bodyScaleY) : 1;
+  const tilt = Number(pose.tilt) || 0;
+  const scaledX = localPoint.x * bodyScaleX;
+  const scaledY = localPoint.y * bodyScaleY;
+  const cosTilt = Math.cos(tilt);
+  const sinTilt = Math.sin(tilt);
+  return {
+    ...localPoint,
+    x: pose.x + visualSwayX + cosTilt * scaledX - sinTilt * scaledY,
+    y: pose.y + sinTilt * scaledX + cosTilt * scaledY
+  };
+}
+
+function getFishV26VisualUvWorldFrame(fish, species, pose, width, height, u, v, now = Date.now(), options = {}) {
+  const anchorLocal = getFishV26VisualUvLocalPoint(fish, species, pose, width, height, u, v, now, options);
+  if (!anchorLocal) return null;
+  const anchorWorld = transformFishV26VisualLocalPointToWorld(fish, pose, anchorLocal);
+  if (!anchorWorld) return null;
+
+  const sourceDirection = typeof getFishTurnV26SourceDirection === "function"
+    ? getFishTurnV26SourceDirection()
+    : 1;
+  const verticalSampleV = clamp(Number(v) - 0.018, 0, 1);
+  const verticalLocal = getFishV26VisualUvLocalPoint(
+    fish,
+    species,
+    pose,
+    width,
+    height,
+    u,
+    verticalSampleV,
+    now,
+    options
+  );
+  const verticalWorld = verticalLocal
+    ? transformFishV26VisualLocalPointToWorld(fish, pose, verticalLocal)
+    : null;
+  const behindU = clamp(Number(u) - 0.03 * sourceDirection, 0, 1);
+  const behindLocal = getFishV26VisualUvLocalPoint(
+    fish,
+    species,
+    pose,
+    width,
+    height,
+    behindU,
+    v,
+    now,
+    options
+  );
+  const behindWorld = behindLocal
+    ? transformFishV26VisualLocalPointToWorld(fish, pose, behindLocal)
+    : null;
+
+  let rotation = Number(pose.tilt) || 0;
+  if (verticalWorld && Math.hypot(verticalWorld.x - anchorWorld.x, verticalWorld.y - anchorWorld.y) > 0.001) {
+    rotation = Math.atan2(verticalWorld.y - anchorWorld.y, verticalWorld.x - anchorWorld.x) + Math.PI / 2;
+  }
+  let direction = getFishFacingDirection(fish);
+  if (behindWorld && Math.abs(anchorWorld.x - behindWorld.x) > 0.001) {
+    direction = anchorWorld.x >= behindWorld.x ? 1 : -1;
+  }
+  return {
+    ...anchorWorld,
+    rotation,
+    direction
+  };
+}
+
 function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   const action = getFishGravelPebbleAction(fish);
   if (!action || action.stage !== "carry") {
@@ -101741,7 +106978,23 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   const size = (Number.isFinite(action.holdSizePx) ? action.holdSizePx : FISH_GRAVEL_PEBBLE_HOLD_SIZE_MIN_PX) * getViewportStableAssetScale();
   const drawWidth = aspect >= 1 ? size : size * aspect;
   const drawHeight = aspect >= 1 ? size / aspect : size;
-  const mouth = getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
+  const fishAsset = getFishDisplayAssetPath(fish, species, now) || species?.asset;
+  const fishMask = fishAsset ? getImageAlphaMask(fishAsset) : null;
+  const mouthAnchor = getFishGravelPebbleFrontAnchor(fishMask);
+  const v26Mouth = mouthAnchor
+    ? getFishV26VisualUvLocalPoint(
+      fish,
+      species,
+      pose,
+      width,
+      height,
+      mouthAnchor.u,
+      mouthAnchor.v,
+      now,
+      { surface: "near" }
+    )
+    : null;
+  const mouth = v26Mouth || getFishGravelPebbleMouthLocalPoint(fish, species, width, height, pose, now);
   if (!mouth) {
     return;
   }
@@ -101759,10 +107012,26 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
 }
 
 function isFishInCaveRenderSublayer(fish) {
-  return Boolean(
+  const activeCaveTravel = Boolean(
     fish?.caveDecorId
     && ["enter", "inside", "exit", "depart"].includes(fish.caveState)
   );
+  if (!activeCaveTravel) {
+    if (fish?.id) runtime.caveRenderOcclusionByFishId?.delete?.(fish.id);
+    return false;
+  }
+
+  const frontZ = getFishCaveDepthRegion(fish, "front");
+  const interiorZ = getFishCaveDepthRegion(fish, "interior");
+  const threshold = (frontZ + interiorZ) / 2;
+  const hysteresis = 0.012;
+  const previous = runtime.caveRenderOcclusionByFishId?.get?.(fish.id) === true;
+  const z = getFishTankDepthZ(fish);
+  const isInside = previous
+    ? z <= threshold + hysteresis
+    : z <= threshold - hysteresis;
+  runtime.caveRenderOcclusionByFishId?.set?.(fish.id, isInside);
+  return isInside;
 }
 
 function getFishSameLayerRenderPriority(fish) {
@@ -101818,7 +107087,7 @@ function fitDebugFishBehaviorLine(text, maxWidth) {
   return `${value.slice(0, Math.max(1, end))}${suffix}`;
 }
 
-function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
+function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now(), context = tankContext) {
   if (!isDebugModeEnabled()) {
     return;
   }
@@ -101834,16 +107103,16 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   const paddingY = 5 * stableScale;
   const maxTextWidth = 220 * stableScale;
 
-  tankContext.save();
-  tankContext.font = `700 ${fontSize}px Trebuchet MS, sans-serif`;
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
+  context.save();
+  context.font = `700 ${fontSize}px Trebuchet MS, sans-serif`;
+  context.textAlign = "center";
+  context.textBaseline = "middle";
 
   const lines = snapshot.labelLines
     .filter((line) => String(line || "").trim())
     .slice(0, 5)
     .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
-  const textWidth = Math.max(...lines.map((line) => tankContext.measureText(line).width), 1);
+  const textWidth = Math.max(...lines.map((line) => context.measureText(line).width), 1);
   const labelWidth = Math.ceil(textWidth + paddingX * 2);
   const labelHeight = Math.ceil(lines.length * lineHeight + paddingY * 2);
   const centerX = clamp(
@@ -101856,25 +107125,64 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   const left = centerX - labelWidth / 2;
   const top = centerY - labelHeight / 2;
 
-  tankContext.fillStyle = "rgba(4, 16, 24, 0.78)";
-  tankContext.strokeStyle = "rgba(255, 220, 92, 0.72)";
-  tankContext.lineWidth = Math.max(1, stableScale);
-  tankContext.beginPath();
-  tankContext.roundRect(left, top, labelWidth, labelHeight, 7 * stableScale);
-  tankContext.fill();
-  tankContext.stroke();
+  context.fillStyle = "rgba(4, 16, 24, 0.78)";
+  context.strokeStyle = "rgba(255, 220, 92, 0.72)";
+  context.lineWidth = Math.max(1, stableScale);
+  context.beginPath();
+  context.roundRect(left, top, labelWidth, labelHeight, 7 * stableScale);
+  context.fill();
+  context.stroke();
 
   lines.forEach((line, index) => {
-    tankContext.fillStyle = index === 0
+    context.fillStyle = index === 0
       ? "rgba(255, 235, 150, 0.98)"
       : "rgba(232, 250, 255, 0.94)";
-    tankContext.fillText(
+    context.fillText(
       line,
       centerX,
       top + paddingY + lineHeight * index + lineHeight / 2
     );
   });
-  tankContext.restore();
+  const depthSpan = Math.max(0.0001, TANK_DEPTH_FRONT_USABLE_Z - TANK_DEPTH_REAR_USABLE_Z);
+  const depthVolume = getTankDepthVolume(getFishTankDepthZ(fish), getFishTankDepthRadius(fish));
+  const barWidth = Math.min(labelWidth - paddingX * 2, 72 * stableScale);
+  const barY = top + labelHeight - Math.max(4, paddingY * 0.55);
+  const toBarX = (z) => left + paddingX + ((sanitizeTankDepthZ(z) - TANK_DEPTH_REAR_USABLE_Z) / depthSpan) * barWidth;
+  context.strokeStyle = "rgba(143, 230, 255, 0.7)";
+  context.lineWidth = Math.max(1, stableScale);
+  context.beginPath();
+  context.moveTo(left + paddingX, barY);
+  context.lineTo(left + paddingX + barWidth, barY);
+  context.stroke();
+  context.strokeStyle = "rgba(255, 210, 93, 0.96)";
+  context.lineWidth = Math.max(2, stableScale * 2);
+  context.beginPath();
+  context.moveTo(toBarX(depthVolume.min), barY);
+  context.lineTo(toBarX(depthVolume.max), barY);
+  context.stroke();
+  context.fillStyle = "rgba(255, 245, 174, 1)";
+  context.beginPath();
+  context.arc(toBarX(getFishTankDepthZ(fish)), barY, Math.max(2, stableScale * 1.8), 0, Math.PI * 2);
+  context.fill();
+  context.restore();
+}
+
+function queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
+  if (!isDebugModeEnabled() || !fish?.id) return;
+  runtime.fishStatsOverlayQueue ||= new Map();
+  runtime.fishStatsOverlayQueue.set(fish.id, { fish, species, pose, width, height, topFrameBottomY, stableScale, now });
+}
+
+function drawQueuedFishStatsOverlays() {
+  const queue = runtime.fishStatsOverlayQueue;
+  if (!(queue instanceof Map) || !queue.size) return;
+  for (const entry of queue.values()) {
+    drawDebugFishBehaviorBroadcast(
+      entry.fish, entry.species, entry.pose, entry.width, entry.height,
+      entry.topFrameBottomY, entry.stableScale, entry.now, glassContext
+    );
+  }
+  queue.clear();
 }
 
 function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
@@ -102528,6 +107836,10 @@ function drawFishTopLightOverlay(context, image, fishDrawX, height, width, poseY
 }
 
 function compareFishRenderRecords(left, right) {
+  const depthDelta = left.depthZ - right.depthZ;
+  if (depthDelta) {
+    return depthDelta;
+  }
   const subLayerDelta = right.subLayer - left.subLayer;
   if (subLayerDelta) {
     return subLayerDelta;
@@ -102653,6 +107965,7 @@ function prepareFishRenderFrameCache(now = Date.now()) {
     record.priority = getFishSameLayerRenderPriority(fish);
     record.subLayer = getFishTankSubLayer(fish);
     record.depthIndex = getFishTankDepthIndex(fish);
+    record.depthZ = getFishTankDepthZ(fish);
     record.yNorm = Number(fish.yNorm) || 0;
     buckets[layer].push(record);
     recordIndex += 1;
@@ -102723,1212 +108036,41 @@ function prepareFishRenderFrameCache(now = Date.now()) {
 }
 
 
-function getFishTurnRigCanvas(image, mirrored = false) {
-  if (!isUsableRuntimeImage(image)) {
-    return null;
-  }
+// Phase 15 retired the segmented complex-turn renderer. Complex horizontal
+// reversals are rendered by v26, with the lightweight sprite turn retained as
+// the only emergency fallback when WebGL is unavailable.
 
-  let entry = fishTurnRigCanvasCache.get(image);
-
-  if (
-    !entry
-    || entry.width !== image.width
-    || entry.height !== image.height
-  ) {
-    const original = document.createElement("canvas");
-    original.width = image.width;
-    original.height = image.height;
-
-    const originalContext = original.getContext("2d");
-    originalContext.clearRect(
-      0,
-      0,
-      original.width,
-      original.height
-    );
-    originalContext.drawImage(image, 0, 0);
-
-    const flipped = document.createElement("canvas");
-    flipped.width = image.width;
-    flipped.height = image.height;
-
-    const flippedContext = flipped.getContext("2d");
-    flippedContext.clearRect(
-      0,
-      0,
-      flipped.width,
-      flipped.height
-    );
-
-    flippedContext.translate(
-      flipped.width,
-      0
-    );
-
-    flippedContext.scale(
-      -1,
-      1
-    );
-
-    flippedContext.drawImage(
-      image,
-      0,
-      0
-    );
-
-    entry = {
-      width: image.width,
-      height: image.height,
-      original,
-      mirrored: flipped,
-      sliceWidth:
-        image.width
-        / FISH_TURN_RIG_SEGMENTS
-    };
-
-    fishTurnRigCanvasCache.set(
-      image,
-      entry
-    );
-  }
-
-  return mirrored
-    ? entry.mirrored
-    : entry.original;
-}
-
-function shouldUseFishTurnRigForSprite(
-  fish,
-  species,
-  effectiveBehavior,
-  pose,
-  suckerFreeSwimming,
-  suckerViewTransition
-) {
-  if (
-    !fish
-    || !species
-    || !pose
-    || pose.isDead
-  ) {
-    return false;
-  }
-
-  if (suckerViewTransition) {
-    return false;
-  }
-
-  if (
-    effectiveBehavior === "sucker"
-    && !suckerFreeSwimming
-  ) {
-    return false;
-  }
-
-  if (
-    !fish.turnStartedAt
-    || Number(fish.turnDurationMs) <= 0
-    || getFishTurnAnimationMode(fish, species) !== "complex"
-  ) {
-    return false;
-  }
-
-  const fromDirection =
-    Number(fish.turnFromDirection) < 0
-      ? -1
-      : 1;
-
-  const toDirection =
-    Number(fish.turnToDirection) < 0
-      ? -1
-      : 1;
-
-  return fromDirection !== toDirection;
-}
-
-function getFishTurnRigProgress(
-  fish,
-  now
-) {
-  if (
-    !fish?.turnStartedAt
-    || Number(fish.turnDurationMs) <= 0
-  ) {
-    return null;
-  }
-
-  const normalized =
-    clamp(
-      (
-        now
-        - Number(fish.turnStartedAt)
-      )
-      / Math.max(
-        1,
-        Number(fish.turnDurationMs)
-      ),
-      0,
-      1
-    );
-
-  return (
-    normalized
-    * FISH_TURN_RIG_INTERNAL_TIMELINE_MAX
-  );
-}
-
-function getFishTurnRigState(
-  fish,
-  now
-) {
-  const progress =
-    getFishTurnRigProgress(
-      fish,
-      now
-    );
-
-  if (progress === null) {
-    return null;
-  }
-
+function getFishLightweightTurnFallbackVisualState(fish, now = Date.now()) {
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active || !turnState.reversing) return null;
+  const progress = clamp(Number(turnState.progress) || 0, 0, 1);
+  const turnAmount = Math.sin(progress * Math.PI);
   return {
     progress,
-
-    fromDirection:
-      Number(fish.turnFromDirection) < 0
-        ? -1
-        : 1,
-
-    toDirection:
-      Number(fish.turnToDirection) < 0
-        ? -1
-        : 1
+    direction: progress < 0.5 ? turnState.fromDirection : turnState.toDirection,
+    scaleX: 1 - turnAmount * (1 - FISH_TURN_MIN_SCALE_X),
+    scaleY: 1 + turnAmount * (FISH_TURN_MAX_SCALE_Y - 1)
   };
 }
 
-function getFishTurnRigPhaseProgress(
-  timelineProgress,
-  start,
-  duration
-) {
-  const raw =
-    clamp(
-      (
-        timelineProgress
-        - start
-      )
-      / Math.max(
-        0.0001,
-        duration
-      ),
-      0,
-      1
-    );
-
-  return (
-    raw
-    * raw
-    * (
-      3
-      - 2 * raw
-    )
-  );
-}
-function getFishTurnRigCollapseProgress(
-  turnProgress,
-  originalIndex
-) {
-  let start =
-    (
-      11
-      - originalIndex
-    )
-    * FISH_TURN_RIG_COLLAPSE_STEP
-    * FISH_TURN_RIG_FOLLOWER_LAG;
-
-  if (originalIndex <= 5) {
-    start +=
-      FISH_TURN_RIG_TAIL_START_DELAY;
-  }
-
-  return getFishTurnRigPhaseProgress(
-    turnProgress,
-    start,
-    FISH_TURN_RIG_COLLAPSE_DURATION
-  );
-}
-
-function getFishTurnRigRebuildProgress(
-  turnProgress,
-  originalIndex
-) {
-  const start =
-    FISH_TURN_RIG_REBUILD_OVERLAP
-    + (
-      11
-      - originalIndex
-    )
-    * FISH_TURN_RIG_REBUILD_STEP;
-
-  return getFishTurnRigPhaseProgress(
-    turnProgress,
-    start,
-    FISH_TURN_RIG_REBUILD_DURATION
-  );
-}
-
-function buildFishTurnRigOriginalBody(
-  turnProgress
-) {
-  const segments = [];
-
-  for (
-    let index = 0;
-    index < FISH_TURN_RIG_SEGMENTS;
-    index += 1
-  ) {
-    const progress =
-      getFishTurnRigCollapseProgress(
-        turnProgress,
-        index
-      );
-
-    segments.push({
-      widthScale:
-        1
-        - progress,
-
-      sizeScale:
-        index >= 6
-          ? (
-            1
-            - FISH_TURN_RIG_FRONT_SHRINK
-            * progress
-          )
-          : (
-            1
-            + FISH_TURN_RIG_TAIL_SWELL
-            * progress
-          )
-    });
-  }
-
-  return segments;
-}
-
-function buildFishTurnRigEmergingHead(
-  turnProgress
-) {
-  const segments = [];
-
-  const order = [
-    6,
-    7,
-    8,
-    9,
-    10,
-    11
-  ];
-
-  for (
-    const originalIndex
-    of order
-  ) {
-    const start =
-      FISH_TURN_RIG_REBUILD_OVERLAP
-      + (
-        11
-        - originalIndex
-      )
-      * FISH_TURN_RIG_REBUILD_STEP
-      * FISH_TURN_RIG_HEAD_STAGGER;
-
-    const progress =
-      getFishTurnRigPhaseProgress(
-        turnProgress,
-        start,
-        FISH_TURN_RIG_REBUILD_DURATION
-      );
-
-    segments.push({
-      widthScale:
-        progress,
-
-      sizeScale:
-        1
-        + FISH_TURN_RIG_FRONT_SHRINK
-        * (
-          1
-          - progress
-        )
-        * 0.9,
-
-      progress
-    });
-  }
-
-  return segments;
-}
-
-function buildFishTurnRigEmergingTail(
-  turnProgress
-) {
-  const segments = [];
-
-  const order = [
-    5,
-    4,
-    3,
-    2,
-    1,
-    0
-  ];
-
-  for (
-    const originalIndex
-    of order
-  ) {
-    const progress =
-      getFishTurnRigRebuildProgress(
-        turnProgress,
-        originalIndex
-      );
-
-    segments.push({
-      widthScale:
-        progress,
-
-      sizeScale:
-        (
-          1
-          + FISH_TURN_RIG_TAIL_SWELL
-        )
-        - FISH_TURN_RIG_TAIL_SWELL
-        * progress,
-
-      progress
-    });
-  }
-
-  return segments;
-}
-
-function withFishTurnRigBodyScales(
-  segments
-) {
-  const boundaries = [
-    segments[0]?.sizeScale
-    || 1
-  ];
-
-  for (
-    let index = 1;
-    index < segments.length;
-    index += 1
-  ) {
-    boundaries[index] =
-      (
-        segments[
-          index - 1
-        ].sizeScale
-        + segments[
-          index
-        ].sizeScale
-      )
-      * 0.5;
-  }
-
-  boundaries[
-    segments.length
-  ] =
-    segments[
-      segments.length - 1
-    ]?.sizeScale
-    || 1;
-
-  return segments.map(
-    (
-      segment,
-      index
-    ) => ({
-      ...segment,
-
-      leftScale:
-        boundaries[index],
-
-      rightScale:
-        boundaries[
-          index + 1
-        ]
-    })
-  );
-}
-
-function withFishTurnRigChainScales(
-  segments,
-  centerScale = 1
-) {
-  const boundaries =
-    new Array(
-      segments.length + 1
-    );
-
-  boundaries[0] =
-    centerScale;
-
-  for (
-    let index = 1;
-    index < segments.length;
-    index += 1
-  ) {
-    boundaries[index] =
-      (
-        segments[
-          index - 1
-        ].sizeScale
-        + segments[
-          index
-        ].sizeScale
-      )
-      * 0.5;
-  }
-
-  boundaries[
-    segments.length
-  ] =
-    segments[
-      segments.length - 1
-    ]?.sizeScale
-    || centerScale;
-
-  return segments.map(
-    (
-      segment,
-      index
-    ) => ({
-      ...segment,
-
-      innerScale:
-        boundaries[index],
-
-      outerScale:
-        boundaries[
-          index + 1
-        ]
-    })
-  );
-}
-
-function measureFishTurnRigOriginalLayout(
-  segments,
-  centerX,
-  targetWidth
-) {
-  const welded =
-    withFishTurnRigBodyScales(
-      segments
-    );
-
-  const widths =
-    welded.map(
-      (segment) =>
-        (
-          targetWidth
-          / FISH_TURN_RIG_SEGMENTS
-        )
-        * segment.widthScale
-    );
-
-  const totalWidth =
-    widths.reduce(
-      (
-        sum,
-        width
-      ) =>
-        sum
-        + width,
-      0
-    );
-
-  const x0 =
-    centerX
-    - totalWidth / 2;
-
-  let seamX =
-    x0;
-
-  for (
-    let index = 0;
-    index < 6;
-    index += 1
-  ) {
-    seamX +=
-      widths[index];
-  }
-
-  return {
-    welded,
-    widths,
-    totalWidth,
-    x0,
-    seamX
-  };
-}
-
-function drawFishTurnRigTextureSegment(
-  context,
-  fullSource,
-  srcX0,
-  srcX1,
-  x0,
-  x1,
-  centerY,
-  targetHeight,
-  leftScale,
-  rightScale,
-  renderOptions = {}
-) {
-  if (!fullSource) {
-    return;
-  }
-
-  const paddedSrcX0 =
-    Math.max(
-      0,
-      srcX0
-      - FISH_TURN_RIG_EDGE_SOFTEN_SRC
-    );
-
-  const paddedSrcX1 =
-    Math.min(
-      fullSource.width,
-      srcX1
-      + FISH_TURN_RIG_EDGE_SOFTEN_SRC
-    );
-
-  const paddedDestX0 =
-    x0
-    - FISH_TURN_RIG_EDGE_SOFTEN_DEST;
-
-  const paddedDestX1 =
-    x1
-    + FISH_TURN_RIG_EDGE_SOFTEN_DEST;
-
-  const destWidth =
-    paddedDestX1
-    - paddedDestX0;
-
-  const srcWidth =
-    paddedSrcX1
-    - paddedSrcX0;
-
-  if (
-    Math.abs(destWidth) <= 0.001
-    || Math.abs(srcWidth) <= 0.001
-  ) {
-    return;
-  }
-
-  const minimumColumns = Math.max(1, Math.floor(Number(renderOptions.minimumColumns) || 4));
-  const maximumColumns = Math.max(
-    minimumColumns,
-    Math.floor(Number(renderOptions.maximumColumns) || FISH_TURN_RIG_VISIBLE_MAX_COLUMNS)
-  );
-  const columnDensity = Math.max(
-    0.01,
-    Number(renderOptions.columnDensity) || FISH_TURN_RIG_VISIBLE_COLUMN_DENSITY
-  );
-  const steps = clamp(
-    Math.ceil(Math.abs(destWidth) * columnDensity),
-    minimumColumns,
-    maximumColumns
-  );
-
-  for (
-    let column = 0;
-    column < steps;
-    column += 1
-  ) {
-    const u0 =
-      column
-      / steps;
-
-    const u1 =
-      (
-        column + 1
-      )
-      / steps;
-
-    const umRaw =
-      (
-        u0
-        + u1
-      )
-      * 0.5;
-
-    const um =
-      umRaw
-      * umRaw
-      * (
-        3
-        - 2 * umRaw
-      );
-
-    const sx0 =
-      paddedSrcX0
-      + srcWidth
-      * u0;
-
-    const sx1 =
-      paddedSrcX0
-      + srcWidth
-      * u1;
-
-    const dx0 =
-      paddedDestX0
-      + destWidth
-      * u0;
-
-    const dx1 =
-      paddedDestX0
-      + destWidth
-      * u1;
-
-    const scale =
-      leftScale
-      + (
-        rightScale
-        - leftScale
-      )
-      * um;
-
-    const drawHeight =
-      targetHeight
-      * scale;
-
-    const drawY =
-      centerY
-      - drawHeight / 2;
-
-    const sx =
-      Math.min(
-        sx0,
-        sx1
-      );
-
-    const sw =
-      Math.max(
-        0.85,
-        Math.abs(
-          sx1
-          - sx0
-        )
-        + 0.9
-      );
-
-    const dx =
-      Math.min(
-        dx0,
-        dx1
-      )
-      - FISH_TURN_RIG_CONTINUOUS_OVERLAP
-      * 0.5;
-
-    const dw =
-      Math.abs(
-        dx1
-        - dx0
-      )
-      + FISH_TURN_RIG_CONTINUOUS_OVERLAP;
-
-    context.drawImage(
-      fullSource,
-      sx,
-      0,
-      sw,
-      fullSource.height,
-      dx,
-      drawY,
-      dw,
-      drawHeight
-    );
-  }
-}
-
-function drawFishTurnRigOriginal(
-  context,
-  fullSource,
-  layout,
-  centerY,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  let x =
-    layout.x0;
-
-  for (
-    let index = 0;
-    index < FISH_TURN_RIG_SEGMENTS;
-    index += 1
-  ) {
-    const segment =
-      layout.welded[index];
-
-    const drawWidth =
-      layout.widths[index];
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const srcX0 =
-      index
-      * sliceWidth;
-
-    const srcX1 =
-      (
-        index + 1
-      )
-      * sliceWidth;
-
-    drawFishTurnRigTextureSegment(
-      context,
-      fullSource,
-      srcX0,
-      srcX1,
-      x,
-      x + drawWidth,
-      centerY,
-      targetHeight,
-      segment.leftScale,
-      segment.rightScale,
-      renderOptions
-    );
-
-    x +=
-      drawWidth;
-  }
-}
-
-function drawFishTurnRigLeftChain(
-  context,
-  mirroredSource,
-  chain,
-  seamX,
-  centerY,
-  slotWidth,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  const welded =
-    withFishTurnRigChainScales(
-      chain,
-      FISH_TURN_RIG_CENTER_SEAM_SCALE
-    );
-
-  let innerX =
-    seamX;
-
-  const handoff =
-    0.46;
-
-  for (
-    let chainIndex = 0;
-    chainIndex < welded.length;
-    chainIndex += 1
-  ) {
-    const segment =
-      welded[
-        chainIndex
-      ];
-
-    const drawWidth =
-      slotWidth
-      * segment.widthScale;
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const pullEase =
-      1
-      - Math.pow(
-        clamp(
-          segment.progress,
-          0,
-          1
-        ),
-        FISH_TURN_RIG_RELEASE_CURVE
-      );
-
-    const packedFactor =
-      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
-        ? (
-          1
-          + FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        )
-        : (
-          1
-          - FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        );
-
-    const pulledWidth =
-      drawWidth
-      * packedFactor;
-
-    const outerX =
-      innerX
-      - pulledWidth;
-
-    const sourceSlot =
-      5
-      - chainIndex;
-
-    const slotLeft =
-      sourceSlot
-      * sliceWidth;
-
-    const slotRight =
-      (
-        sourceSlot + 1
-      )
-      * sliceWidth;
-
-    let srcX0 =
-      slotLeft;
-
-    let srcX1 =
-      slotRight;
-
-    if (
-      segment.progress
-      < handoff
-    ) {
-      const reveal =
-        clamp(
-          segment.progress
-          / handoff
-        );
-
-      srcX0 =
-        slotRight
-        - sliceWidth
-        * reveal;
-    }
-
-    drawFishTurnRigTextureSegment(
-      context,
-      mirroredSource,
-      srcX0,
-      srcX1,
-      outerX,
-      innerX,
-      centerY,
-      targetHeight,
-      segment.outerScale,
-      segment.innerScale,
-      renderOptions
-    );
-
-    innerX =
-      outerX;
-  }
-}
-
-function drawFishTurnRigRightChain(
-  context,
-  mirroredSource,
-  chain,
-  seamX,
-  centerY,
-  slotWidth,
-  targetHeight,
-  sliceWidth,
-  renderOptions = {}
-) {
-  const welded =
-    withFishTurnRigChainScales(
-      chain,
-      FISH_TURN_RIG_CENTER_SEAM_SCALE
-    );
-
-  let innerX =
-    seamX;
-
-  const handoff =
-    0.48;
-
-  for (
-    let chainIndex = 0;
-    chainIndex < welded.length;
-    chainIndex += 1
-  ) {
-    const segment =
-      welded[
-        chainIndex
-      ];
-
-    const drawWidth =
-      slotWidth
-      * segment.widthScale;
-
-    if (
-      drawWidth <= 0.001
-    ) {
-      continue;
-    }
-
-    const pullEase =
-      1
-      - Math.pow(
-        clamp(
-          segment.progress,
-          0,
-          1
-        ),
-        FISH_TURN_RIG_RELEASE_CURVE
-      );
-
-    const packedFactor =
-      FISH_TURN_RIG_REVERSE_EMERGENCE_PULL
-        ? (
-          1
-          + FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        )
-        : (
-          1
-          - FISH_TURN_RIG_EXIT_PULL
-          * pullEase
-        );
-
-    const advanceWidth =
-      drawWidth
-      * packedFactor;
-
-    const outerX =
-      innerX
-      + drawWidth;
-
-    const sourceSlot =
-      6
-      + chainIndex;
-
-    const slotLeft =
-      sourceSlot
-      * sliceWidth;
-
-    const slotRight =
-      (
-        sourceSlot + 1
-      )
-      * sliceWidth;
-
-    let srcX0 =
-      slotLeft;
-
-    let srcX1 =
-      slotRight;
-
-    if (
-      segment.progress
-      < handoff
-    ) {
-      const reveal =
-        clamp(
-          segment.progress
-          / handoff
-        );
-
-      srcX1 =
-        slotLeft
-        + sliceWidth
-        * reveal;
-    }
-
-    drawFishTurnRigTextureSegment(
-      context,
-      mirroredSource,
-      srcX0,
-      srcX1,
-      innerX,
-      outerX,
-      centerY,
-      targetHeight,
-      segment.innerScale,
-      segment.outerScale,
-      renderOptions
-    );
-
-    innerX +=
-      advanceWidth;
-  }
-}
-
-function drawFishTurnaroundRig(
-  context,
-  image,
-  drawX,
-  drawWidth,
-  drawHeight,
-  fish,
-  now,
-  renderOptions = {}
-) {
-  const turnState =
-    getFishTurnRigState(
-      fish,
-      now
-    );
-
-  if (!turnState) {
-    context.drawImage(
-      image,
-      drawX,
-      -drawHeight / 2,
-      drawWidth,
-      drawHeight
-    );
-
+function drawFishLightweightTurnFallbackFrame(context, image, drawX, drawWidth, drawHeight, fish, now = Date.now()) {
+  if (!context || !image) return false;
+  const visual = getFishLightweightTurnFallbackVisualState(fish, now);
+  if (!visual) {
+    context.drawImage(image, drawX, -drawHeight / 2, drawWidth, drawHeight);
     return false;
   }
-
-  const originalSource =
-    getFishTurnRigCanvas(
-      image,
-      false
-    );
-
-  const mirroredSource =
-    getFishTurnRigCanvas(
-      image,
-      true
-    );
-
-  if (
-    !originalSource
-    || !mirroredSource
-  ) {
-    context.drawImage(
-      image,
-      drawX,
-      -drawHeight / 2,
-      drawWidth,
-      drawHeight
-    );
-
-    return false;
-  }
-
-  const centerX =
-    drawX
-    + drawWidth / 2;
-
-  const centerY =
-    0;
-
-  const slotWidth =
-    drawWidth
-    / FISH_TURN_RIG_SEGMENTS;
-
-  const sourceSliceWidth =
-    originalSource.width
-    / FISH_TURN_RIG_SEGMENTS;
-
-  const originalBody =
-    buildFishTurnRigOriginalBody(
-      turnState.progress
-    );
-
-  const emergingHead =
-    buildFishTurnRigEmergingHead(
-      turnState.progress
-    );
-
-  const emergingTail =
-    buildFishTurnRigEmergingTail(
-      turnState.progress
-    );
-
-  const originalLayout =
-    measureFishTurnRigOriginalLayout(
-      originalBody,
-      centerX,
-      drawWidth
-    );
-
-  const seamX =
-    originalLayout.seamX;
-
+  const centerX = drawX + drawWidth / 2;
   context.save();
-
-  if (
-    turnState.fromDirection < 0
-  ) {
-    context.translate(
-      centerX,
-      0
-    );
-
-    context.scale(
-      -1,
-      1
-    );
-
-    context.translate(
-      -centerX,
-      0
-    );
+  context.translate(centerX, 0);
+  context.scale(visual.direction * visual.scaleX, visual.scaleY);
+  context.drawImage(image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+  if (typeof markLightweightCausticImage === "function") {
+    markLightweightCausticImage(context, image, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
   }
-
-  drawFishTurnRigLeftChain(
-    context,
-    mirroredSource,
-    emergingHead,
-    seamX,
-    centerY,
-    slotWidth,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
-  drawFishTurnRigOriginal(
-    context,
-    originalSource,
-    originalLayout,
-    centerY,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
-  drawFishTurnRigRightChain(
-    context,
-    mirroredSource,
-    emergingTail,
-    seamX,
-    centerY,
-    slotWidth,
-    drawHeight,
-    sourceSliceWidth,
-    renderOptions
-  );
-
   context.restore();
-
   return true;
 }
-
-
 
 function getDeadFishEyeAnchorFromMask(mask) {
   if (!mask?.alpha?.length || !mask.width || !mask.height) {
@@ -104267,14 +108409,21 @@ function drawFish(now, layer = null, options = {}) {
       suckerFacePivotX, suckerFacePivotY
     } = prepared;
 
-    const genericTurnRigActive = shouldUseFishTurnRigForSprite(
+    const pendingTravel = record.pendingTravel;
+    const v26TurnRendererActive = shouldUseFishTurnV26RendererForSprite(
       fish,
       species,
       effectiveBehavior,
       pose,
       suckerFreeSwimming,
-      suckerViewTransition
+      suckerViewTransition,
+      now,
+      pendingTravel
     );
+    const complexTurnRendererActive = v26TurnRendererActive;
+    const v26VisualContinuity = v26TurnRendererActive
+      ? getFishTurnV26VisualContinuity(fish, pose.tilt, now)
+      : null;
 
     if (!pose.isDead && effectiveBehavior !== "sucker") {
       drawCasterShadowOnDecorSurfaces({
@@ -104294,16 +108443,15 @@ function drawFish(now, layer = null, options = {}) {
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
     tankContext.translate(pose.x + visualSwayX, pose.y);
-    tankContext.scale(genericTurnRigActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
+    tankContext.scale(complexTurnRendererActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
       tankContext.translate(suckerFacePivotX, suckerFacePivotY);
-      tankContext.rotate(pose.tilt);
+      tankContext.rotate(v26VisualContinuity?.tilt ?? pose.tilt);
       tankContext.translate(-suckerFacePivotX, -suckerFacePivotY);
     } else {
       tankContext.rotate(pose.tilt);
     }
 
-    const pendingTravel = record.pendingTravel;
     const tubeTravel = pendingTravel?.mode === "tube";
     let tubeCompression = 1;
     if (tubeTravel) {
@@ -104377,12 +108525,84 @@ function drawFish(now, layer = null, options = {}) {
       }
       const depthRenderImage = getTankDepthTreatedImage(sprite.renderImage, depthLayer) || sprite.renderImage;
       tankContext.filter = layerMotion?.preserveColor ? fishLighting.filter : fishRenderFilter;
-      if (genericTurnRigActive) {
-        drawFishTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
-        if (getFishTurnRigProgress(fish, now) >= FISH_TURN_RIG_INTERNAL_TIMELINE_MAX) {
-          fish.turnFinalFrameRenderedAt = now;
+      if (v26TurnRendererActive) {
+        const renderedByV26 = drawFishTurnV26VolumeMesh(
+          tankContext,
+          depthRenderImage,
+          image,
+          fishDrawX,
+          width,
+          spriteHeight,
+          fish,
+          now,
+          {
+            species,
+            baseAssetPath: imagePath,
+            includeFinOverlay: layerMotion?.v26FinBasePass === true,
+            alpha: v26VisualContinuity?.meshAlpha ?? 1,
+            // This callback runs while drawFishTurnV26VolumeMesh has applied
+            // the same fish-facing transform used for the visible canvas.
+            // The receiver mask therefore follows the actual WebGL silhouette
+            // and padded trajectory instead of the old flat source rectangle.
+            onRenderedVolumeCanvas: ({ canvas, drawX, drawY, drawWidth, drawHeight, alpha }) => {
+              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha);
+            }
+          }
+        );
+        if (!renderedByV26) {
+          // A v26 failure is sticky for this turn session. Do not retry WebGL
+          // on later frames or swap complex renderers mid-reversal. Degrade to
+          // the existing lightweight squash/flip visual while movement stays
+          // on the same authoritative turn timeline.
+          markFishTurnRendererFallback(fish, "simple");
+          drawFishLightweightTurnFallbackFrame(
+            tankContext,
+            depthRenderImage,
+            fishDrawX,
+            width,
+            spriteHeight,
+            fish,
+            now
+          );
+        } else {
+          // Keep the live swim warp visible under the mesh for a brief overlap
+          // at both endpoints. This preserves the current dive/climb and tail
+          // phase while v26 takes ownership, then reveals the destination pose
+          // before the terminal-frame handoff returns to the normal path.
+          if ((v26VisualContinuity?.spriteAlpha || 0) > 0.001) {
+            tankContext.save();
+            tankContext.globalAlpha *= v26VisualContinuity.spriteAlpha;
+            tankContext.scale(v26VisualContinuity.spriteDirection, 1);
+            const continuityWarped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
+              tankContext,
+              depthRenderImage,
+              fishDrawX,
+              -spriteHeight / 2,
+              width,
+              spriteHeight,
+              fish,
+              species,
+              now,
+              { imagePath, effectiveBehavior, suckerFreeSwimming }
+            );
+            if (!continuityWarped) {
+              tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+            }
+            markLightweightCausticImage(
+              tankContext,
+              depthRenderImage,
+              fishDrawX,
+              -spriteHeight / 2,
+              width,
+              spriteHeight,
+              v26VisualContinuity.spriteAlpha
+            );
+            tankContext.restore();
+          }
+          if (getFishHorizontalTurnState(fish, now).progress >= 1) {
+            markFishTurnFinalFrameRendered(fish, now);
+          }
         }
-        markLightweightCausticTurnaroundRig(tankContext, depthRenderImage, fishDrawX, width, spriteHeight, fish, now);
       } else {
         const warped = useDepthSwimWarp && drawFishSwimDepthWarpImage(
           tankContext,
@@ -104402,7 +108622,7 @@ function drawFish(now, layer = null, options = {}) {
         markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !genericTurnRigActive && layerMotion?.preserveColor !== true) {
+      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true) {
         drawFishTopLightOverlay(
           tankContext,
           sprite.sourceImage,
@@ -104470,7 +108690,12 @@ function drawFish(now, layer = null, options = {}) {
           });
         }
       }
-      drawFishSpriteLayer({ sourceImage: image, renderImage }, 1, 1);
+      drawFishSpriteLayer(
+        { sourceImage: image, renderImage },
+        1,
+        1,
+        { v26FinBasePass: true }
+      );
       if (!pose.isDead) {
         const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now);
         if (symptomOverlay) {
@@ -104515,7 +108740,7 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.restore();
     }
 
-    drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
+    queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
 
     if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
       tankContext.save();
@@ -105221,7 +109446,9 @@ function getFishPose(fish, species, now) {
     const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
     const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
     const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-    const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
+    const useComplexTurn = turnProgress !== null
+      && getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
     const renderDirection = turnProgress === null
       ? getFishFacingDirection(fish)
       : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
@@ -105354,7 +109581,9 @@ function getFishPose(fish, species, now) {
   const turnAmount = turnProgress === null ? 0 : Math.sin(turnProgress * Math.PI);
   const turnFromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
   const turnToDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-  const useComplexTurn = turnProgress !== null && getFishTurnAnimationMode(fish, species) === "complex";
+  const useComplexTurn = turnProgress !== null
+      && getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
   const renderDirection = turnProgress === null
     ? getFishFacingDirection(fish)
     : (useComplexTurn ? turnFromDirection : (turnProgress < 0.5 ? turnFromDirection : turnToDirection));
@@ -105522,14 +109751,10 @@ function normalizeFishSpeed(species, explicitValue) {
 }
 
 function getConfiguredFishTurnAnimationMode(species) {
-  const explicitMode = String(species?.turnAnimation || "").trim().toLowerCase();
-  if (["simple", "complex"].includes(explicitMode)) {
-    return explicitMode;
-  }
-  const speciesType = typeof getFishSpeciesType === "function"
-    ? getFishSpeciesType(species)
-    : String(species?.type || "").trim().toLowerCase();
-  return ["shark", "whale"].includes(speciesType) ? "complex" : "simple";
+  // v26 is the universal production turnaround for every normal fish.
+  // Legacy species-level `turnAnimation` values are retained in asset data for
+  // compatibility only and no longer choose the production renderer.
+  return "complex";
 }
 
 function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
@@ -105542,11 +109767,7 @@ function getFishTurnAnimationMode(fish, species = getSpeciesForFish(fish)) {
   if (typeof areSimpleTurnAnimationsForced === "function" && areSimpleTurnAnimationsForced()) {
     return "simple";
   }
-  const fishPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
-  if (["simple", "complex"].includes(fishPreference)) {
-    return fishPreference;
-  }
-  return getConfiguredFishTurnAnimationMode(species);
+  return "complex";
 }
 
 function getSimpleFishTurnDurationMs(fish, species) {
@@ -105568,29 +109789,20 @@ function getSimpleFishTurnDurationMs(fish, species) {
   return minMs + Math.random() * Math.max(1, maxMs - minMs);
 }
 
-function getComplexFishTurnDurationMs(fish, species) {
-  const locomotionProfile = getFishLocomotionProfile(species || fish);
-  const speciesScale = clamp(Number(locomotionProfile?.turnDurationScale) || 1, 0.6, 1.65);
-  const effectiveBehavior = getEffectiveFishBehavior(fish || species) || "steady";
-  const behaviorScale = FISH_TURN_RIG_BEHAVIOR_DURATION_SCALE[effectiveBehavior] || 1;
-  const typeScale = species?.type === "shark" || String(species?.type || "").toLowerCase() === "shark"
-    ? 0.86
-    : String(species?.type || "").toLowerCase() === "whale"
-      ? 1.16
-      : 1;
-  return clamp(
-    FISH_TURN_RIG_DURATION_MS * speciesScale * behaviorScale * typeScale,
-    FISH_TURN_RIG_MIN_DURATION_MS,
-    FISH_TURN_RIG_MAX_DURATION_MS
-  );
+function getComplexFishTurnDurationMs(fish, species, rendererBackend = null) {
+  const normalizedBackend = normalizeFishTurnRendererBackend(rendererBackend, "v26");
+  if (normalizedBackend === "simple") {
+    return getSimpleFishTurnDurationMs(fish, species);
+  }
+  return FISH_TURN_V26_DURATION_MS;
 }
 
-function getFishTurnDurationMs(fish, species, animationMode = null) {
+function getFishTurnDurationMs(fish, species, animationMode = null, rendererBackend = null) {
   const mode = ["simple", "complex"].includes(String(animationMode || "").trim().toLowerCase())
     ? String(animationMode).trim().toLowerCase()
     : getFishTurnAnimationMode(fish, species);
   return mode === "complex"
-    ? getComplexFishTurnDurationMs(fish, species)
+    ? getComplexFishTurnDurationMs(fish, species, rendererBackend)
     : getSimpleFishTurnDurationMs(fish, species);
 }
 
@@ -107996,7 +112208,7 @@ function clampDecorPlacement(xNorm, yNorm, options = {}) {
 }
 
 function findPlacedDecorAtPoint(x, y) {
-  const sorted = [...state.placedDecor].sort(comparePlacedDecorHitOrder);
+  const sorted = [...getPlacedDecorRenderOrder()].reverse();
   for (const item of sorted) {
     if (isCustomBubblerDecorKey(item.decorKey)) {
       const hitBounds = getCustomBubblerHitBounds(item);
@@ -109338,6 +113550,28 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   return chooseNextAction();
 }
 
+function getCaveDepthRegions(plan) {
+  const frontLayer = clampTankLayer(plan?.frontLayer ?? DEFAULT_TANK_LAYER);
+  const backLayer = clampTankLayer(plan?.backLayer ?? frontLayer);
+  const front = getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
+  const interior = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
+  const rear = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
+  return { front, interior, rear };
+}
+
+function getFishCaveDepthRegion(fish, region = "interior") {
+  const key = region === "front" || region === "rear" ? region : "interior";
+  const field = key === "front" ? "caveFrontZ" : (key === "rear" ? "caveRearZ" : "caveInteriorZ");
+  const fallbackLayer = key === "front" ? fish?.caveFrontLayer : fish?.caveBackLayer;
+  const fallbackSubLayer = key === "front"
+    ? TANK_SUBLAYER_FRONT
+    : (key === "rear" ? TANK_SUBLAYER_BACK : TANK_SUBLAYER_MIDDLE);
+  return sanitizeTankDepthZ(
+    fish?.[field],
+    getTankDepthZFromLegacyPosition(fallbackLayer ?? DEFAULT_TANK_LAYER, fallbackSubLayer)
+  );
+}
+
 function beginFishCaveBehavior(fish, plan, now = Date.now()) {
   if (!fish || !plan) {
     return false;
@@ -109351,6 +113585,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     ? getDebugCaveSeatSequence(decorItem, fish, species, now, plan.inside || plan.mouth || plan.approach)
     : [];
 
+  const depthRegions = getCaveDepthRegions(plan);
   runtime.activeFishCavePlans.set(fish.id, {
     decorId: plan.decorId,
     portalId: plan.portalId,
@@ -109363,6 +113598,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),
     backLayer: clampTankLayer(plan.backLayer),
+    depthRegions,
     approach: { ...plan.approach },
     mouth: { ...plan.mouth },
     inside: { ...plan.inside },
@@ -109404,6 +113640,9 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
   fish.caveSeatId = null;
   fish.caveFrontLayer = clampTankLayer(plan.frontLayer);
   fish.caveBackLayer = clampTankLayer(plan.backLayer);
+  fish.caveFrontZ = depthRegions.front;
+  fish.caveInteriorZ = depthRegions.interior;
+  fish.caveRearZ = depthRegions.rear;
   fish.caveApproachXNorm = plan.approach.xNorm;
   fish.caveApproachYNorm = plan.approach.yNorm;
   fish.caveEntryXNorm = plan.mouth.xNorm;
@@ -110567,6 +114806,51 @@ function getFishShapeDescriptor(fish, species, now, poseOverride = null, options
   };
 }
 
+function getPlacedDecorDepthBuckets() {
+  const placedDecor = Array.isArray(state?.placedDecor) ? state.placedDecor : [];
+  const cached = runtime.decorDepthBucketCache;
+  if (cached?.source === placedDecor && cached.length === placedDecor.length) {
+    return cached.buckets;
+  }
+
+  const bucketCount = 10;
+  const buckets = Array.from({ length: bucketCount }, () => []);
+  for (const item of placedDecor) {
+    if (!item) continue;
+    const volume = getTankDepthVolume(getPlacedDecorDepthZ(item), getPlacedDecorDepthRadius(item));
+    const firstBucket = getTankDepthBucket(volume.min, bucketCount);
+    const lastBucket = getTankDepthBucket(volume.max, bucketCount);
+    for (let bucket = firstBucket; bucket <= lastBucket; bucket += 1) {
+      buckets[bucket].push(item);
+    }
+  }
+  runtime.decorDepthBucketCache = { source: placedDecor, length: placedDecor.length, buckets };
+  return buckets;
+}
+
+function getNearbyPlacedDecorByDepth(z, radius) {
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("depthBucketQueries");
+  }
+  const buckets = getPlacedDecorDepthBuckets();
+  const volume = getTankDepthVolume(z, radius);
+  const firstBucket = getTankDepthBucket(volume.min, buckets.length);
+  const lastBucket = getTankDepthBucket(volume.max, buckets.length);
+  const candidates = [];
+  const seen = new Set();
+  for (let bucket = firstBucket; bucket <= lastBucket; bucket += 1) {
+    for (const item of buckets[bucket]) {
+      if (seen.has(item)) continue;
+      seen.add(item);
+      candidates.push(item);
+    }
+  }
+  if (runtime?.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("depthBucketCandidates", candidates.length);
+  }
+  return candidates;
+}
+
 function getOverlappingDecorForFish(fish, species, now, poseOverride = null, options = null) {
   const fishDescriptor = getFishShapeDescriptor(fish, species, now, poseOverride, {
     depthLayer: options?.depthLayer,
@@ -110581,13 +114865,27 @@ function getOverlappingDecorForFish(fish, species, now, poseOverride = null, opt
   const targetSubLayer = Number.isFinite(Number(options?.depthSubLayer))
     ? clampTankSubLayer(options.depthSubLayer)
     : getFishTankSubLayer(fish);
+  const fishDepthZ = Number.isFinite(Number(options?.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(
+      Number.isFinite(Number(options?.depthLayer)) ? options.depthLayer : getFishTankLayer(fish),
+      targetSubLayer
+    );
   const overlaps = [];
-  for (const item of state.placedDecor) {
+  for (const item of getNearbyPlacedDecorByDepth(fishDepthZ, getFishTankDepthRadius(fish))) {
     const itemLayer = getDecorTankLayer(item);
     if (itemLayer < minLayer || itemLayer > maxLayer) {
       continue;
     }
     if (!doesDecorBlockTankSubLayer(item, targetSubLayer)) {
+      continue;
+    }
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getPlacedDecorDepthZ(item),
+      getPlacedDecorDepthRadius(item)
+    )) {
       continue;
     }
 
@@ -110633,6 +114931,12 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
   if (!fishDescriptor) {
     return [];
   }
+  const fishDepthZ = Number.isFinite(Number(options?.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(
+      Number.isFinite(Number(options?.depthLayer)) ? options.depthLayer : getFishTankLayer(fish),
+      targetSubLayer
+    );
 
   const minLayer = Number.isFinite(options?.minLayer) ? clampTankLayer(options.minLayer) : 1;
   const maxLayer = Number.isFinite(options?.maxLayer) ? clampTankLayer(options.maxLayer) : TANK_DEPTH_LAYERS;
@@ -110647,7 +114951,12 @@ function getOverlappingFishForLayerChange(fish, species, now, poseOverride = nul
     if (otherLayer < minLayer || otherLayer > maxLayer) {
       continue;
     }
-    if (getFishTankSubLayer(otherFish) !== targetSubLayer) {
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getFishTankDepthZ(otherFish),
+      getFishTankDepthRadius(otherFish)
+    )) {
       continue;
     }
 
@@ -111248,15 +115557,7 @@ function tryFishNavigationAdjacentMajorLayerEscape(fish, species, now = Date.now
   for (const targetLayer of candidateLayers) {
     const firstStep = getAdjacentTankDepthPosition(layer, subLayer, targetLayer, subLayer);
     if (!canFishChangeToDepthPosition(fish, species, now, firstStep)) continue;
-    setFishTankDepthPosition(fish, layer, subLayer, targetLayer, subLayer);
-    if (fish.id) {
-      runtime.fishLayerTravelStepTransitions.set(fish.id, {
-        targetDepthIndex: getTankDepthPositionIndex(targetLayer, subLayer),
-        targetLayer,
-        targetSubLayer: subLayer,
-        nextStepAt: now
-      });
-    }
+    setFishDesiredTankDepth(fish, getTankDepthZFromLegacyPosition(targetLayer, subLayer));
     return true;
   }
   return false;
@@ -111323,12 +115624,20 @@ function findFishBodyCollisionAtPose(fish, species, now, xNorm, yNorm, options =
   if (!fishDescriptor) {
     return null;
   }
+  const fishDepthZ = Number.isFinite(Number(options.depthZ))
+    ? sanitizeTankDepthZ(options.depthZ)
+    : getTankDepthZFromLegacyPosition(layer, subLayer);
 
   for (const otherFish of state.fish) {
     if (!otherFish || otherFish.id === fish.id || !shouldFishParticipateInLivingCollision(otherFish)) {
       continue;
     }
-    if (getFishTankLayer(otherFish) !== layer || getFishTankSubLayer(otherFish) !== subLayer) {
+    if (!doTankDepthVolumesOverlap(
+      fishDepthZ,
+      getFishTankDepthRadius(fish),
+      getFishTankDepthZ(otherFish),
+      getFishTankDepthRadius(otherFish)
+    )) {
       continue;
     }
 
@@ -111601,14 +115910,7 @@ function tryFishNavigationDepthEscape(fish, species, now = Date.now(), options =
   if (!target) return false;
   if (!noteFishNavigationDepthEscapeTarget(fish, target.index, now, { reason: options.reason || "obstacle" })) return false;
 
-  if (fish.id) {
-    runtime.fishLayerTravelStepTransitions.set(fish.id, {
-      targetDepthIndex: target.index,
-      targetLayer: target.layer,
-      targetSubLayer: target.subLayer,
-      nextStepAt: now
-    });
-  }
+  setFishDesiredTankDepth(fish, getTankDepthZFromLegacyPosition(target.layer, target.subLayer));
   return true;
 }
 
@@ -111617,8 +115919,6 @@ function tryFishSubLayerPass(fish, species, now = Date.now(), options = {}) {
   const layer = getFishTankLayer(fish);
   const currentSubLayer = getFishTankSubLayer(fish);
   const currentDepthIndex = getFishTankDepthIndex(fish);
-  const originalDesiredLayer = getDesiredFishTankLayer(fish);
-  const originalDesiredSubLayer = getDesiredFishTankSubLayer(fish);
   const currentPose = getFishPose(fish, species, now);
   const targetXNorm = Number.isFinite(Number(options.xNorm)) ? Number(options.xNorm) : fish.xNorm;
   const targetYNorm = Number.isFinite(Number(options.yNorm)) ? Number(options.yNorm) : fish.yNorm;
@@ -111661,13 +115961,8 @@ function tryFishSubLayerPass(fish, species, now = Date.now(), options = {}) {
 
     // Preserve the fish's eventual depth destination. The lane change is a
     // temporary local pass, not a replacement for the route it was following.
-    setFishTankDepthPosition(
-      fish,
-      layer,
-      candidate,
-      originalDesiredLayer,
-      originalDesiredSubLayer
-    );
+    fish.depthRouteTargetZ = getTankDepthZFromLegacyPosition(layer, candidate);
+    fish.depthRouteUntil = now + FISH_NAV_SUBLAYER_COMMIT_MS;
     noteFishNavigationSubLayerCommit(fish, currentDepthIndex, candidateDepthIndex, now);
     noteFishNavigationDepthEscapeTarget(fish, candidateDepthIndex, now, {
       reason: options.reason || "sublayer-pass",
@@ -112034,6 +116329,72 @@ function getFishDepthPositionBlockingFish(fish, species, now, targetPosition, po
   )?.fish || null;
 }
 
+function canFishOccupyContinuousDepth(fish, species, now, pose, z) {
+  const collisionOptions = {
+    depthZ: z,
+    minLayer: 1,
+    maxLayer: TANK_DEPTH_LAYERS,
+    depthSubLayer: getFishTankSubLayer(fish)
+  };
+  return getOverlappingDecorForFish(fish, species, now, pose, collisionOptions).length === 0
+    && getOverlappingFishForLayerChange(fish, species, now, pose, collisionOptions).length === 0;
+}
+
+function findFishContinuousDepthEscape(fish, species, now, pose, currentZ, preferredDirection) {
+  const directions = preferredDirection >= 0 ? [1, -1] : [-1, 1];
+  for (const distance of [0.08, 0.14, 0.2]) {
+    for (const direction of directions) {
+      const candidate = sanitizeTankDepthZ(currentZ + direction * distance);
+      if (Math.abs(candidate - currentZ) < 0.001) continue;
+      if (canFishOccupyContinuousDepth(fish, species, now, pose, candidate)) return candidate;
+    }
+  }
+  return null;
+}
+
+function syncFishContinuousDepth(fish, species, now) {
+  const currentZ = sanitizeTankDepthZ(fish.z, getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish)));
+  const routeTargetZ = Number(fish.depthRouteTargetZ);
+  const usingDepthRoute = Number.isFinite(routeTargetZ) && Number(fish.depthRouteUntil) > now;
+  if (!usingDepthRoute) {
+    fish.depthRouteTargetZ = null;
+    fish.depthRouteUntil = 0;
+  }
+  const desiredZ = usingDepthRoute ? sanitizeTankDepthZ(routeTargetZ) : getDesiredFishTankDepthZ(fish);
+  const difference = desiredZ - currentZ;
+  if (Math.abs(difference) < 0.001) {
+    fish.z = desiredZ;
+    if (usingDepthRoute) {
+      fish.depthRouteTargetZ = null;
+      fish.depthRouteUntil = 0;
+    }
+    return;
+  }
+
+  const previousAt = Number(fish.depthMotionUpdatedAt) || now;
+  const elapsedSeconds = clamp((now - previousAt) / 1000, 0, 0.12);
+  fish.depthMotionUpdatedAt = now;
+  const candidateZ = currentZ + Math.sign(difference) * Math.min(Math.abs(difference), Math.max(0.002, elapsedSeconds * 0.18));
+  const pose = getFishPose(fish, species, now);
+  if (!canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ)) {
+    fish.depthMotionBlockedAt = now;
+    if (!usingDepthRoute) {
+      const escapeZ = findFishContinuousDepthEscape(fish, species, now, pose, currentZ, Math.sign(difference));
+      if (escapeZ !== null) {
+        fish.depthRouteTargetZ = escapeZ;
+        fish.depthRouteUntil = now + 1800;
+      }
+    }
+    return;
+  }
+
+  fish.z = candidateZ;
+  const compatibilityPosition = getLegacyTankDepthPositionFromZ(candidateZ);
+  fish.tankLayer = compatibilityPosition.layer;
+  fish.tankSubLayer = compatibilityPosition.subLayer;
+  fish.drawLayer = tankLayerToLegacy(compatibilityPosition.layer);
+}
+
 function syncFishDrawLayer(fish, species, now) {
   // Dead Fish Phase 23: corpse depth is owned by corpse motion. Never let a
   // direct/late living depth-sync call advance the 15-position travel system.
@@ -112057,9 +116418,29 @@ function syncFishDrawLayer(fish, species, now) {
       ? clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER)
       : getFishActiveCaveInsideLayer(fish, DEFAULT_TANK_LAYER);
     setFishTankLayers(fish, lockedLayer, lockedLayer);
+    const caveRegion = ["approach", "align", "leave"].includes(fish.caveState)
+      ? "front"
+      : "interior";
+    const targetZ = getFishCaveDepthRegion(fish, caveRegion);
+    const currentZ = sanitizeTankDepthZ(
+      fish.z,
+      getTankDepthZFromLegacyPosition(getFishTankLayer(fish), getFishTankSubLayer(fish))
+    );
+    const elapsedSeconds = clamp((now - (Number(fish.caveDepthUpdatedAt) || now)) / 1000, 0, 0.12);
+    fish.caveDepthUpdatedAt = now;
+    const maxStep = Math.max(0.002, elapsedSeconds * 0.2);
+    fish.z = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    fish.desiredZ = targetZ;
     if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;
   }
+
+  // Ordinary fish now travel through normalized depth continuously. Legacy
+  // layer fields mirror the nearest compatibility position for older systems
+  // that have not yet migrated, but do not drive this motion.
+  if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
+  syncFishContinuousDepth(fish, species, now);
+  return;
 
   const currentLayer = getFishTankLayer(fish);
   const currentSubLayer = getFishTankSubLayer(fish);
@@ -112201,6 +116582,7 @@ function syncFishDrawLayer(fish, species, now) {
       targetSubLayer: desiredSubLayer,
       fromDepthIndex: currentDepthIndex,
       toDepthIndex: nextPosition.index,
+      startedAt: now,
       nextStepAt: now + FISH_DEPTH_TRAVEL_STEP_INTERVAL_MS
     });
   }
@@ -112383,8 +116765,179 @@ function randomSwimY(layer = DEFAULT_TANK_LAYER, fish = null, species = getSpeci
   return range.min + Math.random() * Math.max(0, range.max - range.min);
 }
 
+function normalizeFishHorizontalDirection(value, fallback = 1) {
+  const numericValue = Number(value);
+  if (Number.isFinite(numericValue) && numericValue !== 0) {
+    return numericValue < 0 ? -1 : 1;
+  }
+  return Number(fallback) < 0 ? -1 : 1;
+}
+
 function getFishFacingDirection(fish) {
-  return Number(fish?.displayDirection) < 0 ? -1 : 1;
+  return normalizeFishHorizontalDirection(fish?.displayDirection, 1);
+}
+
+function getFishLogicalDirection(fish) {
+  return normalizeFishHorizontalDirection(fish?.direction, 1);
+}
+
+function getFishHorizontalTurnState(fish, now = Date.now()) {
+  const displayDirection = getFishFacingDirection(fish);
+  const logicalDirection = getFishLogicalDirection(fish);
+  const startedAt = Number(fish?.turnStartedAt);
+  const durationMs = Number(fish?.turnDurationMs);
+  const active = Boolean(fish?.turnStartedAt) && Number.isFinite(durationMs) && durationMs > 0;
+  const fromDirection = active
+    ? normalizeFishHorizontalDirection(fish?.turnFromDirection, 1)
+    : displayDirection;
+  const toDirection = active
+    ? normalizeFishHorizontalDirection(fish?.turnToDirection, 1)
+    : displayDirection;
+  const progress = active
+    ? clamp((Number(now) - startedAt) / Math.max(1, durationMs), 0, 1)
+    : 1;
+
+  return {
+    active,
+    reversing: active && fromDirection !== toDirection,
+    progress,
+    startedAt: active ? startedAt : null,
+    durationMs: active ? durationMs : 0,
+    logicalDirection,
+    displayDirection,
+    fromDirection,
+    toDirection,
+    terminalFrameRendered: Number(fish?.turnFinalFrameRenderedAt) > 0
+      && Number(fish?.turnFinalFrameRenderedForStartedAt) === startedAt
+  };
+}
+
+function markFishTurnFinalFrameRendered(fish, now = Date.now()) {
+  if (!fish) return false;
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active || turnState.progress < 1) return false;
+  fish.turnFinalFrameRenderedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  fish.turnFinalFrameRenderedForStartedAt = turnState.startedAt;
+  return true;
+}
+
+function cancelFishV26TurnForSpecialMovementOwner(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now(),
+  owner = "special-movement"
+) {
+  if (!fish || !species) return false;
+  const turnState = getFishHorizontalTurnState(fish, now);
+  if (!turnState.active) return false;
+
+  // Only v26-origin sessions use this special-owner cancellation path. A v26
+  // session that has fallen back to the lightweight visual is still a v26-origin
+  // session, so the movement owner must clear it the same way.
+  // Imported/debug-created active turns may not have a renderer session yet,
+  // so establish their normal session contract before deciding ownership.
+  if (!isFishTurnRendererSessionCurrent(fish)) {
+    ensureFishTurnRendererSession(fish, species, turnState.startedAt || now);
+  }
+  const v26OriginSession = isFishTurnRendererSessionCurrent(fish)
+    && normalizeFishTurnRendererBackend(fish.turnRendererBackend, "") === "v26";
+  if (!v26OriginSession) return false;
+
+  // A mechanic that owns pose/movement takes priority over the visual turn.
+  // Preserve what the player is currently seeing rather than snapping to the
+  // not-yet-rendered destination side, then let the owner continue unchanged.
+  const preservedDirection = getFishFacingDirection(fish);
+  const preservedAngle = preservedDirection < 0 ? Math.PI : 0;
+  fish.direction = preservedDirection;
+  fish.displayDirection = preservedDirection;
+  fish.displayAngle = preservedAngle;
+  fish.turnStartedAt = null;
+  fish.turnDurationMs = 0;
+  fish.turnFinalFrameRenderedAt = 0;
+  fish.turnFinalFrameRenderedForStartedAt = 0;
+  fish.turnAnimationMode = null;
+  fish.turnFromDirection = preservedDirection;
+  fish.turnToDirection = preservedDirection;
+  fish.turnFromAngle = preservedAngle;
+  fish.turnToAngle = preservedAngle;
+  fish.turnSpinDirection = preservedDirection < 0 ? 1 : -1;
+  fish.traversalTurnState = "idle";
+  fish.traversalTurnStartedAt = 0;
+  fish.traversalCommittedDirection = preservedDirection;
+  fish.traversalTurnCommittedUntil = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  clearFishTurnRendererSession(fish);
+
+  return true;
+}
+
+function reconcileFishV26TurnWithSpecialMovementOwner(
+  fish,
+  species = getSpeciesForFish(fish),
+  now = Date.now()
+) {
+  if (!fish || !species || typeof getFishV26SpecialMovementOwner !== "function") return false;
+  const owner = getFishV26SpecialMovementOwner(fish, species, now);
+  if (!owner) return false;
+  return cancelFishV26TurnForSpecialMovementOwner(fish, species, now, owner);
+}
+
+function getFishTurnLocomotionState(fish, now = Date.now()) {
+  const horizontalTurn = getFishHorizontalTurnState(fish, now);
+  if (!horizontalTurn.active) {
+    return {
+      ...horizontalTurn,
+      holdsPosition: false,
+      releaseProgress: FISH_TURN_LOCOMOTION_RELEASE_PROGRESS,
+      movementBlend: 1,
+      passiveSpeedScale: 1
+    };
+  }
+
+  const movementRaw = clamp(
+    (horizontalTurn.progress - FISH_TURN_LOCOMOTION_RELEASE_PROGRESS)
+      / Math.max(0.001, 1 - FISH_TURN_LOCOMOTION_RELEASE_PROGRESS),
+    0,
+    1
+  );
+  const movementBlend = movementRaw * movementRaw * (3 - 2 * movementRaw);
+  const holdsPosition = !horizontalTurn.reversing
+    && horizontalTurn.progress < FISH_TURN_LOCOMOTION_RELEASE_PROGRESS;
+
+  return {
+    ...horizontalTurn,
+    holdsPosition,
+    releaseProgress: FISH_TURN_LOCOMOTION_RELEASE_PROGRESS,
+    movementBlend,
+    passiveSpeedScale: 0.12 + movementBlend * 0.88
+  };
+}
+
+function beginFishTurnaroundCooldown(fish, direction, now = Date.now()) {
+  if (!fish) return;
+  const startedAt = Number.isFinite(Number(now)) ? Number(now) : Date.now();
+  fish.turnaroundCooldownDirection = normalizeFishHorizontalDirection(direction, getFishFacingDirection(fish));
+  fish.turnaroundCooldownStartedAt = startedAt;
+  fish.turnaroundCooldownUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MS;
+  fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS;
+  fish.turnaroundCooldownStartXNorm = Number(fish.xNorm) || 0.5;
+  fish.turnaroundCooldownStartYNorm = Number(fish.yNorm) || 0.5;
+}
+
+function getFishTurnaroundCooldownState(fish, now = Date.now()) {
+  const direction = normalizeFishHorizontalDirection(fish?.turnaroundCooldownDirection, getFishFacingDirection(fish));
+  const until = Number(fish?.turnaroundCooldownUntil) || 0;
+  const maxUntil = Number(fish?.turnaroundCooldownMaxUntil) || 0;
+  const traveled = Math.hypot(
+    (Number(fish?.xNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartXNorm) || 0.5),
+    (Number(fish?.yNorm) || 0.5) - (Number(fish?.turnaroundCooldownStartYNorm) || 0.5)
+  );
+  const active = Number(now) < until
+    || (Number(now) < maxUntil && traveled < FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM);
+  if (!active && fish) {
+    fish.turnaroundCooldownUntil = 0;
+    fish.turnaroundCooldownMaxUntil = 0;
+  }
+  return { active, direction, traveled, until, maxUntil };
 }
 
 function normalizeAngle(angle) {
@@ -112513,22 +117066,27 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const maximumStep = 1.45 * urgency * elapsedSeconds;
   const nextVerticalRatio = clamp(
     currentVerticalRatio + clamp(responsiveStep, -maximumStep, maximumStep),
-    -0.96,
-    0.96
+    -FISH_VERTICAL_TRAVERSAL_MAX_RATIO,
+    FISH_VERTICAL_TRAVERSAL_MAX_RATIO
   );
   fish.steeringVerticalRatio = Math.abs(desiredVerticalRatio - nextVerticalRatio) < 0.012
     ? desiredVerticalRatio
     : nextVerticalRatio;
 
+  const traversalHeadingXNorm = Number(fish.traversalHeadingXNorm);
   const horizontalSign = Math.abs(dxPx) > 0.5
     ? (dxPx >= 0 ? 1 : -1)
-    : getFishFacingDirection(fish);
+    : (Math.abs(traversalHeadingXNorm) > 0.000001
+      ? (traversalHeadingXNorm >= 0 ? 1 : -1)
+      : getFishFacingDirection(fish));
   const verticalRatio = fish.steeringVerticalRatio;
   const horizontalRatio = Math.sqrt(Math.max(0.001, 1 - verticalRatio * verticalRatio));
 
   // Convert the smoothed screen-space heading back into normalized tank-space
   // while preserving the remaining target distance. This bends the path into
   // climbs and dives instead of instantly snapping to a new diagonal vector.
+  // The vertical component is bounded, so a climb or dive always carries a
+  // visible forward swim rather than reading as an in-place sprite rotation.
   const unitXNorm = horizontalSign * horizontalRatio / TANK_WIDTH;
   const unitYNorm = verticalRatio / TANK_HEIGHT;
   const unitNormLength = Math.hypot(unitXNorm, unitYNorm) || 1;
@@ -112541,13 +117099,17 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
 function updateFishTurnState(fish, species, now) {
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (species.behavior !== "sucker" || freeSwimmingOtocinclus) {
-    const liveDirection = Number(fish.direction) < 0 ? -1 : 1;
-    if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
+    const liveDirection = getFishLogicalDirection(fish);
+    const horizontalTurn = getFishHorizontalTurnState(fish, now);
+    if (!horizontalTurn.active) {
+      fish.traversalTurnState = "idle";
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
@@ -112557,30 +117119,36 @@ function updateFishTurnState(fish, species, now) {
       return;
     }
 
-    const progress = clamp((now - fish.turnStartedAt) / fish.turnDurationMs, 0, 1);
-    const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
-    const toDirection = Number(fish.turnToDirection) < 0 ? -1 : 1;
-    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex";
+    const progress = horizontalTurn.progress;
+    const fromDirection = horizontalTurn.fromDirection;
+    const toDirection = horizontalTurn.toDirection;
+    fish.traversalTurnState = fromDirection === toDirection ? "turning" : "reversing";
+    const useComplexTurn = getFishTurnAnimationMode(fish, species) === "complex"
+      && getFishTurnRendererBackend(fish, species) === "v26";
 
     if (useComplexTurn) {
-      // The segmented rig performs the visible reversal itself, so keep the
-      // normal sprite locked to the source side until its terminal frame has
-      // actually rendered.
+      // The active complex turn renderer owns the visible reversal. Keep the
+      // gameplay-facing sprite state locked to the source side until the
+      // renderer confirms that its terminal frame has actually been drawn.
       fish.displayDirection = fromDirection;
       fish.displayAngle = fromDirection < 0 ? Math.PI : 0;
 
-      if (progress >= 1 && Number(fish.turnFinalFrameRenderedAt) > 0) {
+      if (progress >= 1 && horizontalTurn.terminalFrameRendered) {
+        fish.traversalTurnState = "idle";
         fish.displayDirection = liveDirection;
         fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
         fish.turnStartedAt = null;
         fish.turnDurationMs = 0;
         fish.turnFinalFrameRenderedAt = 0;
+        fish.turnFinalFrameRenderedForStartedAt = 0;
+        clearFishTurnRendererSession(fish);
         fish.turnAnimationMode = null;
         fish.turnFromDirection = fish.displayDirection;
         fish.turnToDirection = fish.displayDirection;
         fish.turnFromAngle = fish.displayAngle;
         fish.turnToAngle = fish.displayAngle;
         fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+        if (fromDirection !== toDirection) beginFishTurnaroundCooldown(fish, liveDirection, now);
       }
       return;
     }
@@ -112592,17 +117160,21 @@ function updateFishTurnState(fish, species, now) {
     fish.displayAngle = visibleDirection < 0 ? Math.PI : 0;
 
     if (progress >= 1) {
+      fish.traversalTurnState = "idle";
       fish.displayDirection = liveDirection;
       fish.displayAngle = liveDirection < 0 ? Math.PI : 0;
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = fish.displayDirection;
       fish.turnToDirection = fish.displayDirection;
       fish.turnFromAngle = fish.displayAngle;
       fish.turnToAngle = fish.displayAngle;
       fish.turnSpinDirection = fish.displayDirection < 0 ? 1 : -1;
+      if (fromDirection !== toDirection) beginFishTurnaroundCooldown(fish, liveDirection, now);
     }
     return;
   }
@@ -112610,6 +117182,9 @@ function updateFishTurnState(fish, species, now) {
   if (!fish.turnStartedAt || fish.turnDurationMs <= 0) {
     fish.displayAngle = getFishFacingAngle(fish);
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     return;
   }
 
@@ -112620,6 +117195,9 @@ function updateFishTurnState(fish, species, now) {
     fish.displayDirection = Math.cos(fish.displayAngle) < 0 ? -1 : 1;
     fish.turnStartedAt = null;
     fish.turnDurationMs = 0;
+    fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    clearFishTurnRendererSession(fish);
     fish.turnAnimationMode = null;
     fish.turnFromDirection = fish.displayDirection;
     fish.turnToDirection = fish.displayDirection;
@@ -112668,13 +117246,29 @@ function setFishDirection(fish, desiredDirection, species, now) {
   if (getEffectiveFishBehavior(fish, species) !== "sucker" || freeSwimmingOtocinclus) {
     const currentDisplayDirection = getFishFacingDirection(fish);
     const currentDisplayAngle = currentDisplayDirection < 0 ? Math.PI : 0;
+    const hasTravelTarget = Math.hypot(
+      (Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5) - (Number(fish.xNorm) || 0.5),
+      (Number(fish.targetYNorm) || Number(fish.yNorm) || 0.5) - (Number(fish.yNorm) || 0.5)
+    ) > FISH_DIRECTION_TARGET_DEADZONE_NORM;
 
-    if (fish.turnStartedAt && fish.turnDurationMs > 0) {
+    if (
+      nextDirection !== currentDisplayDirection
+      && (Number(fish.traversalSpeedNorm) || 0) < FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM
+      && !hasTravelTarget
+    ) {
+      // A cosmetic idle state cannot command a physical reversal. Movement
+      // will start the turn later once there is somewhere to travel.
+      return;
+    }
+
+    const horizontalTurn = getFishHorizontalTurnState(fish, now);
+    if (horizontalTurn.active) {
       // Finish the current turn before accepting another reversal. Moving
       // targets and collision corrections can cross the fish several times
       // per second; cancelling and restarting here created rapid left/right
-      // flip loops even though the fish had barely moved.
-      fish.direction = Number(fish.turnToDirection) < 0 ? -1 : 1;
+      // flip loops even though the fish had barely moved. The latched
+      // destination direction is authoritative until the renderer handoff.
+      fish.direction = horizontalTurn.toDirection;
       return;
     }
 
@@ -112685,6 +117279,8 @@ function setFishDirection(fish, desiredDirection, species, now) {
       fish.turnStartedAt = null;
       fish.turnDurationMs = 0;
       fish.turnFinalFrameRenderedAt = 0;
+      fish.turnFinalFrameRenderedForStartedAt = 0;
+      clearFishTurnRendererSession(fish);
       fish.turnAnimationMode = null;
       fish.turnFromDirection = nextDirection;
       fish.turnToDirection = nextDirection;
@@ -112698,13 +117294,31 @@ function setFishDirection(fish, desiredDirection, species, now) {
     fish.displayAngle = currentDisplayAngle;
     fish.turnAnimationMode = getFishTurnAnimationMode(fish, species);
     fish.turnStartedAt = now;
-    fish.turnDurationMs = getFishTurnDurationMs(fish, species, fish.turnAnimationMode);
     fish.turnFinalFrameRenderedAt = 0;
+    fish.turnFinalFrameRenderedForStartedAt = 0;
+    const turnRendererBackend = beginFishTurnRendererSession(
+      fish,
+      species,
+      now,
+      fish.turnAnimationMode
+    );
+    fish.turnDurationMs = getFishTurnDurationMs(
+      fish,
+      species,
+      fish.turnAnimationMode,
+      turnRendererBackend
+    );
     fish.turnFromDirection = currentDisplayDirection;
     fish.turnToDirection = nextDirection;
     fish.turnFromAngle = currentDisplayAngle;
     fish.turnToAngle = nextDirection < 0 ? Math.PI : 0;
     fish.turnSpinDirection = Math.random() < 0.5 ? -1 : 1;
+    fish.traversalTurnState = "reversing";
+    fish.traversalTurnStartedAt = now;
+    fish.traversalCommittedDirection = nextDirection;
+    fish.traversalTurnCommittedUntil = now + Math.max(FISH_TRAVERSAL_TURN_COMMIT_MIN_MS, fish.turnDurationMs);
+    fish.traversalSteeringTargetXNorm = Number.isFinite(Number(fish.targetXNorm)) ? Number(fish.targetXNorm) : fish.xNorm;
+    fish.traversalSteeringTargetYNorm = Number.isFinite(Number(fish.targetYNorm)) ? Number(fish.targetYNorm) : fish.yNorm;
     return;
   }
 

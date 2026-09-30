@@ -372,14 +372,23 @@
 
 
             <div id="toolCursor" class="tool-cursor" hidden aria-hidden="true"></div>
+            <div id="decorDepthIndicator" class="decor-depth-indicator" hidden aria-live="polite">
+              <span>BACK</span>
+              <span class="decor-depth-indicator-track" aria-hidden="true"><i></i></span>
+              <span>FRONT</span>
+            </div>
             <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
-              aria-label="Selected decor layer">
-              <span class="decor-side-control-title">Layer</span>
+              aria-label="Selected decor depth">
+              <span class="decor-side-control-title">Depth</span>
               <button id="selectedDecorLayerUpButton" class="decor-side-control-button" type="button"
-                title="Move Layer Up" aria-label="Move Decor Layer Up">&uarr;</button>
-              <span id="selectedDecorLayerValue" class="decor-side-control-value">3-4</span>
+                title="Move decor backward" aria-label="Move decor backward">&uarr;</button>
+              <span id="selectedDecorLayerValue" class="decor-side-control-value">Center</span>
               <button id="selectedDecorLayerDownButton" class="decor-side-control-button" type="button"
-                title="Move Layer Down" aria-label="Move Decor Layer Down">&darr;</button>
+                title="Move decor forward" aria-label="Move decor forward">&darr;</button>
+              <button id="selectedDecorBringToFrontButton" class="decor-side-control-button decor-depth-jump-button" type="button"
+                title="Bring decor to front" aria-label="Bring decor to front">FRONT</button>
+              <button id="selectedDecorSendToBackButton" class="decor-side-control-button decor-depth-jump-button" type="button"
+                title="Send decor to back" aria-label="Send decor to back">BACK</button>
             </div>
             <div id="selectedDecorTransformControls" class="decor-side-control-panel decor-transform-controls" hidden
               aria-label="Selected decor flip controls">
@@ -420,42 +429,62 @@
                     <button type="button" class="webpage-tab" data-webpage-destination="home" aria-label="Open the browser home page">
                       <img src="assets/web/websurf/browser_home.png" alt="" aria-hidden="true" />
                       <span>Home</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Home tab" title="Close tab">&times;</span>
                     </button>
-                    <button type="button" class="webpage-tab is-active" data-webpage-destination="store" aria-current="page">
+                    <button type="button" class="webpage-tab" data-webpage-destination="store" hidden>
                       <img src="assets/web/bodega/Box.png" alt="" aria-hidden="true" />
                       <span>BubbleBodega</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close BubbleBodega tab" title="Close tab">&times;</span>
                     </button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="bank">
-                      <img data-sprite-src="assets/icons/coin.png" alt="" aria-hidden="true" />
-                      <span>BB Bank</span>
+                    <button type="button" class="webpage-tab" data-webpage-destination="bank" hidden>
+                      <img src="assets/misc/coin_unicode.png" alt="" aria-hidden="true" />
+                      <span>Bubble Borough Bank</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Bubble Borough Bank tab" title="Close tab">&times;</span>
                     </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="locker" hidden>
                       <img src="assets/web/davy/icons/davy_icon.png" alt="" aria-hidden="true" />
                       <span>Davy Jones' Locker</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Davy Jones' Locker tab" title="Close tab">&times;</span>
                     </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="proteus" hidden>
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <span>Proteus Biodyne</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Proteus Biodyne tab" title="Close tab">&times;</span>
                     </button>
                     <button type="button" class="webpage-tab" data-webpage-destination="designer" hidden>
                       <img src="assets/web/proteus/Proteus_Logo_Icon.png" alt="" aria-hidden="true" />
                       <span>EAS Designer</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close EAS Designer tab" title="Close tab">&times;</span>
                     </button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="arcadia" data-websurf-subsidiary-tab="arcadia" hidden><img src="assets/web/proteus/sub/arcadia_logo.png" alt="" aria-hidden="true" /><span>Arcadia Home Aquatics</span></button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="clearwell" data-websurf-subsidiary-tab="clearwell" hidden><img src="assets/web/proteus/sub/clearwell_logo.png" alt="" aria-hidden="true" /><span>Clearwell Laboratories</span></button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="commoncurrent" data-websurf-subsidiary-tab="commoncurrent" hidden><img src="assets/web/proteus/sub/common-current_logo.png" alt="" aria-hidden="true" /><span>Common Current</span></button>
-                    <button type="button" class="webpage-tab" data-webpage-destination="tidewell" data-websurf-subsidiary-tab="tidewell" hidden><img src="assets/web/proteus/sub/tidewell_logo.png" alt="" aria-hidden="true" /><span>Tidewell</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="arcadia" data-websurf-subsidiary-tab="arcadia" hidden><img src="assets/web/proteus/sub/arcadia_logo.png" alt="" aria-hidden="true" /><span>Arcadia Home Aquatics</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Arcadia Home Aquatics tab" title="Close tab">&times;</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="clearwell" data-websurf-subsidiary-tab="clearwell" hidden><img src="assets/web/proteus/sub/clearwell_logo.png" alt="" aria-hidden="true" /><span>Clearwell Laboratories</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Clearwell Laboratories tab" title="Close tab">&times;</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="commoncurrent" data-websurf-subsidiary-tab="commoncurrent" hidden><img src="assets/web/proteus/sub/common-current_logo.png" alt="" aria-hidden="true" /><span>Common Current</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Common Current tab" title="Close tab">&times;</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="tidewell" data-websurf-subsidiary-tab="tidewell" hidden><img src="assets/web/proteus/sub/tidewell_logo.png" alt="" aria-hidden="true" /><span>Tidewell</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Tidewell tab" title="Close tab">&times;</span></button>
                     <button id="webSurfSettingsTab" type="button" class="webpage-tab webpage-tab-settings" data-webpage-destination="settings" data-websurf-temporary-tab="settings" hidden>
                       <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
                       <span>Settings</span>
+                      <span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Settings tab" title="Close tab">&times;</span>
                     </button>
                   </div>
-                  <button id="webSurfSettingsButton" class="webpage-browser-settings" type="button" title="Bubble Borough Settings" aria-label="Open Bubble Borough Settings" data-open-websurf-settings>
+                  <button id="webSurfSettingsButton" class="webpage-browser-settings" type="button" title="WebSurf Settings" aria-label="Open WebSurf Settings" data-open-websurf-settings>
                     <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
                   </button>
                   <button id="closeStoreOverlay" class="webpage-browser-close" type="button" title="Close browser" aria-label="Close browser">&times;</button>
                 </nav>
+                <nav class="websurf-browser-toolbar" aria-label="WebSurf navigation">
+                  <div class="websurf-navigation-row">
+                    <button id="webSurfBackButton" type="button" data-websurf-browser-action="back" aria-label="Back" title="Back">&#8592;</button>
+                    <button id="webSurfForwardButton" type="button" data-websurf-browser-action="forward" aria-label="Forward" title="Forward">&#8594;</button>
+                    <button type="button" data-websurf-browser-action="home" aria-label="WebSurf Home" title="WebSurf Home">&#8962;</button>
+                    <label class="websurf-address-field"><span class="sr-only">WebSurf address</span><input id="webSurfAddressInput" type="text" inputmode="url" autocomplete="off" spellcheck="false" aria-label="WebSurf address" /></label>
+                    <button id="webSurfBookmarkButton" type="button" data-websurf-browser-action="bookmark" aria-label="Bookmark current page" title="Bookmark current page">&#9734;</button>
+                    <button type="button" data-websurf-browser-action="refresh" aria-label="Refresh" title="Refresh">&#8635;</button>
+                  </div>
+                  <div id="webSurfBookmarkBar" class="websurf-bookmark-bar" aria-label="Bookmarks"></div>
+                </nav>
                 <section id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden></section>
+                <section id="webSurfThemesPage" class="web-home-page websurf-themes-page" aria-label="WebSurf Themes Store" hidden></section>
+                <section id="webSurfRouteErrorPage" class="web-home-page websurf-route-error-page" aria-live="polite" hidden></section>
                 <section id="bubbleBankPage" class="bubble-bank-page" aria-label="Bubble Borough Bank" hidden></section>
                 <section id="davyJonesLockerPage" class="davy-jones-locker-page" aria-label="Davy Jones' Locker" hidden>
                   <div class="davy-jones-locker-shell">
@@ -818,8 +847,8 @@
                 </section>
 
                 <section id="webSurfSubsidiaryPage" class="websurf-subsidiary-page" aria-label="Proteus subsidiary website" hidden>
-                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="arcadia" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/arcadia_logo.png" alt="Arcadia Home Aquatics" /><code>arcadiahomeaquatics.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquarium habitats, made intentional.</p><h1>Make the habitat feel alive.</h1><p>Arcadia Home Aquatics supplies plants, hides, stonework, ornaments, and habitat pieces available through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/decor/anchored_sway/amazon-sword__plant__theme-natural.png" alt="Amazon sword aquarium plant" /><img src="assets/decor/anchored_sway/anubias-rock__plant-rock__theme-natural.png" alt="Anubias aquarium plant on rock" /><img src="assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__front.png" alt="Terracotta aquarium hide" /><img src="assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural.png" alt="Marimo moss ball" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
-                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="clearwell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/clearwell_logo.png" alt="Clearwell Laboratories" /><code>clearwelllaboratories.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquatic health products for everyday care.</p><h1>Care, measured by the drop.</h1><p>Clearwell Laboratories develops the aquarium medications and treatment products distributed through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/medicine/first-aid.png.thumb.webp" alt="First Aid medication" /><img src="assets/generated/sprites/foodandmeds/medicine/calming-serum.png.thumb.webp" alt="Calming Serum medication" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="arcadia" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/arcadia_logo.png" alt="Arcadia Home Aquatics" /><code>arcadia.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquarium habitats, made intentional.</p><h1>Make the habitat feel alive.</h1><p>Arcadia Home Aquatics supplies plants, hides, stonework, ornaments, and habitat pieces available through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/decor/anchored_sway/amazon-sword__plant__theme-natural.png" alt="Amazon sword aquarium plant" /><img src="assets/decor/anchored_sway/anubias-rock__plant__theme-natural.png" alt="Anubias aquarium plant on rock" /><img src="assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__front.png" alt="Terracotta aquarium hide" /><img src="assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural.png" alt="Marimo moss ball" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
+                  <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="clearwell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/clearwell_logo.png" alt="Clearwell Laboratories" /><code>clearwell.swim</code></header><div class="websurf-subsidiary-copy"><p>Aquatic health products for everyday care.</p><h1>Care, measured by the drop.</h1><p>Clearwell Laboratories develops the aquarium medications and treatment products distributed through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/medicine/first-aid.png.thumb.webp" alt="First Aid medication" /><img src="assets/generated/sprites/foodandmeds/medicine/calming-serum.png.thumb.webp" alt="Calming Serum medication" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                   <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="commoncurrent" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/common-current_logo.png" alt="Common Current" /><code>commoncurrent.swim</code></header><div class="websurf-subsidiary-copy"><p>Healthy aquarium fish for ordinary homes.</p><h1>Familiar fish. Dependable stock.</h1><p>Common Current supplies BubbleBodega with conventional freshwater and marine aquarium species.</p></div><div class="websurf-subsidiary-gallery"><img src="assets/generated/sprites/fish/goldfish__genetics-natural/goldfish_bubble_eye.png.thumb.webp" alt="Goldfish" /><img src="assets/generated/sprites/fish/guppy__genetics-natural/guppy_cobra.png.thumb.webp" alt="Guppy" /><img src="assets/generated/sprites/fish/clownfish__genetics-natural/clownfish_1.png.thumb.webp" alt="Clownfish" /><img src="assets/generated/sprites/fish/discus__genetics-natural/discus_blue_diamond.png.thumb.webp" alt="Discus" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                   <article class="websurf-subsidiary-site" data-websurf-subsidiary-site="tidewell" hidden><header><img class="websurf-subsidiary-logo" src="assets/web/proteus/sub/tidewell_logo.png" alt="Tidewell" /><code>tidewell.swim</code></header><div class="websurf-subsidiary-copy"><p>Prepared nutrition for every kind of appetite.</p><h1>Feed the whole tank.</h1><p>Tidewell produces the prepared foods, specialty formulas, and predator feeds sold through BubbleBodega.</p></div><div class="websurf-subsidiary-gallery websurf-subsidiary-gallery-products"><img src="assets/generated/sprites/foodandmeds/food_1/basic-food_small.png.thumb.webp" alt="Basic Fish Food" /><img src="assets/foodandmeds/frisky-food.png" alt="Frisky Food" /><img src="assets/generated/sprites/foodandmeds/food_1/chum_small.png.thumb.webp" alt="Chum" /></div><footer><span>A subsidiary of</span><img src="assets/web/proteus/Proteus_Title_Logo.png" alt="Proteus Biodyne" /></footer></article>
                 </section>
@@ -881,6 +910,25 @@
                           <div class="tankazon-item-seller"><span>Sold by</span><button id="tankazonItemSeller" type="button" data-tankazon-seller-link>BubbleBodega</button></div>
                         </aside>
                       </div>
+                      <section id="tankazonItemFit" class="tankazon-item-fit" aria-labelledby="tankazonItemFitTitle" hidden>
+                        <header class="tankazon-item-fit-header">
+                          <span class="tankazon-item-fit-icon" aria-hidden="true">i</span>
+                          <div>
+                            <h2 id="tankazonItemFitTitle">Before You Buy</h2>
+                            <p>Make sure this fish is a good fit for your aquarium.</p>
+                          </div>
+                        </header>
+                        <div class="tankazon-item-fit-columns">
+                          <section class="tankazon-item-fit-group tankazon-item-fit-needs" aria-labelledby="tankazonItemNeedsTitle">
+                            <h3 id="tankazonItemNeedsTitle">Care Requirements</h3>
+                            <ul id="tankazonItemNeeds" class="tankazon-item-fit-list"></ul>
+                          </section>
+                          <section class="tankazon-item-fit-group tankazon-item-fit-warnings" aria-labelledby="tankazonItemWarningsTitle">
+                            <h3 id="tankazonItemWarningsTitle">Compatibility Warnings</h3>
+                            <ul id="tankazonItemWarnings" class="tankazon-item-fit-list"></ul>
+                          </section>
+                        </div>
+                      </section>
                       <section id="tankazonFoodSizeSection" class="tankazon-food-size-section" aria-labelledby="tankazonFoodSizeTitle" hidden>
                         <h2 id="tankazonFoodSizeTitle">Available Sizes</h2>
                         <p>Choose the size that’s right for your aquarium.</p>
@@ -950,8 +998,9 @@
                 <div class="settings-panel-header">
                   <div class="settings-panel-copy websurf-settings-heading">
                     <div class="websurf-settings-heading-copy">
-                      <h2 id="settingsTitle">Settings</h2>
-                      <p>Manage your Account, graphics, and game prefs.</p>
+                      <p class="settings-kicker">Bubble Borough</p>
+                      <h2 id="settingsTitle">WebSurf Settings</h2>
+                      <p>Browser preferences, history, and shared Bubble Borough game settings.</p>
                     </div>
                   </div>
 
@@ -1093,12 +1142,12 @@
                         </div>
                       </div>
 
-                      <label class="settings-toggle-row" for="simpleTurnAnimationsToggleInput" hidden>
+                      <label class="settings-toggle-row" for="complexTurnAnimationsToggleInput">
                         <div class="settings-toggle-copy">
-                          <span class="settings-toggle-label">Simple Turn Animations</span>
-                          <span class="settings-toggle-note">Forces the lightweight turnaround animation for every fish.</span>
+                          <span class="settings-toggle-label">Complex Turning</span>
+                          <span class="settings-toggle-note">Uses the v26 pseudo-3D flexible turnaround for every fish. Turn this off to use the lightweight fallback.</span>
                         </div>
-                        <input id="simpleTurnAnimationsToggleInput" class="settings-checkbox" type="checkbox" />
+                        <input id="complexTurnAnimationsToggleInput" class="settings-checkbox" type="checkbox" checked />
                       </label>
                     </section>
 
@@ -1109,8 +1158,8 @@
                       <div class="settings-section-heading">
                         <span class="settings-section-heading-icon" aria-hidden="true"><img data-sprite-src="assets/icons/general.png" alt="" /></span>
                         <div>
-                          <h3>General</h3>
-                          <p class="settings-section-note">Customize the look and feel.</p>
+                          <h3>WebSurf Settings</h3>
+                          <p class="settings-section-note">Customize your in-game browser and saved browsing data.</p>
                         </div>
                       </div>
 
@@ -1125,6 +1174,27 @@
                           <option value="no">No</option>
                         </select>
                       </label>
+                      <label class="settings-toggle-row" for="webSurfFullscreenToggle">
+                        <div class="settings-toggle-copy"><span class="settings-toggle-label">WebSurf Fullscreen</span><span class="settings-toggle-note">Lets WebSurf fill the Bubble Borough viewport. This does not change your operating-system window.</span></div>
+                        <input id="webSurfFullscreenToggle" class="settings-checkbox" type="checkbox" />
+                      </label>
+                      <div class="settings-inline-action settings-websurf-history-row">
+                        <div class="settings-toggle-copy"><span class="settings-toggle-label">Browser Themes</span><span class="settings-toggle-note">Browse, unlock, and equip WebSurf browser chrome themes.</span></div>
+                        <button type="button" class="small-button" data-websurf-open-themes>Browse Themes</button>
+                      </div>
+                      <div class="settings-inline-action settings-websurf-history-row">
+                        <div class="settings-toggle-copy"><span class="settings-toggle-label">WebSurf History</span><span class="settings-toggle-note">Remove saved WebSurf page visits. This does not remove bookmarks.</span></div>
+                        <button type="button" class="small-button alt" data-websurf-clear-history>Clear History</button>
+                      </div>
+                      <div class="settings-inline-action settings-websurf-history-row">
+                        <div class="settings-toggle-copy"><span class="settings-toggle-label">Reset Browser Preferences</span><span class="settings-toggle-note">Restores WebSurf appearance preferences. Bookmarks and discovered sites are kept.</span></div>
+                        <button type="button" class="small-button alt" data-websurf-reset-preferences>Reset Browser</button>
+                      </div>
+
+                      <div class="settings-game-settings-divider">
+                        <span>Bubble Borough Settings</span>
+                        <p>These controls use the same game settings everywhere in Bubble Borough.</p>
+                      </div>
 
                       <label class="settings-toggle-row settings-peaceful-mode-row" for="peacefulModeToggleInput">
                         <div class="settings-toggle-copy">
@@ -1520,10 +1590,10 @@
               </button>
 
               <button id="editLayerUpButton" class="dock-button edit-shortcut-control" type="button" hidden
-                title="Next decor layer (Z / Up)" aria-label="Next decor layer (Z / Up)">Z</button>
+                title="Move decor forward (Z / Up)" aria-label="Move decor forward (Z / Up)">Z</button>
 
               <button id="editLayerDownButton" class="dock-button edit-shortcut-control" type="button" hidden
-                title="Previous decor layer (X / Down)" aria-label="Previous decor layer (X / Down)">X</button>
+                title="Move decor backward (X / Down)" aria-label="Move decor backward (X / Down)">X</button>
 
               <button id="editScaleUpButton" class="dock-button edit-shortcut-control" type="button" hidden
                 title="Increase decor size (+ / =)" aria-label="Increase decor size (+ / =)">+</button>
@@ -1679,6 +1749,7 @@
                       <span>Decor Viewer</span>
                     </button>
                   </div>
+                  <pre id="debugFishBehaviorReadout" class="debug-progression-readout" aria-live="polite">Select a fish to inspect behavior.</pre>
                 </div>
                 <div class="debug-menu-section">
                   <h3>UI Experiments</h3>
@@ -1986,11 +2057,11 @@
                     <span>Behavior</span>
                     <select id="inspectorFishBehaviorSelect" data-inspector-fish-setting="behavior"></select>
                   </label>
-                  <label class="inspector-setting-row">
+                  <label class="inspector-setting-row" hidden>
                     <span>Turn Style</span>
                     <input id="inspectorFishTurnAnimationInput" class="settings-checkbox" type="checkbox"
-                      data-inspector-fish-setting="turnAnimation" aria-label="Use complex turnaround animation for this fish" />
-                    <strong id="inspectorFishTurnAnimationValue">Simple</strong>
+                      data-inspector-fish-setting="turnAnimation" aria-label="Turn animation is controlled globally" checked disabled />
+                    <strong id="inspectorFishTurnAnimationValue">Complex</strong>
                   </label>
                   <div class="fish-inspector-color-card">
                     <div class="bubbler-color-row cave-color-layer-header">

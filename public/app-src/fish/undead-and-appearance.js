@@ -230,6 +230,7 @@ function clearSuckerFishViewTransition(fish) {
 
 function startSuckerFishViewTransition(fish, fromView, toView, flipDirection = "down", now = Date.now()) {
   if (!fish) return false;
+  cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "sucker-view-transition");
   const normalizedFrom = ["back", "front", "swim"].includes(fromView) ? fromView : "back";
   const normalizedTo = ["back", "front", "swim"].includes(toView) ? toView : normalizedFrom;
   if (normalizedFrom === normalizedTo) {

@@ -389,18 +389,14 @@ function updateInspectorFishReadouts(fish) {
   const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
   const activeColor = getFishColorSetting(fish);
   const species = getSpeciesForFish(fish);
-  const storedTurnPreference = String(fish?.turnAnimationPreference || "").trim().toLowerCase();
-  const preferredTurnMode = ["simple", "complex"].includes(storedTurnPreference)
-    ? storedTurnPreference
-    : getConfiguredFishTurnAnimationMode(species);
+  const preferredTurnMode = areSimpleTurnAnimationsForced() ? "simple" : "complex";
   setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
   setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
   setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
   if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
     dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
-    dom.inspectorFishTurnAnimationInput.title = areSimpleTurnAnimationsForced()
-      ? "Graphics settings currently force Simple turns for all fish. This preference will apply when that override is disabled."
-      : "Use the complex segmented turnaround for this fish.";
+    dom.inspectorFishTurnAnimationInput.disabled = true;
+    dom.inspectorFishTurnAnimationInput.title = "Turn animation is controlled globally in Game Settings.";
   }
   setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
   if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {

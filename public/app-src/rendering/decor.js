@@ -709,6 +709,11 @@ function pruneFishShadowPlaneCache() {
       if (!activeFishIds.has(fishId)) runtime.fishCollisionAvoidanceById.delete(fishId);
     }
   }
+  if (runtime.fishSoftBodySpacingById instanceof Map) {
+    for (const fishId of runtime.fishSoftBodySpacingById.keys()) {
+      if (!activeFishIds.has(fishId)) runtime.fishSoftBodySpacingById.delete(fishId);
+    }
+  }
   if (runtime.fishNavigationMemoryById instanceof Map) {
     for (const fishId of runtime.fishNavigationMemoryById.keys()) {
       if (!activeFishIds.has(fishId)) runtime.fishNavigationMemoryById.delete(fishId);

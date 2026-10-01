@@ -62,6 +62,7 @@ const mathContext = {
   FISH_TURN_V26_VOLUME_LAYERS: 5,
   FISH_TURN_V26_INTERIOR_ALPHA: 0.16,
   FISH_TURN_V26_THICKNESS: 43,
+  FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST: 1.52,
   FISH_TURN_V26_FACE_HEAD_THICKNESS: 200,
   FISH_TURN_V26_EDGE_CLOSURE: 100,
   FISH_TURN_V26_EDGE_REACH: 26,
@@ -146,6 +147,26 @@ mathContext.easeFishTurnV26Sine = vm.runInNewContext(
 );
 mathContext.easeFishTurnV26Continuity = vm.runInNewContext(
   `(${extractFunction(v26Source, "easeFishTurnV26Continuity")})`,
+  mathContext
+);
+mathContext.createFishTurnV26MotionTimingProfile = vm.runInNewContext(
+  `(${extractFunction(v26Source, "createFishTurnV26MotionTimingProfile")})`,
+  mathContext
+);
+mathContext.getFishTurnV26MotionTimingProfile = vm.runInNewContext(
+  `(${extractFunction(v26Source, "getFishTurnV26MotionTimingProfile")})`,
+  mathContext
+);
+mathContext.getFishTurnV26TimedProgress = vm.runInNewContext(
+  `(${extractFunction(v26Source, "getFishTurnV26TimedProgress")})`,
+  mathContext
+);
+mathContext.getFishTurnV26VisualProgress = vm.runInNewContext(
+  `(${extractFunction(v26Source, "getFishTurnV26VisualProgress")})`,
+  mathContext
+);
+mathContext.getFishTurnV26ApparentThicknessScale = vm.runInNewContext(
+  `(${extractFunction(v26Source, "getFishTurnV26ApparentThicknessScale")})`,
   mathContext
 );
 mathContext.getFishHorizontalTurnState = (fish, now) => ({
@@ -349,7 +370,42 @@ test("volume shader uses exact v26 edge, cross-section, end-thinning, and thickn
   assert.match(v26Source, /bodyShape = min\(bodyShape \* faceBoost, 1\.35\);/);
   assert.match(v26Source, /float thicknessShape = edgeShape \* crossShape \* bodyShape;/);
   assert.match(v26Source, /float depth = u_layer \* u_thickness \* thicknessShape;/);
-  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_thickness, FISH_TURN_V26_THICKNESS \/ 450\);/);
+  assert.match(
+    v26Source,
+    /\(FISH_TURN_V26_THICKNESS \/ 450\) \* getFishTurnV26ApparentThicknessScale\(turnProgress\)/
+  );
+});
+
+test("phase 2 keeps edge-on v26 turns visibly thick without changing endpoint scale", () => {
+  assert.match(bootstrapSource, /const FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST = 1\.52;/);
+  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(0), 1);
+  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(1), 1);
+  assert.ok(
+    mathContext.getFishTurnV26ApparentThicknessScale(0.5) >= 1.5,
+    "mid-turn thickness should receive a meaningful edge-on boost"
+  );
+  assert.match(
+    extractFunction(v26Source, "projectFishTurnV26UvPoint"),
+    /getFishTurnV26ApparentThicknessScale\(turnProgress\)/
+  );
+});
+
+test("phase 2 latches subtle per-turn acceleration, deceleration, and midpoint variation", () => {
+  const samples = [0, 0.5, 1];
+  const profile = mathContext.createFishTurnV26MotionTimingProfile(() => samples.shift());
+  assert.ok(profile.midpoint >= 0.465 && profile.midpoint <= 0.535);
+  assert.ok(profile.entryPower >= 0.90 && profile.entryPower <= 1.12);
+  assert.ok(profile.exitPower >= 0.90 && profile.exitPower <= 1.12);
+
+  const fish = { turnV26MotionTiming: { midpoint: 0.535, entryPower: 1.12, exitPower: 0.90 } };
+  assert.equal(mathContext.getFishTurnV26TimedProgress(fish, 0), 0);
+  assert.equal(mathContext.getFishTurnV26TimedProgress(fish, 1), 1);
+  assert.ok(
+    mathContext.getFishTurnV26TimedProgress(fish, 0.5) < 0.5,
+    "later midpoint should delay the visual halfway pose"
+  );
+  assert.match(v26Source, /fish\.turnV26MotionTiming = createFishTurnV26MotionTimingProfile\(\);/);
+  assert.match(v26Source, /fish\.turnV26MotionTiming = null;/);
 });
 
 test("phase 22 gives v26 a capped head-only depth boost and mirrored depth hemispheres", () => {
@@ -691,6 +747,7 @@ test("phase 7 latches renderer backend and v26 style for the whole turn session"
     getFishTurnAnimationMode: (fish) => fish?.turnAnimationMode || "complex",
     beginFishTurnV26FinOverlaySession: () => false,
     clearFishTurnV26FinOverlaySession: () => {},
+    createFishTurnV26MotionTimingProfile: () => ({ midpoint: 0.5, entryPower: 1, exitPower: 1 }),
     FISH_TURN_V26_DEFAULT_STYLE: "head-led",
     FISH_TURN_V26_TURN_DEPTH_MODE: "both",
     Math

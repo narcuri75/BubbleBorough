@@ -1765,7 +1765,10 @@ function sanitizeOwnedBackgroundInventory(rawInventory, fallbackSelectedKeys = [
 function sanitizeTankStateSnapshot(rawTank, options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const legacyHealthModel = Boolean(options.legacyHealthModel);
-  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "tank" });
+  const incomingHealthModelVersion = Number.isFinite(Number(options.incomingHealthModelVersion))
+    ? Number(options.incomingHealthModelVersion)
+    : HEALTH_MODEL_VERSION;
+  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel, incomingHealthModelVersion, now, storageState: "tank" });
   const incomingTank = rawTank && typeof rawTank === "object" ? rawTank : {};
   const typeId = getTankTypeMeta("rectangular").id;
   const localBackgroundImageDataUrl = typeof incomingTank.localBackgroundImageDataUrl === "string"
@@ -1790,7 +1793,7 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     populationCapacity: clamp(Number(incomingTank.populationCapacity) || 20, 1, 100),
     populationUsage: Math.max(0, Number(incomingTank.populationUsage) || 0),
     setupPending: incomingTank.setupPending === true,
-    fish: Array.isArray(incomingTank.fish) ? incomingTank.fish.map((fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "tank" })).filter(Boolean) : [],
+    fish: Array.isArray(incomingTank.fish) ? incomingTank.fish.map((fish) => sanitizeFish(fish, { legacyHealthModel, incomingHealthModelVersion, now, storageState: "tank" })).filter(Boolean) : [],
     feedHistory: sanitizeHistory(incomingTank.feedHistory),
     pendingPoops: Array.isArray(incomingTank.pendingPoops) ? incomingTank.pendingPoops.map(sanitizePoop).filter(Boolean) : [],
     poops: Array.isArray(incomingTank.poops) ? incomingTank.poops.map(sanitizePoop).filter(Boolean) : [],
@@ -2099,11 +2102,11 @@ function reconcileState(rawState) {
   syncRuntimeCustomFishAssetsFromState({ customFishAssets: incomingCustomFishAssets });
   const incomingCustomBackgroundAssets = sanitizeCustomBackgroundAssets(incoming.customBackgroundAssets);
   syncRuntimeCustomBackgroundAssetsFromState({ customBackgroundAssets: incomingCustomBackgroundAssets });
-  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel });
+  const sanitizeFishEntry = (fish) => sanitizeFish(fish, { legacyHealthModel, incomingHealthModelVersion });
   const incomingHasTanks = Array.isArray(incoming.tanks) && incoming.tanks.length > 0;
   const tanks = incomingHasTanks
-    ? incoming.tanks.map((tank) => sanitizeTankStateSnapshot(tank, { now, legacyHealthModel })).filter(Boolean)
-    : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel, setupPending: isBrandNewGame })];
+    ? incoming.tanks.map((tank) => sanitizeTankStateSnapshot(tank, { now, legacyHealthModel, incomingHealthModelVersion })).filter(Boolean)
+    : [buildLegacyTankFromIncoming(incoming, { now, legacyHealthModel, incomingHealthModelVersion, setupPending: isBrandNewGame })];
   normalizeAquariumSectionGrid(tanks);
   const machinery = sanitizeMachineryState(incoming.machinery, tanks, now);
   const storedSubmarines = (Array.isArray(incoming.storedSubmarines)
@@ -2240,7 +2243,7 @@ function reconcileState(rawState) {
     unlockedFishSpecies: sanitizeUnlockedFishSpecies(incoming.unlockedFishSpecies),
     unlockedDecorKeys: sanitizeUnlockedDecorKeys(incoming.unlockedDecorKeys),
     storedFish: Array.isArray(incoming.storedFish)
-      ? incoming.storedFish.map((fish) => sanitizeFish(fish, { legacyHealthModel, now, storageState: "stored" })).filter(Boolean)
+      ? incoming.storedFish.map((fish) => sanitizeFish(fish, { legacyHealthModel, incomingHealthModelVersion, now, storageState: "stored" })).filter(Boolean)
       : [],
     decorInventory: sanitizeDecorInventory(incoming.decorInventory),
     savedDecorLayouts: sanitizeSavedDecorLayouts(incoming.savedDecorLayouts),
@@ -2365,13 +2368,6 @@ function reconcileState(rawState) {
   }
 
   nextState.decorScaleDefaults = migrateLegacyHalloweenDecorScaleDefaults(nextState.decorScaleDefaults, incomingVersion);
-
-  if (incomingHealthModelVersion < HEALTH_MODEL_VERSION) {
-    for (const tank of nextState.tanks) {
-      tank.fish = tank.fish.map((fish) => rebalanceFishHealthForCurrentModel(fish));
-    }
-    nextState.storedFish = nextState.storedFish.map((fish) => rebalanceFishHealthForCurrentModel(fish));
-  }
 
   if (incomingVersion < 36) {
     nextState.tanks.forEach((tank, index) => {

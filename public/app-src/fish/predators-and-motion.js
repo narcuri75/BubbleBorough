@@ -2039,7 +2039,9 @@ function makeFishScurryFromAttack(victim, attacker, now) {
   victim.targetAt = victim.panicUntil;
 
   if (Math.abs(victim.targetXNorm - victim.xNorm) > 0.001) {
-    setFishDirection(victim, victim.targetXNorm >= victim.xNorm ? 1 : -1, species, now);
+    setFishDirection(victim, victim.targetXNorm >= victim.xNorm ? 1 : -1, species, now, {
+      bypassTurnCommitment: true
+    });
   }
 
   spawnBloodCloud(
@@ -2094,7 +2096,9 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     fish.targetYNorm = clamp(fish.yNorm - Math.sign(attemptedYNorm - fish.yNorm) * 0.035, 0.14, 0.8);
     fish.targetAt = now + 1400 + Math.hypot(fish.xNorm - fish.targetXNorm, fish.yNorm - fish.targetYNorm) * 12000;
     if (Math.abs(fish.targetXNorm - fish.xNorm) > 0.002) {
-      setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
+      setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now, {
+        bypassTurnCommitment: true
+      });
     }
     return;
   }
@@ -2201,7 +2205,9 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   }
 
   if (Math.abs(fish.targetXNorm - fish.xNorm) > 0.002) {
-    setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now);
+    setFishDirection(fish, fish.targetXNorm >= fish.xNorm ? 1 : -1, species, now, {
+      bypassTurnCommitment: true
+    });
   }
 }
 
@@ -3633,13 +3639,18 @@ function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now)
 }
 
 function stabilizeFishTraversalTarget(fish, now, deltaSeconds, options = {}) {
-  if (!fish || options.urgent || fish.activity !== "roam" || fish.caveState) {
+  if (!fish || options.urgent || fish.activity !== "roam") {
     fish.traversalSteeringTargetXNorm = null;
     fish.traversalSteeringTargetYNorm = null;
     return {
       xNorm: Number(fish?.targetXNorm) || Number(fish?.xNorm) || 0.5,
       yNorm: Number(fish?.targetYNorm) || Number(fish?.yNorm) || 0.5
     };
+  }
+  if (fish.caveState && typeof getFishCaveSteeringTarget === "function") {
+    fish.traversalSteeringTargetXNorm = null;
+    fish.traversalSteeringTargetYNorm = null;
+    return getFishCaveSteeringTarget(fish, deltaSeconds);
   }
 
   const requestedXNorm = clamp(Number(options.targetXNorm) || Number(fish.targetXNorm) || Number(fish.xNorm) || 0.5, 0.08, 0.92);
@@ -3748,17 +3759,23 @@ function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetY
     && Number.isFinite(existingYNorm)
     && Math.hypot(existingXNorm - fish.xNorm, existingYNorm - fish.yNorm) > 0.016
   ) {
-    return { xNorm: existingXNorm, yNorm: existingYNorm, reason: "committed-detour" };
+    return {
+      xNorm: existingXNorm,
+      yNorm: existingYNorm,
+      reason: fish.traversalObstacleReason || "committed-detour"
+    };
   }
   fish.traversalObstacleWaypointXNorm = null;
   fish.traversalObstacleWaypointYNorm = null;
   fish.traversalObstacleUntil = 0;
+  fish.traversalObstacleReason = null;
 
   const boundaryWaypoint = getFishBoundaryAnticipationWaypoint(fish, targetXNorm, targetYNorm);
   if (boundaryWaypoint) {
     fish.traversalObstacleWaypointXNorm = boundaryWaypoint.xNorm;
     fish.traversalObstacleWaypointYNorm = boundaryWaypoint.yNorm;
     fish.traversalObstacleUntil = now + FISH_OBSTACLE_WAYPOINT_MS;
+    fish.traversalObstacleReason = boundaryWaypoint.reason;
     return boundaryWaypoint;
   }
 
@@ -3830,7 +3847,8 @@ function getFishAnticipatoryObstacleWaypoint(fish, species, targetXNorm, targetY
   fish.traversalObstacleWaypointXNorm = slide.xNorm;
   fish.traversalObstacleWaypointYNorm = slide.yNorm;
   fish.traversalObstacleUntil = now + FISH_OBSTACLE_WAYPOINT_MS;
-  return { ...slide, reason: blockingCave ? "cave" : "decor" };
+  fish.traversalObstacleReason = blockingCave ? "cave" : "decor";
+  return { ...slide, reason: fish.traversalObstacleReason };
 }
 
 function clearFishCruiseWaypoint(fish) {
@@ -4030,6 +4048,7 @@ function updateFishMotion(now, deltaSeconds) {
     runtime.fishPebbleTosses = [];
     runtime.forcedGravelDigUntilByFishId.clear();
     runtime.fishActionSteeringByFishId.clear();
+    runtime.fishSoftBodySpacingById?.clear?.();
     runtime.fishActionQueuesByFishId.clear();
     runtime.fishActionQueueCollapsedFishIds.clear();
     runtime.fishBreedingSequence = null;
@@ -4393,6 +4412,28 @@ function updateFishMotion(now, deltaSeconds) {
         && fish.activity === "roam"
         && !debugCaveTestFish
         && maybeApplyDiseaseAvoidanceReaction(fish, species, now);
+      if (runtime.debugCaveMovementOverlayEnabled && fish.caveState) {
+        const caveAuditMovementOwner = pendingTravel
+          ? "travel"
+          : panicOwnsMovement
+            ? "panic"
+            : pufferInflatedOwnsMovement
+              ? "puffer"
+              : breedingRole
+                ? "breeding"
+                : gravelPebbleOwnsMovement
+                  ? "gravel"
+                  : caveBehaviorOwnsMovement
+                    ? `cave:${fish.caveState}`
+                    : fishActionOwnsMovement
+                      ? "fish-action"
+                      : debugBehaviorOwnsMovement
+                        ? "debug-behavior"
+                        : diseaseAvoidanceOwnsMovement
+                          ? "disease-avoidance"
+                          : (fish.activity || "roam");
+        recordDebugCaveMovementOwner(fish, caveAuditMovementOwner, now);
+      }
       if (
         fish.activity === "roam"
         && !breedingRole
@@ -4496,7 +4537,6 @@ function updateFishMotion(now, deltaSeconds) {
       || panicOwnsMovement
       || pufferInflatedOwnsMovement
       || whaleBreathOwnsMovement
-      || fish.caveState
       || Boolean(activeQueuedFishAction)
       || Boolean(activeDebugSteering)
       || Boolean(activeFishActionSteering)
@@ -4558,6 +4598,35 @@ function updateFishMotion(now, deltaSeconds) {
       if (Math.abs(moveDy) < SOCIAL_FORMATION_POSITION_DEADZONE_NORM) moveDy = 0;
     }
 
+    const softBodySpacing = typeof getFishSoftBodySpacingVector === "function"
+      ? getFishSoftBodySpacingVector(fish, species, now, deltaSeconds, {
+        moveDx,
+        moveDy,
+        // Narrow cave portals, Borough/tube travel, breeding choreography and
+        // special attack/breath/puff owners have their own constrained routes.
+        // Let those systems remain authoritative instead of pushing the fish
+        // sideways into geometry they are explicitly trying to traverse.
+        disabled: Boolean(
+          fish.caveState
+          || pendingTravel
+          || breedingRole
+          || whaleBreathOwnsMovement
+          || pufferInflatedOwnsMovement
+          || zombieAggressionOwnsMovement
+          || piranhaLockedOnPrey
+          || fish.activity === FISH_GRAVEL_PEBBLE_ACTIVITY
+          || fish.activity === FISH_GRAVEL_DIG_ACTIVITY
+        ),
+        // Panic is allowed to keep its escape vector. Only the smaller inner
+        // envelope engages so an emergency dash still avoids body stacking.
+        emergencyOnly: panicOwnsMovement
+      })
+      : null;
+    if (softBodySpacing?.active && !getActiveFishCollisionAvoidance(fish, now)) {
+      moveDx += Number(softBodySpacing.xNorm) || 0;
+      moveDy += Number(softBodySpacing.yNorm) || 0;
+    }
+
     // Never let a normal swimming fish translate backward. Following targets
     // move often enough that they can cross behind a follower between steering
     // refreshes. Start the turn first and hold translation until the rendered
@@ -4565,8 +4634,21 @@ function updateFishMotion(now, deltaSeconds) {
     const freeSwimmingOtocinclusForFacing = species.id === "otocinclus"
       && isSuckerFishFreeSwimming(fish, species, now);
     const canUseHorizontalFacing = effectiveBehavior !== "sucker" || freeSwimmingOtocinclusForFacing;
+    const activeCollisionAvoidance = getActiveFishCollisionAvoidance(fish, now);
+    const hardBoundaryRecovery = ["left-wall", "right-wall", "top-wall", "bottom-wall"]
+      .includes(obstacleWaypoint?.reason);
+    // Cooldown/commitment bypass is intentionally narrow. Ordinary targeting,
+    // inspect/follow actions, schooling corrections, debug steering, generic
+    // decor detours and special cruising behaviors must respect the same turn
+    // commitment as roaming fish. Only genuine emergency/recovery movement can
+    // demand an immediate opposite-side turn.
+    const turnaroundCooldownBypass = panicOwnsMovement
+      || Boolean(activeCollisionAvoidance)
+      || hardBoundaryRecovery;
     const requestedHorizontalDirection = Math.hypot(moveDx, moveDy) > FISH_DIRECTION_TARGET_DEADZONE_NORM
-      ? getFishSteeringHorizontalDirection(fish, moveDx, moveDy)
+      ? getFishHorizontalTurnIntentDirection(fish, species, moveDx, moveDy, now, {
+        force: turnaroundCooldownBypass
+      })
       : 0;
     const renderedFacingDirection = canUseHorizontalFacing ? getFishFacingDirection(fish) : 0;
     const socialTurnCommitActive = socialFormationActive
@@ -4582,16 +4664,6 @@ function updateFishMotion(now, deltaSeconds) {
     let turnReversalTraversal = activeTurnReversalTraversal
       ? getFishTurnReversalTraversal(fish, moveDx, moveDy, now)
       : null;
-    const turnaroundCooldownBypass = Boolean(obstacleWaypoint)
-      || panicOwnsMovement
-      || zombieAggressionOwnsMovement
-      || pufferInflatedOwnsMovement
-      || whaleBreathOwnsMovement
-      || pendingTravel
-      || Boolean(activeQueuedFishAction)
-      || Boolean(activeDebugSteering)
-      || Boolean(activeFishActionSteering)
-      || Boolean(getActiveFishCollisionAvoidance(fish, now));
     const turnaroundCooldown = canUseHorizontalFacing && !turnaroundCooldownBypass
       ? getFishTurnaroundCooldownState(fish, now)
       : { active: false };
@@ -4624,7 +4696,13 @@ function updateFishMotion(now, deltaSeconds) {
       && !socialTurnCommitActive
       && !turnaroundCooldown.active
     ) {
-      setFishDirection(fish, requestedHorizontalDirection, species, now);
+      if (turnaroundCooldownBypass) {
+        setFishDirection(fish, requestedHorizontalDirection, species, now, {
+          bypassTurnCommitment: true
+        });
+      } else {
+        setFishDirection(fish, requestedHorizontalDirection, species, now);
+      }
       if (socialFormationActive) {
         fish.socialTurnCommittedDirection = requestedHorizontalDirection;
         fish.socialTurnCommitUntil = now + SOCIAL_FORMATION_TURN_COMMIT_MS;
@@ -4681,6 +4759,14 @@ function updateFishMotion(now, deltaSeconds) {
       moveDy = gradualSteering.yNorm;
     }
 
+    // A cave staging turn rotates at its legal mouth position. Suppress both
+    // reversal drift and cooldown launch after the steering controllers run.
+    const cavePortalFacingHoldsPosition = applyFishCavePortalFacingHold(fish);
+    if (cavePortalFacingHoldsPosition) {
+      moveDx = 0;
+      moveDy = 0;
+      handledDirectionThisFrame = true;
+    }
     const moveDistance = Math.hypot(moveDx, moveDy);
     const isDirectedSwim = panicOwnsMovement
       || zombieAggressionOwnsMovement
@@ -4883,6 +4969,9 @@ function updateFishMotion(now, deltaSeconds) {
         speedMultiplier = Math.min(1, speedMultiplier);
       }
 
+      const caveLocomotionTuning = fish.caveState && typeof getFishCaveLocomotionTuning === "function"
+        ? getFishCaveLocomotionTuning(fish)
+        : null;
       const speed = fish.swimSpeed * FISH_MOTION_SCALE * speedMultiplier;
       // Ordinary living swimming shares one velocity controller. Behaviors set
       // the destination and urgency, while locomotion preserves the animal's
@@ -4907,20 +4996,26 @@ function updateFishMotion(now, deltaSeconds) {
       let stepYNorm;
       if (usesPassiveMotion) {
         const passiveStep = integrateFishPassiveMotion(fish, moveDx, moveDy, speed, deltaSeconds, {
-          arrivalDistanceNorm: fish.caveState ? 0.025 : fish.activity === "feeding"
+          arrivalDistanceNorm: caveLocomotionTuning?.arrivalDistanceNorm ?? (fish.activity === "feeding"
             ? 0.018
             : socialFormationActive
               ? 0.035
               : activeFishActionSteering?.type === "inspect"
                 ? 0.024
-                : undefined,
+                : undefined),
           accelerationScale: clamp(
             (Number(locomotionProfile?.accelerationScale) || 1)
-              * (fish.schoolRejoinActive ? 1.25 : fish.activity === "feeding" ? 1.12 : 1),
+              * (fish.schoolRejoinActive ? 1.25 : fish.activity === "feeding" ? 1.12 : 1)
+              * (Number(caveLocomotionTuning?.accelerationScale) || 1),
             0.35,
             2.5
           ),
-          decelerationScale: clamp(Number(locomotionProfile?.decelerationScale) || 1, 0.35, 2.8)
+          decelerationScale: clamp(
+            (Number(locomotionProfile?.decelerationScale) || 1)
+              * (Number(caveLocomotionTuning?.decelerationScale) || 1),
+            0.35,
+            2.8
+          )
         });
         stepXNorm = passiveStep.x;
         stepYNorm = passiveStep.y;
@@ -5100,6 +5195,18 @@ function updateFishMotion(now, deltaSeconds) {
           : socialFormationActive
             ? moveDx
             : steeringTargetXNorm - fish.xNorm;
+        const facingDy = fish.activity === "feeding" && pelletPose
+          ? pelletPose.yNorm - fish.yNorm
+          : socialFormationActive
+            ? moveDy
+            : steeringTargetYNorm - fish.yNorm;
+        const facingIntentDirection = getFishHorizontalTurnIntentDirection(
+          fish,
+          species,
+          facingDx,
+          facingDy,
+          now
+        );
         const schoolFollowFacing = !panicOwnsMovement && fish.activity === "roam"
           ? getFishSchoolFollowFacingDirection(fish, species, now, facingDx)
           : null;
@@ -5112,8 +5219,8 @@ function updateFishMotion(now, deltaSeconds) {
         } else if (schoolFollowFacing !== null) {
           setFishDirection(fish, schoolFollowFacing, species, now);
           handledDirectionThisFrame = true;
-        } else if (Math.abs(facingDx) > FISH_DIRECTION_TARGET_DEADZONE_NORM) {
-          setFishDirection(fish, facingDx >= 0 ? 1 : -1, species, now);
+        } else if (facingIntentDirection !== 0) {
+          setFishDirection(fish, facingIntentDirection, species, now);
           handledDirectionThisFrame = true;
         }
       }

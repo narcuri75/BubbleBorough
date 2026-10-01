@@ -609,7 +609,6 @@ function renderSettingsOverlay() {
   if (dom.webSurfThemeModeSelect instanceof HTMLSelectElement) {
     dom.webSurfThemeModeSelect.value = normalizeWebSurfThemeMode(uiSettings.webSurfThemeMode);
   }
-  if (dom.webSurfFullscreenToggle) dom.webSurfFullscreenToggle.checked = uiSettings.webSurfFullscreen === true;
   if (dom.peacefulModeToggleInput) {
     dom.peacefulModeToggleInput.checked = (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled());
   }

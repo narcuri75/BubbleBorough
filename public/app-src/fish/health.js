@@ -171,6 +171,7 @@ function clearFishLivingStateForDeath(fish, now = Date.now()) {
       "fishActionQueuesByFishId",
       "fishActionSteeringByFishId",
       "fishCollisionAvoidanceById",
+      "fishSoftBodySpacingById",
       "fishNavigationMemoryById",
       "fishLayerDepthScaleTransitions",
       "fishLayerTravelStepTransitions",
@@ -412,14 +413,14 @@ function getFishHealthSizeRatio(species) {
   return clamp((speciesWidth - minSize) / (maxSize - minSize), 0, 1);
 }
 
-function getSpeciesMaxHealthUnits(species) {
+function getLegacySpeciesMaxHealthUnits(species) {
   if (!species) {
-    return MIN_FISH_HEARTS * 2;
+    return MIN_FISH_HEARTS * FISH_HEALTH_UNITS_PER_HEART;
   }
 
   const explicitHeartCount = Number(species.heartCount ?? species.hearts);
   if (Number.isFinite(explicitHeartCount)) {
-    return clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS) * 2;
+    return clamp(Math.round(explicitHeartCount), MIN_FISH_HEARTS, MAX_FISH_HEARTS) * FISH_HEALTH_UNITS_PER_HEART;
   }
 
   const sizeHearts = MIN_FISH_HEARTS + Math.round(
@@ -429,11 +430,64 @@ function getSpeciesMaxHealthUnits(species) {
   const costBonus = (cost >= PREMIUM_FISH_HEART_COST_THRESHOLD ? PREMIUM_FISH_HEART_BONUS : 0)
     + (cost >= ULTRA_PREMIUM_FISH_HEART_COST_THRESHOLD ? ULTRA_PREMIUM_FISH_HEART_BONUS : 0);
   const hearts = clamp(sizeHearts + costBonus, MIN_FISH_HEARTS, MAX_FISH_HEARTS);
-  return hearts * 2;
+  return hearts * FISH_HEALTH_UNITS_PER_HEART;
 }
 
-function getFishMaxHealthUnits(fish, species = getSpeciesForFish(fish)) {
-  return getSpeciesMaxHealthUnits(species);
+function getFishMaxHealthHearts(fish) {
+  const careLevel = Math.max(
+    FISH_CARE_LEVEL_MIN,
+    Math.floor(Number(fish?.careLevel) || FISH_CARE_LEVEL_MIN)
+  );
+  const earnedHearts = careLevel - FISH_CARE_LEVEL_MIN;
+  return clamp(
+    FISH_HEALTH_STARTING_HEARTS + earnedHearts,
+    FISH_HEALTH_STARTING_HEARTS,
+    FISH_HEALTH_MAX_HEARTS
+  );
+}
+
+function getSpeciesMaxHealthUnits() {
+  // Compatibility helper for species-only callers. Species no longer controls
+  // health capacity, so a species by itself represents a new Level 1 fish.
+  return FISH_HEALTH_STARTING_HEARTS * FISH_HEALTH_UNITS_PER_HEART;
+}
+
+function getFishMaxHealthUnits(fish) {
+  return getFishMaxHealthHearts(fish) * FISH_HEALTH_UNITS_PER_HEART;
+}
+
+function getPreviousHealthModelMaxUnits(fish, species, previousModelVersion) {
+  if (Number(previousModelVersion) < LEGACY_HEALTH_SCALE_MODEL_VERSION) {
+    return LEGACY_MAX_HEALTH_UNITS;
+  }
+  return getLegacySpeciesMaxHealthUnits(species || getSpeciesForFish(fish));
+}
+
+function migrateFishHealthUnitsToProgressionModel(rawUnits, oldMaxUnits, newMaxUnits) {
+  const oldMax = Math.max(1, Math.round(Number(oldMaxUnits) || 1));
+  const newMax = Math.max(1, Math.round(Number(newMaxUnits) || 1));
+  const current = clamp(Math.round(Number(rawUnits) || 0), 0, oldMax);
+
+  if (current <= 0) return 0;
+  if (current >= oldMax) return newMax;
+
+  // Preserve the old health proportion without allowing a partially injured
+  // living fish to become dead or unexpectedly become completely healed.
+  return clamp(Math.round((current / oldMax) * newMax), 1, Math.max(1, newMax - 1));
+}
+
+function migrateFishHealthToProgressionModel(fish, species = getSpeciesForFish(fish), previousModelVersion = HEALTH_MODEL_VERSION - 1) {
+  if (!fish) return fish;
+  if (fish.lifeState === "dead" || fish.activity === "dead" || Number.isFinite(fish.deadAt) || Number(fish.healthUnits) <= 0) {
+    return { ...fish, healthUnits: 0 };
+  }
+
+  const newMaxUnits = getFishMaxHealthUnits(fish);
+  const oldMaxUnits = getPreviousHealthModelMaxUnits(fish, species, previousModelVersion);
+  return {
+    ...fish,
+    healthUnits: migrateFishHealthUnitsToProgressionModel(fish.healthUnits, oldMaxUnits, newMaxUnits)
+  };
 }
 
 function getFishHealthRatio(fish, species = getSpeciesForFish(fish)) {
@@ -459,17 +513,8 @@ function scaleLegacyFishHealthUnits(rawUnits, maxHealthUnits) {
   return clamp(Math.round((legacyUnits / LEGACY_MAX_HEALTH_UNITS) * maxHealthUnits), 1, maxHealthUnits);
 }
 
-function rebalanceFishHealthForCurrentModel(fish, species = getSpeciesForFish(fish)) {
-  if (!fish || isFishDead(fish)) {
-    return fish;
-  }
-
-  const maxHealthUnits = getFishMaxHealthUnits(fish, species);
-  return {
-    ...fish,
-    healthUnits: clamp((Math.round(Number(fish.healthUnits) || 0) + 1), 1, maxHealthUnits),
-    missedMealsInRow: 0
-  };
+function rebalanceFishHealthForCurrentModel(fish, species = getSpeciesForFish(fish), previousModelVersion = HEALTH_MODEL_VERSION - 1) {
+  return migrateFishHealthToProgressionModel(fish, species, previousModelVersion);
 }
 
 function getFishDirtinessBonus(fish, species = getSpeciesForFish(fish)) {

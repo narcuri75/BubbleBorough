@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://bubbleborough.com/sitemap.xml

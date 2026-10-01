@@ -708,7 +708,7 @@ function isFishSpeciesShopUnlocked(speciesOrId) {
   const species = typeof speciesOrId === "string"
     ? runtime.fishMap.get(speciesOrId)
     : speciesOrId;
-  if (!species) {
+  if (!species || species.Fish_enabled === false) {
     return false;
   }
   return isDebugModeEnabled() || isFishSpeciesProgressUnlocked(species);
@@ -1030,7 +1030,10 @@ function isFishSpeciesCatalogEnabled(speciesOrId) {
   if (!species) {
     return false;
   }
-  return species.Fish_enabled !== false || isDebugModeEnabled();
+  // Fish_enabled is a public-catalog availability flag, not a progression lock.
+  // Debug Mode may bypass progression, but it must never repopulate disabled
+  // species into BubbleBodega or make them purchasable through normal commerce.
+  return species.Fish_enabled !== false;
 }
 
 function getFishShopCatalog() {

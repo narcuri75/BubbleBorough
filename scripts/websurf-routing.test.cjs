@@ -101,3 +101,52 @@ test("WebSurf theme ownership keeps Default and safely falls back from missing t
   const equipped = router.sanitizeWebSurfChromeThemeSettings({ webSurfOwnedThemes: ["aquarium"], webSurfChromeTheme: "aquarium" });
   assert.equal(equipped.activeTheme, "aquarium");
 });
+
+test("closing the final WebSurf tab closes it and opens a fresh Home tab", () => {
+  class FakeElement {
+    constructor(destination, { hidden = false, active = false } = {}) {
+      this.dataset = { webpageDestination: destination };
+      this.hidden = hidden;
+      this.classList = { contains: (name) => name === "is-active" && active };
+    }
+  }
+
+  const homeTab = new FakeElement("home", { hidden: true });
+  homeTab.dataset.websurfTabClosed = "true";
+  const settingsTab = new FakeElement("settings", { active: true });
+  const navigations = [];
+  let settingsDeactivated = 0;
+
+  const context = vm.createContext({
+    HTMLElement: FakeElement,
+    runtime: {},
+    window: { closeWebSurfSiteTab() {} },
+    document: {
+      querySelectorAll() { return [homeTab, settingsTab]; },
+      querySelector(selector) {
+        return selector.includes('data-webpage-destination="home"') ? homeTab : null;
+      }
+    },
+    deactivateWebSurfSettingsPage() { settingsDeactivated += 1; },
+    closeProteusDesignerSession() {},
+    navigateWebSurf(url, options) { navigations.push({ url, options }); },
+    getWebSurfUrlForDestination() { return ""; }
+  });
+
+  for (const statement of sourceFile.statements) {
+    if (ts.isFunctionDeclaration(statement) && ["ensureWebSurfBrowserTab", "closeWebSurfBrowserTab"].includes(statement.name?.text)) {
+      vm.runInContext(statement.getText(sourceFile), context);
+    }
+  }
+
+  context.closeWebSurfBrowserTab(settingsTab);
+
+  assert.equal(settingsTab.hidden, true);
+  assert.equal(settingsTab.dataset.websurfTabClosed, "true");
+  assert.equal(settingsDeactivated, 1);
+  assert.equal(homeTab.hidden, false);
+  assert.equal("websurfTabClosed" in homeTab.dataset, false);
+  assert.deepEqual(JSON.parse(JSON.stringify(navigations)), [
+    { url: "websurf.swim", options: { historyMode: "replace" } }
+  ]);
+});

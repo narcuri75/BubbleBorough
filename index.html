@@ -16,7 +16,7 @@
   <link rel="manifest" href="./public/manifest.webmanifest" />
   <link rel="apple-touch-icon" href="assets/misc/bb_tile.png" />
   <link rel="icon" type="image/png" sizes="192x192" href="assets/misc/favicon.png" />
-  <link rel="stylesheet" href="./public/styles.css?v=20260925-variant-dots-hidden-locks" />
+  <link rel="stylesheet" href="./public/styles.css?v=20260930-websurf-home-compact" />
 </head>
 
 <body>
@@ -469,13 +469,16 @@
                   <button id="webSurfSettingsButton" class="webpage-browser-settings" type="button" title="WebSurf Settings" aria-label="Open WebSurf Settings" data-open-websurf-settings>
                     <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
                   </button>
+                  <button id="webSurfMaximizeButton" class="webpage-browser-maximize" type="button" title="Maximize WebSurf" aria-label="Maximize WebSurf" aria-pressed="false">
+                    <span class="webpage-browser-maximize-icon" aria-hidden="true"></span>
+                  </button>
                   <button id="closeStoreOverlay" class="webpage-browser-close" type="button" title="Close browser" aria-label="Close browser">&times;</button>
                 </nav>
                 <nav class="websurf-browser-toolbar" aria-label="WebSurf navigation">
                   <div class="websurf-navigation-row">
                     <button id="webSurfBackButton" type="button" data-websurf-browser-action="back" aria-label="Back" title="Back">&#8592;</button>
                     <button id="webSurfForwardButton" type="button" data-websurf-browser-action="forward" aria-label="Forward" title="Forward">&#8594;</button>
-                    <button type="button" data-websurf-browser-action="home" aria-label="WebSurf Home" title="WebSurf Home">&#8962;</button>
+                    <button type="button" class="websurf-home-button" data-websurf-browser-action="home" aria-label="WebSurf Home" title="WebSurf Home"><img src="assets/web/websurf/browser_home.png" alt="" aria-hidden="true" /></button>
                     <label class="websurf-address-field"><span class="sr-only">WebSurf address</span><input id="webSurfAddressInput" type="text" inputmode="url" autocomplete="off" spellcheck="false" aria-label="WebSurf address" /></label>
                     <button id="webSurfBookmarkButton" type="button" data-websurf-browser-action="bookmark" aria-label="Bookmark current page" title="Bookmark current page">&#9734;</button>
                     <button type="button" data-websurf-browser-action="refresh" aria-label="Refresh" title="Refresh">&#8635;</button>
@@ -895,10 +898,31 @@
                         </div>
                         <div class="tankazon-item-description">
                           <h1 id="tankazonItemTitle" tabindex="-1"></h1>
-                          <p id="tankazonItemBrand" class="tankazon-item-brand">Visit the BubbleBodega Store</p>
-                          <div id="tankazonItemPrice" class="tankazon-item-price"></div>
-                          <h2>About this item</h2>
+                          <p id="tankazonItemBrand" class="tankazon-item-brand" hidden></p>
+                          <div id="tankazonItemPrice" class="tankazon-item-price" hidden></div>
+                          <h2 id="tankazonGenericAboutHeading" class="tankazon-generic-about-heading">About</h2>
                           <div id="tankazonItemDetails" class="tankazon-item-details"></div>
+                          <section id="tankazonItemFit" class="tankazon-item-fit" aria-labelledby="tankazonItemFitTitle" hidden>
+                            <header class="tankazon-item-fit-header">
+                              <span class="tankazon-item-fit-icon" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" role="presentation"><circle cx="12" cy="12" r="9"></circle><path d="M12 10.5v6"></path><path d="M12 7.5h.01"></path></svg>
+                              </span>
+                              <div>
+                                <h2 id="tankazonItemFitTitle">Before You Buy</h2>
+                                <p>Make sure this fish is a good fit for your aquarium.</p>
+                              </div>
+                            </header>
+                            <div class="tankazon-item-fit-columns">
+                              <section class="tankazon-item-fit-group tankazon-item-fit-needs" aria-labelledby="tankazonItemNeedsTitle">
+                                <h3 id="tankazonItemNeedsTitle">Care Requirements</h3>
+                                <ul id="tankazonItemNeeds" class="tankazon-item-fit-list"></ul>
+                              </section>
+                              <section class="tankazon-item-fit-group tankazon-item-fit-warnings" aria-labelledby="tankazonItemWarningsTitle">
+                                <h3 id="tankazonItemWarningsTitle">Compatibility Warnings</h3>
+                                <ul id="tankazonItemWarnings" class="tankazon-item-fit-list"></ul>
+                              </section>
+                            </div>
+                          </section>
                         </div>
                         <aside class="tankazon-item-buybox" aria-label="Purchase this item">
                           <div id="tankazonItemBuyPrice" class="tankazon-item-price"></div>
@@ -907,28 +931,9 @@
                           <button id="tankazonItemAdd" class="tankazon-item-add" type="button">Add to Cart</button>
                           <button id="tankazonItemBuy" class="tankazon-item-buy" type="button">Buy Now</button>
                           <p id="tankazonItemStatus" class="tankazon-item-status" role="status" aria-live="polite"></p>
-                          <div class="tankazon-item-seller"><span>Sold by</span><button id="tankazonItemSeller" type="button" data-tankazon-seller-link>BubbleBodega</button></div>
+                          <div class="tankazon-item-seller"><span>Sold by</span><span id="tankazonItemSeller">BubbleBodega</span></div>
                         </aside>
                       </div>
-                      <section id="tankazonItemFit" class="tankazon-item-fit" aria-labelledby="tankazonItemFitTitle" hidden>
-                        <header class="tankazon-item-fit-header">
-                          <span class="tankazon-item-fit-icon" aria-hidden="true">i</span>
-                          <div>
-                            <h2 id="tankazonItemFitTitle">Before You Buy</h2>
-                            <p>Make sure this fish is a good fit for your aquarium.</p>
-                          </div>
-                        </header>
-                        <div class="tankazon-item-fit-columns">
-                          <section class="tankazon-item-fit-group tankazon-item-fit-needs" aria-labelledby="tankazonItemNeedsTitle">
-                            <h3 id="tankazonItemNeedsTitle">Care Requirements</h3>
-                            <ul id="tankazonItemNeeds" class="tankazon-item-fit-list"></ul>
-                          </section>
-                          <section class="tankazon-item-fit-group tankazon-item-fit-warnings" aria-labelledby="tankazonItemWarningsTitle">
-                            <h3 id="tankazonItemWarningsTitle">Compatibility Warnings</h3>
-                            <ul id="tankazonItemWarnings" class="tankazon-item-fit-list"></ul>
-                          </section>
-                        </div>
-                      </section>
                       <section id="tankazonFoodSizeSection" class="tankazon-food-size-section" aria-labelledby="tankazonFoodSizeTitle" hidden>
                         <h2 id="tankazonFoodSizeTitle">Available Sizes</h2>
                         <p>Choose the size that’s right for your aquarium.</p>
@@ -1173,10 +1178,6 @@
                           <option value="yes">Yes</option>
                           <option value="no">No</option>
                         </select>
-                      </label>
-                      <label class="settings-toggle-row" for="webSurfFullscreenToggle">
-                        <div class="settings-toggle-copy"><span class="settings-toggle-label">WebSurf Fullscreen</span><span class="settings-toggle-note">Lets WebSurf fill the Bubble Borough viewport. This does not change your operating-system window.</span></div>
-                        <input id="webSurfFullscreenToggle" class="settings-checkbox" type="checkbox" />
                       </label>
                       <div class="settings-inline-action settings-websurf-history-row">
                         <div class="settings-toggle-copy"><span class="settings-toggle-label">Browser Themes</span><span class="settings-toggle-note">Browse, unlock, and equip WebSurf browser chrome themes.</span></div>
@@ -1747,6 +1748,12 @@
                       aria-label="Debug: Open decor placement and shadow viewer">
                       <span class="debug-menu-icon">&#129704;</span>
                       <span>Decor Viewer</span>
+                    </button>
+                    <button id="debugCaveMovementOverlayButton" class="debug-menu-button wide" type="button"
+                      title="Debug: Show cave movement audit overlay"
+                      aria-label="Debug: Show cave movement audit overlay" aria-pressed="false">
+                      <span class="debug-menu-icon">&#128506;&#65039;</span>
+                      <span>Cave Movement Overlay</span>
                     </button>
                   </div>
                   <pre id="debugFishBehaviorReadout" class="debug-progression-readout" aria-live="polite">Select a fish to inspect behavior.</pre>

@@ -1234,6 +1234,441 @@ function triggerDebugGravelDigTest() {
   showToast(`${fish.name} is heading down to dig.`);
 }
 
+function toggleDebugCaveMovementOverlay() {
+  runtime.debugCaveMovementOverlayEnabled = !runtime.debugCaveMovementOverlayEnabled;
+  runtime.debugCaveMovementOwnerByFishId?.clear?.();
+  runtime.debugCaveMovementAuditByFishId?.clear?.();
+  runtime.debugCaveMovementTransitionLog = [];
+  showToast(runtime.debugCaveMovementOverlayEnabled
+    ? "Cave movement audit overlay enabled."
+    : "Cave movement audit overlay disabled.");
+  renderUi(Date.now(), { full: false });
+}
+
+function recordDebugCaveMovementOwner(fish, owner, now = Date.now()) {
+  if (!runtime.debugCaveMovementOverlayEnabled || !fish?.id) {
+    return;
+  }
+
+  runtime.debugCaveMovementOwnerByFishId.set(fish.id, {
+    owner: String(owner || "unknown"),
+    at: now
+  });
+}
+
+function getDebugCaveMovementOwner(fish, now = Date.now()) {
+  const record = fish?.id ? runtime.debugCaveMovementOwnerByFishId?.get?.(fish.id) : null;
+  if (record && now - Number(record.at || 0) <= 750) {
+    return record.owner || "unknown";
+  }
+  return fish?.caveState ? `cave:${fish.caveState}` : (fish?.activity || "unknown");
+}
+
+function formatDebugCaveAuditPoint(point) {
+  if (!point || !Number.isFinite(Number(point.xNorm)) || !Number.isFinite(Number(point.yNorm))) {
+    return "n/a";
+  }
+  return `${(Number(point.xNorm) * 100).toFixed(1)},${(Number(point.yNorm) * 100).toFixed(1)}`;
+}
+
+function pushDebugCaveMovementTransition(message, now = Date.now()) {
+  if (!runtime.debugCaveMovementOverlayEnabled || !message) {
+    return;
+  }
+
+  runtime.debugCaveMovementTransitionLog.push({ at: now, message: String(message) });
+  if (runtime.debugCaveMovementTransitionLog.length > 40) {
+    runtime.debugCaveMovementTransitionLog.splice(0, runtime.debugCaveMovementTransitionLog.length - 40);
+  }
+}
+
+function recordDebugCaveMovementFrame(now = Date.now()) {
+  if (!runtime.debugCaveMovementOverlayEnabled || !Array.isArray(state?.fish)) {
+    return;
+  }
+
+  const activeIds = new Set();
+  for (const fish of state.fish) {
+    if (!fish?.id || !fish.caveState) {
+      continue;
+    }
+
+    activeIds.add(fish.id);
+    const previous = runtime.debugCaveMovementAuditByFishId.get(fish.id) || null;
+    const species = getSpeciesForFish(fish);
+    const current = {
+      at: now,
+      state: fish.caveState,
+      xNorm: Number(fish.xNorm) || 0,
+      yNorm: Number(fish.yNorm) || 0,
+      targetXNorm: Number(fish.targetXNorm) || 0,
+      targetYNorm: Number(fish.targetYNorm) || 0,
+      layer: getFishTankLayer(fish),
+      subLayer: getFishTankSubLayer(fish),
+      depthZ: getFishTankDepthZ(fish),
+      desiredDepthZ: getDesiredFishTankDepthZ(fish),
+      direction: getFishFacingDirection(fish),
+      velocityXNorm: Number(fish.motionVelocityXNorm) || 0,
+      velocityYNorm: Number(fish.motionVelocityYNorm) || 0,
+      owner: getDebugCaveMovementOwner(fish, now),
+      warning: ""
+    };
+
+    if (previous) {
+      const dt = Math.max(0, now - previous.at);
+      const movePx = Math.hypot(
+        (current.xNorm - previous.xNorm) * TANK_WIDTH,
+        (current.yNorm - previous.yNorm) * TANK_HEIGHT
+      );
+      const targetJumpPx = Math.hypot(
+        (current.targetXNorm - previous.targetXNorm) * TANK_WIDTH,
+        (current.targetYNorm - previous.targetYNorm) * TANK_HEIGHT
+      );
+      const warnings = [];
+
+      if (previous.state !== current.state) {
+        pushDebugCaveMovementTransition(
+          `${fish.name || species?.name || "Fish"}: state ${previous.state} -> ${current.state}`,
+          now
+        );
+      }
+      if (previous.layer !== current.layer || previous.subLayer !== current.subLayer) {
+        pushDebugCaveMovementTransition(
+          `${fish.name || species?.name || "Fish"}: depth slot L${previous.layer}.${previous.subLayer} -> L${current.layer}.${current.subLayer}`,
+          now
+        );
+        const expectedPortalDepthStep = [previous.state, current.state].some((stateName) => ["portal-enter", "portal-exit"].includes(stateName));
+        if (!expectedPortalDepthStep) {
+          warnings.push("depth-slot switch");
+        }
+      }
+      if (dt > 0 && dt <= 250 && movePx >= 30) {
+        warnings.push(`position jump ${Math.round(movePx)}px`);
+        pushDebugCaveMovementTransition(
+          `${fish.name || species?.name || "Fish"}: position jump ${Math.round(movePx)}px in ${Math.round(dt)}ms`,
+          now
+        );
+      }
+      if (dt > 0 && dt <= 250 && targetJumpPx >= 70) {
+        warnings.push(`target jump ${Math.round(targetJumpPx)}px`);
+        pushDebugCaveMovementTransition(
+          `${fish.name || species?.name || "Fish"}: target jump ${Math.round(targetJumpPx)}px`,
+          now
+        );
+      }
+      const previousSpeed = Math.hypot(previous.velocityXNorm, previous.velocityYNorm);
+      const currentSpeed = Math.hypot(current.velocityXNorm, current.velocityYNorm);
+      if (dt > 0 && dt <= 250 && previousSpeed > 0.03 && currentSpeed < previousSpeed * 0.08) {
+        warnings.push("velocity reset");
+      }
+      if (previous.direction !== current.direction && previous.state === current.state) {
+        warnings.push("facing changed");
+      }
+      current.warning = warnings.join(", ");
+    } else {
+      pushDebugCaveMovementTransition(
+        `${fish.name || species?.name || "Fish"}: cave audit started in ${current.state}`,
+        now
+      );
+    }
+
+    runtime.debugCaveMovementAuditByFishId.set(fish.id, current);
+  }
+
+  for (const fishId of Array.from(runtime.debugCaveMovementAuditByFishId.keys())) {
+    if (!activeIds.has(fishId)) {
+      const previous = runtime.debugCaveMovementAuditByFishId.get(fishId);
+      if (previous?.state) {
+        const fish = state.fish.find((entry) => entry?.id === fishId);
+        pushDebugCaveMovementTransition(`${fish?.name || "Fish"}: cave audit ended after ${previous.state}`, now);
+      }
+      runtime.debugCaveMovementAuditByFishId.delete(fishId);
+      runtime.debugCaveMovementOwnerByFishId?.delete?.(fishId);
+    }
+  }
+}
+
+function drawDebugCaveAuditRect(context, bounds, strokeStyle, dash = []) {
+  if (!bounds) {
+    return;
+  }
+  const left = Number(bounds.left);
+  const top = Number(bounds.top);
+  const right = Number(bounds.right);
+  const bottom = Number(bounds.bottom);
+  if (![left, top, right, bottom].every(Number.isFinite)) {
+    return;
+  }
+  context.save();
+  context.strokeStyle = strokeStyle;
+  context.lineWidth = 2;
+  context.setLineDash(dash);
+  context.strokeRect(left, top, Math.max(1, right - left), Math.max(1, bottom - top));
+  context.restore();
+}
+
+function drawDebugCaveAuditRegion(context, region, strokeStyle, label = "") {
+  if (!region) {
+    return;
+  }
+  const width = Number.isFinite(Number(region.fitWidthPx)) ? Number(region.fitWidthPx) : Number(region.widthPx);
+  const height = Number.isFinite(Number(region.fitHeightPx)) ? Number(region.fitHeightPx) : Number(region.heightPx);
+  const x = Number(region.x);
+  const y = Number(region.y);
+  if (![width, height, x, y].every(Number.isFinite)) {
+    return;
+  }
+
+  context.save();
+  context.strokeStyle = strokeStyle;
+  context.lineWidth = 2;
+  context.setLineDash([5, 4]);
+  context.strokeRect(x - width / 2, y - height / 2, width, height);
+  context.setLineDash([]);
+  context.fillStyle = strokeStyle;
+  context.beginPath();
+  context.arc(x, y, 4, 0, Math.PI * 2);
+  context.fill();
+  if (label) {
+    context.font = "11px monospace";
+    context.textBaseline = "bottom";
+    context.fillText(label, x + 6, y - 4);
+  }
+  context.restore();
+}
+
+function drawDebugCaveAuditPoint(context, point, label, fillStyle) {
+  if (!point || !Number.isFinite(Number(point.xNorm)) || !Number.isFinite(Number(point.yNorm))) {
+    return;
+  }
+  const x = Number(point.xNorm) * TANK_WIDTH;
+  const y = Number(point.yNorm) * TANK_HEIGHT;
+  context.save();
+  context.fillStyle = fillStyle;
+  context.strokeStyle = "rgba(0,0,0,0.8)";
+  context.lineWidth = 2;
+  context.beginPath();
+  context.arc(x, y, 6, 0, Math.PI * 2);
+  context.fill();
+  context.stroke();
+  context.font = "bold 11px monospace";
+  context.textBaseline = "bottom";
+  context.fillText(label, x + 8, y - 5);
+  context.restore();
+}
+
+function drawDebugCaveAuditPath(context, nodes, strokeStyle, label = "") {
+  if (!Array.isArray(nodes) || !nodes.length) {
+    return;
+  }
+  const points = nodes.filter((node) => Number.isFinite(Number(node?.xNorm)) && Number.isFinite(Number(node?.yNorm)));
+  if (!points.length) {
+    return;
+  }
+  context.save();
+  context.strokeStyle = strokeStyle;
+  context.fillStyle = strokeStyle;
+  context.lineWidth = 2;
+  context.setLineDash([7, 5]);
+  context.beginPath();
+  points.forEach((point, index) => {
+    const x = Number(point.xNorm) * TANK_WIDTH;
+    const y = Number(point.yNorm) * TANK_HEIGHT;
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  context.stroke();
+  context.setLineDash([]);
+  for (let index = 0; index < points.length; index += 1) {
+    const point = points[index];
+    const x = Number(point.xNorm) * TANK_WIDTH;
+    const y = Number(point.yNorm) * TANK_HEIGHT;
+    context.beginPath();
+    context.arc(x, y, 3, 0, Math.PI * 2);
+    context.fill();
+    if (index === 0 && label) {
+      context.font = "10px monospace";
+      context.fillText(label, x + 5, y + 12);
+    }
+  }
+  context.restore();
+}
+
+function drawDebugCaveMovementOverlay(now = Date.now(), context = tankContext) {
+  if (!runtime.debugCaveMovementOverlayEnabled || !isDebugModeEnabled() || !context || !Array.isArray(state?.fish)) {
+    return;
+  }
+
+  recordDebugCaveMovementFrame(now);
+  const caveFish = state.fish.filter((fish) => fish?.caveState && fish?.caveDecorId);
+  if (!caveFish.length) {
+    context.save();
+    context.fillStyle = "rgba(8,12,18,0.78)";
+    context.fillRect(12, 12, 310, 28);
+    context.fillStyle = "#fff";
+    context.font = "12px monospace";
+    context.textBaseline = "middle";
+    context.fillText("Cave audit: waiting for an active cave fish", 22, 26);
+    context.restore();
+    return;
+  }
+
+  const drawnDecorIds = new Set();
+  for (const fish of caveFish) {
+    const species = getSpeciesForFish(fish);
+    const plan = getActiveFishCavePlan(fish);
+    const decor = getCaveBehaviorDecorById(fish.caveDecorId);
+    if (!species || !plan || !decor) {
+      continue;
+    }
+
+    if (!drawnDecorIds.has(decor.id)) {
+      drawnDecorIds.add(decor.id);
+      drawDebugCaveAuditRect(context, getCaveInteriorContainmentDescriptor(decor)?.bounds, "rgba(68,220,255,0.95)", [8, 5]);
+      drawDebugCaveAuditRect(context, getCaveShellDescriptor(decor)?.bounds, "rgba(255,155,56,0.95)", [4, 4]);
+      for (const region of getCaveTriggerRegions(decor)) {
+        drawDebugCaveAuditRegion(context, region, "rgba(255,220,64,0.95)", `portal:${region.id || "?"}`);
+      }
+      for (const region of getCaveSeatRegions(decor)) {
+        drawDebugCaveAuditRegion(context, region, "rgba(106,255,130,0.95)", `seat:${region.id || "?"}`);
+      }
+    }
+
+    drawDebugCaveAuditPath(context, plan.entryPathNodes, "rgba(80,220,255,0.95)", "entry path");
+    drawDebugCaveAuditPath(context, plan.exitPathNodes, "rgba(255,112,96,0.95)", "exit path");
+    if (["portal-enter", "portal-exit"].includes(fish.caveState)) {
+      const crossingNodes = [
+        {
+          xNorm: fish.cavePortalCrossingStartXNorm,
+          yNorm: fish.cavePortalCrossingStartYNorm
+        },
+        Number.isFinite(Number(fish.cavePortalCrossingViaXNorm)) && Number.isFinite(Number(fish.cavePortalCrossingViaYNorm))
+          && fish.cavePortalCrossingViaXNorm !== null && fish.cavePortalCrossingViaYNorm !== null
+          ? {
+            xNorm: fish.cavePortalCrossingViaXNorm,
+            yNorm: fish.cavePortalCrossingViaYNorm
+          }
+          : null,
+        {
+          xNorm: fish.cavePortalCrossingEndXNorm,
+          yNorm: fish.cavePortalCrossingEndYNorm
+        }
+      ].filter(Boolean);
+      drawDebugCaveAuditPath(context, crossingNodes, "rgba(202,126,255,0.98)", "portal crossing");
+    }
+    drawDebugCaveAuditPath(context, plan.normalPathNodes, "rgba(195,126,255,0.95)", "inside path");
+    drawDebugCaveAuditPath(context, plan.debugPathNodes, "rgba(255,126,210,0.95)", "debug path");
+    drawDebugCaveAuditPoint(context, plan.approach, "A", "#8dff8d");
+    drawDebugCaveAuditPoint(context, plan.mouth, "M", "#ffe35a");
+    drawDebugCaveAuditPoint(context, plan.inside, "I", "#55dcff");
+
+    const fishX = Number(fish.xNorm) * TANK_WIDTH;
+    const fishY = Number(fish.yNorm) * TANK_HEIGHT;
+    const targetX = Number(fish.targetXNorm) * TANK_WIDTH;
+    const targetY = Number(fish.targetYNorm) * TANK_HEIGHT;
+    context.save();
+    context.strokeStyle = "rgba(255,255,255,0.94)";
+    context.lineWidth = 1.5;
+    context.setLineDash([3, 4]);
+    context.beginPath();
+    context.moveTo(fishX, fishY);
+    context.lineTo(targetX, targetY);
+    context.stroke();
+    context.setLineDash([]);
+    context.fillStyle = "#fff";
+    context.beginPath();
+    context.arc(targetX, targetY, 4, 0, Math.PI * 2);
+    context.fill();
+
+    const velocityScale = 0.16;
+    context.strokeStyle = "rgba(100,255,194,0.95)";
+    context.lineWidth = 2;
+    context.beginPath();
+    context.moveTo(fishX, fishY);
+    context.lineTo(
+      fishX + (Number(fish.motionVelocityXNorm) || 0) * TANK_WIDTH * velocityScale,
+      fishY + (Number(fish.motionVelocityYNorm) || 0) * TANK_HEIGHT * velocityScale
+    );
+    context.stroke();
+    context.restore();
+
+    const pose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
+    const fishDescriptor = getFishShapeDescriptor(fish, species, now, pose);
+    drawDebugCaveAuditRect(context, fishDescriptor?.bounds, "rgba(255,90,90,0.96)");
+
+    const snapshot = runtime.debugCaveMovementAuditByFishId.get(fish.id) || null;
+    const owner = getDebugCaveMovementOwner(fish, now);
+    const currentDepth = getFishTankDepthZ(fish);
+    const desiredDepth = getDesiredFishTankDepthZ(fish);
+    const pathIndex = Number.isFinite(Number(fish.cavePathIndex)) ? Number(fish.cavePathIndex) : null;
+    const pathLength = fish.caveState === "exit"
+      ? (plan.exitPathNodes?.length || 0)
+      : fish.caveState === "enter"
+        ? (plan.entryPathNodes?.length || 0)
+        : ["portal-enter", "portal-exit"].includes(fish.caveState)
+          ? 1
+          : (plan.normalPathNodes?.length || 0);
+    const lines = [
+      `${fish.name || species.name || "Fish"} | ${fish.caveState} | owner ${owner}`,
+      `cave ${plan.swimmable === false ? "seat-only" : "swimmable"} | seat ${fish.caveSeatId || plan.seatId || "none"}`,
+      `layer ${getFishTankLayer(fish)}.${getFishTankSubLayer(fish)} | z ${currentDepth.toFixed(3)} -> ${desiredDepth.toFixed(3)}`,
+      `target ${formatDebugCaveAuditPoint({ xNorm: fish.targetXNorm, yNorm: fish.targetYNorm })}${pathIndex == null ? "" : ` | node ${pathIndex + 1}/${Math.max(pathLength, 1)}`}`,
+      ["portal-enter", "portal-exit"].includes(fish.caveState)
+        ? `portal ${Math.round(clamp(Number(fish.cavePortalProgress) || 0, 0, 1) * 100)}% | velocity preserved`
+        : null
+    ];
+    if (snapshot?.warning) {
+      lines.push(`WARN ${snapshot.warning}`);
+    }
+    const visibleLines = lines.filter(Boolean);
+
+    context.save();
+    context.font = "11px monospace";
+    const lineHeight = 14;
+    const padding = 6;
+    const boxWidth = Math.min(430, Math.max(...visibleLines.map((line) => context.measureText(line).width)) + padding * 2);
+    const boxHeight = visibleLines.length * lineHeight + padding * 2;
+    let boxX = clamp(fishX + 14, 6, TANK_WIDTH - boxWidth - 6);
+    let boxY = clamp(fishY - boxHeight - 14, 6, TANK_HEIGHT - boxHeight - 6);
+    context.fillStyle = "rgba(8,12,18,0.82)";
+    context.fillRect(boxX, boxY, boxWidth, boxHeight);
+    context.strokeStyle = snapshot?.warning ? "rgba(255,90,90,0.96)" : "rgba(255,255,255,0.42)";
+    context.strokeRect(boxX, boxY, boxWidth, boxHeight);
+    context.textBaseline = "top";
+    visibleLines.forEach((line, index) => {
+      context.fillStyle = index === visibleLines.length - 1 && snapshot?.warning ? "#ff9696" : "#fff";
+      context.fillText(line, boxX + padding, boxY + padding + index * lineHeight);
+    });
+    context.restore();
+  }
+
+  const recentTransitions = (runtime.debugCaveMovementTransitionLog || [])
+    .filter((entry) => now - Number(entry.at || 0) <= 9000)
+    .slice(-6);
+  if (recentTransitions.length) {
+    context.save();
+    context.font = "11px monospace";
+    const padding = 7;
+    const lineHeight = 14;
+    const title = "Cave movement transitions";
+    const messages = recentTransitions.map((entry) => entry.message);
+    const width = Math.min(610, Math.max(context.measureText(title).width, ...messages.map((message) => context.measureText(message).width)) + padding * 2);
+    const height = (messages.length + 1) * lineHeight + padding * 2;
+    context.fillStyle = "rgba(8,12,18,0.78)";
+    context.fillRect(12, 12, width, height);
+    context.strokeStyle = "rgba(255,255,255,0.34)";
+    context.strokeRect(12, 12, width, height);
+    context.fillStyle = "#fff";
+    context.textBaseline = "top";
+    context.fillText(title, 12 + padding, 12 + padding);
+    messages.forEach((message, index) => {
+      context.fillStyle = message.includes("jump") || message.includes("depth slot") ? "#ffb17a" : "#dcecff";
+      context.fillText(message, 12 + padding, 12 + padding + (index + 1) * lineHeight);
+    });
+    context.restore();
+  }
+}
+
 function isDebugCaveTestFish(fish) {
   return Boolean(runtime.debugNightCaveMode && fish?.id && runtime.debugForcedCaveFishId === fish.id);
 }
@@ -2756,7 +3191,7 @@ function createDebugFishBehaviorPreviewFish(speciesId) {
   fish.debugPreviewTurnDurationMs = null;
   fish.direction = 1;
   fish.deadAt = null;
-  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  fish.healthUnits = getFishMaxHealthUnits(fish);
   return fish;
 }
 
@@ -3068,7 +3503,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
   const previewSwimPreset = getDebugFishSwimPresetForPreviewBehavior(behaviorId);
 
   fish.deadAt = null;
-  fish.healthUnits = getSpeciesMaxHealthUnits(species);
+  fish.healthUnits = getFishMaxHealthUnits(fish);
   clearPufferInflationState(fish, { clearCooldown: true });
   delete fish.suckerFreeSwimUntil;
   delete fish.whaleBreathState;
@@ -3094,7 +3529,7 @@ function renderDebugFishBehaviorPreviewFrame(frameNow) {
     fish.healthUnits = 1;
   } else if (behaviorId === "death-animation") {
     const deathStarted = phase >= 0.12;
-    fish.healthUnits = deathStarted ? 0 : getSpeciesMaxHealthUnits(species);
+    fish.healthUnits = deathStarted ? 0 : getFishMaxHealthUnits(fish);
     fish.deadAt = deathStarted ? renderNow - Math.max(0, (phase - 0.12) * cycleMs) : null;
   } else if (behaviorId === "dead") {
     fish.healthUnits = 0;

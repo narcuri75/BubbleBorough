@@ -106,6 +106,7 @@ for (const phase of ["align", "exit", "depart"]) {
       setFishTankLayers: () => {}, setFishTankSublayers: () => {},
       DEFAULT_TANK_LAYER: 2, TANK_DEPTH_LAYERS: 5, TANK_SUBLAYER_FRONT: 2, TANK_SUBLAYER_MIDDLE: 1,
       CAVE_GENERAL_REACHED_DISTANCE_NORM: 0.018, CAVE_MOUTH_REACHED_DISTANCE_NORM: 0.014,
+      getFishCaveWaypointReachDistanceNorm: () => 0.018,
       CAVE_TRIGGER_STALL_FORCE_MS: 100, CAVE_TRIGGER_STALL_FORCE_DISTANCE_NORM: 0.1
     });
     update(fish, { behavior: "normal" }, 10000);

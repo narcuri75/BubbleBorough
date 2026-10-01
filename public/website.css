@@ -1,0 +1,33 @@
+:root {
+  color-scheme: dark light;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  --background: #050d15;
+  --surface: #081824;
+  --ink: #e8f7ff;
+  --muted: #9ebdce;
+  --line: #254658;
+  --accent: #7de0f8;
+  background: var(--background);
+  color: var(--ink);
+}
+* { box-sizing: border-box; }
+body { margin: 0; min-height: 100svh; display: flex; flex-direction: column; }
+a { color: inherit; text-underline-offset: .25em; }
+a:focus-visible { outline: 3px solid var(--accent); outline-offset: 5px; }
+.site-header, .site-footer, main { width: min(100% - 2.5rem, 68rem); margin-inline: auto; }
+.site-header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding-block: 1.5rem; border-bottom: 1px solid var(--line); }
+.brand { font-size: clamp(1.1rem, 3vw, 1.45rem); font-weight: 700; text-decoration: none; }
+.play-link { display: inline-flex; gap: 1rem; align-items: center; justify-content: center; min-height: 44px; padding: .75rem 1.25rem; border-radius: 999px; background: var(--accent); color: #05222e; font-weight: 700; text-decoration: none; }
+.play-link:hover { filter: brightness(1.08); }
+main { flex: 1; padding-block: clamp(2rem, 7vw, 5rem); }
+.intro { border: 1px solid var(--line); border-radius: 26px; background: var(--surface); padding: clamp(1.5rem, 5vw, 4rem); }
+.eyebrow { margin: 0 0 1rem; font-size: .85rem; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+h1 { margin: 0; font-size: clamp(2rem, 7vw, 4rem); line-height: 1.1; overflow-wrap: anywhere; }
+.status { color: var(--muted); font-size: 1.15rem; line-height: 1.6; margin: 1.25rem 0 2rem; }
+.site-footer { display: flex; flex-wrap: wrap; gap: 1.5rem; padding-block: 1.5rem; border-top: 1px solid var(--line); font-size: .9rem; color: var(--muted); }
+.site-footer span { margin-right: auto; }
+.skip-link { position: absolute; left: 1rem; top: -6rem; padding: 1rem; background: var(--accent); color: #05222e; z-index: 1; }
+.skip-link:focus { top: 1rem; }
+@media (prefers-color-scheme: light) {
+  :root { --background: #f1f9fc; --surface: #fff; --ink: #092d3d; --muted: #416373; --line: #c5dce6; --accent: #7de0f8; }
+}

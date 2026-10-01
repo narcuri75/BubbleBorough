@@ -1035,7 +1035,8 @@
       },
       "dislikedTypes": [],
       "turnAnimation": "simple",
-      "liveBirth": false
+      "liveBirth": false,
+      "Fish_enabled": false
     },
     {
       "id": "blue-ram",

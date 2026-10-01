@@ -159,7 +159,7 @@ function getDeadFishCaveDeathContext(fish) {
     ? getActiveFishCavePlan(fish)
     : null;
   const sourceCavePlan = cloneDeadFishCavePlan(activePlan);
-  const inCaveModes = new Set(["enter", "inside", "exit", "depart"]);
+  const inCaveModes = new Set(["portal-enter", "enter", "inside", "exit", "depart", "portal-exit"]);
   const diedInCave = inCaveModes.has(sourceCaveMode);
   return {
     sourceCaveState,
@@ -211,7 +211,7 @@ function buildDeadFishCaveExitNodes(fish, caveContext) {
     let startIndex = 0;
     if (caveContext.sourceCaveMode === "exit" && Number.isFinite(caveContext.sourceCavePathIndex)) {
       startIndex = clamp(caveContext.sourceCavePathIndex, 0, exitNodes.length - 1);
-    } else if (["enter", "exit", "depart"].includes(caveContext.sourceCaveMode)) {
+    } else if (["portal-enter", "enter", "exit", "depart", "portal-exit"].includes(caveContext.sourceCaveMode)) {
       let nearestDistance = Number.POSITIVE_INFINITY;
       for (let index = 0; index < exitNodes.length; index += 1) {
         const node = exitNodes[index];

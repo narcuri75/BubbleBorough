@@ -391,7 +391,9 @@ function getFishBehaviorDebugSnapshot(fish, now = Date.now()) {
       propulsionState: String(fish?.locomotionPropulsionState || "cruise"),
       pathWanderRadians: Number(fish?.locomotionPathWanderRadians) || 0,
       turnCooldownUntil: Number(fish?.turnaroundCooldownUntil) || 0,
-      obstacleReason: Number(fish?.traversalObstacleUntil) > now ? "detour" : "none",
+      obstacleReason: Number(fish?.traversalObstacleUntil) > now
+        ? String(fish?.traversalObstacleReason || "detour")
+        : "none",
       schoolState: String(fish?.schoolState || "none"),
       schoolPathDelayMs: Number(fish?.schoolPathDelayMs) || 0
     }

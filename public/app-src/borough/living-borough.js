@@ -364,6 +364,7 @@ function clearFishReferencesAfterDeath(fishId, now = Date.now()) {
     runtime.fishActionQueuesByFishId?.delete?.(fishId);
     runtime.fishActionSteeringByFishId?.delete?.(fishId);
     runtime.fishCollisionAvoidanceById?.delete?.(fishId);
+    runtime.fishSoftBodySpacingById?.delete?.(fishId);
     runtime.fishNavigationMemoryById?.delete?.(fishId);
     runtime.boroughOverviewFishProxies?.delete?.(fishId);
     runtime.debugBirthdayHatFishIds?.delete?.(fishId);

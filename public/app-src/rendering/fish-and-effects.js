@@ -402,10 +402,104 @@ function drawFishHeldGravelPebble(fish, species, now, pose, width, height) {
   tankContext.restore();
 }
 
+function isFishInCavePortalCrossing(fish) {
+  return Boolean(
+    fish?.caveDecorId
+    && ["portal-enter", "portal-exit"].includes(fish.caveState)
+  );
+}
+
+function getFishCavePortalExteriorClipPolygon(fish) {
+  if (!isFishInCavePortalCrossing(fish)) {
+    return null;
+  }
+
+  const plan = typeof getActiveFishCavePlan === "function" ? getActiveFishCavePlan(fish) : null;
+  const mouth = plan?.mouth || (
+    Number.isFinite(Number(fish.cavePortalCrossingViaXNorm))
+    && Number.isFinite(Number(fish.cavePortalCrossingViaYNorm))
+      ? {
+        xNorm: Number(fish.cavePortalCrossingViaXNorm),
+        yNorm: Number(fish.cavePortalCrossingViaYNorm)
+      }
+      : null
+  );
+  if (!mouth || !Number.isFinite(Number(mouth.xNorm)) || !Number.isFinite(Number(mouth.yNorm))) {
+    return null;
+  }
+
+  const start = {
+    xNorm: Number(fish.cavePortalCrossingStartXNorm),
+    yNorm: Number(fish.cavePortalCrossingStartYNorm)
+  };
+  const end = {
+    xNorm: Number(fish.cavePortalCrossingEndXNorm),
+    yNorm: Number(fish.cavePortalCrossingEndYNorm)
+  };
+  if (![start.xNorm, start.yNorm, end.xNorm, end.yNorm].every(Number.isFinite)) {
+    return null;
+  }
+
+  const entering = fish.caveState === "portal-enter" || fish.cavePortalCrossingMode === "enter";
+  const outside = entering ? start : end;
+  const inside = entering ? end : start;
+  let directionX = (inside.xNorm - outside.xNorm) * TANK_WIDTH;
+  let directionY = (inside.yNorm - outside.yNorm) * TANK_HEIGHT;
+  let directionLength = Math.hypot(directionX, directionY);
+
+  // Very short authored crossing segments can make the start/end direction
+  // numerically unstable. Fall back to the actual cave approach-to-inside
+  // axis so the clip plane still represents the mouth rather than screen X/Y.
+  if (directionLength < 1) {
+    const outsideReference = plan?.approach || outside;
+    const insideReference = plan?.entryPathNodes?.[0] || plan?.inside || inside;
+    directionX = (Number(insideReference?.xNorm) - Number(outsideReference?.xNorm)) * TANK_WIDTH;
+    directionY = (Number(insideReference?.yNorm) - Number(outsideReference?.yNorm)) * TANK_HEIGHT;
+    directionLength = Math.hypot(directionX, directionY);
+  }
+  if (directionLength < 1) {
+    return null;
+  }
+
+  directionX /= directionLength;
+  directionY /= directionLength;
+  const tangentX = -directionY;
+  const tangentY = directionX;
+  const extent = Math.hypot(TANK_WIDTH, TANK_HEIGHT) * 2.5;
+  // Extend the exterior clip two pixels through the portal plane. This tiny
+  // overlap hides antialias seams without making the inside half of the body
+  // render in front of the cave shell.
+  const planeX = Number(mouth.xNorm) * TANK_WIDTH + directionX * 2;
+  const planeY = Number(mouth.yNorm) * TANK_HEIGHT + directionY * 2;
+
+  return [
+    { x: planeX + tangentX * extent, y: planeY + tangentY * extent },
+    { x: planeX - tangentX * extent, y: planeY - tangentY * extent },
+    { x: planeX - tangentX * extent - directionX * extent * 2, y: planeY - tangentY * extent - directionY * extent * 2 },
+    { x: planeX + tangentX * extent - directionX * extent * 2, y: planeY + tangentY * extent - directionY * extent * 2 }
+  ];
+}
+
+function clipContextToFishCavePortalExterior(context, fish) {
+  const polygon = getFishCavePortalExteriorClipPolygon(fish);
+  if (!context || !Array.isArray(polygon) || polygon.length < 4) {
+    return false;
+  }
+
+  context.beginPath();
+  context.moveTo(polygon[0].x, polygon[0].y);
+  for (let index = 1; index < polygon.length; index += 1) {
+    context.lineTo(polygon[index].x, polygon[index].y);
+  }
+  context.closePath();
+  context.clip();
+  return true;
+}
+
 function isFishInCaveRenderSublayer(fish) {
   const activeCaveTravel = Boolean(
     fish?.caveDecorId
-    && ["enter", "inside", "exit", "depart"].includes(fish.caveState)
+    && ["portal-enter", "enter", "inside", "exit", "depart", "portal-exit"].includes(fish.caveState)
   );
   if (!activeCaveTravel) {
     if (fish?.id) runtime.caveRenderOcclusionByFishId?.delete?.(fish.id);
@@ -1780,6 +1874,10 @@ function drawFish(now, layer = null, options = {}) {
       continue;
     }
     const caveInteriorFish = record.caveInteriorFish;
+    const cavePortalExteriorOverlayOnly = options.cavePortalExteriorOverlayOnly === true;
+    if (cavePortalExteriorOverlayOnly && !isFishInCavePortalCrossing(fish)) {
+      continue;
+    }
     if (options.caveInteriorOnly === true && !caveInteriorFish) {
       continue;
     }
@@ -1821,7 +1919,7 @@ function drawFish(now, layer = null, options = {}) {
       ? getFishTurnV26VisualContinuity(fish, pose.tilt, now)
       : null;
 
-    if (!pose.isDead && effectiveBehavior !== "sucker") {
+    if (!cavePortalExteriorOverlayOnly && !pose.isDead && effectiveBehavior !== "sucker") {
       drawCasterShadowOnDecorSurfaces({
         image,
         centerX: pose.x + visualSwayX,
@@ -1838,6 +1936,10 @@ function drawFish(now, layer = null, options = {}) {
 
     const fishWorldTransform = tankContext.getTransform();
     tankContext.save();
+    if (cavePortalExteriorOverlayOnly && !clipContextToFishCavePortalExterior(tankContext, fish)) {
+      tankContext.restore();
+      continue;
+    }
     tankContext.translate(pose.x + visualSwayX, pose.y);
     tankContext.scale(complexTurnRendererActive ? 1 : (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)), 1);
     if (useSuckerFacePivot) {
@@ -2102,17 +2204,17 @@ function drawFish(now, layer = null, options = {}) {
     // puffer inflation bubbles, birthday hats, or similar animated flourishes
     // into the dead state. This keeps every species visually quiet and avoids
     // corpse particles even if stale living-effect data survives for a frame.
-    if (!pose.isDead) {
+    if (!cavePortalExteriorOverlayOnly && !pose.isDead) {
       drawFishHeldGravelPebble(fish, species, now, pose, width, height);
     }
     tankContext.restore();
-    if (!pose.isDead) {
+    if (!cavePortalExteriorOverlayOnly && !pose.isDead) {
       drawFishDiseaseBubbles(fish, species, pose, width, height, now);
       drawFishPufferBubbleBurst(fish, species, pose, width, height, now);
       drawFishBirthdayHat(fish, pose, width, height, now);
     }
 
-    if (!pose.isDead && fish.healthUnits === 1) {
+    if (!cavePortalExteriorOverlayOnly && !pose.isDead && fish.healthUnits === 1) {
       const statusY = Math.max(topFrameBottomY + 12 * stableScale, pose.y - height * 0.72);
       tankContext.save();
       tankContext.font = `${22 * stableScale}px sans-serif`;
@@ -2126,9 +2228,11 @@ function drawFish(now, layer = null, options = {}) {
       tankContext.restore();
     }
 
-    queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
+    if (!cavePortalExteriorOverlayOnly) {
+      queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now);
+    }
 
-    if (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id) {
+    if (!cavePortalExteriorOverlayOnly && (runtime.selectedFishId === fish.id || runtime.selectedFishStatusFishId === fish.id)) {
       // This nested binding intentionally routes the complete selected-fish
       // card to glassCanvas, which is composited above tankCanvas and grime.
       // Foreground decor must never occlude the stats overlay.

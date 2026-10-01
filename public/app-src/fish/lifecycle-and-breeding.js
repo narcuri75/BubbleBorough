@@ -222,9 +222,13 @@ function createFishRecord(speciesId, options = {}) {
     sharkLastAttackAt: Number.isFinite(Number(options.sharkLastAttackAt)) ? Number(options.sharkLastAttackAt) : 0,
     breedCooldownUntil: Number.isFinite(Number(options.breedCooldownUntil)) ? Number(options.breedCooldownUntil) : 0,
     healthUnits: clamp(
-      Number.isFinite(Number(options.healthUnits)) ? Number(options.healthUnits) : getSpeciesMaxHealthUnits(species),
+      Number.isFinite(Number(options.healthUnits)) ? Number(options.healthUnits) : getFishMaxHealthUnits({
+        careLevel: clamp(Math.floor(Number(options.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX)
+      }),
       0,
-      getSpeciesMaxHealthUnits(species)
+      getFishMaxHealthUnits({
+        careLevel: clamp(Math.floor(Number(options.careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX)
+      })
     ),
     injuryDisplaySide: options.injuryDisplaySide === "left" || options.injuryDisplaySide === "right"
       ? options.injuryDisplaySide
@@ -325,6 +329,7 @@ function createFishRecord(speciesId, options = {}) {
     traversalObstacleWaypointXNorm: null,
     traversalObstacleWaypointYNorm: null,
     traversalObstacleUntil: 0,
+    traversalObstacleReason: null,
     traversalCruiseWaypointXNorm: null,
     traversalCruiseWaypointYNorm: null,
     traversalCruiseSourceTargetXNorm: null,
@@ -418,6 +423,17 @@ function createFishRecord(speciesId, options = {}) {
     caveIdleTargetXNorm: null,
     caveIdleTargetYNorm: null,
     caveIdleTargetAt: null,
+    cavePortalCrossingMode: null,
+    cavePortalCrossingStartXNorm: null,
+    cavePortalCrossingStartYNorm: null,
+    cavePortalCrossingViaXNorm: null,
+    cavePortalCrossingViaYNorm: null,
+    cavePortalCrossingEndXNorm: null,
+    cavePortalCrossingEndYNorm: null,
+    cavePortalCrossingStartZ: null,
+    cavePortalCrossingEndZ: null,
+    cavePortalCrossingNodeIndex: null,
+    cavePortalProgress: null,
     entryStartedAt: Number.isFinite(Number(options.entryStartedAt)) ? Number(options.entryStartedAt) : null,
     entryDurationMs: Number.isFinite(Number(options.entryDurationMs)) ? Number(options.entryDurationMs) : 0,
     entryFromYNorm: Number.isFinite(Number(options.entryFromYNorm)) ? clamp(Number(options.entryFromYNorm), 0.02, 0.18) : null,

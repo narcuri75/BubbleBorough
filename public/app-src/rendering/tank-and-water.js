@@ -48,6 +48,11 @@ function renderTank(now) {
     drawDecor(layer, now, { pass: "cave-back" });
     drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
     drawDecor(layer, now, { pass: "cave-front" });
+    // Portal crossings straddle the cave mouth. The inside half remains under
+    // the foreground shell while only the body still outside the portal plane
+    // is redrawn above it. This makes occlusion advance continuously with the
+    // fish instead of popping the whole sprite behind the cave at state entry.
+    drawFish(now, layer, { excludeBehavior: "sucker", cavePortalExteriorOverlayOnly: true });
     drawDecor(layer, now, { pass: "base" });
     drawPoops(now, layer);
     if (layer !== TANK_DEPTH_LAYERS) {
@@ -89,6 +94,7 @@ function renderTank(now) {
   drawActiveDecorLayerCue();
   drawWaterSurface(now);
   drawSplashBursts(now);
+  drawDebugCaveMovementOverlay(now);
   // Front glass glare is disabled for this display-focused view.
   tankContext.restore();
   drawGrime(dirtiness);

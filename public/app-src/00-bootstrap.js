@@ -86,7 +86,7 @@ const HIDDEN_KEY_SEQUENCE_BUFFER_LENGTH = VIEW_LOCK_SEQUENCE.length;
 const FIXED_16_9_ASPECT_RATIO = false;
 const PIRANHA_BEHAVIOR_ENABLED = true;
 const LEGACY_MAX_HEALTH_UNITS = 6;
-const HEALTH_MODEL_VERSION = 3;
+const HEALTH_MODEL_VERSION = 4;
 const LEGACY_HEALTH_SCALE_MODEL_VERSION = 2;
 const MIN_FISH_HEARTS = 2;
 const MAX_FISH_HEARTS = 10;
@@ -95,6 +95,9 @@ const PREMIUM_FISH_HEART_COST_THRESHOLD = 20;
 const ULTRA_PREMIUM_FISH_HEART_COST_THRESHOLD = 40;
 const PREMIUM_FISH_HEART_BONUS = 1;
 const ULTRA_PREMIUM_FISH_HEART_BONUS = 2;
+const FISH_HEALTH_STARTING_HEARTS = 3;
+const FISH_HEALTH_MAX_HEARTS = 8;
+const FISH_HEALTH_UNITS_PER_HEART = 2;
 const FISH_MEAL_COIN_COST_DIVISOR = 4;
 const RECOVERY_FEED_STREAK = 4;
 const STARVATION_DAMAGE_MISSED_MEALS_THRESHOLD = 4;
@@ -2349,6 +2352,10 @@ const FISH_TURN_V26_ALPHA_CUTOFF = 7;
 const FISH_TURN_V26_PROCESSING_MAX_DIM = 512;
 const FISH_TURN_V26_VOLUME_LAYERS = 5;
 const FISH_TURN_V26_THICKNESS = 43;
+// Edge-on v26 turns need enough apparent body volume to remain readable.
+// This boost is strongest at the 90-degree midpoint and fades to 1 at both
+// endpoint sprites, preserving normal source-art proportions before/after turns.
+const FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST = 1.52;
 const FISH_TURN_V26_FACE_HEAD_THICKNESS = 200;
 const FISH_TURN_V26_TURN_DEPTH_MODE = "both";
 const FISH_TURN_V26_DURATION_MS = 650;
@@ -2413,9 +2420,23 @@ const FISH_TURNAROUND_COOLDOWN_MAX_MS = 1700;
 const FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM = 0.045;
 const FISH_TURNAROUND_COOLDOWN_MIN_FORWARD_NORM = 0.032;
 const FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO = 0.42;
+// A horizontal sign change is not automatically a turnaround request. The
+// destination has to establish enough opposite-side displacement to overcome
+// this body/speed/path-scaled hysteresis first, especially during near-vertical
+// travel where tiny X jitter is visually meaningless.
+const FISH_TURN_REVERSAL_MIN_HORIZONTAL_PX = 10;
+const FISH_TURN_REVERSAL_MAX_HORIZONTAL_PX = 64;
+const FISH_TURN_REVERSAL_BODY_WIDTH_FACTOR = 0.22;
+const FISH_TURN_REVERSAL_SPEED_BONUS_PX = 8;
+const FISH_TURN_REVERSAL_DISTANCE_FACTOR = 0.04;
+const FISH_TURN_REVERSAL_DISTANCE_BONUS_MAX_PX = 18;
+const FISH_TURN_REVERSAL_VERTICAL_RATIO_START = 1.15;
+const FISH_TURN_REVERSAL_VERTICAL_BONUS_PER_RATIO_PX = 8;
+const FISH_TURN_REVERSAL_VERTICAL_BONUS_MAX_PX = 20;
 const FISH_TRAVERSAL_TARGET_RESPONSE_PER_SEC = 3.4;
 const FISH_TRAVERSAL_TARGET_MAX_STEP_NORM = 0.032;
 const FISH_TRAVERSAL_TURN_COMMIT_MIN_MS = 360;
+const FISH_TRAVERSAL_POST_TURN_COMMIT_MIN_MS = 650;
 const FISH_OBSTACLE_LOOKAHEAD_MIN_NORM = 0.045;
 const FISH_OBSTACLE_LOOKAHEAD_MAX_NORM = 0.11;
 const FISH_OBSTACLE_WAYPOINT_MS = 720;
@@ -2762,6 +2783,34 @@ const SCHOOL_FORMATION_HEADING_SETTLE_MS = 420;
 // Without it a follower can complete one turn and immediately accept the
 // opposite request from a moving leader or a freshly released detour.
 const SOCIAL_FORMATION_TURN_COMMIT_MS = 720;
+// Phase 6 movement polish: fish should begin yielding before their visible
+// bodies stack on top of one another. This is steering pressure, not rigid
+// collision physics. Ordinary fish get a comfortable body-space envelope;
+// active schoolmates/follow pairs keep their authored formation and only use
+// the emergency inner envelope when a real overlap is becoming imminent.
+const FISH_SOFT_BODY_SPACING_X_SCALE = 0.42;
+const FISH_SOFT_BODY_SPACING_Y_SCALE = 0.24;
+const FISH_SOFT_BODY_SPACING_MIN_X_NORM = 0.026;
+const FISH_SOFT_BODY_SPACING_MAX_X_NORM = 0.14;
+const FISH_SOFT_BODY_SPACING_MIN_Y_NORM = 0.022;
+const FISH_SOFT_BODY_SPACING_MAX_Y_NORM = 0.12;
+// Schoolmates can keep a tighter comfort envelope, but they never receive a
+// smaller physical exclusion body. The body zone below is species-agnostic.
+const FISH_SOFT_BODY_SPACING_SOCIAL_PERSONAL_RATIO = 0.68;
+const FISH_SOFT_BODY_SPACING_URGENT_INNER_RATIO = 0.66;
+const FISH_SOFT_BODY_SPACING_MAX_BIAS_PX = 44;
+const FISH_SOFT_BODY_SPACING_RESPONSE_MIN_PER_SEC = 5.2;
+const FISH_SOFT_BODY_SPACING_RESPONSE_MAX_PER_SEC = 12;
+// The hard exclusion zone is still steering, not bounce physics. It simply
+// responds earlier/stronger once visible bodies are at risk of merging.
+const FISH_BODY_EXCLUSION_PADDING = 1.08;
+const FISH_BODY_EXCLUSION_FALLBACK_WIDTH_RATIO = 0.62;
+const FISH_BODY_EXCLUSION_FALLBACK_HEIGHT_RATIO = 0.30;
+const FISH_BODY_EXCLUSION_MAX_BIAS_PX = 78;
+const FISH_BODY_EXCLUSION_RESPONSE_MIN_PER_SEC = 13;
+const FISH_BODY_EXCLUSION_RESPONSE_MAX_PER_SEC = 24;
+const FISH_SOFT_BODY_SPACING_RELEASE_PER_SEC = 4.4;
+const FISH_SOFT_BODY_SPACING_ACTIVE_EPSILON_PX = 0.35;
 const SAME_SPECIES_SCHOOL_SEPARATION_RADIUS_NORM = 0.09;
 const SAME_SPECIES_SCHOOL_COHESION_BLEND = 0.08;
 const BABY_FISH_SCALE_MULTIPLIER = 0.45;
@@ -3392,6 +3441,7 @@ const AUTO_DISPENSER_BG_PATH = resolveDispenserAssetPath("Food_Dispenser_bg.png"
 
 
 const DEFAULT_CAVE_BEHAVIOR_PROFILE = {
+  swimmable: true,
   portals: [
     { id: "left", approachX: 0.34, approachY: 0.76, mouthX: 0.38, mouthY: 0.69 },
     { id: "center", approachX: 0.5, approachY: 0.76, mouthX: 0.5, mouthY: 0.68 },
@@ -9325,6 +9375,7 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "artificial",
@@ -9344,6 +9395,7 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "artificial",
@@ -9363,13 +9415,107 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": false,
     "tags": [
       "cave",
       "artificial",
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "top-left",
+          "approachX": 0.245,
+          "approachY": 0.325,
+          "mouthX": 0.307,
+          "mouthY": 0.357
+        },
+        {
+          "id": "top-right",
+          "approachX": 0.805,
+          "approachY": 0.402,
+          "mouthX": 0.738,
+          "mouthY": 0.43
+        },
+        {
+          "id": "lower-left",
+          "approachX": 0.095,
+          "approachY": 0.655,
+          "mouthX": 0.178,
+          "mouthY": 0.63
+        },
+        {
+          "id": "lower-center",
+          "approachX": 0.496,
+          "approachY": 0.715,
+          "mouthX": 0.496,
+          "mouthY": 0.602
+        },
+        {
+          "id": "lower-right",
+          "approachX": 0.955,
+          "approachY": 0.66,
+          "mouthX": 0.875,
+          "mouthY": 0.64
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "top-left-seat",
+          "x": 0.326,
+          "y": 0.37,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "top-left"
+          ]
+        },
+        {
+          "id": "top-right-seat",
+          "x": 0.716,
+          "y": 0.439,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "top-right"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.202,
+          "y": 0.624,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "lower-left"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.496,
+          "y": 0.58,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.85,
+          "y": 0.634,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right"
+          ]
+        }
+      ],
+      "lingerMinMs": 8500,
+      "lingerMaxMs": 15000
+    }
   },
   "clay-multi__cave__theme-artificial__front.png": {
     "name": "Clay Multi",
@@ -9382,13 +9528,90 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": false,
     "tags": [
       "cave",
       "artificial",
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "upper",
+          "approachX": 0.27,
+          "approachY": 0.23,
+          "mouthX": 0.315,
+          "mouthY": 0.306
+        },
+        {
+          "id": "left",
+          "approachX": 0.075,
+          "approachY": 0.64,
+          "mouthX": 0.168,
+          "mouthY": 0.622
+        },
+        {
+          "id": "center",
+          "approachX": 0.616,
+          "approachY": 0.755,
+          "mouthX": 0.616,
+          "mouthY": 0.589
+        },
+        {
+          "id": "right",
+          "approachX": 0.975,
+          "approachY": 0.645,
+          "mouthX": 0.893,
+          "mouthY": 0.633
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "upper-seat",
+          "x": 0.337,
+          "y": 0.33,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "upper"
+          ]
+        },
+        {
+          "id": "left-seat",
+          "x": 0.198,
+          "y": 0.618,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "left"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.616,
+          "y": 0.56,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "center"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.866,
+          "y": 0.628,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16500
+    }
   },
   "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
     "name": "Extra Narrow Pleco Tubes",
@@ -9401,13 +9624,107 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": false,
     "tags": [
       "cave",
       "artificial",
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "upper-left",
+          "approachX": 0.465,
+          "approachY": 0.392,
+          "mouthX": 0.497,
+          "mouthY": 0.48
+        },
+        {
+          "id": "upper-right",
+          "approachX": 0.76,
+          "approachY": 0.395,
+          "mouthX": 0.734,
+          "mouthY": 0.487
+        },
+        {
+          "id": "lower-left",
+          "approachX": 0.33,
+          "approachY": 0.77,
+          "mouthX": 0.391,
+          "mouthY": 0.675
+        },
+        {
+          "id": "lower-center",
+          "approachX": 0.627,
+          "approachY": 0.785,
+          "mouthX": 0.627,
+          "mouthY": 0.675
+        },
+        {
+          "id": "lower-right",
+          "approachX": 0.95,
+          "approachY": 0.755,
+          "mouthX": 0.877,
+          "mouthY": 0.669
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "upper-left-seat",
+          "x": 0.505,
+          "y": 0.5,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "upper-left"
+          ]
+        },
+        {
+          "id": "upper-right-seat",
+          "x": 0.724,
+          "y": 0.507,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "upper-right"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.408,
+          "y": 0.653,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "lower-left"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.627,
+          "y": 0.65,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.858,
+          "y": 0.655,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right"
+          ]
+        }
+      ],
+      "lingerMinMs": 9500,
+      "lingerMaxMs": 17000
+    }
   },
   "pvc-pipe__cave__theme-artificial__front.png": {
     "name": "PVC Pipe",
@@ -9420,6 +9737,7 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "artificial",
@@ -9439,6 +9757,7 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "artificial",
@@ -9458,6 +9777,7 @@ const DECOR_META = {
     ],
     "theme": "artificial",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "artificial",
@@ -9518,6 +9838,7 @@ const DECOR_META = {
       "cave"
     ],
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "fantasy",
@@ -9635,6 +9956,7 @@ const DECOR_META = {
       "cave"
     ],
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "fantasy",
@@ -9654,6 +9976,7 @@ const DECOR_META = {
     ],
     "theme": "frozen",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "frozen",
@@ -9673,6 +9996,7 @@ const DECOR_META = {
     ],
     "theme": "frozen",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "frozen",
@@ -9691,6 +10015,7 @@ const DECOR_META = {
     "theme": "halloween",
     "description": "A miniature stone crypt with enough room inside for fish that prefer their hiding places a little more gothic.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "halloween",
@@ -9763,6 +10088,7 @@ const DECOR_META = {
     "theme": "halloween",
     "description": "A miniature haunted house with enough room inside for brave fish, scared fish, or fish that simply want somewhere dark to sit.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "halloween",
@@ -9783,6 +10109,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "natural",
@@ -9803,6 +10130,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "wood",
@@ -9825,6 +10153,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "wood",
@@ -9847,6 +10176,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "wood",
@@ -9929,6 +10259,7 @@ const DECOR_META = {
       "rock"
     ],
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "rock",
@@ -9950,6 +10281,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": false,
     "tags": [
       "cave",
       "rock",
@@ -9957,7 +10289,66 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "left-den",
+          "approachX": 0.275,
+          "approachY": 0.65,
+          "mouthX": 0.378,
+          "mouthY": 0.617
+        },
+        {
+          "id": "upper-right-den",
+          "approachX": 0.9,
+          "approachY": 0.5,
+          "mouthX": 0.808,
+          "mouthY": 0.512
+        },
+        {
+          "id": "lower-right-den",
+          "approachX": 0.9,
+          "approachY": 0.68,
+          "mouthX": 0.78,
+          "mouthY": 0.657
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "left-den-seat",
+          "x": 0.41,
+          "y": 0.61,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "left-den"
+          ]
+        },
+        {
+          "id": "upper-right-den-seat",
+          "x": 0.78,
+          "y": 0.518,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "upper-right-den"
+          ]
+        },
+        {
+          "id": "lower-right-den-seat",
+          "x": 0.8,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right-den"
+          ]
+        }
+      ],
+      "lingerMinMs": 10000,
+      "lingerMaxMs": 18000
+    }
   },
   "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
     "name": "Tangled Driftwood Rootscape",
@@ -9971,6 +10362,7 @@ const DECOR_META = {
     ],
     "theme": "natural",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "wood",
@@ -9993,6 +10385,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A rocky coral shelf with a sheltered space underneath. Part reef decoration, part cozy hiding place.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10015,6 +10408,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A substantial coral shelf with a protected hollow below, giving the tank a more layered reef landscape.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10037,6 +10431,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A layered coral shelf that creates a shaded little retreat beneath the reef.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10059,6 +10454,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A sturdy coral-covered shelf with enough room underneath for curious fish to disappear for a while.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10081,6 +10477,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A reef shelf with a natural hollow beneath it, adding both height and a tucked-away hiding spot.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10103,6 +10500,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10125,6 +10523,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10147,6 +10546,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A broad reef shelf with a built-in hiding place beneath it. Basically beachfront property for fish.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10169,6 +10569,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A rocky coral overhang that adds depth to the reef and a shady little spot underneath.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10192,6 +10593,7 @@ const DECOR_META = {
     ],
     "theme": "reef",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "rock",
@@ -10215,6 +10617,7 @@ const DECOR_META = {
     ],
     "theme": "reef",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "rock",
@@ -10236,6 +10639,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10264,6 +10668,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10292,6 +10697,7 @@ const DECOR_META = {
     "theme": "reef",
     "description": "A cozy sea anemone. Cozy, colorful, and slightly wiggly.",
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "coral",
@@ -10320,6 +10726,7 @@ const DECOR_META = {
     ],
     "theme": "reef",
     "behavior": "cave_layered",
+    "swimmable": false,
     "tags": [
       "cave",
       "coral",
@@ -10328,7 +10735,66 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "left-shell",
+          "approachX": 0.105,
+          "approachY": 0.565,
+          "mouthX": 0.216,
+          "mouthY": 0.524
+        },
+        {
+          "id": "upper-shell",
+          "approachX": 0.5,
+          "approachY": 0.5,
+          "mouthX": 0.585,
+          "mouthY": 0.406
+        },
+        {
+          "id": "right-shell",
+          "approachX": 0.955,
+          "approachY": 0.665,
+          "mouthX": 0.855,
+          "mouthY": 0.64
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "left-shell-seat",
+          "x": 0.245,
+          "y": 0.522,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "left-shell"
+          ]
+        },
+        {
+          "id": "upper-shell-seat",
+          "x": 0.61,
+          "y": 0.42,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "upper-shell"
+          ]
+        },
+        {
+          "id": "right-shell-seat",
+          "x": 0.825,
+          "y": 0.63,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right-shell"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16000
+    }
   },
   "meteor__cave-rock__theme-space__front.png": {
     "name": "Meteor Cave",
@@ -10368,6 +10834,7 @@ const DECOR_META = {
       "rock"
     ],
     "behavior": "cave_layered",
+    "swimmable": true,
     "tags": [
       "cave",
       "rock",
@@ -12455,6 +12922,7 @@ const dom = {
   debugGravelDigButton: document.querySelector("#debugGravelDigButton"),
   debugGravelPebbleButton: document.querySelector("#debugGravelPebbleButton"),
   debugCaveButton: document.querySelector("#debugCaveButton"),
+  debugCaveMovementOverlayButton: document.querySelector("#debugCaveMovementOverlayButton"),
   debugDailyRecapButton: document.querySelector("#debugDailyRecapButton"),
   debugFishBehaviorLogButton: document.querySelector("#debugFishBehaviorLogButton"),
   debugFishBehaviorReadout: document.querySelector("#debugFishBehaviorReadout"),
@@ -12568,6 +13036,7 @@ const dom = {
   bubbleBodegaHomePage: document.querySelector("#bubbleBodegaHomePage"),
   webSurfUnreadBadge: document.querySelector("#webSurfUnreadBadge"),
   webSurfSettingsButton: document.querySelector("#webSurfSettingsButton"),
+  webSurfMaximizeButton: document.querySelector("#webSurfMaximizeButton"),
   webSurfSettingsTab: document.querySelector("#webSurfSettingsTab"),
   bubbleBankPage: document.querySelector("#bubbleBankPage"),
   davyJonesLockerPage: document.querySelector("#davyJonesLockerPage"),
@@ -12586,7 +13055,6 @@ const dom = {
   layoutRatioLockToggleInput: document.querySelector("#layoutRatioLockToggleInput"),
   layoutRatioLockFrameToggleInput: document.querySelector("#layoutRatioLockFrameToggleInput"),
   webSurfThemeModeSelect: document.querySelector("#webSurfThemeModeSelect"),
-  webSurfFullscreenToggle: document.querySelector("#webSurfFullscreenToggle"),
   equipmentOverlay: document.querySelector("#equipmentOverlay"),
   equipmentPanelDescription: document.querySelector("#equipmentPanelDescription"),
   equipmentLightingSection: document.querySelector("#equipmentLightingSection"),
@@ -13153,6 +13621,7 @@ const runtime = {
   fishLayerTravelStepTransitions: new Map(),
   caveRenderOcclusionByFishId: new Map(),
   fishCollisionAvoidanceById: new Map(),
+  fishSoftBodySpacingById: new Map(),
   fishNavigationMemoryById: new Map(),
   fishRightOfWayByPair: new Map(),
   corpseMotionByFishId: new Map(),
@@ -13266,6 +13735,10 @@ const runtime = {
   debugNightCaveMode: false,
   debugForcedCaveFishId: null,
   debugForcedCaveDecorId: null,
+  debugCaveMovementOverlayEnabled: false,
+  debugCaveMovementOwnerByFishId: new Map(),
+  debugCaveMovementAuditByFishId: new Map(),
+  debugCaveMovementTransitionLog: [],
   collapsedSections: {
     fishTank: true,
     fishDead: true,

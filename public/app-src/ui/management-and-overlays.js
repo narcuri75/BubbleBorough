@@ -4195,7 +4195,7 @@ function renderWebSurfHomePage() {
   const browser = getWebSurfBrowserState();
   const playerBookmarks = browser.bookmarks.map((bookmark) => {
     const route = resolveWebSurfUrl(bookmark.url);
-    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(route.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(route.site.displayName)}. Drag to reorder."><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
   }).join("");
   const recentPages = browser.history.slice(-5).reverse().map((entry) => {
     const route = resolveWebSurfUrl(entry.url);
@@ -4224,33 +4224,33 @@ function renderWebSurfHomePage() {
       ${selected ? `<div class="websurf-mail-detail"><div class="websurf-mail-body"><div class="websurf-email-scroll">${message.templateId ? renderWebSurfAutoEmailBody(message) : `<p>${escapeHtml(message.preview)}</p>`}</div></div><div class="websurf-mail-actions">${!message.templateId ? `<button type="button" data-webpage-destination="${escapeHtml(message.destination)}">Open sender site</button>` : ""}<button type="button" class="websurf-silence-button" data-websurf-silence-sender="${escapeHtml(message.sender)}" data-websurf-silence-sender-id="${escapeHtml(message.senderId)}">${silenced ? "Unsilence sender" : "Silence sender"}</button><button type="button" class="websurf-trash-button" data-websurf-trash-mail="${escapeHtml(message.id)}" aria-label="Delete email" title="${starred ? "Unstar this email before deleting it" : "Delete email"}" ${starred ? "disabled" : ""}>${trashIcon}</button></div></div>` : ""}
     </article>`;
   }).join("");
-  return `<header class="websurf-home-header">
+  return `<header class="websurf-home-header websurf-home-dashboard-header">
       <img ${assetImageAttributes("assets/web/websurf/WebSurf_icon.png")} alt="WebSurf" />
       <div><span>WEBSURF.SWIM</span><h1 id="webHomeTitle">Welcome, ${escapeHtml(username)}</h1><p>${escapeHtml(addressName)}@WebSurf.swim</p></div>
     </header>
-    <main class="websurf-home-main">
-      <section class="websurf-bookmarks" aria-labelledby="websurfBookmarksTitle">
-        <h2 id="websurfBookmarksTitle">Bookmarks</h2>
-        <div class="websurf-bookmark-row">
+    <main class="websurf-home-main websurf-home-dashboard-main">
+      <section class="websurf-bookmarks websurf-utility-section" aria-labelledby="websurfBookmarksTitle">
+        <div class="websurf-utility-heading"><h2 id="websurfBookmarksTitle">Favorites</h2></div>
+        <div class="websurf-bookmark-row websurf-favorites-row">
           <button type="button" class="websurf-bookmark" data-webpage-destination="bank"><img ${assetImageAttributes("assets/misc/coin_unicode.png")} alt="" /><span><strong>Bubble Borough Bank</strong><small>Balance, rewards, and statements</small></span></button>
           <button type="button" class="websurf-bookmark" data-webpage-destination="store"><img ${assetImageAttributes("assets/web/bodega/Box.png")} alt="" /><span><strong>BubbleBodega</strong><small>Food, fish, and aquarium supplies</small></span></button>
-          <button type="button" class="websurf-bookmark" data-websurf-route="websurf.swim/themes"><span aria-hidden="true">✦</span><span><strong>Themes Store</strong><small>Customize the WebSurf browser</small></span></button>
-          <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology and marine research</small></span></button>
-          ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue · davyjoneslocker.hadal</small></span></button>` : ""}
+          <button type="button" class="websurf-bookmark" data-websurf-route="websurf.swim/themes"><span class="websurf-bookmark-symbol" aria-hidden="true">✦</span><span><strong>Themes Store</strong><small>Customize WebSurf</small></span></button>
+          <button type="button" class="websurf-bookmark" data-webpage-destination="proteus" data-proteus-home-link ${proteusDiscovered ? "" : "hidden"}><img ${assetImageAttributes("assets/web/proteus/Proteus_Logo_Icon.png")} alt="" /><span><strong>Proteus Biodyne</strong><small>Adaptive biology research</small></span></button>
+          ${davyLockerUnlocked ? `<button type="button" class="websurf-bookmark" data-webpage-destination="locker"><img ${assetImageAttributes("assets/web/davy/icons/davy_icon.png")} alt="" /><span><strong>Davy Jones' Locker</strong><small>Private catalogue</small></span></button>` : ""}
           ${playerBookmarks}
-          <span class="websurf-bookmark is-coming-soon"><span aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations on the horizon</small></span></span>
+          <span class="websurf-bookmark is-coming-soon"><span class="websurf-bookmark-symbol" aria-hidden="true">◈</span><span><strong>More coming soon</strong><small>New destinations</small></span></span>
         </div>
       </section>
-      ${recentPages ? `<section class="websurf-bookmarks" aria-labelledby="websurfRecentTitle"><div class="websurf-bookmarks-heading"><h2 id="websurfRecentTitle">Recent Pages</h2><button type="button" class="small-button alt" data-websurf-clear-history>Clear History</button></div><div class="websurf-bookmark-row">${recentPages}</div></section>` : ""}
+      ${recentPages ? `<section class="websurf-bookmarks websurf-utility-section websurf-recent-section" aria-labelledby="websurfRecentTitle"><div class="websurf-utility-heading"><h2 id="websurfRecentTitle">Recent Pages</h2><button type="button" class="small-button alt" data-websurf-clear-history>Clear History</button></div><div class="websurf-bookmark-row websurf-recent-row">${recentPages}</div></section>` : ""}
       <div class="websurf-dashboard-grid">
         <section class="websurf-inbox" aria-labelledby="websurfInboxTitle">
           <header><div><span class="websurf-inbox-icon" aria-hidden="true">✉</span><h2 id="websurfInboxTitle">Inbox</h2><span class="websurf-unread-count">${unreadCount}</span></div><div class="websurf-inbox-header-actions"><button type="button" data-websurf-delete-unstarred ${deletableCount ? "" : "disabled"}>Delete Unstarred</button><button type="button" data-websurf-mark-all-read ${unreadCount ? "" : "disabled"}>Mark all read</button></div></header>
           <div class="websurf-mail-list">${mailMarkup}</div>
+          <footer class="websurf-status-bar" aria-label="WebSurf status">
+            <span>WebSurf 1.4 · Secure</span>
+            <span><small>Mail storage</small><strong>${formatWebSurfMailStorage(messages)} / 25 MB</strong></span>
+          </footer>
         </section>
-        <footer class="websurf-status-bar" aria-label="WebSurf status">
-          <span>WebSurf 1.4 · Secure</span>
-          <span><small>Mail storage</small><strong>${formatWebSurfMailStorage(messages)} / 25 MB</strong></span>
-        </footer>
       </div>
     </main>`;
 }

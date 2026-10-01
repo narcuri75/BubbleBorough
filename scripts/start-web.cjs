@@ -28,6 +28,8 @@ const mimeTypes = Object.freeze({
   ".ttf": "font/ttf",
   ".wav": "audio/wav",
   ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8",
+  ".txt": "text/plain; charset=utf-8",
   ".webp": "image/webp"
 });
 
@@ -48,15 +50,36 @@ function resolveRequestPath(requestUrl) {
   return relative.startsWith("..") || path.isAbsolute(relative) ? null : resolved;
 }
 
-const server = http.createServer((request, response) => {
-  const filePath = resolveRequestPath(request.url || "/");
+function createServer() {
+return http.createServer((request, response) => {
+  let filePath;
+  let requestUrl;
+  try {
+    requestUrl = new URL(request.url || "/", url);
+    filePath = resolveRequestPath(request.url || "/");
+  } catch {
+    response.writeHead(400).end("Bad Request");
+    return;
+  }
   if (!filePath) {
     response.writeHead(403).end("Forbidden");
     return;
   }
+  // Match ordinary static hosting: directory URLs end in a slash and serve
+  // index.html. Unknown paths never fall back to the game or homepage.
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
+    if (!requestUrl.pathname.endsWith("/")) {
+      response.writeHead(308, { location: `${requestUrl.pathname}/${requestUrl.search}` }).end();
+      return;
+    }
+    filePath = path.join(filePath, "index.html");
+  }
   fs.readFile(filePath, (error, body) => {
     if (error) {
-      response.writeHead(error.code === "ENOENT" ? 404 : 500).end(error.code === "ENOENT" ? "Not Found" : "Server Error");
+      const missing = error.code === "ENOENT";
+      const errorPage = path.join(root, "404.html");
+      response.writeHead(missing ? 404 : 500, { "content-type": "text/html; charset=utf-8" });
+      response.end(missing && fs.existsSync(errorPage) ? fs.readFileSync(errorPage) : (missing ? "Not Found" : "Server Error"));
       return;
     }
     response.writeHead(200, {
@@ -66,7 +89,11 @@ const server = http.createServer((request, response) => {
     response.end(body);
   });
 });
+}
 
+if (require.main === module) {
+require("./build-website.cjs").build();
+const server = createServer();
 server.on("error", (error) => {
   if (error.code === "EADDRINUSE" && port < maximumPort) {
     port += 1;
@@ -81,5 +108,9 @@ server.on("error", (error) => {
 server.listen(port, host, () => {
   console.log(`Bubble Borough is running at ${url}`);
   console.log("Keep this window open while playing. Press Ctrl+C to stop the server.");
-  openBrowser(url);
+  console.log(`Public homepage blueprint: ${url}website-preview/`);
+  if (!process.argv.includes("--no-open")) openBrowser(url);
 });
+}
+
+module.exports = { createServer, resolveRequestPath };

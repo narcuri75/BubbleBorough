@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 56,
-  "functionCount": 4003,
+  "functionCount": 4070,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -100,7 +100,7 @@
     },
     {
       "path": "decor/customization.js",
-      "functionCount": 259,
+      "functionCount": 273,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -393,7 +393,7 @@
     },
     {
       "path": "fish/cave-navigation.js",
-      "functionCount": 61,
+      "functionCount": 62,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -677,7 +677,7 @@
     },
     {
       "path": "fish/health.js",
-      "functionCount": 44,
+      "functionCount": 49,
       "dependencies": [
         "assets/custom-content.js",
         "borough/living-borough.js",
@@ -802,7 +802,7 @@
     },
     {
       "path": "debug/tools.js",
-      "functionCount": 147,
+      "functionCount": 158,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -918,7 +918,7 @@
     },
     {
       "path": "ui/main-and-store-rendering.js",
-      "functionCount": 67,
+      "functionCount": 69,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1165,6 +1165,7 @@
         "borough/living-borough.js",
         "core/settings-and-persistence.js",
         "core/utilities.js",
+        "debug/tools.js",
         "decor/layout-and-layers.js",
         "fish/appearance.js",
         "fish/health.js",
@@ -1232,7 +1233,7 @@
     },
     {
       "path": "rendering/fish-turn-v26.js",
-      "functionCount": 84,
+      "functionCount": 89,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -1251,7 +1252,7 @@
     },
     {
       "path": "rendering/fish-and-effects.js",
-      "functionCount": 62,
+      "functionCount": 65,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "borough/living-borough.js",
@@ -1342,7 +1343,7 @@
     },
     {
       "path": "fish/caves-and-collision.js",
-      "functionCount": 107,
+      "functionCount": 132,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "core/utilities.js",
@@ -1352,6 +1353,7 @@
         "decor/layout-and-layers.js",
         "fish/actions.js",
         "fish/appearance.js",
+        "fish/behavior-scheduler.js",
         "fish/cave-navigation.js",
         "fish/decor-behavior.js",
         "fish/gravel-and-schooling.js",
@@ -1374,7 +1376,7 @@
     },
     {
       "path": "rendering/fish-motion-and-floor.js",
-      "functionCount": 41,
+      "functionCount": 42,
       "dependencies": [
         "assets/custom-content.js",
         "core/utilities.js",

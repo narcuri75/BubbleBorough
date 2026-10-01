@@ -875,6 +875,15 @@ function renderControls(now) {
       : "Debug: Show live frame profiler";
     dom.debugFrameProfilerButton.setAttribute("aria-label", dom.debugFrameProfilerButton.title);
   }
+  if (dom.debugCaveMovementOverlayButton) {
+    dom.debugCaveMovementOverlayButton.disabled = !debugMode;
+    dom.debugCaveMovementOverlayButton.classList.toggle("is-active", runtime.debugCaveMovementOverlayEnabled);
+    dom.debugCaveMovementOverlayButton.setAttribute("aria-pressed", String(runtime.debugCaveMovementOverlayEnabled));
+    dom.debugCaveMovementOverlayButton.title = runtime.debugCaveMovementOverlayEnabled
+      ? "Debug: Hide cave movement audit overlay"
+      : "Debug: Show cave movement audit overlay";
+    dom.debugCaveMovementOverlayButton.setAttribute("aria-label", dom.debugCaveMovementOverlayButton.title);
+  }
   renderLivingBoroughDebugPanel(now);
   dom.resetMealsButton.hidden = !debugMode;
   if (dom.completeMealsButton) {

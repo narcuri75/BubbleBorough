@@ -748,8 +748,13 @@ function bindEvents() {
   document.addEventListener("pointerup", finishSoundRangeDrag, true);
   document.addEventListener("pointercancel", finishSoundRangeDrag, true);
   document.addEventListener("click", handleWalletTransactionMenuDocumentClick);
+  document.addEventListener("pointerdown", handleWebSurfBookmarkPointerDown, true);
+  document.addEventListener("pointermove", handleWebSurfBookmarkPointerMove, true);
+  document.addEventListener("pointerup", handleWebSurfBookmarkPointerUp, true);
+  document.addEventListener("pointercancel", handleWebSurfBookmarkPointerCancel, true);
   document.addEventListener("click", handleWebPageNavigation);
   document.addEventListener("click", handleWebSurfBrowserToolbarEvent);
+  document.addEventListener("keydown", handleWebSurfBookmarkDragKeyDown, true);
   document.addEventListener("keydown", handleWebSurfBrowserToolbarKeyDown, true);
   dom.storeOverlay?.addEventListener("pointermove", handleWebSurfFullscreenPointerMove);
   dom.webSurfBrowserToolbar?.addEventListener("pointerenter", revealWebSurfToolbar);
@@ -1156,6 +1161,7 @@ function bindEvents() {
   dom.debugNotificationUiButton?.addEventListener("click", () => toggleDebugNotificationUi());
   dom.debugFishActionIndicatorsButton?.addEventListener("click", () => toggleDebugFishActionIndicators());
   dom.debugFrameProfilerButton?.addEventListener("click", () => toggleDebugFrameProfiler());
+  dom.debugCaveMovementOverlayButton?.addEventListener("click", () => toggleDebugCaveMovementOverlay());
   dom.debugSwimAnimationSpeedSlider?.addEventListener("input", (event) => {
     handleDebugSwimAnimationSpeedInput(event.currentTarget);
   });
@@ -1479,6 +1485,9 @@ function bindEvents() {
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
   dom.editScaleDownButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-down"));
+  dom.webSurfMaximizeButton?.addEventListener("click", () => {
+    setWebSurfFullscreen(getUiSettings().webSurfFullscreen !== true);
+  });
   dom.closeStoreOverlay.addEventListener("click", () => {
     closeStoreOverlay();
   });
@@ -1694,9 +1703,6 @@ function bindEvents() {
   bindSettingsVolumeSlider(dom.gravelShadowIntensityInput, dom.gravelShadowIntensityOutput, setGravelShadowIntensity);
   dom.webSurfThemeModeSelect?.addEventListener("change", (event) => {
     setWebSurfThemeMode(event.currentTarget?.value);
-  });
-  dom.webSurfFullscreenToggle?.addEventListener("change", (event) => {
-    setWebSurfFullscreen(event.currentTarget?.checked === true);
   });
   dom.toolbarTileColorInput?.addEventListener("input", (event) => {
     const color = normalizeToolbarTileColor(event.currentTarget?.value);
@@ -4715,6 +4721,9 @@ function normalizeDecorMeta(payload) {
       fishBehavior: normalizeDecorFishBehaviorMeta(entry, key),
       moodDelta: clamp(Number(entry.moodDelta) || 0, -0.2, 0.2),
       caveBehavior: normalizeCaveBehaviorMeta(entry.caveBehavior),
+      swimmable: typeof entry.swimmable === "boolean"
+        ? entry.swimmable
+        : (typeof entry?.caveBehavior?.swimmable === "boolean" ? entry.caveBehavior.swimmable : true),
       caveSettings: entry?.caveSettings && typeof entry.caveSettings === "object"
         ? sanitizePlacedCaveSettings(entry.caveSettings)
         : null,
@@ -5191,6 +5200,7 @@ function normalizeCaveBehaviorMeta(entry) {
     portals,
     insideSlots,
     interiorZones,
+    swimmable: typeof entry.swimmable === "boolean" ? entry.swimmable : undefined,
     lingerMinMs: Number.isFinite(entry.lingerMinMs) ? entry.lingerMinMs : undefined,
     lingerMaxMs: Number.isFinite(entry.lingerMaxMs) ? entry.lingerMaxMs : undefined
   };
@@ -5929,6 +5939,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
         caveBehavior: meta.caveBehavior || null,
+        swimmable: meta.swimmable !== false,
         caveSettings: meta.caveSettings || null,
         bubbler: meta.bubbler || normalizeBubblerMeta(null, group.base.key)
       };
@@ -6152,6 +6163,7 @@ function sanitizeCustomDecorAssetEntry(entry, key) {
     motionSwaySide: normalizeDecorSwaySide(entry.motionSwaySide),
     motionIntensity: sanitizeCustomDecorMotionIntensity(entry.motionIntensity),
     caveSettings: customType === "hide" ? sanitizePlacedCaveSettings(entry.caveSettings) : null,
+    swimmable: customType === "hide" ? entry.swimmable !== false : true,
     caveColorSettings: customType === "hide"
       ? sanitizePlacedCaveColorSettings(entry.caveColorSettings, { caveColorLayers })
       : null,
@@ -6229,6 +6241,7 @@ function buildCustomDecorCatalogEntry(asset) {
     width: clamp(Number(asset.width) || CUSTOM_DECOR_DEFAULT_WIDTH, CUSTOM_DECOR_MIN_WIDTH, CUSTOM_DECOR_MAX_WIDTH),
     defaultScale: clamp(Number(asset.defaultScale) || 1, DECOR_SCALE_MIN, DECOR_SCALE_MAX),
     customType: isHide ? "hide" : "decor",
+    swimmable: isHide ? asset.swimmable !== false : true,
     motionType: isHide ? DEFAULT_CUSTOM_DECOR_MOTION_TYPE : normalizeCustomDecorMotionType(asset.motionType),
     motionSplitY: sanitizeCustomDecorMotionSplit(asset.motionSplitY),
     motionSwaySide: normalizeDecorSwaySide(asset.motionSwaySide),

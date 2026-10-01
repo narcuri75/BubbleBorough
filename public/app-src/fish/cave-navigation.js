@@ -40,12 +40,33 @@ function getCaveBehaviorChance(species, timestamp = Date.now()) {
   return clamp((CAVE_ENTRY_CHANCE_BY_STYLE[species.swimStyle] || 0.1) * caveAffinity, 0, 1);
 }
 
+function getDecorCaveSwimmable(decorKey = "") {
+  const decor = runtime.decorMap.get(decorKey) || null;
+  const meta = runtime.decorMeta[decorKey] || null;
+  if (typeof decor?.swimmable === "boolean") {
+    return decor.swimmable;
+  }
+  if (typeof meta?.swimmable === "boolean") {
+    return meta.swimmable;
+  }
+  if (typeof decor?.caveBehavior?.swimmable === "boolean") {
+    return decor.caveBehavior.swimmable;
+  }
+  if (typeof meta?.caveBehavior?.swimmable === "boolean") {
+    return meta.caveBehavior.swimmable;
+  }
+  return DEFAULT_CAVE_BEHAVIOR_PROFILE.swimmable !== false;
+}
+
 function getCaveBehaviorProfile(decorKey = "") {
   const directMeta = runtime.decorMap.get(decorKey)?.caveBehavior || runtime.decorMeta[decorKey]?.caveBehavior;
   const key = String(decorKey || "").toLowerCase();
   const overrideEntry = Object.entries(CAVE_BEHAVIOR_OVERRIDES).find(([matchKey]) => key.includes(matchKey.toLowerCase()));
   const override = overrideEntry?.[1] || null;
   const base = {
+    swimmable: typeof directMeta?.swimmable === "boolean"
+      ? directMeta.swimmable
+      : getDecorCaveSwimmable(decorKey),
     portals: Array.isArray(directMeta?.portals) && directMeta.portals.length
       ? directMeta.portals
       : DEFAULT_CAVE_BEHAVIOR_PROFILE.portals,
@@ -77,6 +98,7 @@ function getCaveBehaviorProfile(decorKey = "") {
   }
 
   return {
+    swimmable: typeof override.swimmable === "boolean" ? override.swimmable : base.swimmable,
     portals: Array.isArray(override.portals) && override.portals.length
       ? override.portals
       : base.portals,
@@ -101,7 +123,16 @@ function getCaveBehaviorProfile(decorKey = "") {
 }
 
 function getCaveBehaviorProfileForItem(item) {
-  return buildCaveBehaviorProfileFromPlacedSettings(item) || getCaveBehaviorProfile(item?.decorKey);
+  const authoredProfile = getCaveBehaviorProfile(item?.decorKey);
+  const placedProfile = buildCaveBehaviorProfileFromPlacedSettings(item);
+  if (!placedProfile) {
+    return authoredProfile;
+  }
+
+  return {
+    ...placedProfile,
+    swimmable: authoredProfile?.swimmable !== false
+  };
 }
 
 function getCaveInsideSlots(profile) {
@@ -231,7 +262,7 @@ function isFishUsingOwnCavePath(fish, item) {
     fish &&
     item &&
     fish.caveDecorId === item.id &&
-    ["approach", "align", "enter", "inside", "exit", "depart", "leave"].includes(fish.caveState)
+    ["approach", "align", "portal-enter", "enter", "inside", "exit", "depart", "portal-exit", "leave"].includes(fish.caveState)
   );
 }
 
@@ -453,6 +484,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
       inside: triggerPath.inside,
       entryPathNodes: triggerPath.entryPathNodes,
       exitPathNodes: triggerPath.exitPathNodes,
+      swimmable: profile?.swimmable !== false,
       lingerMs: lingerMinMs + Math.random() * Math.max(400, lingerMaxMs - lingerMinMs),
       score: distanceScore + layerPenalty
     });
@@ -571,6 +603,7 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
         inside,
         entryPathNodes,
         exitPathNodes,
+        swimmable: profile.swimmable !== false,
         lingerMs: profile.lingerMinMs + Math.random() * Math.max(200, profile.lingerMaxMs - profile.lingerMinMs),
         score: distanceScore + layerPenalty
       });
@@ -645,6 +678,17 @@ function clearFishCaveBehavior(fish) {
   fish.caveIdleTargetXNorm = null;
   fish.caveIdleTargetYNorm = null;
   fish.caveIdleTargetAt = null;
+  fish.cavePortalCrossingMode = null;
+  fish.cavePortalCrossingStartXNorm = null;
+  fish.cavePortalCrossingStartYNorm = null;
+  fish.cavePortalCrossingViaXNorm = null;
+  fish.cavePortalCrossingViaYNorm = null;
+  fish.cavePortalCrossingEndXNorm = null;
+  fish.cavePortalCrossingEndYNorm = null;
+  fish.cavePortalCrossingStartZ = null;
+  fish.cavePortalCrossingEndZ = null;
+  fish.cavePortalCrossingNodeIndex = null;
+  fish.cavePortalProgress = null;
 }
 
 function getCaveBehaviorDecorById(decorId) {

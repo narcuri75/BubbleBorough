@@ -93,9 +93,96 @@ test("normal reversal requests latch an active destination instead of restarting
 test("movement still blocks backward translation through the renderer-neutral reversal contract", () => {
   assert.match(motionSource, /const renderedFacingDirection = canUseHorizontalFacing \? getFishFacingDirection\(fish\) : 0;/);
   assert.match(motionSource, /requestedHorizontalDirection !== renderedFacingDirection/);
-  assert.match(motionSource, /setFishDirection\(fish, requestedHorizontalDirection, species, now\);/);
+  assert.match(motionSource, /getFishHorizontalTurnIntentDirection\(fish, species, moveDx, moveDy, now/);
+  assert.match(motionSource, /setFishDirection\(fish, requestedHorizontalDirection, species, now, \{/);
   assert.match(motionSource, /getFishTurnReversalTraversal\(fish, moveDx, moveDy, now\)/);
   assert.match(motionSource, /const turnLocomotionState = getFishTurnLocomotionState\(fish, now\);/);
+});
+
+test("turn intent hysteresis ignores small opposite X changes during vertical travel", () => {
+  const context = {
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    TANK_WIDTH: 1500,
+    TANK_HEIGHT: 1000,
+    FISH_TURN_REVERSAL_MIN_HORIZONTAL_PX: 10,
+    FISH_TURN_REVERSAL_MAX_HORIZONTAL_PX: 64,
+    FISH_TURN_REVERSAL_BODY_WIDTH_FACTOR: 0.22,
+    FISH_TURN_REVERSAL_SPEED_BONUS_PX: 8,
+    FISH_TURN_REVERSAL_DISTANCE_FACTOR: 0.04,
+    FISH_TURN_REVERSAL_DISTANCE_BONUS_MAX_PX: 18,
+    FISH_TURN_REVERSAL_VERTICAL_RATIO_START: 1.15,
+    FISH_TURN_REVERSAL_VERTICAL_BONUS_PER_RATIO_PX: 8,
+    FISH_TURN_REVERSAL_VERTICAL_BONUS_MAX_PX: 20,
+    getFishFacingDirection: (fish) => Number(fish?.displayDirection) < 0 ? -1 : 1,
+    getFishVisualSize: (fish) => Number(fish?.visualWidthPx) || 80
+  };
+  const getIntent = vm.runInNewContext(
+    `(${extractFunction(turnSource, "getFishHorizontalTurnIntentDirection")})`,
+    context
+  );
+  const fish = { displayDirection: 1, visualWidthPx: 90, swimSpeed: 0.05 };
+
+  assert.equal(getIntent(fish, {}, -0.012, -0.3, 1000), 0, "18px of X jitter cannot flip a climbing fish");
+  assert.equal(getIntent(fish, {}, -0.09, -0.04, 1000), -1, "a real opposite-side destination still requests a turn");
+  assert.equal(getIntent(fish, {}, 0.004, -0.3, 1000), 1, "same-side steering never needs reversal hysteresis");
+});
+
+test("turn intent threshold scales with body size and carried speed", () => {
+  const context = {
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    TANK_WIDTH: 1500,
+    TANK_HEIGHT: 1000,
+    FISH_TURN_REVERSAL_MIN_HORIZONTAL_PX: 10,
+    FISH_TURN_REVERSAL_MAX_HORIZONTAL_PX: 64,
+    FISH_TURN_REVERSAL_BODY_WIDTH_FACTOR: 0.22,
+    FISH_TURN_REVERSAL_SPEED_BONUS_PX: 8,
+    FISH_TURN_REVERSAL_DISTANCE_FACTOR: 0.04,
+    FISH_TURN_REVERSAL_DISTANCE_BONUS_MAX_PX: 18,
+    FISH_TURN_REVERSAL_VERTICAL_RATIO_START: 1.15,
+    FISH_TURN_REVERSAL_VERTICAL_BONUS_PER_RATIO_PX: 8,
+    FISH_TURN_REVERSAL_VERTICAL_BONUS_MAX_PX: 20,
+    getFishFacingDirection: (fish) => Number(fish?.displayDirection) < 0 ? -1 : 1,
+    getFishVisualSize: (fish) => Number(fish?.visualWidthPx) || 80
+  };
+  const getIntent = vm.runInNewContext(
+    `(${extractFunction(turnSource, "getFishHorizontalTurnIntentDirection")})`,
+    context
+  );
+  const small = { displayDirection: 1, visualWidthPx: 32, swimSpeed: 0.05 };
+  const large = { displayDirection: 1, visualWidthPx: 220, swimSpeed: 0.05 };
+  assert.equal(getIntent(small, {}, -0.03, -0.02, 1000), -1);
+  assert.equal(getIntent(large, {}, -0.03, -0.02, 1000), 0, "large bodies require more opposite-side displacement");
+
+  const slow = { displayDirection: 1, visualWidthPx: 32, swimSpeed: 0.05, traversalVelocityXNorm: 0, traversalVelocityYNorm: 0 };
+  const fast = { displayDirection: 1, visualWidthPx: 32, swimSpeed: 0.05, traversalVelocityXNorm: 0.075, traversalVelocityYNorm: 0 };
+  assert.equal(getIntent(slow, {}, -0.016, 0, 1000), -1);
+  assert.equal(getIntent(fast, {}, -0.016, 0, 1000), 0, "carried momentum raises the reversal threshold");
+});
+
+test("post-turn commitment survives renderer completion and ordinary direction calls respect it", () => {
+  assert.match(turnSource, /FISH_TRAVERSAL_POST_TURN_COMMIT_MIN_MS/);
+  assert.match(turnSource, /fish\.traversalCommittedDirection = fish\.turnaroundCooldownDirection;/);
+  assert.match(turnSource, /fish\.traversalTurnCommittedUntil = Math\.max\(/);
+  const setDirectionSource = extractFunction(turnSource, "setFishDirection");
+  assert.match(setDirectionSource, /options\?\.bypassTurnCommitment !== true/);
+  assert.match(setDirectionSource, /getFishTurnaroundCooldownState\(fish, now\)/);
+  assert.match(setDirectionSource, /nextDirection !== committedDirection/);
+});
+
+test("cooldown bypass is reserved for panic, imminent collision and hard boundary recovery", () => {
+  const start = motionSource.indexOf("const turnaroundCooldownBypass =");
+  const end = motionSource.indexOf("const requestedHorizontalDirection", start);
+  assert.ok(start >= 0 && end > start);
+  const bypassSource = motionSource.slice(start, end);
+  assert.match(bypassSource, /panicOwnsMovement/);
+  assert.match(bypassSource, /activeCollisionAvoidance/);
+  assert.match(bypassSource, /hardBoundaryRecovery/);
+  assert.doesNotMatch(bypassSource, /activeQueuedFishAction/);
+  assert.doesNotMatch(bypassSource, /activeFishActionSteering/);
+  assert.doesNotMatch(bypassSource, /activeDebugSteering/);
+  assert.doesNotMatch(bypassSource, /zombieAggressionOwnsMovement/);
+  assert.doesNotMatch(bypassSource, /whaleBreathOwnsMovement/);
+  assert.doesNotMatch(bypassSource, /pendingTravel/);
 });
 
 test("renderer-neutral locomotion state preserves the existing hold and release curve", () => {
@@ -333,7 +420,7 @@ test("vertical targets preserve render facing while horizontal intent can reques
   assert.equal(getDirection(fish, 0, -0.3), 1, "vertical travel does not request a left/right reversal");
   assert.equal(getDirection(fish, -0.06, -0.3), -1, "the fish turns back after gaining lateral clearance");
   assert.equal(getDirection(fish, -0.2, -0.02), -1, "ordinary horizontal travel still follows its destination");
-  assert.match(motionSource, /requestedHorizontalDirection[\s\S]*getFishSteeringHorizontalDirection\(fish, moveDx, moveDy\)/);
+  assert.match(motionSource, /requestedHorizontalDirection[\s\S]*getFishHorizontalTurnIntentDirection\(fish, species, moveDx, moveDy, now/);
 });
 
 test("vertical steering reaches a fully vertical heading", () => {

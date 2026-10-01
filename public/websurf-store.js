@@ -477,16 +477,6 @@
     return getTankazonSellerName(value).toLowerCase() === "arcadia home aquatics";
   }
 
-  function getTankazonSellerSite(item = selectedItem) {
-    const seller = getTankazonSellerName(item?.seller).toLowerCase();
-    if (item?.category === "pharmacy" && (seller === "clearwell laboratories" || seller === "tidewell")) return "clearwell";
-    if (seller === "arcadia home aquatics") return "arcadia";
-    if (seller === "common current") return "commoncurrent";
-    if (seller === "tidewell") return "tidewell";
-    if (seller === "proteus biodyne") return "proteus";
-    return "";
-  }
-
   function syncSubsidiaryTabs() {
     document.querySelectorAll("#storeOverlay [data-websurf-subsidiary-tab]").forEach((tab) => {
       tab.hidden = !subsidiaryTabsOpen.has(tab.dataset.websurfSubsidiaryTab) || tab.dataset.websurfTabClosed === "true";
@@ -1319,9 +1309,104 @@
     });
   }
 
+  const TANKAZON_FISH_INFO_ICONS = Object.freeze({
+    info: '<svg viewBox="0 0 24 24" role="presentation"><circle cx="12" cy="12" r="9"></circle><path d="M12 10.5v6"></path><path d="M12 7.5h.01"></path></svg>',
+    document: '<svg viewBox="0 0 24 24" role="presentation"><path d="M7 3.5h7l4 4V20.5H7z"></path><path d="M14 3.5v4h4"></path><path d="M9.5 12h6"></path><path d="M9.5 15.5h6"></path></svg>',
+    food: '<svg viewBox="0 0 24 24" role="presentation"><path d="M6 3v6"></path><path d="M4 3v4.5A2.5 2.5 0 0 0 6.5 10H8V3"></path><path d="M6 10v11"></path><path d="M16.5 3c1.4 0 2.5 1.8 2.5 4s-1.1 4-2.5 4S14 9.2 14 7s1.1-4 2.5-4z"></path><path d="M16.5 11v10"></path></svg>',
+    behavior: '<svg viewBox="0 0 24 24" role="presentation"><path d="M2.5 9c2.4 0 2.4-2.2 4.8-2.2S9.7 9 12.1 9s2.4-2.2 4.8-2.2S19.3 9 21.5 9"></path><path d="M2.5 14.5c2.4 0 2.4-2.2 4.8-2.2s2.4 2.2 4.8 2.2 2.4-2.2 4.8-2.2 2.4 2.2 4.6 2.2"></path></svg>',
+    genetics: '<svg viewBox="0 0 24 24" role="presentation"><path d="M8 3c0 5 8 5 8 10s-4 6-8 8"></path><path d="M16 3c0 5-8 5-8 10s4 6 8 8"></path><path d="M9 6h6"></path><path d="M8.5 11h7"></path><path d="M9 16h6"></path></svg>'
+  });
+
+  function createTankazonFishInfoIcon(name, className = "") {
+    const icon = document.createElement("span");
+    icon.className = `tankazon-fish-info-icon${className ? ` ${className}` : ""}`;
+    icon.setAttribute("aria-hidden", "true");
+    icon.innerHTML = TANKAZON_FISH_INFO_ICONS[name] || TANKAZON_FISH_INFO_ICONS.info;
+    return icon;
+  }
+
+  function createTankazonFishInfoHeader(iconName, title) {
+    const header = document.createElement("header");
+    header.className = "tankazon-fish-info-card-header";
+    const heading = document.createElement("h2");
+    heading.textContent = title;
+    header.append(createTankazonFishInfoIcon(iconName, "tankazon-fish-info-heading-icon"), heading);
+    return header;
+  }
+
+  function renderTankazonFishProductDetails(item, details) {
+    if (item?.category !== "fish" || !details || typeof window.getBubbleBodegaFishCareProfile !== "function") return false;
+    const profile = window.getBubbleBodegaFishCareProfile(item.id, item.variantKey || "");
+    if (!profile) return false;
+
+    details.replaceChildren();
+
+    const aboutCard = document.createElement("section");
+    aboutCard.className = "tankazon-fish-info-card tankazon-fish-about-card";
+    aboutCard.setAttribute("aria-label", "About");
+    aboutCard.append(createTankazonFishInfoHeader("info", "About"));
+
+    const about = document.createElement("div");
+    about.className = "tankazon-item-facts tankazon-fish-about";
+    const paragraphs = Array.isArray(profile.aboutParagraphs) ? profile.aboutParagraphs : [];
+    paragraphs.forEach((copy) => {
+      if (typeof copy !== "string" || !copy.trim()) return;
+      const paragraph = document.createElement("p");
+      paragraph.textContent = copy.trim();
+      about.append(paragraph);
+    });
+    if (profile.aboutAttribution) {
+      const attribution = document.createElement("div");
+      attribution.className = "shop-about-attribution";
+      attribution.textContent = profile.aboutAttribution;
+      about.append(attribution);
+    }
+    if (profile.aboutTagline) {
+      const tagline = document.createElement("div");
+      tagline.className = "shop-about-tagline";
+      tagline.textContent = profile.aboutTagline;
+      about.append(tagline);
+    }
+    if (!about.textContent.trim()) {
+      const fallback = document.createElement("p");
+      fallback.textContent = `${item.name} for your aquarium.`;
+      about.append(fallback);
+    }
+    aboutCard.append(about);
+
+    const additionalCard = document.createElement("section");
+    additionalCard.className = "tankazon-fish-info-card tankazon-fish-additional-card";
+    additionalCard.setAttribute("aria-label", "Additional Information");
+    additionalCard.append(createTankazonFishInfoHeader("document", "Additional Information"));
+
+    const additional = document.createElement("div");
+    additional.className = "shop-stat-list tankazon-fish-additional-info";
+    [
+      ["Food", profile.food || "No routine food", "food"],
+      ["Behavior", profile.behavior || "Steady", "behavior"],
+      ["Genetics", profile.genetics || "Natural", "genetics"]
+    ].forEach(([label, value, iconName]) => {
+      const row = document.createElement("div");
+      row.className = "shop-stat-row tankazon-fish-info-row";
+      const name = document.createElement("span");
+      name.className = "shop-stat-label";
+      name.textContent = label;
+      const content = document.createElement("span");
+      content.className = "shop-stat-value";
+      content.textContent = value;
+      row.append(createTankazonFishInfoIcon(iconName, "tankazon-fish-info-row-icon"), name, content);
+      additional.append(row);
+    });
+    additionalCard.append(additional);
+
+    details.append(aboutCard, additionalCard);
+    return true;
+  }
+
   function refreshTankazonItemDetailsFromCard(item) {
     const details = document.getElementById("tankazonItemDetails");
     if (!details) return;
+    if (typeof renderTankazonFishProductDetails === "function" && renderTankazonFishProductDetails(item, details)) return;
     const button = findTankazonNativePurchaseButton(item);
     const card = button?.closest(".shop-card");
     if (!card) return;
@@ -1390,8 +1475,11 @@
         return TANKAZON_CARE_COPY[tag] || [String(tag), "This fish benefits from this aquarium condition."];
       })
     ];
-    const warnings = conflictTags.map((tag) => TANKAZON_CARE_COPY[tag]
-      || ["Compatibility concern", "This condition can make the fish uncomfortable."]);
+    const warnings = [
+      ...conflictTags.map((tag) => TANKAZON_CARE_COPY[tag]
+        || ["Compatibility concern", "This condition can make the fish uncomfortable."]),
+      ...(Array.isArray(profile.compatibilityWarnings) ? profile.compatibilityWarnings : [])
+    ];
     return { needs, warnings: warnings.length ? warnings : [["No known conflicts", "This species has no special compatibility warnings in the current catalog."]] };
   }
 
@@ -1461,18 +1549,25 @@
     renderTankazonFoodSizes(selectedItem);
     document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
     document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
+    const itemPage = document.getElementById("tankazonItemPage");
+    const isFishProduct = descriptor.category === "fish";
+    itemPage?.classList.toggle("is-fish-product", isFishProduct);
+    const genericAboutHeading = document.getElementById("tankazonGenericAboutHeading");
+    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct;
     const details = document.getElementById("tankazonItemDetails");
     details.replaceChildren();
+    const renderedFishDetails = typeof renderTankazonFishProductDetails === "function"
+      && renderTankazonFishProductDetails(selectedItem, details);
     const aboutOverride = TANKAZON_ITEM_ABOUT_COPY[`${descriptor.fnName}:${descriptor.id}`] || "";
-    if (aboutOverride) {
+    if (!renderedFishDetails && aboutOverride) {
       const copy = document.createElement("div");
       copy.className = "tankazon-item-facts";
       // These strings are static first-party BubbleBodega copy. Render the
       // paragraph markup so long descriptions are readable and emphasis is kept.
       copy.innerHTML = aboutOverride;
       details.append(copy);
-    } else {
-      // Reuse the real catalog's descriptions, care stats and unlock requirements.
+    } else if (!renderedFishDetails) {
+      // Reuse the real catalog's descriptions and product metadata for non-fish items.
       card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
         const copy = source.cloneNode(true);
         copy.querySelectorAll("button, .price-tag, strong, [id]").forEach((node) => node.remove());
@@ -1550,6 +1645,11 @@
     if (selectedItem) selectedItem.purchaseMode = previousPurchaseMode;
     selectedItem = applyTankazonCollectionState(selectedItem);
     document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
+    const itemPage = document.getElementById("tankazonItemPage");
+    const isFishProduct = selectedItem.category === "fish";
+    itemPage?.classList.toggle("is-fish-product", isFishProduct);
+    const genericAboutHeading = document.getElementById("tankazonGenericAboutHeading");
+    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct;
     renderTankazonFoodSizes(selectedItem);
     renderTankazonItemFit(selectedItem);
     const available = Boolean(button && !button.disabled && variantExists);
@@ -1568,28 +1668,19 @@
       itemImageStage.classList.toggle("is-arcadia-preview", isArcadiaHomeAquaticsSeller(seller) && selectedItem.category === "decor");
     }
     const brand = document.getElementById("tankazonItemBrand");
-    const sellerLabel = document.getElementById("tankazonItemSeller");
-    if (brand && brand.textContent !== `Visit the ${seller} Store`) brand.textContent = `Visit the ${seller} Store`;
-    if (sellerLabel && sellerLabel.textContent !== seller) sellerLabel.textContent = seller;
-    document.querySelectorAll("[data-tankazon-seller-link]").forEach((sellerLink) => {
-      const siteId = getTankazonSellerSite(selectedItem);
-      const linked = Boolean(siteId);
-      sellerLink.disabled = !linked;
-      sellerLink.classList.toggle("is-linked", linked);
-      sellerLink.dataset.tankazonSellerSite = siteId;
-      if (linked) {
-        const siteName = siteId === "clearwell" ? "Clearwell Laboratories" : seller;
-        sellerLink.setAttribute("aria-label", `Visit the ${siteName} webpage`);
-        sellerLink.title = `Visit ${siteName}`;
-      } else {
-        sellerLink.removeAttribute("aria-label");
-        sellerLink.removeAttribute("title");
-      }
-    });
-    for (const id of ["tankazonItemPrice", "tankazonItemBuyPrice"]) {
-      const node = document.getElementById(id);
-      if (node.innerHTML !== priceMarkup) node.innerHTML = priceMarkup;
+    if (brand) {
+      brand.hidden = true;
+      brand.textContent = "";
     }
+    const sellerLabel = document.getElementById("tankazonItemSeller");
+    if (sellerLabel && sellerLabel.textContent !== seller) sellerLabel.textContent = seller;
+    const mainPrice = document.getElementById("tankazonItemPrice");
+    if (mainPrice) {
+      mainPrice.hidden = selectedItem.category === "fish";
+      if (!mainPrice.hidden && mainPrice.innerHTML !== priceMarkup) mainPrice.innerHTML = priceMarkup;
+    }
+    const buyPrice = document.getElementById("tankazonItemBuyPrice");
+    if (buyPrice && buyPrice.innerHTML !== priceMarkup) buyPrice.innerHTML = priceMarkup;
     const availability = document.getElementById("tankazonItemAvailability");
     const label = available ? "Available" : "Currently unavailable";
     if (availability.textContent !== label) availability.textContent = label;
@@ -2479,14 +2570,6 @@
       window.showProteusDesignerPage?.("");
       return;
     }
-    const sellerLink = event.target.closest?.("[data-tankazon-seller-link]");
-    if (sellerLink && !sellerLink.disabled) {
-      event.preventDefault();
-      const siteId = sellerLink.dataset.tankazonSellerSite || getTankazonSellerSite(selectedItem);
-      if (siteId === "proteus") showProteusBiodyne(sellerLink);
-      else if (siteId) showWebSurfSubsidiaryPage(siteId, sellerLink);
-      return;
-    }
     if (event.target.closest?.("[data-proteus-back]")) { closeProteusBiodyne(); return; }
     if (event.target.closest?.("#tankazonAccountButton")) { highlightedOrderId = ""; showTankazonAccount(); return; }
     if (event.target.closest?.("#tankazonAccountBack, [data-account-shop-now]")) { closeTankazonAccount(); return; }
@@ -2527,6 +2610,7 @@
       selectedItem.purchaseMode = purchaseMode;
       selectedItem = applyTankazonCollectionState(selectedItem);
       syncTankazonItemArt(selectedItem);
+      refreshTankazonItemDetailsFromCard(selectedItem);
       const collection = getTankazonDecorCollectionConfig(selectedItem);
       document.getElementById("tankazonItemVariantLabel").textContent = `${collection ? "Variant" : "Appearance"}: ${selectedItem.variantLabel}`;
       document.getElementById("tankazonItemStatus").textContent = "";

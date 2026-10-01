@@ -116,7 +116,7 @@ function fixture({ saved = "fish", storageBlocked = false } = {}) {
     renderTankazonItemFit() {}
   });
   loadFunctions(context, shell, ["saveTankazonView", "restoreTankazonView", "prepareBubbleBodegaView", "enterBubbleBodegaHome", "refreshTankazonOpening", "syncWebPageTabs", "syncTankazonNavState", "applySearch", "shouldShowTankazonSectionHeading", "closeTankazonItem", "syncTankazonSearchFromControls", "showAllCategories"]);
-  loadFunctions(context, native, ["resolveBubbleBodegaOpeningView", "openStoreOverlay", "openExclusiveOverlay", "resetCompetingOverlayState", "openBubbleBodegaHome", "closeStoreOverlay", "openWebSurfSessionPage", "openBubbleBank"]);
+  loadFunctions(context, native, ["resolveBubbleBodegaOpeningView", "openStoreOverlay", "openExclusiveOverlay", "resetCompetingOverlayState", "openBubbleBodegaHome", "closeStoreOverlay", "openWebSurfSessionPage", "openBubbleBank", "isWebSurfBookmarkDragWithin", "finishWebSurfBookmarkDrag"]);
   loadFunctions(context, rendering, ["renderStoreOverlay"]);
   context.renderUi = () => context.renderStoreOverlay();
   // Execute the production wiring and handlers, including the window observer.

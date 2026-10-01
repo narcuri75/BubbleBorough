@@ -472,7 +472,8 @@ test('A completed turnaround commits to forward travel before another ordinary r
     clamp,
     FISH_TURNAROUND_COOLDOWN_MS: 850,
     FISH_TURNAROUND_COOLDOWN_MAX_MS: 1700,
-    FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM: 0.045
+    FISH_TURNAROUND_MIN_POST_TURN_TRAVEL_NORM: 0.045,
+    FISH_TRAVERSAL_POST_TURN_COMMIT_MIN_MS: 650
   };
   context.normalizeFishHorizontalDirection = (value, fallback = 1) => Number(value || fallback) < 0 ? -1 : 1;
   context.getFishFacingDirection = fish => Number(fish?.displayDirection) < 0 ? -1 : 1;
@@ -483,6 +484,8 @@ test('A completed turnaround commits to forward travel before another ordinary r
   const early = getState(fish, 1200);
   assert.equal(early.active, true);
   assert.equal(early.direction, -1);
+  assert.equal(fish.traversalCommittedDirection, -1);
+  assert.ok(fish.traversalTurnCommittedUntil >= fish.turnaroundCooldownUntil, 'the destination side stays committed after renderer handoff');
   fish.xNorm = 0.55;
   const released = getState(fish, 1900);
   assert.equal(released.active, false, 'enough forward travel releases the normal reversal gate');
@@ -490,9 +493,11 @@ test('A completed turnaround commits to forward travel before another ordinary r
 
 test('Turnaround cooldown routes a shallow forward continuation and keeps urgent movement exempt', () => {
   const source = extractFunction(predators, 'updateFishMotion');
-  assert.match(source, /const turnaroundCooldownBypass = Boolean\(obstacleWaypoint\)\s*\|\| panicOwnsMovement/);
-  assert.match(source, /\|\| zombieAggressionOwnsMovement/);
-  assert.match(source, /\|\| Boolean\(getActiveFishCollisionAvoidance\(fish, now\)\)/);
+  assert.match(source, /const turnaroundCooldownBypass = panicOwnsMovement\s*\|\| Boolean\(activeCollisionAvoidance\)\s*\|\| hardBoundaryRecovery/);
+  assert.doesNotMatch(source, /const turnaroundCooldownBypass =[\s\S]{0,300}zombieAggressionOwnsMovement/);
+  assert.doesNotMatch(source, /const turnaroundCooldownBypass =[\s\S]{0,300}activeQueuedFishAction/);
+  assert.doesNotMatch(source, /const turnaroundCooldownBypass =[\s\S]{0,300}activeFishActionSteering/);
+  assert.doesNotMatch(source, /const turnaroundCooldownBypass =[\s\S]{0,300}activeDebugSteering/);
   assert.match(source, /moveDx = turnaroundCooldown\.direction \* forwardMagnitude;/);
   assert.match(source, /FISH_TURNAROUND_COOLDOWN_MAX_VERTICAL_RATIO/);
   assert.match(source, /&& !turnaroundCooldown\.active/);

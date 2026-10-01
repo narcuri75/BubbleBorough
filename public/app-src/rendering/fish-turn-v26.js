@@ -87,6 +87,7 @@ function clearFishTurnRendererSession(fish) {
   fish.turnV26StyleStartedAt = 0;
   fish.turnV26EntryTilt = null;
   fish.turnV26ActiveDepthSign = 0;
+  fish.turnV26MotionTiming = null;
   clearFishTurnV26FinOverlaySession(fish);
 }
 
@@ -119,11 +120,15 @@ function beginFishTurnRendererSession(
     fish.turnV26LastDepthSign = fish.turnV26ActiveDepthSign;
     fish.turnV26StyleActive = resolveFishTurnV26Style(fish, species, startedAt);
     fish.turnV26StyleStartedAt = startedAt;
+    // Latch subtle per-turn timing variation once. Rendering the same turn on
+    // later frames must never reroll its acceleration or midpoint.
+    fish.turnV26MotionTiming = createFishTurnV26MotionTimingProfile();
     beginFishTurnV26FinOverlaySession(fish, species, startedAt, now);
   } else {
     fish.turnV26StyleActive = null;
     fish.turnV26StyleStartedAt = 0;
     fish.turnV26ActiveDepthSign = 0;
+    fish.turnV26MotionTiming = null;
     clearFishTurnV26FinOverlaySession(fish);
   }
   return backend;
@@ -170,9 +175,54 @@ function easeFishTurnV26Continuity(value) {
   return t * t * (3 - 2 * t);
 }
 
+function createFishTurnV26MotionTimingProfile(randomFn = Math.random) {
+  const nextRandom = typeof randomFn === "function" ? randomFn : Math.random;
+  const sample = () => clamp(Number(nextRandom()) || 0, 0, 1);
+  return {
+    // Keep the visual midpoint close to center while allowing individual turns
+    // to arrive there a little earlier or later.
+    midpoint: 0.465 + sample() * 0.07,
+    // Small power changes alter acceleration/deceleration without producing a
+    // visibly different locomotion class or overriding the selected turn style.
+    entryPower: 0.90 + sample() * 0.22,
+    exitPower: 0.90 + sample() * 0.22
+  };
+}
+
+function getFishTurnV26MotionTimingProfile(fish) {
+  const profile = fish?.turnV26MotionTiming;
+  const midpoint = clamp(Number(profile?.midpoint) || 0.5, 0.44, 0.56);
+  const entryPower = clamp(Number(profile?.entryPower) || 1, 0.82, 1.18);
+  const exitPower = clamp(Number(profile?.exitPower) || 1, 0.82, 1.18);
+  return { midpoint, entryPower, exitPower };
+}
+
+function getFishTurnV26TimedProgress(fish, value) {
+  const t = clamp(Number(value) || 0, 0, 1);
+  if (t <= 0 || t >= 1) return t;
+  const profile = getFishTurnV26MotionTimingProfile(fish);
+  if (t <= profile.midpoint) {
+    const local = clamp(t / Math.max(0.001, profile.midpoint), 0, 1);
+    return 0.5 * Math.pow(local, profile.entryPower);
+  }
+  const local = clamp((t - profile.midpoint) / Math.max(0.001, 1 - profile.midpoint), 0, 1);
+  return 0.5 + 0.5 * (1 - Math.pow(1 - local, profile.exitPower));
+}
+
+function getFishTurnV26VisualProgress(fish, value) {
+  return easeFishTurnV26Continuity(getFishTurnV26TimedProgress(fish, value));
+}
+
+function getFishTurnV26ApparentThicknessScale(turnProgress) {
+  const t = clamp(Number(turnProgress) || 0, 0, 1);
+  const edgeOnEnvelope = Math.pow(Math.max(0, Math.sin(Math.PI * t)), 1.35);
+  return 1 + (FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST - 1) * edgeOnEnvelope;
+}
+
 function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now()) {
   const turnState = getFishHorizontalTurnState(fish, now);
   const progress = clamp(Number(turnState.progress) || 0, 0, 1);
+  const visualProgress = getFishTurnV26VisualProgress(fish, progress);
   const entryEnd = Math.max(0.001, FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS);
   const exitStart = clamp(FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS, entryEnd, 0.999);
   const meshIn = easeFishTurnV26Continuity(progress / entryEnd);
@@ -187,7 +237,7 @@ function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now())
   const entry = Number.isFinite(Number(fish?.turnV26EntryTilt))
     ? Number(fish.turnV26EntryTilt)
     : current;
-  const exitBlend = easeFishTurnV26Continuity((progress - exitStart) / Math.max(0.001, 1 - exitStart));
+  const exitBlend = easeFishTurnV26Continuity((visualProgress - exitStart) / Math.max(0.001, 1 - exitStart));
   return {
     meshAlpha,
     spriteAlpha: turnVisualActive ? 0 : 1,
@@ -1060,7 +1110,10 @@ function normalizeFishTurnV26Style(value, fallback = FISH_TURN_V26_DEFAULT_STYLE
     "tester-9": "wide-fluid-u-turn",
     "wide-u-turn": "wide-fluid-u-turn",
     "wide-fluid": "wide-fluid-u-turn",
-    "wide-fluid-u-turn": "wide-fluid-u-turn"
+    "wide-fluid-u-turn": "wide-fluid-u-turn",
+    "portal-tight": "portal-tight",
+    "cave-clearance": "portal-tight",
+    "clearance-tight": "portal-tight"
   };
   const fallbackNormalized = String(fallback || "").trim().toLowerCase().replace(/[_\s]+/g, "-");
   if (aliases[normalized]) return aliases[normalized];
@@ -1148,8 +1201,12 @@ function getFishTurnV26BehaviorContext(fish, species = getSpeciesForFish(fish), 
     || (Number(fish?.panicSpeedBoost) || 0) > 1.15
     || /\b(attack|chase|strike|striking|lunge|pounce|pouncing|ambush|flee|avoid|retreat|startled|dart|zoomies|burst|high-speed|confrontation|yield)\b/.test(actionText)
   );
+  const caveClearanceConstrained = typeof isFishNearCaveShellForTurn === "function"
+    ? isFishNearCaveShellForTurn(fish, species, now)
+    : Boolean(fish?.caveState);
   const constrained = Boolean(
     collisionAvoidanceActive
+    || caveClearanceConstrained
     || edgeClearance < 0.115
     || targetDistance < 0.055
     || fish?.caveState
@@ -1173,6 +1230,7 @@ function getFishTurnV26BehaviorContext(fish, species = getSpeciesForFish(fish), 
     steeringType,
     breedingActive,
     collisionAvoidanceActive,
+    caveClearanceConstrained,
     schoolLeading,
     schoolFollowing,
     schoolFormationActive,
@@ -1195,6 +1253,13 @@ function selectFishTurnV26StyleForContext(
 ) {
   const context = getFishTurnV26BehaviorContext(fish, species, now);
   const roll = clamp(Number(randomValue) || 0, 0, 0.999999);
+
+  // Cave mouths and nearby solid cave shells need a turn whose rendered mesh
+  // stays inside the authoritative fish footprint. Geometry safety wins over
+  // personality/style randomization for this one reversal.
+  if (context.caveClearanceConstrained || ["align", "portal-enter", "exit", "depart", "portal-exit"].includes(fish?.caveState)) {
+    return "portal-tight";
+  }
 
   // Fast threat responses and forceful reversals should read as decisive.
   if (context.forceful) {
@@ -1281,6 +1346,17 @@ function easeFishTurnV26Sine(t) {
 function getFishTurnV26StyleDefinition(styleValue) {
   const style = normalizeFishTurnV26Style(styleValue);
   switch (style) {
+    case "portal-tight":
+      return {
+        id: "portal-tight",
+        testerId: 0,
+        name: "Cave Clearance Turn",
+        bendScale: 0.82,
+        bias: 0,
+        waveScale: 0.16,
+        waveSpeed: 1.0,
+        yawEase: "sine"
+      };
     case "banked-flex":
       return {
         id: "banked-flex",
@@ -1351,6 +1427,18 @@ function computeFishTurnV26StyleTransform(
   let rotationZDegrees = 0;
 
   switch (style.id) {
+    case "portal-tight":
+      // Rotate almost in place. The ordinary cinematic styles translate the
+      // mesh in screen space, which is attractive in open water but can sweep
+      // a head or tail through a cave rim despite a valid gameplay collision
+      // pose. Portal-tight keeps that visual trajectory essentially centered.
+      motionX = 0;
+      motionY = 0;
+      motionZ = 0.035 * B;
+      rotationXDegrees = -2 * B;
+      rotationYDegrees = 180 * sineEase * d;
+      rotationZDegrees = 3 * doubleSine * d;
+      break;
     case "banked-flex":
       motionX = 35 * Math.sin(Math.PI * t) * d;
       motionY = -20 * B;
@@ -1614,7 +1702,8 @@ function projectFishTurnV26UvPoint(options) {
     styleTransform.style.waveSpeed,
     turnDepthSign
   );
-  const depth = layer * (FISH_TURN_V26_THICKNESS / 450) * thicknessShape;
+  const apparentThicknessScale = getFishTurnV26ApparentThicknessScale(turnProgress);
+  const depth = layer * (FISH_TURN_V26_THICKNESS / 450) * apparentThicknessScale * thicknessShape;
   const surfaceX = spineFrame.center.x + spineFrame.normal.x * depth;
   const surfaceZ = spineFrame.center.z + spineFrame.normal.z * depth;
   const sourceY = (0.5 - safeV) * (2 / fishAspect);
@@ -1710,7 +1799,7 @@ function getFishTurnV26VisualAnchorLocalPoint(
   }
   const style = getFishTurnV26Style(fish);
   const turnDepthSign = getFishTurnV26DepthSign(fish);
-  const visualProgress = easeFishTurnV26Continuity(turnState.progress);
+  const visualProgress = getFishTurnV26VisualProgress(fish, turnState.progress);
   const styleTransform = computeFishTurnV26StyleTransform(
     style,
     visualProgress,
@@ -2272,7 +2361,10 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
 
   try {
     const turnState = getFishHorizontalTurnState(fish, now);
-    const turnProgress = easeFishTurnV26Continuity(clamp(Number(turnState.progress) || 0, 0, 1));
+    const turnProgress = getFishTurnV26VisualProgress(
+      fish,
+      clamp(Number(turnState.progress) || 0, 0, 1)
+    );
     const sourceDirection = getFishTurnV26SourceDirection();
     const turnStyle = getFishTurnV26Style(fish);
     const turnDepthSign = getFishTurnV26DepthSign(fish);
@@ -2310,7 +2402,10 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
     gl.activeTexture(gl.TEXTURE0);
     gl.bindTexture(gl.TEXTURE_2D, bodyTexture);
     gl.uniform1i(uniforms.u_texture, 0);
-    gl.uniform1f(uniforms.u_thickness, FISH_TURN_V26_THICKNESS / 450);
+    gl.uniform1f(
+      uniforms.u_thickness,
+      (FISH_TURN_V26_THICKNESS / 450) * getFishTurnV26ApparentThicknessScale(turnProgress)
+    );
     gl.uniform1f(uniforms.u_edgeReach, FISH_TURN_V26_EDGE_REACH);
     gl.uniform1f(uniforms.u_edgeClosure, FISH_TURN_V26_EDGE_CLOSURE / 100);
     gl.uniform1f(uniforms.u_edgeRoundness, FISH_TURN_V26_EDGE_ROUNDNESS / 100);

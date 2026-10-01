@@ -50,7 +50,17 @@ function renderUi(now, options = {}) {
         social: {
           socialMode: social.socialMode,
           socialMinimum: social.socialMinimum
-        }
+        },
+        aboutParagraphs: [species.description, ...(Array.isArray(species.aboutParagraphs) ? species.aboutParagraphs : [])]
+          .filter((paragraph) => typeof paragraph === "string" && paragraph.trim()),
+        aboutAttribution: typeof species.aboutAttribution === "string" ? species.aboutAttribution.trim() : "",
+        aboutTagline: typeof species.aboutTagline === "string" ? species.aboutTagline.trim() : "",
+        food: formatFishShopFood(species),
+        behavior: formatFishShopBehavior(species),
+        genetics: formatFishShopGenetics(species, appearanceVariantKey),
+        compatibilityWarnings: isPiranhaSpecies(species)
+          ? [["Predatory behavior", "Warning: attacks and can kill tankmates when aggressive behavior is enabled."]]
+          : []
       };
     };
   }
@@ -394,6 +404,51 @@ function formatFishShopMetric(kind, count, options = {}) {
   return `${safeCount} ${pluralize("heart", safeCount)}`;
 }
 
+
+function formatFishShopFood(species) {
+  if (!species) return "Basic Food / Fish Flakes";
+  if (isCustomFishShopKey(species.id)) return "Configured in designer";
+  if (species.requiresFood === false || String(species.dietProfile || species.diet || "").trim().toLowerCase() === "none") return "None";
+
+  const acceptedFoods = typeof getFishAcceptedFoodKeys === "function"
+    ? getFishAcceptedFoodKeys(species)
+    : (Array.isArray(species.acceptedFoods) ? species.acceptedFoods : []);
+  const foods = new Set(acceptedFoods.map((foodKey) => String(foodKey || "").trim()).filter(Boolean));
+  const dietProfile = String(species.dietProfile || species.diet || "").trim().toLowerCase();
+
+  if (foods.has("chum") && (dietProfile === "chum" || isPiranhaSpecies(species) || isDesperationPredatorFish(species))) return "Chum";
+  if (dietProfile === "detritus" && foods.has("algaeWafers")) return "Algae Wafers";
+  if (dietProfile === "carnivore") {
+    if (foods.has("carnivore")) return "Carnivore Meat Hunks";
+    if (foods.has("brineShrimp")) return "Brine Shrimp";
+  }
+  if (foods.has("basic")) return "Basic Food / Fish Flakes";
+  if (foods.has("algaeWafers")) return "Algae Wafers";
+  if (foods.has("carnivore")) return "Carnivore Meat Hunks";
+  if (foods.has("brineShrimp")) return "Brine Shrimp";
+  if (foods.has("chum")) return "Chum";
+  return "No routine food";
+}
+
+function formatFishShopGenetics(species, appearanceVariantKey = "") {
+  if (!species) return "Natural";
+
+  const requestedKey = String(appearanceVariantKey || "").trim().toLowerCase();
+  let variantText = requestedKey;
+  if (requestedKey && typeof getFishStoreVariants === "function") {
+    const variant = getFishStoreVariants(species).find((entry) => String(entry?.key || "").toLowerCase() === requestedKey);
+    variantText = `${variantText} ${String(variant?.label || "").toLowerCase()}`;
+  }
+
+  const genetics = String(species.genetics || "natural").trim().toLowerCase();
+  const enhanced = genetics === "enhanced"
+    || species.proteusExclusive === true
+    || isDavyMutationSpecies(species)
+    || isCustomFishShopKey(species.id)
+    || /\bneon\b/i.test(variantText);
+  return enhanced ? "Enhanced" : "Natural";
+}
+
 function formatFishShopBehavior(species) {
   if (!species) {
     return "Steady";
@@ -515,24 +570,14 @@ function renderFishStoreThumbnail(fish, asset, locked = false) {
 }
 
 function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater"), tutorialPreviewOnly = false } = {}) {
+  if (!fish || fish.Fish_enabled === false) {
+    return "";
+  }
   const isCustomUploadProduct = isCustomFishShopKey(fish.id);
   const progressLocked = !isFishSpeciesProgressUnlocked(fish);
   const locked = !isFishSpeciesShopUnlocked(fish);
   const debugUnlocked = progressLocked && !locked;
   const purchaseCost = getFishPurchaseCost(fish.id);
-  const maxHealthUnits = getSpeciesMaxHealthUnits(fish);
-  const heartCount = Math.ceil(maxHealthUnits / 2);
-  const healthDisplay = isCustomUploadProduct
-    ? "Behavior-based"
-    : formatFishShopMetric("heart", heartCount);
-  const coinsDisplay = isCustomUploadProduct
-    ? "Behavior-based"
-    : isMealFreeFish(fish)
-      ? "None"
-      : formatFishShopMetric("coin", fish.mealCoins);
-  const dirtinessLoadPercent = isCustomUploadProduct
-    ? null
-    : Math.round(getFishDirtinessBonus({ scale: getFishScaleDefault(fish.id) }, fish) * 100);
   const bubbleBodegaVariants = getBubbleBodegaFishStoreVariants(fish);
   const fishVariantProgressMessage = typeof isDebugModeEnabled === "function"
     && isDebugModeEnabled()
@@ -544,45 +589,35 @@ function renderFishStoreCard(fish, { activeWaterType = (typeof getActiveStoreWat
     || getFishCatalogAssetPath(fish)
     || fish.asset;
   const isDavyMutation = isDavyMutationSpecies(fish);
-  const needChips = renderNeutralComfortTagChips(getSpeciesNeedTags(fish));
-  const conflictChips = renderNeutralComfortTagChips(getSpeciesConflictTags(fish));
-  const lockedRequirementLabel = getUnlockRequirementLabel(fish.unlockRequirement);
-  const unlockLabel = locked
-    ? lockedRequirementLabel
-    : debugUnlocked
-      ? `Debug unlocked (${lockedRequirementLabel})`
-      : "Unlocked";
-  const behaviorWarning = isPiranhaSpecies(fish)
-    ? "Warning: attacks and can kill tankmates when aggressive behavior is enabled."
-    : "";
   const waterRequirement = typeof getStoreWaterRequirementLabel === "function" ? getStoreWaterRequirementLabel("fish", fish, activeWaterType) : "";
+  const foodDisplay = typeof formatFishShopFood === "function" ? formatFishShopFood(fish) : "Basic Food / Fish Flakes";
+  const behaviorDisplay = formatFishShopBehavior(fish);
+  const geneticsDisplay = typeof formatFishShopGenetics === "function"
+    ? formatFishShopGenetics(fish)
+    : (String(fish.genetics || "natural").trim().toLowerCase() === "enhanced" ? "Enhanced" : "Natural");
+  // Preserve existing progression/water computations for compatibility and
+  // filtering, but do not expose them as product metadata. Before You Buy owns
+  // aquarium requirements; Additional Information owns only food/behavior/genetics.
+  void debugUnlocked;
+  void fishVariantProgressMessage;
+  void waterRequirement;
   return `
     <article class="shop-card ${locked ? "is-locked" : ""} ${isDavyMutation ? "is-davy-mutation" : ""}" ${renderStoreFacetAttributes("fish", fish)}>
       ${renderFishStoreThumbnail(fish, fishAsset, locked)}
       <div class="shop-meta shop-card-main">
         <div>
           <strong>${escapeHtml(fish.name)}</strong>
-          ${renderFishShopGeneticsPill(fish.genetics)}
           ${[fish.description, ...(Array.isArray(fish.aboutParagraphs) ? fish.aboutParagraphs : [])]
             .filter((paragraph) => typeof paragraph === "string" && paragraph.trim())
             .map((paragraph) => `<div class="fish-meta">${escapeHtml(paragraph)}</div>`)
             .join("")}
           ${fish.aboutAttribution ? `<div class="shop-about-attribution">${escapeHtml(fish.aboutAttribution)}</div>` : ""}
           ${fish.aboutTagline ? `<div class="shop-about-tagline">${escapeHtml(fish.aboutTagline)}</div>` : ""}
-          ${behaviorWarning ? `<div class="shop-behavior-warning">${escapeHtml(behaviorWarning)}</div>` : ""}
-          ${waterRequirement ? `<div class="shop-water-requirement">${escapeHtml(waterRequirement)}</div>` : ""}
-          ${fishVariantProgressMessage ? `<div class="shop-variant-progress-message">${escapeHtml(fishVariantProgressMessage)}</div>` : ""}
         </div>
-        <div class="shop-stat-list">
-          <div class="shop-stat-row"><span class="shop-stat-label">Unlock:</span><span class="shop-stat-value">${escapeHtml(unlockLabel)}</span></div>
-          <div class="shop-stat-row"><span class="shop-stat-label">Health:</span><span class="shop-stat-value">${healthDisplay}</span></div>
-          <div class="shop-stat-row"><span class="shop-stat-label">Feeding Care:</span><span class="shop-stat-value">${coinsDisplay}</span></div>
-          <div class="shop-stat-row"><span class="shop-stat-label">Grime Multiplier:</span><span class="shop-stat-value">${isCustomUploadProduct ? "Size-based" : `+${dirtinessLoadPercent}%`}</span></div>
-          <div class="shop-stat-row"><span class="shop-stat-label">Behavior:</span><span class="shop-stat-value">${formatFishShopBehavior(fish)}</span></div>
-        </div>
-        <div class="shop-comfort-profile">
-          <div><span>Needs</span><div class="inspector-chip-row">${needChips}</div></div>
-          <div><span>Conflicts</span><div class="inspector-chip-row">${conflictChips}</div></div>
+        <div class="shop-stat-list shop-fish-additional-info" aria-label="Additional Information">
+          <div class="shop-stat-row"><span class="shop-stat-label">Food:</span><span class="shop-stat-value">${escapeHtml(foodDisplay)}</span></div>
+          <div class="shop-stat-row"><span class="shop-stat-label">Behavior:</span><span class="shop-stat-value">${escapeHtml(behaviorDisplay)}</span></div>
+          <div class="shop-stat-row"><span class="shop-stat-label">Genetics:</span><span class="shop-stat-value">${escapeHtml(geneticsDisplay)}</span></div>
         </div>
       </div>
       <div class="shop-meta">
@@ -602,7 +637,7 @@ function renderFishShop() {
   const activeWaterType = typeof getActiveStoreWaterType === "function" ? getActiveStoreWaterType() : "freshwater";
   // Species that have not been progression-unlocked do not appear in
   // BubbleBodega at all. They are future discoveries, not out-of-stock stock.
-  // Debug Mode intentionally keeps its temporary catalog bypass.
+  // Debug Mode may bypass progression, but Fish_enabled:false remains absolute.
   const sourceCatalog = getFishShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
   const otherSourceCatalog = getOtherAquariumCreatureShopCatalog().filter((fish) => isFishSpeciesShopUnlocked(fish));
   const filterEntry = (fish) => {
@@ -835,10 +870,15 @@ async function handleDavyJonesLockerPageClick(event) {
 function renderStoreOverlay() {
   syncWebSurfThemePresentation();
   resetWebSurfToolbarVisibility();
-  syncWebSurfBrowserChrome();
   const routeError = runtime.webSurfRouteError;
   const showingRouteError = Boolean(routeError);
   const showingHome = runtime.webHomeOpen === true;
+  const bookmarkDrag = runtime.webSurfBookmarkDrag;
+  if (bookmarkDrag && (!bookmarkDrag.container.isConnected || !runtime.storeOverlayOpen
+    || (isWebSurfBookmarkDragWithin(dom.webHomePage) && (!showingHome || showingRouteError)))) {
+    finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
+  }
+  syncWebSurfBrowserChrome();
   const showingThemes = runtime.webSurfThemesOpen === true;
   const showingBank = runtime.bubbleBankOpen === true;
   const showingLocker = runtime.davyJonesLockerOpen === true;
@@ -883,10 +923,17 @@ function renderStoreOverlay() {
   const decorTabSelected = categoryTabOwnsHomeCatalog && showingDecor;
   const equipmentTabSelected = categoryTabOwnsHomeCatalog && showingEquipment;
 
+  const webSurfFullscreenActive = runtime.storeOverlayOpen && getUiSettings().webSurfFullscreen === true;
   dom.storeOverlay.hidden = !runtime.storeOverlayOpen;
   dom.storeOverlay.classList.toggle("is-open", runtime.storeOverlayOpen);
-  dom.storeOverlay.classList.toggle("is-websurf-fullscreen", runtime.storeOverlayOpen && getUiSettings().webSurfFullscreen === true);
-  dom.storeOverlay.classList.toggle("is-websurf-toolbar-hidden", runtime.storeOverlayOpen && runtime.webSurfToolbarHidden === true && getUiSettings().webSurfFullscreen === true);
+  dom.storeOverlay.classList.toggle("is-websurf-fullscreen", webSurfFullscreenActive);
+  dom.storeOverlay.classList.toggle("is-websurf-toolbar-hidden", runtime.storeOverlayOpen && runtime.webSurfToolbarHidden === true && webSurfFullscreenActive);
+  if (dom.webSurfMaximizeButton) {
+    const maximizeLabel = webSurfFullscreenActive ? "Restore WebSurf" : "Maximize WebSurf";
+    dom.webSurfMaximizeButton.setAttribute("aria-pressed", webSurfFullscreenActive ? "true" : "false");
+    dom.webSurfMaximizeButton.setAttribute("aria-label", maximizeLabel);
+    dom.webSurfMaximizeButton.title = maximizeLabel;
+  }
   dom.storeOverlay.classList.toggle("is-web-home-open", runtime.storeOverlayOpen && showingHome);
   dom.storeOverlay.classList.toggle("is-websurf-themes-open", runtime.storeOverlayOpen && showingThemes);
   dom.storeOverlay.classList.toggle("is-bubblebodega-home-open", runtime.storeOverlayOpen && showingBodegaHome);
@@ -905,7 +952,7 @@ function renderStoreOverlay() {
   if (dom.webHomePage) {
     dom.webHomePage.hidden = !runtime.storeOverlayOpen || !showingHome || Boolean(routeError);
     syncWebSurfUnreadBadge();
-    if (runtime.storeOverlayOpen && showingHome) {
+    if (runtime.storeOverlayOpen && showingHome && !isWebSurfBookmarkDragWithin(dom.webHomePage)) {
       setMarkupIfChanged("websurf-home-page", dom.webHomePage, renderWebSurfHomePage());
       window.syncProteusDiscovery?.();
     }

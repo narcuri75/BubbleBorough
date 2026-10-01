@@ -1769,7 +1769,7 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   const storeRenderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
   assert.match(websurfStore, /getTankazonSellerName[\s\S]*return seller \|\| "BubbleBodega"/);
-  assert.match(websurfStore, /tankazonItemSeller[\s\S]*Visit the \$\{seller\} Store/);
+  assert.doesNotMatch(websurfStore, /Visit the \$\{seller\} Store/);
   assert.match(normalizationSource, /id: CUSTOM_FISH_SHOP_KEY,[\s\S]*seller: "Proteus Biodyne"/);
   assert.match(bootstrap, /const CUSTOM_FISH_COST = 125;/);
   assert.match(bootstrap, /CUSTOM_FISH_SHOP_IMAGE = resolveAppUrl\("assets\/web\/proteus\/PB_Custom_Fish\.png"\)/);
@@ -1809,8 +1809,8 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   }
   assert.match(html, /data-webpage-destination="home"[\s\S]{0,180}assets\/web\/websurf\/browser_home\.png/);
   assert.match(html, /data-webpage-destination="store"[\s\S]{0,180}assets\/web\/bodega\/Box\.png/);
-  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}assets\/icons\/coin\.png/);
-  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}<span>BB Bank<\/span>/);
+  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}assets\/misc\/coin_unicode\.png/);
+  assert.match(html, /data-webpage-destination="bank"[\s\S]{0,180}<span>Bubble Borough Bank<\/span>/);
   assert.match(html, /data-webpage-destination="proteus"[\s\S]{0,180}assets\/web\/proteus\/Proteus_Logo_Icon\.png/);
   assert.match(html, /class="webpage-tab" data-webpage-destination="proteus" hidden/);
   assert.match(html, /id="webHomePage" class="web-home-page" aria-label="WebSurf home" hidden/);
@@ -1874,9 +1874,11 @@ test("store item pages use catalog-authored sellers and link Proteus Biodyne to 
   ]) {
     assert.match(html, new RegExp(`${asset.replace(".", "\\.")}[\\s\\S]{0,220}<h3>${name}</h3>`));
   }
-  assert.match(html, /data-tankazon-seller-link[\s\S]*isProteusBiodyneSeller[\s\S]*showProteusBiodyne/);
+  assert.doesNotMatch(html, /data-tankazon-seller-link/);
+  assert.doesNotMatch(websurfStore, /getTankazonSellerSite/);
+  assert.match(overlaySource, /id: "proteus"[\s\S]*domain: "proteus\.swim"/);
   assert.match(html, /proteus-biodyne-open[\s\S]*closeProteusBiodyne/);
-  assert.match(styles, /\.tankazon-store \.tankazon-item-buybox \.tankazon-item-seller > button \{[\s\S]*width: auto;[\s\S]*min-height: 0;[\s\S]*padding: 0;/);
+  assert.doesNotMatch(styles, /tankazon-item-seller[^\n]*button\.is-linked|tankazon-item-seller > button/);
   assert.match(indexHtml, /is-proteus-preview[\s\S]*isProteusBiodyneSeller\(descriptor\.seller\)/);
   assert.match(styles, /data-store-seller="Proteus Biodyne" i[\s\S]*PB_Item_Thumb\.png[\s\S]*filter: blur\(1\.5px\)/);
   assert.match(styles, /tankazon-item-image\.is-proteus-preview::before[\s\S]*PB_Item_Thumb\.png[\s\S]*filter: blur\(2px\)/);

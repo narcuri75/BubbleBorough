@@ -304,6 +304,9 @@ function sanitizeFishTraversalState(fish, options = {}) {
       ? clamp(Number(fish.traversalObstacleWaypointYNorm), 0.14, 0.8)
       : null,
     traversalObstacleUntil: Number.isFinite(Number(fish.traversalObstacleUntil)) ? Math.max(0, Number(fish.traversalObstacleUntil)) : 0,
+    traversalObstacleReason: typeof fish.traversalObstacleReason === "string"
+      ? fish.traversalObstacleReason
+      : null,
     traversalCruiseWaypointXNorm: Number.isFinite(Number(fish.traversalCruiseWaypointXNorm))
       ? clamp(Number(fish.traversalCruiseWaypointXNorm), 0.08, 0.92)
       : null,
@@ -363,6 +366,9 @@ function sanitizeFish(fish, options = {}) {
   const now = Number.isFinite(Number(options.now)) ? Number(options.now) : Date.now();
   const species = getBaseSpeciesForFish(fish);
   const legacyHealthModel = Boolean(options.legacyHealthModel);
+  const incomingHealthModelVersion = Number.isFinite(Number(options.incomingHealthModelVersion))
+    ? Number(options.incomingHealthModelVersion)
+    : HEALTH_MODEL_VERSION;
   const maxHealthUnits = getFishMaxHealthUnits(fish, species);
   const rawHealthUnits = hasActiveCandyBoost(fish, now) ? maxHealthUnits : Number.isFinite(Number(fish.healthUnits))
     ? Math.round(Number(fish.healthUnits))
@@ -509,8 +515,12 @@ function sanitizeFish(fish, options = {}) {
       ? 0
       : rawHealthUnits === null
         ? maxHealthUnits
-        : legacyHealthModel
-          ? scaleLegacyFishHealthUnits(rawHealthUnits, maxHealthUnits)
+        : incomingHealthModelVersion < HEALTH_MODEL_VERSION
+          ? migrateFishHealthUnitsToProgressionModel(
+              rawHealthUnits,
+              getPreviousHealthModelMaxUnits(fish, species, incomingHealthModelVersion),
+              maxHealthUnits
+            )
           : clamp(rawHealthUnits, 0, maxHealthUnits),
     injuryDisplaySide: fish.injuryDisplaySide === "left" || fish.injuryDisplaySide === "right"
       ? fish.injuryDisplaySide
@@ -719,7 +729,18 @@ function sanitizeFish(fish, options = {}) {
     cavePathIndex: Number.isFinite(Number(fish.cavePathIndex)) ? Math.max(0, Math.floor(Number(fish.cavePathIndex))) : null,
     caveIdleTargetXNorm: Number.isFinite(Number(fish.caveIdleTargetXNorm)) ? clamp(Number(fish.caveIdleTargetXNorm), 0.08, 0.92) : null,
     caveIdleTargetYNorm: Number.isFinite(Number(fish.caveIdleTargetYNorm)) ? clamp(Number(fish.caveIdleTargetYNorm), 0.14, 0.8) : null,
-    caveIdleTargetAt: Number.isFinite(Number(fish.caveIdleTargetAt)) ? Number(fish.caveIdleTargetAt) : null
+    caveIdleTargetAt: Number.isFinite(Number(fish.caveIdleTargetAt)) ? Number(fish.caveIdleTargetAt) : null,
+    cavePortalCrossingMode: ["enter", "exit"].includes(fish.cavePortalCrossingMode) ? fish.cavePortalCrossingMode : null,
+    cavePortalCrossingStartXNorm: Number.isFinite(Number(fish.cavePortalCrossingStartXNorm)) ? clamp(Number(fish.cavePortalCrossingStartXNorm), 0.08, 0.92) : null,
+    cavePortalCrossingStartYNorm: Number.isFinite(Number(fish.cavePortalCrossingStartYNorm)) ? clamp(Number(fish.cavePortalCrossingStartYNorm), 0.14, 0.8) : null,
+    cavePortalCrossingViaXNorm: Number.isFinite(Number(fish.cavePortalCrossingViaXNorm)) ? clamp(Number(fish.cavePortalCrossingViaXNorm), 0.08, 0.92) : null,
+    cavePortalCrossingViaYNorm: Number.isFinite(Number(fish.cavePortalCrossingViaYNorm)) ? clamp(Number(fish.cavePortalCrossingViaYNorm), 0.14, 0.8) : null,
+    cavePortalCrossingEndXNorm: Number.isFinite(Number(fish.cavePortalCrossingEndXNorm)) ? clamp(Number(fish.cavePortalCrossingEndXNorm), 0.08, 0.92) : null,
+    cavePortalCrossingEndYNorm: Number.isFinite(Number(fish.cavePortalCrossingEndYNorm)) ? clamp(Number(fish.cavePortalCrossingEndYNorm), 0.14, 0.8) : null,
+    cavePortalCrossingStartZ: Number.isFinite(Number(fish.cavePortalCrossingStartZ)) ? sanitizeTankDepthZ(Number(fish.cavePortalCrossingStartZ)) : null,
+    cavePortalCrossingEndZ: Number.isFinite(Number(fish.cavePortalCrossingEndZ)) ? sanitizeTankDepthZ(Number(fish.cavePortalCrossingEndZ)) : null,
+    cavePortalCrossingNodeIndex: Number.isFinite(Number(fish.cavePortalCrossingNodeIndex)) ? Math.max(0, Math.min(1, Math.floor(Number(fish.cavePortalCrossingNodeIndex)))) : null,
+    cavePortalProgress: Number.isFinite(Number(fish.cavePortalProgress)) ? clamp(Number(fish.cavePortalProgress), 0, 1) : null
   };
 }
 
@@ -2758,6 +2779,9 @@ function tankLayerToLegacy(layer) {
 
 function getFishTankLayer(fish) {
   if (fish?.caveState) {
+    if (["portal-enter", "portal-exit"].includes(fish.caveState)) {
+      return clampTankLayer(fish.tankLayer || DEFAULT_TANK_LAYER);
+    }
     if (["approach", "align", "leave"].includes(fish.caveState)) {
       return clampTankLayer(fish.caveFrontLayer || fish.tankLayer || DEFAULT_TANK_LAYER);
     }
@@ -2770,6 +2794,9 @@ function getFishTankLayer(fish) {
 
 function getFishTankSubLayer(fish) {
   if (fish?.caveState) {
+    if (["portal-enter", "portal-exit"].includes(fish.caveState)) {
+      return clampTankSubLayer(fish?.tankSubLayer ?? DEFAULT_TANK_SUBLAYER);
+    }
     if (["enter", "inside", "exit", "depart"].includes(fish.caveState)) {
       return TANK_SUBLAYER_MIDDLE;
     }
@@ -2869,6 +2896,9 @@ function getSuckerFishYRange(fish, species = getSpeciesForFish(fish), layer = ge
 
 function getDesiredFishTankLayer(fish) {
   if (fish?.caveState) {
+    if (["portal-enter", "portal-exit"].includes(fish.caveState)) {
+      return clampTankLayer(fish.desiredTankLayer || fish.tankLayer || DEFAULT_TANK_LAYER);
+    }
     if (["approach", "align", "leave"].includes(fish.caveState)) {
       return clampTankLayer(fish.caveFrontLayer || fish.desiredTankLayer || fish.tankLayer || DEFAULT_TANK_LAYER);
     }
@@ -2881,6 +2911,9 @@ function getDesiredFishTankLayer(fish) {
 
 function getDesiredFishTankSubLayer(fish) {
   if (fish?.caveState) {
+    if (["portal-enter", "portal-exit"].includes(fish.caveState)) {
+      return clampTankSubLayer(fish?.desiredTankSubLayer ?? fish?.tankSubLayer ?? DEFAULT_TANK_SUBLAYER);
+    }
     if (["enter", "exit", "depart"].includes(fish.caveState)) {
       return TANK_SUBLAYER_MIDDLE;
     }

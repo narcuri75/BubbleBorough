@@ -487,8 +487,7 @@ async function buyFish(speciesId, options = {}) {
   }
 
 
-  const debugCatalogBypass = typeof isDebugModeEnabled === "function" && isDebugModeEnabled();
-  if (species.Fish_enabled === false && !debugCatalogBypass) {
+  if (species.Fish_enabled === false) {
     showToast(`${species.name} is temporarily unavailable.`);
     return { ok: false, reason: "species-disabled" };
   }

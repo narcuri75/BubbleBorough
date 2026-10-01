@@ -1688,6 +1688,7 @@ function renderWebSurfRouteErrorPage(error) {
 }
 
 function navigateWebSurf(value, options = {}) {
+  finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
   const route = resolveWebSurfUrl(value);
   if (route.status !== "ok") return showWebSurfRouteError(route.status, route.url);
   if (!isWebSurfRouteAllowed(route)) return showWebSurfRouteError("access-denied", route.url);
@@ -1752,14 +1753,6 @@ function closeWebSurfBrowserTab(tab) {
   const destination = String(tab.dataset.webpageDestination || "");
   const wasActive = tab.classList.contains("is-active");
 
-  // A browser always has somewhere safe to land. Closing its sole remaining
-  // tab simply returns it to WebSurf Home instead of leaving an empty shell.
-  if (tabs.length <= 1) {
-    tab.hidden = false;
-    navigateWebSurf("websurf.swim", { historyMode: "replace" });
-    return;
-  }
-
   tab.dataset.websurfTabClosed = "true";
   tab.hidden = true;
   if (destination === "settings") deactivateWebSurfSettingsPage();
@@ -1767,8 +1760,16 @@ function closeWebSurfBrowserTab(tab) {
   if (destination === "designer") closeProteusDesignerSession();
   window.closeWebSurfSiteTab?.(destination);
 
+  const remainingTabs = tabs.filter((candidate) => candidate !== tab && !candidate.hidden);
+  if (!remainingTabs.length) {
+    // Close the final tab first, then create a clean default Home tab.
+    ensureWebSurfBrowserTab("home");
+    navigateWebSurf("websurf.swim", { historyMode: "replace" });
+    return;
+  }
+
   if (!wasActive) return;
-  const next = tabs.find((candidate) => candidate !== tab);
+  const next = remainingTabs[0];
   const nextUrl = getWebSurfUrlForDestination(next?.dataset.webpageDestination);
   navigateWebSurf(nextUrl || "websurf.swim", { historyMode: "replace" });
 }
@@ -1804,6 +1805,7 @@ function recordWebSurfNavigation(url, options = {}) {
 }
 
 function updateWebSurfRoute(url, options = {}) {
+  finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
   const route = resolveWebSurfUrl(url);
   if (route.status !== "ok") return false;
   runtime.webSurfRouteError = null;
@@ -1854,6 +1856,223 @@ function toggleWebSurfBookmark(url = getWebSurfSessionUrl()) {
   return index < 0;
 }
 
+function applyWebSurfBookmarkOrder(orderedUrls = []) {
+  const browser = getWebSurfBrowserState();
+  const existing = Array.isArray(browser.bookmarks) ? browser.bookmarks : [];
+  if (existing.length < 2) return false;
+  const byUrl = new Map(existing.map((entry) => [String(entry?.url || ""), entry]));
+  const seen = new Set();
+  const next = [];
+  for (const rawUrl of Array.isArray(orderedUrls) ? orderedUrls : []) {
+    const route = resolveWebSurfUrl(rawUrl);
+    const url = route?.status === "ok" ? route.url : String(rawUrl || "");
+    const entry = byUrl.get(url);
+    if (!entry || seen.has(url)) continue;
+    seen.add(url);
+    next.push(entry);
+  }
+  for (const entry of existing) {
+    const url = String(entry?.url || "");
+    if (!url || seen.has(url)) continue;
+    seen.add(url);
+    next.push(entry);
+  }
+  const changed = next.length === existing.length && next.some((entry, index) => entry !== existing[index]);
+  if (!changed) return false;
+  browser.bookmarks = next;
+  saveState();
+  return true;
+}
+
+function isWebSurfBookmarkClickSuppressed(target) {
+  if (!(target instanceof Element) || !target.closest("[data-websurf-bookmark-reorder-url]")) return false;
+  return Number(runtime.webSurfBookmarkSuppressClickUntil) > Date.now();
+}
+
+function getWebSurfBookmarkReorderItems(container, excluded = null) {
+  if (!(container instanceof Element)) return [];
+  return Array.from(container.querySelectorAll("[data-websurf-bookmark-reorder-url]"))
+    .filter((item) => item instanceof HTMLElement && item !== excluded && !item.hidden);
+}
+
+function isWebSurfBookmarkDragWithin(element) {
+  const container = runtime.webSurfBookmarkDrag?.container;
+  return Boolean(element && container && (element === container || element.contains(container)));
+}
+
+function getWebSurfBookmarkInsertion(container, dragged, clientX, clientY) {
+  const candidates = getWebSurfBookmarkReorderItems(container, dragged);
+  if (!candidates.length) return { target: null, before: false };
+  let closest = null;
+  let closestScore = Infinity;
+  for (const candidate of candidates) {
+    const rect = candidate.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    const dx = clientX - centerX;
+    const dy = clientY - centerY;
+    const score = (dx * dx) + (dy * dy * 1.35);
+    if (score < closestScore) {
+      closestScore = score;
+      closest = { candidate, rect, centerX, centerY };
+    }
+  }
+  if (!closest) return { target: null, before: false };
+  const rowTolerance = Math.max(6, closest.rect.height * 0.35);
+  let before;
+  if (clientY < closest.rect.top - rowTolerance) before = true;
+  else if (clientY > closest.rect.bottom + rowTolerance) before = false;
+  else before = clientX < closest.centerX;
+  return { target: closest.candidate, before };
+}
+
+function positionWebSurfBookmarkDragGhost(session, clientX, clientY) {
+  const ghost = session?.ghost;
+  if (!(ghost instanceof HTMLElement)) return;
+  ghost.style.left = `${Math.round(clientX - session.pointerOffsetX)}px`;
+  ghost.style.top = `${Math.round(clientY - session.pointerOffsetY)}px`;
+}
+
+function beginWebSurfBookmarkDrag(session, event) {
+  const item = session?.item;
+  const container = session?.container;
+  if (!(item instanceof HTMLElement) || !(container instanceof HTMLElement)) return false;
+  const rect = item.getBoundingClientRect();
+  const computed = getComputedStyle(item);
+  const ghost = item.cloneNode(true);
+  ghost.classList.add("websurf-bookmark-drag-ghost");
+  ghost.classList.remove("websurf-bookmark-drag-placeholder");
+  ghost.removeAttribute("id");
+  ghost.setAttribute("aria-hidden", "true");
+  ghost.setAttribute("tabindex", "-1");
+  ghost.style.width = `${rect.width}px`;
+  ghost.style.height = `${rect.height}px`;
+  ghost.style.background = computed.background;
+  ghost.style.backgroundColor = computed.backgroundColor;
+  ghost.style.color = computed.color;
+  ghost.style.borderColor = computed.borderColor;
+  ghost.style.borderRadius = computed.borderRadius;
+  ghost.style.font = computed.font;
+  document.body.appendChild(ghost);
+  session.dragging = true;
+  session.ghost = ghost;
+  item.classList.add("websurf-bookmark-drag-placeholder");
+  item.setAttribute("aria-grabbed", "true");
+  container.classList.add("is-reordering");
+  document.body.classList.add("websurf-bookmark-dragging");
+  runtime.webSurfBookmarkSuppressClickUntil = Date.now() + 1000;
+  try { item.setPointerCapture?.(session.pointerId); } catch (_error) {}
+  positionWebSurfBookmarkDragGhost(session, event.clientX, event.clientY);
+  return true;
+}
+
+function updateWebSurfBookmarkDrag(event) {
+  const session = runtime.webSurfBookmarkDrag;
+  if (!session || Number(event?.pointerId) !== Number(session.pointerId)) return false;
+  if (!session.container.isConnected || !session.container.contains(session.item)) {
+    finishWebSurfBookmarkDrag(null, { cancel: true });
+    return false;
+  }
+  const dx = Number(event.clientX) - session.startX;
+  const dy = Number(event.clientY) - session.startY;
+  if (!session.dragging) {
+    if (Math.hypot(dx, dy) < 7) return false;
+    if (!beginWebSurfBookmarkDrag(session, event)) return false;
+  }
+  event.preventDefault?.();
+  runtime.webSurfBookmarkSuppressClickUntil = Date.now() + 1000;
+  positionWebSurfBookmarkDragGhost(session, Number(event.clientX), Number(event.clientY));
+  const containerRect = session.container.getBoundingClientRect();
+  if (session.container.classList.contains("websurf-bookmark-bar")) {
+    const edge = Math.min(42, Math.max(24, containerRect.width * 0.12));
+    if (event.clientX < containerRect.left + edge) session.container.scrollLeft -= 14;
+    else if (event.clientX > containerRect.right - edge) session.container.scrollLeft += 14;
+  }
+  const insertion = getWebSurfBookmarkInsertion(session.container, session.item, Number(event.clientX), Number(event.clientY));
+  if (!insertion.target) return true;
+  const reference = insertion.before ? insertion.target : insertion.target.nextSibling;
+  if (reference !== session.item && session.item.nextSibling !== reference) {
+    session.container.insertBefore(session.item, reference);
+  }
+  return true;
+}
+
+function finishWebSurfBookmarkDrag(event = null, options = {}) {
+  const session = runtime.webSurfBookmarkDrag;
+  if (!session) return false;
+  if (event && Number(event.pointerId) !== Number(session.pointerId)) return false;
+  const wasDragging = session.dragging === true;
+  const cancel = options.cancel === true
+    || !session.container?.isConnected
+    || !session.container?.contains(session.item);
+  const orderedUrls = wasDragging && !cancel
+    ? getWebSurfBookmarkReorderItems(session.container)
+      .map((item) => String(item.dataset.websurfBookmarkReorderUrl || ""))
+      .filter(Boolean)
+    : [];
+  if (wasDragging) {
+    event?.preventDefault?.();
+    runtime.webSurfBookmarkSuppressClickUntil = Date.now() + 700;
+  }
+  try { session.item?.releasePointerCapture?.(session.pointerId); } catch (_error) {}
+  session.item?.classList.remove("websurf-bookmark-drag-placeholder");
+  session.item?.removeAttribute("aria-grabbed");
+  session.container?.classList.remove("is-reordering");
+  session.ghost?.remove?.();
+  document.body.classList.remove("websurf-bookmark-dragging");
+  runtime.webSurfBookmarkDrag = null;
+  if (!wasDragging) return false;
+  // Dragging mutates DOM order without updating the markup cache. Force Home
+  // to restore saved order on cancellation as well as after a committed drop.
+  delete runtime.renderedMarkup["websurf-home-page"];
+  const changed = !cancel && applyWebSurfBookmarkOrder(orderedUrls);
+  if (options.render !== false) {
+    syncWebSurfBrowserChrome();
+    renderUi(Date.now(), { full: false });
+  }
+  return cancel || changed;
+}
+
+function handleWebSurfBookmarkPointerDown(event) {
+  if (event?.button !== 0 || event?.isPrimary === false) return;
+  const target = event.target instanceof Element ? event.target : null;
+  const item = target?.closest("[data-websurf-bookmark-reorder-url]");
+  if (!(item instanceof HTMLElement) || item.disabled) return;
+  const container = item.closest(".websurf-bookmark-bar, .websurf-bookmark-row");
+  if (!(container instanceof HTMLElement)) return;
+  const rect = item.getBoundingClientRect();
+  runtime.webSurfBookmarkDrag = {
+    pointerId: Number(event.pointerId),
+    item,
+    container,
+    startX: Number(event.clientX),
+    startY: Number(event.clientY),
+    pointerOffsetX: Number(event.clientX) - rect.left,
+    pointerOffsetY: Number(event.clientY) - rect.top,
+    dragging: false,
+    ghost: null
+  };
+}
+
+function handleWebSurfBookmarkPointerMove(event) {
+  updateWebSurfBookmarkDrag(event);
+}
+
+function handleWebSurfBookmarkPointerUp(event) {
+  finishWebSurfBookmarkDrag(event);
+}
+
+function handleWebSurfBookmarkPointerCancel(event) {
+  finishWebSurfBookmarkDrag(event, { cancel: true });
+}
+
+function handleWebSurfBookmarkDragKeyDown(event) {
+  if (event?.key !== "Escape" || runtime.webSurfBookmarkDrag?.dragging !== true) return;
+  event.preventDefault();
+  event.stopPropagation();
+  finishWebSurfBookmarkDrag(null, { cancel: true });
+}
+
 function clearWebSurfHistory() {
   const browser = getWebSurfBrowserState();
   if (!browser.history.length) return false;
@@ -1898,11 +2117,11 @@ function syncWebSurfBrowserChrome() {
     dom.webSurfBookmarkButton.setAttribute("aria-label", currentBookmarkIndex >= 0 ? "Remove current page from bookmarks" : "Bookmark current page");
     dom.webSurfBookmarkButton.title = currentBookmarkIndex >= 0 ? "Remove bookmark" : "Bookmark current page";
   }
-  if (dom.webSurfBookmarkBar) {
+  if (dom.webSurfBookmarkBar && !isWebSurfBookmarkDragWithin(dom.webSurfBookmarkBar)) {
     const entries = browser.bookmarks.map((bookmark) => {
       const savedRoute = resolveWebSurfUrl(bookmark.url);
       return savedRoute.status === "ok" && isWebSurfRouteAllowed(savedRoute)
-        ? `<button type="button" class="websurf-bookmark-bar-item" data-websurf-bookmark-link="${escapeHtml(savedRoute.url)}" title="Open ${escapeHtml(savedRoute.site.displayName)}"><img src="${escapeHtml(savedRoute.site.bookmarkIcon || "assets/web/websurf/WebSurf_icon.png")}" alt="" aria-hidden="true" /><span>${escapeHtml(savedRoute.site.displayName)}</span></button>`
+        ? `<button type="button" class="websurf-bookmark-bar-item" data-websurf-bookmark-link="${escapeHtml(savedRoute.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(savedRoute.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(savedRoute.site.displayName)}. Drag to reorder."><img src="${escapeHtml(savedRoute.site.bookmarkIcon || "assets/web/websurf/WebSurf_icon.png")}" alt="" aria-hidden="true" /><span>${escapeHtml(savedRoute.site.displayName)}</span></button>`
         : "";
     }).filter(Boolean);
     dom.webSurfBookmarkBar.innerHTML = entries.length ? entries.join("") : '<span class="websurf-bookmark-bar-empty">Add pages with the ☆ button</span>';
@@ -1925,6 +2144,11 @@ function refreshWebSurfRoute() {
 
 function handleWebSurfBrowserToolbarEvent(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  if (isWebSurfBookmarkClickSuppressed(target)) {
+    event.preventDefault?.();
+    event.stopImmediatePropagation?.();
+    return;
+  }
   const bookmarkLink = target?.closest("[data-websurf-bookmark-link]");
   if (bookmarkLink) {
     event.preventDefault();
@@ -2354,6 +2578,11 @@ function openBubbleBank(tab = "account", options = {}) {
 
 function handleWebPageNavigation(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  if (isWebSurfBookmarkClickSuppressed(target)) {
+    event?.preventDefault?.();
+    event?.stopImmediatePropagation?.();
+    return;
+  }
   const routeLink = target?.closest("[data-websurf-route]");
   if (routeLink) {
     event?.preventDefault?.();
@@ -2641,6 +2870,7 @@ function closeStoreOverlay(options = {}) {
     return false;
   }
 
+  finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
   if (options.preserveWebSurfSession !== true) captureWebSurfSessionState();
   resetWebSurfToolbarVisibility();
   window.closeProteusBiodynePage?.(false);

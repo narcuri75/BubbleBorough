@@ -184,6 +184,16 @@ function beginFishTurnaroundCooldown(fish, direction, now = Date.now()) {
   fish.turnaroundCooldownMaxUntil = startedAt + FISH_TURNAROUND_COOLDOWN_MAX_MS * turnScale * momentumScale;
   fish.turnaroundCooldownStartXNorm = Number(fish.xNorm) || 0.5;
   fish.turnaroundCooldownStartYNorm = Number(fish.yNorm) || 0.5;
+  // The destination side remains the committed facing after the renderer has
+  // handed control back to ordinary swimming. This closes the old one-frame
+  // gap where the turn itself was committed, but a fresh target could request
+  // the opposite side immediately after completion.
+  fish.traversalCommittedDirection = fish.turnaroundCooldownDirection;
+  fish.traversalTurnCommittedUntil = Math.max(
+    Number(fish.traversalTurnCommittedUntil) || 0,
+    startedAt + FISH_TRAVERSAL_POST_TURN_COMMIT_MIN_MS,
+    fish.turnaroundCooldownUntil
+  );
 }
 
 function getFishTurnaroundCooldownState(fish, now = Date.now()) {
@@ -330,6 +340,54 @@ function getFishSteeringHorizontalDirection(fish, deltaXNorm, deltaYNorm) {
     return dxPx < 0 ? -1 : 1;
   }
   return carriedDirection;
+}
+
+function getFishHorizontalTurnIntentDirection(fish, species, deltaXNorm, deltaYNorm, now = Date.now(), options = {}) {
+  const dxPx = (Number(deltaXNorm) || 0) * TANK_WIDTH;
+  const dyPx = (Number(deltaYNorm) || 0) * TANK_HEIGHT;
+  if (Math.abs(dxPx) <= 0.5) return 0;
+
+  const candidateDirection = dxPx < 0 ? -1 : 1;
+  const facingDirection = getFishFacingDirection(fish);
+  if (candidateDirection === facingDirection || options.force === true) {
+    return candidateDirection;
+  }
+
+  const visualWidthPx = typeof getFishVisualSize === "function"
+    ? clamp(Number(getFishVisualSize(fish, species, now)) || 0, 24, 280)
+    : 72;
+  const swimSpeed = Math.max(0.01, Number(fish?.swimSpeed) || 0.04);
+  const travelSpeed = Math.hypot(
+    Number(fish?.traversalVelocityXNorm) || 0,
+    Number(fish?.traversalVelocityYNorm) || 0
+  );
+  const speedRatio = clamp(travelSpeed / swimSpeed, 0, 1.5);
+  const targetDistancePx = Math.hypot(dxPx, dyPx);
+  const verticalRatio = Math.abs(dyPx) / Math.max(1, Math.abs(dxPx));
+
+  const bodyRequirementPx = visualWidthPx * FISH_TURN_REVERSAL_BODY_WIDTH_FACTOR;
+  const speedRequirementPx = speedRatio * FISH_TURN_REVERSAL_SPEED_BONUS_PX;
+  const distanceRequirementPx = Math.min(
+    FISH_TURN_REVERSAL_DISTANCE_BONUS_MAX_PX,
+    targetDistancePx * FISH_TURN_REVERSAL_DISTANCE_FACTOR
+  );
+  const verticalRequirementPx = clamp(
+    (verticalRatio - FISH_TURN_REVERSAL_VERTICAL_RATIO_START)
+      * FISH_TURN_REVERSAL_VERTICAL_BONUS_PER_RATIO_PX,
+    0,
+    FISH_TURN_REVERSAL_VERTICAL_BONUS_MAX_PX
+  );
+  const requiredHorizontalPx = clamp(
+    FISH_TURN_REVERSAL_MIN_HORIZONTAL_PX
+      + bodyRequirementPx
+      + speedRequirementPx
+      + distanceRequirementPx
+      + verticalRequirementPx,
+    FISH_TURN_REVERSAL_MIN_HORIZONTAL_PX,
+    FISH_TURN_REVERSAL_MAX_HORIZONTAL_PX
+  );
+
+  return Math.abs(dxPx) >= requiredHorizontalPx ? candidateDirection : 0;
 }
 
 function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds, options = {}) {
@@ -588,7 +646,7 @@ function setSuckerFishAngle(fish, desiredAngle, now) {
   fish.direction = fish.turnToDirection;
 }
 
-function setFishDirection(fish, desiredDirection, species, now) {
+function setFishDirection(fish, desiredDirection, species, now, options = null) {
   const nextDirection = Number(desiredDirection) < 0 ? -1 : 1;
   const freeSwimmingOtocinclus = species?.id === "otocinclus" && isSuckerFishFreeSwimming(fish, species, now);
   if (getEffectiveFishBehavior(fish, species) !== "sucker" || freeSwimmingOtocinclus) {
@@ -603,9 +661,16 @@ function setFishDirection(fish, desiredDirection, species, now) {
       nextDirection !== currentDisplayDirection
       && (Number(fish.traversalSpeedNorm) || 0) < FISH_TRAVERSAL_HEADING_MIN_SPEED_NORM
       && !hasTravelTarget
+      && options?.allowStationaryTurn !== true
     ) {
       // A cosmetic idle state cannot command a physical reversal. Movement
       // will start the turn later once there is somewhere to travel.
+      return;
+    }
+
+    const portalDirectionLocked = ["portal-enter", "portal-exit"].includes(fish?.caveState);
+    if (portalDirectionLocked && nextDirection !== currentDisplayDirection) {
+      fish.direction = currentDisplayDirection;
       return;
     }
 
@@ -618,6 +683,25 @@ function setFishDirection(fish, desiredDirection, species, now) {
       // destination direction is authoritative until the renderer handoff.
       fish.direction = horizontalTurn.toDirection;
       return;
+    }
+
+    if (nextDirection !== currentDisplayDirection && options?.bypassTurnCommitment !== true) {
+      const committedDirection = normalizeFishHorizontalDirection(
+        fish.traversalCommittedDirection,
+        currentDisplayDirection
+      );
+      if (
+        Number(fish.traversalTurnCommittedUntil) > now
+        && nextDirection !== committedDirection
+      ) {
+        fish.direction = committedDirection;
+        return;
+      }
+      const turnaroundCooldown = getFishTurnaroundCooldownState(fish, now);
+      if (turnaroundCooldown.active && nextDirection !== turnaroundCooldown.direction) {
+        fish.direction = turnaroundCooldown.direction;
+        return;
+      }
     }
 
     fish.direction = nextDirection;
@@ -664,7 +748,10 @@ function setFishDirection(fish, desiredDirection, species, now) {
     fish.traversalTurnState = "reversing";
     fish.traversalTurnStartedAt = now;
     fish.traversalCommittedDirection = nextDirection;
-    fish.traversalTurnCommittedUntil = now + Math.max(FISH_TRAVERSAL_TURN_COMMIT_MIN_MS, fish.turnDurationMs);
+    fish.traversalTurnCommittedUntil = now + Math.max(
+      FISH_TRAVERSAL_TURN_COMMIT_MIN_MS,
+      fish.turnDurationMs + FISH_TRAVERSAL_POST_TURN_COMMIT_MIN_MS
+    );
     fish.traversalSteeringTargetXNorm = Number.isFinite(Number(fish.targetXNorm)) ? Number(fish.targetXNorm) : fish.xNorm;
     fish.traversalSteeringTargetYNorm = Number.isFinite(Number(fish.targetYNorm)) ? Number(fish.targetYNorm) : fish.yNorm;
     return;

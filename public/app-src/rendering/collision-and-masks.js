@@ -145,6 +145,13 @@ function getCaveTriggerRegions(item) {
       .filter(Boolean);
   }
 
+  const authoredProfile = decor.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior || null;
+  if (Array.isArray(authoredProfile?.portals) && authoredProfile.portals.length) {
+    return authoredProfile.portals
+      .map((portal, index) => getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id || `trigger-${index + 1}`, 36))
+      .filter(Boolean);
+  }
+
   if (decor.triggerPath) {
     return getPlacedMaskRegions(item, decor.triggerPath);
   }
@@ -184,6 +191,24 @@ function getCaveSeatRegions(item) {
             ...region,
             facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction),
             portalIds: getCaveSeatPortalIds(slot)
+          }
+          : null;
+      })
+      .filter(Boolean);
+  }
+
+  const authoredProfile = decor.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior || null;
+  if (Array.isArray(authoredProfile?.insideSlots) && authoredProfile.insideSlots.length) {
+    return authoredProfile.insideSlots
+      .map((slot, index) => {
+        const region = getPseudoRegionAtPoint(item, slot.x, slot.y, slot.id || `seat-${index + 1}`, 44);
+        return region
+          ? {
+            ...region,
+            portalIds: getCaveSeatPortalIds(slot),
+            ...(slot.facing !== undefined || slot.direction !== undefined || slot.seatFacing !== undefined
+              ? { facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction ?? slot.seatFacing) }
+              : {})
           }
           : null;
       })
@@ -348,11 +373,11 @@ function isCaveSeatOccupied(decorId, seatId, excludingFishId = null) {
     (
       (
         getReservedFishCaveSeatId(fish) === seatId &&
-        ["approach", "align", "enter", "inside", "exit", "depart", "leave"].includes(fish.caveState)
+        ["approach", "align", "portal-enter", "enter", "inside", "exit", "depart", "portal-exit", "leave"].includes(fish.caveState)
       ) ||
       (
         (() => {
-          if (!seatRegion || !["approach", "align", "enter", "inside", "exit", "depart", "leave"].includes(fish.caveState)) {
+          if (!seatRegion || !["approach", "align", "portal-enter", "enter", "inside", "exit", "depart", "portal-exit", "leave"].includes(fish.caveState)) {
             return false;
           }
 
@@ -382,7 +407,7 @@ function isCaveSeatOccupied(decorId, seatId, excludingFishId = null) {
       ) ||
       (
         seatRegion &&
-        ["inside", "exit", "depart"].includes(fish.caveState) &&
+        ["inside", "exit", "depart", "portal-exit"].includes(fish.caveState) &&
         pointsOverlapSeat({ xNorm: fish.xNorm, yNorm: fish.yNorm })
       )
     )

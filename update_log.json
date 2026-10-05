@@ -1,0 +1,23 @@
+{
+  "updates": [
+    {
+      "version": "0.2.2",
+      "pushedAt": "10/2/2026 2:14PM",
+      "publishedAt": "2026-10-02T14:14:00-07:00",
+      "notes": [
+        "This is the first official noted push for Bubble Borough.",
+        "[header] Recent additions",
+        "[bullet] Updated turn animation to give fish a more three-dimensional perspective.",
+        "[bullet] Updated the fish leveling and variant unlock system.",
+        "[bullet] Improved fish movement, behavior, and depth rendering.",
+        "[bullet] Expanded decor interactions and aquarium customization."
+      ],
+      "knownIssues": [
+        "Fish sometimes get caught on decor or other fish, resulting in strange stuttering behavior.",
+        "When changing gravel color, the zoom-out frame may get stuck when exiting edit mode and only clear after refreshing the browser.",
+        "Fish can snap in a direction instead of gradually swimming that way.",
+        "Fish can disappear momentarily or clip through cave images and cave walls."
+      ]
+    }
+  ]
+}

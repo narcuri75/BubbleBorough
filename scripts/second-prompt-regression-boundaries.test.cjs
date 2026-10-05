@@ -4,7 +4,7 @@ const crypto = require('node:crypto');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const SRC = path.join(ROOT, 'public', 'app-src');
 const read = relative => fs.readFileSync(path.join(SRC, relative), 'utf8');
 const sha256 = value => crypto.createHash('sha256').update(value).digest('hex');

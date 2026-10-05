@@ -4,7 +4,7 @@
 // including brackish specialists, are modeled as saltwater.
 const fs = require("node:fs");
 const path = require("node:path");
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const catalogFile = path.join(root, "assets", "fish", "fish-types.json");
 const saltwater = new Set([
   "tang", "clownfish", "lionfish", "bull-shark", "great-white-shark",

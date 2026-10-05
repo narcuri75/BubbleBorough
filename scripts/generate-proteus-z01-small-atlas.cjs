@@ -5,7 +5,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const sourceWebp = path.join(root, "assets/web/proteus/dna_fish/zombie_fish.webp");
 const sourceJson = path.join(root, "assets/web/proteus/dna_fish/zombie_fish.json");
 const outputWebp = path.join(root, "assets/web/proteus/dna_fish/small_fish/zombie_fish.webp");

@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const BOOTSTRAP_PATH = path.join(ROOT, "public", "app-src", "00-bootstrap.js");
 const RECAPS_PATH = path.join(ROOT, "public", "app-src", "tank", "events-recaps-and-save.js");
 

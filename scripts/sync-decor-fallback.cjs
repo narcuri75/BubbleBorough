@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const catalogPath = path.join(projectRoot, "assets", "decor", "decor_types.json");
 const bootstrapPath = path.join(projectRoot, "public", "app-src", "00-bootstrap.js");
 const checkOnly = process.argv.includes("--check");

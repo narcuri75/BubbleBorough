@@ -3,7 +3,7 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const vm = require('node:vm');
 const fs = require('node:fs');
-const source = fs.readFileSync('public/app-src/core/cloud-save.js', 'utf8');
+const source = fs.readFileSync('game/public/app-src/core/cloud-save.js', 'utf8');
 function harness(href = 'https://bubbleborough.com/', existing = null) {
   const storage = new Map(existing ? [['session', JSON.stringify(existing)]] : []);
   const calls = [];

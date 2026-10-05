@@ -7,7 +7,7 @@ const os = require("node:os");
 const vm = require("node:vm");
 const sharp = require("sharp");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 
 function runtimeContext() {
   const requests = [];
@@ -253,17 +253,51 @@ test("fish startup includes selected appearances in every tank with matching pos
   assert.deepEqual(paths, ["assets/fish/otocinclus_2.png", "assets/fish/otocinclus_2_bottom.png", "assets/fish/otocinclus_2_side.png", "overlay.png", "assets/fish/angelfish_1.png"]);
 });
 
+test("same-origin legacy asset URLs resolve to current game artwork and sprite previews", async () => {
+  const { context: c } = runtimeContext();
+  const origin = "https://example.test";
+  for (const asset of ["fish/rainbow-shark_neon-5.png", "fish/tetra_neon-blue.png", "fish/tetra_neon-green.png", "fish/tetra_neon-purple.png", "fish/tetra_neon-pink.png", "fish/tetra_neon-orange.png", "fish/tetra_neon-red.png", "fish/angelfish_neon-green.png", "fish/barb_black_ruby.png", "fish/tetra_black-skirt.png", "fish/tetra_cave.png", "fish/tetra_lemon.png", "fish/goldfish_bubble_eye.png", "fish/moor_white.png", "foodandmeds/fish-flakes_small.png"]) {
+    const image = { getAttribute: () => null, setAttribute() {}, removeAttribute() {} };
+    await c.setAssetImageSource(image, `${origin}/assets/${asset}?v=old`);
+    const url = new URL(image.src);
+    assert.match(url.pathname, /^\/game\/assets\/generated\/sprites\//, asset);
+    assert.equal(fs.existsSync(path.join(root, decodeURIComponent(url.pathname.replace(/^\/game\//, "")))), true, asset);
+  }
+  assert.equal(c.resolveAppUrl("/game/assets/misc/coin_unicode.webp"), `${origin}/game/assets/misc/coin_unicode.webp`);
+  assert.equal(c.resolveRenderableAssetPath(`${origin}/game/assets/generated/backgrounds/Emerald_Aquascape.webp?v=old`), `${origin}/game/assets/backgrounds/Emerald_Aquascape.webp?v=old`);
+  assert.equal(c.resolveRenderableAssetPath(`${origin}/game/assets/misc/coin_unicode.png`), `${origin}/game/assets/misc/coin_unicode.webp`);
+  assert.equal(c.resolveRenderableAssetPath("https://external.test/assets/misc/bubble.png"), "https://external.test/assets/misc/bubble.png");
+  for (const suffix of [".png.webp", "_png.webp"]) {
+    assert.equal(c.resolveRenderableAssetPath(`${origin}/game/assets/generated/backgrounds/Emerald_Aquascape${suffix}?v=old`), `${origin}/game/assets/backgrounds/Emerald_Aquascape.webp?v=old`);
+    assert.equal(c.normalizeRenderableAssetPath(`assets/generated/previews/decor/static/rock${suffix}`), "assets/generated/previews/decor/static/rock.webp");
+  }
+  assert.equal(c.normalizeRenderableAssetPath("assets/generated/sprites/icons/Icons/store.png.thumb.webp"), "assets/generated/sprites/icons/Icons/store.png.thumb.webp");
+  for (const png of ["web/websurf/WebSurf_icon.png", "web/websurf/browser_home.png", "foodandmeds/frisky-food.png"]) assert.equal(c.resolveRenderableAssetPath(`${origin}/assets/${png}`), `${origin}/game/assets/${png}`);
+});
+
 test("DOM sprites use immediate small previews without loading sheets or encoding PNGs", async () => {
   const { context: c, requests } = runtimeContext();
   const sprite = "assets/icons/coin.png";
   assert.match(c.assetImageAttributes(sprite), /coin.png.thumb.webp.*loading="lazy" decoding="async"/);
-  assert.equal(c.assetImageAttributes("assets/misc/bb_logo.png"), 'src="assets/misc/bb_logo.png"');
+  assert.equal(c.assetImageAttributes("assets/misc/bb_logo.png"), 'src="assets/misc/bb_logo.webp"');
+  assert.equal(
+    c.assetImageAttributes("assets/generated/previews/decor/static/example.png.webp"),
+    'src="assets/generated/previews/decor/static/example.webp"'
+  );
+  assert.match(
+    c.assetImageAttributes("/assets/fish/tetra_neon.png"),
+    /^data-sprite-src="https:\/\/example\.test\/game\/assets\/fish\/tetra_neon\.png" src="https:\/\/example\.test\/game\/assets\/generated\/sprites\/fish\/tetra__genetics-natural\/tetra_neon\.png\.thumb\.webp\?v=.*" loading="lazy" decoding="async"$/
+  );
   const attrs = new Map();
   const image = { getAttribute: name => attrs.get(name), setAttribute: (name, value) => attrs.set(name, value), removeAttribute: name => attrs.delete(name) };
   const pending = c.setAssetImageSource(image, sprite);
   await c.setAssetImageSource(image, "assets/misc/bb_logo.png");
   await pending;
-  assert.equal(image.src, "assets/misc/bb_logo.png");
+  assert.equal(image.src, "assets/misc/bb_logo.webp");
+  await c.setAssetImageSource(image, "assets/generated/previews/decor/static/example.png.webp");
+  assert.equal(image.src, "assets/generated/previews/decor/static/example.webp");
+  await c.setAssetImageSource(image, "/assets/fish/tetra_neon.png");
+  assert.match(image.src, /\/game\/assets\/generated\/sprites\/fish\/tetra__genetics-natural\/tetra_neon\.png\.thumb\.webp\?v=/);
   await c.setAssetImageSource(image, sprite);
   assert.equal(image.src, c.getSpriteImageUrl(sprite));
   assert.equal(requests.length, 0);

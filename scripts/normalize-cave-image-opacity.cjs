@@ -6,7 +6,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const sharp = require("sharp");
 
-const caveDirectory = path.resolve(__dirname, "..", "assets", "decor", "cave_layered");
+const caveDirectory = path.resolve(__dirname, "..", "game", "assets", "decor", "cave_layered");
 const checkOnly = process.argv.includes("--check");
 const ALPHA_CUTOUT_THRESHOLD = 32;
 

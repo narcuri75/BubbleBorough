@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 function makeLifecycleContext() {

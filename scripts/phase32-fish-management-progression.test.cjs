@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const UI_PATH = path.join(ROOT, 'public/app-src/ui/customization-actions-and-inventory.js');
 const ui = fs.readFileSync(UI_PATH, 'utf8');
 const styles = fs.readFileSync(path.join(ROOT, 'public/styles.css'), 'utf8');

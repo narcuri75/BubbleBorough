@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 const EXPECTED_OPENINGS = new Map([

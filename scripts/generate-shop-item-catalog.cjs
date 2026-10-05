@@ -1,7 +1,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'game');
 const readJson = (file) => JSON.parse(fs.readFileSync(path.join(root, file), 'utf8'));
 const fish = readJson('assets/fish/fish-types.json').fish;
 const decor = readJson('assets/decor/decor_types.json').decor;
@@ -104,7 +104,7 @@ item('Food Dispenser 9000', 'A top-mounted automatic feeder with an unnecessaril
 item('Automated Care Submarine', 'A tiny autonomous submarine built to handle the parts of fishkeeping you might forget. It travels between connected tanks, feeds hungry residents, administers medicine when needed, and carries up to 99 portions of each supply. Not compatible with chum.', ['Price: 300 coins', 'Status/ownership count: dynamic', 'Appearance variants available']);
 item('Chum Skiff', 'A small surface skiff dedicated to one extremely specific job that even submariners won\'t do: delivering chum. It patrols the water above the tank and drops a portion on command from its supply of up to 99 servings.', ['Price: 125 coins', 'Status/ownership count: dynamic', 'Appearance variants available']);
 
-const output = path.join(root, 'docs', 'shop-item-catalog.md');
+const output = path.join(root, '..', 'docs', 'shop-item-catalog.md');
 fs.mkdirSync(path.dirname(output), { recursive: true });
 fs.writeFileSync(output, `${lines.join('\n')}\n`);
 console.log(`Wrote ${output}`);

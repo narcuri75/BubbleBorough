@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const read = (file) => fs.readFileSync(path.join(root, file), "utf8");
 const store = read("public/websurf-store.js");
 const html = read("index.html");

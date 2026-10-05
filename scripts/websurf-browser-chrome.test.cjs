@@ -7,7 +7,7 @@ const test = require("node:test");
 const ts = require("typescript");
 const vm = require("node:vm");
 
-const root = path.join(__dirname, "..");
+const root = path.join(__dirname, "..", "game");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");
 const css = fs.readFileSync(path.join(root, "public", "styles.css"), "utf8");
 const customizationPath = path.join(root, "public", "app-src", "decor", "customization.js");

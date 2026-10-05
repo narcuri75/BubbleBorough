@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const css = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 const cursorRenderer = fs.readFileSync(path.join(root, "public/app-src/ui/scene-controls-and-animation.js"), "utf8");
 const input = fs.readFileSync(path.join(root, "public/app-src/assets/custom-content.js"), "utf8");

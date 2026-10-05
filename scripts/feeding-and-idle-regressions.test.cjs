@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 const bootstrap = read('public/app-src/00-bootstrap.js');
@@ -74,13 +74,12 @@ test('hand-fed surface food falls vertically instead of flying in from a side', 
   assert.doesNotMatch(meals, /dropProgress \* Math\.PI \* 1\.35/);
 });
 
-test('idle tail keeps a tiny stationary floor without replacing the original swim movement driver', () => {
+test('idle tail keeps a tiny stationary floor and visual effort follows successful travel', () => {
   assert.match(bootstrap, /stationaryIntensityFloor:\s*0\.04/);
   assert.match(bootstrap, /stationaryFrequencyFloor:\s*0\.08/);
   assert.doesNotMatch(bootstrap, /fishSwimMovementSamples:\s*new Map\(\)/);
-  assert.match(renderer, /function getFishSwimMovementFactor\(fish\)/);
-  assert.match(renderer, /const motionFactor = clamp\(\(\(Number\(fish\.motionLevel\) \|\| 0\.04\) - 0\.03\) \/ 0\.75, 0, 1\)/);
-  assert.match(renderer, /const distanceFactor = clamp\(targetDistance \/ 0\.07, 0, 1\)/);
-  assert.match(renderer, /return Math\.max\(motionFactor, distanceFactor\)/);
-  assert.match(renderer, /const physicallyMoving = targetDistance > 0\.008 \|\| \(Number\(fish\?\.motionLevel\) \|\| 0\) > 0\.14/);
+  assert.match(renderer, /function getFishSwimMovementFactor\(fish, now = Date\.now\(\)\)/);
+  assert.match(renderer, /Math\.hypot\(x - previous\.x, y - previous\.y\) \/ elapsed/);
+  assert.match(renderer, /clamp\(speed \/ Math\.max\(0\.008, Number\(fish\.swimSpeed\) \|\| 0\.04\), 0, 1\)/);
+  assert.match(renderer, /const physicallyMoving = getFishSwimMovementFactor\(fish, now\) > 0\.05/);
 });

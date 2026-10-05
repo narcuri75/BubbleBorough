@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
-const read = file => fs.readFileSync(path.join(__dirname, "../public/app-src", file), "utf8");
+const read = file => fs.readFileSync(path.join(__dirname, "../game/public/app-src", file), "utf8");
 function declarations(file, names) {
   const parsed = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true);
   return names.map(name => parsed.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === name).getText(parsed)).join("\n");

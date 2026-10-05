@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const caveSource = fs.readFileSync(path.join(ROOT, "public/app-src/fish/caves-and-collision.js"), "utf8");
 const motionSource = fs.readFileSync(path.join(ROOT, "public/app-src/fish/predators-and-motion.js"), "utf8");
 const parsed = ts.createSourceFile("caves.js", caveSource, ts.ScriptTarget.Latest, true);

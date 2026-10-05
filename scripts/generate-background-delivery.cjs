@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const sourceDir = path.join(root, "assets", "backgrounds");
 const outputDir = path.join(root, "assets", "generated", "backgrounds");
 const manifestPath = path.join(outputDir, "manifest.json");

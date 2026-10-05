@@ -1,8 +1,8 @@
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.resolve(__dirname, '..');
-const catalogPath = path.join(root, 'docs', 'shop-item-catalog.md');
+const root = path.resolve(__dirname, '..', 'game');
+const catalogPath = path.join(root, '..', 'docs', 'shop-item-catalog.md');
 const readJson = (relativePath) => JSON.parse(fs.readFileSync(path.join(root, relativePath), 'utf8'));
 const writeJson = (relativePath, value, indent = 2) => fs.writeFileSync(path.join(root, relativePath), `${JSON.stringify(value, null, indent)}\n`);
 

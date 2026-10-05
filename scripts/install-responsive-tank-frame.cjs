@@ -4,7 +4,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const indexPath = path.join(projectRoot, "index.html");
 const scriptRelativePath = "public/tank-physical-frame.js";
 const scriptTag = `<script defer src="${scriptRelativePath}?v=20260925-responsive-physical-frame"></script>`;

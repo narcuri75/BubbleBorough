@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'game');
 const read = rel => fs.readFileSync(path.join(root, rel), 'utf8');
 const bootstrap = read('public/app-src/00-bootstrap.js');
 const catalog = read('public/app-src/store/catalog.js');

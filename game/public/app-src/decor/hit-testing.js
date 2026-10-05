@@ -1,0 +1,512 @@
+// Source fragment: decor/hit-testing.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function isFreeDecorPlacementEnabled(target = getCurrentTank(), options = {}) {
+  if (target && typeof target === "object") {
+    if (Object.prototype.hasOwnProperty.call(target, "freePlacementEnabled")) {
+      return target.freePlacementEnabled === true;
+    }
+    if (Object.prototype.hasOwnProperty.call(target, "freeDecorPlacement")) {
+      return target.freeDecorPlacement === true;
+    }
+  }
+
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+
+  return false;
+}
+
+function getResolvedDecorFreePlacementEnabled(options = {}) {
+  if (options.item && Object.prototype.hasOwnProperty.call(options.item, "freePlacementEnabled")) {
+    return options.item.freePlacementEnabled === true;
+  }
+  if (Object.prototype.hasOwnProperty.call(options, "freePlacementEnabled")) {
+    return options.freePlacementEnabled === true;
+  }
+  if (runtime.placementMode && Object.prototype.hasOwnProperty.call(runtime.placementMode, "freePlacementEnabled")) {
+    return runtime.placementMode.freePlacementEnabled === true;
+  }
+  return isFreeDecorPlacementEnabled(options.tank || getCurrentTank());
+}
+
+function isDecorExemptFromGravity(decorOrKey) {
+  const capabilities = getDecorMotionCapabilities(decorOrKey);
+  return Boolean(capabilities.isFloating || capabilities.isLure);
+}
+
+function shouldApplyDecorPlacementGravity(decorKey, options = {}) {
+  return options.applyGravity === true
+    && !getResolvedDecorFreePlacementEnabled(options)
+    && !isDecorExemptFromGravity(options.item || decorKey);
+}
+
+function getPlacedDecorSurfaceReceiver(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  const surfaceImage = decor?.surfacePath ? runtime.images.get(decor.surfacePath) : null;
+  const primaryImage = decor?.path ? runtime.images.get(decor.path) : null;
+  const mask = decor?.surfacePath ? getImageAlphaMask(decor.surfacePath) : null;
+  if (!decor?.surfacePath || !surfaceImage?.width || !primaryImage?.width || !mask?.alpha) return null;
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (primaryImage.height / Math.max(1, primaryImage.width));
+  return {
+    item,
+    decor,
+    image: surfaceImage,
+    mask,
+    left: item.xNorm * TANK_WIDTH - width / 2,
+    top: getDecorImageTopY(item, height),
+    width,
+    height,
+    tankLayer: getDecorTankLayer(item),
+    flipX: isDecorHorizontallyFlipped(item),
+    flipY: isDecorVerticallyFlipped(item)
+  };
+}
+
+function getDecorSurfacePlaneYAtWorldX(receiver, worldX, casterBottomY, contactTolerancePx = 8) {
+  if (!receiver || worldX < receiver.left || worldX > receiver.left + receiver.width) return null;
+  const displayU = clamp((worldX - receiver.left) / Math.max(1, receiver.width), 0, 1);
+  const sourceU = receiver.flipX ? 1 - displayU : displayU;
+  const sourceX = clamp(Math.floor(sourceU * receiver.mask.width), 0, receiver.mask.width - 1);
+  let wasOpaque = false;
+  let nearest = null;
+  for (let displayY = 0; displayY < receiver.mask.height; displayY += 1) {
+    const sourceY = receiver.flipY ? receiver.mask.height - 1 - displayY : displayY;
+    const opaque = receiver.mask.alpha[(sourceY * receiver.mask.width + sourceX) * 4 + 3] >= ALPHA_HIT_THRESHOLD;
+    if (opaque && !wasOpaque) {
+      const worldY = receiver.top + (displayY / receiver.mask.height) * receiver.height;
+      if (worldY >= casterBottomY - contactTolerancePx && (nearest === null || Math.abs(worldY - casterBottomY) < Math.abs(nearest - casterBottomY))) {
+        nearest = worldY;
+      }
+    }
+    wasOpaque = opaque;
+  }
+  return nearest;
+}
+
+function getDecorSurfaceMarkedYAtWorldX(receiver, worldX, minWorldY, maxWorldY, targetWorldY) {
+  if (!receiver || worldX < receiver.left || worldX > receiver.left + receiver.width) return null;
+  const displayU = clamp((worldX - receiver.left) / Math.max(1, receiver.width), 0, 1);
+  const sourceU = receiver.flipX ? 1 - displayU : displayU;
+  const sourceX = clamp(Math.floor(sourceU * receiver.mask.width), 0, receiver.mask.width - 1);
+  const minY = Math.min(minWorldY, maxWorldY);
+  const maxY = Math.max(minWorldY, maxWorldY);
+  let nearest = null;
+  let nearestDistance = Infinity;
+  // Keep the exact pixel-center checks and traversal order below. The extra
+  // boundary rows cover rounding at fractional scales without visiting the
+  // rest of a full-resolution support mask for each shadow sample.
+  const canBoundRows = receiver.height > 0 && Number.isFinite(receiver.height)
+    && Number.isFinite(receiver.top) && !Number.isNaN(minY) && !Number.isNaN(maxY);
+  const firstRow = canBoundRows
+    ? Math.max(0, Math.floor((minY - receiver.top) * receiver.mask.height / receiver.height) - 1)
+    : 0;
+  const endRow = canBoundRows
+    ? Math.min(receiver.mask.height, Math.ceil((maxY - receiver.top) * receiver.mask.height / receiver.height) + 1)
+    : receiver.mask.height;
+  for (let displayY = firstRow; displayY < endRow; displayY += 1) {
+    const worldY = receiver.top + ((displayY + 0.5) / receiver.mask.height) * receiver.height;
+    if (worldY < minY || worldY > maxY) continue;
+    const sourceY = receiver.flipY ? receiver.mask.height - 1 - displayY : displayY;
+    const pixelOffset = (sourceY * receiver.mask.width + sourceX) * 4;
+    // Surface files are RGB placement maps. Alpha only distinguishes painted
+    // pixels from transparent canvas; black RGB pixels remain fully valid.
+    if (receiver.mask.alpha[pixelOffset + 3] < ALPHA_HIT_THRESHOLD) continue;
+    const distance = Math.abs(worldY - targetWorldY);
+    if (distance < nearestDistance) {
+      nearest = worldY;
+      nearestDistance = distance;
+    }
+  }
+  return nearest;
+}
+
+function getDecorPlacementSurfaceAnchorY(candidate, placementBounds, anchorY, options = {}) {
+  if (!candidate || !placementBounds || !Array.isArray(state?.placedDecor)) return null;
+  const relBottom = placementBounds.bottom - anchorY;
+  let nearestPlaneY = null;
+  for (const supportItem of state.placedDecor) {
+    if (!supportItem || supportItem.id === candidate.id || getDecorTankLayer(supportItem) !== getDecorTankLayer(candidate)) continue;
+    const receiver = getPlacedDecorSurfaceReceiver(supportItem);
+    if (!receiver) continue;
+    const overlapLeft = Math.max(placementBounds.left, receiver.left);
+    const overlapRight = Math.min(placementBounds.right, receiver.left + receiver.width);
+    if (overlapRight - overlapLeft < Math.min(5, Math.max(1, placementBounds.right - placementBounds.left) * 0.08)) continue;
+    const sampleXs = [
+      overlapLeft + 1,
+      overlapLeft + (overlapRight - overlapLeft) * 0.25,
+      (overlapLeft + overlapRight) * 0.5,
+      overlapLeft + (overlapRight - overlapLeft) * 0.75,
+      overlapRight - 1
+    ];
+    for (const sampleX of sampleXs) {
+      let planeY = getDecorSurfacePlaneYAtWorldX(receiver, sampleX, placementBounds.bottom, 18);
+      if (!Number.isFinite(planeY) && options.allowOverlapSnap === true) {
+        planeY = getDecorSurfaceMarkedYAtWorldX(
+          receiver,
+          sampleX,
+          placementBounds.top - 18,
+          placementBounds.bottom + 18,
+          placementBounds.bottom
+        );
+      }
+      if (!Number.isFinite(planeY)) continue;
+      if (nearestPlaneY === null || planeY < nearestPlaneY) nearestPlaneY = planeY;
+    }
+  }
+  return Number.isFinite(nearestPlaneY) ? nearestPlaneY - relBottom : null;
+}
+
+function clampDecorPlacement(xNorm, yNorm, options = {}) {
+  const shellBounds = getTankShellBounds();
+  const minXNorm = shellBounds.innerLeft / TANK_WIDTH;
+  const maxXNorm = (shellBounds.innerLeft + shellBounds.innerWidth) / TANK_WIDTH;
+  const minYNorm = shellBounds.innerTop / TANK_HEIGHT;
+  const maxYNorm = (shellBounds.innerTop + shellBounds.innerHeight) / TANK_HEIGHT;
+  const normalizedX = clamp(Number.isFinite(Number(xNorm)) ? Number(xNorm) : 0.5, 0, 1);
+  // yNorm is the raw PNG bottom anchor, not necessarily the visible artwork's
+  // bottom. When an image has transparent padding below the art, correctly
+  // grounding its visible pixels can require this invisible anchor to sit below
+  // the tank's normalized 1.0 edge. Keep corrupt values bounded, but do not
+  // clamp valid placement math back into the visible shell.
+  const normalizedY = clamp(Number.isFinite(Number(yNorm)) ? Number(yNorm) : 0.8, 0, 4);
+  const decorKey = options.item?.decorKey || options.decorKey || runtime.placementMode?.decorKey || null;
+  const resolvedLayer = decorKey
+    ? getDecorFrontLayer(
+      decorKey,
+      options.item?.tankLayer
+      ?? options.tankLayer
+      ?? runtime.placementMode?.tankLayer
+      ?? runtime.decorPlacementLayer
+      ?? DEFAULT_TANK_LAYER
+    )
+    : DEFAULT_TANK_LAYER;
+  const depthZ = options.item?.z
+    ?? options.z
+    ?? runtime.placementMode?.z;
+  // Continuous-depth decor grounds on its exact depth plane, interpolated
+  // between the configurable front/rear endpoints. Older records without z
+  // still use their legacy layer floor until they are migrated.
+  const layerBoundaryY = Number.isFinite(Number(depthZ))
+    ? getTankDepthPositionFloorY(getTankDepthPositionIndexFromZ(depthZ))
+    : getTankLayerBottomBoundaryY(resolvedLayer);
+  const layerBoundaryYNorm = layerBoundaryY / TANK_HEIGHT;
+  const effectiveMaxYNorm = Math.max(minYNorm, Math.min(maxYNorm, layerBoundaryYNorm));
+  const applyGravity = shouldApplyDecorPlacementGravity(decorKey, options);
+  const attachToCeiling = (isTransitTubeDecorKey(decorKey) || getDecorMotionCapabilities(decorKey).isLure)
+    && !getResolvedDecorFreePlacementEnabled(options);
+
+  if (!decorKey) {
+    const constrained = constrainNormalizedPointToTankShell(
+      clamp(normalizedX, minXNorm, maxXNorm),
+      applyGravity ? effectiveMaxYNorm : clamp(normalizedY, minYNorm, effectiveMaxYNorm)
+    );
+    return {
+      xNorm: clamp(constrained.xNorm, minXNorm, maxXNorm),
+      yNorm: clamp(constrained.yNorm, minYNorm, effectiveMaxYNorm)
+    };
+  }
+
+  const resolvedScale = clamp(
+    Number.isFinite(Number(options.item?.scale))
+      ? Number(options.item.scale)
+      : Number.isFinite(Number(options.scale))
+        ? Number(options.scale)
+        : Number.isFinite(Number(runtime.placementMode?.scale))
+          ? Number(runtime.placementMode.scale)
+          : getDecorScaleDefault(decorKey),
+    DECOR_SCALE_MIN,
+    DECOR_SCALE_MAX
+  );
+  const resolvedFlipped = options.item && Object.prototype.hasOwnProperty.call(options.item, "flipped")
+    ? Boolean(options.item.flipped)
+    : (Object.prototype.hasOwnProperty.call(options, "flipped")
+      ? Boolean(options.flipped)
+      : Boolean(runtime.placementMode?.flipped));
+  const resolvedFlippedY = options.item && Object.prototype.hasOwnProperty.call(options.item, "flippedY")
+    ? Boolean(options.item.flippedY)
+    : (Object.prototype.hasOwnProperty.call(options, "flippedY")
+      ? Boolean(options.flippedY)
+      : Boolean(runtime.placementMode?.flippedY));
+  const candidate = {
+    ...(options.item || {}),
+    decorKey,
+    scale: resolvedScale,
+    flipped: resolvedFlipped,
+    flippedY: resolvedFlippedY,
+    tankLayer: resolvedLayer,
+    xNorm: normalizedX,
+    yNorm: normalizedY
+  };
+  const placementBounds = getPlacedDecorPlacementBounds(candidate);
+  if (!placementBounds) {
+    const constrained = constrainNormalizedPointToTankShell(
+      clamp(normalizedX, minXNorm, maxXNorm),
+      clamp(normalizedY, minYNorm, effectiveMaxYNorm)
+    );
+    return {
+      xNorm: clamp(constrained.xNorm, minXNorm, maxXNorm),
+      yNorm: clamp(constrained.yNorm, minYNorm, effectiveMaxYNorm)
+    };
+  }
+
+  const anchorX = normalizedX * TANK_WIDTH;
+  const anchorY = normalizedY * TANK_HEIGHT;
+  const relLeft = placementBounds.left - anchorX;
+  const relRight = placementBounds.right - anchorX;
+  const relTop = placementBounds.top - anchorY;
+  const relBottom = placementBounds.bottom - anchorY;
+  const relBounds = { left: relLeft, right: relRight, top: relTop, bottom: relBottom };
+  const minAnchorX = shellBounds.innerLeft - relLeft;
+  const maxAnchorX = shellBounds.innerLeft + shellBounds.innerWidth - relRight;
+  const minAnchorY = getDecorTopOverhangLimitY(relBounds, shellBounds) - relTop;
+  const maxAnchorY = Math.min(
+    shellBounds.innerTop + shellBounds.innerHeight - relBottom,
+    layerBoundaryY - relBottom
+  );
+  const surfaceAnchorY = applyGravity
+    ? getDecorPlacementSurfaceAnchorY(candidate, placementBounds, anchorY, {
+      allowOverlapSnap: options.allowSurfaceOverlapSnap === true
+    })
+    : null;
+  const clampedX = minAnchorX <= maxAnchorX
+    ? clamp(anchorX, minAnchorX, maxAnchorX)
+    : (minAnchorX + maxAnchorX) / 2;
+  const clampedY = minAnchorY <= maxAnchorY
+    ? (attachToCeiling
+      ? minAnchorY
+      : (applyGravity
+        ? clamp(Number.isFinite(surfaceAnchorY) ? surfaceAnchorY : maxAnchorY, minAnchorY, maxAnchorY)
+        : clamp(anchorY, minAnchorY, maxAnchorY)))
+    : maxAnchorY;
+
+  const constrained = constrainNormalizedPointToTankShell(
+    clamp(clampedX / TANK_WIDTH, minXNorm, maxXNorm),
+    clamp(clampedY / TANK_HEIGHT, minYNorm, maxYNorm)
+  );
+  return {
+    xNorm: clamp(constrained.xNorm, minXNorm, maxXNorm),
+    // clampedY already constrains the *visible* placement bounds to the tank and
+    // active layer floor. Do not clamp the invisible PNG anchor to maxYNorm here,
+    // or transparent bottom padding becomes an artificial gap above the floor.
+    yNorm: clamp(clampedY / TANK_HEIGHT, 0, 4)
+  };
+}
+
+function findPlacedDecorAtPoint(x, y) {
+  const sorted = [...getPlacedDecorRenderOrder()].reverse();
+  for (const item of sorted) {
+    if (isCustomBubblerDecorKey(item.decorKey)) {
+      const hitBounds = getCustomBubblerHitBounds(item);
+      if (pointInSimpleBounds(x, y, hitBounds)) {
+        return item;
+      }
+    }
+
+    const decor = runtime.decorMap.get(item.decorKey);
+    const caveDescriptors = getCaveDecorHitShapeDescriptors(item, decor);
+    if (caveDescriptors.length) {
+      if (caveDescriptors.some((descriptor) => pointHitsShapeDescriptor(descriptor, x, y))) {
+        return item;
+      }
+      continue;
+    }
+
+    const descriptor = getDecorShapeDescriptor(item);
+    if (descriptor && pointHitsShapeDescriptor(descriptor, x, y)) {
+      return item;
+    }
+  }
+
+  return null;
+}
+
+function getCustomBubblerHitBounds(item) {
+  if (!item || !isCustomBubblerDecorKey(item.decorKey)) {
+    return null;
+  }
+
+  return expandBoundsAroundCenter(getPlacedDecorGroundBounds(item), CUSTOM_BUBBLER_HIT_SCALE);
+}
+
+function getCaveDecorHitShapeDescriptors(item, decor = runtime.decorMap.get(item?.decorKey)) {
+  if (!item || !decor || !hasDecorCaveColorLayers(decor)) {
+    return [];
+  }
+
+  const descriptors = [];
+  const seen = new Set();
+  const addDescriptor = (imagePath) => {
+    if (!imagePath || seen.has(imagePath)) {
+      return;
+    }
+    seen.add(imagePath);
+    const descriptor = getDecorShapeDescriptor(item, imagePath);
+    if (descriptor) {
+      descriptors.push(descriptor);
+    }
+  };
+
+  addDescriptor(decor.bgPath);
+  for (const layer of getVisibleDecorColorLayers(decor)) {
+    addDescriptor(resolveDecorColorLayerPath(layer));
+    if (typeof isTrypophobiaEnabled === "function" && isTrypophobiaEnabled()) {
+      addDescriptor(getDecorLayerTrypophobiaPath(decor, layer));
+    }
+  }
+  return descriptors;
+}
+
+function getPlacedDecorBounds(item) {
+  const decor = runtime.decorMap.get(item.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  const image = runtime.images.get(decor.path);
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (image ? image.height / image.width : 1);
+  const x = item.xNorm * TANK_WIDTH;
+  const top = getDecorImageTopY(item, height);
+
+  return {
+    left: x - width / 2,
+    right: x + width / 2,
+    top,
+    bottom: top + height
+  };
+}
+
+function getDecorVisibleImagePaths(decor) {
+  if (!decor) {
+    return [];
+  }
+
+  const colorLayers = hasDecorCaveColorLayers(decor) ? getVisibleDecorColorLayers(decor) : [];
+  const normalColorPaths = colorLayers.map((layer) => resolveDecorColorLayerPath(layer)).filter(Boolean);
+  const trypophobiaPaths = isTrypophobiaEnabled()
+    ? colorLayers.map((layer) => getDecorLayerTrypophobiaPath(decor, layer)).filter((path) => path && runtime.images.get(path))
+    : [];
+
+  return [...new Set([
+    decor.bgPath,
+    decor.path,
+    ...normalColorPaths,
+    ...trypophobiaPaths,
+    decor.midPath,
+    decor.lightPath
+  ].filter(Boolean))];
+}
+
+function getPlacedDecorOpaqueBoundsForImagePath(item, decor, imagePath) {
+  const image = runtime.images.get(imagePath);
+  const mask = getImageAlphaMask(imagePath);
+  if (!image || !mask) {
+    return null;
+  }
+
+  const width = getDecorDisplayWidth(decor, item);
+  const height = width * (image.height / image.width);
+  const x = item.xNorm * TANK_WIDTH;
+  const left = x - width / 2;
+  const top = getDecorImageTopY(item, height);
+  const minU = mask.bounds.minX / image.width;
+  const maxU = (mask.bounds.maxX + 1) / image.width;
+  const mappedMinU = resolveDecorHorizontalUnit(item, minU);
+  const mappedMaxU = resolveDecorHorizontalUnit(item, maxU);
+  const mappedMinV = resolveDecorVerticalUnit(item, mask.bounds.minY / image.height);
+  const mappedMaxV = resolveDecorVerticalUnit(item, (mask.bounds.maxY + 1) / image.height);
+
+  return {
+    left: left + Math.min(mappedMinU, mappedMaxU) * width,
+    right: left + Math.max(mappedMinU, mappedMaxU) * width,
+    top: top + Math.min(mappedMinV, mappedMaxV) * height,
+    bottom: top + Math.max(mappedMinV, mappedMaxV) * height
+  };
+}
+
+function getPlacedDecorOpaqueBounds(item, imagePathOverride = null) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  const imagePaths = imagePathOverride
+    ? [imagePathOverride]
+    : getDecorVisibleImagePaths(decor);
+  if (!imagePaths.length) {
+    return getPlacedDecorBounds(item);
+  }
+
+  let mergedBounds = null;
+  for (const imagePath of imagePaths) {
+    const bounds = getPlacedDecorOpaqueBoundsForImagePath(item, decor, imagePath);
+    if (!bounds) {
+      continue;
+    }
+
+    if (!mergedBounds) {
+      mergedBounds = { ...bounds };
+      continue;
+    }
+
+    mergedBounds.left = Math.min(mergedBounds.left, bounds.left);
+    mergedBounds.right = Math.max(mergedBounds.right, bounds.right);
+    mergedBounds.top = Math.min(mergedBounds.top, bounds.top);
+    mergedBounds.bottom = Math.max(mergedBounds.bottom, bounds.bottom);
+  }
+
+  return mergedBounds || getPlacedDecorBounds(item);
+}
+
+function getPlacedDecorGroundBounds(item) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  // The optional shadow-footprint helper is the authored physical contact line.
+  // Keep the visible primary artwork bounds for top/left/right placement, but use
+  // the helper's bottom edge as the true foot. This lets roots, fronds, shards,
+  // and other art extend below the placement plane without changing the layer
+  // where the object is considered to touch the substrate.
+  const primaryBounds = decor.path
+    ? getPlacedDecorOpaqueBounds(item, decor.path)
+    : null;
+  const visualBounds = primaryBounds || getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
+  if (!visualBounds) {
+    return null;
+  }
+
+  const footprintBounds = decor.shadowFootprintPath
+    ? getPlacedDecorOpaqueBoundsForImagePath(item, decor, decor.shadowFootprintPath)
+    : null;
+  if (!footprintBounds) {
+    return visualBounds;
+  }
+
+  return {
+    left: visualBounds.left,
+    right: visualBounds.right,
+    top: visualBounds.top,
+    bottom: Math.max(visualBounds.top, footprintBounds.bottom)
+  };
+}
+
+function getDecorShapeDescriptor(item, imagePathOverride = null) {
+  const decor = runtime.decorMap.get(item?.decorKey);
+  if (!decor) {
+    return null;
+  }
+
+  const imagePath = imagePathOverride || decor.path;
+  const image = runtime.images.get(imagePath);
+  const mask = getImageAlphaMask(imagePath);
+  if (!image || !mask) {
+    return null;
+  }
+
+  return createDecorShapeDescriptorFromMask(item, decor, imagePath, mask);
+}

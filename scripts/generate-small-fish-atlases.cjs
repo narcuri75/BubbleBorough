@@ -4,7 +4,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const sourceDirectory = path.join(root, "assets", "fish");
 const outputDirectory = path.join(sourceDirectory, "small_fish");
 const LONGEST_SIDE = 64;

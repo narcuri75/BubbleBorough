@@ -7,7 +7,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const read = (file) => fs.readFileSync(path.join(ROOT, file), "utf8");
 const debugSource = read("public/app-src/debug/tools.js");
 const fishSource = read("public/app-src/fish/needs-disease-and-behavior.js");

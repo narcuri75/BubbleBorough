@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const ts = require("typescript");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const sourceRoot = path.join(projectRoot, "public", "app-src");
 const manifestPath = path.join(sourceRoot, "module-manifest.json");
 const inventoryPath = path.join(sourceRoot, "function-inventory.json");

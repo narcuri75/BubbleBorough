@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="{{robots}}">
+  <meta name="description" content="{{description}}">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="dark light">
+  <title>{{title}}</title>
+  {{canonical}}
+  <meta property="og:title" content="{{title}}">
+  <meta property="og:description" content="{{description}}">
+  <meta property="og:site_name" content="Bubble Borough">
+  <meta property="og:type" content="website">
+  <meta property="og:image" content="https://bubbleborough.com/assets/misc/bb_logo.webp">
+  <meta property="og:image:alt" content="Bubble Borough logo">
+  <meta property="og:url" content="{{url}}">
+  <meta name="twitter:card" content="summary">
+  <meta name="twitter:title" content="{{title}}">
+  <meta name="twitter:description" content="{{description}}">
+  <meta name="twitter:image" content="https://bubbleborough.com/assets/misc/bb_logo.webp">
+  <link rel="icon" href="/assets/misc/favicon.webp">
+  <link rel="manifest" href="/public/manifest.webmanifest">
+  <link rel="stylesheet" href="/site/site.css">
+  <link rel="stylesheet" href="/site/catalog.css">
+  <script src="/site/compat.js"></script>
+  <script src="/site/site.js" defer></script>
+  {{structuredData}}
+</head>
+<body>
+  <canvas class="ambient-bubbles" aria-hidden="true"></canvas>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/" aria-label="Bubble Borough home"><img src="/assets/misc/bb_logo.webp" alt="Bubble Borough"></a>
+    <nav aria-label="Main navigation">{{navigation}}<a class="play-link" href="/play">Play</a></nav>
+  </header>
+  <main id="main" tabindex="-1">{{content}}</main>
+  <footer class="site-footer"><span>&copy; Bubble Borough</span><a href="/">Home</a><a href="/play">Play</a><a href="https://buymeacoffee.com/nathanarcuri" target="_blank" rel="noopener noreferrer">Support Bubble Borough</a></footer>
+</body>
+</html>

@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 const bootstrap = read('public/app-src/00-bootstrap.js');
@@ -107,9 +107,9 @@ test('living fish use slice-based curved depth warp with phase lag and only mino
 test('old whole-fish living wobble is neutralized while turning and death remain separate', () => {
   assert.match(fishRenderer, /const wholeBodyWiggle = useDepthSwimWarp \? 0 : wiggle/);
   assert.match(fishRenderer, /const verticalBob = useDepthSwimWarp\s*\? 0/);
-  assert.match(fishRenderer, /const turnLean = turnProgress === null \|\| useComplexTurn \|\| useDepthSwimWarp/);
-  assert.match(fishRenderer, /useDepthSwimWarp \|\| useComplexTurn \? 1 : \(1 - turnAmount/);
-  assert.match(fishRenderer, /useDepthSwimWarp \|\| useComplexTurn \? 1 : \(1 \+ turnAmount/);
+  assert.match(fishRenderer, /const turnLean = 0/);
+  assert.doesNotMatch(fishRenderer, /useDepthSwimWarp \|\| useComplexTurn \? 1 : \(1 [+-] turnAmount/);
+  assert.match(fishRenderer, /else if \(simpleTurnRendererActive\) \{\s*drawFishLightweightTurnFallbackFrame/);
   assert.match(fishRenderer, /const turnSway = turnProgress === null \|\| useComplexTurn \|\| useDepthSwimWarp/);
   assert.match(fishRenderer, /const useOtocinclusDepthSwimWarp = shouldUseFishSwimDepthWarp/);
   assert.match(fishRenderer, /const subtleBob = useOtocinclusDepthSwimWarp\s*\? 0/);
@@ -120,9 +120,9 @@ test('old whole-fish living wobble is neutralized while turning and death remain
 });
 
 test('behavior style follows physical movement and keeps a dedicated continuous swim phase', () => {
-  assert.match(fishRenderer, /const physicallyMoving = targetDistance > 0\.008 \|\| \(Number\(fish\?\.motionLevel\) \|\| 0\) > 0\.14/);
-  assert.match(fishRenderer, /function getFishSwimMovementFactor\(fish\)/);
-  assert.match(fishRenderer, /return Math\.max\(motionFactor, distanceFactor\)/);
+  assert.match(fishRenderer, /const physicallyMoving = getFishSwimMovementFactor\(fish, now\) > 0\.05/);
+  assert.match(fishRenderer, /function getFishSwimMovementFactor\(fish, now = Date\.now\(\)\)/);
+  assert.match(fishRenderer, /Math\.hypot\(x - previous\.x, y - previous\.y\) \/ elapsed/);
   assert.doesNotMatch(fishRenderer, /fishSwimMovementSamples/);
   assert.match(fishRenderer, /if \(physicallyMoving && .*panicUntil/s);
   assert.match(fishRenderer, /if \(physicallyMoving && \/zoomies\//);
@@ -274,7 +274,7 @@ test('Phase 14 Zoomies matches the approved tuner baseline without becoming stru
 test('Phase 15 Panicked matches the approved maximum without stationary flapping or random phase jumps', () => {
   assert.match(debugTools, /window\.debugForcePanickedSwimAnimation = \(\) => window\.debugSetSwimAnimationPreset\("panicked"\)/);
   assert.match(fishRenderer, /const panicSpeedBoost = panicActive \? Math\.max\(1, Number\(fish\?\.panicSpeedBoost\) \|\| 2\) : 1/);
-  assert.match(fishRenderer, /const activePanicDash = panicActive && targetDistance > 0\.008 && panicSpeedBoost > 1/);
+  assert.match(fishRenderer, /const activePanicDash = panicActive && physicallyMoving && panicSpeedBoost > 1/);
   assert.match(fishRenderer, /if \(physicallyMoving && activePanicDash\) return "panicked"/);
   assert.match(fishRenderer, /if \(physicallyMoving && \(panicActive \|\| mood === "Panicked"\)\) return "scared"/);
   assert.match(motion, /speedMultiplier \*= Number\(fish\.panicSpeedBoost\) \|\| 2/);

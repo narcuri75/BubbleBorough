@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const cavePath = path.join(__dirname, "../public/app-src/fish/caves-and-collision.js");
+const cavePath = path.join(__dirname, "../game/public/app-src/fish/caves-and-collision.js");
 const caveSource = fs.readFileSync(cavePath, "utf8");
 const caveParsed = ts.createSourceFile("caves.js", caveSource, ts.ScriptTarget.Latest, true);
 function load(name, stubs = {}) {
@@ -110,18 +110,18 @@ test("continuous portal depth is mirrored into compatibility fields without setF
 
 
 test("portal crossing remains on its own cave path and avoids strict interior containment until clear", () => {
-  const navSource = fs.readFileSync(path.join(__dirname, "../public/app-src/fish/cave-navigation.js"), "utf8");
+  const navSource = fs.readFileSync(path.join(__dirname, "../game/public/app-src/fish/cave-navigation.js"), "utf8");
   assert.match(navSource, /\["approach", "align", "portal-enter", "enter", "inside", "exit", "depart", "portal-exit", "leave"\]\.includes\(fish\.caveState\)/);
   assert.match(caveSource, /const interior = \["enter", "inside", "exit", "depart"\]\.includes\(fish\.caveState\)/);
 });
 
 test("portal crossing renders in the cave sandwich while depth remains continuous", () => {
-  const renderSource = fs.readFileSync(path.join(__dirname, "../public/app-src/rendering/fish-and-effects.js"), "utf8");
+  const renderSource = fs.readFileSync(path.join(__dirname, "../game/public/app-src/rendering/fish-and-effects.js"), "utf8");
   assert.match(renderSource, /\["portal-enter", "enter", "inside", "exit", "depart", "portal-exit"\]\.includes\(fish\.caveState\)/);
 });
 
 test("crossing state uses raw compatibility depth instead of forcing front or interior legacy slots", () => {
-  const layoutSource = fs.readFileSync(path.join(__dirname, "../public/app-src/decor/layout-and-layers.js"), "utf8");
+  const layoutSource = fs.readFileSync(path.join(__dirname, "../game/public/app-src/decor/layout-and-layers.js"), "utf8");
   assert.match(layoutSource, /if \(\["portal-enter", "portal-exit"\]\.includes\(fish\.caveState\)\) \{\s*return clampTankLayer\(fish\.tankLayer/);
   assert.match(layoutSource, /return clampTankSubLayer\(fish\?\.tankSubLayer/);
 });

@@ -1,5 +1,7 @@
 # Cave swimmability JSON contract
 
+Game source and asset paths in this document are relative to game/, unless written as public URLs. Project tooling and documentation remain at the repository root.
+
 Every `cave_layered` decor entry in `assets/decor/decor_types.json` now has an explicit boolean `swimmable` field.
 
 ```json

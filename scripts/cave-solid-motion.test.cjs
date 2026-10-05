@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const ts = require("typescript");
 const path = require("node:path");
-const source = fs.readFileSync(path.join(__dirname, "../public/app-src/fish/caves-and-collision.js"), "utf8");
+const source = fs.readFileSync(path.join(__dirname, "../game/public/app-src/fish/caves-and-collision.js"), "utf8");
 const parsed = ts.createSourceFile("caves.js", source, ts.ScriptTarget.Latest, true);
 function load(name, stubs) {
   const fn = parsed.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === name);
@@ -130,7 +130,7 @@ test("repeated cancellation requests preserve progress along the physical exit",
 
 test("a real opening admits fish, while solid rim and transparent space above roof do not", () => {
   const nav = ts.createSourceFile("nav.js", fs.readFileSync(path.join(__dirname,
-    "../public/app-src/fish/cave-navigation.js"), "utf8"), ts.ScriptTarget.Latest, true);
+    "../game/public/app-src/fish/cave-navigation.js"), "utf8"), ts.ScriptTarget.Latest, true);
   const fn = nav.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === "portalOpeningFitsFish");
   let contained = true, blocked = false;
   const fits = vm.runInNewContext(`(${fn.getText(nav)})`, {
@@ -147,7 +147,7 @@ test("a real opening admits fish, while solid rim and transparent space above ro
 });
 
 test("cached ordinary draw passes cannot draw an interior fish a second time", () => {
-  const render = fs.readFileSync(path.join(__dirname, "../public/app-src/rendering/fish-and-effects.js"), "utf8");
+  const render = fs.readFileSync(path.join(__dirname, "../game/public/app-src/rendering/fish-and-effects.js"), "utf8");
   const begin = render.indexOf("function drawFish(");
   const end = render.indexOf("    const prepared = record.render;", begin);
   const seen = [];
@@ -165,7 +165,7 @@ test("cached ordinary draw passes cannot draw an interior fish a second time", (
 
 test("legacy cave occupants render in their cave's sandwich, not behind its background", () => {
   const render = ts.createSourceFile("render.js", fs.readFileSync(path.join(__dirname,
-    "../public/app-src/rendering/fish-and-effects.js"), "utf8"), ts.ScriptTarget.Latest, true);
+    "../game/public/app-src/rendering/fish-and-effects.js"), "utf8"), ts.ScriptTarget.Latest, true);
   const fn = render.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === "getFishRenderPassLayer");
   const layer = vm.runInNewContext(`(${fn.getText(render)})`, {
     isFishInCaveRenderSublayer: f => f.caveState === "inside",

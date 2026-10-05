@@ -23,23 +23,25 @@ jobs:
           PUSH_TIME="$(TZ=America/Los_Angeles date '+%m/%d/%Y %-I:%M %p %Z')"
           SHORT_SHA="${GITHUB_SHA::7}"
 
-          cat > public/build-info.json <<EOF_JSON
+          cat > game/public/build-info.json <<EOF_JSON
           {
             "lastPushed": "${PUSH_TIME}",
             "commit": "${SHORT_SHA}"
           }
           EOF_JSON
 
-      - name: Commit updated build info
+      - name: Build GitHub Pages documents
+        run: npm run build:website
+
+      - name: Commit updated build info and static pages
         shell: bash
         run: |
-          if git diff --quiet -- public/build-info.json; then
-            echo "Build info is already current."
+          if git diff --quiet; then
+            echo "Build info and static pages are already current."
             exit 0
           fi
-
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add public/build-info.json
-          git commit -m "chore: update build info"
+          git add game/public/build-info.json index.html 404.html robots.txt sitemap.xml website/fish website/decor website/news website/faqs website/about
+          git commit -m "chore: update build info and static pages"
           git push

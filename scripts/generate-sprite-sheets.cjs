@@ -4,7 +4,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const output = path.join(root, "public/app-src/assets/sprite-sheet-definitions.js");
 const OPTIONAL_SPRITE_SHEET_PAIRS = [
   { base: "web/proteus/dna_fish/zombie_fish", label: "Proteus Z-01" }

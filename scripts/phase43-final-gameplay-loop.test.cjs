@@ -5,7 +5,7 @@ const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const APP_SRC = path.join(ROOT, "public", "app-src");
 const recaps = fs.readFileSync(path.join(APP_SRC, "tank", "events-recaps-and-save.js"), "utf8");
 const purchases = fs.readFileSync(path.join(APP_SRC, "store", "purchases.js"), "utf8");
@@ -74,7 +74,7 @@ test("Phase 43 species mastery and discovered variants persist independently acr
   assert.ok(unlockBody.includes("selected.key"));
   assert.match(unlockBody, /collectionCompletedAt/);
 
-  const phase40 = fs.readFileSync(path.join(ROOT, "scripts", "phase40-progression-regressions.test.cjs"), "utf8");
+  const phase40 = fs.readFileSync(path.join(ROOT, "..", "scripts", "phase40-progression-regressions.test.cjs"), "utf8");
   assert.ok(
     phase40.includes("later generations can consume all four level opportunities after species mastery is already Level 5"),
     "final suite must retain the repeated-generation variant discovery contract"
@@ -97,7 +97,7 @@ test("Phase 43 money buys unlocked content while care progression controls acces
 });
 
 test("Phase 43 final regression command retains save, progression, economy, and final-loop contract suites", () => {
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "..", "package.json"), "utf8"));
   for (const file of [
     "phase34-save-compatibility.test.cjs",
     "phase40-progression-regressions.test.cjs",

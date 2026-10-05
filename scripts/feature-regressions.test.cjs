@@ -5,10 +5,10 @@ const fs = require("node:fs");
 const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
-const root = path.join(__dirname, "../public/app-src");
+const root = path.join(__dirname, "../game/public/app-src");
 const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function getWebSurfStoreSource() {
-  return fs.readFileSync(path.join(__dirname, "../public/websurf-store.js"), "utf8");
+  return fs.readFileSync(path.join(__dirname, "../game/public/websurf-store.js"), "utf8");
 }
 function loadTankazonFunctions(names, bindings) {
   const script = getWebSurfStoreSource();
@@ -75,7 +75,7 @@ test("BubbleBodega recognizes water treatment kits as purchasable equipment", ()
 
 test("BubbleBodega water treatment kit CTA is visible and intercepted by the cart storefront", () => {
   const websurf = getWebSurfStoreSource();
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   const overlayPurchaseSelectors = [...websurf.matchAll(/#storeOverlay \[data-buy-fish\][^";]+/g)].map((match) => match[0]);
   assert.ok(overlayPurchaseSelectors.length >= 2, "expected both normalization and click-interception purchase selectors");
@@ -97,7 +97,7 @@ test("BubbleBodega water treatment kit CTA is visible and intercepted by the car
 
 test("BubbleBodega backgrounds are purchasable from the Decor storefront", async () => {
   const websurf = getWebSurfStoreSource();
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const bindings = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
 
@@ -366,7 +366,7 @@ test("Proteus behavior fields persist and completed design links remain single-u
 
 test("Proteus designer exposes the clinical behavior controls without restoring the hero", () => {
   const designer = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(designer, /BEHAVIOR PROFILE/);
   assert.match(designer, /DIETARY PROFILE[\s\S]*approved nutritional substrate/);
   assert.match(designer, /ACTIVITY REGULATION[\s\S]*locomotor cadence/);
@@ -612,7 +612,7 @@ test("chum clouds render with food before decor while other blood keeps its fron
   assert.deepEqual(clouds.map(cloud => cloud.layer), ["food", "front"]);
   const source = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
   assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") > source.indexOf("drawPellets(now)"));
-  assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") < source.indexOf('drawDecor(layer, now, { pass: "base" })'));
+  assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") < source.indexOf('drawDecor(layer, now, { pass: "base"'));
 });
 
 test("rear grime mirrors a tiny cached texture, shares scrub strokes, and avoids per-frame blur rebuilds", () => {
@@ -1211,7 +1211,7 @@ test("Phase 21 fish locks do not change non-fish variant selection behavior", ()
 });
 
 test("Phase 21 catalog variant controls ignore stale locked fish appearances without displaying them", () => {
-  const source = fs.readFileSync(path.join(__dirname, "../public/store-variants.js"), "utf8");
+  const source = fs.readFileSync(path.join(__dirname, "../game/public/store-variants.js"), "utf8");
   assert.match(source, /function isLockedFishVariant\(/);
   assert.match(source, /if \(locked\) \{[\s\S]*?dot\.disabled = true;[\s\S]*?dot\.hidden = true/);
   assert.doesNotMatch(source, /classList\.add\("is-locked"\)|shop-variant-lock|🔒/);
@@ -1669,7 +1669,7 @@ test("insufficient purchases use the red payment error and BubbleBodega exposes 
   assert.equal(c.lastToast[1].tone, "error");
   assert.match(source, /function getInsufficientFundsMessage\(\)[\s\S]*Payment method declined\. Insufficient Funds\./);
 
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const websurfStore = getWebSurfStoreSource();
   const machinery = fs.readFileSync(path.join(root, "machinery/submarine.js"), "utf8");
   assert.match(websurfStore, /data-buy-boat/);
@@ -1681,7 +1681,7 @@ test("insufficient purchases use the red payment error and BubbleBodega exposes 
 });
 
 test("Neon Tetra uses neutral neon variant names and stale saved keys preserve the numeric appearance", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   const neonTetra = catalog.fish.find((fish) => fish.id === "neon-tetra");
   assert.ok(neonTetra);
   assert.deepEqual(neonTetra.assetVariants, [
@@ -1717,7 +1717,7 @@ test("Neon Tetra uses neutral neon variant names and stale saved keys preserve t
 });
 
 test("Koi and Lionfish remain in the natural fish catalog with sprite variants", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   const koi = catalog.fish.find((fish) => fish.id === "koi");
   const lionfish = catalog.fish.find((fish) => fish.id === "lionfish");
   assert.ok(koi);
@@ -1731,7 +1731,7 @@ test("Koi and Lionfish remain in the natural fish catalog with sprite variants",
 });
 
 test("pilot fish remains while axolotl and nautilus are absent", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   const pilot = catalog.fish.find((fish) => fish.id === "pilot-fish");
   assert.ok(pilot);
   assert.equal(catalog.fish.some((fish) => fish.id === "axolotl"), false);
@@ -1750,16 +1750,16 @@ test("pilot fish remains while axolotl and nautilus are absent", () => {
 });
 
 test("store item pages use catalog-authored sellers and link Proteus Biodyne to its overlay webpage", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   for (const id of ["bull-shark", "great-white-shark", "hammerhead-shark", "orca", "sunfish"]) {
     assert.equal(catalog.fish.find((fish) => fish.id === id)?.seller.toLowerCase(), "proteus biodyne");
   }
 
-  const indexDocument = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const indexDocument = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const websurfStore = getWebSurfStoreSource();
   const html = `${indexDocument}\n${websurfStore}`;
   const indexHtml = html;
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const cloudSource = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
   const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
@@ -1893,8 +1893,8 @@ test("WebSurf persists mailbox state and FIN sends the intro plus randomized vag
   const overlaySource = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const purchaseSource = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const saveWriterSource = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
-  const templates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8")).templates;
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
+  const templates = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/web/websurf/auto_emails.json"), "utf8")).templates;
 
   assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(saveSource, /webSurfMailStates: sanitizeWebSurfMailStates\(incoming\.webSurfMailStates\)/);
@@ -1944,8 +1944,8 @@ test("fish progression is paced through Borough Legends and gates engineered spe
   const normalizationSource = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const renderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
-  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8"));
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
+  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/web/websurf/auto_emails.json"), "utf8"));
 
   assert.match(catalogSource, /const preferredStarterId = activeWaterType === "saltwater" \? "firefish" : "goldfish"/);
   assert.match(catalogSource, /species\?\.starterFish === true[\s\S]*isFishCompatibleWithWaterType\(species, activeWaterType\)/);
@@ -1972,15 +1972,15 @@ test("fish progression is paced through Borough Legends and gates engineered spe
 });
 
 test("BubbleBodega issues a single-use recovery email for every empty-and-broke cycle", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const websurfStore = getWebSurfStoreSource();
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const catalogSource = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
   const purchaseSource = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const saveSource = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const managementSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
   const renderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/web/websurf/auto_emails.json"), "utf8"));
+  const emailTemplates = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/web/websurf/auto_emails.json"), "utf8"));
   const template = emailTemplates.templates.bubblebodega_rescue_offer;
 
   assert.ok(template);
@@ -2309,7 +2309,17 @@ test("inactive tank art and collision masks have bounded decoded-image caches", 
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   assert.match(images, /function releaseRuntimeImage\(path\)/);
   assert.match(images, /function setBoundedAlphaMask\(path, mask\)/);
-  assert.match(images, /new Uint8ClampedArray\(imageData\.data\)/);
+  // Preserve RGB marker bytes as well as alpha, regardless of whether the
+  // already-independent canvas readback needs an additional allocation.
+  const rgba = Uint8ClampedArray.from([42, 23, 11, 255, 0, 0, 0, 0]);
+  const maskRuntime = { images: new Map([["mask", { width: 2, height: 1 }]]), alphaMaskCache: new Map() };
+  const maskContext = load("assets/image-storage-and-import.js", ["getImageAlphaMask"], {
+    runtime: maskRuntime,
+    document: { createElement: () => ({ getContext: () => ({ clearRect() {}, drawImage() {}, getImageData: () => ({ data: rgba }) }) }) },
+    buildAlphaMaskFromBuffer: (width, height, alpha) => ({ width, height, alpha }),
+    setBoundedAlphaMask: (key, mask) => maskRuntime.alphaMaskCache.set(key, mask)
+  });
+  assert.deepEqual(Array.from(maskContext.getImageAlphaMask("mask").alpha), Array.from(rgba));
   assert.match(images, /getMaxAlphaMaskCacheBytes\(\)/);
   assert.match(sprites, /function releaseInactiveTankImages\(targetState = state\)/);
   assert.match(customization, /releaseInactiveDecorImages\(state\);[\s\S]*releaseInactiveTankImages\(state\);/);
@@ -2317,7 +2327,7 @@ test("inactive tank art and collision masks have bounded decoded-image caches", 
 });
 
 test("tank frame calibration uses deterministic full and quarter-pixel step controls instead of ranges", () => {
-  const index = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const index = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const customContent = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const calibration = index.slice(index.indexOf('id="debugTankFrameCalibration"'), index.indexOf('id="debugDepthTuner"'));
   assert.match(calibration, /data-tank-frame-axis="horizontal"/);
@@ -2517,7 +2527,7 @@ test("tank rendering caps DPR at 1.25 and idles at 30 FPS", () => {
 test("wallet receipts persist purchases and expose a compact toolbar history", () => {
   const purchases = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   assert.match(purchases, /function recordWalletTransaction/);
   assert.match(rendering, /function renderWalletTransactionMenu/);
   assert.match(html, /id="walletTransactionMenu"/);
@@ -2529,8 +2539,8 @@ test("Bubble Borough Bank exposes account, recap reports, and unlocked milestone
   const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
   const customization = fs.readFileSync(path.join(root, "decor", "customization.js"), "utf8");
   const purchases = fs.readFileSync(path.join(root, "store", "purchases.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(bootstrap, /bubbleBankOpen: false/);
   assert.match(rendering, /data-open-bubble-bank/);
   assert.match(rendering, /renderBubbleBankPage\(\)/);
@@ -2575,7 +2585,7 @@ test("the toolbar store button switches from the bank page into the catalog", ()
 
 test("the bank account tab uses the fish coin artwork", () => {
   const overlays = fs.readFileSync(path.join(root, "ui", "management-and-overlays.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(overlays, /bubble-bank-tab-icon/);
   assert.match(overlays, /assets\/misc\/coin_unicode\.png/);
   assert.match(styles, /\.bubble-bank-tab\.is-active \.bubble-bank-tab-icon/);
@@ -2884,8 +2894,8 @@ test("cloud account UI uses yellow syncing, green success, red failure, and the 
 });
 
 test("friend invite Edge Function allows CORS preflight through the gateway and authenticates POST itself", () => {
-  const config = fs.readFileSync(path.join(__dirname, "../supabase/config.toml"), "utf8");
-  const fn = fs.readFileSync(path.join(__dirname, "../supabase/functions/send-friend-invite/index.ts"), "utf8");
+  const config = fs.readFileSync(path.join(__dirname, "../game/supabase/config.toml"), "utf8");
+  const fn = fs.readFileSync(path.join(__dirname, "../game/supabase/functions/send-friend-invite/index.ts"), "utf8");
   assert.match(config, /\[functions\.send-friend-invite\][\s\S]*verify_jwt\s*=\s*false/);
   assert.match(fn, /request\.method === "OPTIONS"[\s\S]*status: 204/);
   assert.match(fn, /request\.headers\.get\("Authorization"\)/);
@@ -3147,14 +3157,14 @@ test("Chum Skiff resource icon uses the existing chum food art", () => {
 
 
 test("toolbar shell follows the selected tile color with a clearly darker muted derived shade", () => {
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(css, /--toolbar-shell-color:\s*color-mix\(in srgb, var\(--toolbar-tile-color[^;]*34%[^;]*#03080b\)/);
   assert.match(css, /--toolbar-shell-border-color:\s*color-mix\(in srgb, var\(--toolbar-tile-color[^;]*42%[^;]*#0d171c\)/);
   assert.match(css, /background:\s*var\(--toolbar-shell-color\)/);
 });
 
 test("toolbar icons render in front of the collapse tab", () => {
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const tabLayer = Number(css.match(/\.toolbar-tab\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
   const buttonLayer = Number(css.match(/\.dock-button\s*\{[^}]*z-index:\s*(\d+)/s)?.[1]);
   assert.ok(Number.isFinite(tabLayer));
@@ -3164,7 +3174,7 @@ test("toolbar icons render in front of the collapse tab", () => {
 
 test("horizontal care and edit menus render in front of the entire toolbar", () => {
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(rendering, /horizontalMenuCoversToolbar = runtime\.editTankMode[\s\S]*runtime\.fishEditMode[\s\S]*runtime\.equipmentEditMode[\s\S]*runtime\.tankEditMode[\s\S]*runtime\.foodTrayOpen[\s\S]*runtime\.medicineTrayOpen/);
   assert.match(rendering, /classList\.toggle\("is-behind-horizontal-menu", horizontalMenuCoversToolbar\)/);
   assert.match(css, /\.tank-bottom-dock\.is-behind-horizontal-menu:not\(\.is-behind-overlay\)\s*\{\s*z-index:\s*3/);
@@ -3181,7 +3191,7 @@ test("startup Continue is replaced by loading and cannot reappear while the aqua
 });
 
 test("startup keeps the intended loading spinner but suppresses the stray fade-out spinner", () => {
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(css, /\.startup-loading-indicator span\s*\{[\s\S]*width:\s*17px[\s\S]*animation:\s*startupSpinner/);
   assert.match(css, /\.loading-overlay\.is-hiding \.loading-overlay-text\s*\{\s*display:\s*none !important/);
   assert.match(css, /\.loading-overlay\.is-hiding \.loading-overlay-text::before\s*\{[\s\S]*content:\s*none !important[\s\S]*animation:\s*none !important/);
@@ -3267,7 +3277,7 @@ test("sea anemones use explicit sway metadata while cave anemones keep cave laye
 test("decor artwork and thumbnails use the literal bg, regular, color2, color3 stack", () => {
   const customizationSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/customization.js"), "utf8");
   const hitTestingSource = fs.readFileSync(path.join(root, "../../public/app-src/decor/hit-testing.js"), "utf8");
-  const previewSource = fs.readFileSync(path.join(root, "../../scripts/generate-loose-decor-previews.cjs"), "utf8");
+  const previewSource = fs.readFileSync(path.join(root, "../../../scripts/generate-loose-decor-previews.cjs"), "utf8");
 
   assert.match(customizationSource, /\["color1", "color2", "color3"\]\.flatMap/);
   assert.match(hitTestingSource, /getCaveDecorHitShapeDescriptors/);
@@ -3324,7 +3334,7 @@ test("caves stay on one main layer and use the shared back, middle, and front su
   assert.equal(c.getDecorFrontLayer("coral-shelf-1__cave-coral__theme-reef__front.png", 5), 5);
 
   const tankRendering = fs.readFileSync(path.join(root, "../../public/app-src/rendering/tank-and-water.js"), "utf8");
-  assert.match(tankRendering, /drawDecor\(layer, now, \{ pass: "cave-back" \}\)[\s\S]*subLayer: TANK_SUBLAYER_BACK[\s\S]*subLayer: TANK_SUBLAYER_MIDDLE[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front" \}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base" \}\)[\s\S]*subLayer: TANK_SUBLAYER_FRONT/);
+  assert.match(tankRendering, /drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*subLayer: TANK_SUBLAYER_BACK[\s\S]*subLayer: TANK_SUBLAYER_MIDDLE[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*subLayer: TANK_SUBLAYER_FRONT/);
   assert.match(tankRendering, /Ordinary[\s\S]*decor assigned to that same major layer is painted after the completed[\s\S]*cave/);
 });
 
@@ -3339,8 +3349,8 @@ test("Lure decor is tank-top locked until Free Placement is explicitly enabled",
 });
 
 test("checkout delivery animation uses Box.png outside the sprite image system", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(html, /class="store-delivery-box"[^>]*data-store-delivery-box/);
   assert.doesNotMatch(html, /data-store-delivery-box[^>]*data-sprite-src/);
   assert.match(css, /\.store-delivery-box[^}]*Box\.png/s);
@@ -3348,7 +3358,7 @@ test("checkout delivery animation uses Box.png outside the sprite image system",
 
 test("BubbleBodega replaces the old standalone store name in live UI copy", () => {
   const files = [
-    path.join(__dirname, "../index.html"),
+    path.join(__dirname, "../game/index.html"),
     path.join(root, "store/purchases.js"),
     path.join(root, "machinery/submarine.js"),
     path.join(root, "ui/main-and-store-rendering.js"),
@@ -3361,8 +3371,8 @@ test("BubbleBodega replaces the old standalone store name in live UI copy", () =
 
 test("retired loose Borough decor no longer appears in catalogs or unlock metadata", () => {
   const retired = ["bubble-plaza.png", "coral-clinic.png", "kelp-cafe.png", "moonstone-grotto.png", "nursery-garden.png", "rock-arch.png", "shell-house.png"];
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/decor/decor_types.json"), "utf8"));
-  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/asset-manifest.json"), "utf8"));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/decor/decor_types.json"), "utf8"));
+  const manifest = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/asset-manifest.json"), "utf8"));
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const catalogFiles = new Set((catalog.decor || []).map(item => item.file));
   const manifestFiles = new Set((manifest.decor || []).map(item => item.key));
@@ -3374,7 +3384,7 @@ test("retired loose Borough decor no longer appears in catalogs or unlock metada
 });
 
 test("Trypophobia graphics mode overlays base cave art and replaces color companion layers", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const catalog = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
@@ -3388,7 +3398,7 @@ test("Trypophobia graphics mode overlays base cave art and replaces color compan
 });
 
 test("ambient decorative bubbles use the four-level density and speed setting with legacy migration", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const controls = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
@@ -3432,7 +3442,7 @@ test("fish wounds are flank-specific while white specks remain visible on either
 
 test("tank switching fully covers the old tank before committing the destination", () => {
   const source = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const setActiveTankSource = source.slice(source.indexOf("function setActiveTank"), source.indexOf("function switchTankByOffset"));
   assert.match(source, /function waitForTankSwitchLoadingCover\(token\)/);
   assert.match(source, /transitionend[\s\S]*propertyName !== "opacity"/);
@@ -3447,8 +3457,8 @@ test("tank switching fully covers the old tank before committing the destination
 });
 
 test("settings dashboard uses independent compact columns so Graphics cannot push Other downward", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(html, /settings-dashboard-column-left[\s\S]*settings-graphics-card[\s\S]*settings-dashboard-column-right[\s\S]*settings-general-card[\s\S]*settings-audio-card[\s\S]*settings-other-card/);
   assert.match(css, /grid-template-areas:\s*\n\s*"account account"\s*\n\s*"left right"/);
   assert.match(css, /\.settings-dashboard-column\s*\{[\s\S]*align-content:\s*start[\s\S]*gap:\s*14px/);
@@ -3456,12 +3466,12 @@ test("settings dashboard uses independent compact columns so Graphics cannot pus
 });
 
 test("settings exposes a single Legal entry with tabbed privacy, terms, services, and licenses", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const overlays = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
   const listeners = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const cloudSave = fs.readFileSync(path.join(root, "core/cloud-save.js"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(html, /settings-other-actions[\s\S]*data-open-legal[\s\S]*Legal/);
   assert.match(bootstrap, /legalOverlayTab:\s*"privacy"/);
@@ -3504,8 +3514,8 @@ test("debug fish behavior viewer previews every action on a stationary specimen"
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
   const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const actionIds = ["eat", "waitfood", "rest", "sleep", "zoomies", "greet", "hangout", "play", "pebble", "dig", "avoid", "breed", "hide", "inspect"];
 
   assert.match(html, /id="debugFishBehaviorPreviewButton"/);
@@ -3581,7 +3591,7 @@ test("a single glass-tap panic does not inflate a pufferfish", () => {
 });
 
 test("Ratio Lock preserves desktop toolbar proportions on narrow browser windows", () => {
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(css, /html\[data-layout-ratio-lock="true"\] \.tank-bottom-dock\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?width:\s*auto;[\s\S]*?overflow-x:\s*visible;/);
   assert.match(css, /html\[data-layout-ratio-lock="true"\]\[data-toolbar-position="bottom-center"\] \.tank-bottom-dock\s*\{[\s\S]*?left:\s*50%;[\s\S]*?right:\s*auto;[\s\S]*?gap:\s*9px;[\s\S]*?padding:\s*8px 9px;/);
   assert.match(css, /html\[data-layout-ratio-lock="true"\] \.dock-button\s*\{[\s\S]*?width:\s*45px;[\s\S]*?height:\s*45px;/);
@@ -3593,7 +3603,7 @@ test("Ratio Lock auto-captures only once and persists its saved reference", () =
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const ratio = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const tools = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
 
   assert.match(bootstrap, /layoutRatioLockEnabled:\s*true,[\s\S]*layoutRatioLockWidth:\s*0,[\s\S]*layoutRatioLockHeight:\s*0/);
   assert.match(settings, /layoutRatioLockWidth:\s*Math\.max\(0,[\s\S]*layoutRatioLockHeight:\s*Math\.max\(0/);
@@ -3609,7 +3619,7 @@ test("Ratio Lock auto-captures only once and persists its saved reference", () =
 test("procedural backgrounds and store thumbnails do not request invented image files", () => {
   const assets = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const startup = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   assert.match(assets, /key === NONE_BACKGROUND_ASSET_KEY \|\| key === CUSTOM_IMAGE_BACKGROUND_ASSET_KEY[\s\S]*\? ""/);
   assert.match(startup, /const activeTank = getCurrentTank\(\);[\s\S]*getTankSwitchPreloadPaths\(activeTank\)/);
   assert.doesNotMatch(html, /function useBackgroundCatalogImages/);
@@ -3709,7 +3719,7 @@ test("debug species scenarios use real AI prerequisites and expose puffer contro
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const debug = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
   const tools = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   assert.match(bootstrap, /species-signature/);
   assert.match(bootstrap, /puffer-inflate/);
   assert.match(bootstrap, /puffer-deflate/);
@@ -3730,7 +3740,7 @@ test("Koi and Lionfish have species-specific movement, comfort, feeding, and egg
   const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
   const dragging = fs.readFileSync(path.join(root, "decor/placement-and-dragging.js"), "utf8");
   const store = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8"));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8"));
   const koi = catalog.fish.find((entry) => entry.id === "koi");
   const lionfish = catalog.fish.find((entry) => entry.id === "lionfish");
 
@@ -3773,7 +3783,7 @@ test("aquarium depth effects use one five-layer configuration and continuous sub
   const decor = fs.readFileSync(path.join(root, "rendering/decor.js"), "utf8");
   const gravel = fs.readFileSync(path.join(root, "rendering/gravel-and-effects.js"), "utf8");
   const water = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
 
   assert.match(bootstrap, /const DEPTH_VISUALS = Object\.freeze\(\{[\s\S]*1: Object\.freeze\(\{ haze: 0, saturation: 1, contrast: 1, blurPx: 0, coolTint: 0, shadowStrength: 1, movementMultiplier: 1 \}\)[\s\S]*5: Object\.freeze\(\{ haze: 0\.06, saturation: 0\.92, contrast: 0\.91, blurPx: 0\.35, coolTint: 0\.05, shadowStrength: 0\.55, movementMultiplier: 0\.92 \}\)/);
   assert.match(bootstrap, /depthEffectLevel: DEPTH_EFFECT_LEVEL_DEFAULT/);
@@ -3797,7 +3807,8 @@ test("aquarium depth effects use one five-layer configuration and continuous sub
   assert.match(depth, /function drawContinuousTankDepthSubstrateSoftness\(\)[\s\S]*Intentionally no-op/);
   assert.match(depth, /globalCompositeOperation = "source-over"/);
   assert.doesNotMatch(depth, /context\.filter\s*=\s*`blur\(/);
-  assert.match(fish, /getTankDepthTreatedImage\(sprite\.renderImage, depthLayer\)/);
+  assert.match(fish, /const renderImage = layerMotion\?\.preserveColor === true[\s\S]*getFishTintedImage\(sprite\.path \|\| imagePath, sprite\.sourceImage, fish\)/);
+  assert.match(fish, /getTankDepthTreatedImage\(renderImage, depthLayer\)/);
   assert.match(decor, /const depthLayer = getDecorTankLayer\(item\)[\s\S]*drawTankDepthAwareImageToContext\(/);
   assert.match(depth, /function drawTankDepthAwareImageToContext/);
   assert.match(depth, /No treated pixel may be drawn[\s\S]*drawPass\(Math\.max\(objectTop, waterlineY\), objectBottom, depthImage, "depth"\)/);
@@ -3931,7 +3942,7 @@ test("ordinary rear fish are occluded before cave-authorized fish enter the cave
   const water = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
   assert.match(
     water,
-    /drawDecor\(layer, now, \{ pass: "cave-back" \}\);[\s\S]*excludeCaveInterior: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-back" \}\);[\s\S]*caveInteriorOnly: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front" \}\)/
+    /drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\);[\s\S]*excludeCaveInterior: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\);[\s\S]*caveInteriorOnly: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front"(?:, frameCache: decorRenderFrame)? \}\)/
   );
 });
 
@@ -3957,8 +3968,8 @@ test("selling an occupied tank stores living contents while dead fish are donate
 });
 
 test("BubbleBodega search is scoped by the active category without a native scope dropdown", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const websurfStore = getWebSurfStoreSource();
 
@@ -3974,7 +3985,7 @@ test("BubbleBodega search is scoped by the active category without a native scop
 });
 
 test("BubbleBodega initial navigation controls do not preselect a category", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
 
   assert.match(html, /id="tankazonAllCategories"[^>]*class="tankazon-all-categories"[^>]*aria-pressed="false"/);
@@ -3988,7 +3999,7 @@ test("BubbleBodega initial navigation controls do not preselect a category", () 
 });
 
 test("BubbleBodega section title bars stay in All Categories and the Equipment tab only", () => {
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const websurfStore = getWebSurfStoreSource();
   const c = loadTankazonFunctions(["shouldShowTankazonSectionHeading"], {});
 
@@ -4008,14 +4019,14 @@ test("BubbleBodega section title bars stay in All Categories and the Equipment t
 });
 
 test("the toolbar toggles Settings closed without routing back to WebSurf Home", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const settings = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
   const tutorial = fs.readFileSync(path.join(root, "tutorial/flow.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   const storeHandlerStart = events.indexOf('dom.openStoreButton.addEventListener("click"');
   const storeHandlerEnd = events.indexOf("\n  dom.toolbarTab?", storeHandlerStart);
   const storeHandler = events.slice(storeHandlerStart, storeHandlerEnd);
@@ -4044,7 +4055,7 @@ test("the toolbar toggles Settings closed without routing back to WebSurf Home",
 });
 
 test("WebSurf Settings account actions keep deliberate spacing at the locked desktop ratio", () => {
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-account-data-actions\s*\{[\s\S]*grid-template-columns:\s*132px 132px 150px;[\s\S]*gap:\s*14px;/);
   assert.match(styles, /#settingsOverlay\.websurf-settings-page \.settings-data-actions \.small-button\s*\{[\s\S]*justify-content:\s*center;[\s\S]*column-gap:\s*7px;/);
   assert.match(styles, /#settingsOverlay\.websurf-settings-page \.cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px;/);
@@ -4053,8 +4064,8 @@ test("WebSurf Settings account actions keep deliberate spacing at the locked des
 });
 
 test("WebSurf Settings uses the full browser-page redesign without changing its controls", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(html, /class="settings-panel-copy websurf-settings-heading"/);
   assert.doesNotMatch(html, /class="websurf-settings-brand-icon"/);
@@ -4071,13 +4082,13 @@ test("WebSurf Settings uses the full browser-page redesign without changing its 
 });
 
 test("WebSurf dark mode supports Auto Yes No and themes first-party WebSurf pages", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const settings = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const actions = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
   const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(html, /id="webSurfThemeModeSelect"[\s\S]*value="auto">Auto<[\s\S]*value="yes">Yes<[\s\S]*value="no">No</);
   assert.match(bootstrap, /const WEBSURF_THEME_MODE_AUTO = "auto"/);
@@ -4098,14 +4109,14 @@ test("WebSurf dark mode supports Auto Yes No and themes first-party WebSurf page
 });
 
 test("Game Settings exposes Complex Turning and defaults universal v26 turns on", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const customization = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const events = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const motion = fs.readFileSync(path.join(root, "fish/predators-and-motion.js"), "utf8");
   const meals = fs.readFileSync(path.join(root, "fish/meals-and-needs.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(html, /for="complexTurnAnimationsToggleInput"/);
   assert.match(html, />Complex Turning</);
@@ -4122,8 +4133,8 @@ test("Game Settings exposes Complex Turning and defaults universal v26 turns on"
 });
 
 test("WebSurf Phase 5 keeps Home, mail, Settings, and browser chrome in desktop geometry under Ratio Lock", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(html, /styles\.css\?v=[^"]+/);
   assert.match(styles, /html\[data-layout-ratio-lock="true"\] \.store-overlay\.tankazon-store\s*\{[\s\S]*?position:\s*absolute;[\s\S]*?display:\s*grid;[\s\S]*?padding:\s*clamp\(8px, 1\.2%, 14px\);/);
@@ -4142,7 +4153,7 @@ test("WebSurf Phase 5 keeps Home, mail, Settings, and browser chrome in desktop 
 
 
 test("WebSurf account actions keep vertical clearance below the top action row", () => {
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(styles, /settings-account-data-actions[\s\S]*grid-template-columns:\s*132px 132px 150px/);
   assert.match(styles, /settings-account-data-actions[\s\S]*gap:\s*14px/);
   assert.match(styles, /cloud-account-dashboard\s*\{[\s\S]*margin-top:\s*20px/);
@@ -5693,6 +5704,7 @@ test("Phase 19 mood depth preferences choose protected, social, hostile, and pan
     "getFishMoodDepthPreference"
   ], {
     state,
+    getFishByIdFast: id => state.fish.find(fish => fish.id === id) || null,
     runtime,
     TANK_DEPTH_POSITIONS: 15,
     TANK_SUBLAYER_FRONT: 1,
@@ -5962,7 +5974,7 @@ test("Phase 21 final integration keeps every prior system wired to the shared si
 });
 
 test("Phase 22 full fish roster has stable identities plus explicit social size coverage", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   const davy = load("store/catalog.js", ["getDavyMutationCatalogDefinitions"], {}).getDavyMutationCatalogDefinitions();
   const all = [...catalog.fish, ...davy];
   const ids = all.map((fish) => fish.id);
@@ -6272,7 +6284,7 @@ test("Phase 22 regression matrix keeps the major fish systems connected", () => 
   assert.match(caves, /getFishCaveInsideMoodSubLayer/);
   assert.match(layout, /function getDecorCollisionSubLayers/);
   assert.match(caves, /getFishCollisionRightOfWayDecision/);
-  assert.match(tankRender, /drawFish\(now, layer, \{ excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK[^}]*\}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base" \}\)[\s\S]*TANK_SUBLAYER_FRONT/);
+  assert.match(tankRender, /drawFish\(now, layer, \{ excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK[^}]*\}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*TANK_SUBLAYER_FRONT/);
   assert.match(renderFish, /tankSubLayer|TankSubLayer|subLayer/);
   assert.match(machinery, /findSubmarineCareCandidate/);
   assert.match(schooling, /OTOCINCLUS_DAILY_COIN_FIND_CAP/);
@@ -7425,7 +7437,7 @@ test("Dead Fish Phase 13 removes the floating skull indicator while preserving t
 
 test("Dead Fish Phase 13 removes only the old death indicator and leaves corpse rendering intact", () => {
   const rendering = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   assert.match(rendering, /getDeadFishCorpseRenderState/, "corpse pose and passive-motion rendering must remain active");
   assert.match(rendering, /drawDeadFishEyeTreatment\(tankContext, fish, imagePath, fishDrawX, width, height, now\)/, "Phase 9's optional eye treatment must remain intact");
   assert.match(rendering, /if \(pose\.isDead && !pose\.isBeingConsumed\)/, "dead-fish presentation should still be keyed from the corpse state");
@@ -7504,7 +7516,7 @@ test("Dead Fish Phase 14 disposal and dead-fish storage clear corpse runtime wit
 
 test("Dead Fish Phase 14 completed piranha consumption removes the corpse and its runtime state cleanly", () => {
   const health = fs.readFileSync(path.join(root, "fish/health.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   assert.match(health, /function finalizePiranhaConsumedFish\([\s\S]*clearRemovedDeadFishRuntimeState\(fish\)/);
   assert.match(health, /preserveTankDirtinessThroughChange\(now, removeConsumedFish\)/);
   assert.match(health, /state\.fish = state\.fish\.filter\(\(fish\) => !consumedIds\.has\(fish\.id\)\)/);
@@ -7612,7 +7624,7 @@ test("Dead Fish Phase 15 revive restores an ordinary living fish state instead o
 
 test("Dead Fish Phase 15 routes Debug Revive All through the same corpse cleanup path", () => {
   const debugTools = fs.readFileSync(path.join(root, "debug/tools.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   assert.match(debugTools, /function reviveFishForDebug\([\s\S]*clearRevivedFishCorpseState\(fish, now\)/);
   assert.match(debugTools, /function restoreAllFishHealthDebug\([\s\S]*reviveFishForDebug\(fish, now\)/);
   assert.match(debugTools, /function clearRevivedFishCorpseState\(/);
@@ -7750,7 +7762,7 @@ test("Dead Fish Phase 16 sanitizes corpse persistence and flushes it before loca
   const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
   const saving = fs.readFileSync(path.join(root, "tank/events-recaps-and-save.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   assert.match(layout, /function sanitizeDeadFishCorpsePersistence\(/);
   assert.match(layout, /const spawnY = clamp\(Number\(fish\.yNorm\) \|\| randomSwimY\(\), dead \? 0\.12 : 0\.14, 0\.8\)/);
   for (const field of ["corpseStage", "corpseRotation", "corpseSurfaceYNorm", "corpseStableAngleOffset", "corpseDriftDirection", "corpseSeed", "corpseCaveState"]) {
@@ -7836,7 +7848,7 @@ test("Dead Fish Phase 17 ships a miniature atlas for every fish sprite sheet", (
   for (const sheet of fishSheets) {
     const compactPath = String(sheet.path).replace(/^assets\/fish\//i, "assets/fish/small_fish/");
     assert.ok(definitions.some(entry => entry.path === compactPath), `missing compact atlas definition for ${sheet.path}`);
-    assert.equal(fs.existsSync(path.join(__dirname, "..", compactPath)), true, `missing compact atlas for ${sheet.path}`);
+    assert.equal(fs.existsSync(path.join(__dirname, "..", "game", compactPath)), true, `missing compact atlas for ${sheet.path}`);
   }
 });
 
@@ -7861,7 +7873,7 @@ test("Dead Fish Phase 17 Borough corpse pose reads the real corpse state instead
 
 test("Dead Fish Phase 17 Borough renderer includes corpses but bypasses living miniature navigation for them", () => {
   const overview = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   assert.match(overview, /const fishList = Array\.isArray\(tank\?\.fish\) \? tank\.fish : \[\];/);
   assert.match(overview, /const position = dead\s*\? getBoroughOverviewDeadFishPosition\(fish, now\)\s*:\s*getBoroughOverviewFishPosition\(fish, now\)/);
   assert.match(overview, /getBoroughOverviewSmallFishImage\(imagePath\)/);
@@ -8086,7 +8098,7 @@ test("Dead Fish Phase 19 swaps only corpse asset resolution while retaining shar
   const overview = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const full = fs.readFileSync(path.join(root, "rendering/fish-and-effects.js"), "utf8");
   const corpse = fs.readFileSync(path.join(root, "fish/corpse-motion.js"), "utf8");
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
 
   assert.match(overview, /getBoroughOverviewSmallFishImage\(imagePath\)/, "Borough renderer should use the compact fish atlas");
   assert.match(full, /runtime\.images\.get\(imagePath\)/, "full renderer should continue using the full-resolution fish asset");
@@ -8238,7 +8250,7 @@ test("Dead Fish Phase 21 preserves cooldown/history fields while canceling activ
 });
 
 test("Dead Fish Phase 21 enters corpse state before living AI can resume on the next motion frame", () => {
-  const bundle = fs.readFileSync(path.join(__dirname, "../public/app.js"), "utf8");
+  const bundle = fs.readFileSync(path.join(__dirname, "../game/public/app.js"), "utf8");
   const motion = bundle.match(/function updateFishMotion\(now, deltaSeconds\)[\s\S]*?\n\}/)?.[0] || "";
   const deadBranch = motion.indexOf("if (fishDead) {");
   const corpseUpdate = motion.indexOf("updateDeadFishCorpseMotion(fish, species, now, deltaSeconds);", deadBranch);
@@ -9090,6 +9102,7 @@ test("Proteus Zombie Fish aggression is intermittent physical damage only and st
   let peaceful = false;
   const c = load("fish/predators-and-motion.js", ["clearProteusZombieAggression", "getProteusZombieAggressionCandidates", "updateProteusZombieFishAggression"], {
     state,
+    getFishByIdFast: id => state.fish.find(fish => fish.id === id) || null,
     isProteusZombieFish: fish => fish?.speciesId === "proteus-zombie-fish",
     isFishDead: fish => fish?.lifeState === "dead",
     isPeacefulModeEnabled: () => peaceful,
@@ -9278,7 +9291,7 @@ test("Proteus Z-01 complimentary claim cannot bypass the classified authenticati
 });
 
 test("Plan B WebSurf sites expose shared compact header hooks", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const bankSource = fs.readFileSync(path.join(root, "ui/management-and-overlays.js"), "utf8");
   assert.match(html, /data-websurf-site-header="store"/);
   assert.match(html, /data-websurf-site-header="proteus"/);
@@ -9298,7 +9311,7 @@ test("Plan B WebSurf compact chrome is scroll-driven with hysteresis while Prote
 });
 
 test("BubbleBodega no longer renders Back to Top navigation", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const source = fs.readFileSync(path.join(root, "decor/customization.js"), "utf8");
   const bindings = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
@@ -9309,7 +9322,7 @@ test("BubbleBodega no longer renders Back to Top navigation", () => {
 });
 
 test("Plan B compact layout rules cover Bank, Davy and BubbleBodega while Proteus stays full-size", () => {
-  const css = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const css = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(css, /\.tankazon-header\.websurf-site-header\.is-collapsed/);
   assert.match(css, /\.bubble-bank-window-header\.websurf-site-header\.is-collapsed/);
   assert.doesNotMatch(css, /\.proteus-biodyne-header\.websurf-site-header\.is-collapsed \{[\s\S]{0,160}min-height: 46px/);
@@ -9399,7 +9412,7 @@ test("Plan B Phase 2 virtual window mounts only nearby rows and leaves distant c
 
 
 test("Plan B Phase 3 food packages stay in one save inventory bucket and remain distinct BubbleBodega products", () => {
-  const foodCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/foodandmeds/food-and-meds.json"), "utf8"));
+  const foodCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/foodandmeds/food-and-meds.json"), "utf8"));
   const renderingSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const purchaseSource = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const saveSource = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
@@ -9423,7 +9436,7 @@ test("Plan B Phase 3 food packages stay in one save inventory bucket and remain 
 
 test("Plan B Phase 3 starter balance keeps first food purchase affordable", () => {
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
-  const foodCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/foodandmeds/food-and-meds.json"), "utf8"));
+  const foodCatalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/foodandmeds/food-and-meds.json"), "utf8"));
   assert.match(bootstrap, /const STARTING_COINS = 20;/);
   assert.match(bootstrap, /const TUTORIAL_BASIC_FOOD_REWARD_COUNT = 5;/);
   assert.equal(foodCatalog.food.basic.packages[0].cost, 5);
@@ -9489,7 +9502,7 @@ test("tank editor camera movement bypasses the idle animation frame cap", () => 
 });
 
 test("Expansion Phase 1 species catalog carries durable biology and population metadata", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8").replace(/^\uFEFF/, ""));
   assert.equal(catalog.fish.length >= 39, true);
   for (const fish of catalog.fish) {
     assert.ok(["freshwater", "saltwater"].includes(fish.waterType), `${fish.id} waterType`);
@@ -9713,8 +9726,8 @@ test("Expansion Phase 4 BubbleBodega auto-selects a removable visible water face
   const catalog = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
   const fishShop = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const decorShop = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
-  const facets = fs.readFileSync(path.join(__dirname, "../public/store-facets.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const facets = fs.readFileSync(path.join(__dirname, "../game/public/store-facets.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(catalog, /"Water type"/);
   assert.doesNotMatch(fishShop, /waterFilterEnabled/);
@@ -9810,7 +9823,7 @@ test("Expansion Phase 5 water conversion stays in Edit Tank and consumes exactly
 test("Expansion Phase 5 water-type choice opens a usable conversion dialog instead of hiding confirmation below the fixed tray", () => {
   const ui = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
   const bindings = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
 
   assert.match(bindings, /openWaterConversionDialog\(requestWaterButton\.dataset\.requestWaterConversion\)/);
   assert.match(ui, /dialog\.dataset\.waterConversionDialog = "true"/);
@@ -9936,7 +9949,7 @@ test("Expansion Phase 5 living decor deactivates in incompatible water and react
 });
 
 test("Expansion Phase 5 exposes Water Type controls and keeps Water Care purchases separate from conversion", () => {
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   const ui = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
   const purchases = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
   const bindings = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
@@ -9977,7 +9990,7 @@ test("Expansion Phase 6 formalizes conditions, recovery timers, and v55 salinity
   const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
 
   assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /const CALMING_EFFECT_DURATION_MS = 10 \* MINUTE_MS;/);
@@ -10136,7 +10149,7 @@ test("Expansion Phase 6 Osmotic Stress progression stops in correct water and re
 });
 
 test("Expansion Phase 7 audits every first-party species with explicit adult and juvenile food lists", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8")).fish;
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8")).fish;
   assert.equal(catalog.length, 54);
   for (const species of catalog) {
     assert.ok(["omnivore", "carnivore", "herbivore", "detritus", "chum", "none"].includes(species.dietProfile), `${species.id} needs a diet profile`);
@@ -10182,7 +10195,7 @@ test("Expansion Phase 7 feeding uses authored species foods while Spawning Food 
 });
 
 test("Expansion Phase 7 standardizes bulk foods at 20, 75, and 200 servings with improving value", () => {
-  const food = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/foodandmeds/food-and-meds.json"), "utf8")).food;
+  const food = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/foodandmeds/food-and-meds.json"), "utf8")).food;
   for (const id of ["basic", "algaeWafers", "brineShrimp", "carnivore", "chum"]) {
     const packages = food[id].packages;
     assert.deepEqual(packages.map((entry) => entry.servings), [20, 75, 200], `${id} package counts`);
@@ -10368,7 +10381,7 @@ test("Expansion Phase 9 persists breeding readiness, pending spawns, v57 migrati
   const layout = fs.readFileSync(path.join(root, "decor/layout-and-layers.js"), "utf8");
   const persistence = fs.readFileSync(path.join(root, "core/settings-and-persistence.js"), "utf8");
   const feeding = fs.readFileSync(path.join(root, "fish/feeding-and-medicine.js"), "utf8");
-  const html = fs.readFileSync(path.join(__dirname, "../index.html"), "utf8");
+  const html = fs.readFileSync(path.join(__dirname, "../game/index.html"), "utf8");
   assert.match(bootstrap, /const STATE_VERSION = 65;/);
   assert.match(bootstrap, /BREEDING_ATTEMPT_SUCCESS_CHANCE = 0\.65/);
   assert.match(layout, /breedingReadyUntil:/);
@@ -10739,7 +10752,7 @@ test("Phase 7 Weekly Report state and Bank presentation persist separately from 
 });
 
 test("Phase 8 marks exactly six real starter fish with four-coin pricing split across both water types", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8"));
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8"));
   const fish = Array.isArray(catalog?.fish) ? catalog.fish : [];
   const starterIds = fish.filter((entry) => entry?.starterFish === true).map((entry) => entry.id).sort();
   assert.deepEqual(starterIds, ["cardinal", "chromis", "firefish", "goldfish", "guppy", "tetra"]);
@@ -11979,8 +11992,8 @@ test("Phase 20 fish store progress message handles guaranteed and completed coll
 
 test("BubbleBodega fish appearance selectors stay as clean dots and never render lock thumbnails", () => {
   const renderSource = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
-  const selectorSource = fs.readFileSync(path.join(__dirname, "../public/store-variants.js"), "utf8");
-  const styles = fs.readFileSync(path.join(__dirname, "../public/styles.css"), "utf8");
+  const selectorSource = fs.readFileSync(path.join(__dirname, "../game/public/store-variants.js"), "utf8");
+  const styles = fs.readFileSync(path.join(__dirname, "../game/public/styles.css"), "utf8");
   assert.match(renderSource, /isDebugModeEnabled\(\)[\s\S]*getFishStoreVariantProgressMessage/,
     "variant-count/chance spoilers are debug-only in BubbleBodega");
   assert.match(selectorSource, /variant\.locked === true/);
@@ -12012,9 +12025,9 @@ test("BubbleBodega exposes only unlocked fish variants in normal play and all cu
 });
 
 test("Tetra regular collection contains only the current natural sprite-sheet variants", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8")).fish;
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8")).fish;
   const tetra = catalog.find(entry => entry.id === "tetra");
-  const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/tetra__genetics-natural.json"), "utf8"));
+  const metadata = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/tetra__genetics-natural.json"), "utf8"));
   const currentFrames = new Set(metadata.layers.flatMap(layer => layer.sprites || []).map(sprite => sprite.name));
   const catalogFrames = new Set((tetra.assetVariants || []).map(value => String(value).split("/").pop()));
   assert.deepEqual([...catalogFrames].sort(), [...currentFrames].sort(),
@@ -12547,7 +12560,7 @@ test("Second prompt Phase 3 proper groupmates are not rejected by legacy friends
 });
 
 test("Second prompt Phase 4 registers Lookdown with the existing four sprite variants", () => {
-  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../assets/fish/fish-types.json"), "utf8")).fish;
+  const catalog = JSON.parse(fs.readFileSync(path.join(__dirname, "../game/assets/fish/fish-types.json"), "utf8")).fish;
   const lookdown = catalog.find((fish) => fish.id === "lookdown");
   assert.ok(lookdown, "Lookdown must be a real catalog fish");
   assert.equal(lookdown.name, "Lookdown");
@@ -12578,8 +12591,8 @@ test("Second prompt Phase 4 registers Lookdown with the existing four sprite var
 
 test("Second prompt Phase 4 strips embedded Lookdown base64 while preserving sprite metadata", () => {
   for (const relative of [
-    "../assets/fish/lookdown__genetics-natural.json",
-    "../assets/fish/small_fish/lookdown__genetics-natural.json"
+    "../game/assets/fish/lookdown__genetics-natural.json",
+    "../game/assets/fish/small_fish/lookdown__genetics-natural.json"
   ]) {
     const text = fs.readFileSync(path.join(__dirname, relative), "utf8");
     const metadata = JSON.parse(text);

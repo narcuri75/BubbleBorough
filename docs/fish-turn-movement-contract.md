@@ -1,5 +1,7 @@
 # Fish Turn / Movement Integration Contract
 
+Game source and asset paths in this document are relative to game/, unless written as public URLs. Project tooling and documentation remain at the repository root.
+
 This document freezes the Bubble Borough fish-facing and turn lifecycle that existed before the v26 pseudo-3D turn renderer integration.
 
 The v26 renderer must be added behind these contracts. It must not become a second movement, targeting, collision, schooling, or interaction system.
@@ -233,7 +235,7 @@ The Phase 3 v26 backend is intentionally a parity renderer. Its 96 x 48 continuo
 - same canvas filter/tint context
 - no writes to `xNorm`, `yNorm`, tank layer, tank sublayer, collision pose, target, speed, schooling state, or behavior state
 
-The WebGL canvas is composited into the existing 2D tank render pass. During early integration phases, WebGL failure fell back to the legacy complex path; complex turning now preserves the live sprite until the mesh can render. This fallback is visual only and does not change the active movement contract.
+The WebGL canvas is composited into the existing 2D tank render pass. WebGL failure latches the animated lightweight sprite path for the remaining turn. This fallback is visual only and does not change the active movement contract.
 
 Phase 3 intentionally does not:
 
@@ -844,7 +846,7 @@ Phase 15 is the production state of the fish-turn system. **v26 is the productio
 
 The segmented 12-slice renderer, its canvas cache, its multi-second renderer-specific timing constants, and its caustic-mask renderer have been removed from the live code path. The renderer-neutral locomotion contract remains unchanged.
 
-If WebGL initialization, preprocessing, texture creation, or a v26 draw fails, the **live sprite remains visible while the mesh recovers**; the lightweight squash-and-flip turn is not reintroduced while complex turning is enabled. This preserves the already-started turn clock and authoritative movement state, and prevents a dark renderer handoff. The visual recovery never rewrites `xNorm`, `yNorm`, targets, depth, collision, feeding, cave state, schooling, or behavior ownership.
+If WebGL initialization, preprocessing, texture creation, or a v26 draw fails, the session latches the animated lightweight sprite fallback. It narrows before changing facing and expands on the destination side, rather than holding a full-width sprite and flipping at completion. The already-started turn clock and authoritative movement state remain intact. The visual recovery never rewrites `xNorm`, `yNorm`, targets, depth, collision, feeding, cave state, schooling, or behavior ownership.
 
 Production GPU work is asset-cached. Body and optional fin shape data remain asset-level caches, body/fin vertex buffers are shared by shape cache key, and WebGL body/fin textures are uploaded once per source image identity rather than once per fish per frame. A school of fish using the same artwork therefore reuses the same preprocessing and GPU resources.
 
@@ -859,9 +861,11 @@ The v26 mesh uses sprite UV coordinates with `v = 0` at the TOP of the Bubble Bo
 
 ## Phase 18 visual-pose continuity
 
-Phase 18 removes the visual handoff between normal swimming and the v26 turn mesh without changing authoritative movement. At turn start, the v26 session latches the fish's current steering tilt. The ordinary swim renderer remains visible beneath the mesh during a short entry overlap, so its existing climb/dive and body-wave presentation does not disappear on the frame that starts a reversal.
+At turn start, every renderer session latches the last visible local steering tilt. Normal swimming mirrors before rotating; turning rotates before applying its own facing. Turn rotation therefore uses world tilt (`localTilt * facing`) to match the swimming transform. This prevents a left-facing fish's climb/dive slope from reversing at entry.
 
-The v26 mesh then owns the middle of the 650 ms turn. During the final overlap window, it fades down while the normal swim renderer fades up using the destination-facing direction and current destination pose. The terminal-frame handshake remains unchanged: it still commits logical display-facing state only after v26 has drawn its terminal frame.
+The mesh owns the active turn without a sprite crossfade. World tilt blends smoothly from the latched source-facing slope to the current destination-facing slope throughout the turn. The terminal frame uses the destination swimming transform, and the terminal-frame handshake remains intact. Caustics and visual carry anchors follow the same world rotation. Simple and fallback turns use this continuity transform and own their squash once, rather than applying it again in the pose.
+
+V26-origin sessions retain a renderer-only clock in a runtime WeakMap. Each visible frame advances at most 50 ms, matching the movement loop's maximum step, and all passes at the same timestamp share the same progress. A stalled browser frame therefore cannot consume the whole turn between two images. The authoritative turn clock and `turnDurationMs` remain unchanged. Completion waits for the rendered terminal frame, including after a session latches the simple fallback. At ordinary frame rates this preserves the 650 ms animation; during severe stalls it extends the visual turn until its intermediate poses have actually been drawn.
 
 This phase is rendering-only. It does not change `xNorm`, `yNorm`, target selection, steering, collision, tank depth, schooling, feeding, cave behavior, or the turn clock. Caustic mask alignment and navigation routing are intentionally deferred to later phases.
 
@@ -928,3 +932,13 @@ Turnaround commitment now includes species timing, carried speed, and a body-len
 Schooling remains a single leader/follower behavior. The leader keeps one bounded rolling path history shared by the school. Followers sample delayed positions along that history, then apply their stable formation offsets as elastic regions rather than exact points. This makes a leader's turn propagate through the school instead of mirroring all slots instantly. Formations breathe with small stable offsets, pause reshaping during major maneuvers, preserve catch-up behavior, and continue to forbid reverse-swimming followers.
 
 Wall and decor anticipation remain steering aids rather than collision replacements. Lookahead now considers species profile, carried speed, and body scale. Wall avoidance prefers a sweeping tangent route before hard boundary correction. Existing collision and cave rules remain authoritative.
+
+## Swimming handoff corrections
+
+V26-origin reversal travel and movement release now read the same bounded runtime turn progress as the body renderer. This supersedes the earlier separation between the renderer's bounded clock and wall-clock locomotion progress: after a browser stall, the fish cannot launch toward the destination while its visible body is still on the source side. The chosen duration, wall-clock state reader, terminal-frame handshake, special owners and save format remain intact.
+
+The reversal controller updates the screen-space steering heading as it traverses its arc. Ordinary steering therefore resumes from the final reversal heading rather than rotating again from the obsolete entry heading.
+
+Decor hangouts and species hover bouts are arrival destinations. Cruise continuation clears its waypoint for those targets instead of extending them into another route. Hover bouts use the existing hangout zone field to retain that distinction until their target expires. Ordinary cruising retains its rolling waypoints; cave, feeding and emergency owners retain their established movement paths.
+
+The frame limiter discards missed render slots and retains only a fractional interval after a stall. It no longer builds a render backlog that makes it exceed its configured FPS limit during recovery. The profiler separately reports simulation and UI time within the one-second tick, since those callbacks can stall rendering outside the animation callback's measured work.

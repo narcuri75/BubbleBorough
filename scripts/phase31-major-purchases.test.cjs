@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 
 test('Phase 31 major purchase prices match the progression plan', () => {

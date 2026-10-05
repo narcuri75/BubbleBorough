@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (relative) => fs.readFileSync(path.join(ROOT, relative), 'utf8');
 const fishData = JSON.parse(read('assets/fish/fish-types.json')).fish;
 const byId = new Map(fishData.map((fish) => [fish.id, fish]));

@@ -6,7 +6,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const read = relative => fs.readFileSync(path.join(ROOT, relative), "utf8");
 const fishRenderSource = read("public/app-src/rendering/fish-and-effects.js");
 const tankSource = read("public/app-src/rendering/tank-and-water.js");
@@ -23,6 +23,7 @@ function load(source, name, stubs = {}) {
 
 test("portal exterior clip is a mouth-aligned half-plane, not a whole-sprite alpha fade", () => {
   const getPolygon = load(fishRenderSource, "getFishCavePortalExteriorClipPolygon", {
+    runtime: {},
     TANK_WIDTH: 1000,
     TANK_HEIGHT: 600,
     Math,
@@ -52,7 +53,7 @@ test("portal exterior clip is a mouth-aligned half-plane, not a whole-sprite alp
 
 test("render order redraws only the exterior portal body after cave front", () => {
   const sandwich = tankSource.slice(
-    tankSource.indexOf('drawDecor(layer, now, { pass: "cave-back" });', tankSource.indexOf('for (let layer')),
+    tankSource.indexOf('drawDecor(layer, now, { pass: "cave-back"', tankSource.indexOf('for (let layer')),
     tankSource.indexOf('drawPoops(now, layer);')
   );
   const interiorIndex = sandwich.indexOf('caveInteriorOnly: true');
@@ -62,6 +63,41 @@ test("render order redraws only the exterior portal body after cave front", () =
   assert.ok(interiorIndex >= 0 && frontIndex > interiorIndex && exteriorIndex > frontIndex && baseIndex > exteriorIndex);
   assert.match(fishRenderSource, /clipContextToFishCavePortalExterior\(tankContext, fish\)/);
   assert.match(fishRenderSource, /!cavePortalExteriorOverlayOnly && !pose\.isDead/);
+});
+
+test("missing portal coordinates cannot turn the exterior clip into a plane at zero", () => {
+  const getPolygon = load(fishRenderSource, "getFishCavePortalExteriorClipPolygon", {
+    runtime: {},
+    TANK_WIDTH: 1000, TANK_HEIGHT: 600,
+    isFishInCavePortalCrossing: () => true, getActiveFishCavePlan: () => null
+  });
+  const fish = { caveState: "portal-enter", cavePortalCrossingViaXNorm: null, cavePortalCrossingViaYNorm: null,
+    cavePortalCrossingStartXNorm: 0.5, cavePortalCrossingStartYNorm: 0.65,
+    cavePortalCrossingEndXNorm: 0.5, cavePortalCrossingEndYNorm: 0.35 };
+  const polygon = getPolygon(fish);
+  assert.ok(polygon);
+  assert.ok(Math.abs(polygon[0].y - 388) < 0.001, "fallback mouth uses the real entry start, not the origin");
+  fish.cavePortalCrossingStartYNorm = null;
+  assert.equal(getPolygon(fish), null);
+});
+
+test("a portal crossing keeps one clip plane when its cave plan is rebuilt or missing", () => {
+  let plan = { mouth: { xNorm: 0.5, yNorm: 0.5 } };
+  const getPolygon = load(fishRenderSource, "getFishCavePortalExteriorClipPolygon", {
+    runtime: {}, TANK_WIDTH: 1000, TANK_HEIGHT: 600,
+    isFishInCavePortalCrossing: () => true, getActiveFishCavePlan: () => plan
+  });
+  const fish = { caveDecorId: "pot", caveState: "portal-enter",
+    cavePortalCrossingViaXNorm: null, cavePortalCrossingViaYNorm: null,
+    cavePortalCrossingStartXNorm: 0.5, cavePortalCrossingStartYNorm: 0.65,
+    cavePortalCrossingEndXNorm: 0.5, cavePortalCrossingEndYNorm: 0.35 };
+  const first = getPolygon(fish);
+  plan = null;
+  assert.equal(getPolygon(fish), first);
+  plan = { mouth: { xNorm: 0.1, yNorm: 0.1 } };
+  assert.equal(getPolygon(fish), first, "an in-flight crossing does not switch clip planes");
+  fish.caveState = "portal-exit";
+  assert.notEqual(getPolygon(fish), first, "the next crossing receives a fresh plane");
 });
 
 test("portal crossing waits for a horizontal clearance turn to finish", () => {

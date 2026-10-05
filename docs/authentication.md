@@ -1,16 +1,27 @@
 # Supabase authentication redirects
 
-Bubble Borough uses `index.html` and the existing REST auth helper in
-`public/app-src/core/cloud-save.js`. No SDK client, auth listener, magic-link
+Bubble Borough uses `game/index.html` at `/play` and the existing REST auth helper in
+`game/public/app-src/core/cloud-save.js`. No SDK client, auth listener, magic-link
 button, or separate callback document is needed.
 
-Configure the hosted Supabase project with Site URL `https://bubbleborough.com/`
+For the new Node architecture, configure the hosted Supabase project with Site URL `https://bubbleborough.com/play`
 and these allowed redirect URLs:
 
 - https://bubbleborough.com/
 - https://bubbleborough.com/?auth=signup-confirmed
 - https://bubbleborough.com/?auth=email-changed
 - https://bubbleborough.com/?auth=recovery
+- https://bubbleborough.com/play
+- https://bubbleborough.com/play?auth=signup-confirmed
+- https://bubbleborough.com/play?auth=email-changed
+- https://bubbleborough.com/play?auth=recovery
+
+Keep the root entries for already-sent links. If `/play/` links were previously
+issued, keep those allowed too; Node normalizes them to `/play`. These hosted
+settings are a deployment requirement, not settings automatically changed by
+moving the repository. The public website safely hands recognized root query
+or fragment callbacks to `/play` without dropping URL information. Its standalone
+launch compatibility also keeps older installed applications entering the game.
 
 Signup, email change, and recovery requests supply their respective redirect.
 Keep authentication email links using Supabase's `{{ .ConfirmationURL }}` so
@@ -18,12 +29,14 @@ Supabase verifies the token before returning to the requested destination.
 Secure Email Change can remain enabled; the UI tells users to complete every
 required verification and does not claim completion while `new_email` remains.
 
-Administrative invitations should use `redirectTo: 'https://bubbleborough.com/'`
+New administrative invitations should use `redirectTo: 'https://bubbleborough.com/play'`
 and the Supabase confirmation link. Invite callbacks open ordinary Sign In /
-Create Account / Forgot Password. Player invitations must not use admin auth APIs.
+Create Account / Forgot Password. Existing server-side friend invitations still
+returning to `/` remain compatible through the handoff. Browser clients must
+never receive administrative credentials.
 
 For Password Changed and Email Address Changed security notifications, link to
-`https://bubbleborough.com/` for sign-in/account access. A plain recovery URL is
+`https://bubbleborough.com/play` for sign-in/account access. A plain recovery URL is
 not a recovery credential: it shows instructions to request a fresh email using
 Forgot Password. Never link to reset.html, confirm.html, or other absent files.
 

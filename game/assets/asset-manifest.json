@@ -1,0 +1,2800 @@
+{
+  "backgrounds": [
+    {
+      "key": "Abyssal_Pillars.webp",
+      "path": "assets/backgrounds/Abyssal_Pillars.webp?v=307a842575e4"
+    },
+    {
+      "key": "Blue_Rock_Canyon.webp",
+      "path": "assets/backgrounds/Blue_Rock_Canyon.webp?v=b4640d2e5856"
+    },
+    {
+      "key": "Coral_Shelf_Reef.webp",
+      "path": "assets/backgrounds/Coral_Shelf_Reef.webp?v=e5d1a054f6e4"
+    },
+    {
+      "key": "Emerald_Aquascape.webp",
+      "path": "assets/backgrounds/Emerald_Aquascape.webp?v=0faccdfb5de4"
+    },
+    {
+      "key": "Forest_Stream.webp",
+      "path": "assets/backgrounds/Forest_Stream.webp?v=a42b1b8c2b63"
+    },
+    {
+      "key": "Halloween_Haunted_Kelp_Forest.webp",
+      "path": "assets/backgrounds/Halloween_Haunted_Kelp_Forest.webp?v=410c99c9bbbf"
+    },
+    {
+      "key": "Mangrove_Passage.webp",
+      "path": "assets/backgrounds/Mangrove_Passage.webp?v=ba2e3a48ad7b"
+    },
+    {
+      "key": "Riverbed_Driftwood.webp",
+      "path": "assets/backgrounds/Riverbed_Driftwood.webp?v=3f5eed5af9b9"
+    },
+    {
+      "key": "Shadow_Slate.webp",
+      "path": "assets/backgrounds/Shadow_Slate.webp?v=2f94af73ebf4"
+    },
+    {
+      "key": "Sunken_Ruins.webp",
+      "path": "assets/backgrounds/Sunken_Ruins.webp?v=3ab6a39dadd9"
+    },
+    {
+      "key": "Sunken_Saucer.webp",
+      "path": "assets/backgrounds/Sunken_Saucer.webp?v=82b24a558572"
+    },
+    {
+      "key": "Volcanic_Caverns.webp",
+      "path": "assets/backgrounds/Volcanic_Caverns.webp?v=26d6dd9a661e"
+    },
+    {
+      "key": "Volcanic_Passage.webp",
+      "path": "assets/backgrounds/Volcanic_Passage.webp?v=905d01447473"
+    },
+    {
+      "key": "Volcanic_Rock_Reef.webp",
+      "path": "assets/backgrounds/Volcanic_Rock_Reef.webp?v=c47320fd980a"
+    }
+  ],
+  "decor": [
+    {
+      "key": "amazon-sword__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/amazon-sword__plant__theme-natural__shadow-footprint.webp?v=3c97ea3c69e5"
+    },
+    {
+      "key": "amazon-sword__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/amazon-sword__plant__theme-natural.webp?v=90cd8bec7200"
+    },
+    {
+      "key": "anubias-rock__plant-rock__theme-natural__color2.webp",
+      "path": "assets/decor/anchored_sway/anubias-rock__plant-rock__theme-natural__color2.webp?v=b3f2a01633ea"
+    },
+    {
+      "key": "anubias-rock__plant-rock__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/anubias-rock__plant-rock__theme-natural.webp?v=fb7501c03249"
+    },
+    {
+      "key": "bacopa__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/bacopa__plant__theme-natural__shadow-footprint.webp?v=6cd34f0380fe"
+    },
+    {
+      "key": "bacopa__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/bacopa__plant__theme-natural.webp?v=0962848ca701"
+    },
+    {
+      "key": "bronze-red-crypt__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/bronze-red-crypt__plant__theme-natural__shadow-footprint.webp?v=d1a177888acc"
+    },
+    {
+      "key": "bronze-red-crypt__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/bronze-red-crypt__plant__theme-natural.webp?v=99931681c44d"
+    },
+    {
+      "key": "cabomba__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/cabomba__plant__theme-natural.webp?v=696a1ba654eb"
+    },
+    {
+      "key": "cryptocoryne__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/cryptocoryne__plant__theme-natural__shadow-footprint.webp?v=f46e679b9dfa"
+    },
+    {
+      "key": "cryptocoryne__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/cryptocoryne__plant__theme-natural.webp?v=b5b40201aedf"
+    },
+    {
+      "key": "halloween-seaweed__plant__theme-halloween.webp",
+      "path": "assets/decor/anchored_sway/halloween-seaweed__plant__theme-halloween.webp?v=cd9773763ada"
+    },
+    {
+      "key": "hammer-coral__coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/hammer-coral__coral__theme-reef__shadow-footprint.webp?v=7aa2dd4b3461"
+    },
+    {
+      "key": "hammer-coral__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/hammer-coral__coral__theme-reef.webp?v=7f0770b00953"
+    },
+    {
+      "key": "hornwort__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/hornwort__plant__theme-natural.webp?v=3b449257eaf8"
+    },
+    {
+      "key": "java-fern-cluster__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/java-fern-cluster__plant__theme-natural__shadow-footprint.webp?v=caeb1359a33b"
+    },
+    {
+      "key": "java-fern-cluster__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/java-fern-cluster__plant__theme-natural.webp?v=a11a9329b493"
+    },
+    {
+      "key": "java-moss__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/java-moss__plant__theme-natural__shadow-footprint.webp?v=8022da9169a0"
+    },
+    {
+      "key": "java-moss__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/java-moss__plant__theme-natural.webp?v=6f4e293684c4"
+    },
+    {
+      "key": "large-mushroom-coral__coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/large-mushroom-coral__coral__theme-reef__shadow-footprint.webp?v=495f02f35720"
+    },
+    {
+      "key": "large-mushroom-coral__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/large-mushroom-coral__coral__theme-reef.webp?v=8999ce21bae4"
+    },
+    {
+      "key": "leather-coral__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/leather-coral__coral__theme-reef.webp?v=8a6f66af0739"
+    },
+    {
+      "key": "ludwigia__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/ludwigia__plant__theme-natural.webp?v=8958a4617379"
+    },
+    {
+      "key": "macroalgae__plant__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/macroalgae__plant__theme-reef.webp?v=0e9c9c0ad454"
+    },
+    {
+      "key": "marimo-moss-ball__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural__shadow-footprint.webp?v=5b4f379e5f71"
+    },
+    {
+      "key": "marimo-moss-ball__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/marimo-moss-ball__plant__theme-natural.webp?v=f0763e1c618e"
+    },
+    {
+      "key": "monte-carlo-carpet__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/monte-carlo-carpet__plant__theme-natural.webp?v=9a9ec3e2af00"
+    },
+    {
+      "key": "mushroom-coral-colony__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/mushroom-coral-colony__coral__theme-reef.webp?v=a0e1808da91e"
+    },
+    {
+      "key": "red-stem__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/red-stem__plant__theme-natural__shadow-footprint.webp?v=286dfbddc167"
+    },
+    {
+      "key": "red-stem__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/red-stem__plant__theme-natural.webp?v=c02250a9920b"
+    },
+    {
+      "key": "rotala__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/rotala__plant__theme-natural.webp?v=73762029521e"
+    },
+    {
+      "key": "sea-anemone__coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/sea-anemone__coral__theme-reef__shadow-footprint.webp?v=6b2da9f9b18b"
+    },
+    {
+      "key": "sea-anemone__coral__theme-reef__v2__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/sea-anemone__coral__theme-reef__v2__shadow-footprint.webp?v=eed9bf71e1e0"
+    },
+    {
+      "key": "sea-anemone__coral__theme-reef__v2.webp",
+      "path": "assets/decor/anchored_sway/sea-anemone__coral__theme-reef__v2.webp?v=036fcc1a348f"
+    },
+    {
+      "key": "sea-anemone__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/sea-anemone__coral__theme-reef.webp?v=cb709dcd16e8"
+    },
+    {
+      "key": "sea-fan-gorgonian__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/sea-fan-gorgonian__coral__theme-reef.webp?v=b51c0dbcad3f"
+    },
+    {
+      "key": "seaweed__plant__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/seaweed__plant__theme-reef.webp?v=1d9b3bcea3db"
+    },
+    {
+      "key": "seaweed-bunch__plant__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/seaweed-bunch__plant__theme-reef.webp?v=6f76c11e40b9"
+    },
+    {
+      "key": "small-moss-patch__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/small-moss-patch__plant__theme-natural__shadow-footprint.webp?v=60db40388ed9"
+    },
+    {
+      "key": "small-moss-patch__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/small-moss-patch__plant__theme-natural.webp?v=6de2195b841a"
+    },
+    {
+      "key": "tiger-lotus__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/tiger-lotus__plant__theme-natural__shadow-footprint.webp?v=aa6085e98688"
+    },
+    {
+      "key": "tiger-lotus__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/tiger-lotus__plant__theme-natural.webp?v=7a246daea713"
+    },
+    {
+      "key": "torch-coral__coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/torch-coral__coral__theme-reef__shadow-footprint.webp?v=eb38ad6c2c97"
+    },
+    {
+      "key": "torch-coral__coral__theme-reef.webp",
+      "path": "assets/decor/anchored_sway/torch-coral__coral__theme-reef.webp?v=2df7c013d2af"
+    },
+    {
+      "key": "vallisneria-clump__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/vallisneria-clump__plant__theme-natural.webp?v=c9f88ce14b54"
+    },
+    {
+      "key": "vallisneria-cutout__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/vallisneria-cutout__plant__theme-natural.webp?v=d00836d02e14"
+    },
+    {
+      "key": "water-wisteria__plant__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/anchored_sway/water-wisteria__plant__theme-natural__shadow-footprint.webp?v=276709d66f30"
+    },
+    {
+      "key": "water-wisteria__plant__theme-natural.webp",
+      "path": "assets/decor/anchored_sway/water-wisteria__plant__theme-natural.webp?v=ae4fbdea8a3d"
+    },
+    {
+      "key": "frozen-bubbler__bubbler__theme-frozen.webp",
+      "path": "assets/decor/bubbler/frozen-bubbler__bubbler__theme-frozen.webp?v=3ccde3b01681"
+    },
+    {
+      "key": "halloween-cauldron__bubbler__theme-halloween__bg.webp",
+      "path": "assets/decor/bubbler/halloween-cauldron__bubbler__theme-halloween__bg.webp?v=5185e7435744"
+    },
+    {
+      "key": "halloween-cauldron__bubbler__theme-halloween__front.webp",
+      "path": "assets/decor/bubbler/halloween-cauldron__bubbler__theme-halloween__front.webp?v=ecad2196a319"
+    },
+    {
+      "key": "halloween-jack-o-lantern__bubbler__theme-halloween__bg.webp",
+      "path": "assets/decor/bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__bg.webp?v=6c79ec635894"
+    },
+    {
+      "key": "halloween-jack-o-lantern__bubbler__theme-halloween__front__color2.webp",
+      "path": "assets/decor/bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front__color2.webp?v=942ab9fefc06"
+    },
+    {
+      "key": "halloween-jack-o-lantern__bubbler__theme-halloween__front.webp",
+      "path": "assets/decor/bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front.webp?v=692c8fe1f990"
+    },
+    {
+      "key": "treasure-chest__bubbler__theme-treasure__bg.webp",
+      "path": "assets/decor/bubbler/treasure-chest__bubbler__theme-treasure__bg.webp?v=564721ec2475"
+    },
+    {
+      "key": "treasure-chest__bubbler__theme-treasure__front.webp",
+      "path": "assets/decor/bubbler/treasure-chest__bubbler__theme-treasure__front.webp?v=d6f2446508f5"
+    },
+    {
+      "key": "volcano__bubbler__theme-natural__bg.webp",
+      "path": "assets/decor/bubbler/volcano__bubbler__theme-natural__bg.webp?v=a6162e8d4b64"
+    },
+    {
+      "key": "volcano__bubbler__theme-natural__front.webp",
+      "path": "assets/decor/bubbler/volcano__bubbler__theme-natural__front.webp?v=e933b31b9e22"
+    },
+    {
+      "key": "volcano__bubbler__theme-natural__v2__bg.webp",
+      "path": "assets/decor/bubbler/volcano__bubbler__theme-natural__v2__bg.webp?v=c7e730798eb7"
+    },
+    {
+      "key": "volcano__bubbler__theme-natural__v2__front.webp",
+      "path": "assets/decor/bubbler/volcano__bubbler__theme-natural__v2__front.webp?v=989b4d49fa76"
+    },
+    {
+      "key": "blue-castle__cave__theme-fantasy__bg.webp",
+      "path": "assets/decor/cave_layered/blue-castle__cave__theme-fantasy__bg.webp?v=220e1df48dc0"
+    },
+    {
+      "key": "blue-castle__cave__theme-fantasy__front__color2.webp",
+      "path": "assets/decor/cave_layered/blue-castle__cave__theme-fantasy__front__color2.webp?v=4ce4f0351c14"
+    },
+    {
+      "key": "blue-castle__cave__theme-fantasy__front__color3.webp",
+      "path": "assets/decor/cave_layered/blue-castle__cave__theme-fantasy__front__color3.webp?v=ca6c2aebdcd3"
+    },
+    {
+      "key": "blue-castle__cave__theme-fantasy__front.webp",
+      "path": "assets/decor/cave_layered/blue-castle__cave__theme-fantasy__front.webp?v=43939b4d90de"
+    },
+    {
+      "key": "broken-pot-fragment__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/broken-pot-fragment__cave__theme-artificial__bg.webp?v=0b71aa390f7f"
+    },
+    {
+      "key": "broken-pot-fragment__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/broken-pot-fragment__cave__theme-artificial__front.webp?v=1164c880dfb2"
+    },
+    {
+      "key": "broken-terracotta-pot__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/broken-terracotta-pot__cave__theme-artificial__bg.webp?v=49d0491e90d8"
+    },
+    {
+      "key": "broken-terracotta-pot__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/broken-terracotta-pot__cave__theme-artificial__front.webp?v=442bc9fa8262"
+    },
+    {
+      "key": "ceramic-tube-cluster__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/ceramic-tube-cluster__cave__theme-artificial__bg.webp?v=6ef8d5aa759e"
+    },
+    {
+      "key": "ceramic-tube-cluster__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/ceramic-tube-cluster__cave__theme-artificial__front.webp?v=e67cb5690b9f"
+    },
+    {
+      "key": "clay-multi__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/clay-multi__cave__theme-artificial__bg.webp?v=f7b64698357a"
+    },
+    {
+      "key": "clay-multi__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/clay-multi__cave__theme-artificial__front.webp?v=35c51cdccc50"
+    },
+    {
+      "key": "coconut-shell-hideaway__cave__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/coconut-shell-hideaway__cave__theme-natural__bg.webp?v=49b2a80ce439"
+    },
+    {
+      "key": "coconut-shell-hideaway__cave__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/coconut-shell-hideaway__cave__theme-natural__front.webp?v=679a2560775c"
+    },
+    {
+      "key": "coral-shelf-1__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__bg.webp?v=26be6eda4cc2"
+    },
+    {
+      "key": "coral-shelf-1__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__front.webp?v=7111f7a174ef"
+    },
+    {
+      "key": "coral-shelf-1__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__surface.webp?v=15f43ebe8fc8"
+    },
+    {
+      "key": "coral-shelf-1__cave-coral__theme-reef__trypophobia__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.webp?v=515c37c011a8"
+    },
+    {
+      "key": "coral-shelf-10__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__bg.webp?v=9eb114248d79"
+    },
+    {
+      "key": "coral-shelf-10__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__front.webp?v=a5a6d094fb80"
+    },
+    {
+      "key": "coral-shelf-10__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__surface.webp?v=eb4a0c74e6fa"
+    },
+    {
+      "key": "coral-shelf-10__cave-coral__theme-reef__trypophobia__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.webp?v=a11bed7a4959"
+    },
+    {
+      "key": "coral-shelf-2__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-2__cave-coral__theme-reef__bg.webp?v=c98e98273ec2"
+    },
+    {
+      "key": "coral-shelf-2__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-2__cave-coral__theme-reef__front.webp?v=8f00c1c66cbb"
+    },
+    {
+      "key": "coral-shelf-2__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-2__cave-coral__theme-reef__surface.webp?v=2cd285a367b5"
+    },
+    {
+      "key": "coral-shelf-3__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-3__cave-coral__theme-reef__bg.webp?v=38726df61e59"
+    },
+    {
+      "key": "coral-shelf-3__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-3__cave-coral__theme-reef__front.webp?v=b7a84083caf7"
+    },
+    {
+      "key": "coral-shelf-3__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-3__cave-coral__theme-reef__surface.webp?v=3721093ae549"
+    },
+    {
+      "key": "coral-shelf-4__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-4__cave-coral__theme-reef__bg.webp?v=463ccd076755"
+    },
+    {
+      "key": "coral-shelf-4__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-4__cave-coral__theme-reef__front.webp?v=14a5b0f5aad4"
+    },
+    {
+      "key": "coral-shelf-4__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-4__cave-coral__theme-reef__surface.webp?v=5965969eca8a"
+    },
+    {
+      "key": "coral-shelf-5__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-5__cave-coral__theme-reef__bg.webp?v=577ecd83a90f"
+    },
+    {
+      "key": "coral-shelf-5__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-5__cave-coral__theme-reef__front.webp?v=05183d845b85"
+    },
+    {
+      "key": "coral-shelf-5__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-5__cave-coral__theme-reef__surface.webp?v=24daa32c4c4d"
+    },
+    {
+      "key": "coral-shelf-6__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__bg.webp?v=b23495521e7c"
+    },
+    {
+      "key": "coral-shelf-6__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp?v=af84a509dc0e"
+    },
+    {
+      "key": "coral-shelf-6__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__surface.webp?v=00c346dba503"
+    },
+    {
+      "key": "coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp?v=0e9d16f5f302"
+    },
+    {
+      "key": "coral-shelf-7__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-7__cave-coral__theme-reef__bg.webp?v=cc351c3e012b"
+    },
+    {
+      "key": "coral-shelf-7__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-7__cave-coral__theme-reef__front.webp?v=48916915f734"
+    },
+    {
+      "key": "coral-shelf-7__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-7__cave-coral__theme-reef__surface.webp?v=f8ceaeffb4c9"
+    },
+    {
+      "key": "coral-shelf-9__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__bg.webp?v=7be6cd6f9d69"
+    },
+    {
+      "key": "coral-shelf-9__cave-coral__theme-reef__front__color2.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__front__color2.webp?v=5d0da7d0aa85"
+    },
+    {
+      "key": "coral-shelf-9__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__front.webp?v=992aa5f100fb"
+    },
+    {
+      "key": "coral-shelf-9__cave-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__surface.webp?v=82bdfc4de75f"
+    },
+    {
+      "key": "coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.webp",
+      "path": "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.webp?v=df1e79207788"
+    },
+    {
+      "key": "coralline-live-rock__cave-rock-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__bg.webp?v=ff74b7c4e1b6"
+    },
+    {
+      "key": "coralline-live-rock__cave-rock-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__front.webp?v=b7aa09558b77"
+    },
+    {
+      "key": "coralline-live-rock__cave-rock-coral__theme-reef__surface.webp",
+      "path": "assets/decor/cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__surface.webp?v=c31f9fd4255c"
+    },
+    {
+      "key": "extra-narrow-pleco-tubes__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__bg.webp?v=b55839bb1a74"
+    },
+    {
+      "key": "extra-narrow-pleco-tubes__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__front.webp?v=14ad7389aa97"
+    },
+    {
+      "key": "frozen-cave__cave__theme-frozen__front.webp",
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__front.webp?v=c69ac37e5a14"
+    },
+    {
+      "key": "frozen-cave__cave__theme-frozen__v2__front.webp",
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp?v=c051a2ff5f06"
+    },
+    {
+      "key": "halloween-crypt__cave__theme-halloween__bg.webp",
+      "path": "assets/decor/cave_layered/halloween-crypt__cave__theme-halloween__bg.webp?v=2dfdd87259ef"
+    },
+    {
+      "key": "halloween-crypt__cave__theme-halloween__front__color2.webp",
+      "path": "assets/decor/cave_layered/halloween-crypt__cave__theme-halloween__front__color2.webp?v=199e6ad21c9b"
+    },
+    {
+      "key": "halloween-crypt__cave__theme-halloween__front.webp",
+      "path": "assets/decor/cave_layered/halloween-crypt__cave__theme-halloween__front.webp?v=f1b6b4e28e0f"
+    },
+    {
+      "key": "halloween-haunted-house__cave__theme-halloween__bg.webp",
+      "path": "assets/decor/cave_layered/halloween-haunted-house__cave__theme-halloween__bg.webp?v=6f0f569c0ab1"
+    },
+    {
+      "key": "halloween-haunted-house__cave__theme-halloween__front__color2.webp",
+      "path": "assets/decor/cave_layered/halloween-haunted-house__cave__theme-halloween__front__color2.webp?v=1fc8cfca8441"
+    },
+    {
+      "key": "halloween-haunted-house__cave__theme-halloween__front__color3.webp",
+      "path": "assets/decor/cave_layered/halloween-haunted-house__cave__theme-halloween__front__color3.webp?v=1a993bdbd6b2"
+    },
+    {
+      "key": "halloween-haunted-house__cave__theme-halloween__front.webp",
+      "path": "assets/decor/cave_layered/halloween-haunted-house__cave__theme-halloween__front.webp?v=16a9df35ead1"
+    },
+    {
+      "key": "hollow-mossy-driftwood__cave-wood__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__bg.webp?v=a76f439d7648"
+    },
+    {
+      "key": "hollow-mossy-driftwood__cave-wood__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__front.webp?v=9593978e44c1"
+    },
+    {
+      "key": "live-rock-cluster__cave-rock__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/live-rock-cluster__cave-rock__theme-reef__bg.webp?v=a791bc007cbc"
+    },
+    {
+      "key": "live-rock-cluster__cave-rock__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/live-rock-cluster__cave-rock__theme-reef__front.webp?v=95413f196b1e"
+    },
+    {
+      "key": "live-root-overhang__cave-wood__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/live-root-overhang__cave-wood__theme-natural__bg.webp?v=1401e37fbce6"
+    },
+    {
+      "key": "live-root-overhang__cave-wood__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/live-root-overhang__cave-wood__theme-natural__front.webp?v=f51e5a77eae4"
+    },
+    {
+      "key": "live-root-overhang__cave-wood__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/live-root-overhang__cave-wood__theme-natural__shadow-footprint.webp?v=0aa0a53abd3e"
+    },
+    {
+      "key": "mangrove-roots__cave-wood__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/mangrove-roots__cave-wood__theme-natural__bg.webp?v=3fecf136dd57"
+    },
+    {
+      "key": "mangrove-roots__cave-wood__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/mangrove-roots__cave-wood__theme-natural__front.webp?v=589466a0ebd7"
+    },
+    {
+      "key": "meteor__cave-rock__theme-space__bg.webp",
+      "path": "assets/decor/cave_layered/meteor__cave-rock__theme-space__bg.webp?v=1b38b9b5d379"
+    },
+    {
+      "key": "meteor__cave-rock__theme-space__front__color2.webp",
+      "path": "assets/decor/cave_layered/meteor__cave-rock__theme-space__front__color2.webp?v=c43e89eb0709"
+    },
+    {
+      "key": "meteor__cave-rock__theme-space__front.webp",
+      "path": "assets/decor/cave_layered/meteor__cave-rock__theme-space__front.webp?v=6453faba0893"
+    },
+    {
+      "key": "pvc-pipe__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/pvc-pipe__cave__theme-artificial__bg.webp?v=89f3d725ef92"
+    },
+    {
+      "key": "pvc-pipe__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/pvc-pipe__cave__theme-artificial__front.webp?v=6421bc38b576"
+    },
+    {
+      "key": "sea-anemone-1__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-1__cave-coral__theme-reef__bg.webp?v=9e3b901e819c"
+    },
+    {
+      "key": "sea-anemone-1__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-1__cave-coral__theme-reef__front.webp?v=6020a7d254fa"
+    },
+    {
+      "key": "sea-anemone-1__cave-coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-1__cave-coral__theme-reef__shadow-footprint.webp?v=39c20fecdec5"
+    },
+    {
+      "key": "sea-anemone-3__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-3__cave-coral__theme-reef__bg.webp?v=d9b33ce2f9f5"
+    },
+    {
+      "key": "sea-anemone-3__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-3__cave-coral__theme-reef__front.webp?v=c40751b6d05d"
+    },
+    {
+      "key": "sea-anemone-3__cave-coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-3__cave-coral__theme-reef__shadow-footprint.webp?v=dbb38b4686e4"
+    },
+    {
+      "key": "sea-anemone-4__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-4__cave-coral__theme-reef__bg.webp?v=d12cfc1a6b5c"
+    },
+    {
+      "key": "sea-anemone-4__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-4__cave-coral__theme-reef__front.webp?v=0fcd21d900a5"
+    },
+    {
+      "key": "sea-anemone-4__cave-coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/sea-anemone-4__cave-coral__theme-reef__shadow-footprint.webp?v=5aea1f6ecc64"
+    },
+    {
+      "key": "seashell-cluster__cave-coral__theme-reef__bg.webp",
+      "path": "assets/decor/cave_layered/seashell-cluster__cave-coral__theme-reef__bg.webp?v=1e0529a83610"
+    },
+    {
+      "key": "seashell-cluster__cave-coral__theme-reef__front.webp",
+      "path": "assets/decor/cave_layered/seashell-cluster__cave-coral__theme-reef__front.webp?v=7c51f555885a"
+    },
+    {
+      "key": "slate__cave-rock__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/slate__cave-rock__theme-natural__bg.webp?v=b93b69919916"
+    },
+    {
+      "key": "slate__cave-rock__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/slate__cave-rock__theme-natural__front.webp?v=f564d4d6d4e9"
+    },
+    {
+      "key": "slate-stack__cave-rock__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/slate-stack__cave-rock__theme-natural__bg.webp?v=61036c153619"
+    },
+    {
+      "key": "slate-stack__cave-rock__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/slate-stack__cave-rock__theme-natural__front.webp?v=36957845c709"
+    },
+    {
+      "key": "tangled-driftwood-rootscape__cave-wood__theme-natural__bg.webp",
+      "path": "assets/decor/cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__bg.webp?v=aeaa7631099c"
+    },
+    {
+      "key": "tangled-driftwood-rootscape__cave-wood__theme-natural__front.webp",
+      "path": "assets/decor/cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__front.webp?v=83d1e4b4fb8b"
+    },
+    {
+      "key": "tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.webp?v=cff4d935debe"
+    },
+    {
+      "key": "terracotta-pot__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__bg.webp?v=3b8285ffe533"
+    },
+    {
+      "key": "terracotta-pot__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__front.webp?v=5a982dd93711"
+    },
+    {
+      "key": "terracotta-pot__cave__theme-artificial__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/terracotta-pot__cave__theme-artificial__shadow-footprint.webp?v=903f19b0d960"
+    },
+    {
+      "key": "terracotta-tunnel__cave__theme-artificial__bg.webp",
+      "path": "assets/decor/cave_layered/terracotta-tunnel__cave__theme-artificial__bg.webp?v=a56a67a044e7"
+    },
+    {
+      "key": "terracotta-tunnel__cave__theme-artificial__front.webp",
+      "path": "assets/decor/cave_layered/terracotta-tunnel__cave__theme-artificial__front.webp?v=9a8c758e6ed9"
+    },
+    {
+      "key": "wizard-castle__cave__theme-fantasy__bg.webp",
+      "path": "assets/decor/cave_layered/wizard-castle__cave__theme-fantasy__bg.webp?v=d44ff2abff3d"
+    },
+    {
+      "key": "wizard-castle__cave__theme-fantasy__front__color2.webp",
+      "path": "assets/decor/cave_layered/wizard-castle__cave__theme-fantasy__front__color2.webp?v=05276af350f9"
+    },
+    {
+      "key": "wizard-castle__cave__theme-fantasy__front__color3.webp",
+      "path": "assets/decor/cave_layered/wizard-castle__cave__theme-fantasy__front__color3.webp?v=4c52c6cf4bcd"
+    },
+    {
+      "key": "wizard-castle__cave__theme-fantasy__front.webp",
+      "path": "assets/decor/cave_layered/wizard-castle__cave__theme-fantasy__front.webp?v=b4c2045c617c"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v2.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v2.webp?v=9bcd58520cf7"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v3.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v3.webp?v=27314b7ec843"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v4.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v4.webp?v=db52c242cab0"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v5.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v5.webp?v=bfe5d926023c"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v6.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v6.webp?v=affa272120e2"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial__v7.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial__v7.webp?v=e697c16a3333"
+    },
+    {
+      "key": "fishing-lure__lure__theme-artificial.webp",
+      "path": "assets/decor/ceiling_sway/fishing-lure__lure__theme-artificial.webp?v=3cc4234faad1"
+    },
+    {
+      "key": "halloween-gorebag__lure__theme-halloween.webp",
+      "path": "assets/decor/ceiling_sway/halloween-gorebag__lure__theme-halloween.webp?v=76e92e138e35"
+    },
+    {
+      "key": "frozen-glacier__rock__theme-frozen.webp",
+      "path": "assets/decor/floating_bob/frozen-glacier__rock__theme-frozen.webp?v=113a50b8d226"
+    },
+    {
+      "key": "frozen-iceberg__rock__theme-frozen.webp",
+      "path": "assets/decor/floating_bob/frozen-iceberg__rock__theme-frozen.webp?v=044b3406a2f3"
+    },
+    {
+      "key": "halloween-ghost__ornament__theme-halloween.webp",
+      "path": "assets/decor/floating_bob/halloween-ghost__ornament__theme-halloween.webp?v=98f0849bcdce"
+    },
+    {
+      "key": "halloween-skeleton__ornament__theme-halloween.webp",
+      "path": "assets/decor/floating_bob/halloween-skeleton__ornament__theme-halloween.webp?v=9f5200648de3"
+    },
+    {
+      "key": "halloween-webs__ornament__theme-halloween.webp",
+      "path": "assets/decor/floating_bob/halloween-webs__ornament__theme-halloween.webp?v=8718444a8bf5"
+    },
+    {
+      "key": "floating-lettuce-root__plant__theme-natural.webp",
+      "path": "assets/decor/floating_sway/floating-lettuce-root__plant__theme-natural.webp?v=77069cf21bcb"
+    },
+    {
+      "key": "floating-seaweed__plant__theme-reef.webp",
+      "path": "assets/decor/floating_sway/floating-seaweed__plant__theme-reef.webp?v=0fdeb73a1386"
+    },
+    {
+      "key": "floating-swamp-moss__plant__theme-natural.webp",
+      "path": "assets/decor/floating_sway/floating-swamp-moss__plant__theme-natural.webp?v=b520e7e43fcd"
+    },
+    {
+      "key": "halloween-floating-seaweed__plant__theme-halloween.webp",
+      "path": "assets/decor/floating_sway/halloween-floating-seaweed__plant__theme-halloween.webp?v=a52a879eb1c6"
+    },
+    {
+      "key": "alder-cone-cluster__botanical__theme-natural.webp",
+      "path": "assets/decor/static/alder-cone-cluster__botanical__theme-natural.webp?v=1c9842318e07"
+    },
+    {
+      "key": "autumn-leaf-litter-mound__botanical__theme-natural__trypophobia.webp",
+      "path": "assets/decor/static/autumn-leaf-litter-mound__botanical__theme-natural__trypophobia.webp?v=a6e7ee7bb8bf"
+    },
+    {
+      "key": "autumn-leaf-litter-mound__botanical__theme-natural.webp",
+      "path": "assets/decor/static/autumn-leaf-litter-mound__botanical__theme-natural.webp?v=af98f0b3eb57"
+    },
+    {
+      "key": "barnacle-covered-reef-rock__rock-coral__theme-reef__trypophobia.webp",
+      "path": "assets/decor/static/barnacle-covered-reef-rock__rock-coral__theme-reef__trypophobia.webp?v=3120bfb72c5f"
+    },
+    {
+      "key": "barnacle-covered-reef-rock__rock-coral__theme-reef.webp",
+      "path": "assets/decor/static/barnacle-covered-reef-rock__rock-coral__theme-reef.webp?v=1d5b33d1da75"
+    },
+    {
+      "key": "brain-coral__coral__theme-reef.webp",
+      "path": "assets/decor/static/brain-coral__coral__theme-reef.webp?v=ce5037fc0aad"
+    },
+    {
+      "key": "branch-canopy__wood__theme-natural.webp",
+      "path": "assets/decor/static/branch-canopy__wood__theme-natural.webp?v=d968a3bd4dc9"
+    },
+    {
+      "key": "coral__coral__theme-reef__v10.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v10.webp?v=9b68ed139412"
+    },
+    {
+      "key": "coral__coral__theme-reef__v2.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v2.webp?v=5817a2df9799"
+    },
+    {
+      "key": "coral__coral__theme-reef__v3.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v3.webp?v=58c1a593e46d"
+    },
+    {
+      "key": "coral__coral__theme-reef__v4.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v4.webp?v=83f5ca5b95f0"
+    },
+    {
+      "key": "coral__coral__theme-reef__v5.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v5.webp?v=4bc88e995e5f"
+    },
+    {
+      "key": "coral__coral__theme-reef__v6.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v6.webp?v=1c64ea4535b8"
+    },
+    {
+      "key": "coral__coral__theme-reef__v7.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v7.webp?v=8211df295138"
+    },
+    {
+      "key": "coral__coral__theme-reef__v8.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v8.webp?v=50f328aab0a8"
+    },
+    {
+      "key": "coral__coral__theme-reef__v9.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef__v9.webp?v=c2fe08086638"
+    },
+    {
+      "key": "coral__coral__theme-reef.webp",
+      "path": "assets/decor/static/coral__coral__theme-reef.webp?v=39ea44ad63ba"
+    },
+    {
+      "key": "dirt__rock__theme-natural.webp",
+      "path": "assets/decor/static/dirt__rock__theme-natural.webp?v=afcfee5d1166"
+    },
+    {
+      "key": "dried-catappa-leaf-pile__botanical__theme-natural.webp",
+      "path": "assets/decor/static/dried-catappa-leaf-pile__botanical__theme-natural.webp?v=793e082b2619"
+    },
+    {
+      "key": "driftwood__wood__theme-natural.webp",
+      "path": "assets/decor/static/driftwood__wood__theme-natural.webp?v=ecc9ae23744b"
+    },
+    {
+      "key": "driftwood-root__wood__theme-natural__color2.webp",
+      "path": "assets/decor/static/driftwood-root__wood__theme-natural__color2.webp?v=e843be5c00b0"
+    },
+    {
+      "key": "driftwood-root__wood__theme-natural.webp",
+      "path": "assets/decor/static/driftwood-root__wood__theme-natural.webp?v=fcdd5c761f7e"
+    },
+    {
+      "key": "flat-spawning-stone__rock__theme-natural.webp",
+      "path": "assets/decor/static/flat-spawning-stone__rock__theme-natural.webp?v=d1f482ae9a18"
+    },
+    {
+      "key": "frozen-anchor__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-anchor__ornament__theme-frozen.webp?v=010780cd83ba"
+    },
+    {
+      "key": "frozen-arch__ornament__theme-frozen__v2.webp",
+      "path": "assets/decor/static/frozen-arch__ornament__theme-frozen__v2.webp?v=26710be8d873"
+    },
+    {
+      "key": "frozen-arch__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-arch__ornament__theme-frozen.webp?v=0288bbd1791f"
+    },
+    {
+      "key": "frozen-column__ornament__theme-frozen__v2.webp",
+      "path": "assets/decor/static/frozen-column__ornament__theme-frozen__v2.webp?v=87ef58f376a8"
+    },
+    {
+      "key": "frozen-column__ornament__theme-frozen__v3.webp",
+      "path": "assets/decor/static/frozen-column__ornament__theme-frozen__v3.webp?v=f3ed82352722"
+    },
+    {
+      "key": "frozen-column__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-column__ornament__theme-frozen.webp?v=c227b82b2cfb"
+    },
+    {
+      "key": "frozen-crystals__rock__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-crystals__rock__theme-frozen.webp?v=75fb75c6f2df"
+    },
+    {
+      "key": "frozen-fossil__rock__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-fossil__rock__theme-frozen.webp?v=9a721c8b5aed"
+    },
+    {
+      "key": "frozen-plant__plant__theme-frozen__v2.webp",
+      "path": "assets/decor/static/frozen-plant__plant__theme-frozen__v2.webp?v=78cf6a2d2c26"
+    },
+    {
+      "key": "frozen-plant__plant__theme-frozen__v3.webp",
+      "path": "assets/decor/static/frozen-plant__plant__theme-frozen__v3.webp?v=e256e7e0ab96"
+    },
+    {
+      "key": "frozen-plant__plant__theme-frozen__v4.webp",
+      "path": "assets/decor/static/frozen-plant__plant__theme-frozen__v4.webp?v=bbbcc77b99a8"
+    },
+    {
+      "key": "frozen-plant__plant__theme-frozen__v5.webp",
+      "path": "assets/decor/static/frozen-plant__plant__theme-frozen__v5.webp?v=318896bdc3e9"
+    },
+    {
+      "key": "frozen-plant__plant__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-plant__plant__theme-frozen.webp?v=cb9c76ca2f6a"
+    },
+    {
+      "key": "frozen-rock__rock__theme-frozen__v2.webp",
+      "path": "assets/decor/static/frozen-rock__rock__theme-frozen__v2.webp?v=8f57c50f4f0b"
+    },
+    {
+      "key": "frozen-rock__rock__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-rock__rock__theme-frozen.webp?v=47007ae99c3a"
+    },
+    {
+      "key": "frozen-root__wood__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-root__wood__theme-frozen.webp?v=b6edc47f8b73"
+    },
+    {
+      "key": "frozen-ship__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-ship__ornament__theme-frozen.webp?v=4d5b3fb38bf2"
+    },
+    {
+      "key": "frozen-sunken-submarine__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-sunken-submarine__ornament__theme-frozen.webp?v=34bdc1c979f4"
+    },
+    {
+      "key": "frozen-treasure__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-treasure__ornament__theme-frozen.webp?v=a393994e2a68"
+    },
+    {
+      "key": "frozen-ufo__ornament__theme-frozen.webp",
+      "path": "assets/decor/static/frozen-ufo__ornament__theme-frozen.webp?v=7101e104a8fb"
+    },
+    {
+      "key": "halloween-ghost-ship__ornament__theme-halloween.webp",
+      "path": "assets/decor/static/halloween-ghost-ship__ornament__theme-halloween.webp?v=3efca1ab522c"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__color2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__color2.webp?v=3b28a1e981ed"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v2__color2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v2__color2.webp?v=00cd21f5a78c"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v2.webp?v=24125b500509"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v3__color2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v3__color2.webp?v=20b3b5c9f725"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v3.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v3.webp?v=bf1adefb772f"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v4__color2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v4__color2.webp?v=23b1daedef53"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v4.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v4.webp?v=46a2c649c113"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v5__color2.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v5__color2.webp?v=b524d727c787"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween__v5.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween__v5.webp?v=ae5f5465994c"
+    },
+    {
+      "key": "halloween-gravestone__ornament__theme-halloween.webp",
+      "path": "assets/decor/static/halloween-gravestone__ornament__theme-halloween.webp?v=d787c9ea0b3d"
+    },
+    {
+      "key": "halloween-haunted-tree__ornament__theme-halloween.webp",
+      "path": "assets/decor/static/halloween-haunted-tree__ornament__theme-halloween.webp?v=38fd3141ab3d"
+    },
+    {
+      "key": "mixed-leaf-litter-scatter__botanical__theme-natural__trypophobia.webp",
+      "path": "assets/decor/static/mixed-leaf-litter-scatter__botanical__theme-natural__trypophobia.webp?v=9faa1c0c4610"
+    },
+    {
+      "key": "mixed-leaf-litter-scatter__botanical__theme-natural.webp",
+      "path": "assets/decor/static/mixed-leaf-litter-scatter__botanical__theme-natural.webp?v=9a2bba4b839d"
+    },
+    {
+      "key": "moss-bridge__wood-plant__theme-natural.webp",
+      "path": "assets/decor/static/moss-bridge__wood-plant__theme-natural.webp?v=4827d2179068"
+    },
+    {
+      "key": "moss-covered-driftwood__wood-plant__theme-natural.webp",
+      "path": "assets/decor/static/moss-covered-driftwood__wood-plant__theme-natural.webp?v=87d7e4c877bb"
+    },
+    {
+      "key": "moss-covered-rock-formation__rock-plant__theme-natural.webp",
+      "path": "assets/decor/static/moss-covered-rock-formation__rock-plant__theme-natural.webp?v=b836f8e1d45c"
+    },
+    {
+      "key": "river-stone-mound__rock__theme-natural.webp",
+      "path": "assets/decor/static/river-stone-mound__rock__theme-natural.webp?v=8e68a80d579c"
+    },
+    {
+      "key": "rock-bricks__rock__theme-natural__v2.webp",
+      "path": "assets/decor/static/rock-bricks__rock__theme-natural__v2.webp?v=a48676f31259"
+    },
+    {
+      "key": "rock-bricks__rock__theme-natural__v3.webp",
+      "path": "assets/decor/static/rock-bricks__rock__theme-natural__v3.webp?v=5005cae2db50"
+    },
+    {
+      "key": "rock-bricks__rock__theme-natural__v4.webp",
+      "path": "assets/decor/static/rock-bricks__rock__theme-natural__v4.webp?v=fe2d84f8313b"
+    },
+    {
+      "key": "rock-bricks__rock__theme-natural__v5.webp",
+      "path": "assets/decor/static/rock-bricks__rock__theme-natural__v5.webp?v=88be720b7a0d"
+    },
+    {
+      "key": "rock-bricks__rock__theme-natural.webp",
+      "path": "assets/decor/static/rock-bricks__rock__theme-natural.webp?v=3d4992bc0898"
+    },
+    {
+      "key": "root-debris-scatter__wood__theme-natural.webp",
+      "path": "assets/decor/static/root-debris-scatter__wood__theme-natural.webp?v=e19f5b0ab9d4"
+    },
+    {
+      "key": "seed-pod-cluster__botanical__theme-natural__trypophobia.webp",
+      "path": "assets/decor/static/seed-pod-cluster__botanical__theme-natural__trypophobia.webp?v=eb6d1df2c237"
+    },
+    {
+      "key": "seed-pod-cluster__botanical__theme-natural.webp",
+      "path": "assets/decor/static/seed-pod-cluster__botanical__theme-natural.webp?v=7ffa488cbf52"
+    },
+    {
+      "key": "single-catappa-leaf__botanical__theme-natural.webp",
+      "path": "assets/decor/static/single-catappa-leaf__botanical__theme-natural.webp?v=f4d871e342d5"
+    },
+    {
+      "key": "single-loose-leaf__botanical__theme-natural.webp",
+      "path": "assets/decor/static/single-loose-leaf__botanical__theme-natural.webp?v=378e35a5919f"
+    },
+    {
+      "key": "single-twig__botanical__theme-natural.webp",
+      "path": "assets/decor/static/single-twig__botanical__theme-natural.webp?v=2c23ce90d2ae"
+    },
+    {
+      "key": "small-botanical-scatter-pieces__botanical__theme-natural__trypophobia.webp",
+      "path": "assets/decor/static/small-botanical-scatter-pieces__botanical__theme-natural__trypophobia.webp?v=d74af0986c3d"
+    },
+    {
+      "key": "small-botanical-scatter-pieces__botanical__theme-natural.webp",
+      "path": "assets/decor/static/small-botanical-scatter-pieces__botanical__theme-natural.webp?v=70298834c4e5"
+    },
+    {
+      "key": "small-branch-pile__wood__theme-natural.webp",
+      "path": "assets/decor/static/small-branch-pile__wood__theme-natural.webp?v=132ce8d95ac6"
+    },
+    {
+      "key": "small-stone-shard-cluster__rock__theme-natural.webp",
+      "path": "assets/decor/static/small-stone-shard-cluster__rock__theme-natural.webp?v=01a12015b797"
+    },
+    {
+      "key": "small-wood-branch-cluster__wood__theme-natural.webp",
+      "path": "assets/decor/static/small-wood-branch-cluster__wood__theme-natural.webp?v=70e903bc0842"
+    },
+    {
+      "key": "sprawling-spider-wood-rootscape__wood__theme-natural.webp",
+      "path": "assets/decor/static/sprawling-spider-wood-rootscape__wood__theme-natural.webp?v=57ffa6d0865c"
+    },
+    {
+      "key": "stone-pebble-cluster__rock__theme-natural.webp",
+      "path": "assets/decor/static/stone-pebble-cluster__rock__theme-natural.webp?v=0e91a2ffe36c"
+    },
+    {
+      "key": "twig-and-pod-mix__botanical__theme-natural__trypophobia.webp",
+      "path": "assets/decor/static/twig-and-pod-mix__botanical__theme-natural__trypophobia.webp?v=98149df281b7"
+    },
+    {
+      "key": "twig-and-pod-mix__botanical__theme-natural.webp",
+      "path": "assets/decor/static/twig-and-pod-mix__botanical__theme-natural.webp?v=a8802ce68e24"
+    },
+    {
+      "key": "volcanic-rock-bricks__rock__theme-natural__v2.webp",
+      "path": "assets/decor/static/volcanic-rock-bricks__rock__theme-natural__v2.webp?v=8d6af4f1cefb"
+    },
+    {
+      "key": "volcanic-rock-bricks__rock__theme-natural__v3.webp",
+      "path": "assets/decor/static/volcanic-rock-bricks__rock__theme-natural__v3.webp?v=1bba7e041698"
+    },
+    {
+      "key": "volcanic-rock-bricks__rock__theme-natural__v4.webp",
+      "path": "assets/decor/static/volcanic-rock-bricks__rock__theme-natural__v4.webp?v=c939893eac87"
+    },
+    {
+      "key": "volcanic-rock-bricks__rock__theme-natural.webp",
+      "path": "assets/decor/static/volcanic-rock-bricks__rock__theme-natural.webp?v=f43c036a10f8"
+    },
+    {
+      "key": "zoanthid-mat__coral__theme-reef.webp",
+      "path": "assets/decor/static/zoanthid-mat__coral__theme-reef.webp?v=904e20b27eb1"
+    }
+  ],
+  "fish": [
+    {
+      "key": "angelfish_altum.png",
+      "path": "assets/fish/angelfish_altum.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_black_lace.png",
+      "path": "assets/fish/angelfish_black_lace.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_blue_blushing.png",
+      "path": "assets/fish/angelfish_blue_blushing.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_emperor.png",
+      "path": "assets/fish/angelfish_emperor.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_flame.png",
+      "path": "assets/fish/angelfish_flame.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_gold_pearlscale.png",
+      "path": "assets/fish/angelfish_gold_pearlscale.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_koi.png",
+      "path": "assets/fish/angelfish_koi.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_marble.png",
+      "path": "assets/fish/angelfish_marble.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_neon-blue.png",
+      "path": "assets/fish/angelfish_neon-blue.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-green.png",
+      "path": "assets/fish/angelfish_neon-green.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-orange.png",
+      "path": "assets/fish/angelfish_neon-orange.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-pink.png",
+      "path": "assets/fish/angelfish_neon-pink.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-purple.png",
+      "path": "assets/fish/angelfish_neon-purple.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_neon-red.png",
+      "path": "assets/fish/angelfish_neon-red.png?v=b74f14f22a57"
+    },
+    {
+      "key": "angelfish_silver.png",
+      "path": "assets/fish/angelfish_silver.png?v=e7cf190be202"
+    },
+    {
+      "key": "angelfish_zebra.png",
+      "path": "assets/fish/angelfish_zebra.png?v=e7cf190be202"
+    },
+    {
+      "key": "assessor_blue.png",
+      "path": "assets/fish/assessor_blue.png?v=82e8c5dc38ff"
+    },
+    {
+      "key": "assessor_randalls.png",
+      "path": "assets/fish/assessor_randalls.png?v=82e8c5dc38ff"
+    },
+    {
+      "key": "barb_black_ruby.png",
+      "path": "assets/fish/barb_black_ruby.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_cherry.png",
+      "path": "assets/fish/barb_cherry.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_five_banded.png",
+      "path": "assets/fish/barb_five_banded.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_gold.png",
+      "path": "assets/fish/barb_gold.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_green.png",
+      "path": "assets/fish/barb_green.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_neon-blue.png",
+      "path": "assets/fish/barb_neon-blue.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-green.png",
+      "path": "assets/fish/barb_neon-green.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-orange.png",
+      "path": "assets/fish/barb_neon-orange.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-pink.png",
+      "path": "assets/fish/barb_neon-pink.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-purple.png",
+      "path": "assets/fish/barb_neon-purple.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_neon-red.png",
+      "path": "assets/fish/barb_neon-red.png?v=4145c5e1ef3f"
+    },
+    {
+      "key": "barb_odessa.png",
+      "path": "assets/fish/barb_odessa.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_rosy.png",
+      "path": "assets/fish/barb_rosy.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "barb_tiger.png",
+      "path": "assets/fish/barb_tiger.png?v=cddd3e1c1368"
+    },
+    {
+      "key": "basslet_swissguard.png",
+      "path": "assets/fish/basslet_swissguard.png?v=724e747c22b0"
+    },
+    {
+      "key": "betta_crowntail.png",
+      "path": "assets/fish/betta_crowntail.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_delta.png",
+      "path": "assets/fish/betta_delta.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_double_tail.png",
+      "path": "assets/fish/betta_double_tail.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_dumbo_ear.png",
+      "path": "assets/fish/betta_dumbo_ear.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_giant.png",
+      "path": "assets/fish/betta_giant.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_half_moon.png",
+      "path": "assets/fish/betta_half_moon.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_koi.png",
+      "path": "assets/fish/betta_koi.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_plakat.png",
+      "path": "assets/fish/betta_plakat.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_rosetail.png",
+      "path": "assets/fish/betta_rosetail.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "betta_veiltail.png",
+      "path": "assets/fish/betta_veiltail.png?v=bdbee0d6c8c6"
+    },
+    {
+      "key": "Bull_Shark_1.png",
+      "path": "assets/fish/Bull_Shark_1.png?v=5029dc65c1d6"
+    },
+    {
+      "key": "Bull_Shark_2.png",
+      "path": "assets/fish/Bull_Shark_2.png?v=5029dc65c1d6"
+    },
+    {
+      "key": "Bull_Shark_3.png",
+      "path": "assets/fish/Bull_Shark_3.png?v=5029dc65c1d6"
+    },
+    {
+      "key": "Bull_Shark_4.png",
+      "path": "assets/fish/Bull_Shark_4.png?v=5029dc65c1d6"
+    },
+    {
+      "key": "Bull_Shark.png",
+      "path": "assets/fish/Bull_Shark.png?v=5029dc65c1d6"
+    },
+    {
+      "key": "cardinalfish_banggai.png",
+      "path": "assets/fish/cardinalfish_banggai.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_blackstripe.png",
+      "path": "assets/fish/cardinalfish_blackstripe.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_five_lined.png",
+      "path": "assets/fish/cardinalfish_five_lined.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_goldbelly.png",
+      "path": "assets/fish/cardinalfish_goldbelly.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_orbic.png",
+      "path": "assets/fish/cardinalfish_orbic.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_pajama.png",
+      "path": "assets/fish/cardinalfish_pajama.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_red.png",
+      "path": "assets/fish/cardinalfish_red.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_ring_tailed.png",
+      "path": "assets/fish/cardinalfish_ring_tailed.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_seales.png",
+      "path": "assets/fish/cardinalfish_seales.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "cardinalfish_yellow.png",
+      "path": "assets/fish/cardinalfish_yellow.png?v=5c4beef86e8f"
+    },
+    {
+      "key": "chromis_blue.png",
+      "path": "assets/fish/chromis_blue.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_bluegreen.png",
+      "path": "assets/fish/chromis_bluegreen.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_green.png",
+      "path": "assets/fish/chromis_green.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_half_and_half.png",
+      "path": "assets/fish/chromis_half_and_half.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_orange.png",
+      "path": "assets/fish/chromis_orange.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_purple.png",
+      "path": "assets/fish/chromis_purple.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_sunshine.png",
+      "path": "assets/fish/chromis_sunshine.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_vanderbilts.png",
+      "path": "assets/fish/chromis_vanderbilts.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "chromis_yellowtail.png",
+      "path": "assets/fish/chromis_yellowtail.png?v=17b8a0dcd686"
+    },
+    {
+      "key": "cichlid_blue_ram.png",
+      "path": "assets/fish/cichlid_blue_ram.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_flameback.png",
+      "path": "assets/fish/cichlid_flameback.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_frontosa.png",
+      "path": "assets/fish/cichlid_frontosa.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_green_severum.png",
+      "path": "assets/fish/cichlid_green_severum.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_haplochromis.png",
+      "path": "assets/fish/cichlid_haplochromis.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_ob_peacock.png",
+      "path": "assets/fish/cichlid_ob_peacock.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_pseudotropheus.png",
+      "path": "assets/fish/cichlid_pseudotropheus.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_red_empress.png",
+      "path": "assets/fish/cichlid_red_empress.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_tropheus.png",
+      "path": "assets/fish/cichlid_tropheus.png?v=8f14e0c72635"
+    },
+    {
+      "key": "cichlid_venustus.png",
+      "path": "assets/fish/cichlid_venustus.png?v=8f14e0c72635"
+    },
+    {
+      "key": "clownfish_1.png",
+      "path": "assets/fish/clownfish_1.png?v=256f4f3cc516"
+    },
+    {
+      "key": "clownfish_2.png",
+      "path": "assets/fish/clownfish_2.png?v=256f4f3cc516"
+    },
+    {
+      "key": "clownfish_3.png",
+      "path": "assets/fish/clownfish_3.png?v=256f4f3cc516"
+    },
+    {
+      "key": "clownfish_4.png",
+      "path": "assets/fish/clownfish_4.png?v=256f4f3cc516"
+    },
+    {
+      "key": "clownfish_5.png",
+      "path": "assets/fish/clownfish_5.png?v=256f4f3cc516"
+    },
+    {
+      "key": "coral-beauty-angelfish_1.png",
+      "path": "assets/fish/coral-beauty-angelfish_1.png?v=a7e48399f406"
+    },
+    {
+      "key": "coral-beauty-angelfish_2.png",
+      "path": "assets/fish/coral-beauty-angelfish_2.png?v=a7e48399f406"
+    },
+    {
+      "key": "coral-beauty-angelfish_3.png",
+      "path": "assets/fish/coral-beauty-angelfish_3.png?v=a7e48399f406"
+    },
+    {
+      "key": "coral-beauty-angelfish_4.png",
+      "path": "assets/fish/coral-beauty-angelfish_4.png?v=a7e48399f406"
+    },
+    {
+      "key": "coral-beauty-angelfish_5.png",
+      "path": "assets/fish/coral-beauty-angelfish_5.png?v=a7e48399f406"
+    },
+    {
+      "key": "danio_blue.png",
+      "path": "assets/fish/danio_blue.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_celestial-pearl_.png",
+      "path": "assets/fish/danio_celestial-pearl_.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_emerald-dwarf.png",
+      "path": "assets/fish/danio_emerald-dwarf.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_glowlight.png",
+      "path": "assets/fish/danio_glowlight.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_golden-zebra.png",
+      "path": "assets/fish/danio_golden-zebra.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_leopard.png",
+      "path": "assets/fish/danio_leopard.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_longfin-zebra.png",
+      "path": "assets/fish/danio_longfin-zebra.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_orange-finned.png",
+      "path": "assets/fish/danio_orange-finned.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_pearl.png",
+      "path": "assets/fish/danio_pearl.png?v=d0999c592897"
+    },
+    {
+      "key": "danio_zebra.png",
+      "path": "assets/fish/danio_zebra.png?v=d0999c592897"
+    },
+    {
+      "key": "discus_blue_diamond.png",
+      "path": "assets/fish/discus_blue_diamond.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_checkerboard_pigeon.png",
+      "path": "assets/fish/discus_checkerboard_pigeon.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_cobalt.png",
+      "path": "assets/fish/discus_cobalt.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_heckel.png",
+      "path": "assets/fish/discus_heckel.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_leopard_snakeskin.png",
+      "path": "assets/fish/discus_leopard_snakeskin.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_leopard.png",
+      "path": "assets/fish/discus_leopard.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_red_eagle.png",
+      "path": "assets/fish/discus_red_eagle.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_snakeskin.png",
+      "path": "assets/fish/discus_snakeskin.png?v=a32aeee43de4"
+    },
+    {
+      "key": "discus_turquoise.png",
+      "path": "assets/fish/discus_turquoise.png?v=a32aeee43de4"
+    },
+    {
+      "key": "dottyback_diadem.png",
+      "path": "assets/fish/dottyback_diadem.png?v=28f86c55ff16"
+    },
+    {
+      "key": "dottyback_orchid.png",
+      "path": "assets/fish/dottyback_orchid.png?v=28f86c55ff16"
+    },
+    {
+      "key": "dottyback_springers.png",
+      "path": "assets/fish/dottyback_springers.png?v=28f86c55ff16"
+    },
+    {
+      "key": "dottyback_striped.png",
+      "path": "assets/fish/dottyback_striped.png?v=28f86c55ff16"
+    },
+    {
+      "key": "endler_black_bar.png",
+      "path": "assets/fish/endler_black_bar.png?v=5c7c24e46c35"
+    },
+    {
+      "key": "endler_el_silverado.png",
+      "path": "assets/fish/endler_el_silverado.png?v=5c7c24e46c35"
+    },
+    {
+      "key": "endler_lime_green.png",
+      "path": "assets/fish/endler_lime_green.png?v=5c7c24e46c35"
+    },
+    {
+      "key": "endler_peacock.png",
+      "path": "assets/fish/endler_peacock.png?v=5c7c24e46c35"
+    },
+    {
+      "key": "endler_tiger.png",
+      "path": "assets/fish/endler_tiger.png?v=5c7c24e46c35"
+    },
+    {
+      "key": "firefish_1.png",
+      "path": "assets/fish/firefish_1.png?v=da20a56e8c76"
+    },
+    {
+      "key": "firefish_2.png",
+      "path": "assets/fish/firefish_2.png?v=da20a56e8c76"
+    },
+    {
+      "key": "firefish_3.png",
+      "path": "assets/fish/firefish_3.png?v=da20a56e8c76"
+    },
+    {
+      "key": "firefish_4.png",
+      "path": "assets/fish/firefish_4.png?v=da20a56e8c76"
+    },
+    {
+      "key": "firefish_5.png",
+      "path": "assets/fish/firefish_5.png?v=da20a56e8c76"
+    },
+    {
+      "key": "goldfish_bubble_eye.png",
+      "path": "assets/fish/goldfish_bubble_eye.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_celestial.png",
+      "path": "assets/fish/goldfish_celestial.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_comet.png",
+      "path": "assets/fish/goldfish_comet.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_common.png",
+      "path": "assets/fish/goldfish_common.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_fantail.png",
+      "path": "assets/fish/goldfish_fantail.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_lionhead.png",
+      "path": "assets/fish/goldfish_lionhead.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_oranda.png",
+      "path": "assets/fish/goldfish_oranda.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_ranchu.png",
+      "path": "assets/fish/goldfish_ranchu.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_ryukin.png",
+      "path": "assets/fish/goldfish_ryukin.png?v=cc99bc75e054"
+    },
+    {
+      "key": "goldfish_shubunkin.png",
+      "path": "assets/fish/goldfish_shubunkin.png?v=cc99bc75e054"
+    },
+    {
+      "key": "gourami_blue.png",
+      "path": "assets/fish/gourami_blue.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_chocolate.png",
+      "path": "assets/fish/gourami_chocolate.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_dwarf.png",
+      "path": "assets/fish/gourami_dwarf.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_giant.png",
+      "path": "assets/fish/gourami_giant.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_gold.png",
+      "path": "assets/fish/gourami_gold.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_honey.png",
+      "path": "assets/fish/gourami_honey.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_moonlight.png",
+      "path": "assets/fish/gourami_moonlight.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_opaline.png",
+      "path": "assets/fish/gourami_opaline.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_pearl.png",
+      "path": "assets/fish/gourami_pearl.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gourami_sparkling.png",
+      "path": "assets/fish/gourami_sparkling.png?v=9e0610f5c6f1"
+    },
+    {
+      "key": "gramma_royal.png",
+      "path": "assets/fish/gramma_royal.png?v=724e747c22b0"
+    },
+    {
+      "key": "Great_White_Shark_1.png",
+      "path": "assets/fish/Great_White_Shark_1.png?v=fb61539824a2"
+    },
+    {
+      "key": "Great_White_Shark_2.png",
+      "path": "assets/fish/Great_White_Shark_2.png?v=fb61539824a2"
+    },
+    {
+      "key": "Great_White_Shark_3.png",
+      "path": "assets/fish/Great_White_Shark_3.png?v=fb61539824a2"
+    },
+    {
+      "key": "Great_White_Shark_4.png",
+      "path": "assets/fish/Great_White_Shark_4.png?v=fb61539824a2"
+    },
+    {
+      "key": "Great_White_Shark.png",
+      "path": "assets/fish/Great_White_Shark.png?v=fb61539824a2"
+    },
+    {
+      "key": "green-chromis_1.png",
+      "path": "assets/fish/green-chromis_1.png?v=4bb02a1090f6"
+    },
+    {
+      "key": "green-chromis_2.png",
+      "path": "assets/fish/green-chromis_2.png?v=4bb02a1090f6"
+    },
+    {
+      "key": "green-chromis_3.png",
+      "path": "assets/fish/green-chromis_3.png?v=4bb02a1090f6"
+    },
+    {
+      "key": "green-chromis_4.png",
+      "path": "assets/fish/green-chromis_4.png?v=4bb02a1090f6"
+    },
+    {
+      "key": "green-chromis_5.png",
+      "path": "assets/fish/green-chromis_5.png?v=4bb02a1090f6"
+    },
+    {
+      "key": "guppy_cobra.png",
+      "path": "assets/fish/guppy_cobra.png?v=f7cb61caaa8f"
+    },
+    {
+      "key": "guppy_full_red.png",
+      "path": "assets/fish/guppy_full_red.png?v=f7cb61caaa8f"
+    },
+    {
+      "key": "guppy_mosaic.png",
+      "path": "assets/fish/guppy_mosaic.png?v=f7cb61caaa8f"
+    },
+    {
+      "key": "guppy_moscow_blue.png",
+      "path": "assets/fish/guppy_moscow_blue.png?v=f7cb61caaa8f"
+    },
+    {
+      "key": "guppy_tuxedo.png",
+      "path": "assets/fish/guppy_tuxedo.png?v=f7cb61caaa8f"
+    },
+    {
+      "key": "Hammerhead_Shark_1.png",
+      "path": "assets/fish/Hammerhead_Shark_1.png?v=2b40a2419017"
+    },
+    {
+      "key": "Hammerhead_Shark_2.png",
+      "path": "assets/fish/Hammerhead_Shark_2.png?v=2b40a2419017"
+    },
+    {
+      "key": "Hammerhead_Shark_3.png",
+      "path": "assets/fish/Hammerhead_Shark_3.png?v=2b40a2419017"
+    },
+    {
+      "key": "Hammerhead_Shark_4.png",
+      "path": "assets/fish/Hammerhead_Shark_4.png?v=2b40a2419017"
+    },
+    {
+      "key": "Hammerhead_Shark_5.png",
+      "path": "assets/fish/Hammerhead_Shark_5.png?v=2b40a2419017"
+    },
+    {
+      "key": "Hammerhead_Shark.png",
+      "path": "assets/fish/Hammerhead_Shark.png?v=2b40a2419017"
+    },
+    {
+      "key": "hawkfish_coral.png",
+      "path": "assets/fish/hawkfish_coral.png?v=724e747c22b0"
+    },
+    {
+      "key": "killifish_american.png",
+      "path": "assets/fish/killifish_american.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_blue-panchax.png",
+      "path": "assets/fish/killifish_blue-panchax.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_bluefin-notho.png",
+      "path": "assets/fish/killifish_bluefin-notho.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_clown.png",
+      "path": "assets/fish/killifish_clown.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_gardneri.png",
+      "path": "assets/fish/killifish_gardneri.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_lyretail.png",
+      "path": "assets/fish/killifish_lyretail.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_orange australe.png",
+      "path": "assets/fish/killifish_orange australe.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_redtail-notho.png",
+      "path": "assets/fish/killifish_redtail-notho.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "killifish_wonder-golden.png",
+      "path": "assets/fish/killifish_wonder-golden.png?v=f11ac4ce09ed"
+    },
+    {
+      "key": "koi_asagi.png",
+      "path": "assets/fish/koi_asagi.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_chagoi.png",
+      "path": "assets/fish/koi_chagoi.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_goshiki.png",
+      "path": "assets/fish/koi_goshiki.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_kohaku.png",
+      "path": "assets/fish/koi_kohaku.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_shiro_bekko.png",
+      "path": "assets/fish/koi_shiro_bekko.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_shiro_utsuri.png",
+      "path": "assets/fish/koi_shiro_utsuri.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_showa_sanshoku.png",
+      "path": "assets/fish/koi_showa_sanshoku.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_taisho_sanke.png",
+      "path": "assets/fish/koi_taisho_sanke.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_tancho.png",
+      "path": "assets/fish/koi_tancho.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "koi_yamabuki_ogon.png",
+      "path": "assets/fish/koi_yamabuki_ogon.png?v=c71ef23ac3a7"
+    },
+    {
+      "key": "Lionfish_1.png",
+      "path": "assets/fish/Lionfish_1.png?v=96263951f4a7"
+    },
+    {
+      "key": "Lionfish_2.png",
+      "path": "assets/fish/Lionfish_2.png?v=96263951f4a7"
+    },
+    {
+      "key": "Lionfish_3.png",
+      "path": "assets/fish/Lionfish_3.png?v=96263951f4a7"
+    },
+    {
+      "key": "Lionfish_4.png",
+      "path": "assets/fish/Lionfish_4.png?v=96263951f4a7"
+    },
+    {
+      "key": "Lionfish_5.png",
+      "path": "assets/fish/Lionfish_5.png?v=96263951f4a7"
+    },
+    {
+      "key": "lookdown-fish_barred.png",
+      "path": "assets/fish/lookdown-fish_barred.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_blue.png",
+      "path": "assets/fish/lookdown-fish_blue.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_classic-silver.png",
+      "path": "assets/fish/lookdown-fish_classic-silver.png?v=82c4babaf29f"
+    },
+    {
+      "key": "lookdown-fish_golden.png",
+      "path": "assets/fish/lookdown-fish_golden.png?v=82c4babaf29f"
+    },
+    {
+      "key": "masturus_lanceolatus.png",
+      "path": "assets/fish/masturus_lanceolatus.png?v=37bb581b7395"
+    },
+    {
+      "key": "mola_alexandrini.png",
+      "path": "assets/fish/mola_alexandrini.png?v=37bb581b7395"
+    },
+    {
+      "key": "mola_tecta.png",
+      "path": "assets/fish/mola_tecta.png?v=37bb581b7395"
+    },
+    {
+      "key": "mola-mola_eastern-atlantic.png",
+      "path": "assets/fish/mola-mola_eastern-atlantic.png?v=37bb581b7395"
+    },
+    {
+      "key": "mola-mola_pacific.png",
+      "path": "assets/fish/mola-mola_pacific.png?v=37bb581b7395"
+    },
+    {
+      "key": "molly_black.png",
+      "path": "assets/fish/molly_black.png?v=6b8acf189ef3"
+    },
+    {
+      "key": "molly_creamsicle_lyretail.png",
+      "path": "assets/fish/molly_creamsicle_lyretail.png?v=6b8acf189ef3"
+    },
+    {
+      "key": "molly_dalmatian.png",
+      "path": "assets/fish/molly_dalmatian.png?v=6b8acf189ef3"
+    },
+    {
+      "key": "molly_gold_dust.png",
+      "path": "assets/fish/molly_gold_dust.png?v=6b8acf189ef3"
+    },
+    {
+      "key": "molly_sailfin.png",
+      "path": "assets/fish/molly_sailfin.png?v=6b8acf189ef3"
+    },
+    {
+      "key": "moor_black.png",
+      "path": "assets/fish/moor_black.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_bronze.png",
+      "path": "assets/fish/moor_bronze.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_calico.png",
+      "path": "assets/fish/moor_calico.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_gold.png",
+      "path": "assets/fish/moor_gold.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_orangewhite.png",
+      "path": "assets/fish/moor_orangewhite.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_panda.png",
+      "path": "assets/fish/moor_panda.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_redblack.png",
+      "path": "assets/fish/moor_redblack.png?v=34068f7ee548"
+    },
+    {
+      "key": "moor_white.png",
+      "path": "assets/fish/moor_white.png?v=34068f7ee548"
+    },
+    {
+      "key": "mosquitofish_big_bend.png",
+      "path": "assets/fish/mosquitofish_big_bend.png?v=7cf148ac91e3"
+    },
+    {
+      "key": "mosquitofish_clear_creek.png",
+      "path": "assets/fish/mosquitofish_clear_creek.png?v=7cf148ac91e3"
+    },
+    {
+      "key": "mosquitofish_eastern.png",
+      "path": "assets/fish/mosquitofish_eastern.png?v=7cf148ac91e3"
+    },
+    {
+      "key": "mosquitofish_tex_mex.png",
+      "path": "assets/fish/mosquitofish_tex_mex.png?v=7cf148ac91e3"
+    },
+    {
+      "key": "mosquitofish_western.png",
+      "path": "assets/fish/mosquitofish_western.png?v=7cf148ac91e3"
+    },
+    {
+      "key": "Orca_1.png",
+      "path": "assets/fish/Orca_1.png?v=1a36efff9123"
+    },
+    {
+      "key": "Orca_2.png",
+      "path": "assets/fish/Orca_2.png?v=1a36efff9123"
+    },
+    {
+      "key": "Orca_3.png",
+      "path": "assets/fish/Orca_3.png?v=1a36efff9123"
+    },
+    {
+      "key": "Orca_4.png",
+      "path": "assets/fish/Orca_4.png?v=1a36efff9123"
+    },
+    {
+      "key": "Orca.png",
+      "path": "assets/fish/Orca.png?v=1a36efff9123"
+    },
+    {
+      "key": "orchid-dottyback_1.png",
+      "path": "assets/fish/orchid-dottyback_1.png?v=3b46e12c6240"
+    },
+    {
+      "key": "orchid-dottyback_2.png",
+      "path": "assets/fish/orchid-dottyback_2.png?v=3b46e12c6240"
+    },
+    {
+      "key": "orchid-dottyback_3.png",
+      "path": "assets/fish/orchid-dottyback_3.png?v=3b46e12c6240"
+    },
+    {
+      "key": "orchid-dottyback_4.png",
+      "path": "assets/fish/orchid-dottyback_4.png?v=3b46e12c6240"
+    },
+    {
+      "key": "orchid-dottyback_5.png",
+      "path": "assets/fish/orchid-dottyback_5.png?v=3b46e12c6240"
+    },
+    {
+      "key": "otocinclus_0_bottom.png",
+      "path": "assets/fish/otocinclus_0_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_0_side.png",
+      "path": "assets/fish/otocinclus_0_side.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_0.png",
+      "path": "assets/fish/otocinclus_0.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_1_bottom.png",
+      "path": "assets/fish/otocinclus_1_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_1_side.png",
+      "path": "assets/fish/otocinclus_1_side.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_1.png",
+      "path": "assets/fish/otocinclus_1.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_2_bottom.png",
+      "path": "assets/fish/otocinclus_2_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_2_side.png",
+      "path": "assets/fish/otocinclus_2_side.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_2.png",
+      "path": "assets/fish/otocinclus_2.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_3_bottom.png",
+      "path": "assets/fish/otocinclus_3_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_3_side.png",
+      "path": "assets/fish/otocinclus_3_side.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_3.png",
+      "path": "assets/fish/otocinclus_3.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_bottom.png",
+      "path": "assets/fish/otocinclus_0_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_front.png",
+      "path": "assets/fish/otocinclus_0_bottom.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus_side.png",
+      "path": "assets/fish/otocinclus_0_side.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "otocinclus.png",
+      "path": "assets/fish/otocinclus_0.png?v=8bf3b2b0ac6f"
+    },
+    {
+      "key": "pencil_marginatus.png",
+      "path": "assets/fish/pencil_marginatus.png?v=5f5622c761d6"
+    },
+    {
+      "key": "pencil_mortenthaleri.png",
+      "path": "assets/fish/pencil_mortenthaleri.png?v=5f5622c761d6"
+    },
+    {
+      "key": "pencil_rubrocaudatus.png",
+      "path": "assets/fish/pencil_rubrocaudatus.png?v=5f5622c761d6"
+    },
+    {
+      "key": "pencil_trifasciatus.png",
+      "path": "assets/fish/pencil_trifasciatus.png?v=5f5622c761d6"
+    },
+    {
+      "key": "pencil_unifasciatus.png",
+      "path": "assets/fish/pencil_unifasciatus.png?v=5f5622c761d6"
+    },
+    {
+      "key": "Pilot_Fish_1.png",
+      "path": "assets/fish/Pilot_Fish_1.png?v=c60b6f42e59c"
+    },
+    {
+      "key": "Pilot_Fish_2.png",
+      "path": "assets/fish/Pilot_Fish_2.png?v=c60b6f42e59c"
+    },
+    {
+      "key": "Pilot_Fish_3.png",
+      "path": "assets/fish/Pilot_Fish_3.png?v=c60b6f42e59c"
+    },
+    {
+      "key": "Pilot_Fish_4.png",
+      "path": "assets/fish/Pilot_Fish_4.png?v=c60b6f42e59c"
+    },
+    {
+      "key": "Pilot_Fish.png",
+      "path": "assets/fish/Pilot_Fish.png?v=c60b6f42e59c"
+    },
+    {
+      "key": "piranha_black.png",
+      "path": "assets/fish/piranha_black.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_cariba.png",
+      "path": "assets/fish/piranha_cariba.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_elongated.png",
+      "path": "assets/fish/piranha_elongated.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_lobetoothed.png",
+      "path": "assets/fish/piranha_lobetoothed.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_manueli.png",
+      "path": "assets/fish/piranha_manueli.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_piraya.png",
+      "path": "assets/fish/piranha_piraya.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_red_bellied.png",
+      "path": "assets/fish/piranha_red_bellied.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_spotted.png",
+      "path": "assets/fish/piranha_spotted.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_white.png",
+      "path": "assets/fish/piranha_white.png?v=11fa55f85034"
+    },
+    {
+      "key": "piranha_wimple.png",
+      "path": "assets/fish/piranha_wimple.png?v=11fa55f85034"
+    },
+    {
+      "key": "platy_blue.png",
+      "path": "assets/fish/platy_blue.png?v=7ada3777cb9c"
+    },
+    {
+      "key": "platy_mickey_mouse.png",
+      "path": "assets/fish/platy_mickey_mouse.png?v=7ada3777cb9c"
+    },
+    {
+      "key": "platy_red_wagtail.png",
+      "path": "assets/fish/platy_red_wagtail.png?v=7ada3777cb9c"
+    },
+    {
+      "key": "platy_sunburst.png",
+      "path": "assets/fish/platy_sunburst.png?v=7ada3777cb9c"
+    },
+    {
+      "key": "platy_tuxedo.png",
+      "path": "assets/fish/platy_tuxedo.png?v=7ada3777cb9c"
+    },
+    {
+      "key": "puffer_amazon_inflated.png",
+      "path": "assets/fish/puffer_amazon_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_amazon.png",
+      "path": "assets/fish/puffer_amazon.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_dogface_inflated.png",
+      "path": "assets/fish/puffer_dogface_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_dogface.png",
+      "path": "assets/fish/puffer_dogface.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_dwarf_inflated.png",
+      "path": "assets/fish/puffer_dwarf_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_dwarf.png",
+      "path": "assets/fish/puffer_dwarf.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_fahaka_inflated.png",
+      "path": "assets/fish/puffer_fahaka_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_fahaka.png",
+      "path": "assets/fish/puffer_fahaka.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_figure8_inflated.png",
+      "path": "assets/fish/puffer_figure8_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_figure8.png",
+      "path": "assets/fish/puffer_figure8.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_green_spotted_inflated.png",
+      "path": "assets/fish/puffer_green_spotted_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_green_spotted.png",
+      "path": "assets/fish/puffer_green_spotted.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_map_inflated.png",
+      "path": "assets/fish/puffer_map_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_map.png",
+      "path": "assets/fish/puffer_map.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_mbu_inflated.png",
+      "path": "assets/fish/puffer_mbu_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_mbu.png",
+      "path": "assets/fish/puffer_mbu.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_oceanic_inflated.png",
+      "path": "assets/fish/puffer_oceanic_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_oceanic.png",
+      "path": "assets/fish/puffer_oceanic.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "puffer_valentinis_sharpnose_inflated.png",
+      "path": "assets/fish/puffer_valentinis_sharpnose_inflated.png?v=3f1d03408dcc"
+    },
+    {
+      "key": "puffer_valentinis_sharpnose.png",
+      "path": "assets/fish/puffer_valentinis_sharpnose.png?v=f60ffdbe6d2b"
+    },
+    {
+      "key": "rainbow_bleheri.png",
+      "path": "assets/fish/rainbow_bleheri.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_boesemani.png",
+      "path": "assets/fish/rainbow_boesemani.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_fluviatilis.png",
+      "path": "assets/fish/rainbow_fluviatilis.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_incisus.png",
+      "path": "assets/fish/rainbow_incisus.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_parkinsoni.png",
+      "path": "assets/fish/rainbow_parkinsoni.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_praecox.png",
+      "path": "assets/fish/rainbow_praecox.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_trifasciata.png",
+      "path": "assets/fish/rainbow_trifasciata.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow_turquoise.png",
+      "path": "assets/fish/rainbow_turquoise.png?v=7a139b2822c5"
+    },
+    {
+      "key": "rainbow-shark_neon-1.png",
+      "path": "assets/fish/rainbow-shark_neon-1.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-2.png",
+      "path": "assets/fish/rainbow-shark_neon-2.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-3.png",
+      "path": "assets/fish/rainbow-shark_neon-3.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-4.png",
+      "path": "assets/fish/rainbow-shark_neon-4.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-5.png",
+      "path": "assets/fish/rainbow-shark_neon-5.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "rainbow-shark_neon-6.png",
+      "path": "assets/fish/rainbow-shark_neon-6.png?v=d34c3fb5b111"
+    },
+    {
+      "key": "ranzania_laevis.png",
+      "path": "assets/fish/ranzania_laevis.png?v=37bb581b7395"
+    },
+    {
+      "key": "rasbora_chili.png",
+      "path": "assets/fish/rasbora_chili.png?v=b3f477d98287"
+    },
+    {
+      "key": "rasbora_galaxy.png",
+      "path": "assets/fish/rasbora_galaxy.png?v=b3f477d98287"
+    },
+    {
+      "key": "rasbora_harlequin.png",
+      "path": "assets/fish/rasbora_harlequin.png?v=b3f477d98287"
+    },
+    {
+      "key": "rasbora_hengeli.png",
+      "path": "assets/fish/rasbora_hengeli.png?v=b3f477d98287"
+    },
+    {
+      "key": "rasbora_lambchop.png",
+      "path": "assets/fish/rasbora_lambchop.png?v=b3f477d98287"
+    },
+    {
+      "key": "rasbora_scissortail.png",
+      "path": "assets/fish/rasbora_scissortail.png?v=b3f477d98287"
+    },
+    {
+      "key": "sea-shrimp_antenna.png",
+      "path": "assets/fish/sea-shrimp_antenna.png?v=0b15c4d9cd5b"
+    },
+    {
+      "key": "sea-shrimp_body.png",
+      "path": "assets/fish/sea-shrimp_body.png?v=0b15c4d9cd5b"
+    },
+    {
+      "key": "sea-shrimp_legs.png",
+      "path": "assets/fish/sea-shrimp_legs.png?v=0b15c4d9cd5b"
+    },
+    {
+      "key": "sea-snail_1.png",
+      "path": "assets/fish/sea-snail_1.png?v=28e11ca5455b"
+    },
+    {
+      "key": "sea-snail_2.png",
+      "path": "assets/fish/sea-snail_2.png?v=28e11ca5455b"
+    },
+    {
+      "key": "sea-snail_3.png",
+      "path": "assets/fish/sea-snail_3.png?v=28e11ca5455b"
+    },
+    {
+      "key": "sea-snail_4.png",
+      "path": "assets/fish/sea-snail_4.png?v=28e11ca5455b"
+    },
+    {
+      "key": "sea-snail_5.png",
+      "path": "assets/fish/sea-snail_5.png?v=28e11ca5455b"
+    },
+    {
+      "key": "Seahorse_1.png",
+      "path": "assets/fish/Seahorse_1.png?v=4b2c3a73ea04"
+    },
+    {
+      "key": "Seahorse_2.png",
+      "path": "assets/fish/Seahorse_2.png?v=4b2c3a73ea04"
+    },
+    {
+      "key": "Seahorse_3.png",
+      "path": "assets/fish/Seahorse_3.png?v=4b2c3a73ea04"
+    },
+    {
+      "key": "Seahorse_4.png",
+      "path": "assets/fish/Seahorse_4.png?v=4b2c3a73ea04"
+    },
+    {
+      "key": "Seahorse.png",
+      "path": "assets/fish/Seahorse.png?v=4b2c3a73ea04"
+    },
+    {
+      "key": "shrimp_antenna.png",
+      "path": "assets/fish/shrimp_antenna.png?v=fae33106c8d4"
+    },
+    {
+      "key": "shrimp_body.png",
+      "path": "assets/fish/shrimp_body.png?v=fae33106c8d4"
+    },
+    {
+      "key": "shrimp_legs.png",
+      "path": "assets/fish/shrimp_legs.png?v=fae33106c8d4"
+    },
+    {
+      "key": "six-line-wrasse_1.png",
+      "path": "assets/fish/six-line-wrasse_1.png?v=2f092a7a0250"
+    },
+    {
+      "key": "six-line-wrasse_2.png",
+      "path": "assets/fish/six-line-wrasse_2.png?v=2f092a7a0250"
+    },
+    {
+      "key": "six-line-wrasse_3.png",
+      "path": "assets/fish/six-line-wrasse_3.png?v=2f092a7a0250"
+    },
+    {
+      "key": "six-line-wrasse_4.png",
+      "path": "assets/fish/six-line-wrasse_4.png?v=2f092a7a0250"
+    },
+    {
+      "key": "six-line-wrasse_5.png",
+      "path": "assets/fish/six-line-wrasse_5.png?v=2f092a7a0250"
+    },
+    {
+      "key": "snail_1.png",
+      "path": "assets/fish/snail_1.png?v=6501b7c58381"
+    },
+    {
+      "key": "snail_2.png",
+      "path": "assets/fish/snail_2.png?v=6501b7c58381"
+    },
+    {
+      "key": "snail_3.png",
+      "path": "assets/fish/snail_3.png?v=6501b7c58381"
+    },
+    {
+      "key": "snail_4.png",
+      "path": "assets/fish/snail_4.png?v=6501b7c58381"
+    },
+    {
+      "key": "snail_5.png",
+      "path": "assets/fish/snail_5.png?v=6501b7c58381"
+    },
+    {
+      "key": "swordtail_black.png",
+      "path": "assets/fish/swordtail_black.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_fancy-hi-fin.png",
+      "path": "assets/fish/swordtail_fancy-hi-fin.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_golden.png",
+      "path": "assets/fish/swordtail_golden.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_koi.png",
+      "path": "assets/fish/swordtail_koi.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_neon.png",
+      "path": "assets/fish/swordtail_neon.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_pineapple-wagtail.png",
+      "path": "assets/fish/swordtail_pineapple-wagtail.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_red-tuxedo.png",
+      "path": "assets/fish/swordtail_red-tuxedo.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_red.png",
+      "path": "assets/fish/swordtail_red.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_showa.png",
+      "path": "assets/fish/swordtail_showa.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_yellow-comet.png",
+      "path": "assets/fish/swordtail_yellow-comet.png?v=853183e2673a"
+    },
+    {
+      "key": "swordtail_yellow-tuxedo.png",
+      "path": "assets/fish/swordtail_yellow-tuxedo.png?v=853183e2673a"
+    },
+    {
+      "key": "tang_achilles.png",
+      "path": "assets/fish/tang_achilles.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_blue.png",
+      "path": "assets/fish/tang_blue.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_bluespine-unicornfish.png",
+      "path": "assets/fish/tang_bluespine-unicornfish.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_kole.png",
+      "path": "assets/fish/tang_kole.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_lined-surgeonfish.png",
+      "path": "assets/fish/tang_lined-surgeonfish.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_naso.png",
+      "path": "assets/fish/tang_naso.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_pacific-sailfin.png",
+      "path": "assets/fish/tang_pacific-sailfin.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_powder-blue.png",
+      "path": "assets/fish/tang_powder-blue.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_purple.png",
+      "path": "assets/fish/tang_purple.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_vlamings-unicornfish.png",
+      "path": "assets/fish/tang_vlamings-unicornfish.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tang_yellow.png",
+      "path": "assets/fish/tang_yellow.png?v=e5a4ac09813e"
+    },
+    {
+      "key": "tetra_black-neon.png",
+      "path": "assets/fish/tetra_black-neon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_black-phantom.png",
+      "path": "assets/fish/tetra_black-phantom.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_black-skirt.png",
+      "path": "assets/fish/tetra_black-skirt.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_cave.png",
+      "path": "assets/fish/tetra_cave.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_cochus-blue.png",
+      "path": "assets/fish/tetra_cochus-blue.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_congo.png",
+      "path": "assets/fish/tetra_congo.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_cosmic-blue.png",
+      "path": "assets/fish/tetra_cosmic-blue.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_ember.png",
+      "path": "assets/fish/tetra_ember.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_emperor.png",
+      "path": "assets/fish/tetra_emperor.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_glass.png",
+      "path": "assets/fish/tetra_glass.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_gold-neon.png",
+      "path": "assets/fish/tetra_gold-neon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_green-neon.png",
+      "path": "assets/fish/tetra_green-neon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_lemon.png",
+      "path": "assets/fish/tetra_lemon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_neon-blue.png",
+      "path": "assets/fish/tetra_neon-blue.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-green.png",
+      "path": "assets/fish/tetra_neon-green.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-orange.png",
+      "path": "assets/fish/tetra_neon-orange.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-pink.png",
+      "path": "assets/fish/tetra_neon-pink.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-purple.png",
+      "path": "assets/fish/tetra_neon-purple.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon-red.png",
+      "path": "assets/fish/tetra_neon-red.png?v=8325540060fc"
+    },
+    {
+      "key": "tetra_neon.png",
+      "path": "assets/fish/tetra_neon.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_penguin.png",
+      "path": "assets/fish/tetra_penguin.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_rummy-nose.png",
+      "path": "assets/fish/tetra_rummy-nose.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra_white-skirt.png",
+      "path": "assets/fish/tetra_white-skirt.png?v=4fe17e4e9e22"
+    },
+    {
+      "key": "tetra-neon__genetics-enhanced_fin.webp",
+      "path": "assets/fish/tetra-neon__genetics-enhanced_fin.webp?v=217080f699e5"
+    },
+    {
+      "key": "zebra-danio_neon-blue.png",
+      "path": "assets/fish/zebra-danio_neon-blue.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-green.png",
+      "path": "assets/fish/zebra-danio_neon-green.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-orange.png",
+      "path": "assets/fish/zebra-danio_neon-orange.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-pink.png",
+      "path": "assets/fish/zebra-danio_neon-pink.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-purple.png",
+      "path": "assets/fish/zebra-danio_neon-purple.png?v=32e4f3102817"
+    },
+    {
+      "key": "zebra-danio_neon-red.png",
+      "path": "assets/fish/zebra-danio_neon-red.png?v=32e4f3102817"
+    }
+  ],
+  "gravel": [
+    {
+      "key": "river-rock.webp",
+      "path": "assets/gravel/alt/river-rock.webp?v=ade80ce0519c"
+    },
+    {
+      "key": "sand.webp",
+      "path": "assets/gravel/alt/sand.webp?v=6fd61c11795f"
+    },
+    {
+      "key": "Gravel_L1.webp",
+      "path": "assets/gravel/Gravel_L1.webp?v=7314b1e5ec76"
+    },
+    {
+      "key": "Gravel_L2.webp",
+      "path": "assets/gravel/Gravel_L2.webp?v=56b1c45292cb"
+    },
+    {
+      "key": "Gravel_L3.webp",
+      "path": "assets/gravel/Gravel_L3.webp?v=a9554c40a0b6"
+    },
+    {
+      "key": "pebble_1.webp",
+      "path": "assets/gravel/pebble_1.webp?v=3cfaf7982f4e"
+    },
+    {
+      "key": "pebble_2.webp",
+      "path": "assets/gravel/pebble_2.webp?v=abd2c1efff09"
+    },
+    {
+      "key": "pebble_3.webp",
+      "path": "assets/gravel/pebble_3.webp?v=59282f027be6"
+    }
+  ],
+  "equipment": [
+    {
+      "key": "boat_1.png",
+      "path": "assets/equipment/machinery/boat_1.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "boat_2.png",
+      "path": "assets/equipment/machinery/boat_2.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "boat_3.png",
+      "path": "assets/equipment/machinery/boat_3.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "boat_4.png",
+      "path": "assets/equipment/machinery/boat_4.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "boat.png",
+      "path": "assets/equipment/machinery/boat.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "Food_Dispenser_1_bg.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_1_bg.webp?v=fbfbf21fa557"
+    },
+    {
+      "key": "Food_Dispenser_1.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_1.webp?v=9b16dd0edf15"
+    },
+    {
+      "key": "Food_Dispenser_2_bg.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_2_bg.webp?v=6957c51cee6b"
+    },
+    {
+      "key": "Food_Dispenser_2.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_2.webp?v=52e17366a028"
+    },
+    {
+      "key": "Food_Dispenser_3_bg.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_3_bg.webp?v=09948d6bab9d"
+    },
+    {
+      "key": "Food_Dispenser_3.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_3.webp?v=7f025a43ccc1"
+    },
+    {
+      "key": "Food_Dispenser_4_bg.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_4_bg.webp?v=61453b7f86b1"
+    },
+    {
+      "key": "Food_Dispenser_4.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_4.webp?v=4d1a3b92c7fb"
+    },
+    {
+      "key": "Food_Dispenser_bg.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_bg.webp?v=1fc75cc1da06"
+    },
+    {
+      "key": "Food_Dispenser_Light_Green.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Green.webp?v=c5d3b140be2f"
+    },
+    {
+      "key": "Food_Dispenser_Light_Off.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Off.webp?v=f61c3317dee2"
+    },
+    {
+      "key": "Food_Dispenser_Light_Red.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Red.webp?v=9c4116f3c4e2"
+    },
+    {
+      "key": "Food_Dispenser_Light_Yellow.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser_Light_Yellow.webp?v=8d7d2b82b893"
+    },
+    {
+      "key": "Food_Dispenser.webp",
+      "path": "assets/equipment/dispenser/Food_Dispenser.webp?v=659b22ca2e9c"
+    },
+    {
+      "key": "Halloween_Boat_5.png",
+      "path": "assets/equipment/machinery/Halloween_Boat_5.png?v=bb54f0722cc2"
+    },
+    {
+      "key": "Halloween_Submarine_5.png",
+      "path": "assets/equipment/machinery/Halloween_Submarine_5.png?v=ed5e6fc5525e"
+    },
+    {
+      "key": "submarine_1.png",
+      "path": "assets/equipment/machinery/submarine_1.png?v=ed5e6fc5525e"
+    },
+    {
+      "key": "submarine_2.png",
+      "path": "assets/equipment/machinery/submarine_2.png?v=ed5e6fc5525e"
+    },
+    {
+      "key": "submarine_3.png",
+      "path": "assets/equipment/machinery/submarine_3.png?v=ed5e6fc5525e"
+    },
+    {
+      "key": "submarine_4.png",
+      "path": "assets/equipment/machinery/submarine_4.png?v=ed5e6fc5525e"
+    },
+    {
+      "key": "Submarine_Light_Red.webp",
+      "path": "assets/equipment/machinery/Submarine_Light_Red.webp?v=4fb94c1eecf2"
+    },
+    {
+      "key": "submarine.png",
+      "path": "assets/equipment/machinery/submarine.png?v=ed5e6fc5525e"
+    }
+  ]
+}

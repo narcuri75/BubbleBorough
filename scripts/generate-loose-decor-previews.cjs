@@ -4,7 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const sourceDir = path.join(root, "assets", "decor");
 const outputDir = path.join(root, "assets", "generated", "previews", "decor");
 const manifestPath = path.join(outputDir, "manifest.json");
@@ -12,13 +12,13 @@ const checkOnly = process.argv.includes("--check");
 const hash = value => crypto.createHash("sha256").update(value).digest("hex");
 const PREVIEW_RENDER_VERSION = "layered-decor-v2-nested";
 
-function walkPngs(directory, relative = "") {
+function walkDecorImages(directory, relative = "") {
   const result = [];
   for (const entry of fs.readdirSync(directory, { withFileTypes: true })) {
     const relativePath = relative ? path.posix.join(relative, entry.name) : entry.name;
     const fullPath = path.join(directory, entry.name);
-    if (entry.isDirectory()) result.push(...walkPngs(fullPath, relativePath));
-    else if (entry.isFile() && /\.png$/i.test(entry.name)) result.push(relativePath);
+    if (entry.isDirectory()) result.push(...walkDecorImages(fullPath, relativePath));
+    else if (entry.isFile() && /\.webp$/i.test(entry.name)) result.push(relativePath);
   }
   return result.sort();
 }
@@ -122,7 +122,7 @@ function pruneEmptyDirectories(directory) {
 }
 
 async function run() {
-  const sources = walkPngs(sourceDir);
+  const sources = walkDecorImages(sourceDir);
   // _surface artwork is an invisible alpha receiver used by the renderer, not
   // a sellable/previewable layer.
   const previewSources = sources.filter(relativePath => !isSurfaceCompanion(relativePath));
@@ -143,8 +143,8 @@ async function run() {
   ));
   if (!checkOnly) fs.mkdirSync(outputDir, { recursive: true });
   const expectedOutputs = new Set([
-    ...previewSources.map(name => `${name}.webp`),
-    ...trypophobiaPreviewGroups.map(group => `${group.base}.trypophobia.webp`)
+    ...previewSources,
+    ...trypophobiaPreviewGroups.map(group => `${group.base.replace(/\.webp$/i, "")}.trypophobia.webp`)
   ]);
   const obsoleteOutputs = walkWebps(outputDir).filter(name => !expectedOutputs.has(name));
   if (checkOnly && obsoleteOutputs.length) throw new Error(`Obsolete decor previews: ${obsoleteOutputs.join(", ")}. Run npm run build:app.`);
@@ -156,7 +156,7 @@ async function run() {
       : [relativePath];
     const layerSources = layerNames.map(name => fs.readFileSync(path.join(sourceDir, ...name.split("/"))));
     const sourceHash = hash(Buffer.concat([Buffer.from(PREVIEW_RENDER_VERSION), ...layerSources]));
-    const outputName = `${relativePath}.webp`;
+    const outputName = relativePath;
     const outputPath = path.join(outputDir, ...outputName.split("/"));
     const outputExists = fs.existsSync(outputPath);
     const outputHash = outputExists ? hash(fs.readFileSync(outputPath)) : "";
@@ -181,7 +181,7 @@ async function run() {
     const layerSources = layerNames.map(name => fs.readFileSync(path.join(sourceDir, ...name.split("/"))));
     const manifestKey = `${group.base}::trypophobia`;
     const sourceHash = hash(Buffer.concat([Buffer.from(`${PREVIEW_RENDER_VERSION}:trypophobia`), ...layerSources]));
-    const outputName = `${group.base}.trypophobia.webp`;
+    const outputName = `${group.base.replace(/\.webp$/i, "")}.trypophobia.webp`;
     const outputPath = path.join(outputDir, ...outputName.split("/"));
     const outputExists = fs.existsSync(outputPath);
     const outputHash = outputExists ? hash(fs.readFileSync(outputPath)) : "";

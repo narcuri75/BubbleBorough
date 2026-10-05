@@ -7,7 +7,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const root = path.join(__dirname, "../public/app-src");
+const root = path.join(__dirname, "../game/public/app-src");
 
 function loadFunctions(file, names, bindings = {}) {
   const source = fs.readFileSync(path.join(root, file), "utf8");

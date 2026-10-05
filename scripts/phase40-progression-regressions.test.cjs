@@ -7,7 +7,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const APP_SRC = path.join(ROOT, "public", "app-src");
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
 
@@ -61,12 +61,12 @@ const requiredFeatureRegressionLabels = [
 ];
 
 test("Phase 40 standard feature regression suite retains every required progression contract", () => {
-  const source = fs.readFileSync(path.join(ROOT, "scripts", "feature-regressions.test.cjs"), "utf8");
+  const source = fs.readFileSync(path.join(ROOT, "..", "scripts", "feature-regressions.test.cjs"), "utf8");
   for (const label of requiredFeatureRegressionLabels) {
     assert.ok(source.includes(label), `missing required regression: ${label}`);
   }
 
-  const saveCompatibility = fs.readFileSync(path.join(ROOT, "scripts", "phase34-save-compatibility.test.cjs"), "utf8");
+  const saveCompatibility = fs.readFileSync(path.join(ROOT, "..", "scripts", "phase34-save-compatibility.test.cjs"), "utf8");
   for (const label of [
     "Phase 34 grandfathers every currently owned normal appearance into permanent mastery",
     "Phase 34 stale Neon Tetra names preserve the saved numeric appearance index",
@@ -230,7 +230,7 @@ test("Phase 40 purchase, store, breeding, and locked-species enforcement stay on
 });
 
 test("Phase 40 npm test runs the consolidated progression suite in addition to the existing feature regressions", () => {
-  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "package.json"), "utf8"));
+  const pkg = JSON.parse(fs.readFileSync(path.join(ROOT, "..", "package.json"), "utf8"));
   assert.match(pkg.scripts.test, /scripts\/feature-regressions\.test\.cjs/);
   assert.match(pkg.scripts.test, /scripts\/phase34-save-compatibility\.test\.cjs/);
   assert.match(pkg.scripts.test, /scripts\/phase40-progression-regressions\.test\.cjs/);

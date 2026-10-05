@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const management = fs.readFileSync(path.join(root, "public/app-src/ui/management-and-overlays.js"), "utf8");
 const styles = fs.readFileSync(path.join(root, "public/styles.css"), "utf8");
 const html = fs.readFileSync(path.join(root, "index.html"), "utf8");

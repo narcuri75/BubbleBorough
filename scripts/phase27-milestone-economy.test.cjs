@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const root = path.resolve(__dirname, '..');
+const root = path.resolve(__dirname, '..', 'game');
 const bootstrap = fs.readFileSync(path.join(root, 'public/app-src/00-bootstrap.js'), 'utf8');
 const events = fs.readFileSync(path.join(root, 'public/app-src/tank/events-recaps-and-save.js'), 'utf8');
 const ui = fs.readFileSync(path.join(root, 'public/app-src/ui/management-and-overlays.js'), 'utf8');

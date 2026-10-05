@@ -5,7 +5,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 
 const SOURCE = fs.readFileSync(
-  path.join(__dirname, '..', 'public/app-src/rendering/decor.js'),
+  path.join(__dirname, '..', 'game', 'public/app-src/rendering/decor.js'),
   'utf8'
 );
 
@@ -68,7 +68,7 @@ test('Phase 2 keeps equal-depth decor ordering stable and caches the static orde
 
 test('Phase 2 routes hit-testing through the cached render order', () => {
   const hitTesting = fs.readFileSync(
-    path.join(__dirname, '..', 'public/app-src/decor/hit-testing.js'),
+    path.join(__dirname, '..', 'game', 'public/app-src/decor/hit-testing.js'),
     'utf8'
   );
   assert.match(SOURCE, /function getPlacedDecorRenderOrder\(/);

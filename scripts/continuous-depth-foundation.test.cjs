@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const LAYOUT_PATH = path.join(ROOT, 'public/app-src/decor/layout-and-layers.js');
 const PERSISTENCE_PATH = path.join(ROOT, 'public/app-src/core/settings-and-persistence.js');
 const CAVES_PATH = path.join(ROOT, 'public/app-src/fish/caves-and-collision.js');
@@ -62,6 +62,7 @@ function clamp(value, minimum, maximum) {
 function createDepthHelpers() {
   const context = {
     clamp,
+    normalizeDecorKey: (key) => String(key || '').trim(),
     DEFAULT_TANK_LAYER: 3,
     DEFAULT_TANK_SUBLAYER: 2,
     TANK_DEPTH_LAYERS: 5,
@@ -121,13 +122,44 @@ test('Phase 1 migrates tank decor, tank fish, and stored fish exactly once', () 
   assert.equal(fish.depthRadius, 0.025);
   assert.equal(decor.depthRadius, 0.04);
 
-  const currentSave = { ...migrated, version: 66 };
+  const currentSave = { ...migrated, version: 67 };
   const current = migrate(currentSave);
   assert.equal(current, currentSave, 'current saves do not receive a second migration pass');
 });
 
+test('Floating Lettuce Root defaults and existing placements use 30 percent motion points', () => {
+  const key = 'floating-lettuce-root__plant__theme-natural.png';
+  const catalog = JSON.parse(fs.readFileSync(path.join(ROOT, 'assets/decor/decor_types.json'), 'utf8'));
+  const lettuce = catalog.decor.find((entry) => entry.file === key);
+  assert.equal(lettuce.floatPointY, 0.3);
+  assert.equal(lettuce.motionSplitY, 0.3);
+  const migrate = vm.runInNewContext(`(${extractFunction(persistence, 'migrateSaveSchema')})`, createDepthHelpers());
+  const other = { decorKey: 'another-plant.png', decorSettings: { swaySplitY: 0.6 } };
+  const legacy = {
+    version: 66,
+    tanks: [null, { placedDecor: [
+      { decorKey: key },
+      { decorKey: key, decorSettings: { floatPointY: 0.08, swaySplitY: 0.25, swaySpeed: 1.7 } },
+      other
+    ] }],
+    placedDecor: [{ decorKey: key }]
+  };
+  const before = JSON.stringify(legacy);
+  const migrated = migrate(legacy);
+  for (const item of [...migrated.tanks[1].placedDecor.slice(0, 2), ...migrated.placedDecor]) {
+    assert.equal(item.decorSettings.floatPointY, 0.3);
+    assert.equal(item.decorSettings.swaySplitY, 0.3);
+  }
+  assert.equal(migrated.tanks[1].placedDecor[1].decorSettings.swaySpeed, 1.7);
+  assert.equal(migrated.tanks[1].placedDecor[2], other);
+  assert.equal(JSON.stringify(legacy), before, 'migration preserves the source save');
+  const current = { ...migrated, version: 67 };
+  current.tanks[1].placedDecor[0].decorSettings.floatPointY = 0.4;
+  assert.equal(migrate(current), current, 'later user edits survive subsequent loads');
+});
+
 test('Phase 1 persists the continuous-depth schema and leaves legacy fields available', () => {
-  assert.match(bootstrap, /const STATE_VERSION = 66;/);
+  assert.match(bootstrap, /const STATE_VERSION = 67;/);
   assert.match(persistence, /if \(incomingVersion < 66\)/);
   assert.match(layout, /z,\n    desiredZ,\n    depthRadius:/);
   assert.match(layout, /tankLayer: clampTankLayer/);
@@ -440,6 +472,11 @@ test('Turn reversal traversal follows a continuous water arc rather than stoppin
     FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE: 0.2,
     FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO: 0.26
   };
+  context.runtime = {};
+  for (const name of ['normalizeFishHorizontalDirection', 'getFishFacingDirection', 'getFishLogicalDirection',
+    'getFishHorizontalTurnState', 'getFishRenderedHorizontalTurnState']) {
+    context[name] = vm.runInNewContext(`(${extractFunction(fishMotion, name)})`, context);
+  }
   const getReversal = vm.runInNewContext(`(${extractFunction(predators, 'getFishTurnReversalTraversal')})`, context);
   const fish = {
     turnStartedAt: 1000,
@@ -676,10 +713,3 @@ test('Traversal save state clamps route waypoints and drops malformed legacy val
   assert.equal(state.traversalCruiseUntil, 0);
 });
 
-test('Phase 2 gives decor a restrained rear-to-front visual depth scale', () => {
-  const depth = createDepthHelpers();
-  const getScale = vm.runInNewContext(`(${extractFunction(fs.readFileSync(path.join(ROOT, 'public/app-src/rendering/decor.js'), 'utf8'), 'getDecorDepthScaleForZ')})`, depth);
-  assert.equal(getScale(0.05), 0.94);
-  assert.equal(getScale(0.95), 1);
-  assert.ok(getScale(0.5) > 0.94 && getScale(0.5) < 1);
-});

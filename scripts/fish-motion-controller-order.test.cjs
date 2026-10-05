@@ -4,7 +4,7 @@ const path = require("node:path");
 const test = require("node:test");
 
 const source = fs.readFileSync(
-  path.resolve(__dirname, "..", "public", "app-src", "fish", "predators-and-motion.js"),
+  path.resolve(__dirname, "..", "game", "public", "app-src", "fish", "predators-and-motion.js"),
   "utf8"
 );
 

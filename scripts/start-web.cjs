@@ -1,116 +1,135 @@
 "use strict";
 
-const http = require("http");
-const fs = require("fs");
-const path = require("path");
-const { spawn } = require("child_process");
-
+// One Node entry for development and hosted use. Physical ownership (/game,
+// /website) intentionally differs from the public URL contract.
+const http = require("node:http");
+const path = require("node:path");
+const { spawn } = require("node:child_process");
+const website = require("../website/router.cjs");
+const { gameDestination } = require("../website/compat.js");
+const { createHttpDelivery } = require("./http-delivery.cjs");
 const root = path.resolve(__dirname, "..");
-const host = "127.0.0.1";
-const preferredPort = 4173;
-const maximumPort = 4183;
-let port = preferredPort;
-let url = `http://${host}:${port}/`;
+const gameRoot = path.join(root, "game");
+const mimeTypes = {
+  ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8", ".mjs": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8", ".webmanifest": "application/manifest+json; charset=utf-8",
+  ".xml": "application/xml; charset=utf-8", ".txt": "text/plain; charset=utf-8",
+  ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
+  ".avif": "image/avif", ".gif": "image/gif", ".svg": "image/svg+xml", ".ico": "image/x-icon",
+  ".mp3": "audio/mpeg", ".ogg": "audio/ogg", ".wav": "audio/wav", ".mp4": "video/mp4", ".webm": "video/webm",
+  ".ttf": "font/ttf", ".woff": "font/woff", ".woff2": "font/woff2"
+};
 
-const mimeTypes = Object.freeze({
-  ".css": "text/css; charset=utf-8",
-  ".html": "text/html; charset=utf-8",
-  ".ico": "image/x-icon",
-  ".jpeg": "image/jpeg",
-  ".jpg": "image/jpeg",
-  ".js": "text/javascript; charset=utf-8",
-  ".json": "application/json; charset=utf-8",
-  ".mjs": "text/javascript; charset=utf-8",
-  ".mp3": "audio/mpeg",
-  ".ogg": "audio/ogg",
-  ".png": "image/png",
-  ".svg": "image/svg+xml",
-  ".ttf": "font/ttf",
-  ".wav": "audio/wav",
-  ".webmanifest": "application/manifest+json; charset=utf-8",
-  ".xml": "application/xml; charset=utf-8",
-  ".txt": "text/plain; charset=utf-8",
-  ".webp": "image/webp"
-});
-
-function openBrowser(targetUrl) {
-  const child = process.platform === "win32"
-    ? spawn("cmd.exe", ["/d", "/s", "/c", "start", "", targetUrl], { detached: true, stdio: "ignore", windowsHide: true })
-    : process.platform === "darwin"
-      ? spawn("open", [targetUrl], { detached: true, stdio: "ignore" })
-      : spawn("xdg-open", [targetUrl], { detached: true, stdio: "ignore" });
-  child.unref();
+function within(directory, relative) {
+  const target = path.resolve(directory, relative);
+  const difference = path.relative(directory, target);
+  return difference && !difference.startsWith("..") && !path.isAbsolute(difference) ? target : null;
 }
 
-function resolveRequestPath(requestUrl) {
-  const pathname = decodeURIComponent(new URL(requestUrl, url).pathname);
-  const relativePath = pathname === "/" ? "index.html" : pathname.replace(/^\/+/, "");
-  const resolved = path.resolve(root, relativePath);
-  const relative = path.relative(root, resolved);
-  return relative.startsWith("..") || path.isAbsolute(relative) ? null : resolved;
+function resolveRequestPath(pathname, debugTools = false) {
+  if (debugTools && pathname === "/.fish-motion-audit.html") return path.join(gameRoot, ".fish-motion-audit.html");
+  if (debugTools && pathname === "/scripts/fish-motion-audit-browser.js") return path.join(root, "scripts/fish-motion-audit-browser.js");
+  if (pathname === "/play") return path.join(gameRoot, "index.html");
+  if (pathname === "/mobile.html") return path.join(gameRoot, "mobile.html");
+  // Preserve existing asset URLs, including CSS-relative paths and JSON refs.
+  for (const prefix of ["/assets/", "/public/", "/game/assets/", "/game/public/"]) {
+    if (pathname.startsWith(prefix)) {
+      const relative = pathname.slice(prefix.length);
+      if (relative.split("/").some(part => part.startsWith(".")) || /(?:\.backup|\.cjs$)/i.test(relative)) return null;
+      const directory = prefix.endsWith("/assets/") ? "assets" : "public";
+      return within(path.join(gameRoot, directory), relative);
+    }
+  }
+  // Only browser resources are public; never expose website server modules.
+  if (["/site/site.css", "/site/catalog.css", "/site/compat.js", "/site/site.js"].includes(pathname)) return path.join(root, "website", pathname.slice(6));
+  if (pathname.startsWith("/site/web_assets/")) return within(path.join(root, "website", "web_assets"), pathname.slice(17));
+  if (pathname.startsWith("/site/assets/")) return within(path.join(root, "website/assets"), pathname.slice(13));
+  return null;
 }
 
-function createServer() {
-return http.createServer((request, response) => {
-  let filePath;
-  let requestUrl;
-  try {
-    requestUrl = new URL(request.url || "/", url);
-    filePath = resolveRequestPath(request.url || "/");
-  } catch {
-    response.writeHead(400).end("Bad Request");
-    return;
-  }
-  if (!filePath) {
-    response.writeHead(403).end("Forbidden");
-    return;
-  }
-  // Match ordinary static hosting: directory URLs end in a slash and serve
-  // index.html. Unknown paths never fall back to the game or homepage.
-  if (fs.existsSync(filePath) && fs.statSync(filePath).isDirectory()) {
-    if (!requestUrl.pathname.endsWith("/")) {
-      response.writeHead(308, { location: `${requestUrl.pathname}/${requestUrl.search}` }).end();
+function createServer({ debugTools = false, production = process.env.NODE_ENV === "production" } = {}) {
+  const delivery = createHttpDelivery({ production });
+  return http.createServer((request, response) => {
+    response.setHeader("Referrer-Policy", "no-referrer");
+    response.setHeader("X-Content-Type-Options", "nosniff");
+    response.setHeader("Cache-Control", "no-store");
+    function send(status, body, contentType = "text/html; charset=utf-8") {
+      void delivery.send(request, response, status, body, contentType).catch(() => response.destroy());
+    }
+    function redirect(destination, status = 308) {
+      response.writeHead(status, { Location: destination });
+      response.end();
+    }
+    if (!["GET", "HEAD"].includes(request.method)) {
+      response.setHeader("Allow", "GET, HEAD");
+      send(405, "Method Not Allowed", "text/plain; charset=utf-8");
       return;
     }
-    filePath = path.join(filePath, "index.html");
-  }
-  fs.readFile(filePath, (error, body) => {
-    if (error) {
-      const missing = error.code === "ENOENT";
-      const errorPage = path.join(root, "404.html");
-      response.writeHead(missing ? 404 : 500, { "content-type": "text/html; charset=utf-8" });
-      response.end(missing && fs.existsSync(errorPage) ? fs.readFileSync(errorPage) : (missing ? "Not Found" : "Server Error"));
+    let url, pathname;
+    try {
+      url = new URL(request.url, "http://localhost");
+      pathname = decodeURIComponent(url.pathname);
+      if (pathname.includes("\\") || pathname.includes("\0")) throw new Error("Invalid path");
+    } catch {
+      send(400, "Bad Request", "text/plain; charset=utf-8");
       return;
     }
-    response.writeHead(200, {
-      "cache-control": "no-store",
-      "content-type": mimeTypes[path.extname(filePath).toLowerCase()] || "application/octet-stream"
-    });
-    response.end(body);
+    const normalized = pathname !== "/" ? pathname.replace(/\/+$/, "") : "/";
+    if ((website.routes.has(normalized) || normalized === "/play") && pathname !== normalized) {
+      redirect(normalized + url.search);
+      return;
+    }
+    // Older game bookmarks and generated entries remain valid; fragments survive
+    // browser redirects because no replacement fragment is specified.
+    if (["/index.html", "/play/index.html", "/game", "/game/", "/game/index.html"].includes(pathname)) {
+      redirect("/play" + url.search);
+      return;
+    }
+    if (pathname === "/") {
+      const destination = gameDestination(url.href);
+      if (destination) { redirect(destination, 302); return; }
+    }
+    if (website.routes.has(pathname)) { send(200, website.render(pathname)); return; }
+    if (pathname === "/robots.txt") {
+      send(200, `User-agent: *\nAllow: /\n\nSitemap: ${website.origin}/sitemap.xml\n`, mimeTypes[".txt"]);
+      return;
+    }
+    if (pathname === "/sitemap.xml") { send(200, website.sitemap(), mimeTypes[".xml"]); return; }
+    // Retire the temporary separate manifest without creating another app ID.
+    if (pathname === "/public/play.webmanifest") { redirect("/public/manifest.webmanifest"); return; }
+    const file = resolveRequestPath(pathname, debugTools);
+    if (!file) { send(404, website.render(null)); return; }
+    if (pathname === "/play" || pathname === "/mobile.html") response.setHeader("X-Robots-Tag", "noindex,follow");
+    void delivery.sendFile(request, response, file, mimeTypes[path.extname(file).toLowerCase()] || "application/octet-stream")
+      .catch(error => {
+        if (response.headersSent) { response.destroy(); return; }
+        send(["ENOENT", "EISDIR", "ENOTDIR"].includes(error.code) ? 404 : 500, website.render(null));
+      });
   });
-});
 }
 
 if (require.main === module) {
-require("./build-website.cjs").build();
-const server = createServer();
-server.on("error", (error) => {
-  if (error.code === "EADDRINUSE" && port < maximumPort) {
-    port += 1;
-    url = `http://${host}:${port}/`;
-    server.listen(port, host);
-    return;
-  }
-  console.error(error);
-  process.exit(1);
-});
-
-server.listen(port, host, () => {
-  console.log(`Bubble Borough is running at ${url}`);
-  console.log("Keep this window open while playing. Press Ctrl+C to stop the server.");
-  console.log(`Public homepage blueprint: ${url}website-preview/`);
-  if (!process.argv.includes("--no-open")) openBrowser(url);
-});
+  const host = process.env.HOST || "127.0.0.1";
+  const initialPort = Number(process.env.PORT || 4173);
+  let port = initialPort;
+  const server = createServer({ debugTools: process.argv.includes("--debug-tools") && process.env.NODE_ENV !== "production" });
+  server.on("error", error => {
+    if (error.code === "EADDRINUSE" && !process.env.PORT && port < initialPort + 10) { server.listen(++port, host); return; }
+    console.error(error.message);
+    process.exitCode = 1;
+  });
+  server.on("listening", () => {
+    const url = `http://${host}:${port}/`;
+    console.log(`Bubble Borough website: ${url}\nGame: ${url}play`);
+    if (!process.argv.includes("--no-open") && process.env.NODE_ENV !== "production") {
+      const child = process.platform === "win32"
+        ? spawn("cmd.exe", ["/d", "/s", "/c", "start", "", url], { detached: true, stdio: "ignore", windowsHide: true })
+        : spawn(process.platform === "darwin" ? "open" : "xdg-open", [url], { detached: true, stdio: "ignore" });
+      child.unref();
+    }
+  });
+  server.listen(port, host);
 }
 
 module.exports = { createServer, resolveRequestPath };

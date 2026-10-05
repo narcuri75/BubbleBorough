@@ -5,7 +5,7 @@ const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
 
 let removed = 0;
 for (const sheet of buildDefinitions()) {
-  const jsonPath = path.resolve(__dirname, "..", sheet.path.replace(/\.webp$/i, ".json"));
+  const jsonPath = path.resolve(__dirname, "..", "game", sheet.path.replace(/\.webp$/i, ".json"));
   const source = JSON.parse(fs.readFileSync(jsonPath, "utf8"));
   const strip = value => {
     if (Array.isArray(value)) return value.map(strip);

@@ -3,7 +3,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const crypto = require("node:crypto");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const manifestPath = path.join(root, "assets/generated/sprites/delivery-manifest.json");
 const hash = buffer => crypto.createHash("sha256").update(buffer).digest("hex");
 // Increment delivery.version in generate-sprite-sheets.cjs when changing presets.

@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const EVENTS_PATH = path.join(ROOT, 'public/app-src/tank/events-recaps-and-save.js');
 const APPEARANCE_PATH = path.join(ROOT, 'public/app-src/fish/appearance.js');
 const PERSISTENCE_PATH = path.join(ROOT, 'public/app-src/core/settings-and-persistence.js');
@@ -156,7 +156,7 @@ test('Phase 34 mastery sanitization canonicalizes saved keys, preserves alternat
 
 test('Phase 34 older fish safely default progression fields without inferring XP from age', () => {
   assert.match(persistence, /if \(incomingVersion < 65\)/);
-  assert.match(bootstrap, /const STATE_VERSION = 65;/);
+  assert.match(bootstrap, /const STATE_VERSION = 67;/);
   assert.match(fishSanitize, /careXp: Math\.max\(0, Math\.floor\(Number\(fish\.careXp\) \|\| 0\)\)/);
   assert.match(fishSanitize, /careLevel: clamp\(Math\.floor\(Number\(fish\.careLevel\) \|\| FISH_CARE_LEVEL_MIN\)/);
   assert.match(fishSanitize, /lastCareXpDayKey: typeof fish\.lastCareXpDayKey === "string" \? fish\.lastCareXpDayKey : ""/);

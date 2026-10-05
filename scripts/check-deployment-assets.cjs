@@ -1,7 +1,7 @@
 "use strict";
 
 // Local development can serve files that have not been added to Git yet.
-// Production cannot: static hosting only receives the committed tree. Verify
+// Production cannot: deployments only receive the committed tree. Verify
 // the sprite atlas sources and every generated preview are both present and
 // tracked, so a local green build cannot conceal production-only 404s.
 const fs = require("node:fs");
@@ -9,7 +9,7 @@ const path = require("node:path");
 const { execFileSync } = require("node:child_process");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const manifestPath = "assets/generated/sprites/delivery-manifest.json";
 const manifest = JSON.parse(fs.readFileSync(path.join(root, manifestPath), "utf8"));
 const expected = new Set([manifestPath]);

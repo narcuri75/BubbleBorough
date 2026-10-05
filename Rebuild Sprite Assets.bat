@@ -40,10 +40,10 @@ if errorlevel 1 goto :fail
 
 echo.
 echo [2/5] Deleting ALL previously generated sprite delivery files...
-if exist "assets\generated\sprites" (
-  rmdir /s /q "assets\generated\sprites"
-  if exist "assets\generated\sprites" (
-    echo ERROR: Could not fully remove assets\generated\sprites
+if exist "game\assets\generated\sprites" (
+  rmdir /s /q "game\assets\generated\sprites"
+  if exist "game\assets\generated\sprites" (
+    echo ERROR: Could not fully remove game\assets\generated\sprites
     goto :fail
   )
 )
@@ -55,7 +55,7 @@ if errorlevel 1 goto :fail
 
 echo.
 echo [4/5] Normalizing the asset manifest...
-node "scripts\write-stable-json.cjs" "assets\asset-manifest.json"
+node "scripts\write-stable-json.cjs" "game\assets\asset-manifest.json"
 if errorlevel 1 goto :fail
 
 echo.

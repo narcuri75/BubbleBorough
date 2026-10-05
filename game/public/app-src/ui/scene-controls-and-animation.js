@@ -1,0 +1,1405 @@
+// Source fragment: ui/scene-controls-and-animation.js
+// Assembled into ../app.js by scripts/build-app-bundle.cjs.
+
+function renderPlacedDecor() {
+  const placedDecorDataKey = state.placedDecor
+    .map((item) => [
+      item.id,
+      item.decorKey,
+      getDecorTankLayer(item),
+      Number(item.xNorm).toFixed(4),
+      Number(item.yNorm).toFixed(4),
+      Number(item.scale).toFixed(2),
+      isDecorHorizontallyFlipped(item) ? 1 : 0,
+      isDecorVerticallyFlipped(item) ? 1 : 0,
+      item.groupId || ""
+    ].join(","))
+    .concat([
+      (Array.isArray(runtime.selectedDecorIds) ? runtime.selectedDecorIds : []).join(",")
+    ])
+    .join("|");
+  if (!shouldRebuildRenderSection("placed-decor-data", placedDecorDataKey)) {
+    return;
+  }
+
+  if (!state.placedDecor.length) {
+    setMarkupIfChanged("placed-decor", dom.placedDecorList, `
+      <div class="empty-state">
+        Nothing is placed yet.
+      </div>
+    `);
+    return;
+  }
+
+  const sorted = [...state.placedDecor].sort((left, right) => {
+    if (getDecorTankLayer(left) !== getDecorTankLayer(right)) {
+      return getDecorTankLayer(right) - getDecorTankLayer(left);
+    }
+    return left.yNorm - right.yNorm;
+  });
+  const selectedItems = getSelectedPlacedDecorItems();
+  const selectedGroupIds = getDecorGroupIdsForItems(selectedItems);
+  const selectionMarkup = selectedItems.length > 1
+    ? `
+      <article class="mini-card decor-selection-card">
+        <div>
+          <strong>${selectedItems.length} Selected</strong>
+          <div class="fish-meta">${selectedGroupIds.length ? "Grouped selection ready." : "Press G to group them."}</div>
+          <div class="mini-note">Shift-click decor tray items to adjust the selection.</div>
+        </div>
+        <div class="mini-card-actions">
+          <button class="small-button" data-group-selected-decor>Group / Add To Group</button>
+          <button class="small-button alt" data-ungroup-selected-decor ${selectedGroupIds.length ? "" : "disabled"}>Ungroup</button>
+        </div>
+      </article>
+    `
+    : "";
+  const markup = selectionMarkup + sorted
+    .map((item) => {
+      const decor = runtime.decorMap.get(item.decorKey) || {
+        name: titleFromFile(item.decorKey),
+        path: getDecorAssetPathForKey(item.decorKey)
+      };
+      const grouped = isPlacedDecorGrouped(item);
+      const selected = getSelectedDecorIdSet().has(item.id);
+
+      return `
+        <article class="mini-card ${selected ? "is-selected" : ""}">
+          <img class="decor-thumb" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="${escapeHtml(decor.name)}"${isDecorHorizontallyFlipped(item) || isDecorVerticallyFlipped(item) ? ` style="transform: scale(${isDecorHorizontallyFlipped(item) ? -1 : 1}, ${isDecorVerticallyFlipped(item) ? -1 : 1});"` : ""} />
+          <div>
+            <strong>${decor.name}</strong>
+            <div class="fish-meta">${grouped ? "Grouped decor." : "Placed in the tank."}</div>
+            <div class="mini-note">Depth: ${getDecorDepthPlacementLabel(item)}. Current size: ${formatDecorScale(item.scale)}</div>
+          </div>
+          <div class="mini-card-actions">
+            <div class="size-controls">
+              <button class="small-button icon alt" data-resize-placed="${item.id}" data-size-direction="-1" aria-label="Make ${decor.name} smaller">-</button>
+              <span class="size-badge">${formatDecorScale(item.scale)}</span>
+              <button class="small-button icon alt" data-resize-placed="${item.id}" data-size-direction="1" aria-label="Make ${decor.name} larger">+</button>
+            </div>
+            <button class="small-button" data-copy-size="${item.id}">Set Default</button>
+            <button class="small-button alt" data-edit-decor-settings="${item.id}">Settings</button>
+            <button class="small-button alt" data-ungroup-decor="${item.id}" ${grouped ? "" : "disabled"}>Ungroup</button>
+            <button class="small-button alt" data-sell-decor-placed="${item.id}" ${grouped ? "disabled" : ""}>${typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor) ? "Rehome" : "Sell"}</button>
+            <button class="small-button alt" data-store-decor="${item.id}" ${grouped ? "disabled" : ""}>Put Away</button>
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+  setMarkupIfChanged("placed-decor", dom.placedDecorList, markup);
+}
+
+function renderBackgrounds() {
+  const buildBackgroundCardsMarkup = (backgrounds) => backgrounds
+    .map((background) => {
+      const selected = state.selectedBackground === background.key;
+      return `
+        <article class="background-card ${selected ? "is-selected" : ""}">
+          ${renderBackgroundPreview(background, "background-thumb")}
+          <div>
+            <strong>${background.name}</strong>
+          </div>
+          <div class="shop-button-row">
+            <button data-select-background="${background.key}">
+              ${selected
+            ? "Using This Background"
+            : isLocalImageBackgroundKey(background.key) && !hasLocalBackgroundImage()
+              ? "Choose Image"
+              : "Use Background"}
+            </button>
+            ${background.customUploadAsset === true ? `<button class="small-button alt" type="button" data-delete-custom-background="${escapeHtml(background.key)}">Delete</button>` : ""}
+          </div>
+        </article>
+      `;
+    })
+    .join("");
+
+  const ownedImageBackgrounds = getOwnedBackgroundCatalog().filter((background) => (
+    !isCustomBackgroundKey(background.key)
+    && !isLocalImageBackgroundKey(background.key)
+  ));
+
+  if (dom.backgroundList) {
+    const sharedMarkup = buildBackgroundCardsMarkup(
+      getOwnedBackgroundCatalog().filter((background) => !isCustomBackgroundKey(background.key))
+    );
+    setMarkupIfChanged(
+      "background-list",
+      dom.backgroundList,
+      sharedMarkup || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
+  }
+
+  if (dom.equipmentBackgroundList) {
+    const localImageReady = hasLocalBackgroundImage();
+    const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
+    const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
+    const localCardMarkup = localBackground
+      ? `
+        <article class="background-card local-background-card ${localImageSelected ? "is-selected" : ""}">
+          ${renderBackgroundPreview(localBackground, "background-thumb")}
+          <div>
+            <strong>${localBackground.name}</strong>
+            <div class="fish-meta">${localImageReady
+        ? localImageSelected
+          ? "Currently in use for this aquarium."
+          : "Ready to use as a background image."
+        : "Use your own image file for this aquarium."}</div>
+          </div>
+          <div class="shop-button-row">
+            <button type="button" data-open-local-background-picker>${localImageReady ? "Replace Image" : "Choose Image"}</button>
+            <button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}" ${localImageReady ? "" : "disabled"}>${localImageSelected ? "Using This Image" : "Use Image"}</button>
+            <button class="small-button alt" type="button" data-clear-local-background ${localImageReady ? "" : "disabled"}>Clear</button>
+          </div>
+        </article>
+      `
+      : "";
+    setMarkupIfChanged(
+      "equipment-background-list",
+      dom.equipmentBackgroundList,
+      `${localCardMarkup}${buildBackgroundCardsMarkup(ownedImageBackgrounds)}`
+        || `<div class="empty-state">No image backgrounds are unlocked yet.</div>`
+    );
+  }
+
+  if (dom.editTankBackgroundList) {
+    const storageMeter = document.getElementById("editTankCustomStorageMeter");
+    if (storageMeter) setMarkupIfChanged("edit-tank-custom-storage-meter", storageMeter, renderCustomContentStorageMeter({ compact: true }));
+    const localImageReady = hasLocalBackgroundImage();
+    const localImageSelected = isLocalImageBackgroundKey(state.selectedBackground);
+    const localBackground = runtime.backgroundMap.get(CUSTOM_IMAGE_BACKGROUND_ASSET_KEY);
+    const localPreview = localImageReady && localBackground
+      ? renderBackgroundPreview(localBackground, "edit-tank-local-image-thumb")
+      : `<span class="edit-tank-local-image-placeholder">+</span>`;
+    const localMarkup = localBackground
+      ? `
+        <article class="edit-tank-local-image-card ${localImageSelected ? "is-selected" : ""}">
+          <div class="edit-tank-local-image-preview">${localPreview}</div>
+          <div class="edit-tank-local-image-copy">
+            <strong>Custom Image</strong>
+            <span>${localImageReady ? "Legacy uploaded background" : `Add a reusable custom background for ${CUSTOM_BACKGROUND_COST} coins`}</span>
+          </div>
+          <div class="edit-tank-local-image-actions">
+            <button type="button" data-open-local-background-picker>Add Custom Image</button>
+            ${localImageReady ? `<button class="small-button alt" type="button" data-select-background="${CUSTOM_IMAGE_BACKGROUND_ASSET_KEY}">${localImageSelected ? "Selected" : "Use Image"}</button>` : ""}
+            ${localImageReady ? `<button class="small-button alt" type="button" data-clear-local-background title="Clear custom image" aria-label="Clear custom image">×</button>` : ""}
+          </div>
+        </article>
+      `
+      : "";
+
+    const imageCards = ownedImageBackgrounds.map((background) => {
+      const selected = state.selectedBackground === background.key;
+      return `
+        <div class="edit-tank-image-option-shell">
+          <button
+            class="edit-tank-image-option ${selected ? "is-selected" : ""}"
+            type="button"
+            data-select-background="${background.key}"
+            aria-pressed="${selected}"
+            title="Use ${escapeHtml(background.name)}">
+            ${renderBackgroundPreview(background, "edit-tank-image-thumb")}
+            <span>${escapeHtml(background.name)}</span>
+          </button>
+          ${background.customUploadAsset === true ? `<button class="small-button alt" type="button" data-delete-custom-background="${escapeHtml(background.key)}" title="Delete ${escapeHtml(background.name)}">Delete</button>` : ""}
+        </div>
+      `;
+    }).join("");
+
+    setMarkupIfChanged(
+      "edit-tank-background-list",
+      dom.editTankBackgroundList,
+      `<div class="edit-tank-image-layout">
+        <section class="edit-tank-custom-content">
+          ${localMarkup}
+        </section>
+        <div class="edit-tank-built-in-backgrounds">
+          <div class="edit-tank-built-in-backgrounds-label">Background Library</div>
+          <div class="edit-tank-image-options">${imageCards || `<span class="edit-tank-image-empty">No unlocked image backgrounds.</span>`}</div>
+        </div>
+      </div>`
+    );
+  }
+}
+
+function rgbToHsv(rgb) {
+  const red = clamp((Number(rgb?.r) || 0) / 255, 0, 1);
+  const green = clamp((Number(rgb?.g) || 0) / 255, 0, 1);
+  const blue = clamp((Number(rgb?.b) || 0) / 255, 0, 1);
+  const max = Math.max(red, green, blue);
+  const min = Math.min(red, green, blue);
+  const delta = max - min;
+  let hue = 0;
+  if (delta > 0.000001) {
+    if (max === red) {
+      hue = ((green - blue) / delta) % 6;
+    } else if (max === green) {
+      hue = ((blue - red) / delta) + 2;
+    } else {
+      hue = ((red - green) / delta) + 4;
+    }
+    hue /= 6;
+  }
+  if (hue < 0) {
+    hue += 1;
+  }
+  return {
+    h: normalizeHueUnit(hue),
+    s: max <= 0 ? 0 : delta / max,
+    v: max
+  };
+}
+
+function hsvToRgb(hsv) {
+  const hue = normalizeHueUnit(hsv?.h);
+  const saturation = clamp(Number(hsv?.s) || 0, 0, 1);
+  const value = clamp(Number(hsv?.v) || 0, 0, 1);
+  const scaledHue = hue * 6;
+  const sector = Math.floor(scaledHue) % 6;
+  const fraction = scaledHue - Math.floor(scaledHue);
+  const p = value * (1 - saturation);
+  const q = value * (1 - fraction * saturation);
+  const t = value * (1 - (1 - fraction) * saturation);
+  const channels = [
+    [value, t, p],
+    [q, value, p],
+    [p, value, t],
+    [p, q, value],
+    [t, p, value],
+    [value, p, q]
+  ][sector] || [value, p, q];
+  return {
+    r: Math.round(channels[0] * 255),
+    g: Math.round(channels[1] * 255),
+    b: Math.round(channels[2] * 255)
+  };
+}
+
+function getTankColorPickerModel(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_SOLID_BACKGROUND_COLOR;
+  const hsv = rgbToHsv(hexToRgb(normalizedColor));
+  const hueColor = rgbToHex(hsvToRgb({ h: hsv.h, s: 1, v: 1 }));
+  return {
+    color: normalizedColor,
+    hue: hsv.h,
+    saturation: hsv.s,
+    value: hsv.v,
+    darkness: 1 - hsv.v,
+    hueColor
+  };
+}
+
+function getTankColorChoiceLabel(color, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedColor = normalizeHexColor(color);
+  return colorChoices.find((choice) => normalizeHexColor(choice.color) === normalizedColor)?.label
+    || normalizedColor
+    || "Custom";
+}
+
+function renderTankQuickColorSwatches(context, activeColor, colorChoices = getSolidBackgroundColorChoices()) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return colorChoices.map((choice) => {
+    const normalizedColor = normalizeHexColor(choice.color);
+    const selected = normalizedColor === normalizedActive;
+    return `
+      <button
+        class="tank-color-picker-quick-swatch ${selected ? "is-selected" : ""}"
+        type="button"
+        data-color-picker-quick="${context}"
+        data-color-picker-color="${normalizedColor}"
+        aria-pressed="${selected}"
+        aria-label="Set color to ${escapeHtml(choice.label)}"
+        title="${escapeHtml(choice.label)}"
+        style="--swatch:${normalizedColor};"></button>
+    `;
+  }).join("");
+}
+
+function renderCompactTankColorPicker(context, color, title, options = {}) {
+  const colorChoices = options.colorChoices || getSolidBackgroundColorChoices();
+  const model = getTankColorPickerModel(color);
+  const label = getTankColorChoiceLabel(model.color, colorChoices);
+  const compactClass = options.compact ? " is-condensed" : "";
+  return `
+    <div
+      class="tank-color-picker${compactClass}"
+      data-color-picker-root="${context}"
+      style="--picker-hue-color:${model.hueColor};--picker-saturation:${(model.saturation * 100).toFixed(2)}%;--picker-darkness:${(model.darkness * 100).toFixed(2)}%;--picker-color:${model.color};">
+      <div class="tank-color-picker-heading">
+        <span>${escapeHtml(title)}</span>
+        <strong data-color-picker-label>${escapeHtml(label)}</strong>
+        ${options.headingAction || ""}
+      </div>
+      <div class="tank-color-picker-body">
+        <div class="tank-color-picker-spectrum-wrap">
+          <div class="tank-color-picker-spectrum" data-color-picker-field="${context}" role="slider" aria-label="${escapeHtml(title)} saturation and darkness">
+            <span class="tank-color-picker-spectrum-marker"></span>
+          </div>
+          <div class="tank-color-picker-hue" data-color-picker-hue="${context}" role="slider" aria-label="${escapeHtml(title)} hue">
+            <span class="tank-color-picker-hue-marker" style="top:${(model.hue * 100).toFixed(2)}%;"></span>
+          </div>
+        </div>
+        <div class="tank-color-picker-sliders">
+          <label>
+            <span>Saturation</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.saturation * 100)}" data-color-picker-range="${context}" data-color-picker-channel="saturation" />
+          </label>
+          <label>
+            <span>Darkness</span>
+            <input type="range" min="0" max="100" step="1" value="${Math.round(model.darkness * 100)}" data-color-picker-range="${context}" data-color-picker-channel="darkness" />
+          </label>
+          <div class="tank-color-picker-code-row">
+            <span class="tank-color-picker-current" data-color-picker-current style="--swatch:${model.color};"></span>
+            <input class="tank-color-picker-hex" type="text" inputmode="text" autocomplete="off" spellcheck="false" maxlength="7" value="${model.color}" data-color-picker-hex="${context}" aria-label="${escapeHtml(title)} hex color" />
+          </div>
+        </div>
+        <div class="tank-color-picker-quick-area">
+          <span class="tank-color-picker-quick-label">Quick Colors</span>
+          <div class="tank-color-picker-quick-grid" role="group" aria-label="Quick colors for ${escapeHtml(title)}">
+            ${renderTankQuickColorSwatches(context, model.color, colorChoices)}
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+}
+
+function buildAnimatedBackgroundPresetFill(color) {
+  const normalizedColor = normalizeHexColor(color) || DEFAULT_ANIMATED_BACKGROUND_TOP_COLOR;
+  const surface = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.surface, normalizedColor);
+  const mid = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.mid, normalizedColor);
+  const deep = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.deep, normalizedColor);
+  const abyss = remapAnimatedBackgroundSourceColor(ANIMATED_BACKGROUND_SOURCE_PALETTE.abyss, normalizedColor);
+  return `linear-gradient(180deg, ${surface} 0%, ${mid} 38%, ${deep} 70%, ${abyss} 100%)`;
+}
+
+function renderCompactAnimatedBackgroundPresets(activeColor) {
+  const normalizedActive = normalizeHexColor(activeColor);
+  return `
+    <div class="edit-tank-animated-presets">
+      <div class="edit-tank-animated-summary">
+        <span>Animated Scheme</span>
+        <strong>${escapeHtml(getTankColorChoiceLabel(normalizedActive))}</strong>
+        <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset</button>
+      </div>
+      <div class="edit-tank-animated-preset-list" role="group" aria-label="Animated background schemes">
+        ${TANK_ANIMATED_BACKGROUND_PRESETS.map((preset) => {
+          const selected = normalizeHexColor(preset.color) === normalizedActive;
+          return `
+            <button
+              class="edit-tank-animated-preset ${selected ? "is-selected" : ""}"
+              type="button"
+              data-animated-background-scheme-color="${preset.color}"
+              aria-pressed="${selected}"
+              title="${escapeHtml(preset.label)}">
+              <span class="edit-tank-animated-preset-preview" style="--animated-preset-fill:${buildAnimatedBackgroundPresetFill(preset.color)};"></span>
+              <span>${escapeHtml(preset.label)}</span>
+            </button>
+          `;
+        }).join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderSolidBackgroundControls() {
+  const hasEquipmentPanel = Boolean(dom.equipmentBackgroundColorPanel);
+  const hasEditTankPanel = Boolean(dom.editTankBackgroundColorPanel);
+  if (!hasEquipmentPanel && !hasEditTankPanel) {
+    return;
+  }
+
+  const solidEnabled = isSolidBackgroundEnabled();
+  const gradientEnabled = isGradientBackgroundEnabled();
+  const animatedEnabled = isAnimatedBackgroundEnabled();
+  const stateCompactMode = solidEnabled
+    ? "solid"
+    : gradientEnabled
+      ? "gradient"
+      : animatedEnabled
+        ? "animated"
+        : "image";
+  const validCompactModes = new Set(["image", "solid", "gradient", "animated"]);
+  if (hasEditTankPanel && !validCompactModes.has(runtime.editTankBackgroundMode)) {
+    runtime.editTankBackgroundMode = stateCompactMode;
+  }
+  const compactMode = hasEditTankPanel && validCompactModes.has(runtime.editTankBackgroundMode)
+    ? runtime.editTankBackgroundMode
+    : stateCompactMode;
+  const colorChoices = getSolidBackgroundColorChoices();
+  const activeColor = getActiveSolidBackgroundColor();
+  const activeChoice = colorChoices.find((choice) => choice.color === activeColor)
+    || { label: activeColor, color: activeColor };
+  const gradientColors = getActiveGradientBackgroundColors();
+  const gradientStartChoice = colorChoices.find((choice) => choice.color === gradientColors.start)
+    || { label: gradientColors.start, color: gradientColors.start };
+  const gradientEndChoice = colorChoices.find((choice) => choice.color === gradientColors.end)
+    || { label: gradientColors.end, color: gradientColors.end };
+  const animatedColors = getActiveAnimatedBackgroundColors();
+  const animatedChoicesByKey = Object.fromEntries(
+    ANIMATED_BACKGROUND_COLOR_GROUPS.map((group) => {
+      const color = animatedColors[group.key];
+      const choice = colorChoices.find((entry) => entry.color === color)
+        || { label: color, color };
+      return [group.key, choice];
+    })
+  );
+
+  const renderSolidSwatches = () => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColor;
+      return `
+        <button
+          class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+          type="button"
+          data-solid-background-color="${choice.color}"
+          aria-pressed="${selected}"
+          aria-label="Set solid background color to ${choice.label}"
+          title="${choice.label}"
+          style="--swatch:${choice.color};">
+        </button>
+      `;
+    })
+    .join("");
+
+  const renderGradientSwatches = (role, activeColorValue) => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColorValue;
+      return `
+        <button
+          class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+          type="button"
+          data-gradient-background-role="${role}"
+          data-gradient-background-color="${choice.color}"
+          aria-pressed="${selected}"
+          aria-label="Set gradient ${role === "end" ? "bottom right" : "top left"} color to ${choice.label}"
+          title="${choice.label}"
+          style="--swatch:${choice.color};">
+        </button>
+      `;
+    })
+    .join("");
+
+  const renderAnimatedSwatches = (role, activeColorValue, roleLabel) => colorChoices
+    .map((choice) => {
+      const selected = choice.color === activeColorValue;
+      return `
+        <button
+          class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+          type="button"
+          data-animated-background-role="${role}"
+          data-animated-background-color="${choice.color}"
+          aria-pressed="${selected}"
+          aria-label="Set ${roleLabel} color to ${choice.label}"
+          title="${choice.label}"
+          style="--swatch:${choice.color};">
+        </button>
+      `;
+    })
+    .join("");
+
+  const animatedGroupMarkup = ANIMATED_BACKGROUND_COLOR_GROUPS
+    .map((group) => `
+      <div class="background-gradient-color-group">
+        <div class="custom-gravel-choice-summary">
+          <span>${group.label}</span>
+          <strong>${animatedChoicesByKey[group.key].label}</strong>
+        </div>
+        <div class="custom-gravel-swatches" role="group" aria-label="Animated background ${group.description} color choices">
+          ${renderAnimatedSwatches(group.key, animatedColors[group.key], group.description)}
+        </div>
+      </div>
+    `)
+    .join("");
+
+  if (hasEquipmentPanel) {
+    const equipmentMarkup = `
+      <div class="background-color-panel-shell">
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentSolidBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Solid Color</span>
+            <span class="settings-toggle-note">Use a flat backdrop instead of an image background.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${solidEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentSolidBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-solid-background
+              ${solidEnabled ? "checked" : ""}
+              aria-label="Use Solid Color background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentGradientBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Gradient Background</span>
+            <span class="settings-toggle-note">Blend two colors diagonally from the top left to the bottom right.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${gradientEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentGradientBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-gradient-background
+              ${gradientEnabled ? "checked" : ""}
+              aria-label="Use Gradient background" />
+          </div>
+        </label>
+        <label class="settings-toggle-row background-solid-toggle-row" for="equipmentAnimatedBackgroundToggle">
+          <div class="settings-toggle-copy">
+            <span class="settings-toggle-label">Animated Background</span>
+            <span class="settings-toggle-note">Use a slow underwater wallpaper effect instead of a still image.</span>
+          </div>
+          <div class="background-solid-toggle-controls">
+            ${animatedEnabled ? renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-solid-toggle-preview") : ""}
+            <input
+              id="equipmentAnimatedBackgroundToggle"
+              class="settings-checkbox"
+              type="checkbox"
+              data-toggle-animated-background
+              ${animatedEnabled ? "checked" : ""}
+              aria-label="Use Animated background" />
+          </div>
+        </label>
+        ${(solidEnabled || gradientEnabled || animatedEnabled) ? `
+        <div class="settings-subsection-heading">
+          <h4>Background Colors</h4>
+        </div>
+        ` : ""}
+        ${solidEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${activeChoice.label}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="Solid background color choices">
+            ${renderSolidSwatches()}
+          </div>
+        </article>
+        ` : ""}
+        ${gradientEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="background-gradient-grid">
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Top Left</span>
+                <strong>${gradientStartChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Top left gradient color choices">
+                ${renderGradientSwatches("start", gradientColors.start)}
+              </div>
+            </div>
+            <div class="background-gradient-color-group">
+              <div class="custom-gravel-choice-summary">
+                <span>Bottom Right</span>
+                <strong>${gradientEndChoice.label}</strong>
+              </div>
+              <div class="custom-gravel-swatches" role="group" aria-label="Bottom right gradient color choices">
+                ${renderGradientSwatches("end", gradientColors.end)}
+              </div>
+            </div>
+          </div>
+        </article>
+        ` : ""}
+        ${animatedEnabled ? `
+        <article class="custom-gravel-layer-card background-solid-color-card">
+          <div class="custom-gravel-layer-header background-color-preview-header">
+            ${renderCustomBackgroundPreviewSwatch(getCurrentTank(), "background-mode-preview")}
+          </div>
+          <div class="shop-button-row">
+            <button class="small-button alt" type="button" data-reset-animated-background-colors>Reset Scheme</button>
+          </div>
+          <div class="background-gradient-grid">
+            ${animatedGroupMarkup}
+          </div>
+        </article>
+        ` : ""}
+      </div>
+    `;
+    setMarkupIfChanged("equipment-background-color-panel", dom.equipmentBackgroundColorPanel, equipmentMarkup);
+  }
+
+  if (hasEditTankPanel) {
+    let compactMarkup = "";
+    if (compactMode === "solid") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-solid">
+          ${renderCompactTankColorPicker("solid-background", activeColor, "Solid Color")}
+        </div>
+      `;
+    } else if (compactMode === "gradient") {
+      compactMarkup = `
+        <div class="edit-tank-background-control is-gradient">
+          <div class="edit-tank-gradient-picker-grid">
+            ${renderCompactTankColorPicker("gradient-start", gradientColors.start, "Top Color", { compact: true })}
+            ${renderCompactTankColorPicker("gradient-end", gradientColors.end, "Bottom Color", { compact: true })}
+          </div>
+        </div>
+      `;
+    } else if (compactMode === "animated") {
+      const schemeGroup = ANIMATED_BACKGROUND_COLOR_GROUPS[0];
+      compactMarkup = `
+        <div class="edit-tank-background-control is-animated">
+          ${renderCompactAnimatedBackgroundPresets(animatedColors[schemeGroup.key])}
+        </div>
+      `;
+    }
+
+    setMarkupIfChanged("edit-tank-background-color-panel", dom.editTankBackgroundColorPanel, compactMarkup);
+    dom.editTankBackgroundColorPanel.hidden = compactMode === "image";
+    if (dom.editTankBackgroundList) {
+      dom.editTankBackgroundList.hidden = compactMode !== "image";
+    }
+    for (const button of dom.editTankTray?.querySelectorAll("[data-tank-background-mode]") || []) {
+      const selected = runtime.editTankTrayTab === "background" && button.dataset.tankBackgroundMode === compactMode;
+      button.classList.toggle("is-active", selected);
+      button.setAttribute("aria-selected", selected ? "true" : "false");
+      button.tabIndex = 0;
+    }
+  }
+}
+
+
+function renderCustomGravelControls() {
+  const standardContainers = [
+    ["custom-gravel-panel", dom.customGravelPanel],
+    ["equipment-custom-gravel-panel", dom.equipmentCustomGravelPanel]
+  ].filter(([, container]) => container);
+  const editContainer = dom.editTankCustomGravelPanel;
+  if (!standardContainers.length && !editContainer) {
+    return;
+  }
+
+  const layerCatalog = runtime.customGravelLayerCatalog || [];
+  const layersReady = hasReadyCustomGravelLayers();
+
+  if (!layersReady) {
+    const emptyMarkup = `<div class="empty-state">Custom gravel layers were not found. Add the three layer PNGs to <code>assets/gravel</code>.</div>`;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, emptyMarkup);
+    }
+    if (editContainer) {
+      setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, emptyMarkup);
+    }
+    return;
+  }
+
+  const choices = getCustomGravelColorChoices();
+  const activeSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const substrateChoices = [
+    ["auto", "Match Water", "Freshwater uses river rock. Saltwater uses sand."],
+    ["river-rock", "River Rock", "Natural rounded river-stone substrate."],
+    ["sand", "Sand", "Pale fine-grain substrate."],
+    ["custom", "Custom Gravel", "Use the three recolorable gravel layers below."]
+  ];
+  const substrateMarkup = `
+    <article class="custom-gravel-layer-card">
+      <div class="custom-gravel-layer-header"><div><strong>Substrate</strong></div></div>
+      <div class="shop-button-row">
+        ${substrateChoices.map(([value, label, description]) => {
+          const requiredStyle = value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value;
+          const owned = isSubstrateOwned(requiredStyle);
+          return `<button type="button" class="small-button ${activeSubstrateStyle === value ? "is-selected" : "alt"}" data-substrate-style="${value}" title="${escapeHtml(owned ? description : `${description} Unlock in BubbleBodega first.`)}" aria-pressed="${activeSubstrateStyle === value}" ${owned ? "" : "disabled"}>${escapeHtml(label)}${owned ? "" : " (Locked)"}</button>`;
+        }).join("")}
+      </div>
+    </article>
+  `;
+  const activeColors = getActiveCustomGravelLayerColors();
+  const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
+
+  const layerMarkup = layerCatalog
+    .map((layer, index) => {
+      const activeColor = activeColors[index] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
+      const activeChoice = choices.find((choice) => choice.color === activeColor) || { label: activeColor, color: activeColor };
+      const colorizeChecked = activeColorizeSettings[index] === true;
+      const swatchMarkup = choices
+        .map((choice) => {
+          const selected = choice.color === activeColor;
+          return `
+            <button
+              class="custom-gravel-color-swatch ${selected ? "is-selected" : ""}"
+              type="button"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-color="${choice.color}"
+              aria-pressed="${selected}"
+              aria-label="Set ${escapeHtml(layer.label)} to ${escapeHtml(choice.label)}"
+              title="${escapeHtml(choice.label)}"
+              style="--swatch:${choice.color};">
+            </button>
+          `;
+        })
+        .join("");
+
+      return `
+        <article class="custom-gravel-layer-card">
+          <div class="custom-gravel-layer-header">
+            <div><strong>${escapeHtml(layer.label)}</strong></div>
+            <span class="custom-gravel-layer-swatch" style="--swatch:${activeColor};"></span>
+          </div>
+          <div class="custom-gravel-choice-summary">
+            <span>Selected Color</span>
+            <strong>${escapeHtml(activeChoice.label)}</strong>
+          </div>
+          <div class="custom-gravel-swatches" role="group" aria-label="${escapeHtml(layer.label)} color choices">
+            ${swatchMarkup}
+          </div>
+          <label class="cave-colorize-toggle custom-gravel-colorize-toggle">
+            <input
+              type="checkbox"
+              data-custom-gravel-layer="${index}"
+              data-custom-gravel-colorize="true"
+              ${colorizeChecked ? "checked" : ""} />
+            <span>Colorize</span>
+          </label>
+        </article>
+      `;
+    })
+    .join("");
+
+  if (standardContainers.length) {
+    const markup = `
+      <div class="custom-gravel-panel-shell">
+        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
+      </div>
+    `;
+    for (const [cacheKey, container] of standardContainers) {
+      setMarkupIfChanged(cacheKey, container, markup);
+    }
+  }
+
+  if (editContainer) {
+    const editMarkup = `
+      <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
+        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
+      </div>
+    `;
+    setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
+  }
+}
+
+function renderSceneAssetCards(container, items, selectedKey, attributeName, useLabel, activeLabel, cacheKeyOverride = "") {
+  if (!container) {
+    return;
+  }
+
+  if (!items.length) {
+    setMarkupIfChanged(cacheKeyOverride || `scene-assets-${attributeName}`, container, `<div class="empty-state">No PNG assets were found in this folder yet.</div>`);
+    return;
+  }
+
+  const markup = items
+    .map((item) => {
+      const selected = selectedKey === item.key;
+      return `
+        <article class="background-card ${selected ? "is-selected" : ""}">
+          <img class="scene-thumb" ${assetImageAttributes(item.path)} alt="${item.name}" />
+          <div>
+            <strong>${item.name}</strong>
+            <div class="fish-meta">${item.blurb}</div>
+          </div>
+          <button ${attributeName}="${item.key}">
+            ${selected ? activeLabel : useLabel}
+          </button>
+        </article>
+      `;
+    })
+    .join("");
+  setMarkupIfChanged(cacheKeyOverride || `scene-assets-${attributeName}`, container, markup);
+}
+
+function renderControls(now) {
+  const selectedActiveFish = state.fish.find((fish) => fish.id === (runtime.selectedFishId || runtime.selectedFishStatusFishId));
+  const hasCaveDecor = state.placedDecor.some((item) => isCaveDecorKey(item.decorKey));
+  const hasCaveFishCandidate = hasCaveDecor && state.fish.some((fish) => {
+    const species = getSpeciesForFish(fish);
+    return species && species.behavior !== "sucker" && species.caveEnabled !== false && !isFishDead(fish);
+  });
+  const hasGravelPebbleCandidate = hasFishGravelPebbleCandidate(now);
+  const hasGravelDigCandidate = hasFishGravelDigCandidate(now);
+  const debugMode = isDebugModeEnabled();
+  if (!debugMode && runtime.debugSidebarOpen) {
+    runtime.debugSidebarOpen = false;
+  }
+
+  dom.feedButton.disabled = false;
+
+  if (dom.toggleDebugMenuButton) {
+    const debugSidebarOpen = debugMode && runtime.debugSidebarOpen;
+    dom.toggleDebugMenuButton.hidden = !debugMode;
+    dom.toggleDebugMenuButton.disabled = !debugMode;
+    dom.toggleDebugMenuButton.classList.toggle("is-active", debugSidebarOpen);
+    dom.toggleDebugMenuButton.title = debugSidebarOpen ? "Close Debug Menu" : "Debug Menu";
+    dom.toggleDebugMenuButton.setAttribute("aria-label", debugSidebarOpen ? "Close Debug Menu" : "Debug Menu");
+    dom.toggleDebugMenuButton.setAttribute("aria-expanded", String(debugSidebarOpen));
+  }
+  if (dom.debugSidebar) {
+    dom.debugSidebar.hidden = !debugMode || !runtime.debugSidebarOpen;
+  }
+  if (debugMode && runtime.debugSidebarOpen) {
+    syncDebugSwimAnimationSpeedControls();
+    syncDebugDepthTunerControls();
+  }
+  if (dom.debugNotificationUiButton) {
+    dom.debugNotificationUiButton.disabled = !debugMode;
+    dom.debugNotificationUiButton.classList.toggle("is-active", runtime.debugNotificationUiEnabled);
+    dom.debugNotificationUiButton.setAttribute("aria-pressed", String(runtime.debugNotificationUiEnabled));
+    dom.debugNotificationUiButton.title = runtime.debugNotificationUiEnabled
+      ? "Debug: Hide notification bell and activity notifications"
+      : "Debug: Show notification bell and activity notifications";
+    dom.debugNotificationUiButton.setAttribute("aria-label", dom.debugNotificationUiButton.title);
+  }
+  if (dom.debugFishActionIndicatorsButton) {
+    dom.debugFishActionIndicatorsButton.disabled = !debugMode;
+    dom.debugFishActionIndicatorsButton.classList.toggle("is-active", runtime.debugFishActionIndicatorsEnabled);
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-pressed", String(runtime.debugFishActionIndicatorsEnabled));
+    dom.debugFishActionIndicatorsButton.title = runtime.debugFishActionIndicatorsEnabled
+      ? "Debug: Hide active fish action indicators"
+      : "Debug: Show active fish action indicators";
+    dom.debugFishActionIndicatorsButton.setAttribute("aria-label", dom.debugFishActionIndicatorsButton.title);
+  }
+  syncDebugDecorPerformanceControls(debugMode);
+  if (dom.debugFrameProfilerButton) {
+    dom.debugFrameProfilerButton.disabled = !debugMode;
+    dom.debugFrameProfilerButton.classList.toggle("is-active", runtime.debugFrameProfilerEnabled);
+    dom.debugFrameProfilerButton.setAttribute("aria-pressed", String(runtime.debugFrameProfilerEnabled));
+    dom.debugFrameProfilerButton.title = runtime.debugFrameProfilerEnabled
+      ? "Debug: Hide live frame profiler"
+      : "Debug: Show live frame profiler";
+    dom.debugFrameProfilerButton.setAttribute("aria-label", dom.debugFrameProfilerButton.title);
+  }
+  if (dom.debugCaveMovementOverlayButton) {
+    dom.debugCaveMovementOverlayButton.disabled = !debugMode;
+    dom.debugCaveMovementOverlayButton.classList.toggle("is-active", runtime.debugCaveMovementOverlayEnabled);
+    dom.debugCaveMovementOverlayButton.setAttribute("aria-pressed", String(runtime.debugCaveMovementOverlayEnabled));
+    dom.debugCaveMovementOverlayButton.title = runtime.debugCaveMovementOverlayEnabled
+      ? "Debug: Hide cave movement audit overlay"
+      : "Debug: Show cave movement audit overlay";
+    dom.debugCaveMovementOverlayButton.setAttribute("aria-label", dom.debugCaveMovementOverlayButton.title);
+  }
+  renderLivingBoroughDebugPanel(now);
+  dom.resetMealsButton.hidden = !debugMode;
+  if (dom.completeMealsButton) {
+    dom.completeMealsButton.hidden = !debugMode;
+  }
+  dom.debugDamageFishButton.hidden = !debugMode;
+  dom.debugBreedButton.hidden = !debugMode;
+  dom.resetFishHealthButton.hidden = !debugMode;
+  if (dom.debugInfectFishButton) {
+    dom.debugInfectFishButton.hidden = !debugMode;
+  }
+  if (dom.debugCureFishButton) {
+    dom.debugCureFishButton.hidden = !debugMode;
+  }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.hidden = !debugMode;
+  }
+  dom.addCoinsButton.hidden = !debugMode;
+  if (dom.addHundredCoinsButton) {
+    dom.addHundredCoinsButton.hidden = !debugMode;
+  }
+  dom.maxDirtButton.hidden = !debugMode;
+  if (dom.debugMaxDirtinessButton) {
+    dom.debugMaxDirtinessButton.hidden = !debugMode;
+  }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.hidden = !debugMode;
+  }
+  dom.debugGravelDigButton.hidden = !debugMode;
+  dom.debugGravelPebbleButton.hidden = !debugMode;
+  dom.debugCaveButton.hidden = !debugMode;
+  if (dom.debugDailyRecapButton) {
+    dom.debugDailyRecapButton.hidden = !debugMode;
+  }
+  if (dom.debugFishBehaviorLogButton) {
+    dom.debugFishBehaviorLogButton.hidden = !debugMode;
+  }
+  syncDebugBehaviorLabButtons(debugMode, selectedActiveFish, now);
+  syncDebugFishProgressionInspection(debugMode, selectedActiveFish);
+
+  dom.resetMealsButton.disabled = !debugMode;
+  if (dom.completeMealsButton) {
+    dom.completeMealsButton.disabled = !debugMode;
+  }
+  dom.resetFishHealthButton.disabled = !debugMode;
+  dom.addCoinsButton.disabled = !debugMode;
+  if (dom.addHundredCoinsButton) {
+    dom.addHundredCoinsButton.disabled = !debugMode;
+  }
+  dom.maxDirtButton.disabled = !debugMode;
+  if (dom.debugMaxDirtinessButton) {
+    dom.debugMaxDirtinessButton.disabled = !debugMode;
+  }
+  if (dom.debugMaxCleanlinessButton) {
+    dom.debugMaxCleanlinessButton.disabled = !debugMode;
+  }
+  dom.debugGravelDigButton.disabled = !debugMode || !hasGravelDigCandidate;
+  dom.debugGravelPebbleButton.disabled = !debugMode || !hasGravelPebbleCandidate;
+  dom.debugDamageFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  if (dom.debugInfectFishButton) {
+    dom.debugInfectFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
+  if (dom.debugCureFishButton) {
+    dom.debugCureFishButton.disabled = !debugMode || !selectedActiveFish || isFishDead(selectedActiveFish);
+  }
+  if (dom.debugReviveAllFishButton) {
+    dom.debugReviveAllFishButton.disabled = !debugMode;
+  }
+  dom.debugBreedButton.disabled = !debugMode || (!hasDebugBreedingPairCandidate(now) && !runtime.debugBreedingSequence);
+  if (dom.debugDailyRecapButton) {
+    dom.debugDailyRecapButton.disabled = !debugMode || !getCurrentTank();
+  }
+  if (dom.debugFishBehaviorLogButton) {
+    dom.debugFishBehaviorLogButton.disabled = !debugMode || runtime.debugFishBehaviorLog.length === 0;
+  }
+  dom.debugBreedButton.classList.toggle("is-active", Boolean(runtime.debugBreedingSequence));
+  dom.debugBreedButton.title = runtime.debugBreedingSequence
+    ? "Debug: Baby Sequence Running"
+    : "Debug: Make a Baby";
+  dom.debugBreedButton.setAttribute(
+    "aria-label",
+    runtime.debugBreedingSequence
+      ? "Debug: Baby Sequence Running"
+      : "Debug: Make a Baby"
+  );
+  dom.debugCaveButton.disabled = !debugMode || (!hasCaveFishCandidate && !runtime.debugNightCaveMode);
+  dom.debugCaveButton.classList.toggle("is-active", runtime.debugNightCaveMode);
+  dom.debugCaveButton.title = runtime.debugNightCaveMode
+    ? "Debug: Disable Cave Test Loop"
+    : "Debug: Cave";
+  dom.debugCaveButton.setAttribute(
+    "aria-label",
+    runtime.debugNightCaveMode
+      ? "Debug: Disable Cave Test Loop"
+      : "Debug: Cave"
+  );
+  if (dom.debugGravelPebbleButton) {
+    dom.debugGravelPebbleButton.title = hasGravelPebbleCandidate
+      ? "Debug: Pebble"
+      : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank";
+    dom.debugGravelPebbleButton.setAttribute(
+      "aria-label",
+      hasGravelPebbleCandidate
+        ? "Debug: Pebble"
+        : "Debug: Keep gravel pebble assets and a living non-sucker fish in the tank"
+    );
+  }
+  if (dom.debugGravelDigButton) {
+    dom.debugGravelDigButton.title = hasGravelDigCandidate
+      ? "Debug: Dig"
+      : "Debug: Keep a living non-sucker fish in the tank";
+    dom.debugGravelDigButton.setAttribute(
+      "aria-label",
+      hasGravelDigCandidate
+        ? "Debug: Dig"
+        : "Debug: Keep a living non-sucker fish in the tank"
+    );
+  }
+
+  dom.feedButton.classList.toggle("is-active", runtime.foodTrayOpen || Boolean(runtime.feedingModeFoodKey));
+  dom.openEquipmentButton?.classList.toggle("is-active", runtime.equipmentOverlayOpen || runtime.tankEditMode);
+  dom.openSettingsButton?.classList.toggle("is-active", runtime.settingsOverlayOpen);
+  dom.openManagementButton?.classList.toggle("is-active", runtime.utilityOverlayOpen && runtime.utilityOverlayMode === "tank-management");
+  dom.careTaskPaneButton?.classList.toggle("is-active", getUiSettings().careTaskPaneOpen === true);
+  dom.toggleMouseLockButton?.classList.toggle("is-active", isTankMouseInputLocked());
+  const careToolActive = runtime.medicineTrayOpen || Boolean(runtime.medicineModeKey) || runtime.cleaningMode || runtime.scoopMode;
+  const editToolActive = runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode || runtime.equipmentOverlayOpen;
+  dom.careMenuButton?.classList.toggle("is-active", careToolActive);
+  dom.editMenuButton?.classList.toggle("is-active", editToolActive);
+  dom.careMenuButton?.setAttribute("aria-expanded", String(runtime.medicineTrayOpen));
+  dom.editMenuButton?.setAttribute("aria-expanded", String(editToolActive));
+  if (dom.toolbarTab) {
+    const uiSettings = getUiSettings();
+    const toolbarCollapsed = uiSettings.toolbarCollapsed;
+    const tabLabel = toolbarCollapsed ? "Show Toolbar" : "Hide Toolbar";
+    const tabIconMap = {
+      "right-center": toolbarCollapsed ? "<" : ">",
+      "left-center": toolbarCollapsed ? ">" : "<",
+      "bottom-center": toolbarCollapsed ? "^" : "v"
+    };
+    dom.toolbarTab.textContent = tabIconMap[uiSettings.toolbarPosition] || ">";
+    dom.toolbarTab.title = tabLabel;
+    dom.toolbarTab.setAttribute("aria-label", tabLabel);
+    dom.toolbarTab.setAttribute("aria-pressed", String(toolbarCollapsed));
+  }
+  if (dom.displayTab) {
+    const uiSettings = getUiSettings();
+    const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, getTutorialUiState());
+    const displayAtBottom = uiSettings.displayPosition.startsWith("bottom-");
+    const displayLabel = displayCollapsed ? "Show Display" : "Hide Display";
+    dom.displayTab.textContent = displayAtBottom
+      ? (displayCollapsed ? "^" : "v")
+      : (displayCollapsed ? "v" : "^");
+    dom.displayTab.title = displayLabel;
+    dom.displayTab.setAttribute("aria-label", displayLabel);
+    dom.displayTab.setAttribute("aria-pressed", String(displayCollapsed));
+  }
+  if (dom.openEquipmentButton) {
+    const tankEditorOpen = runtime.equipmentOverlayOpen || runtime.tankEditMode;
+    dom.openEquipmentButton.title = tankEditorOpen ? "Edit Tank (Active)" : "Edit Tank";
+    dom.openEquipmentButton.setAttribute("aria-label", tankEditorOpen ? "Edit Tank active" : "Edit Tank");
+  }
+  if (dom.openSettingsButton) {
+    dom.openSettingsButton.title = runtime.settingsOverlayOpen ? "Settings (Open)" : "Settings";
+    dom.openSettingsButton.setAttribute("aria-label", runtime.settingsOverlayOpen ? "Settings open" : "Settings");
+  }
+  if (dom.overviewButton) {
+    const overviewOpen = runtime.boroughOverviewOpen === true;
+    const overviewLabel = "Borough Overview";
+    dom.overviewButton.title = overviewOpen ? `${overviewLabel} (Open)` : overviewLabel;
+    dom.overviewButton.setAttribute("aria-label", overviewOpen ? `${overviewLabel}, open` : overviewLabel);
+    dom.overviewButton.classList.toggle("is-active", overviewOpen);
+    if (dom.aquariumTaskBadge) {
+      dom.aquariumTaskBadge.hidden = true;
+      dom.aquariumTaskBadge.textContent = "";
+    }
+  }
+  if (dom.careTaskPaneButton) {
+    dom.careTaskPaneButton.hidden = true;
+    dom.careTaskPaneButton.disabled = true;
+  }
+  if (dom.toggleMouseLockButton) {
+    const mouseLockAvailable = isTankMouseLockFeatureEnabled();
+    const locked = isTankMouseInputLocked();
+    if (dom.mouseLockSettingsRow) {
+      dom.mouseLockSettingsRow.hidden = !mouseLockAvailable;
+    }
+    dom.toggleMouseLockButton.hidden = !mouseLockAvailable;
+    dom.toggleMouseLockButton.disabled = !mouseLockAvailable;
+    dom.toggleMouseLockButton.title = locked ? "Unlock Tank Mouse Input" : "Lock Tank Mouse Input";
+    dom.toggleMouseLockButton.setAttribute("aria-label", locked ? "Unlock Tank Mouse Input" : "Lock Tank Mouse Input");
+    dom.toggleMouseLockButton.setAttribute("aria-pressed", String(locked));
+    if (dom.toggleMouseLockButton.classList.contains("settings-action-button")) {
+      dom.toggleMouseLockButton.textContent = locked ? "Unlock Input" : "Lock Input";
+    }
+  }
+  const activeDecorShortcutTarget = getActiveDecorShortcutTarget();
+  const activeDecorShortcutKey = activeDecorShortcutTarget?.decorKey || "";
+  const hasActiveDecorShortcutTarget = Boolean(activeDecorShortcutKey);
+  const layerShortcutsDisabled = !hasActiveDecorShortcutTarget;
+  const scaleShortcutsDisabled = !hasActiveDecorShortcutTarget;
+  const layerShortcutHint = !hasActiveDecorShortcutTarget
+    ? "Select or drag decor to change its depth"
+    : "";
+  if (dom.editLayerUpButton) {
+    dom.editLayerUpButton.hidden = !runtime.editTankMode;
+    dom.editLayerUpButton.disabled = layerShortcutsDisabled;
+    dom.editLayerUpButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)";
+    dom.editLayerUpButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor backward (Z / Up)");
+  }
+  if (dom.editLayerDownButton) {
+    dom.editLayerDownButton.hidden = !runtime.editTankMode;
+    dom.editLayerDownButton.disabled = layerShortcutsDisabled;
+    dom.editLayerDownButton.title = layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)";
+    dom.editLayerDownButton.setAttribute("aria-label", layerShortcutsDisabled ? layerShortcutHint : "Move decor forward (X / Down)");
+  }
+  if (dom.editScaleUpButton) {
+    dom.editScaleUpButton.hidden = !runtime.editTankMode;
+    dom.editScaleUpButton.disabled = scaleShortcutsDisabled;
+    dom.editScaleUpButton.title = scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+ / =)";
+    dom.editScaleUpButton.setAttribute("aria-label", scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Increase decor size (+ / =)");
+  }
+  if (dom.editScaleDownButton) {
+    dom.editScaleDownButton.hidden = !runtime.editTankMode;
+    dom.editScaleDownButton.disabled = scaleShortcutsDisabled;
+    dom.editScaleDownButton.title = scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Decrease decor size (-)";
+    dom.editScaleDownButton.setAttribute("aria-label", scaleShortcutsDisabled ? "Select or drag decor to resize it" : "Decrease decor size (-)");
+  }
+  dom.toggleEditMode.classList.toggle("is-active", runtime.editTankMode);
+  dom.toggleEditMode.textContent = runtime.editTankMode ? "Editing" : "Edit";
+  renderScrubProgress();
+
+  renderPlacementHint();
+
+  dom.tankStage.style.cursor = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey)
+    ? "none"
+    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
+      ? "grabbing"
+      : (runtime.editTankMode || runtime.fishEditMode)
+        ? "grab"
+        : (runtime.equipmentEditMode || runtime.tankEditMode)
+          ? "default"
+        : "default";
+  syncToolbarFastTooltipExperiment();
+  renderToolCursor();
+}
+
+function renderToolCursor() {
+  const visible = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey) && runtime.pointerStagePx;
+  dom.toolCursor.hidden = !visible;
+
+  if (!visible) {
+    dom.toolCursor.replaceChildren();
+    dom.toolCursor.className = "tool-cursor";
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-x");
+    dom.toolCursor.style.removeProperty("--tool-cursor-offset-y");
+    delete dom.toolCursor.dataset.renderKey;
+    return;
+  }
+
+  const cursorSpec = getActiveToolCursorSpec();
+  const renderKey = cursorSpec
+    ? [cursorSpec.type, cursorSpec.base || "", cursorSpec.overlay || "", cursorSpec.variant || "", cursorSpec.hotspotX, cursorSpec.hotspotY].join("|")
+    : "";
+  const hotspotX = Number.isFinite(Number(cursorSpec?.hotspotX)) ? Number(cursorSpec.hotspotX) : 100;
+  const hotspotY = Number.isFinite(Number(cursorSpec?.hotspotY)) ? Number(cursorSpec.hotspotY) : 0;
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-x", `${-hotspotX}%`);
+  dom.toolCursor.style.setProperty("--tool-cursor-offset-y", `${-hotspotY}%`);
+
+  // A mode toggle clears the cursor's layers. Rebuild when it is re-enabled
+  // even if it uses the same food and therefore has the same render key.
+  if (dom.toolCursor.dataset.renderKey !== renderKey || !dom.toolCursor.childElementCount) {
+    dom.toolCursor.replaceChildren();
+    dom.toolCursor.className = "tool-cursor";
+    dom.toolCursor.dataset.renderKey = renderKey;
+
+    if (cursorSpec?.type === "layered-food") {
+      dom.toolCursor.classList.add("is-food-cursor");
+      if (cursorSpec.variant) dom.toolCursor.classList.add(`is-${cursorSpec.variant}`);
+
+      const scoop = document.createElement("img");
+      scoop.alt = "";
+      scoop.draggable = false;
+      scoop.setAttribute("aria-hidden", "true");
+      scoop.className = "tool-cursor-layer tool-cursor-scoop";
+      dom.toolCursor.append(scoop);
+      void setAssetImageSource(scoop, cursorSpec.base);
+
+      const pellets = document.createElement("img");
+      pellets.alt = "";
+      pellets.draggable = false;
+      pellets.setAttribute("aria-hidden", "true");
+      pellets.className = "tool-cursor-layer tool-cursor-pellets";
+      dom.toolCursor.append(pellets);
+      void setAssetImageSource(pellets, cursorSpec.overlay);
+    } else if (cursorSpec?.base) {
+      const image = document.createElement("img");
+      image.alt = "";
+      image.draggable = false;
+      image.setAttribute("aria-hidden", "true");
+      image.className = "tool-cursor-layer tool-cursor-single";
+      dom.toolCursor.append(image);
+      void setAssetImageSource(image, cursorSpec.base);
+    }
+  }
+
+  dom.toolCursor.style.left = `${runtime.pointerStagePx.x}px`;
+  dom.toolCursor.style.top = `${runtime.pointerStagePx.y}px`;
+}
+
+function getActiveToolCursorSpec() {
+  if (runtime.medicineModeKey) {
+    if (runtime.medicineModeKey === "firstAid") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.firstAid, hotspotX: 50, hotspotY: 50 };
+    }
+    if (runtime.medicineModeKey === "waterStress") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.osmoticStress, hotspotX: 50, hotspotY: 50 };
+    }
+    if (runtime.medicineModeKey === "infectionTreatment") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.infection, hotspotX: 50, hotspotY: 50 };
+    }
+    if (runtime.medicineModeKey === "antiParasite") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.antiParasite, hotspotX: 50, hotspotY: 50 };
+    }
+    if (runtime.medicineModeKey === "betaBlocker") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.calmingSerum, hotspotX: 50, hotspotY: 50 };
+    }
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackMedicine, hotspotX: 50, hotspotY: 50 };
+  }
+
+  if (runtime.feedingModeFoodKey) {
+    if (runtime.feedingModeFoodKey === "basic") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
+        variant: "basic-food",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "frisky") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.foodPellets,
+        variant: "frisky-food",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "fishFlakes") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.fishFlakes,
+        variant: "fish-flakes",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "algaeWafers") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.algaeWafers,
+        variant: "algae-wafers",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "brineShrimp") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.brineShrimp,
+        variant: "brine-shrimp",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "carnivore") {
+      return {
+        type: "layered-food",
+        base: TOOL_CURSOR_ICON_PATHS.foodScoop,
+        overlay: TOOL_CURSOR_ICON_PATHS.carnivore,
+        variant: "carnivore-food",
+        hotspotX: 50,
+        hotspotY: 36
+      };
+    }
+    if (runtime.feedingModeFoodKey === "chum") {
+      return { type: "single", base: TOOL_CURSOR_ICON_PATHS.chumBucket, hotspotX: 50, hotspotY: 36 };
+    }
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fallbackFeed, hotspotX: 50, hotspotY: 50 };
+  }
+
+  if (runtime.scoopMode) {
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.fishNet, hotspotX: 29, hotspotY: 31 };
+  }
+  if (runtime.cleaningMode) {
+    return { type: "single", base: TOOL_CURSOR_ICON_PATHS.cleaning, hotspotX: 50, hotspotY: 50 };
+  }
+  return null;
+}
+
+function renderScrubProgress() {
+  const scrubPercent = Math.round(getScrubCoverage() * 100);
+  if (dom.scrubProgressLabel) {
+    const now = Date.now();
+    const cleaningIncome = getTankCleaningIncomeStatus(getCurrentTank(), now);
+    const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
+      ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
+      : 0;
+    const earningsText = `Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`;
+    dom.scrubProgressLabel.textContent = autoCompleteSeconds
+      ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
+      : `${scrubPercent}% - ${earningsText}`;
+  }
+  if (dom.scrubProgressBar) {
+    dom.scrubProgressBar.style.width = `${scrubPercent}%`;
+  }
+}
+
+function animationLoop(frameTime) {
+  window.requestAnimationFrame(animationLoop);
+  if (document.hidden) {
+    runtime.lastAnimationFrameAt = frameTime;
+    runtime.lastAnimationUpdateAt = frameTime;
+    return;
+  }
+  const rafGapMs = runtime.lastAnimationFrameAt ? frameTime - runtime.lastAnimationFrameAt : 16;
+  const rafDeltaSeconds = runtime.lastAnimationFrameAt
+    ? Math.min(1, (frameTime - runtime.lastAnimationFrameAt) / 1000)
+    : 0.016;
+  runtime.lastAnimationFrameAt = frameTime;
+  if (isWallpaperEnginePauseActive()) {
+    runtime.lastAnimationUpdateAt = frameTime;
+    runtime.wallpaperEngineFpsCarrySeconds = 0;
+    return;
+  }
+  const animationFpsLimit = getEffectiveAnimationFpsLimit();
+  if (animationFpsLimit > 0) {
+    runtime.wallpaperEngineFpsCarrySeconds += rafDeltaSeconds;
+    const fpsThreshold = 1 / animationFpsLimit;
+    if (runtime.wallpaperEngineFpsCarrySeconds < fpsThreshold) {
+      return;
+    }
+    // Missed render slots have no frame to display. Keep only the fractional
+    // remainder, rather than spending a stall's backlog rendering at full RAF
+    // speed for seconds after the browser resumes.
+    runtime.wallpaperEngineFpsCarrySeconds %= fpsThreshold;
+  }
+
+  const now = advanceDebugSimulationClock(Date.now());
+  const renderGapMs = runtime.lastAnimationUpdateAt
+    ? Math.max(0, frameTime - runtime.lastAnimationUpdateAt)
+    : 16;
+  const deltaSeconds = runtime.lastAnimationUpdateAt
+    ? Math.min(0.05, (frameTime - runtime.lastAnimationUpdateAt) / 1000)
+    : 0.016;
+  runtime.lastAnimationUpdateAt = frameTime;
+  beginDebugFrameProfile(frameTime, rafGapMs, renderGapMs, animationFpsLimit);
+  updateAmbienceAudioLoop();
+  if (runtime.boroughOverviewOpen) {
+    const overviewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+    // Keep the tank backdrop static while Overview is open.
+    // Only the miniature fish overlay continues animating.
+    renderBoroughOverviewFish(now);
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("boroughOverview", overviewProfileStartedAt);
+    }
+    finishDebugFrameProfile();
+    return;
+  }
+  if (runtime.cleaningMode && runtime.scrubAutoCompleteAt && now >= runtime.scrubAutoCompleteAt) {
+    if (getScrubCoverage() >= SCRUB_AUTO_COMPLETE_GRACE_THRESHOLD) {
+      completeCleaning({ source: "scrub-timer" });
+    } else {
+      runtime.scrubAutoCompleteAt = 0;
+    }
+  }
+  if (runtime.cleaningMode && runtime.scrubAutoCompleteAt) {
+    renderScrubProgress();
+  }
+  updateCleaningTransition(now);
+  updateSplashBursts(now);
+  updateGlassTapEffects(now);
+  const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  updateFishMotion(now, deltaSeconds);
+  if (typeof updateMoodBubbles === "function") {
+    updateMoodBubbles(now);
+  }
+  updateMachineryMotion(now, deltaSeconds);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
+  }
+  syncDebugFishBehaviorBroadcast(now);
+  updateWaterLifeEffects(now, deltaSeconds);
+  const stageViewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  updateStageRenderView(frameTime);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("stageView", stageViewProfileStartedAt);
+  }
+  const tankRenderProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
+  renderTank(now);
+  if (runtime.debugFrameProfilerEnabled) {
+    endDebugFrameProfilerSection("tankRender", tankRenderProfileStartedAt);
+  }
+  if (runtime.debugFishActionIndicatorsEnabled) {
+    renderFishActionQueueDock(now);
+  }
+  updateSelectedDecorActionButtons();
+  renderCustomDecorMotionPreview(now);
+  renderCustomHidePreview(now);
+  renderDecorSettingsMotionPreview(now);
+  finishDebugFrameProfile();
+}

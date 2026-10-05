@@ -1,0 +1,1034 @@
+{
+  "anchored_sway/amazon-sword__plant__theme-natural.webp": {
+    "sourceHash": "cd9a97c52a10295837eaf826427bf5c11db97f50c491a08af8e33a3626f934b5",
+    "outputHash": "6570758fab01c69f9394637675dff7d8bb57bf096c8c29b2ddab9dad7621b1c3"
+  },
+  "anchored_sway/amazon-sword__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "78d769c0cfa6a47cf0c7f52444c14d21e22ec52b86d0089b1ec83c521c8e92cb",
+    "outputHash": "423b57ec6f0dba6381a17c82220e32ea9dd037b33eefbd3ec689e2bc46e32303"
+  },
+  "anchored_sway/anubias-rock__plant-rock__theme-natural.webp": {
+    "sourceHash": "a965c02e0da3aef86cd592372ffa48604ecd9c5c6a5205b88970579a869454f0",
+    "outputHash": "ad549c691f084a65eb1e43ed59777db4c53353afa49b6d6e51e14b0e4bbc38c7"
+  },
+  "anchored_sway/anubias-rock__plant-rock__theme-natural__color2.webp": {
+    "sourceHash": "d8edb73fed949366d1895646d1b733829f1b4442266e10fce63e2b31c9a24d65",
+    "outputHash": "315b0987900488482d1c6a08e3aa41954f7443d7c738f796d7cbca077da57be7"
+  },
+  "anchored_sway/bacopa__plant__theme-natural.webp": {
+    "sourceHash": "83f1255bb0eeacedaffb64201614bb25ff6b9996f85229a396d210f9e2f767c1",
+    "outputHash": "f657079fdb99d794ffaf58cac8e28534ad92c6e110e8f139053bd7b0dd335975"
+  },
+  "anchored_sway/bacopa__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "50526ee845a90da69f000534316e023bc91a6f9f7ded01bcd2607b4d20a718da",
+    "outputHash": "66ffd7739ea6b7c86349382f67c0e27da50c006264d0917c70758f5f1c64699f"
+  },
+  "anchored_sway/bronze-red-crypt__plant__theme-natural.webp": {
+    "sourceHash": "9ed7cb10fc494f2979d445448a2cf1ffda3492aefe1ba69de85ac6ea74c77616",
+    "outputHash": "389de878e9e1fefcee1b3cfa376a0d7b8399e413c4e231162de1847ee4ac5c27"
+  },
+  "anchored_sway/bronze-red-crypt__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "32be0e2bba5cb901e897860ed23ccf377f2ce13e73d486bd61963b749d4c02ee",
+    "outputHash": "7e42236100701f529de7b2aa4e88cab5031ce69628a1c858e4f2a58b23604542"
+  },
+  "anchored_sway/cabomba__plant__theme-natural.webp": {
+    "sourceHash": "82723f630fd1704a70bc491ebfc034c2f150f14ae3eabadb7e6a20470feddb10",
+    "outputHash": "3ea04e7eddbcbb2ade27e5fc7a40f6686a6c7bcf062cfe53672633985ba36612"
+  },
+  "anchored_sway/cryptocoryne__plant__theme-natural.webp": {
+    "sourceHash": "e09436d6122305a9a871238aed6fc4806ebee9d46d3a3b9cbae1c43de210c37a",
+    "outputHash": "f9de6f0f83165100409c233192e64c134568b836290cdb5ba9e19dbe80186232"
+  },
+  "anchored_sway/cryptocoryne__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "bffba9eb76c726900e46617c45ceb30cee4304feccfeb24105905d4f1a1c70e9",
+    "outputHash": "ac5acb1f47d906f258bc2681c0260caff874dc641b9c047e26ffe7fc1905efa8"
+  },
+  "anchored_sway/halloween-seaweed__plant__theme-halloween.webp": {
+    "sourceHash": "bacee33ae0ab5cf1936f0a867a357d1e3dedba6b829c0ddd9cbca7670176744e",
+    "outputHash": "3df37b70b17fcc2780faa8ff5869683f7a55acd59a23555555b6871dabcb0128"
+  },
+  "anchored_sway/hammer-coral__coral__theme-reef.webp": {
+    "sourceHash": "5c45df3bcd0d1540f6fea0c997d858ee4995be5aed1b4abacc98e4734a8d2389",
+    "outputHash": "fc734907818b9c93512329cf526c287b95c2c1aed52b381570c2b0b9920b7aa3"
+  },
+  "anchored_sway/hammer-coral__coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "3959b6c033be89c3b7cb85bd9f4fc44594dbcc09e9630dc58dbf9361919c0c1c",
+    "outputHash": "6283bf865590d0cbd42cef89ff490a24e8c8c42e505a136c048c74a6e0a02b04"
+  },
+  "anchored_sway/hornwort__plant__theme-natural.webp": {
+    "sourceHash": "f3f18bdedae5619d1c2fd8bf168f7e48388ecdf4191b860ebf2466cf4ca0a321",
+    "outputHash": "0c6a1fcba5a6f6c4ed38db9e984330c5896fb1f566dc597d63cc97ccdc95dff4"
+  },
+  "anchored_sway/java-fern-cluster__plant__theme-natural.webp": {
+    "sourceHash": "52fade20400704ddc005220e7896f9fbb0ccb45b09ee6763bd51dc067a43ef28",
+    "outputHash": "c0c604de1a66e90a35845e3780f1e0e5330385bdd62bf22bcaad578fcb022b18"
+  },
+  "anchored_sway/java-fern-cluster__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "f0a76bb7a2dc9f0d3c9e74603a8c06b421f443bd5c87afb543a7a3b6313ce6e1",
+    "outputHash": "11b81b16871765314d5a721e71a41081b1c7863ae42419fa2e94aefda7fbcc55"
+  },
+  "anchored_sway/java-moss__plant__theme-natural.webp": {
+    "sourceHash": "e4435730371d56e7a315fa0e12e567d206036846d637daf702643aa78e990c7b",
+    "outputHash": "9de950c2503466fd319fd5961a2ec2b95319b880b400ad1c90811dfb4ee42b1f"
+  },
+  "anchored_sway/java-moss__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "d32b725911a8092ed66d9c59757e4e9c969c72c122c1dfa2168925cf960cd9b2",
+    "outputHash": "1f142f52a7c39ab38978b5d892377ea82cf154ac2282ce7f442e9c1764b579c2"
+  },
+  "anchored_sway/large-mushroom-coral__coral__theme-reef.webp": {
+    "sourceHash": "d7dae3794bb80a7c265c91ab0597c4016fd418f18988e42a1551427dddee280e",
+    "outputHash": "d647cfd2ece65305db420a34a57fa5a1af941dfc663028baa97da4377042c382"
+  },
+  "anchored_sway/large-mushroom-coral__coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "3d8ce3e3a2a1c837ae431fa27108d74cf19687b07b5ed5113fa471ca3cc3ca10",
+    "outputHash": "b3cd6ede049a4aedba3592bba953d7c7f426fc191ae11a7b756f9e5bf41a604b"
+  },
+  "anchored_sway/leather-coral__coral__theme-reef.webp": {
+    "sourceHash": "857d416bd8132c39e713a1778da939ee0b1907ecb7658845b86ea03644239532",
+    "outputHash": "4aef17bd1f75f1e531a73bbee32139ef1611490ae5052456d26e27b5e053d0fc"
+  },
+  "anchored_sway/ludwigia__plant__theme-natural.webp": {
+    "sourceHash": "77e5da2799700b21e91b77e45d8c67d28a94de91a77039e038ec825fbcf98168",
+    "outputHash": "933754f7cd86bcf89c8f1e2e87cdd13571694269ddc8f080846e13959f349bdc"
+  },
+  "anchored_sway/macroalgae__plant__theme-reef.webp": {
+    "sourceHash": "6fe977818570a9fad2bfa66297f0f753565865b5186c4691611ad86db987a328",
+    "outputHash": "68c699769d0aaf5d1f508424315cf8cb775fdb52d372b1fecab64a4fa1cfa400"
+  },
+  "anchored_sway/marimo-moss-ball__plant__theme-natural.webp": {
+    "sourceHash": "917161fe172ba464f3f734511202ecfcdbbd43a58d4811b8c458cc4cf57df3e9",
+    "outputHash": "4efee29c1147ebc09f3748ef398a517ac15404a4fa6639c6b91b60bf415bcee6"
+  },
+  "anchored_sway/marimo-moss-ball__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "391c4f74308a2f3534a8ef036083293be5a769e15af4de5b907992f83a584f17",
+    "outputHash": "39d79ecd60dbe3dbcd0bc02bf7afacb43a30969776c296b11acb1aca5231da9e"
+  },
+  "anchored_sway/monte-carlo-carpet__plant__theme-natural.webp": {
+    "sourceHash": "ade316dab40258e81bca88f40d35d4e92e8fcbc028f9b3315cd0895d9f896c3a",
+    "outputHash": "25a547f87cfd0338931e518d07ca242d3ef6c072c9ba8f7d2911b656033c72e6"
+  },
+  "anchored_sway/mushroom-coral-colony__coral__theme-reef.webp": {
+    "sourceHash": "3975e8f8922645819d8b97278034f437d377c21e38b0d0c9e35d75edefdbd6e3",
+    "outputHash": "2d2a5535b32dbb8f4e36207a5e1e6a50fe57a0d517881d327c89f5296568124e"
+  },
+  "anchored_sway/red-stem__plant__theme-natural.webp": {
+    "sourceHash": "b3fd4f735c28827abd2fb4eabbe45876b08312bd3be8af9acdc712e414470c7f",
+    "outputHash": "33f02ef34ad1c3b90b4d70435ce0f48819453e181aa9fac8bc5067455e3a49f2"
+  },
+  "anchored_sway/red-stem__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "1635f8361bf93b1b94878893191fce8d14eb73e303a102cff08f2fc808e64f4c",
+    "outputHash": "6aa4459bf94d185613c5a96e025f74ba4c9b7adca592bbfed29246b29e571b2b"
+  },
+  "anchored_sway/rotala__plant__theme-natural.webp": {
+    "sourceHash": "9dde661f6f4a07c30415f6092159bf3b3ad02c63959b9d447ae8735c48ef068b",
+    "outputHash": "7427927415c00affdd896f5951072ce56517b5a0643e56b2c68218bf3206c750"
+  },
+  "anchored_sway/sea-anemone__coral__theme-reef.webp": {
+    "sourceHash": "2f5403e6b868fbd0908432006d8b60c55348a29a081d1800f9621be1d797fb36",
+    "outputHash": "ebf13565172d5bd067613662bc20904c2ad0a35f14a18db440800b2bdd19d4de"
+  },
+  "anchored_sway/sea-anemone__coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "ae954744babf6f0ee46353ae80e5daef2221d0d381aaeb4619dac3a37fafd286",
+    "outputHash": "53beb848c90b2975d9ebde4435b5879ccc7eb04a9e554caf6b5d28714f5d49c2"
+  },
+  "anchored_sway/sea-anemone__coral__theme-reef__v2.webp": {
+    "sourceHash": "37214ba77bb105d8627ad0f65cebb621d4f5ab818dee73e786d427815fb84d77",
+    "outputHash": "8d718e1919eef8b7c167b46ffdd6bd1ba5ec2bd129f17c82d2aaaeca3608bd73"
+  },
+  "anchored_sway/sea-anemone__coral__theme-reef__v2__shadow-footprint.webp": {
+    "sourceHash": "92d20977541ae2a93945af94c0468ec9e564f0c3db2b104820fe7d120a440d35",
+    "outputHash": "3ce0ae465eaed57fc356deb9fc320179bb479625214515eb94094242c2fbf7c4"
+  },
+  "anchored_sway/sea-fan-gorgonian__coral__theme-reef.webp": {
+    "sourceHash": "bdd2da8b051ae013434839a9e1e880002bcbd14e44545c6ec728e0481d88e5a1",
+    "outputHash": "3dd8fb21ffea6ccf5af702dfaa63d09416cac967abf32a1559261bfaba2e3c21"
+  },
+  "anchored_sway/seaweed-bunch__plant__theme-reef.webp": {
+    "sourceHash": "8f3c332f2da9b95958a6c1109f04a2e6d45d7eb2b491e1cf9f32be1ce7b9847e",
+    "outputHash": "103fbce3a5657a60a2d69c053942380e7bc50f9331f94711608249574ab9f667"
+  },
+  "anchored_sway/seaweed__plant__theme-reef.webp": {
+    "sourceHash": "4163d6b042938c06dc28691d85db41b63eb3313e42457c86bdb5721e89e87b18",
+    "outputHash": "1ce2b294d29e4877813cdf0b9c6f07e5c7fe8da0cab869930a378aca473f6abd"
+  },
+  "anchored_sway/small-moss-patch__plant__theme-natural.webp": {
+    "sourceHash": "b9c81afc250b71e02d753692a8fbd539c607ecb2cf2770d954b344c53ddf78c0",
+    "outputHash": "24a6686e7c52c9b69a6e637c6bc0043583fa6091344cdb4ecd9856983c39b9b0"
+  },
+  "anchored_sway/small-moss-patch__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "48af30491b93ebfb214a136a901b94716f6f95f329c659946f149afa760a3037",
+    "outputHash": "a8a0ad899a3d470257521eba5d86f3531a6432397af44dd15b05a26a37cd359e"
+  },
+  "anchored_sway/tiger-lotus__plant__theme-natural.webp": {
+    "sourceHash": "ec8d2b7f5bd1f6b9d4f4f0c7eac72aba629fe23198e0350909befcda05217059",
+    "outputHash": "9d8fddeabcfe4456b572a3e5df752608d326fd8159e335458719b573e3a96f71"
+  },
+  "anchored_sway/tiger-lotus__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "203b8cb3f21d16cd5f358d42b0d41506e3df3b4320fa47146dd5a6f36663d5bd",
+    "outputHash": "951b8e7ea4caa958e08e478a7d3f57b5a380fe62e21c94dc9a4e5e28f43a21fd"
+  },
+  "anchored_sway/torch-coral__coral__theme-reef.webp": {
+    "sourceHash": "fc5d7cda81a56958dc126d937d0ea3055d405ffc3c759370d37e1868e9debdb7",
+    "outputHash": "abcebed6a7683d015506718a0e863ede98399e8ae632af8357d272cf574c11c1"
+  },
+  "anchored_sway/torch-coral__coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "440a6b985cbfb6773adba6e163ff0406eeb6be3561a4d61a06d7934af43f19e3",
+    "outputHash": "6c7f81692229cce74e1d396ed09a6369d4cc3726ff3bd66776f5e4f107ebd8b0"
+  },
+  "anchored_sway/vallisneria-clump__plant__theme-natural.webp": {
+    "sourceHash": "8e7db83088f8b5f00e279909478236aed2afe488c08e85a249c23af31b2bf982",
+    "outputHash": "215cf3a16ff18e053cd2cf2ad65dfcaeb0e91e1efb26c954839cbec6a761042d"
+  },
+  "anchored_sway/vallisneria-cutout__plant__theme-natural.webp": {
+    "sourceHash": "1cb2e5965b5ff8b5e959249f3d94a128e2fcd31c495eeb098d3876d463f63b5c",
+    "outputHash": "dac582db6b7fe4e6969fe21e6c38abce53f6383d9f1393bf4adfa1e55d537ac5"
+  },
+  "anchored_sway/water-wisteria__plant__theme-natural.webp": {
+    "sourceHash": "947e056ebfb91c11ed8624c8ada49ebb8c2772331b8ccabbb52ad80b6bd545ed",
+    "outputHash": "7118cf7961f3f27e62ebda7efacbc1e838c72b36bb3deec814e2cf57255814da"
+  },
+  "anchored_sway/water-wisteria__plant__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "b8a814b9b6cf37d8a5d0a9509fde209e9d99278d3f56017a092ed70eca928b8b",
+    "outputHash": "e6f29f40e7de46f51062ab6ea615e91c44d910c4c45af324443c12258b78a48a"
+  },
+  "bubbler/frozen-bubbler__bubbler__theme-frozen.webp": {
+    "sourceHash": "a55622bcffda396867078bb5f2aecad8c27c756f71aa4c3ff71273ae016fd705",
+    "outputHash": "a156f05d2e493801e46c5e0596bc0b9f7882db14dbfd00004df29237bfbead0b"
+  },
+  "bubbler/halloween-cauldron__bubbler__theme-halloween__bg.webp": {
+    "sourceHash": "b51bd74f9b9fac73aa1c58d3494f259d75d35d675a1c966bc1e685278e07ea1e",
+    "outputHash": "1350d7a68b40b80614d81a50adbfc3becf074122bb9def8f65254d6df96fe24a"
+  },
+  "bubbler/halloween-cauldron__bubbler__theme-halloween__front.webp": {
+    "sourceHash": "e654aee926f8fa32dbc05b00abc93a078178f0aaae9a9185cbde0f917c804646",
+    "outputHash": "66e2626e6e64935da31197d3dde3cf32f6084e88509513b4d316518f86f8a420"
+  },
+  "bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__bg.webp": {
+    "sourceHash": "c06805f47d2032e497ec4f253b12432f96e8eafc59250252e20ca764f5dc6d95",
+    "outputHash": "1f60c6a9da5a44b9494d4b1b9fb785bf375d3d265c0745715f7b29d3257edafb"
+  },
+  "bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front.webp": {
+    "sourceHash": "6c88cad0cf56c7a23e099c58f49a7bd2641744bc0a0b1cec7624177dac6d6815",
+    "outputHash": "0efb23fde12339f91d5fceab495de2910d00c6da89f76d86ec68b844005fd3ee"
+  },
+  "bubbler/halloween-jack-o-lantern__bubbler__theme-halloween__front__color2.webp": {
+    "sourceHash": "eb5a624359a5db8645ab8ba1b19b7a883eb39ffa5bc29d0a87ef9407700d20cf",
+    "outputHash": "8764aeede9369dcd2e2faba0987e29f2c7c621e64a1af9e0ecd2ffeb44c7f337"
+  },
+  "bubbler/treasure-chest__bubbler__theme-treasure__bg.webp": {
+    "sourceHash": "d30be89c02366073aa7482e9da92a376782211dc16bcb69ebbb62d7587aca389",
+    "outputHash": "6d93100d2757182f563308cb6aee9b45cf41a58a67959d3ffee7994de1f3f93d"
+  },
+  "bubbler/treasure-chest__bubbler__theme-treasure__front.webp": {
+    "sourceHash": "ff56bf298ddf9105adeb860f402da3eeab6f9ed913a2088e05a0036eb754a990",
+    "outputHash": "f5936803f7c6be704107c05b600da250755ef113634c712a5557476d819a7a46"
+  },
+  "bubbler/volcano__bubbler__theme-natural__bg.webp": {
+    "sourceHash": "dc91947d72bc4375ada6d448a31d90d021388e0b563717fc16f8696e2867a41a",
+    "outputHash": "8c2f2994e1c261173be420ef8b37aa459015283d7ffc1cae1190b3e9bea4c47d"
+  },
+  "bubbler/volcano__bubbler__theme-natural__front.webp": {
+    "sourceHash": "a9991cabffd842023885d2a73fe9ba17d1edf60141f731c7dd279a0d01ef27b8",
+    "outputHash": "cfaa01c45cab2ae4a1733e108b3d603123c668eac3c2c05b121271524a328e88"
+  },
+  "bubbler/volcano__bubbler__theme-natural__v2__bg.webp": {
+    "sourceHash": "83e36f8959ae440c8b33de89963d1e210adbbadef3e7e43b1690dda2a5c48109",
+    "outputHash": "49cd08135a0245ae9f8eb0e2866d4e4b2e0858c3f9894836424a94bfd719f7dc"
+  },
+  "bubbler/volcano__bubbler__theme-natural__v2__front.webp": {
+    "sourceHash": "0a01717fa427fa08009aa2bc420a1ba7062e935d02923d2d239dec6ecb11bf74",
+    "outputHash": "9f3225371f96573a728c68737929f45d249e15756995b5fa3dd757a429cd678d"
+  },
+  "cave_layered/blue-castle__cave__theme-fantasy__bg.webp": {
+    "sourceHash": "fb74a049eaef4e2cb116d0ba94b0a5fe2837696562b442522b1603a6a8a700ea",
+    "outputHash": "1b7e10e4bfeeb6fed034fda8cbbc3ee5eb28ee638557c0b36eecaa6e06fda948"
+  },
+  "cave_layered/blue-castle__cave__theme-fantasy__front.webp": {
+    "sourceHash": "d0737b3415074d300815d41926def4910e4c8ce929bb1f29cad8e6a0bf65d1ac",
+    "outputHash": "78e296f5ea522f0766aada8b9b74720e4a70ca2f852628138f8422f244e3a21a"
+  },
+  "cave_layered/blue-castle__cave__theme-fantasy__front__color2.webp": {
+    "sourceHash": "5d92f62656a772f1db47ff5cde72fc97f05cd540eb7f390c7cf8bd71ed580ee2",
+    "outputHash": "223e4b589e292fcadc6d04a61cfaa455870be9a98baf19cb8f08f06361bb0920"
+  },
+  "cave_layered/blue-castle__cave__theme-fantasy__front__color3.webp": {
+    "sourceHash": "8f888ec7831c359c46a8ae37553412ed3224744096bb0e5c8faa9e7d408b1f9a",
+    "outputHash": "24449102743712243a13b2a9dd5d29325020288ab44ab21152ea4fe945519b95"
+  },
+  "cave_layered/broken-pot-fragment__cave__theme-artificial__bg.webp": {
+    "sourceHash": "24b75613804c27dbf86c5f1819c0fa282ad4958f95cf84a025bdd793bf1b7965",
+    "outputHash": "9a4a29c72e0b75b2b2d8fd1309a66c96c7ca344d5be6bc74916a06071b7a40af"
+  },
+  "cave_layered/broken-pot-fragment__cave__theme-artificial__front.webp": {
+    "sourceHash": "99a16ce46b9a2fd8525113567b5d822ec18ed69550db3afeb71828f940c78742",
+    "outputHash": "fc8080db94abfc70b54fc67d9ca991ebfd003cf6f9a274447ed5316c7b6c50fe"
+  },
+  "cave_layered/broken-terracotta-pot__cave__theme-artificial__bg.webp": {
+    "sourceHash": "f61e8450880d10d5938b0ba0749cd9162ed35e06a4e1694e57acf7f90de2b8eb",
+    "outputHash": "0248f2083b0b2529154917051557e46136a475c8fc7114c86ba182b4320160a5"
+  },
+  "cave_layered/broken-terracotta-pot__cave__theme-artificial__front.webp": {
+    "sourceHash": "908e9f39fcbf33fe5f4c896f12f79761888a12534b0a6b50652a64b88b15e01f",
+    "outputHash": "d08b87d23b48926e9d32298c7294e306eeb2b08806368c739572ccc1079a51be"
+  },
+  "cave_layered/ceramic-tube-cluster__cave__theme-artificial__bg.webp": {
+    "sourceHash": "12cd266cf482221e5383be4989a7401aa71a127b9c81ff9437864bf39949ee21",
+    "outputHash": "0e031192e96f34a0d4f56d2085a95055359493a60d29c49ce489296c20bd555a"
+  },
+  "cave_layered/ceramic-tube-cluster__cave__theme-artificial__front.webp": {
+    "sourceHash": "d22e4664b4886b3e6f63ad466aa721d66843e57e155c4fec73b277018fa2a5ce",
+    "outputHash": "d56b3f670fe1704b9b6d5b6fdff005fcf4e54e68cfdf2c50b5771bc19aac8880"
+  },
+  "cave_layered/clay-multi__cave__theme-artificial__bg.webp": {
+    "sourceHash": "2d0195be43f701fc16165d6d9d6b11609b65ab18952766949ab7995512f8dba7",
+    "outputHash": "90de9e838ced676bb6f26a1d8c2796902f3ec767d2db4876e2698f4f34654820"
+  },
+  "cave_layered/clay-multi__cave__theme-artificial__front.webp": {
+    "sourceHash": "4aa0fe2ea47201d3a2c7acf578926d20d2589e396fee1546823fad40994ce4c1",
+    "outputHash": "fea724dfa0e2c2dd2b4c22c49a25655f235f73492b5a862cb668b9e48f19b89f"
+  },
+  "cave_layered/coconut-shell-hideaway__cave__theme-natural__bg.webp": {
+    "sourceHash": "60d7245a541cbcca8a9268730bc53bfce19238f88550630823abc23d84171a51",
+    "outputHash": "ce615e4be1bc450f1314890db7448501e2dd0ae128edeb388b3d4eacc87d43ad"
+  },
+  "cave_layered/coconut-shell-hideaway__cave__theme-natural__front.webp": {
+    "sourceHash": "a0604e80f115ce26ab9e9725368536fab73c8aed74aec22ff394bb7dff7db8d7",
+    "outputHash": "84e1bb7ffe6ace1bfa9b6d00f7ee3b160b38f5b9cc05d0b4c536751c169218af"
+  },
+  "cave_layered/coral-shelf-10__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "f2e563c266ee043b7ac66fc6f83ea94d49e0045905db8779c900edaa55142ca2",
+    "outputHash": "e904acaf53f1e0647f9c2cf8055d7ac18b6c2991ab36bbcfeac9f59ab0036c0e"
+  },
+  "cave_layered/coral-shelf-10__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "fb84b1947c23b07d5f8a96a84b1d09be28a09fb962adc47e149e8c6aed2ca4ba",
+    "outputHash": "823dc39ab4eb27ab774b6952d23d3a1b4e735b84f0a0ba66e4388426d8b19a09"
+  },
+  "cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.webp": {
+    "sourceHash": "afb5d56663fdd447e4f85245c069769dc36f128923fe3b6a1e29064fb962ee13",
+    "outputHash": "8edaba2466b6f3d163cf7e8ed9d12a8731a455743fa081d6a2e2b07426186468"
+  },
+  "cave_layered/coral-shelf-1__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "30fc63aa6666ec97839ea1cc7cdeb8f58413259c0978fe7e97e59614a453d407",
+    "outputHash": "152206d9148089934205ad71f2c09cdaacdb27ecf9a5d884da07df3cf2061bd7"
+  },
+  "cave_layered/coral-shelf-1__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "cae88727d5b75b602e99203532eb68f64516ba4ea1a4b3c28dd1e25787af2f7a",
+    "outputHash": "b648e44a2c8ab6d7dbad39ab5c1a5470052c6e67e72dcfe4cafcd6b32d4ba335"
+  },
+  "cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.webp": {
+    "sourceHash": "2d2537b6826c20b840c230b92d73fbae035a8a052ccf5917864a1b2b5638da2b",
+    "outputHash": "f9e9ea204db309bbfa1c4d38f682231309caabdae71595e7506cc614a34ac0fd"
+  },
+  "cave_layered/coral-shelf-2__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "30e7a2a02aeb47d22dfdae381750e9eb6c07ec504c2f294d8e580b3746e440dc",
+    "outputHash": "11a1a82e894fe9d972e46c0423acdcd3b334fb00c006bab5faedc33e12631da0"
+  },
+  "cave_layered/coral-shelf-2__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "a9352099afc191d384eadd3143c14710d02f14b1fbc50e71b37fa653734719e5",
+    "outputHash": "985fbd9bfacb2f0cbaee1a22ac3d2fe80812f0cce70f7b09958cee9ac32fb606"
+  },
+  "cave_layered/coral-shelf-3__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "75470c15f536f459dc926f6459fa1f88bda95679ebd0ca136b9714380d1e3046",
+    "outputHash": "32cddbfba5edb946681914fca58094cb07f32c911fc264be5177e9e9c867e1a6"
+  },
+  "cave_layered/coral-shelf-3__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "617968a3711edcc0ac71f03800c910c9a4516ab332f33e88f0df97c347b8ed9a",
+    "outputHash": "fb760bbf921588adf1d6093e397e9eebd2e9d296eaffe06f1018214c9c814422"
+  },
+  "cave_layered/coral-shelf-4__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "e393a7d14b0cac7752615839789b6888a6d2df0b2017ac8a4f324dd4ed4e1999",
+    "outputHash": "493b30cfe5715e98bb4cb314b63111b28d6ca3d7197f4cb31a857da1a98bef3f"
+  },
+  "cave_layered/coral-shelf-4__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "ec7e05a97129dc84f8326ddb2fde2d6f94c455d8439480f91cbc631c9997ca4e",
+    "outputHash": "288c316aed4989c68135381ff7ed7040229d0b985a6d0fa134f77af203886d9c"
+  },
+  "cave_layered/coral-shelf-5__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "fe834a1f926c684e05c94af134bb2b88fb67cbc1a8bed5913cc752e7bc4c6f83",
+    "outputHash": "a7ce47477a28c5800738f10b5143610418f1ac7284ce949dc4195a126327a1b6"
+  },
+  "cave_layered/coral-shelf-5__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "5f3bece0620409e6df22467d9c89cff5370a1f0866e69770e4f8c6286e3a4c9c",
+    "outputHash": "5479a352f0e7804f890c8dbe35ff72ac4ffcdca030614e34a2577e79fcca08f6"
+  },
+  "cave_layered/coral-shelf-6__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "974ce1369684b4a6d5a06b235b0bd120859532c0b9d783039bf021460c1c6b3d",
+    "outputHash": "c79d0ad2e153d42d7c58ebdeba513454dd52b239a3f98a093fcf03baf0cc319b"
+  },
+  "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "7ec49d5358f6d37f768c3761095d11e8626297b1b6d4d36aef678b84eb7f550f",
+    "outputHash": "996171a117d642cfce0bd7aad94ddbf9dc9d8950ed71802d2d21d1ab7982dec6"
+  },
+  "cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp": {
+    "sourceHash": "485330dee66cfa3d10ec1853bf8c91fe0765a238bbdac85c0a4995161e08f139",
+    "outputHash": "514d46394bc2c0622247b7372eb5be434a5aebb22a05e64c243e4bf616d440cf"
+  },
+  "cave_layered/coral-shelf-7__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "a9688ce5d205debc6a3b0b3982d3bfe2810b6ed4a57d38165baaa54e1dfd0eff",
+    "outputHash": "ad84cb62ace170fb6934444e6c98783c4f0101b1d0d2ead8ed8a016f230e325a"
+  },
+  "cave_layered/coral-shelf-7__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "70fb6a4c8ff4ca0384a931dab522e1343886fcfa302be442bf07823c4c87238c",
+    "outputHash": "5f9b1da065f6693570db749ebbab69bcb8fbe9a24b888b554a3b47638b2d5fd1"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "8e709938c40b4ac795b3352995b99d9df19f0922bb14c3848517d3e2ed8f50a1",
+    "outputHash": "088cdf12f77438400daa229d62847a16b031d0a48621e5ed03b89980be730283"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "e5df6f52ac91e012a85ef220bb29bb18b67a70f3d9277c89173627dfecc2d7bc",
+    "outputHash": "f6086166e2bfe30c3e969a48444dfed7261a21fc379318b2cb67675059f6cdb4"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__front__color2.webp": {
+    "sourceHash": "4338f0bc042416c59eb38b6971e9ef83c9ffbef33d2f2b107fd8ac2eae99f53f",
+    "outputHash": "9d5b913d3ad49c493bebaff75653cfc848f581c39447e2dfba845d3afada104e"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.webp": {
+    "sourceHash": "ce08958a000a987672c09698e83d68aa99d399cc20fbb7bd583d5c9a2af1651a",
+    "outputHash": "62c124dce51a60bfa8afbb99116281d9e5f32cdeaeeda27eabef5b94e766bfb0"
+  },
+  "cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__bg.webp": {
+    "sourceHash": "88caebf170aa6ffc8b0f51738c2ae39aeb1b2d039b40481f90ab0774f907e75b",
+    "outputHash": "3e81c55abf19e468d2ad47263878f26caf581582cf4aac22a6adaf7cd0387316"
+  },
+  "cave_layered/coralline-live-rock__cave-rock-coral__theme-reef__front.webp": {
+    "sourceHash": "459ce385feb5423c978fc227129d455322f452b108ede8cc8934060bd2185d2b",
+    "outputHash": "697e60b9d348d4dfd14db2884e149851070af2174088bd569ec53f41ada2bce4"
+  },
+  "cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__bg.webp": {
+    "sourceHash": "de190f31476df5b6c6f68f65acf7e245c5553c2eecbce98f95049945d8a90cc5",
+    "outputHash": "1369a011a07a641e069e38c9f4d6ea7c0d111bb1466be4fd2ab4e280997724b9"
+  },
+  "cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__front.webp": {
+    "sourceHash": "bdae3358b761932c4679576c126f4d6f6f92bd8232baad4cc3c35ecb30d45f14",
+    "outputHash": "d4d1aa2146e3a7d447ce1e31e19d62e5f94463652ac856cba0b432a5b5e43ad4"
+  },
+  "cave_layered/frozen-cave__cave__theme-frozen__front.webp": {
+    "sourceHash": "48ea25257f13d3675b9e2c2c8576cda56494027e71934214a0401dc20d064b46",
+    "outputHash": "a529cdcc0cfc7ab5ad8075c523f8ee20d530fa897d845a4f2ebee896b6c2f498"
+  },
+  "cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp": {
+    "sourceHash": "a78e5872b649015cc040ea314ebb75ee9de37cd65aaf6891d401dfcde33ff0d3",
+    "outputHash": "66ae907fa5df130a987007a4c15961803b282d6101d09088b9019fdda08b3adb"
+  },
+  "cave_layered/halloween-crypt__cave__theme-halloween__bg.webp": {
+    "sourceHash": "7e444f4c477429c6482743b2a32a34a057190668d8b5a8242b0423a7266758be",
+    "outputHash": "7c47e5e6bb8e796e0b2c65d422f429322ee64c7d53420a6c505eaae41cb79263"
+  },
+  "cave_layered/halloween-crypt__cave__theme-halloween__front.webp": {
+    "sourceHash": "d934876a77f5b095247e8a253a2abff922083f2d1e99d3a2f9c3e4543dbd1daa",
+    "outputHash": "ce5df088635e61450cb9d4b814f1c32395b1fce249257f63fe2f7eca9a80ab54"
+  },
+  "cave_layered/halloween-crypt__cave__theme-halloween__front__color2.webp": {
+    "sourceHash": "35668b2ba274e7db497352695cdf5342e54890dfcfac1b14fb4c06aad42d38d4",
+    "outputHash": "86b77b37500cdbb993c6f2157cff6937fa65bd717d1ab4dd0998d1d47817b8d8"
+  },
+  "cave_layered/halloween-haunted-house__cave__theme-halloween__bg.webp": {
+    "sourceHash": "eeb1d7440e457a08a1209c8cd4ecf3723158a79303e5ee901f2de4c39c4e3a08",
+    "outputHash": "7bed9647b9be281437b3fc72bb6314bdc68e617250d3a525e91fd743dbea3f3e"
+  },
+  "cave_layered/halloween-haunted-house__cave__theme-halloween__front.webp": {
+    "sourceHash": "e30870c90b721a6802198f69357b27ff56865a3bccc98badb4b172a6c24ee04c",
+    "outputHash": "bb5e0f629b94cbeedfde036e83a603196cc80d08f82708f53c65c2d56f2a24cf"
+  },
+  "cave_layered/halloween-haunted-house__cave__theme-halloween__front__color2.webp": {
+    "sourceHash": "a6a0ecd41fa62ad0e7735d2ec7331bdbd61fcca7999c8de3c950c29330716bdc",
+    "outputHash": "408f46051cc5a939d88de35679f761ab9da180b9480f7934d25cdb71b95df6c3"
+  },
+  "cave_layered/halloween-haunted-house__cave__theme-halloween__front__color3.webp": {
+    "sourceHash": "8b2aaba20600bc55d9adf835238e3da1cc85486514e03819bb5e26804313a30d",
+    "outputHash": "3e00528e5bb22469cb03e76d4af8a1ff20827931a0e46acd908df5e7c58c8b5b"
+  },
+  "cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__bg.webp": {
+    "sourceHash": "4363e452ae73ed2eae95a57403beffc74ec47a1b8af19084cb947f246613db6a",
+    "outputHash": "107094b07b05baf10c6aaca0384f42c96e3630376b52171ffd7e0eb2ed720299"
+  },
+  "cave_layered/hollow-mossy-driftwood__cave-wood__theme-natural__front.webp": {
+    "sourceHash": "f95d881d4ab2c017f03ea91d56648a18f4a565afa1c3572eea643b6c97cdb356",
+    "outputHash": "f7dc63619255f010d5643f86fadd6097caa000995ed3a7a9fc71d54e9dee845b"
+  },
+  "cave_layered/live-rock-cluster__cave-rock__theme-reef__bg.webp": {
+    "sourceHash": "a24c964de054b12ab03017958326fd6a296cee6894abc9e283d0870627894d2a",
+    "outputHash": "0546429a0c00545224d9421ebc67981aa519773169ebc036000b7e2b14476b84"
+  },
+  "cave_layered/live-rock-cluster__cave-rock__theme-reef__front.webp": {
+    "sourceHash": "f7e54d99ffd51858830c9ec7cf4190699b66a2a3abf955b24e17ba8c53725ad7",
+    "outputHash": "d0f504d16a15dd549e684578abf28a026c9668c4cf6c79499ae21ee1fe4b9dc1"
+  },
+  "cave_layered/live-root-overhang__cave-wood__theme-natural__bg.webp": {
+    "sourceHash": "8b67f08a0b8841d5676e3e772c836ee1470dc318c578f22e78c31df38d00a569",
+    "outputHash": "53884892c04f73c794571a8f7b270aaefbaca64c3d9943a60f7ee8bf9bb6bc14"
+  },
+  "cave_layered/live-root-overhang__cave-wood__theme-natural__front.webp": {
+    "sourceHash": "45f5101777b14aeb6a438003abe780ce9ace7e90446cf10b14557df8e89f7571",
+    "outputHash": "bf65a67d1b9411b9b3c13a49e8657fd5ba2bd32665497cc93203731c1321a669"
+  },
+  "cave_layered/live-root-overhang__cave-wood__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "ae39262ee8a0b1d1782f187443c132a3fa7cbaf362d67b5f5207f246c906d600",
+    "outputHash": "53cb5d5e911ea3a741fad0aa7d2afe08afa97c82eb06ae83e47d4482bffee23b"
+  },
+  "cave_layered/mangrove-roots__cave-wood__theme-natural__bg.webp": {
+    "sourceHash": "f56760c773c1df71efce551254763fa79ce98b1d6af249bc21d8486e9dd131bb",
+    "outputHash": "236957615fc083bb9ba8c9696c9e7c6e7a3ffba9280d1eacf4cb69251029dadd"
+  },
+  "cave_layered/mangrove-roots__cave-wood__theme-natural__front.webp": {
+    "sourceHash": "d429f731d9392b03a9295afe6f6466108e8dd1d86c866612f6b70cfde78190d1",
+    "outputHash": "36baf48db472202a0778eed9b15db0745293d3c92425a27c3056b5a47dcc7f42"
+  },
+  "cave_layered/meteor__cave-rock__theme-space__bg.webp": {
+    "sourceHash": "4184d162375f0e7222c390936e64d87ff874b12e2bdd5baa3faae38b6051e60a",
+    "outputHash": "2e6d7d66f9e6bd47355136cd7a46e37e0b129a53e1ec7463fd703a4d135ccbca"
+  },
+  "cave_layered/meteor__cave-rock__theme-space__front.webp": {
+    "sourceHash": "5540bf8a5cb7d7f92b94d559590aaf53f594d0103d81553ebbdacf83c8220b30",
+    "outputHash": "e38f3b07ab98b8b7ad269b17baf09ce0c5f7d15737400756a09926e3c7b7e43e"
+  },
+  "cave_layered/meteor__cave-rock__theme-space__front__color2.webp": {
+    "sourceHash": "5f2efdc0ec1be96434867763712288351fb7ae03be880515b3aa64c2e8738caa",
+    "outputHash": "f2a4f57b595f957790b6deab7073a96e6cac769e3008d73942cbe41ca29d5887"
+  },
+  "cave_layered/pvc-pipe__cave__theme-artificial__bg.webp": {
+    "sourceHash": "13391a364b2998041f0169d743239e6496c728f01d09c4c5fece49a4920f01d8",
+    "outputHash": "b9327851901e7f6305ea6b229cc7d9e7d5049f5f21df8f70132af95b0113fc01"
+  },
+  "cave_layered/pvc-pipe__cave__theme-artificial__front.webp": {
+    "sourceHash": "a2b35b572fca93c97b28552c31b365c357b756c0af2020848f9ac124cc3574c5",
+    "outputHash": "8b2a2d210a4331e2a756a5812dd7fc5b70e1bcfc74e13368e0186ef669c780f4"
+  },
+  "cave_layered/sea-anemone-1__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "b360cf70ff00d1578af63dcb8342604c1f4df0dc5180551291f58d47ed954a46",
+    "outputHash": "840d56ddf5366c1677b3b517c8841beeaf22e29cc370a75ec57f2bbd91cde425"
+  },
+  "cave_layered/sea-anemone-1__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "40a84fa3ddf8a2b956c5a73f9901ad1df79205b1862909a0ec46c5af5e4c12bf",
+    "outputHash": "77758f3ca3c25d96dca3927432d7305e82e9a5b13bb14fe55589ede02a61126b"
+  },
+  "cave_layered/sea-anemone-1__cave-coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "2d5970cd34ecff3d64533ecf39e1a51a5f588bff29404422b2378083a37d5ba7",
+    "outputHash": "25a37a254f8ede1e79080d765ab8bdb6bd44f3be1d3c057e47f32fcb0aa07f4a"
+  },
+  "cave_layered/sea-anemone-3__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "059c1d9f1ff7954037c44a3d31529659efda2523f6d7afef58d33029a25ca796",
+    "outputHash": "53bce493307ed1e6766660f1049cf2b84a4108c56a1d2d30b8ac52418d046ccf"
+  },
+  "cave_layered/sea-anemone-3__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "5bbe26f4379082f766f13351524a7baf09318ed98e9601b5d1a3178cc25aa721",
+    "outputHash": "a03e83cdc82d0f9f4b0485f4ade765e44ece49a0df2e0fcc6042c9187ba196fb"
+  },
+  "cave_layered/sea-anemone-3__cave-coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "045efabec9f1f539ca3d08829803d4bc1c7ac28cee200867315fe9845a2cfc86",
+    "outputHash": "bfb61454ca6d4ef4c3fd06b378c8900aeb84d6890f9c107cb1d49914b3e46c9c"
+  },
+  "cave_layered/sea-anemone-4__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "de0044a96ed7c6169eb73ebf9b74e498284548a4fc7518da9f484a5ce297c7cd",
+    "outputHash": "017e9b026af04e66cfbcb78fca1a18c4b4bb8416991d1c12f6fe6c443ec911ea"
+  },
+  "cave_layered/sea-anemone-4__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "d7344a4af841d7a8f34185e2c54648446e90289895963675a988d840115bd3bb",
+    "outputHash": "925ab6631ed91c36edf35ff5d889c845d8633232f36a0aa2bfbd50c4c074f93f"
+  },
+  "cave_layered/sea-anemone-4__cave-coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "aeb782453f57992573e79ec8988af0b358f5785e0d57b25010eaf85180458bd2",
+    "outputHash": "7567fb7e60a836ee7276596970f73ae3665282df919b17a1a5a8528c2221fed7"
+  },
+  "cave_layered/seashell-cluster__cave-coral__theme-reef__bg.webp": {
+    "sourceHash": "f5438cf0ddbc0800768634e71acba139cb91894544bba77285b663ebd70cf1c6",
+    "outputHash": "d676b1394d814e4a51b709784d2a5fcb91208615d9f156803e937a3dea0560e0"
+  },
+  "cave_layered/seashell-cluster__cave-coral__theme-reef__front.webp": {
+    "sourceHash": "8a3cafada4164fe4a0fbd2f4fcb8a8521f25e6c69048d0f78b9a8486aeb94a22",
+    "outputHash": "087ad113c240a0ba7759fbf3538a76c87279a16b09d8a05db04cefe30be7654d"
+  },
+  "cave_layered/slate-stack__cave-rock__theme-natural__bg.webp": {
+    "sourceHash": "2aade67f867e79592f83f5ed7ce75203a9a79a87f3aaa9e157fbc4ae39668da8",
+    "outputHash": "d5d8e373ebfcb60a592dc9873b8bc3d3e5cdd93314f1353347af96537d35f9eb"
+  },
+  "cave_layered/slate-stack__cave-rock__theme-natural__front.webp": {
+    "sourceHash": "79e5fd1ab6c8f4019bcc79600b02ad4bc3abadcc1bd0c63f67c925c67a6206c2",
+    "outputHash": "7e2db8cbdc993e49dc50c42f98980e5fd05c5c7cbfe73ba7e74043d09e536dbf"
+  },
+  "cave_layered/slate__cave-rock__theme-natural__bg.webp": {
+    "sourceHash": "f00e50d066587ee75383f5382552fddedf05e937618923ab1e4d9ac82ce93894",
+    "outputHash": "8c3d92f5be1bf0eb189e6fd2ef4ff171b5e4531794247dadd93dd2dbc875b60d"
+  },
+  "cave_layered/slate__cave-rock__theme-natural__front.webp": {
+    "sourceHash": "afc7569c10377e7cf8acb0a812b711eeb8191b2b737801d502c347d489842f98",
+    "outputHash": "64599a2a1fac8b7ac7379e7ac3b16d61f50f5de9b7ae5fd3e881a5d4c9cfe24d"
+  },
+  "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__bg.webp": {
+    "sourceHash": "74f0a07f3d3c2c6c45b900b63d2278669482be633e5725d07ad3280e467f1d2a",
+    "outputHash": "5e5ae8cf0782a0ade788ede59290be4dc5cf5228dd6374eec2b9d5b5960669c7"
+  },
+  "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__front.webp": {
+    "sourceHash": "c8ae01624f7ff6922a104d048204d65e544240fdf48213ea70e7394c3189e23e",
+    "outputHash": "ba009080bbb070e8a02e0d857d820150533a83c3aa68175db550b1025bdbddda"
+  },
+  "cave_layered/tangled-driftwood-rootscape__cave-wood__theme-natural__shadow-footprint.webp": {
+    "sourceHash": "eb518cc3da7b8bfc4987793fabea3fb3a4cb910b49a53bc62925e5bce6d0cfd3",
+    "outputHash": "bfa7f702f7844b1f781b5e5c117c2ae1664c3671e641054184bd32f91a19e7a6"
+  },
+  "cave_layered/terracotta-pot__cave__theme-artificial__bg.webp": {
+    "sourceHash": "1051cf385e18e1da2eea1df8427018d7410becdc22a54875fed514a64abc53b2",
+    "outputHash": "9f7a98a8faa5659bf2f9cc02a74c4dbf8534d5fee66e79327b70cb22d7a71255"
+  },
+  "cave_layered/terracotta-pot__cave__theme-artificial__front.webp": {
+    "sourceHash": "c2a35e44b39be527fa8c761db0bf4909c420c2876465ce7b89354b72d39fcbc8",
+    "outputHash": "645745283b0901d6ba82b8a476e17db455f0d159ca0658a1aae314e9ff293e91"
+  },
+  "cave_layered/terracotta-pot__cave__theme-artificial__shadow-footprint.webp": {
+    "sourceHash": "7b04f626a57ef48cb0575ef9958a63b743cac847cf6dfa1eb38a5bcaa144846e",
+    "outputHash": "cae2444af786a4c29c9a8ebccf08eb8f9d44937f62773128e93483b5561f67be"
+  },
+  "cave_layered/terracotta-tunnel__cave__theme-artificial__bg.webp": {
+    "sourceHash": "6b793fad6684c811c4641f01fa533e8fe1113ec9224a69258df142677dfb25dc",
+    "outputHash": "5fc1aae130706075a5305446184210f90315d55b6199ea3b46c28239392013fa"
+  },
+  "cave_layered/terracotta-tunnel__cave__theme-artificial__front.webp": {
+    "sourceHash": "25e44747f22c001bed6877a86596b031e5967ac9a955c74e66e4b55fa4a7becc",
+    "outputHash": "91c11b5ccba21ba380eb0e82353a1ce5c4d57bcee40a6efc89d8838d6599f35d"
+  },
+  "cave_layered/wizard-castle__cave__theme-fantasy__bg.webp": {
+    "sourceHash": "024199783d95c693b9e0edbddfa6863ddcf0d96f28255499bebf2fa76efed749",
+    "outputHash": "4da76279b3374dac42eb027bcbe4bde41feb49f9e119965abea4228262667955"
+  },
+  "cave_layered/wizard-castle__cave__theme-fantasy__front.webp": {
+    "sourceHash": "8d6f1e2ac5cfa6dc8f2cd1c26fe7102f359a2da365d75ea48aa55c22c845f6d5",
+    "outputHash": "d8f9c098cbc91d4de130d8947509ddbdc4131fd94befe89388cf0ec5eee8e393"
+  },
+  "cave_layered/wizard-castle__cave__theme-fantasy__front__color2.webp": {
+    "sourceHash": "e1a2764f80ddc77536921a0d880efa68db81489f3d424eecd2b74f466af7c416",
+    "outputHash": "97b82f36b124aaf8553d1d7cbaabe226a1f69c6711d93d95df57b3a770343329"
+  },
+  "cave_layered/wizard-castle__cave__theme-fantasy__front__color3.webp": {
+    "sourceHash": "b0e8e6d03d774c70f838d9b8d2d5940597bea23a337861b2a44c1529bab06e09",
+    "outputHash": "fa8ca6aefda9f883bd82720ef537cd3f1aa9eb5a530253cf8e057a46b95d1896"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial.webp": {
+    "sourceHash": "b2b6da5761163c9a16f4358a1c3623884b47cc23986968ac48f4d9dc3c9574b0",
+    "outputHash": "671571950656c0903fc272fe5b4b0db3ed2270b2a026279925447965ffef799a"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v2.webp": {
+    "sourceHash": "b1ef27f7ced1a587aa33de44ee062ba86bfa571827638f38ead7d9286e1882e7",
+    "outputHash": "feb950fac2f9f6cc7a5b9194480ea34681fd7fe1137c816eb07322df3dac6adb"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v3.webp": {
+    "sourceHash": "b791fe2e1fbe459eb2d32839f118ccb94cbbc373d1385fad75a1cd69cb991718",
+    "outputHash": "7dc90f24e2cca1d5806a1da857682c17f3007b9c2213eb71995bfc2bc2dea434"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v4.webp": {
+    "sourceHash": "f3835e24b397f93806163e5c5cdcedcb9f041fd58328efad32c3c1a2ce382d18",
+    "outputHash": "15c77e01fa9a4330ec8e522f4f47c5ff8c4283b5d83f1f751044425ea6ee64f9"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v5.webp": {
+    "sourceHash": "37dc43e084af41fc54b595b149df48875414f92ea2d5abe54ab96c097614477d",
+    "outputHash": "dadbff0dd99fb695061002d3e3a47d1e8f204c1439a9442aa72da6c0bd2537aa"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v6.webp": {
+    "sourceHash": "eef2091df7bf1066ab9b9199ec1fb65eea3ef371578a720d95d03cd16f50adb4",
+    "outputHash": "102e40a84e133f4a6ad8d1a90e4ddaf4d52be784d08de5398b21ebdfc34aa9fa"
+  },
+  "ceiling_sway/fishing-lure__lure__theme-artificial__v7.webp": {
+    "sourceHash": "9297e47cf457cbf2994f46eaf5c7de99373b872c9eef63e86811fc242e6142d2",
+    "outputHash": "435bff671610e0d1714dcf8156df544852d582f5e8eec92cf488b1268e92d343"
+  },
+  "ceiling_sway/halloween-gorebag__lure__theme-halloween.webp": {
+    "sourceHash": "7178ec315a903a0f19f69d60119f4454014084b40555adb931f6172dff793b2b",
+    "outputHash": "c9e619e47e4d3f49d97a24b3b5ef4af59623ac3618bb84496ac2002dd10f7fee"
+  },
+  "floating_bob/frozen-glacier__rock__theme-frozen.webp": {
+    "sourceHash": "bb407597303e686f9f3e0b381f0bfe0f99d6e8d7c136cd5b55bdc7ed45c68a95",
+    "outputHash": "8cc4a0247070c92796381838911c0214f72a15aba81219ba3a3e4074ed3304ab"
+  },
+  "floating_bob/frozen-iceberg__rock__theme-frozen.webp": {
+    "sourceHash": "72748904b334a0c9c8672e63881e6af25c42cccd7339689978096e17abad1448",
+    "outputHash": "e3ac3ba6d36f663cddef33eeff4d222a9658938bf5d4dd73ac230f934c70019a"
+  },
+  "floating_bob/halloween-ghost__ornament__theme-halloween.webp": {
+    "sourceHash": "6302cf3c0f510295089344f2ba72b18b11538e0e39aa5360461100c0b9b75b09",
+    "outputHash": "9be140b140898f2921f933c73a9aff24eae394de3970ef51ecada82257c2e6d8"
+  },
+  "floating_bob/halloween-skeleton__ornament__theme-halloween.webp": {
+    "sourceHash": "f8946c39abc13e7619b5f09465e8f3e5315a1e22d2613a5e29562b962fced8f4",
+    "outputHash": "612be88d52786cee57d320db3e22a05fc071ce1e05a0128a11f6a5e0cbd5e893"
+  },
+  "floating_bob/halloween-webs__ornament__theme-halloween.webp": {
+    "sourceHash": "d1e3430acf77e23776fda30e8f9d9e0095492c2482320b5e7bf9e3573da4ee72",
+    "outputHash": "a9c935d9ac166763ff56c41501d4ce53a4e15e9a0dc32f312a617350b8f571cb"
+  },
+  "floating_sway/floating-lettuce-root__plant__theme-natural.webp": {
+    "sourceHash": "09dded07e33988c52630c72d4385d47e4d98568e710efb798101fd83c5d1e9b5",
+    "outputHash": "1e758504a4a968c1dc6affc529c15b1afba994468349ffe0628f7a84e5ff3e00"
+  },
+  "floating_sway/floating-seaweed__plant__theme-reef.webp": {
+    "sourceHash": "4c42fb57d2b2d8786b0ea3bdc14171787504fb817b1c0636e1433af9c32f676d",
+    "outputHash": "2586c3703f774fedb6fb0c753f936eafca5428c83beb6e09cf964c64980f0966"
+  },
+  "floating_sway/floating-swamp-moss__plant__theme-natural.webp": {
+    "sourceHash": "ed275d7eba16c4c45a32d05ce69dcab3eec9c6a6bc520e3caa9c971e60955865",
+    "outputHash": "e921725f156760b598758ee72bf53538df755fbd3387bf96de3f23481844bb0e"
+  },
+  "floating_sway/halloween-floating-seaweed__plant__theme-halloween.webp": {
+    "sourceHash": "88298651a34921fe3508dd78c3189956eba8dbdfc469e6fb80b85e9f21cb2e76",
+    "outputHash": "840ed3c99fe4c9451c4fe0b5f52648b2a8b3557c9c1e2aa1a28092d27e210d54"
+  },
+  "static/alder-cone-cluster__botanical__theme-natural.webp": {
+    "sourceHash": "9c9a3f4066bf5d8cf7912c7277116d1c0a1466beddb79df735b757e2f153f33a",
+    "outputHash": "09ce4cac6a078272f64b028b95e536ea8e0e53823719f6467f0a9b2c07630257"
+  },
+  "static/autumn-leaf-litter-mound__botanical__theme-natural.webp": {
+    "sourceHash": "55fb63b08fe27948e34f55e15e84bb410bbd42cbe5a05b69ab18ee6afe0377f6",
+    "outputHash": "2e7c844f0b5dc0703133ebb55f3dbe849a045dff1eb259354aaf16699a1fabf6"
+  },
+  "static/autumn-leaf-litter-mound__botanical__theme-natural__trypophobia.webp": {
+    "sourceHash": "9e1c68d15823e14a5ac494a21e2344ef5804c9d5554ae999f2808b487895d28f",
+    "outputHash": "93335df65d6948cad741570dc3e001c0acad764d7d16b8620c3ff0e468357a46"
+  },
+  "static/barnacle-covered-reef-rock__rock-coral__theme-reef.webp": {
+    "sourceHash": "1f5fc7b800e0ce5528a530efb9d58519047e733ca85ab04977acfc4c650c2582",
+    "outputHash": "59b5aa6148efab0b4d0efbc663fb05b553e642b66be38f85620623aa2b19198c"
+  },
+  "static/barnacle-covered-reef-rock__rock-coral__theme-reef__trypophobia.webp": {
+    "sourceHash": "e213d8c4849d0f23df5c7379416448832142b5181d371571b8fef978c227ca30",
+    "outputHash": "3660a3041f6ef0592f0d91aad3bf25c1076ad450826d7e4e73ef87e4d01ab94c"
+  },
+  "static/brain-coral__coral__theme-reef.webp": {
+    "sourceHash": "174252fd483549243aaacc58037344031c22574d626d1192c44cd8a24296a9bd",
+    "outputHash": "cd83c1c809ca64239d64edaf32c92bc1451992fcffbc4d3efeca81adfc776e15"
+  },
+  "static/branch-canopy__wood__theme-natural.webp": {
+    "sourceHash": "bd5875e58ad8549d887cda0298e9000b89b655b86b73a9faa7860d6f2f5ea257",
+    "outputHash": "dc8222241e66e3daddd57e51d855f79b40606d737b7eb67810593eb478f3583a"
+  },
+  "static/coral__coral__theme-reef.webp": {
+    "sourceHash": "e7c80cc7fd411f63a30f17b44d15031c2a42f9cd2743ad2e8c67d7994fb09799",
+    "outputHash": "0740df3a7d72487974684a93cb034ac6ba6f7d994ff6c95a3316c2c73e7ee322"
+  },
+  "static/coral__coral__theme-reef__v10.webp": {
+    "sourceHash": "43e876728169e1673edee9867ea7b7e598f43b02819f0264d56bbd3af37ca8f7",
+    "outputHash": "d907ae0bdb90c1c547734e7f4a71c307802d503b5ddedd0011f31ec59878f06b"
+  },
+  "static/coral__coral__theme-reef__v2.webp": {
+    "sourceHash": "9c6337c27b8a63a25af15991a0fc3fe8014c897a1031e2f664c96e32104cb515",
+    "outputHash": "b0f5f0eea4be6dbe54b08d234f8fe2fcb553897cb2bb6b3da4164fde4a970f4c"
+  },
+  "static/coral__coral__theme-reef__v3.webp": {
+    "sourceHash": "ad3c279cc40aca2057e354231f802a4b5cb75bf3800b1c587046b36a62fa9902",
+    "outputHash": "c683ce4bfd892628611ca968c578ef1ac230c61ba353a36a990567a382b02b44"
+  },
+  "static/coral__coral__theme-reef__v4.webp": {
+    "sourceHash": "46c6601e8583d3cedbcfe24dedb55c7c2bd706c3166928b2a3e24fbf383b5b39",
+    "outputHash": "444fdddf90fafd40f714dd57ebe989de6426a47c9a5d64d77205beeb1038ca8c"
+  },
+  "static/coral__coral__theme-reef__v5.webp": {
+    "sourceHash": "d8efc13247702e225e510dfb532a292e3ba6d64817e80cef57433d9761470db6",
+    "outputHash": "bb486507da620a42493a5eca4807ffeb029d9dd8ca83106d71c5c8397347af1e"
+  },
+  "static/coral__coral__theme-reef__v6.webp": {
+    "sourceHash": "4dd689c06dbb7f8536f3989ce9d36e621107eb489d2d5ddc6c0d579d6c6ea96f",
+    "outputHash": "e7498c9ee93c98eaa4d2dcf1a0b0e5122da6957069a27d9f8441043fb9eaebc8"
+  },
+  "static/coral__coral__theme-reef__v7.webp": {
+    "sourceHash": "e3b0104ef7969e52bb72f8b8c7780fd1d0168f94ab577477f3fc2cf9d8320dac",
+    "outputHash": "ee82f9ec3a62c2091d5d0c5ff360ad39ebb6ff51afd76d23a701cd8dc86af52c"
+  },
+  "static/coral__coral__theme-reef__v8.webp": {
+    "sourceHash": "b595b02370d63deda240d0390199df04da3d64ecb2dbc7ec89b94054ed4a2d1a",
+    "outputHash": "0cbeee9eb8cd8c19b425582cb5f5c9240e1f2f55b48d815ed035fc2e9dd6b158"
+  },
+  "static/coral__coral__theme-reef__v9.webp": {
+    "sourceHash": "3e4f0ae7aeadd0900b74a87ec889648043b17499b9499b179548200215588198",
+    "outputHash": "ff94bbd11b2833f24ea005b54cb6ebbe283b67aabfd4f12fa79624ebdfb0c207"
+  },
+  "static/dirt__rock__theme-natural.webp": {
+    "sourceHash": "4d6082fcdbe57a7822a1a3f6e7c5f70a8f4ba46cdfa7ee7d314ecd8e33541162",
+    "outputHash": "ed9f44a96769ab6c7be4f097008a644ac07dcb0d4bb0cede685bddd91cef1948"
+  },
+  "static/dried-catappa-leaf-pile__botanical__theme-natural.webp": {
+    "sourceHash": "eb0035b7e11631f3938bd1073f96b74cfdc1a00e667ef5ca0e960f73106eca23",
+    "outputHash": "89ff78f42b9459904a33ba41f94bc66f13e011265c2b4e6523698c27a3fddbd8"
+  },
+  "static/driftwood-root__wood__theme-natural.webp": {
+    "sourceHash": "a77f28a3a6655b3e3490c5dfb1a0a4e6d788f49267f82cd2919cc2ede4799857",
+    "outputHash": "dcad359cbdc13849628f176de684d0c576a73a9f749fb466cb5629aa4090388c"
+  },
+  "static/driftwood-root__wood__theme-natural__color2.webp": {
+    "sourceHash": "7874e25e37ceae6861cf993eb138b2680e8ee293dc053ab7ca36b99c623421f2",
+    "outputHash": "22a2e19a7f47cc959030abb7fa6c3823daa3ab1d3f9305156ae01d1afec1c80f"
+  },
+  "static/driftwood__wood__theme-natural.webp": {
+    "sourceHash": "f536b4b63fa408b59ad21b037b7447f4073013e9936213dc797ef248bf7468d5",
+    "outputHash": "abe0a536ccafe83fb7ed0ce9e927f550fc9183d3f7f6576311585e872d5b90bf"
+  },
+  "static/flat-spawning-stone__rock__theme-natural.webp": {
+    "sourceHash": "94cf26f5d233c87d914543982462eac26abdc5e5b17f16ac232f27f8540afb57",
+    "outputHash": "9892610d53b186365b4b22b1182af0458bf0c342cc991e1843b5205386100b88"
+  },
+  "static/frozen-anchor__ornament__theme-frozen.webp": {
+    "sourceHash": "654eef93bf9129ee0b9a0328a13bb2bce60b99a8995a66fbcba5a8d75a161a6a",
+    "outputHash": "94958fd7da1202a9ccb4e341c4648a52870730a3c9e42b8808ee7ce024411a69"
+  },
+  "static/frozen-arch__ornament__theme-frozen.webp": {
+    "sourceHash": "8e32f9ef3893dc9d4876611cdbf96e52b33b17aeb45cca0543ac4ad88c59bfb4",
+    "outputHash": "e760027162dfa282dc19676b377d09a220c0959195244afdbd6f9ae1d6a87965"
+  },
+  "static/frozen-arch__ornament__theme-frozen__v2.webp": {
+    "sourceHash": "056d0afc7308967cb4702e898c9d0de5de30fb2d57fc5139824c6865dc697f0b",
+    "outputHash": "72fb58801625a1831a7217355108ba3d1ce18db2bee31b46bbbb57d1e0e57854"
+  },
+  "static/frozen-column__ornament__theme-frozen.webp": {
+    "sourceHash": "4bf95d3cdc1364a04f82949bc9d4c7a86f7fbd22135203b390a3dfd8bab9184f",
+    "outputHash": "611ddff33a3005c3ce04e40d203382584ecde69e6d9ea1cfc5c3192416307500"
+  },
+  "static/frozen-column__ornament__theme-frozen__v2.webp": {
+    "sourceHash": "1393813fddb057af4cc65926c1a721fa32458ba8c0454f8c938ebd2d4bb6df5b",
+    "outputHash": "29134142a90fef64f7f5b817cfd1dff6a42eec407d2a15c9a6f8b21c6fc54e5b"
+  },
+  "static/frozen-column__ornament__theme-frozen__v3.webp": {
+    "sourceHash": "8b2bdc00af09921d88a88b5993262b01cf5117c8956ef3eee7e971b883cf9a94",
+    "outputHash": "038a17ec01a890ccbeee503e18c5301c6ed7153dd4317db7b3243213a3260384"
+  },
+  "static/frozen-crystals__rock__theme-frozen.webp": {
+    "sourceHash": "de00317c0f2863937b4ab704bbd7ec1ceb45b92d9522e5f42684b49078d270e3",
+    "outputHash": "d14ea076f349c8b6b97938afc7f08ebb8c5dcd2fdfd6b2dfe0760d0edc839afa"
+  },
+  "static/frozen-fossil__rock__theme-frozen.webp": {
+    "sourceHash": "343fd8d671d5f058b9422fb37ff0a26a1c7dc429090df802e9a2b2ecf3be3249",
+    "outputHash": "4ec999e124af8b4b5aff2f2dd59be0f7200bb90b7eaa1acdb68229d4c8b3dc2e"
+  },
+  "static/frozen-plant__plant__theme-frozen.webp": {
+    "sourceHash": "9a86578d01f534b0c0815ad06daaa601b18f3c5ab973e25f5633488c5a8245d3",
+    "outputHash": "9411d8ed32a79d0ebb547294182b54fc89bac216296cb12d79dc3d4f7389b604"
+  },
+  "static/frozen-plant__plant__theme-frozen__v2.webp": {
+    "sourceHash": "96053a9ae08910b0962a581c5bd9be8a6466730b16ca920ab4081b0100cad40c",
+    "outputHash": "2e98186a88a9a0d437bb34822131ae7ed66e44a6c040ff569e2897ec7e44dc8f"
+  },
+  "static/frozen-plant__plant__theme-frozen__v3.webp": {
+    "sourceHash": "a7029bcc536c2139abedeb47bb4db61fa9ca3e5d514f39da29fbaa799fe8b2f0",
+    "outputHash": "659ad0f60284dd960680e63c7990993b5db4abca2305c5927f4f28bddd81d806"
+  },
+  "static/frozen-plant__plant__theme-frozen__v4.webp": {
+    "sourceHash": "62979bf4cd30be84ebfdcb3da0639ce027c85b7d6a027b3877075decc1d0ecc3",
+    "outputHash": "ae3e97fdaedf1cbc28fc92f46d981567bff0ebf8af4f18fd6e64999214294fcc"
+  },
+  "static/frozen-plant__plant__theme-frozen__v5.webp": {
+    "sourceHash": "23ca3db328309f3ffd88ecb10c17f803db4e72c8b211800a6a40cb5b5095e7fd",
+    "outputHash": "fb025226e1cfdbe5a3db7568713a3d809248c9b98eb4e5b7f6e3d05f11af4478"
+  },
+  "static/frozen-rock__rock__theme-frozen.webp": {
+    "sourceHash": "700560ef551311996fc4bad1497cd508ff4a7c048cda47834796b8c98f31b279",
+    "outputHash": "b98083f62c75e2f12b4b9d345318ad63e01824703c2e4c62f3f76fc511b32921"
+  },
+  "static/frozen-rock__rock__theme-frozen__v2.webp": {
+    "sourceHash": "718a551e0e45cb2ae5ac16da31c7c26dbcd221f2d03e6a996229637156eb977b",
+    "outputHash": "d7bfb5b27338b4b3144896b48f5fcf037ea4e716c3234fe44ab32efa68d327e4"
+  },
+  "static/frozen-root__wood__theme-frozen.webp": {
+    "sourceHash": "55f0765b0b4f87f9c8d6625448ff21ecd28b7fc8cbd1863c428d9287d4410157",
+    "outputHash": "b54be354c6bdb56bbfcc36f90990dc6b8290b583389cfc0aa9c1683ed2652f93"
+  },
+  "static/frozen-ship__ornament__theme-frozen.webp": {
+    "sourceHash": "547f1a0eb6c51bfbcad599f83192cf72ce6cc18068ed58edb56033473948d748",
+    "outputHash": "c3da8e4df01ab0e1be946919dcf3d768a5e2de5798e4bf0107b81cbd174d6877"
+  },
+  "static/frozen-sunken-submarine__ornament__theme-frozen.webp": {
+    "sourceHash": "bc6983f68205d72d5e71ef66ea872464e3cf2a16225f16fd0982b62ce6a4a57c",
+    "outputHash": "82b8c821add385acee3c968c9250b127c9efe0d44ab716cef6863ac26f7337bd"
+  },
+  "static/frozen-treasure__ornament__theme-frozen.webp": {
+    "sourceHash": "ad32cfd2ddce0b709c1dbb18564a7e6754c07a04edacd46de7de66a4a584ea0e",
+    "outputHash": "de473a9215b2811188d916394a2a8223b31300213a56e14a7086ce7fdd7a218d"
+  },
+  "static/frozen-ufo__ornament__theme-frozen.webp": {
+    "sourceHash": "1170951b8b8752baaafdb2fc666c2631a28bc3164e642dd6b9591850e2452047",
+    "outputHash": "526d63acbe3d220c577bdea180dfa7f6b6d0dc32ecc30b1a4de25f753230a69d"
+  },
+  "static/halloween-ghost-ship__ornament__theme-halloween.webp": {
+    "sourceHash": "f1c338a425cfc3712f5e877c9b397df58e6d0aa8f8f5f156ccdef5b2a43ff92a",
+    "outputHash": "db88b22b40d04b183e8ddf3f44c2a63b8f02c974045c3134abc97042f8543755"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween.webp": {
+    "sourceHash": "2c2a67e37ea2eaa23e68bed1cf9ce14ede555a9d0ec79b6ebadd50282bbd329b",
+    "outputHash": "d344a2201b69e8b77142f93b13305d473b7f71450b757da62f3103abdc59e04b"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__color2.webp": {
+    "sourceHash": "e79a59262a74ddb6486462222b40ea538bea58fe90b867a3c98ffa941c7acac8",
+    "outputHash": "5ef38c12f09ba5f6a965be630a0e02d6a488d70a6f2e0a5a541e10ac9b7af016"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v2.webp": {
+    "sourceHash": "0a9dd83d934b1b3e6ebbe2750482c8269c6e89ba36ded5ab7c54a9170e8132f4",
+    "outputHash": "144a0092c406bac186dd9a304c212ddb23e93d78031c93a5bf77a45f5f32c0cb"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v2__color2.webp": {
+    "sourceHash": "de76d7750206b56981fcc367e8e4cde450ab495fb315c721b971e48c15ee193a",
+    "outputHash": "d1f93aa52663efcb6ddd58a70787dfdc044cd665f23abfe412a60d694f76d1a0"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v3.webp": {
+    "sourceHash": "039e003e6291ac0474f7ff785e01cd7adbb1f2b4a6effccd14ab35ee88a812cf",
+    "outputHash": "c91e07230f4c2108238d16cbbdea09bb8752da914a592ed5dd70b951b9e5ec62"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v3__color2.webp": {
+    "sourceHash": "a1b0173b803ba06c1d27004d0df5c7b8429420b9a728c4335b210e7d71c06ba3",
+    "outputHash": "c8d6885f4facdca7e16bce4abfdaae28e7cd3f8794880a7fa1d93bffc167f5c0"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v4.webp": {
+    "sourceHash": "e4d13431e362d4cf5e5893b27844a6f82825a208f6ae4095dd603b6aea8ec86b",
+    "outputHash": "4df0f04d6642ac9fd723e4094fce237d0fb2f30cee2a5d19400e05b69f3b735f"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v4__color2.webp": {
+    "sourceHash": "1b6639348696528fd9d49d171e466cdb5ab3ca7a97c64ee2d9d18e0da7ffa31e",
+    "outputHash": "5dfaaedf49914177e43dc742eabbd3ad9509b30e0b6794836a886d0cd3e97dfa"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v5.webp": {
+    "sourceHash": "f8a11fe060e7e7bd69a545235beef7c406fbcc90ad91891f248ab3c7c87a0ae8",
+    "outputHash": "811e59c8198452ad531033fa574f6bd111024d1018712dd2a461bdf44e3f3727"
+  },
+  "static/halloween-gravestone__ornament__theme-halloween__v5__color2.webp": {
+    "sourceHash": "e1b00940af6471ac1c424b63332419d9814bd918b33ec64ca358124d0837ee1a",
+    "outputHash": "40a205c3ab4d1bcc7025760724e284229de99be056935c765fa87a329db606f9"
+  },
+  "static/halloween-haunted-tree__ornament__theme-halloween.webp": {
+    "sourceHash": "3026c4f0afa3509399fa41835a41236954e2d40c6b63e9ea9ff0a894b860f21a",
+    "outputHash": "f059ab9a73cee2d52cdafceee20dc0f32ab753b26358eee5be360442bc723f19"
+  },
+  "static/mixed-leaf-litter-scatter__botanical__theme-natural.webp": {
+    "sourceHash": "937bda656042b6d0051e4a737cd893bde3943622fa5b108c1eee8b16ba4300ca",
+    "outputHash": "eb695c25c5d6fa25f084e56323c642998976cf34b2b5e402c137f7dfcbd922f5"
+  },
+  "static/mixed-leaf-litter-scatter__botanical__theme-natural__trypophobia.webp": {
+    "sourceHash": "2ad78a43d5147c7aacbd2f68b77328a3660148dd2b887b10a1aa1f369b874f7a",
+    "outputHash": "62f969008015d93869fe6fe62959769bbcfc9e4160cc813ae8621ed6f76fa983"
+  },
+  "static/moss-bridge__wood-plant__theme-natural.webp": {
+    "sourceHash": "e521ffb84243df37b0545025a0b5669b999e98a0c33f94cc8a4cda41019f6d2d",
+    "outputHash": "57ba860d5ddba91e386f872012645abfc4fb41b43dadb49ca8398632dc7b8678"
+  },
+  "static/moss-covered-driftwood__wood-plant__theme-natural.webp": {
+    "sourceHash": "12a623af460c3022a92505dac8ba09a3d0186735bd7eee732d4a63c0d7432467",
+    "outputHash": "b934838e7f08a0d4c729547e9a74a93e2d5166b5c6aa9fda2d3c8fef358e7543"
+  },
+  "static/moss-covered-rock-formation__rock-plant__theme-natural.webp": {
+    "sourceHash": "116f024b2c5b059fea3c1d321b75a28957302ab3d2a0b7a94c5bee59e52e232e",
+    "outputHash": "963933a6bc7f3c1e218df67b899ebf728a774673437e55aa3093bc37e355d75c"
+  },
+  "static/river-stone-mound__rock__theme-natural.webp": {
+    "sourceHash": "44d81486ace3776215c518e42d06f1ac241f9df5319859252a55955a729800f0",
+    "outputHash": "5068747777a7bfc282842294f5af7f1746f7888ad77ef7f6c27b137255e87f8f"
+  },
+  "static/rock-bricks__rock__theme-natural.webp": {
+    "sourceHash": "b55a17f18732a50df765243fd5d1a529350814425cd49e420940103ee5570b4b",
+    "outputHash": "2b849511194cf923c79e8daebe24490a21a596ddfdc726b60f235f5f3a9cc317"
+  },
+  "static/rock-bricks__rock__theme-natural__v2.webp": {
+    "sourceHash": "0ff8914baa3482bc628bd2f8a8261258f4f32d6e8270d9d84c6a531b8f1d85ea",
+    "outputHash": "b37aabc3597fe6e6d2f14af1e32c21fbb5df332431828ed414f1d068d3d78dda"
+  },
+  "static/rock-bricks__rock__theme-natural__v3.webp": {
+    "sourceHash": "871cde1564d4250b8ddb8d6fcc1190f70931122a0e873a1483fa690413c4cea6",
+    "outputHash": "d12ea242ab892969605167a03ddd9ae2fe4848b3a82f13911f631ffaad799d66"
+  },
+  "static/rock-bricks__rock__theme-natural__v4.webp": {
+    "sourceHash": "295cbc777100bfae485b4fe84f7fef84a279fa35c13b1abc96d6869335950dc5",
+    "outputHash": "64362b08bb37069fe887b5e635f9538660b854a391bcfa9e49d45cedec0e7b5c"
+  },
+  "static/rock-bricks__rock__theme-natural__v5.webp": {
+    "sourceHash": "82b8097147841c8c9621aaff5bed59150dd4ed9fb59f9e9bfdf15b0967e54560",
+    "outputHash": "c6126351385dc987cbf83f58ab79722d1b66c14180a334fcf13a523b4a32a59b"
+  },
+  "static/root-debris-scatter__wood__theme-natural.webp": {
+    "sourceHash": "39d9899237b2d4e454345166af85891ea006920d8164b435559c97ab8df4ec71",
+    "outputHash": "002beec370af33d1ae458607e195694f8a9247c9470477998797350603bd96a4"
+  },
+  "static/seed-pod-cluster__botanical__theme-natural.webp": {
+    "sourceHash": "3e4b10d3e5ea05efb01d0288c69c78ad5508ee121dbb788c79d6415f57fab5a9",
+    "outputHash": "0ff90e7ab561caf58e61f881ef3d51a6613e38fbe163d36c46599a9281937422"
+  },
+  "static/seed-pod-cluster__botanical__theme-natural__trypophobia.webp": {
+    "sourceHash": "0fd2225e7c0d0c940aa9bad6728dcdfa4d7c783610d19577e5dedc4569d60c2a",
+    "outputHash": "b64f811014357604b44face0dc7ae0309336bf65ce22320b4c5afa6d25a98150"
+  },
+  "static/single-catappa-leaf__botanical__theme-natural.webp": {
+    "sourceHash": "0545ae9a1044b57ba1549f437e261229373fb801ecf4beba1ea8bb2ca360e071",
+    "outputHash": "82a4d15e28d65a3de34cc59adde32d9bd9a10ea18b0b49377bbd9f33685222f0"
+  },
+  "static/single-loose-leaf__botanical__theme-natural.webp": {
+    "sourceHash": "5367f6abe2e253080ace3f21ddd7ade381eb14b90883f7f1a637bee4f93627a3",
+    "outputHash": "c521f7e7def2cc8658b22164fdc90a8cfda8895a4bc8f1bcb6fe77c4a4d9563a"
+  },
+  "static/single-twig__botanical__theme-natural.webp": {
+    "sourceHash": "e444975c03648a05093c08c81841821bf4e933253be47050b4d886ba740d40a7",
+    "outputHash": "295bc0ca6ec97937b3cd0b5081d9477261332064e8ce6daa21238a5b74313e23"
+  },
+  "static/small-botanical-scatter-pieces__botanical__theme-natural.webp": {
+    "sourceHash": "18990a7c355d0a8f1f09faedb92890b2f9d01767abf6da4ec4ba673aedd09e65",
+    "outputHash": "35b7ccec99ee0ef008e2eba00f8fe26453d32a535ee43c5b81c8fa79eb176eaf"
+  },
+  "static/small-botanical-scatter-pieces__botanical__theme-natural__trypophobia.webp": {
+    "sourceHash": "315899393cee9f9fa95fa48b5e1e5572ca0afa5b1c3afa41ef7008522dc25c05",
+    "outputHash": "c7577416fcca12b8f68f68e2473789d210f7551f6bf71e2e40383e47d0612081"
+  },
+  "static/small-branch-pile__wood__theme-natural.webp": {
+    "sourceHash": "b1e00f13be511f90af097a7c01c232864205df0e32209a2579e089dfffa2d5da",
+    "outputHash": "5cce49330ccb3cabf8d923ef884b46acd1b6ab9e385fa1624502d8692e8ca9f9"
+  },
+  "static/small-stone-shard-cluster__rock__theme-natural.webp": {
+    "sourceHash": "4a74d17aeae982d18edeade0b74d6787f7ed96b42a42c227fd92f12548fcb64b",
+    "outputHash": "78271428212103be0b99897f8808ad7d1630bf49aa4b99dcff153923da87758f"
+  },
+  "static/small-wood-branch-cluster__wood__theme-natural.webp": {
+    "sourceHash": "541ce46aa56ccc71b9702373db1a966e6c9252139f400175cfdb0a27cbc7b3d8",
+    "outputHash": "c8023c9493315a74c82f395ec01935a70796d1135780b6db0d184d567ebf3a41"
+  },
+  "static/sprawling-spider-wood-rootscape__wood__theme-natural.webp": {
+    "sourceHash": "f6c8f19610bc582ce24dde2514a4412921d439a99f5d4d6e05043a6ef69047dd",
+    "outputHash": "53f8ba7eafab9fdf0a34d4272e9699186ffbbbaffed256cb53dcc8ab350e4582"
+  },
+  "static/stone-pebble-cluster__rock__theme-natural.webp": {
+    "sourceHash": "3a96f15637c2fc7943d7e5b2d99ff580dd923f35725a0c6e8a85dc59f64b21a2",
+    "outputHash": "937c8bb4fc01dd8283934a165fa2484b3008bb168613e30a9f0fee70af924d08"
+  },
+  "static/twig-and-pod-mix__botanical__theme-natural.webp": {
+    "sourceHash": "e5daca616972ff77d33e6343df65645d3b645fcacbf8685bf7c9423a52205122",
+    "outputHash": "40cc903899f56a2de85dfe34bd1547e8f3f8367aed2136797756a18de5e1cfe6"
+  },
+  "static/twig-and-pod-mix__botanical__theme-natural__trypophobia.webp": {
+    "sourceHash": "a56e7f87976c8fad34c8e0dbe981b84834a84b67aa45166fd897a0b3fb1bbbb8",
+    "outputHash": "976f13571b40814c11875f15c8da3d415a43187201d7985abbdb9657e5bd9d78"
+  },
+  "static/volcanic-rock-bricks__rock__theme-natural.webp": {
+    "sourceHash": "a85000a87e950eee4dccf11e7be4ec35fbaba2c17c001e345d1d327a1b3cb39d",
+    "outputHash": "217779e39f082d5a37bc6d82bd7c6204e71c22ef5efc04de7838270a4d530f4c"
+  },
+  "static/volcanic-rock-bricks__rock__theme-natural__v2.webp": {
+    "sourceHash": "7ea304974a079cdf2296b4968c0d6ef7eaadd0a0b2b89c19fa2107950f9a6e36",
+    "outputHash": "c2a2a1b4ebdde4b421dc65c143f5d9dd5ecc14ea053fb67d49bf6f11ac2bfd65"
+  },
+  "static/volcanic-rock-bricks__rock__theme-natural__v3.webp": {
+    "sourceHash": "989991a5f4877e3a3a8ffe6aa49b2aceea96334dedbbe589570d68667862d66a",
+    "outputHash": "50f71bdc039772c32a333d0c734c969641a922b6a5acc7e518906d75001608bc"
+  },
+  "static/volcanic-rock-bricks__rock__theme-natural__v4.webp": {
+    "sourceHash": "db61a06541b9c3b15cd7b1e180f816245bb3c7cd8256b0510b8c3c4af9702847",
+    "outputHash": "2de45228e76dd10b980a4e5f79fe5cd41aeec50fca5db5cbdb51820a78112ca1"
+  },
+  "static/zoanthid-mat__coral__theme-reef.webp": {
+    "sourceHash": "bc841440efdf1ba1a34ea889718dba5cc031889ae0a36f2653235b01d048622a",
+    "outputHash": "3c441f5bbc25c46510c31425b051a631dade5eb2983376290ace43ff936358ea"
+  },
+  "cave_layered/coral-shelf-10__cave-coral__theme-reef__front.webp::trypophobia": {
+    "sourceHash": "405a88e9ecca317b972e746f10e85f989d0f53ad8c48ff2f557bade9a0fa6a9a",
+    "outputHash": "21e71ab449c48a4e3a7ddfa1d1e8f9ba5ae2812de122fb81e222a9172f4a2f0e"
+  },
+  "cave_layered/coral-shelf-1__cave-coral__theme-reef__front.webp::trypophobia": {
+    "sourceHash": "996ebaace1bdc16401992636cca67c69a6673d5565be3f78b6bfc694f4f4a503",
+    "outputHash": "f88e22382f63aa3aee7a6a3ddfd514015d91aaa79170641c1f1e50cd1cc10c21"
+  },
+  "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp::trypophobia": {
+    "sourceHash": "74df5e48bbf8691b9edfc2492157ddf887d66fbb19eaf5f2140cba7841933ee6",
+    "outputHash": "cc17ae11a13f1139538393bab3642c9c963205d7a2c20cad7179f3f2c6f6d6c3"
+  },
+  "cave_layered/coral-shelf-9__cave-coral__theme-reef__front.webp::trypophobia": {
+    "sourceHash": "e6956d71a353ebb4b7ee810b3e46820882b237ae584cb6aa2c8b08e394fa2c3a",
+    "outputHash": "f6086166e2bfe30c3e969a48444dfed7261a21fc379318b2cb67675059f6cdb4"
+  }
+}

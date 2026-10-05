@@ -3,7 +3,7 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const read = (p) => fs.readFileSync(path.join(ROOT, p), 'utf8');
 
 test('every authored cave-layered decor exposes the JSON swimmable toggle', () => {
@@ -60,6 +60,6 @@ test('seat-only caves cannot start normal or debug interior roaming', () => {
 test('missing swimmable remains backward-compatible and defaults to true', () => {
   const bootstrap = read('public/app-src/00-bootstrap.js');
   assert.match(bootstrap, /const DEFAULT_CAVE_BEHAVIOR_PROFILE = \{\s*swimmable: true,/);
-  const docs = read('docs/cave-swimmability.md');
+  const docs = read('../docs/cave-swimmability.md');
   assert.match(docs, /If the field is missing, the runtime resolves it as `true`/);
 });

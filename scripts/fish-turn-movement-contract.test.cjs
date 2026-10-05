@@ -6,7 +6,7 @@ const path = require("node:path");
 const test = require("node:test");
 const vm = require("node:vm");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const sourceRoot = path.join(root, "public", "app-src");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 const turnSource = read("public/app-src/rendering/fish-motion-and-floor.js");
@@ -41,6 +41,14 @@ function extractFunction(source, name) {
     }
   }
   throw new Error(`Could not extract ${name}`);
+}
+
+function installTurnStateReaders(context) {
+  context.runtime = {};
+  for (const name of ["normalizeFishHorizontalDirection", "getFishFacingDirection", "getFishLogicalDirection",
+    "getFishHorizontalTurnState", "getFishRenderedHorizontalTurnState"]) {
+    context[name] = vm.runInNewContext(`(${extractFunction(turnSource, name)})`, context);
+  }
 }
 
 function sourceFilesContaining(fragment) {
@@ -190,10 +198,7 @@ test("renderer-neutral locomotion state preserves the existing hold and release 
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     FISH_TURN_LOCOMOTION_RELEASE_PROGRESS: 0.62
   };
-  context.normalizeFishHorizontalDirection = vm.runInNewContext(`(${extractFunction(turnSource, "normalizeFishHorizontalDirection")})`, context);
-  context.getFishFacingDirection = vm.runInNewContext(`(${extractFunction(turnSource, "getFishFacingDirection")})`, context);
-  context.getFishLogicalDirection = vm.runInNewContext(`(${extractFunction(turnSource, "getFishLogicalDirection")})`, context);
-  context.getFishHorizontalTurnState = vm.runInNewContext(`(${extractFunction(turnSource, "getFishHorizontalTurnState")})`, context);
+  installTurnStateReaders(context);
   const getLocomotion = vm.runInNewContext(`(${extractFunction(turnSource, "getFishTurnLocomotionState")})`, context);
 
   const stationaryTurn = {
@@ -244,7 +249,7 @@ test("direct direction mutations remain confined to audited lifecycle/debug exce
 });
 
 test("phase 1 documentation freezes gameplay pose as authoritative and excludes v26 geometry changes", () => {
-  const contract = read("docs/fish-turn-movement-contract.md");
+  const contract = read("../docs/fish-turn-movement-contract.md");
   assert.match(contract, /authoritative gameplay pose/i);
   assert.match(contract, /visual render offsets only/i);
   assert.match(contract, /`setFishDirection\(\)` remains the normal in-tank horizontal reversal gateway/i);
@@ -256,7 +261,7 @@ test("phase 1 documentation freezes gameplay pose as authoritative and excludes 
 
 
 test("phase 2 documentation freezes locomotion behavior while removing renderer coupling", () => {
-  const contract = read("docs/fish-turn-movement-contract.md");
+  const contract = read("../docs/fish-turn-movement-contract.md");
   assert.match(contract, /Phase 2 renderer-neutral locomotion policy/);
   assert.match(contract, /getFishTurnLocomotionState\(fish, now\)/);
   assert.match(contract, /getFishTurnReversalTraversal\(fish, requestedXNorm, requestedYNorm, now\)/);
@@ -307,7 +312,7 @@ test("phase 7 starts renderer ownership through the existing direction gateway a
 });
 
 test("phase 7 documentation preserves movement and interaction authority", () => {
-  const contract = read("docs/fish-turn-movement-contract.md");
+  const contract = read("../docs/fish-turn-movement-contract.md");
   assert.match(contract, /Phase 7 renderer session ownership and terminal-frame handoff/);
   assert.match(contract, /Changing a development override or fish\/species preference during an active reversal does not swap/i);
   assert.match(contract, /Phase 15 retires that renderer and latches the lightweight sprite fallback instead/i);
@@ -326,6 +331,7 @@ test("phase 8 reversal traversal is normalized, so the 650 ms v26 clock preserve
     FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE: 0.2,
     FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO: 0.26
   };
+  installTurnStateReaders(context);
   const getReversal = vm.runInNewContext(`(${extractFunction(motionSource, "getFishTurnReversalTraversal")})`, context);
   const base = {
     turnStartedAt: 1000,
@@ -355,14 +361,16 @@ test("phase 8 reversal traversal is normalized, so the 650 ms v26 clock preserve
 });
 
 test("a committed reversal keeps its arc when its target jumps across the fish", () => {
-  const getReversal = vm.runInNewContext(`(${extractFunction(motionSource, "getFishTurnReversalTraversal")})`, {
+  const context = {
     clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
     FISH_TURN_TRAVERSAL_ARC_APEX_PROGRESS: 0.5,
     FISH_TURN_TRAVERSAL_DRIFT_MIN_SCALE: 0.2,
     FISH_TURN_TRAVERSAL_DRIFT_MAX_SCALE: 0.52,
     FISH_TURN_TRAVERSAL_LAUNCH_MIN_SCALE: 0.2,
     FISH_TURN_TRAVERSAL_ARC_VERTICAL_RATIO: 0.26
-  });
+  };
+  installTurnStateReaders(context);
+  const getReversal = vm.runInNewContext(`(${extractFunction(motionSource, "getFishTurnReversalTraversal")})`, context);
   const fish = { turnStartedAt: 1000, turnDurationMs: 650, turnFromDirection: 1, turnToDirection: -1 };
   getReversal(fish, -0.3, 0.08, 1000);
   const steady = getReversal({ ...fish }, -0.3, 0.08, 1325);
@@ -466,7 +474,7 @@ test("inspect approaches retain the decor waypoint instead of bypassing it", () 
 });
 
 test("phase 8 documentation keeps visual trajectories separate from authoritative locomotion", () => {
-  const contract = read("docs/fish-turn-movement-contract.md");
+  const contract = read("../docs/fish-turn-movement-contract.md");
   assert.match(contract, /Phase 8 v26 timing and locomotion reconciliation/);
   assert.match(contract, /only a turn whose latched renderer backend is `v26` receives the approved `650 ms` duration/i);
   assert.match(contract, /does not become `fish\.xNorm` or `fish\.yNorm`/i);

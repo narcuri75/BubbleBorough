@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="theme-color" content="#082f49" />
+  <title>Bubble Borough — Desktop Required</title>
+  <link rel="icon" type="image/webp" href="assets/misc/favicon.webp" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { min-height: 100%; margin: 0; }
+    body {
+      display: grid;
+      place-items: center;
+      padding: 24px;
+      color: #ecfeff;
+      background: radial-gradient(circle at 50% 20%, #0891b2, #075985 48%, #082f49);
+      font-family: BubbleBorough, system-ui, sans-serif;
+      text-align: center;
+    }
+    main {
+      width: min(100%, 420px);
+      padding: 32px 26px;
+      border: 1px solid rgba(255,255,255,.28);
+      border-radius: 22px;
+      background: rgba(3,37,65,.78);
+      box-shadow: 0 22px 60px rgba(0,0,0,.3);
+      backdrop-filter: blur(8px);
+    }
+    img { width: min(260px, 78vw); height: auto; }
+    h1 { margin: 24px 0 12px; font-size: clamp(1.55rem, 7vw, 2.2rem); }
+    p { margin: 0; font-family: system-ui, sans-serif; line-height: 1.55; color: #cffafe; }
+  </style>
+</head>
+<body>
+  <main role="status" aria-live="polite">
+    <img src="assets/misc/bb_logo.webp" alt="Bubble Borough" />
+    <h1>Desktop Required</h1>
+    <p>Bubble Borough is designed for a desktop or laptop computer. Please open it there to play.</p>
+  </main>
+</body>
+</html>

@@ -4,7 +4,7 @@ const path = require("node:path");
 const crypto = require("node:crypto");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const manifestPath = path.join(root, "assets", "asset-manifest.json");
 const imagePattern = /\.(?:png|jpe?g|webp)$/i;
 const hash = file => crypto.createHash("sha256").update(fs.readFileSync(file)).digest("hex").slice(0, 12);

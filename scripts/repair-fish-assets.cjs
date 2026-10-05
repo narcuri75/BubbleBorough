@@ -7,7 +7,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const fishRoot = path.join(root, "assets", "fish");
 const smallRoot = path.join(fishRoot, "small_fish");
 const protectedJson = new Set(["fish-types.json", "FISH_RENAME_MANIFEST.json"]);

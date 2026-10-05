@@ -5,7 +5,7 @@ const fs = require("fs");
 const path = require("path");
 const ts = require("typescript");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const originalPath = process.argv[2] ? path.resolve(process.argv[2]) : null;
 const generatedPath = path.join(projectRoot, "public", "app.js");
 if (!originalPath || !fs.existsSync(originalPath)) {

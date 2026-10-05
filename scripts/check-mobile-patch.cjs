@@ -3,7 +3,7 @@
 const fs = require("node:fs");
 const path = require("node:path");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const mobileHtml = fs.readFileSync(path.join(projectRoot, "mobile.html"), "utf8");
 const desktopHtml = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 const failures = [];

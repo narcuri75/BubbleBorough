@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const path = require("node:path");
 const test = require("node:test");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const read = (rel) => fs.readFileSync(path.join(ROOT, rel), "utf8");
 
 function sliceBetween(source, startText, endText) {

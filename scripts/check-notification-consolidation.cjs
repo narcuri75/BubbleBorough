@@ -3,7 +3,7 @@
 const fs = require("fs");
 const path = require("path");
 
-const projectRoot = path.resolve(__dirname, "..");
+const projectRoot = path.resolve(__dirname, "..", "game");
 const sourceRoot = path.join(projectRoot, "public", "app-src");
 const notificationModule = path.join(sourceRoot, "ui", "notifications.js");
 const notificationSource = fs.readFileSync(notificationModule, "utf8");

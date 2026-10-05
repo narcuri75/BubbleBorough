@@ -5,7 +5,7 @@ const fs = require("node:fs");
 const vm = require("node:vm");
 const ts = require("typescript");
 const path = require("node:path");
-const root = path.join(__dirname, "..", "public", "app-src");
+const root = path.join(__dirname, "..", "game", "public", "app-src");
 const DAY_MS = 86400000;
 const keys = ["hunger", "energy", "social", "comfort", "hygiene", "environment", "stimulation"];
 function addFunctions(context, file, names) {

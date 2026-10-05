@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 
-const ROOT = path.resolve(__dirname, '..');
+const ROOT = path.resolve(__dirname, '..', 'game');
 const EVENTS_PATH = path.join(ROOT, 'public/app-src/tank/events-recaps-and-save.js');
 const events = fs.readFileSync(EVENTS_PATH, 'utf8');
 

@@ -7,7 +7,7 @@ const test = require("node:test");
 const ts = require("typescript");
 const vm = require("node:vm");
 
-const root = path.join(__dirname, "..");
+const root = path.join(__dirname, "..", "game");
 const customizationPath = path.join(root, "public", "app-src", "decor", "customization.js");
 const customization = fs.readFileSync(customizationPath, "utf8");
 const customizationFile = ts.createSourceFile(customizationPath, customization, ts.ScriptTarget.Latest, true);

@@ -7,7 +7,7 @@ const test = require("node:test");
 const vm = require("node:vm");
 const sharp = require("sharp");
 
-const root = path.resolve(__dirname, "..");
+const root = path.resolve(__dirname, "..", "game");
 const read = (relativePath) => fs.readFileSync(path.join(root, relativePath), "utf8");
 const v26Source = read("public/app-src/rendering/fish-turn-v26.js");
 const rendererSource = read("public/app-src/rendering/fish-and-effects.js");
@@ -21,7 +21,7 @@ const boroughSource = read("public/app-src/borough/living-borough.js");
 const appearanceSource = read("public/app-src/fish/undead-and-appearance.js");
 const gravelSchoolingSource = read("public/app-src/fish/gravel-and-schooling.js");
 const diseaseSource = read("public/app-src/fish/needs-disease-and-behavior.js");
-const contract = read("docs/fish-turn-movement-contract.md");
+const contract = read("../docs/fish-turn-movement-contract.md");
 
 function extractFunction(source, name) {
   const start = source.indexOf(`function ${name}(`);
@@ -175,6 +175,7 @@ mathContext.getFishHorizontalTurnState = (fish, now) => ({
   fromDirection: Number(fish?.turnFromDirection) < 0 ? -1 : 1,
   toDirection: Number(fish?.turnToDirection) < 0 ? -1 : 1
 });
+mathContext.getFishRenderedHorizontalTurnState = mathContext.getFishHorizontalTurnState;
 mathContext.getFishTurnV26VisualContinuity = vm.runInNewContext(
   `(${extractFunction(v26Source, "getFishTurnV26VisualContinuity")})`,
   mathContext
@@ -634,13 +635,13 @@ test("phase 1 gives the complex turn sole visual ownership without a fade seam",
   assert.equal(nearEnd.meshAlpha, 1);
   assert.equal(nearEnd.spriteAlpha, 0);
   assert.equal(nearEnd.spriteDirection, -1);
-  assert.ok(nearEnd.tilt < 0.31 && nearEnd.tilt > -0.28);
+  assert.ok(nearEnd.tilt < 0.31 && nearEnd.tilt > 0.28);
 
   const atEnd = mathContext.getFishTurnV26VisualContinuity(fish, -0.28, 1650);
   assert.equal(atEnd.meshAlpha, 0);
   assert.equal(atEnd.spriteAlpha, 1);
   assert.equal(atEnd.spriteDirection, -1);
-  assert.ok(Math.abs(atEnd.tilt + 0.28) < 1e-12);
+  assert.ok(Math.abs(atEnd.tilt - 0.28) < 1e-12, "destination local tilt converts to world rotation");
 });
 
 test("phase 1 continuity is wired through the v26 session and renderer overlap", () => {
@@ -648,7 +649,7 @@ test("phase 1 continuity is wired through the v26 session and renderer overlap",
   assert.match(v26Source, /Number\.isFinite\(Number\(fish\.swimTilt\)\) \? Number\(fish\.swimTilt\) : 0/);
   assert.match(v26Source, /function getFishTurnV26VisualContinuity\(/);
   assert.match(v26Source, /context\.globalAlpha \*= Number\.isFinite\(requestedAlpha\)/);
-  assert.match(rendererSource, /const v26VisualContinuity = v26TurnRendererActive/);
+  assert.match(rendererSource, /const v26VisualContinuity = complexTurnRendererActive/);
   assert.match(rendererSource, /tankContext\.rotate\(v26VisualContinuity\?\.tilt \?\? pose\.tilt\)/);
   assert.match(rendererSource, /alpha: v26VisualContinuity\?\.meshAlpha \?\? 1/);
   assert.match(rendererSource, /tankContext\.scale\(v26VisualContinuity\.spriteDirection, 1\)/);
@@ -657,9 +658,9 @@ test("phase 1 continuity is wired through the v26 session and renderer overlap",
 test("phase 2 caustics receive the transformed v26 canvas rather than its flat source rectangle", () => {
   const waterSource = read("public/app-src/rendering/tank-and-water.js");
   assert.match(v26Source, /onRenderedVolumeCanvas\(\{[\s\S]*canvas: volumeCanvas/);
-  assert.match(rendererSource, /onRenderedVolumeCanvas: \(\{ canvas, drawX, drawY, drawWidth, drawHeight, alpha \}\) => \{/);
-  assert.match(rendererSource, /markLightweightCausticImage\(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha\)/);
-  assert.match(waterSource, /function markLightweightCausticImage\(sourceContext, image, x, y, width, height, alpha = 1\)/);
+  assert.match(rendererSource, /onRenderedVolumeCanvas: \(\{ canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight \}\) => \{/);
+  assert.match(rendererSource, /markLightweightCausticImage\(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight\)/);
+  assert.match(waterSource, /function markLightweightCausticImage\(sourceContext, image, x, y, width, height, alpha = 1, sourceWidth = image\?\.width, sourceHeight = image\?\.height\)/);
   assert.match(waterSource, /context\.globalAlpha = clamp\(Number\(alpha\) \|\| 0, 0, 1\);/);
 });
 
@@ -725,9 +726,8 @@ test("drawFish uses the base fish source art for v26 body geometry and depth-tre
   assert.doesNotMatch(v26Source, /\.swimSpeed\s*=/);
 });
 
-test("phase 15 v26 failure preserves the live sprite without reviving simple turns", () => {
-  assert.match(rendererSource, /if \(!renderedByV26\) \{[\s\S]*Keep the live sprite visible until/);
-  assert.doesNotMatch(rendererSource, /if \(!renderedByV26\) \{[\s\S]*markFishTurnRendererFallback\(fish, "simple"\);/);
+test("v26 failure latches the animated lightweight fallback for the remaining turn", () => {
+  assert.match(rendererSource, /if \(!renderedByV26\) \{[\s\S]*markFishTurnRendererFallback\(fish, "simple"\);\s*drawFishLightweightTurnFallbackFrame/);
   assert.match(v26Source, /console\.warn\("Fish Turn v26 volume renderer failed; using the lightweight turn fallback\.", error\);/);
   assert.doesNotMatch(rendererSource, /drawFishTurnaroundRig/);
   assert.doesNotMatch(contract, /lightweight sprite turn is the emergency fallback/i);

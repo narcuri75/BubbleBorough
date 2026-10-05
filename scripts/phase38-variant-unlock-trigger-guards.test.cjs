@@ -7,7 +7,7 @@ const path = require("node:path");
 const vm = require("node:vm");
 const ts = require("typescript");
 
-const ROOT = path.resolve(__dirname, "..");
+const ROOT = path.resolve(__dirname, "..", "game");
 const APP_SRC = path.join(ROOT, "public/app-src");
 const EVENTS_PATH = path.join(APP_SRC, "tank/events-recaps-and-save.js");
 const events = fs.readFileSync(EVENTS_PATH, "utf8");

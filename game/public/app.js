@@ -16592,12 +16592,13 @@ function resolveAppUrl(path) {
   }
 
   // Saved/catalog URLs can retain the old root-level asset location. Give
-  // same-origin app resources the same canonical URL as relative references,
+  // same-origin and former local app resources the same URL as relative references,
   // so sprite lookup works on both /play and the static /game/ deployment.
   const base = new URL(document.baseURI);
   const candidate = new URL(trimmed, base);
   const appResource = candidate.pathname.match(/^\/(?:game\/)?((?:assets|public)\/.*)$/);
-  if (candidate.origin === base.origin && appResource) {
+  const localDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])$/i.test(candidate.hostname);
+  if ((candidate.origin === base.origin || localDevelopmentHost) && appResource) {
     return new URL(appResource[1] + candidate.search + candidate.hash, base).toString();
   }
   if (/^https?:/i.test(trimmed)) return trimmed;
@@ -41303,7 +41304,9 @@ function sanitizePurchaseHistory(rawHistory) {
       if (!rawItem || typeof rawItem !== "object") return null;
       const name = typeof rawItem.name === "string" ? rawItem.name.trim().slice(0, 120) : "Store item";
       const category = typeof rawItem.category === "string" ? rawItem.category.trim().slice(0, 32) : "";
-      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/web/bodega/Store_Logo.webp";
+      // Orders travel between local development, desktop and hosted saves.
+      // Keep logical asset names instead of persisting the server's origin.
+      const image = normalizeWebSurfThumbnailPath(typeof rawItem.image === "string" ? rawItem.image.trim().slice(0, 600) : "");
       const seller = typeof rawItem.seller === "string" ? rawItem.seller.trim().slice(0, 120) : "";
       return {
         key: typeof rawItem.key === "string" ? rawItem.key.slice(0, 180) : "",
@@ -49751,7 +49754,7 @@ function loadRuntimeImageAttempt(path, timeoutMs) {
     image.decoding = "async";
     image.onload = () => finish(true, "loaded");
     image.onerror = () => finish(false, "error");
-    image.src = path;
+    image.src = resolveRenderableAssetPath(path);
   });
 }
 
@@ -84323,7 +84326,7 @@ function renderWebSurfEmailInlineText(value, data = {}) {
 function normalizeWebSurfThumbnailPath(value) {
   const fallback = "assets/web/bodega/Store_Logo.webp";
   let raw = typeof value === "string" ? value.trim() : "";
-  if (!raw || raw.startsWith("data:")) return raw || fallback;
+  if (!raw || /^(?:data:|blob:)/i.test(raw)) return raw || fallback;
   raw = raw.replace(/\\/g, "/");
   try {
     raw = new URL(raw, window.location.href).pathname;
@@ -96704,6 +96707,14 @@ function syncFishTraversalStateFromMove(fish, previousXNorm, previousYNorm, now,
   }
 }
 
+function settleFishIdleMotion(fish, now, deltaSeconds) {
+  // The no-travel branch must update locomotion too. Otherwise a resting
+  // fish keeps its last recorded swim speed and later launches with stale
+  // velocity from before its rest.
+  integrateFishPassiveMotion(fish, 0, 0, 0, deltaSeconds);
+  syncFishTraversalStateFromMove(fish, fish.xNorm, fish.yNorm, now, deltaSeconds);
+}
+
 function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now) {
   if (!fish || !fish.turnStartedAt || !(Number(fish.turnDurationMs) > 0)) return null;
   const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
@@ -96738,10 +96749,22 @@ function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now)
     fish.traversalArcStartedAt = fish.turnStartedAt;
     fish.traversalArcVertical = clamp(Number(requestedYNorm) || 0, -0.12, 0.12) * 0.55;
     fish.traversalArcDistance = horizontalDistance;
+    const velocityX = Number(fish.traversalVelocityXNorm) || 0;
+    const velocityY = Number(fish.traversalVelocityYNorm) || 0;
+    const velocityLength = Math.hypot(velocityX, velocityY);
+    // Start on the course that actually reached this turn, not the new
+    // destination's climb/dive. Otherwise down-left can instantly become
+    // up-left before the fish has even started its reversal animation.
+    fish.traversalArcSourceVertical = velocityLength > 0.00001
+      ? horizontalDistance * velocityY / Math.max(Math.abs(velocityX), velocityLength * 0.02)
+      : 0;
   }
   const requestedVertical = Number(fish.traversalArcVertical) || 0;
+  const sourceVertical = Number(fish.traversalArcSourceVertical) || 0;
   const arcDistance = Number(fish.traversalArcDistance) || horizontalDistance;
-  const verticalCarry = requestedVertical * (0.72 + Math.abs(horizontalMomentum) * 0.28);
+  const courseBlend = progress * progress * (3 - 2 * progress);
+  const verticalCarry = (sourceVertical + (requestedVertical - sourceVertical) * courseBlend)
+    * (0.72 + Math.abs(horizontalMomentum) * 0.28);
   const travelDirection = horizontalMomentum < -0.0001 ? toDirection : fromDirection;
   return {
     xNorm: fromDirection * arcDistance * horizontalMomentum,
@@ -98345,6 +98368,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
     } else {
+      settleFishIdleMotion(fish, now, deltaSeconds);
       const freeSwimmingOtocinclus = species.id === "otocinclus"
         && isSuckerFishFreeSwimming(fish, species, now);
       if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {
@@ -121821,10 +121845,13 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const distancePx = Math.hypot(dxPx, dyPx);
   if (distancePx <= 0.001) return { xNorm: dx, yNorm: dy };
 
-  const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
   const desiredVerticalRatio = clamp(dyPx / distancePx, -verticalLimit, verticalLimit);
   const desiredHorizontalRatio = Math.sqrt(Math.max(0, 1 - desiredVerticalRatio * desiredVerticalRatio));
-  let desiredHeadingX = horizontalSign * desiredHorizontalRatio;
+  // Small opposite targets may intentionally fall below the turn-intent
+  // threshold. Steering must not quietly cross to backward travel while the
+  // fish still faces its old side; the reversal controller owns that crossing.
+  const facingDirection = getFishFacingDirection(fish);
+  let desiredHeadingX = facingDirection * desiredHorizontalRatio;
   let desiredHeadingY = desiredVerticalRatio;
 
   const wanderScale = clamp(Number(options.wanderScale) || 0, 0, 1);
@@ -121841,7 +121868,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     const sine = Math.sin(wanderRadians);
     const rotatedX = desiredHeadingX * cosine - desiredHeadingY * sine;
     const rotatedY = desiredHeadingX * sine + desiredHeadingY * cosine;
-    if (rotatedX * horizontalSign > 0.05) {
+    if (rotatedX * facingDirection > 0.05) {
       desiredHeadingX = rotatedX;
       desiredHeadingY = clamp(rotatedY, -verticalLimit, verticalLimit);
     }
@@ -121879,6 +121906,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   let nextHeadingY = Math.sin(nextAngle);
   // Eliminate floating-point residual sideways drift at exactly +/-90 degrees.
   if (Math.abs(nextHeadingX) < 1e-10) nextHeadingX = 0;
+  if (nextHeadingX * facingDirection < 0) nextHeadingX = 0;
   nextHeadingY = clamp(nextHeadingY, -verticalLimit, verticalLimit);
   const headingLength = Math.hypot(nextHeadingX, nextHeadingY) || 1;
   nextHeadingX /= headingLength;
@@ -131516,7 +131544,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/icons/icons",
+        "root": "assets/generated/sprites/icons/Icons",
         "version": "b46abd0da7b0-v1",
         "standalone": false
       }
@@ -133225,12 +133253,13 @@ function getSpriteDeliveryUrl(frame, preview = true) {
 function normalizeRenderableAssetPath(path) {
   const raw = typeof path === "string" ? path.trim() : "";
   if (!raw || /^(?:data:|blob:)/i.test(raw)) return raw;
-  if (/^https?:/i.test(raw) && new URL(raw).origin !== new URL(document.baseURI).origin) return raw;
+  const portable = /^https?:/i.test(raw) ? resolveAppUrl(raw) : raw;
+  if (/^https?:/i.test(portable) && new URL(portable).origin !== new URL(document.baseURI).origin) return raw;
 
   // A legacy catalogue entry may be a former PNG logical name. It must never
   // become a fictitious `name.png.webp` preview. Decor, backgrounds and gravel
   // are loose WebP artwork; their PNG names are save/metadata identifiers only.
-  let normalized = raw.replace(/(?:\.png|_png)\.webp(?=([?#]|$))/i, ".webp");
+  let normalized = portable.replace(/(?:\.png|_png)\.webp(?=([?#]|$))/i, ".webp");
   // Backgrounds converted to WebP are now served directly. Old catalog/session
   // paths may still point at the former generated background delivery folder.
   normalized = normalized.replace(/(assets\/)generated\/backgrounds\//i, "$1backgrounds/");
@@ -133290,8 +133319,89 @@ async function setAssetImageSource(image, path) {
   if (image.getAttribute("src") !== source) image.src = source;
 }
 
+function getRecoverableAssetPath(path) {
+  if (!path || /^(?:data:|blob:)/i.test(path)) return "";
+  try {
+    const url = new URL(resolveAppUrl(path));
+    if (url.origin !== new URL(document.baseURI).origin) return "";
+    const match = url.pathname.match(/(?:^|\/)assets\/.*$/);
+    return match ? decodeURIComponent(match[0].replace(/^\//, "")) : "";
+  } catch { return ""; }
+}
+
+function getAssetRecoveryLogicalPath(path) {
+  const asset = getRecoverableAssetPath(path);
+  if (!asset) return "";
+  // Failed previews may come from an older deployment or directory casing.
+  // Recover their logical frame name using the current sheet catalogue.
+  for (const sheet of getAllSpriteSheetDefinitions()) {
+    if (!sheet.delivery?.root || !asset.toLowerCase().startsWith(`${sheet.delivery.root}/`.toLowerCase())) continue;
+    const name = asset.slice(sheet.delivery.root.length + 1).replace(/(?:\.thumb)?\.webp$/i, "");
+    const frameName = Object.keys(sheet.frames).find(candidate => candidate.toLowerCase() === name.toLowerCase());
+    if (frameName) return sheet.path.slice(0, sheet.path.lastIndexOf("/") + 1) + frameName;
+  }
+  return normalizeRenderableAssetPath(asset);
+}
+
+async function reacquireAssetImage(path) {
+  const logicalPath = getAssetRecoveryLogicalPath(path);
+  if (!logicalPath) return "";
+  const retry = async (candidate) => {
+    const url = new URL(resolveAppUrl(getSpriteImageUrl(candidate)));
+    url.searchParams.set("bb-retry", String(Date.now()));
+    const result = await loadTemporarySpriteSheet(url.href, 8000);
+    return result.loaded ? url.href : "";
+  };
+  const refreshed = await retry(logicalPath);
+  if (refreshed) return refreshed;
+  if (getSpriteAssetFrame(logicalPath)) {
+    // A missing thumbnail can still be rebuilt from the original sprite atlas.
+    const result = await preloadImagePath(logicalPath, { timeoutMs: 8000, maxAttempts: 1 });
+    const image = runtime.images.get(logicalPath);
+    if (result.loaded && image?.toDataURL) return image.toDataURL("image/webp");
+    return "";
+  }
+  // Loose artwork may have moved. Consult the current manifest only after
+  // the normal retry fails; healthy images incur no extra requests.
+  const manifest = await fetchAssetManifest();
+  const entries = Object.values(manifest).flatMap(value => Array.isArray(value) ? value : Object.values(value || {}).flat());
+  const category = logicalPath.split("/")[1];
+  const filename = logicalPath.split("/").pop().toLowerCase();
+  const matches = entries.filter(entry => {
+    const candidate = getRecoverableAssetPath(entry?.path);
+    return candidate.split("/")[1] === category && candidate.split("/").pop()?.toLowerCase() === filename;
+  });
+  return matches.length === 1 ? retry(matches[0].path) : "";
+}
+
+function recoverFailedAssetImage(image) {
+  const path = image?.getAttribute?.("data-sprite-src") || image?.getAttribute?.("src") || "";
+  if (!getRecoverableAssetPath(path)) return false;
+  const attempts = recoverFailedAssetImage.attempts || (recoverFailedAssetImage.attempts = new WeakMap());
+  const previous = attempts.get(image);
+  if (previous && (path === previous.path || path === previous.recovered)) return false;
+  const attempt = { path, recovered: "" };
+  attempts.set(image, attempt);
+  void reacquireAssetImage(path).catch(() => "").then(recovered => {
+    const currentPath = image.getAttribute("data-sprite-src") || image.getAttribute("src") || "";
+    if (currentPath !== path || !image.isConnected) {
+      if (attempts.get(image) === attempt) attempts.delete(image);
+      return;
+    }
+    attempt.recovered = recovered || resolveAppUrl("assets/web/bodega/Store_Logo.webp");
+    image.src = attempt.recovered;
+  }).catch(() => {});
+  return true;
+}
+
 function initializeSpriteImages() {
   if (initializeSpriteImages.observer) return;
+  document.addEventListener("error", event => {
+    if (event.target?.tagName === "IMG" && recoverFailedAssetImage(event.target)) {
+      // Let recovery finish before an inline placeholder handler runs.
+      event.stopImmediatePropagation();
+    }
+  }, true);
   const hydrate = (node) => {
     if (node.nodeType !== 1) return;
     const images = [...node.querySelectorAll("img[data-sprite-src]")];

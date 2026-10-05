@@ -942,3 +942,15 @@ The reversal controller updates the screen-space steering heading as it traverse
 Decor hangouts and species hover bouts are arrival destinations. Cruise continuation clears its waypoint for those targets instead of extending them into another route. Hover bouts use the existing hangout zone field to retain that distinction until their target expires. Ordinary cruising retains its rolling waypoints; cave, feeding and emergency owners retain their established movement paths.
 
 The frame limiter discards missed render slots and retains only a fractional interval after a stall. It no longer builds a render backlog that makes it exceed its configured FPS limit during recovery. The profiler separately reports simulation and UI time within the one-second tick, since those callbacks can stall rendering outside the animation callback's measured work.
+
+## Diagonal reversals and stationary locomotion
+
+A reversal now latches its incoming vertical slope from successful travel and smoothly blends that slope toward the committed turn destination using rendered turn progress. A fish swimming down-left toward a new up-right destination starts its turn down-left; selecting that destination cannot first snap its travel up-left. Changing the target during the turn does not reroll either endpoint.
+
+Ordinary steering remains on the fish's visible facing side. An opposite target below the horizontal turn threshold may guide vertical travel, but it cannot quietly produce backward swimming. The animated reversal controller retains exclusive ownership of the crossing to the opposite facing side. Cave precision movement retains its authored route.
+
+The stationary movement branch also updates traversal telemetry and dissipates passive velocity. Resting reports zero travel speed while retaining the last successful heading, and resuming does not reuse momentum from before the rest.
+
+## Continuous depth barriers
+
+Ordinary depth changes test the swept depth volume from source to destination against opaque decor artwork. Legacy front/back lane labels cannot exempt a continuous crossing. Visible companion images and thin opaque details participate in this barrier; transparent openings remain available. Escape routes must be clear along their entire depth crossing, and blocked escape searches retry at a bounded interval rather than every rendered frame. Explicit cave portals retain their existing crossing controller.

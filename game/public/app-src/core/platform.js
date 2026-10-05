@@ -16,12 +16,13 @@ function resolveAppUrl(path) {
   }
 
   // Saved/catalog URLs can retain the old root-level asset location. Give
-  // same-origin app resources the same canonical URL as relative references,
+  // same-origin and former local app resources the same URL as relative references,
   // so sprite lookup works on both /play and the static /game/ deployment.
   const base = new URL(document.baseURI);
   const candidate = new URL(trimmed, base);
   const appResource = candidate.pathname.match(/^\/(?:game\/)?((?:assets|public)\/.*)$/);
-  if (candidate.origin === base.origin && appResource) {
+  const localDevelopmentHost = /^(?:localhost|127(?:\.\d{1,3}){3}|\[::1\])$/i.test(candidate.hostname);
+  if ((candidate.origin === base.origin || localDevelopmentHost) && appResource) {
     return new URL(appResource[1] + candidate.search + candidate.hash, base).toString();
   }
   if (/^https?:/i.test(trimmed)) return trimmed;

@@ -3188,7 +3188,7 @@ function renderWebSurfEmailInlineText(value, data = {}) {
 function normalizeWebSurfThumbnailPath(value) {
   const fallback = "assets/web/bodega/Store_Logo.webp";
   let raw = typeof value === "string" ? value.trim() : "";
-  if (!raw || raw.startsWith("data:")) return raw || fallback;
+  if (!raw || /^(?:data:|blob:)/i.test(raw)) return raw || fallback;
   raw = raw.replace(/\\/g, "/");
   try {
     raw = new URL(raw, window.location.href).pathname;

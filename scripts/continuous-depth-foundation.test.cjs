@@ -377,7 +377,7 @@ test('Vertical traversal always retains forward travel from physical heading', (
     FISH_VERTICAL_TRAVERSAL_CLEARANCE_FROM_HEIGHT: 0.4,
     FISH_VERTICAL_TRAVERSAL_MIN_LATERAL_CLEARANCE_PX: 18,
     FISH_VERTICAL_TRAVERSAL_MAX_LATERAL_CLEARANCE_PX: 80,
-    getFishFacingDirection: () => -1
+    getFishFacingDirection: () => 1
   };
   context.getFishSteeringHorizontalDirection = vm.runInNewContext(`(${extractFunction(fishMotion, 'getFishSteeringHorizontalDirection')})`, context);
   const steer = vm.runInNewContext(`(${extractFunction(fishMotion, 'getFishGradualSteeringVector')})`, context);

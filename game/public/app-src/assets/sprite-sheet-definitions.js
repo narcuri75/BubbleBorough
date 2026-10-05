@@ -6665,7 +6665,7 @@ function getSpriteSheetDefinitions() {
         ]
       },
       "delivery": {
-        "root": "assets/generated/sprites/icons/icons",
+        "root": "assets/generated/sprites/icons/Icons",
         "version": "b46abd0da7b0-v1",
         "standalone": false
       }

@@ -9,7 +9,7 @@ const sharp = require("sharp");
 const { buildDefinitions } = require("./generate-sprite-sheets.cjs");
 const root = path.resolve(__dirname, "..", "game");
 
-function runtimeContext() {
+function runtimeContext({ failRequests = () => false } = {}) {
   const requests = [];
   const draws = [];
   const sheets = buildDefinitions();
@@ -20,6 +20,10 @@ function runtimeContext() {
   class Image {
     set src(value) {
       requests.push(value);
+      if (failRequests(value)) {
+        queueMicrotask(() => this.onerror?.());
+        return;
+      }
       const sheet = sheets.find(sheet => value.split("?")[0].endsWith(sheet.path));
       const fullSheet = sheets.find(sheet => value.includes(sheet.delivery.root));
       const fullFrame = fullSheet && Object.entries(fullSheet.frames).find(([name]) => value.split("?")[0].endsWith(`${encodeURIComponent(name)}.webp`))?.[1];
@@ -275,6 +279,110 @@ test("same-origin legacy asset URLs resolve to current game artwork and sprite p
   for (const png of ["web/websurf/WebSurf_icon.png", "web/websurf/browser_home.png", "foodandmeds/frisky-food.png"]) assert.equal(c.resolveRenderableAssetPath(`${origin}/assets/${png}`), `${origin}/game/assets/${png}`);
 });
 
+test("development-server saves migrate to portable purchase images and current sprite URLs", async () => {
+  const { context: c } = runtimeContext();
+  for (const file of ["core/settings-and-persistence.js", "ui/management-and-overlays.js"]) {
+    vm.runInContext(fs.readFileSync(path.join(root, "public/app-src", file), "utf8"), c);
+  }
+  c.MAX_WALLET_COINS = 999999;
+  const original = [{ id: "existing-order", placedAt: 42, items: [{
+    name: "Neon Zebra Danio", cost: 10, quantity: 2,
+    image: "http://127.0.0.1:5502/game/assets/fish/zebra-danio_neon-pink.png?v=old"
+  }] }];
+  const orders = c.sanitizePurchaseHistory(original);
+  assert.equal(orders[0].items[0].image, "assets/fish/zebra-danio_neon-pink.png");
+  assert.equal(orders[0].id, original[0].id);
+  assert.equal(orders[0].placedAt, 42);
+  assert.equal(orders[0].total, 20);
+  for (const host of ["127.0.0.1:5502", "localhost:5502", "[::1]:5502"]) {
+    const source = `http://${host}/game/assets/fish/zebra-danio_neon-pink.png`;
+    assert.match(c.assetImageAttributes(source), /src="https:\/\/example.test\/game\/assets\/generated\/sprites\//);
+    assert.doesNotMatch(c.assetImageAttributes(source), /http:\/\//);
+  }
+  assert.equal(c.resolveAppUrl("https://external.test/assets/image.png"), "https://external.test/assets/image.png");
+  assert.equal(c.resolveAppUrl("data:image/png;base64,custom"), "data:image/png;base64,custom");
+});
+
+test("failed stale preview URLs reacquire the current case-correct icon with a fresh request", async () => {
+  const { context: c, requests } = runtimeContext();
+  const recovered = await c.reacquireAssetImage("http://127.0.0.1:5502/game/assets/generated/sprites/icons/icons/settings.png.thumb.webp?v=old");
+  assert.match(recovered, /^https:\/\/example.test\/game\/assets\/generated\/sprites\/icons\/Icons\/settings.png.thumb.webp\?/);
+  assert.match(recovered, /bb-retry=/);
+  assert.equal(requests.length, 1);
+});
+
+test("a missing sprite thumbnail is rebuilt from its source atlas", async () => {
+  const { context: c, requests, draws } = runtimeContext({ failRequests: url => url.includes(".thumb.webp") });
+  c.document.createElement = () => ({
+    getContext: () => ({ drawImage: (...args) => draws.push(args) }),
+    toDataURL: () => "data:image/webp;base64,recovered"
+  });
+  assert.equal(await c.reacquireAssetImage("assets/icons/settings.png"), "data:image/webp;base64,recovered");
+  assert.equal(draws.length, 1);
+  assert.equal(requests.length, 2);
+  assert.match(requests[1], /\/game\/assets\/icons\/icons.webp\?/);
+});
+
+test("failed loose artwork is reacquired through the current manifest", async () => {
+  const { context: c, requests } = runtimeContext({ failRequests: url => url.includes("/decor/old/") });
+  c.fetchAssetManifest = async () => ({ decor: [{ path: "assets/decor/current/rock.webp?v=current" }] });
+  const recovered = await c.reacquireAssetImage("assets/decor/old/rock.png");
+  assert.match(recovered, /\/game\/assets\/decor\/current\/rock.webp\?v=current&bb-retry=/);
+  assert.equal(requests.length, 2);
+});
+
+test("DOM recovery is bounded and does not replace images whose source changed", async () => {
+  const { context: c } = runtimeContext();
+  let finish;
+  c.reacquireAssetImage = () => new Promise(resolve => { finish = resolve; });
+  const attrs = new Map([["data-sprite-src", "assets/icons/settings.png"]]);
+  const image = { isConnected: true, getAttribute: name => attrs.get(name) };
+  assert.equal(c.recoverFailedAssetImage(image), true);
+  assert.equal(c.recoverFailedAssetImage(image), false);
+  finish("https://example.test/game/recovered.webp");
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(image.src, "https://example.test/game/recovered.webp");
+  assert.equal(c.recoverFailedAssetImage(image), false);
+  attrs.set("data-sprite-src", "assets/icons/feed_fish.png");
+  assert.equal(c.recoverFailedAssetImage(image), true);
+  attrs.set("data-sprite-src", "assets/icons/coin.png");
+  finish("https://example.test/game/wrong.webp");
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(image.src, "https://example.test/game/recovered.webp");
+  assert.equal(c.recoverFailedAssetImage({ getAttribute: () => "https://external.test/image.png" }), false);
+});
+
+test("image errors automatically trigger recovery before inline placeholder handlers", async () => {
+  const { context: c } = runtimeContext();
+  let onError;
+  let intercepted = false;
+  c.document.addEventListener = (name, handler, capture) => {
+    assert.equal(name, "error");
+    assert.equal(capture, true);
+    onError = handler;
+  };
+  c.document.body = { nodeType: 1, querySelectorAll: () => [], matches: () => false };
+  c.document.documentElement = { style: { setProperty() {} } };
+  c.MutationObserver = class { observe() {} };
+  c.reacquireAssetImage = async () => "data:image/webp;base64,recovered";
+  c.initializeSpriteImages();
+  const image = { tagName: "IMG", isConnected: true, getAttribute: () => "assets/icons/settings.png" };
+  onError({ target: image, stopImmediatePropagation: () => { intercepted = true; } });
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(intercepted, true);
+  assert.equal(image.src, "data:image/webp;base64,recovered");
+});
+
+test("permanently missing artwork stops after recovery and uses a placeholder", async () => {
+  const { context: c, requests } = runtimeContext({ failRequests: () => true });
+  const image = { isConnected: true, getAttribute: () => "assets/icons/settings.png" };
+  assert.equal(c.recoverFailedAssetImage(image), true);
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(image.src, "https://example.test/game/assets/web/bodega/Store_Logo.webp");
+  assert.equal(c.recoverFailedAssetImage(image), false);
+  assert.equal(requests.length, 2);
+});
+
 test("DOM sprites use immediate small previews without loading sheets or encoding PNGs", async () => {
   const { context: c, requests } = runtimeContext();
   const sprite = "assets/icons/coin.png";
@@ -309,10 +417,18 @@ test("decor loads its loose files without decoding or cropping a sprite sheet", 
   const alias = c.resolveAppUrl(asset) + "?v=old";
   await c.preloadImages([asset, alias]);
   assert.equal(requests.length, 2);
-  assert.equal(requests[0], asset);
-  assert.equal(requests[1], alias);
+  assert.equal(requests[0], asset.replace(/\.png$/, ".webp"));
+  assert.equal(requests[1], alias.replace(/\.png\?/, ".webp?"));
   assert.equal(draws.length, 0);
   assert.equal(c.getSpriteAssetFrame(asset), null);
+});
+
+test("runtime loose images repair saved localhost URLs while preserving their cache keys", async () => {
+  const { context: c, requests } = runtimeContext();
+  const oldPath = "http://127.0.0.1:5502/game/assets/decor/rock.png?v=old";
+  assert.equal((await c.preloadImagePath(oldPath)).loaded, true);
+  assert.equal(requests[0], "https://example.test/game/assets/decor/rock.webp?v=old");
+  assert.ok(c.runtime.images.has(oldPath));
 });
 
 test("decor startup loads only placed artwork and companions, while inventory uses previews", async () => {

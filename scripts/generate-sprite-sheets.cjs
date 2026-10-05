@@ -9,6 +9,11 @@ const output = path.join(root, "public/app-src/assets/sprite-sheet-definitions.j
 const OPTIONAL_SPRITE_SHEET_PAIRS = [
   { base: "web/proteus/dna_fish/zombie_fish", label: "Proteus Z-01" }
 ];
+// Preserve the published, Git-tracked directory casing independently of the
+// source sheet's filename. Windows otherwise hides Linux-only preview 404s.
+const DELIVERY_ROOT_OVERRIDES = {
+  "assets/icons/icons.webp": "assets/generated/sprites/icons/Icons"
+};
 
 function validateOptionalSpriteSheetPairs(assetRoot = path.join(root, "assets")) {
   for (const pair of OPTIONAL_SPRITE_SHEET_PAIRS) {
@@ -83,9 +88,10 @@ function buildDefinitions(assetRoot = path.join(root, "assets")) {
         frames[sprite.name] = [(index % data.columns) * cellWidth + x, Math.floor(index / data.columns) * cellHeight + y, w, h];
       });
       const version = crypto.createHash("sha256").update(sheetBytes).digest("hex").slice(0, 12);
-      definitions.push({ path: `assets/${directory.relativeDirectory}/${file}`.replace("assets//", "assets/"), version, width, height, frames,
+      const logicalSheetPath = `assets/${directory.relativeDirectory}/${file}`.replace("assets//", "assets/");
+      definitions.push({ path: logicalSheetPath, version, width, height, frames,
         delivery: {
-          root: `assets/generated/sprites/${directory.relativeDirectory}/${file.replace(/\.webp$/, "")}`.replace("sprites//", "sprites/"),
+          root: DELIVERY_ROOT_OVERRIDES[logicalSheetPath] || `assets/generated/sprites/${directory.relativeDirectory}/${file.replace(/\.webp$/, "")}`.replace("sprites//", "sprites/"),
           version: `${crypto.createHash("sha256").update(sheetBytes).update(JSON.stringify(frames)).digest("hex").slice(0, 12)}-v1`,
           standalone: directory.relativeDirectory === "decor"
         }

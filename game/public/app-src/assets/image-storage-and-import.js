@@ -559,7 +559,7 @@ function loadRuntimeImageAttempt(path, timeoutMs) {
     image.decoding = "async";
     image.onload = () => finish(true, "loaded");
     image.onerror = () => finish(false, "error");
-    image.src = path;
+    image.src = resolveRenderableAssetPath(path);
   });
 }
 

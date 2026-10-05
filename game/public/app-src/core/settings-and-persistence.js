@@ -152,7 +152,9 @@ function sanitizePurchaseHistory(rawHistory) {
       if (!rawItem || typeof rawItem !== "object") return null;
       const name = typeof rawItem.name === "string" ? rawItem.name.trim().slice(0, 120) : "Store item";
       const category = typeof rawItem.category === "string" ? rawItem.category.trim().slice(0, 32) : "";
-      const image = typeof rawItem.image === "string" && rawItem.image.trim() ? rawItem.image.trim().slice(0, 600) : "assets/web/bodega/Store_Logo.webp";
+      // Orders travel between local development, desktop and hosted saves.
+      // Keep logical asset names instead of persisting the server's origin.
+      const image = normalizeWebSurfThumbnailPath(typeof rawItem.image === "string" ? rawItem.image.trim().slice(0, 600) : "");
       const seller = typeof rawItem.seller === "string" ? rawItem.seller.trim().slice(0, 120) : "";
       return {
         key: typeof rawItem.key === "string" ? rawItem.key.slice(0, 180) : "",

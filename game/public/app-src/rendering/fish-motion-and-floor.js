@@ -450,10 +450,13 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   const distancePx = Math.hypot(dxPx, dyPx);
   if (distancePx <= 0.001) return { xNorm: dx, yNorm: dy };
 
-  const horizontalSign = getFishSteeringHorizontalDirection(fish, dx, dy);
   const desiredVerticalRatio = clamp(dyPx / distancePx, -verticalLimit, verticalLimit);
   const desiredHorizontalRatio = Math.sqrt(Math.max(0, 1 - desiredVerticalRatio * desiredVerticalRatio));
-  let desiredHeadingX = horizontalSign * desiredHorizontalRatio;
+  // Small opposite targets may intentionally fall below the turn-intent
+  // threshold. Steering must not quietly cross to backward travel while the
+  // fish still faces its old side; the reversal controller owns that crossing.
+  const facingDirection = getFishFacingDirection(fish);
+  let desiredHeadingX = facingDirection * desiredHorizontalRatio;
   let desiredHeadingY = desiredVerticalRatio;
 
   const wanderScale = clamp(Number(options.wanderScale) || 0, 0, 1);
@@ -470,7 +473,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
     const sine = Math.sin(wanderRadians);
     const rotatedX = desiredHeadingX * cosine - desiredHeadingY * sine;
     const rotatedY = desiredHeadingX * sine + desiredHeadingY * cosine;
-    if (rotatedX * horizontalSign > 0.05) {
+    if (rotatedX * facingDirection > 0.05) {
       desiredHeadingX = rotatedX;
       desiredHeadingY = clamp(rotatedY, -verticalLimit, verticalLimit);
     }
@@ -508,6 +511,7 @@ function getFishGradualSteeringVector(fish, deltaXNorm, deltaYNorm, deltaSeconds
   let nextHeadingY = Math.sin(nextAngle);
   // Eliminate floating-point residual sideways drift at exactly +/-90 degrees.
   if (Math.abs(nextHeadingX) < 1e-10) nextHeadingX = 0;
+  if (nextHeadingX * facingDirection < 0) nextHeadingX = 0;
   nextHeadingY = clamp(nextHeadingY, -verticalLimit, verticalLimit);
   const headingLength = Math.hypot(nextHeadingX, nextHeadingY) || 1;
   nextHeadingX /= headingLength;

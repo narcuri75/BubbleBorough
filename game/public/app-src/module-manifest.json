@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 56,
-  "functionCount": 4113,
+  "functionCount": 4118,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -355,6 +355,7 @@
         "tutorial/flow.js",
         "ui/customization-actions-and-inventory.js",
         "ui/main-and-store-rendering.js",
+        "ui/management-and-overlays.js",
         "ui/notifications.js",
         "ui/scene-controls-and-animation.js",
         "ui/tool-modes-and-debug-panels.js"
@@ -1088,7 +1089,7 @@
     },
     {
       "path": "fish/predators-and-motion.js",
-      "functionCount": 138,
+      "functionCount": 139,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "assets/sprite-sheets.js",
@@ -1460,8 +1461,9 @@
     },
     {
       "path": "assets/sprite-sheets.js",
-      "functionCount": 26,
+      "functionCount": 30,
       "dependencies": [
+        "assets/custom-content.js",
         "assets/image-storage-and-import.js",
         "assets/sprite-sheet-definitions.js",
         "core/platform.js",

@@ -3591,6 +3591,14 @@ function syncFishTraversalStateFromMove(fish, previousXNorm, previousYNorm, now,
   }
 }
 
+function settleFishIdleMotion(fish, now, deltaSeconds) {
+  // The no-travel branch must update locomotion too. Otherwise a resting
+  // fish keeps its last recorded swim speed and later launches with stale
+  // velocity from before its rest.
+  integrateFishPassiveMotion(fish, 0, 0, 0, deltaSeconds);
+  syncFishTraversalStateFromMove(fish, fish.xNorm, fish.yNorm, now, deltaSeconds);
+}
+
 function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now) {
   if (!fish || !fish.turnStartedAt || !(Number(fish.turnDurationMs) > 0)) return null;
   const fromDirection = Number(fish.turnFromDirection) < 0 ? -1 : 1;
@@ -3625,10 +3633,22 @@ function getFishTurnReversalTraversal(fish, requestedXNorm, requestedYNorm, now)
     fish.traversalArcStartedAt = fish.turnStartedAt;
     fish.traversalArcVertical = clamp(Number(requestedYNorm) || 0, -0.12, 0.12) * 0.55;
     fish.traversalArcDistance = horizontalDistance;
+    const velocityX = Number(fish.traversalVelocityXNorm) || 0;
+    const velocityY = Number(fish.traversalVelocityYNorm) || 0;
+    const velocityLength = Math.hypot(velocityX, velocityY);
+    // Start on the course that actually reached this turn, not the new
+    // destination's climb/dive. Otherwise down-left can instantly become
+    // up-left before the fish has even started its reversal animation.
+    fish.traversalArcSourceVertical = velocityLength > 0.00001
+      ? horizontalDistance * velocityY / Math.max(Math.abs(velocityX), velocityLength * 0.02)
+      : 0;
   }
   const requestedVertical = Number(fish.traversalArcVertical) || 0;
+  const sourceVertical = Number(fish.traversalArcSourceVertical) || 0;
   const arcDistance = Number(fish.traversalArcDistance) || horizontalDistance;
-  const verticalCarry = requestedVertical * (0.72 + Math.abs(horizontalMomentum) * 0.28);
+  const courseBlend = progress * progress * (3 - 2 * progress);
+  const verticalCarry = (sourceVertical + (requestedVertical - sourceVertical) * courseBlend)
+    * (0.72 + Math.abs(horizontalMomentum) * 0.28);
   const travelDirection = horizontalMomentum < -0.0001 ? toDirection : fromDirection;
   return {
     xNorm: fromDirection * arcDistance * horizontalMomentum,
@@ -5232,6 +5252,7 @@ function updateFishMotion(now, deltaSeconds) {
         }
       }
     } else {
+      settleFishIdleMotion(fish, now, deltaSeconds);
       const freeSwimmingOtocinclus = species.id === "otocinclus"
         && isSuckerFishFreeSwimming(fish, species, now);
       if (effectiveBehavior !== "sucker" || freeSwimmingOtocinclus) {

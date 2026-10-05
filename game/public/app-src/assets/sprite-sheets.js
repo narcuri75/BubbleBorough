@@ -452,12 +452,13 @@ function getSpriteDeliveryUrl(frame, preview = true) {
 function normalizeRenderableAssetPath(path) {
   const raw = typeof path === "string" ? path.trim() : "";
   if (!raw || /^(?:data:|blob:)/i.test(raw)) return raw;
-  if (/^https?:/i.test(raw) && new URL(raw).origin !== new URL(document.baseURI).origin) return raw;
+  const portable = /^https?:/i.test(raw) ? resolveAppUrl(raw) : raw;
+  if (/^https?:/i.test(portable) && new URL(portable).origin !== new URL(document.baseURI).origin) return raw;
 
   // A legacy catalogue entry may be a former PNG logical name. It must never
   // become a fictitious `name.png.webp` preview. Decor, backgrounds and gravel
   // are loose WebP artwork; their PNG names are save/metadata identifiers only.
-  let normalized = raw.replace(/(?:\.png|_png)\.webp(?=([?#]|$))/i, ".webp");
+  let normalized = portable.replace(/(?:\.png|_png)\.webp(?=([?#]|$))/i, ".webp");
   // Backgrounds converted to WebP are now served directly. Old catalog/session
   // paths may still point at the former generated background delivery folder.
   normalized = normalized.replace(/(assets\/)generated\/backgrounds\//i, "$1backgrounds/");
@@ -517,8 +518,89 @@ async function setAssetImageSource(image, path) {
   if (image.getAttribute("src") !== source) image.src = source;
 }
 
+function getRecoverableAssetPath(path) {
+  if (!path || /^(?:data:|blob:)/i.test(path)) return "";
+  try {
+    const url = new URL(resolveAppUrl(path));
+    if (url.origin !== new URL(document.baseURI).origin) return "";
+    const match = url.pathname.match(/(?:^|\/)assets\/.*$/);
+    return match ? decodeURIComponent(match[0].replace(/^\//, "")) : "";
+  } catch { return ""; }
+}
+
+function getAssetRecoveryLogicalPath(path) {
+  const asset = getRecoverableAssetPath(path);
+  if (!asset) return "";
+  // Failed previews may come from an older deployment or directory casing.
+  // Recover their logical frame name using the current sheet catalogue.
+  for (const sheet of getAllSpriteSheetDefinitions()) {
+    if (!sheet.delivery?.root || !asset.toLowerCase().startsWith(`${sheet.delivery.root}/`.toLowerCase())) continue;
+    const name = asset.slice(sheet.delivery.root.length + 1).replace(/(?:\.thumb)?\.webp$/i, "");
+    const frameName = Object.keys(sheet.frames).find(candidate => candidate.toLowerCase() === name.toLowerCase());
+    if (frameName) return sheet.path.slice(0, sheet.path.lastIndexOf("/") + 1) + frameName;
+  }
+  return normalizeRenderableAssetPath(asset);
+}
+
+async function reacquireAssetImage(path) {
+  const logicalPath = getAssetRecoveryLogicalPath(path);
+  if (!logicalPath) return "";
+  const retry = async (candidate) => {
+    const url = new URL(resolveAppUrl(getSpriteImageUrl(candidate)));
+    url.searchParams.set("bb-retry", String(Date.now()));
+    const result = await loadTemporarySpriteSheet(url.href, 8000);
+    return result.loaded ? url.href : "";
+  };
+  const refreshed = await retry(logicalPath);
+  if (refreshed) return refreshed;
+  if (getSpriteAssetFrame(logicalPath)) {
+    // A missing thumbnail can still be rebuilt from the original sprite atlas.
+    const result = await preloadImagePath(logicalPath, { timeoutMs: 8000, maxAttempts: 1 });
+    const image = runtime.images.get(logicalPath);
+    if (result.loaded && image?.toDataURL) return image.toDataURL("image/webp");
+    return "";
+  }
+  // Loose artwork may have moved. Consult the current manifest only after
+  // the normal retry fails; healthy images incur no extra requests.
+  const manifest = await fetchAssetManifest();
+  const entries = Object.values(manifest).flatMap(value => Array.isArray(value) ? value : Object.values(value || {}).flat());
+  const category = logicalPath.split("/")[1];
+  const filename = logicalPath.split("/").pop().toLowerCase();
+  const matches = entries.filter(entry => {
+    const candidate = getRecoverableAssetPath(entry?.path);
+    return candidate.split("/")[1] === category && candidate.split("/").pop()?.toLowerCase() === filename;
+  });
+  return matches.length === 1 ? retry(matches[0].path) : "";
+}
+
+function recoverFailedAssetImage(image) {
+  const path = image?.getAttribute?.("data-sprite-src") || image?.getAttribute?.("src") || "";
+  if (!getRecoverableAssetPath(path)) return false;
+  const attempts = recoverFailedAssetImage.attempts || (recoverFailedAssetImage.attempts = new WeakMap());
+  const previous = attempts.get(image);
+  if (previous && (path === previous.path || path === previous.recovered)) return false;
+  const attempt = { path, recovered: "" };
+  attempts.set(image, attempt);
+  void reacquireAssetImage(path).catch(() => "").then(recovered => {
+    const currentPath = image.getAttribute("data-sprite-src") || image.getAttribute("src") || "";
+    if (currentPath !== path || !image.isConnected) {
+      if (attempts.get(image) === attempt) attempts.delete(image);
+      return;
+    }
+    attempt.recovered = recovered || resolveAppUrl("assets/web/bodega/Store_Logo.webp");
+    image.src = attempt.recovered;
+  }).catch(() => {});
+  return true;
+}
+
 function initializeSpriteImages() {
   if (initializeSpriteImages.observer) return;
+  document.addEventListener("error", event => {
+    if (event.target?.tagName === "IMG" && recoverFailedAssetImage(event.target)) {
+      // Let recovery finish before an inline placeholder handler runs.
+      event.stopImmediatePropagation();
+    }
+  }, true);
   const hydrate = (node) => {
     if (node.nodeType !== 1) return;
     const images = [...node.querySelectorAll("img[data-sprite-src]")];

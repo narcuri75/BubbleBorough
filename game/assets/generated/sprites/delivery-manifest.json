@@ -1636,6 +1636,13 @@
         "assets/generated/sprites/tank-frame/top-bottom/tank_frame_bottom.png.thumb.webp": "7dcff08888d6ab7a86e85c9c2568aa4e231f0f355d054f40b1642c0e087e0187"
       }
     },
+    "assets/web/bodega/substrate_icons.webp": {
+      "version": "3b44d68e094c-v1",
+      "files": {
+        "assets/generated/sprites/web/bodega/substrate_icons/sand_product-icon.png.thumb.webp": "2287a140b4a522ba40e18cee02ab4d571dc363feac4e549fd887f2727dc56064",
+        "assets/generated/sprites/web/bodega/substrate_icons/river-rock_product-icon.png.thumb.webp": "9bbdb77f5ba8f35d34b438b16de4d7eb2e7b8864f876618e2e35078754754288"
+      }
+    },
     "assets/web/bodega/symptom-tiles.webp": {
       "version": "45534867b6a2-v1",
       "files": {

@@ -1812,8 +1812,8 @@ const CUSTOM_CONTENT_ITEM_MAX_BYTES = 2 * 1024 * 1024;
 const CUSTOM_BACKGROUND_KEY_PREFIX = "custom-background:";
 const SUBSTRATE_CATALOG = Object.freeze([
   Object.freeze({ id: "custom", name: "Custom Gravel", cost: 15, defaultUnlocked: true, description: "The recolorable three-layer gravel bed." }),
-  Object.freeze({ id: "river-rock", name: "River Rock", cost: 25, defaultUnlocked: false, description: "Natural rounded river-stone substrate." }),
-  Object.freeze({ id: "sand", name: "Sand", cost: 20, defaultUnlocked: false, description: "Pale fine-grain aquarium sand." })
+  Object.freeze({ id: "river-rock", name: "River Rock", cost: 25, defaultUnlocked: false, description: "Natural rounded river-stone substrate.", shopIcon: "assets/web/bodega/river-rock_product-icon.png" }),
+  Object.freeze({ id: "sand", name: "Sand", cost: 20, defaultUnlocked: false, description: "Pale fine-grain aquarium sand.", shopIcon: "assets/web/bodega/sand_product-icon.png" })
 ]);
 const TANK_SUBSTRATE_ASSET_PATHS = Object.freeze({
   "river-rock": "assets/gravel/alt/river-rock.webp",
@@ -90740,8 +90740,11 @@ function renderBackgroundShopCards(backgrounds = runtime.backgroundCatalog.filte
 function renderSubstrateShopCards(substrates = SUBSTRATE_CATALOG.filter((item) => !item.defaultUnlocked)) {
   return substrates.map((item) => {
     const owned = isSubstrateOwned(item.id);
+    const iconMarkup = item.shopIcon
+      ? `<img class="substrate-shop-icon" ${assetImageAttributes(item.shopIcon)} alt="" draggable="false" />`
+      : "";
     return `<article class="shop-card substrate-shop-card" ${renderStoreFacetAttributes("substrate", item)} data-store-subcategory="substrate" data-substrate="${escapeHtml(item.id)}">
-      <div class="shop-thumb substrate-shop-thumb" aria-hidden="true"></div>
+      <div class="shop-thumb substrate-shop-thumb" aria-hidden="true">${iconMarkup}</div>
       <div class="shop-meta shop-card-main"><div><strong>${escapeHtml(item.name)}</strong><div class="fish-meta">${escapeHtml(item.description)}</div><div class="fish-meta">${owned ? "Owned" : "Permanent unlock"}</div></div></div>
       <div class="tankazon-tile-info"><div class="tankazon-tile-title">${escapeHtml(item.name)}</div><div class="tankazon-tile-cost"><img class="tankazon-tile-cost-icon" src="assets/misc/coin_unicode.webp" alt="" aria-hidden="true" /><span class="tankazon-tile-cost-value">${item.cost}</span></div></div>
       <div class="shop-meta shop-card-actions"><span class="price-tag">${item.cost} ${pluralize("coin", item.cost)}</span><div class="shop-button-row">${owned
@@ -132805,6 +132808,31 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/tank-frame/top-bottom",
         "version": "9e63e3bc232e-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/bodega/substrate_icons.webp",
+      "version": "f94459f7c59a",
+      "width": 820,
+      "height": 512,
+      "frames": {
+        "sand_product-icon.png": [
+          0,
+          0,
+          410,
+          512
+        ],
+        "river-rock_product-icon.png": [
+          410,
+          0,
+          410,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/bodega/substrate_icons",
+        "version": "3b44d68e094c-v1",
         "standalone": false
       }
     },

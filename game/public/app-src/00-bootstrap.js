@@ -1809,8 +1809,8 @@ const CUSTOM_CONTENT_ITEM_MAX_BYTES = 2 * 1024 * 1024;
 const CUSTOM_BACKGROUND_KEY_PREFIX = "custom-background:";
 const SUBSTRATE_CATALOG = Object.freeze([
   Object.freeze({ id: "custom", name: "Custom Gravel", cost: 15, defaultUnlocked: true, description: "The recolorable three-layer gravel bed." }),
-  Object.freeze({ id: "river-rock", name: "River Rock", cost: 25, defaultUnlocked: false, description: "Natural rounded river-stone substrate." }),
-  Object.freeze({ id: "sand", name: "Sand", cost: 20, defaultUnlocked: false, description: "Pale fine-grain aquarium sand." })
+  Object.freeze({ id: "river-rock", name: "River Rock", cost: 25, defaultUnlocked: false, description: "Natural rounded river-stone substrate.", shopIcon: "assets/web/bodega/river-rock_product-icon.png" }),
+  Object.freeze({ id: "sand", name: "Sand", cost: 20, defaultUnlocked: false, description: "Pale fine-grain aquarium sand.", shopIcon: "assets/web/bodega/sand_product-icon.png" })
 ]);
 const TANK_SUBSTRATE_ASSET_PATHS = Object.freeze({
   "river-rock": "assets/gravel/alt/river-rock.webp",

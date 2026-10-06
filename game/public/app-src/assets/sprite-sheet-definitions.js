@@ -7500,6 +7500,31 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/web/bodega/substrate_icons.webp",
+      "version": "f94459f7c59a",
+      "width": 820,
+      "height": 512,
+      "frames": {
+        "sand_product-icon.png": [
+          0,
+          0,
+          410,
+          512
+        ],
+        "river-rock_product-icon.png": [
+          410,
+          0,
+          410,
+          512
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/bodega/substrate_icons",
+        "version": "3b44d68e094c-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/web/bodega/symptom-tiles.webp",
       "version": "dd2f7f237485",
       "width": 1536,

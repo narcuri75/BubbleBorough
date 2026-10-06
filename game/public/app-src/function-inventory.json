@@ -3202,8 +3202,8 @@
       "module": "assets/sprite-sheet-definitions.js",
       "sourceLine": 2,
       "originalLine": null,
-      "characters": 154672,
-      "sourceHash": "e73057d4de40da3bfa728b37eb9f88e78de6d6117ad947d2874423fa7df7b557",
+      "characters": 155216,
+      "sourceHash": "8725cb1f1d5ba12f0edaec158a96e59c55b84ea5fc413102e1e07bbb849d0900",
       "calls": []
     },
     {
@@ -49824,9 +49824,10 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 3859,
       "originalLine": null,
-      "characters": 1410,
-      "sourceHash": "ecc8862432e2d683701bc16cf1c216f4d4a46070b45453aa8e80625d637d42e6",
+      "characters": 1582,
+      "sourceHash": "0d4db2e19b7313c86c85faab5a4f19aa1ecf9174070a772827454e9d9fe22837",
       "calls": [
+        "assetImageAttributes",
         "escapeHtml",
         "isSubstrateOwned",
         "pluralize",
@@ -49836,7 +49837,7 @@
     {
       "name": "renderDecorStoreCard",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3873,
+      "sourceLine": 3876,
       "originalLine": null,
       "characters": 2939,
       "sourceHash": "369a1fa3125ebbb0ea1b319d02501539b4c9ea54b13b0cbd92fb2240726b5f43",
@@ -49861,7 +49862,7 @@
     {
       "name": "renderDecorShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 3918,
+      "sourceLine": 3921,
       "originalLine": 47981,
       "characters": 4792,
       "sourceHash": "9f7b44959f95387fb4fbe783c1079de8b1e70509a1f4e464818e789ef680727d",
@@ -49893,7 +49894,7 @@
     {
       "name": "renderEquipmentShop",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 4013,
+      "sourceLine": 4016,
       "originalLine": 48072,
       "characters": 5507,
       "sourceHash": "274b02520bb5b1b935b3c6bba00677edf8e7341ef9fe5c4dd13868dde532d536",
@@ -49914,7 +49915,7 @@
     {
       "name": "renderDecorInventory",
       "module": "ui/customization-actions-and-inventory.js",
-      "sourceLine": 4106,
+      "sourceLine": 4109,
       "originalLine": 48283,
       "characters": 3024,
       "sourceHash": "e86b62f2324491a034f17dcd16008e899dfd7432d3b1bf87b9b7e78b922559ce",

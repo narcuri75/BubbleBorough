@@ -15014,18 +15014,18 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 .tankazon-store .substrate-shop-thumb {
-  background:
-    radial-gradient(ellipse at 22% 48%, rgba(255, 255, 255, 0.25) 0 4px, transparent 5px),
-    radial-gradient(ellipse at 49% 38%, rgba(255, 255, 255, 0.2) 0 6px, transparent 7px),
-    radial-gradient(ellipse at 76% 64%, rgba(0, 0, 0, 0.16) 0 5px, transparent 6px),
-    linear-gradient(145deg, #83919a, #4d5d65 58%, #77878b);
+  display: grid;
+  place-items: center;
+  padding: 6px !important;
+  background: transparent !important;
 }
 
-.tankazon-store .substrate-shop-card[data-substrate="sand"] .substrate-shop-thumb {
-  background:
-    radial-gradient(circle at 22% 35%, rgba(255, 255, 255, 0.45) 0 2px, transparent 3px),
-    radial-gradient(circle at 58% 60%, rgba(126, 91, 42, 0.3) 0 2px, transparent 3px),
-    linear-gradient(150deg, #ead28e, #c5a55e 65%, #ecd592);
+.tankazon-store .substrate-shop-icon {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  pointer-events: none;
 }
 
 

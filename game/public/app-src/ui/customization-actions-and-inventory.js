@@ -3859,8 +3859,11 @@ function renderBackgroundShopCards(backgrounds = runtime.backgroundCatalog.filte
 function renderSubstrateShopCards(substrates = SUBSTRATE_CATALOG.filter((item) => !item.defaultUnlocked)) {
   return substrates.map((item) => {
     const owned = isSubstrateOwned(item.id);
+    const iconMarkup = item.shopIcon
+      ? `<img class="substrate-shop-icon" ${assetImageAttributes(item.shopIcon)} alt="" draggable="false" />`
+      : "";
     return `<article class="shop-card substrate-shop-card" ${renderStoreFacetAttributes("substrate", item)} data-store-subcategory="substrate" data-substrate="${escapeHtml(item.id)}">
-      <div class="shop-thumb substrate-shop-thumb" aria-hidden="true"></div>
+      <div class="shop-thumb substrate-shop-thumb" aria-hidden="true">${iconMarkup}</div>
       <div class="shop-meta shop-card-main"><div><strong>${escapeHtml(item.name)}</strong><div class="fish-meta">${escapeHtml(item.description)}</div><div class="fish-meta">${owned ? "Owned" : "Permanent unlock"}</div></div></div>
       <div class="tankazon-tile-info"><div class="tankazon-tile-title">${escapeHtml(item.name)}</div><div class="tankazon-tile-cost"><img class="tankazon-tile-cost-icon" src="assets/misc/coin_unicode.webp" alt="" aria-hidden="true" /><span class="tankazon-tile-cost-value">${item.cost}</span></div></div>
       <div class="shop-meta shop-card-actions"><span class="price-tag">${item.cost} ${pluralize("coin", item.cost)}</span><div class="shop-button-row">${owned

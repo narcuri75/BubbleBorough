@@ -48,14 +48,40 @@
       "cost": 5,
       "image": "fish-flakes_small.png",
       "dropStyle": "sprite",
-      "dropImages": ["fish-flake_1.png", "fish-flake_2.png", "fish-flake_3.png", "fish-flake_4.png"],
+      "dropImages": [
+        "fish-flake_1.png",
+        "fish-flake_2.png",
+        "fish-flake_3.png",
+        "fish-flake_4.png"
+      ],
       "piecesPerDrop": 6,
       "surfaceFloating": true,
       "dispenserAllowed": false,
       "packages": [
-        { "id": "small", "name": "Small | 20 Count", "description": "A small container of surface-floating fish flakes.", "servings": 20, "cost": 5, "image": "fish-flakes_small.png" },
-        { "id": "medium", "name": "Medium | 75 Count", "description": "A medium container of fish flakes for busy tanks.", "servings": 75, "cost": 15, "image": "fish-flakes_medium.png" },
-        { "id": "large", "name": "Large | 200 Count", "description": "A large container of fish flakes for a full collection.", "servings": 200, "cost": 30, "image": "fish-flakes_large.png" }
+        {
+          "id": "small",
+          "name": "Small | 20 Count",
+          "description": "A small container of surface-floating fish flakes.",
+          "servings": 20,
+          "cost": 5,
+          "image": "fish-flakes_small.png"
+        },
+        {
+          "id": "medium",
+          "name": "Medium | 75 Count",
+          "description": "A medium container of fish flakes for busy tanks.",
+          "servings": 75,
+          "cost": 15,
+          "image": "fish-flakes_medium.png"
+        },
+        {
+          "id": "large",
+          "name": "Large | 200 Count",
+          "description": "A large container of fish flakes for a full collection.",
+          "servings": 200,
+          "cost": 30,
+          "image": "fish-flakes_large.png"
+        }
       ],
       "seller": "Tidewell"
     },
@@ -262,7 +288,7 @@
     "firstAid": {
       "id": "firstAid",
       "name": "First Aid",
-      "description": "Fast-acting blue drops for fish that have seen better days. Helps injured fish recover and gives sick fish a little extra strength while they fight off whatever’s bothering them.",
+      "description": "For cuts, wounds and lost hearts. Give one drop per affected fish every 24 hours for 3 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.",
       "color": "#56B8FF",
       "bottleDrops": 3,
       "cost": 8,
@@ -272,7 +298,7 @@
     "betaBlocker": {
       "id": "betaBlocker",
       "name": "Calming Serum",
-      "description": "Gentle yellow drops for fish that could use a little peace and quiet. Helps calm the entire tank and keeps its residents feeling comfortable and content for the rest of the day.",
+      "description": "One drop calms the living fish in the tank for ten minutes. Address the cause of panic or aggression, and wait until the effect ends before giving another drop.",
       "color": "#F3D348",
       "bottleDrops": 3,
       "cost": 10,
@@ -282,7 +308,7 @@
     "antiParasite": {
       "id": "antiParasite",
       "name": "Anti-Parasite Treatment",
-      "description": "Targeted Clearwell treatment for external parasites. Clears the active parasite condition, then the fish recovers over the next 24 hours.",
+      "description": "For white specks. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.",
       "color": "#76C7A5",
       "bottleDrops": 3,
       "cost": 12,
@@ -292,7 +318,7 @@
     "infectionTreatment": {
       "id": "infectionTreatment",
       "name": "Infection Treatment",
-      "description": "Targeted Clearwell treatment for active infections. Clears the infection, then the fish recovers over the next 24 hours.",
+      "description": "For red or cloudy lesions. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.",
       "color": "#E58B9B",
       "bottleDrops": 3,
       "cost": 14,
@@ -302,7 +328,7 @@
     "waterStress": {
       "id": "waterStress",
       "name": "Osmotic Stress Treatment",
-      "description": "Helps a fish recover after a water mismatch has been corrected. It cannot make incompatible water safe.",
+      "description": "Correct the water type first. One drop boosts a fish's recovery for six hours. Wait until the boost ends before giving another drop. Compatible water allows recovery without medication.",
       "color": "#8CB8D8",
       "bottleDrops": 3,
       "cost": 11,

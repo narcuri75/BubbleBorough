@@ -1885,7 +1885,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
     ? "cave-front"
     : (options.pass === "cave-back" ? "cave-back" : "base");
   const frame = options.frameCache;
-  const sorted = frame?.source === state.placedDecor && frame.length === state.placedDecor.length
+  const sorted = options.items || (frame?.source === state.placedDecor && frame.length === state.placedDecor.length
     ? (layer === null ? frame.items : frame.layers[layer] || [])
     : getPlacedDecorRenderOrder()
     .filter((item) => {
@@ -1895,7 +1895,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
 
       const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
       return layer >= span.min && layer <= span.max;
-    });
+    }));
 
   for (const item of sorted) {
     const decor = runtime.decorMap.get(item.decorKey);

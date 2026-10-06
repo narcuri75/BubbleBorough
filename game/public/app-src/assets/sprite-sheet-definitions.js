@@ -297,7 +297,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/barb__genetics-natural.webp",
-      "version": "cddd3e1c1368",
+      "version": "4cbe27ac8842",
       "width": 1536,
       "height": 1152,
       "frames": {
@@ -307,19 +307,19 @@ function getSpriteSheetDefinitions() {
           512,
           384
         ],
-        "barb_cherry.png": [
+        "barb_tiger.png": [
           512,
           0,
           512,
           384
         ],
-        "barb_five_banded.png": [
+        "barb_rosy.png": [
           1024,
           0,
           512,
           384
         ],
-        "barb_gold.png": [
+        "barb_odessa.png": [
           0,
           384,
           512,
@@ -331,20 +331,26 @@ function getSpriteSheetDefinitions() {
           512,
           384
         ],
-        "barb_odessa.png": [
+        "barb_gold.png": [
           1024,
           384,
           512,
           384
         ],
-        "barb_rosy.png": [
+        "barb_five_banded.png": [
           0,
           768,
           512,
           384
         ],
-        "barb_tiger.png": [
+        "barb_cherry.png": [
           512,
+          768,
+          512,
+          384
+        ],
+        "silver-barb.png": [
+          1024,
           768,
           512,
           384
@@ -352,7 +358,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/barb__genetics-natural",
-        "version": "6e884325ca31-v1",
+        "version": "3c6c7e5c228b-v1",
         "standalone": false
       }
     },
@@ -3292,7 +3298,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/barb__genetics-natural.webp",
-      "version": "f96d4aed62df",
+      "version": "5941d4a694b7",
       "width": 192,
       "height": 144,
       "frames": {
@@ -3302,19 +3308,19 @@ function getSpriteSheetDefinitions() {
           64,
           48
         ],
-        "barb_cherry.png": [
+        "barb_tiger.png": [
           64,
           0,
           64,
           48
         ],
-        "barb_five_banded.png": [
+        "barb_rosy.png": [
           128,
           0,
           64,
           48
         ],
-        "barb_gold.png": [
+        "barb_odessa.png": [
           0,
           48,
           64,
@@ -3326,20 +3332,26 @@ function getSpriteSheetDefinitions() {
           64,
           48
         ],
-        "barb_odessa.png": [
+        "barb_gold.png": [
           128,
           48,
           64,
           48
         ],
-        "barb_rosy.png": [
+        "barb_five_banded.png": [
           0,
           96,
           64,
           48
         ],
-        "barb_tiger.png": [
+        "barb_cherry.png": [
           64,
+          96,
+          64,
+          48
+        ],
+        "silver-barb.png": [
+          128,
           96,
           64,
           48
@@ -3347,7 +3359,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/barb__genetics-natural",
-        "version": "afd702e1b4c2-v1",
+        "version": "388d999a4ee3-v1",
         "standalone": false
       }
     },
@@ -7422,6 +7434,55 @@ function getSpriteSheetDefinitions() {
       "delivery": {
         "root": "assets/generated/sprites/tank-frame/top-bottom",
         "version": "9e63e3bc232e-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/web/bodega/symptom-tiles.webp",
+      "version": "dd2f7f237485",
+      "width": 1536,
+      "height": 768,
+      "frames": {
+        "spots_symptoms.png": [
+          0,
+          0,
+          512,
+          384
+        ],
+        "lesions_symptoms.png": [
+          512,
+          0,
+          512,
+          384
+        ],
+        "cuts_symptoms.png": [
+          1024,
+          0,
+          512,
+          384
+        ],
+        "faded-color_symptoms.png": [
+          0,
+          384,
+          512,
+          384
+        ],
+        "strange-behavior_symptoms.png": [
+          512,
+          384,
+          512,
+          384
+        ],
+        "panic_symptoms.png": [
+          1024,
+          384,
+          512,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/bodega/symptom-tiles",
+        "version": "45534867b6a2-v1",
         "standalone": false
       }
     },

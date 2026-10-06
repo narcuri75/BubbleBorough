@@ -178,7 +178,9 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     placedItem.bubblerSettings = createDefaultBubblerSettings();
   }
   if (isCaveDecorKey(decorKey)) {
-    placedItem.caveSettings = getDecorDefaultCaveSettings(decorKey);
+    // Generic editor defaults must not replace artwork-authored entrances.
+    const authoredCaveSettings = getAuthoredDecorCaveSettings(decorKey);
+    if (authoredCaveSettings) placedItem.caveSettings = authoredCaveSettings;
     const defaultCaveColorSettings = getDecorDefaultCaveColorSettings(decorKey);
     if (defaultCaveColorSettings) {
       placedItem.caveColorSettings = defaultCaveColorSettings;

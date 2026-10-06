@@ -156,7 +156,7 @@ test('Phase 34 mastery sanitization canonicalizes saved keys, preserves alternat
 
 test('Phase 34 older fish safely default progression fields without inferring XP from age', () => {
   assert.match(persistence, /if \(incomingVersion < 65\)/);
-  assert.match(bootstrap, /const STATE_VERSION = 67;/);
+  assert.match(bootstrap, /const STATE_VERSION = 68;/);
   assert.match(fishSanitize, /careXp: Math\.max\(0, Math\.floor\(Number\(fish\.careXp\) \|\| 0\)\)/);
   assert.match(fishSanitize, /careLevel: clamp\(Math\.floor\(Number\(fish\.careLevel\) \|\| FISH_CARE_LEVEL_MIN\)/);
   assert.match(fishSanitize, /lastCareXpDayKey: typeof fish\.lastCareXpDayKey === "string" \? fish\.lastCareXpDayKey : ""/);

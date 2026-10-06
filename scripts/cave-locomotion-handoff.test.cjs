@@ -81,13 +81,14 @@ test("cave locomotion coasts through routes and brakes more firmly only for seat
 test("blocked cave recovery sheds momentum rather than erasing it", () => {
   const plan = {
     decorId: "pot", inside: { xNorm: 0.5, yNorm: 0.5 },
-    collisionRetryAt: 5000
+    collisionRetryAt: 0
   };
   const recover = load("recoverFishInsideCave", {
     Math, Number,
     getActiveFishCavePlan: () => plan,
     getCaveBehaviorDecorById: () => ({}),
     getActiveFishCaveTriggerRegion: () => null,
+    setFishTargetToCaveNode: () => true,
     buildNormalCaveInsideTravelNodes: () => []
   });
   const fish = {
@@ -174,7 +175,7 @@ test("shared locomotion applies cave steering and cave-specific acceleration tun
 });
 
 test("normal cave exit uses the momentum-preserving release handoff", () => {
-  const leaveStart = caveSource.indexOf('if (fish.caveState === "leave")');
+  const leaveStart = caveSource.lastIndexOf('if (fish.caveState === "leave")');
   assert.ok(leaveStart >= 0);
   const leaveBlock = caveSource.slice(leaveStart, leaveStart + 2200);
   assert.match(leaveBlock, /releaseFishFromCaveWithMomentum\(fish, species, plan, now\)/);

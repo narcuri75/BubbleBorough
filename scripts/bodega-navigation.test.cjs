@@ -109,7 +109,7 @@ function fixture({ saved = "fish", storageBlocked = false } = {}) {
     syncWebSurfThemePresentation() {}, ensureWebSurfSettingsPageMounted() {}, syncWebSurfUnreadBadge() {},
     renderWebSurfHomePage: () => "WebSurf", renderBubbleBodegaHomePage: () => "Bodega Home", renderBubbleBankPage: () => "Bank",
     setMarkupIfChanged: (key, node, markup) => { node.markup = markup; },
-    syncWallpaperEngineStoreScrollControls() {}, syncWebSurfSiteChrome() {},
+    syncWallpaperEngineStoreScrollControls() {}, syncWebSurfSiteChrome() {}, renderFishCareWebSurfaces() {},
     normalizeBubbleBankTab: tab => tab,
     getTankazonCategoryTab: category => tabs[categories.indexOf(category)],
     findTankazonNativePurchaseButton: () => null,
@@ -443,7 +443,7 @@ test("clicking a Home fish preview opens its selected variant and Back restores 
     isProteusBiodyneSeller: seller => seller === "Proteus Biodyne", isCommonCurrentSeller: () => false,
     isArcadiaHomeAquaticsSeller: () => false
   });
-  loadFunctions(c, shell, ["openTankazonItem", "getTankazonCardPurchaseButton", "getButtonDescriptor", "selectTankazonFishVariant", "isTankazonLockedFishVariant", "getTankazonSelectableVariant"]);
+  loadFunctions(c, shell, ["openTankazonItem", "renderTankazonMedicineProductDetails", "getTankazonCardPurchaseButton", "getButtonDescriptor", "selectTankazonFishVariant", "isTankazonLockedFishVariant", "getTankazonSelectableVariant"]);
   card.querySelectorAll = selector => selector === "button" ? [button] : [];
   f.extras.tankazonCatalogArea.scrollTop = 175;
   f.click(preview);

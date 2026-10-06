@@ -230,6 +230,7 @@ function sanitizeWebSurfSentEmails(rawEmails) {
     const time = Number.isFinite(Number(rawEmail.time)) ? Math.max(0, Number(rawEmail.time)) : Date.now();
     const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
       ? {
+        consultationId: typeof rawEmail.data.consultationId === "string" ? rawEmail.data.consultationId.slice(0, 100) : "",
         orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
         speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : "",
         fishId: typeof rawEmail.data.fishId === "string" ? rawEmail.data.fishId.slice(0, 100) : "",
@@ -816,6 +817,9 @@ function getPeacefulModeFishSnapshot(fish) {
   for (const key of timerKeys) {
     if (Number.isFinite(Number(fish[key]))) timers[key] = Number(fish[key]);
   }
+  for (const key of ["calmedUntil", "waterStressBoostUntil", "injuryRecoveryLastAt", "osmoticStressLastProgressAt", "osmoticStressLastDamageAt", "osmoticRecoveryLastAt"]) {
+    if (Number.isFinite(Number(fish[key])) && Number(fish[key]) > 0) timers[key] = Number(fish[key]);
+  }
   return {
     needs: fish.needs && typeof fish.needs === "object" ? { ...fish.needs } : null,
     healthUnits: Number.isFinite(Number(fish.healthUnits)) ? Number(fish.healthUnits) : null,
@@ -954,6 +958,7 @@ function restorePeacefulModeState(now = Date.now()) {
   const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
   for (const fish of allFish) {
     if (!fish?.id || isFishDead(fish)) continue;
+    if (!fish.storageFrozen && fish.treatmentCourses) shiftFishTreatmentTimes(fish, pauseDuration);
     const snapshot = mode.fishSnapshots[fish.id];
     if (snapshot) {
       fish.needs = snapshot.needs ? sanitizeFishNeeds(snapshot.needs, fish, now) : sanitizeFishNeeds(null, fish, now);
@@ -2052,6 +2057,7 @@ function reconcileState(rawState) {
     purchaseHistory: [],
     webSurfMailStates: {},
     webSurfSenderStates: {},
+    vetConsultations: [],
     webSurfSentEmails: [],
     webSurf: sanitizeWebSurfBrowserState(null),
     proteusCorpseDonationDigests: [],
@@ -2216,6 +2222,7 @@ function reconcileState(rawState) {
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
     webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
     webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
+    vetConsultations: sanitizeStillwaterConsultations(incoming.vetConsultations),
     webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
     webSurf: sanitizeWebSurfBrowserState(incoming.webSurf, incoming),
     proteusCorpseDonationDigests: sanitizeProteusCorpseDonationDigests(incoming.proteusCorpseDonationDigests),

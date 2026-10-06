@@ -14285,7 +14285,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 /* Product browsing cards are intentionally limited to image, title, action. */
 /* ========================================================================== */
 .tankazon-store .store-drawer,
-.tankazon-store .shop-section-cards {
+.tankazon-store .shop-section-cards,
+.tankazon-store .pharmacy-result-cards {
   grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
   align-items: start;
 }
@@ -14404,7 +14405,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 
 @media (max-width: 1180px) {
   .tankazon-store .store-drawer,
-  .tankazon-store .shop-section-cards {
+  .tankazon-store .shop-section-cards,
+  .tankazon-store .pharmacy-result-cards {
     grid-template-columns: repeat(auto-fill, minmax(158px, 1fr));
   }
 }
@@ -19217,21 +19219,27 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 }
 
 /* Phase 7: compact BubbleBodega fish product detail cards. */
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-layout,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-layout {
   grid-template-columns: minmax(250px, .9fr) minmax(340px, 1.25fr) minmax(210px, 240px);
   gap: 22px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-description h1,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-description h1 {
   margin: 0 0 16px;
   font-size: 28px;
   font-weight: 650;
   line-height: 1.2;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-generic-about-heading,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-generic-about-heading,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-brand,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-brand,
+.tankazon-store .tankazon-item-page.is-medicine-product #tankazonItemPrice,
 .tankazon-store .tankazon-item-page.is-fish-product #tankazonItemPrice {
   display: none !important;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-details,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-details {
   display: grid;
   gap: 18px;
@@ -19239,6 +19247,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   line-height: 1.5;
 }
 .tankazon-store .tankazon-fish-info-card,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit {
   border: 1px solid #63aec7;
   border-radius: 10px;
@@ -19249,6 +19258,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   padding: 20px 22px;
 }
 .tankazon-store .tankazon-fish-info-card-header,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-header,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-header {
   display: flex;
   align-items: center;
@@ -19258,6 +19268,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   margin-bottom: 18px;
 }
 .tankazon-store .tankazon-fish-info-card-header h2,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-header h2,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-header h2 {
   margin: 0;
   color: #102832;
@@ -19266,6 +19277,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   line-height: 1.2;
 }
 .tankazon-store .tankazon-fish-info-icon,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-icon,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-icon {
   display: grid;
   place-items: center;
@@ -19273,6 +19285,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   color: #1281a9;
 }
 .tankazon-store .tankazon-fish-info-heading-icon,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-icon,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-icon {
   width: 34px;
   height: 34px;
@@ -19280,6 +19293,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   background: #e7f5fa;
 }
 .tankazon-store .tankazon-fish-info-icon svg,
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-icon svg,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-icon svg {
   width: 22px;
   height: 22px;
@@ -19305,6 +19319,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-store .tankazon-item-details .tankazon-fish-about .shop-about-tagline {
   margin-top: -4px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-details .tankazon-fish-additional-info,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-details .tankazon-fish-additional-info {
   display: grid;
   gap: 0;
@@ -19313,6 +19328,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   background: none;
   box-shadow: none;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row {
   display: grid;
   grid-template-columns: 30px minmax(86px, .42fr) minmax(0, 1fr);
@@ -19323,9 +19339,11 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   border: 0;
   border-bottom: 1px solid #d8e6eb;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row:first-child,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row:first-child {
   padding-top: 0;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row:last-child,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row:last-child {
   padding-bottom: 0;
   border-bottom: 0;
@@ -19340,72 +19358,88 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   width: 19px;
   height: 19px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row .shop-stat-label,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row .shop-stat-label {
   color: #50636b;
   font-weight: 650;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row .shop-stat-value,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row .shop-stat-value {
   min-width: 0;
   color: #12252d;
   text-align: left;
   overflow-wrap: anywhere;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit {
   margin-top: 18px;
   padding: 20px 22px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-header,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-header {
   margin-bottom: 16px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-icon,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-icon {
   background: #e7f5fa;
   color: #1281a9;
   font: inherit;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-header p,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-header p {
   margin: 3px 0 0;
   color: #53666f;
   font-size: 13px;
   line-height: 1.35;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-columns,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-columns {
   gap: 16px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-group + .tankazon-item-fit-group,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-group + .tankazon-item-fit-group {
   padding-left: 16px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-group h3,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-group h3 {
   margin-bottom: 9px;
   font-size: 15px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-list,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-list {
   gap: 7px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-entry,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-entry {
   grid-template-columns: 28px minmax(0, 1fr);
   gap: 8px;
   padding: 8px 10px;
   border-radius: 7px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-entry-icon,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-entry-icon {
   width: 26px;
   height: 26px;
   font-size: 16px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-buybox,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-buybox {
   gap: 10px;
   padding: 18px;
   border-radius: 10px;
   background: #fff;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-buybox .tankazon-item-price,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-buybox .tankazon-item-price {
   font-size: 24px;
   font-weight: 650;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-availability,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-availability {
   margin-top: 0;
   font-size: 16px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-seller,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-seller {
   display: flex;
   grid-template-columns: none;
@@ -19413,50 +19447,64 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   gap: 5px;
   padding-top: 12px;
 }
+.tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-seller #tankazonItemSeller,
 .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-seller #tankazonItemSeller {
   color: #0f1111;
   font-weight: 600;
 }
 
 @media (max-width: 1050px) {
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-layout,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-layout {
     grid-template-columns: minmax(240px, .8fr) minmax(320px, 1.2fr);
     gap: 22px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-gallery,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-gallery {
     grid-row: 1 / span 2;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-buybox,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-buybox {
     grid-column: 2;
   }
 }
 
 @media (max-width: 720px) {
+  .tankazon-store .tankazon-item-page.is-medicine-product,
   .tankazon-store .tankazon-item-page.is-fish-product {
     padding: 16px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-layout,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-layout {
     grid-template-columns: minmax(0, 1fr);
     gap: 18px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-gallery,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-gallery,
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-buybox,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-buybox {
     grid-column: 1;
     grid-row: auto;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-card,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-card,
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit,
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-buybox,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-buybox {
     padding: 16px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-fish-info-row,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-fish-info-row {
     grid-template-columns: 28px 78px minmax(0, 1fr);
     gap: 9px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-columns,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-columns {
     grid-template-columns: minmax(0, 1fr);
     gap: 14px;
   }
+  .tankazon-store .tankazon-item-page.is-medicine-product .tankazon-item-fit-group + .tankazon-item-fit-group,
   .tankazon-store .tankazon-item-page.is-fish-product .tankazon-item-fit-group + .tankazon-item-fit-group {
     padding: 14px 0 0;
     border-top: 1px solid #9ec7d8;
@@ -23216,7 +23264,7 @@ html[data-layout-ratio-lock="true"] .toolbar-action-menu-button img {
   border-radius: 7px;
   color: #18394f;
   background: #fff;
-  font: 600 .78rem/1 system-ui, sans-serif;
+  font: 600 .85rem/1 system-ui, sans-serif;
 }
 
 .websurf-bookmark-bar {
@@ -23295,7 +23343,7 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
   .websurf-browser-toolbar { min-height: 104px; padding: 8px; }
   .websurf-navigation-row { grid-template-columns: repeat(3, 30px) minmax(0, 1fr) repeat(2, 30px); gap: 4px; }
   .websurf-browser-toolbar button { width: 30px; height: 30px; }
-  .websurf-address-field input { height: 30px; font-size: .7rem; }
+  .websurf-address-field input { height: 30px; font-size: .78rem; }
 }
 
 .webpage-tab-strip {
@@ -24166,7 +24214,13 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
   --ws-focus: #147593;
   --ws-input-bg: #f7fbfe;
   --ws-input-text: #18394f;
+  --ws-input-border: #647f91;
+  --ws-input-placeholder: #4e6575;
+  --ws-input-selection-bg: #165f91;
+  --ws-input-selection-text: #ffffff;
   --ws-chrome-text: #163750;
+  --ws-chrome-icon-filter: none;
+  --ws-active-tab-icon-filter: none;
 }
 
 .tankazon-store[data-websurf-theme="dark"] {
@@ -24200,6 +24254,11 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
   --ws-accent: #4aa9ff;
   --ws-focus: #6bc3ff;
   --ws-input-bg: #171e23;
+  --ws-input-text: #edf3f7;
+  --ws-input-border: #7c919f;
+  --ws-input-placeholder: #a6bac8;
+  --ws-chrome-icon-filter: brightness(0) invert(1) opacity(.9);
+  --ws-active-tab-icon-filter: brightness(0) invert(1) opacity(.9);
 }
 
 .tankazon-store .webpage-tab-strip {
@@ -24219,8 +24278,7 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
 }
 .tankazon-store .webpage-tab.is-active[data-webpage-destination="home"] img,
 .tankazon-store .webpage-tab.is-active[data-webpage-destination="settings"] img {
-  /* Active tabs use a deliberately pale surface in every chrome theme. */
-  filter: none !important;
+  filter: var(--ws-active-tab-icon-filter) !important;
 }
 .tankazon-store .webpage-tab-close {
   display: grid;
@@ -24256,15 +24314,11 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
 
 /* Only the monochrome Home and Settings navigation glyphs follow the chrome theme.
    Branded favicons keep their authored colors. */
-.tankazon-store[data-websurf-theme="dark"] .webpage-tab[data-webpage-destination="home"] img,
-.tankazon-store[data-websurf-theme="dark"] .webpage-tab[data-webpage-destination="settings"] img,
-.tankazon-store[data-websurf-theme="dark"] .webpage-browser-settings img,
-.tankazon-store[data-websurf-theme="dark"] .websurf-home-button img {
-  filter: brightness(0) invert(1) opacity(.9);
-}
-.tankazon-store[data-websurf-theme="dark"] .webpage-tab.is-active[data-webpage-destination="home"] img,
-.tankazon-store[data-websurf-theme="dark"] .webpage-tab.is-active[data-webpage-destination="settings"] img {
-  filter: none !important;
+.tankazon-store .webpage-tab[data-webpage-destination="home"] img,
+.tankazon-store .webpage-tab[data-webpage-destination="settings"] img,
+.tankazon-store .webpage-browser-settings img,
+.tankazon-store .websurf-home-button img {
+  filter: var(--ws-chrome-icon-filter);
 }
 
 /* WebSurf Home + mail client dark theme. */
@@ -24546,6 +24600,10 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
 /* Every catalogue chrome skin uses a light address surface. Keep its text
    deliberately dark, while the surrounding toolbar and bookmark row retain
    the high-contrast light ink intended for their darker surfaces. */
+.tankazon-store[data-websurf-chrome-theme="minimal"] { --ws-input-bg: #fafafa; }
+.tankazon-store[data-websurf-chrome-theme="aquarium"] { --ws-input-bg: #effffa; }
+.tankazon-store[data-websurf-chrome-theme="retro"] { --ws-input-bg: #fffbf2; }
+.tankazon-store[data-websurf-chrome-theme="corporate"] { --ws-input-bg: #f3f8ff; }
 .tankazon-store[data-websurf-chrome-theme="minimal"],
 .tankazon-store[data-websurf-chrome-theme="aquarium"],
 .tankazon-store[data-websurf-chrome-theme="retro"],
@@ -24558,15 +24616,27 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
 .tankazon-store[data-websurf-chrome-theme="red-velvet"],
 .tankazon-store[data-websurf-chrome-theme="burnt-titanium"] {
   --ws-input-text: #1d2730;
+  --ws-input-border: #647f91;
+  --ws-input-placeholder: #4e6575;
   --ws-chrome-text: #f5f9fb;
   --ws-chrome-muted: #cdd6dc;
+  --ws-chrome-icon-filter: brightness(0) invert(1) opacity(.9);
+  --ws-active-tab-icon-filter: none;
 }
+.tankazon-store[data-websurf-chrome-theme="retro"] { --ws-active-tab-icon-filter: brightness(0) invert(1) opacity(.9); }
 
 /* The toolbar uses the soft panel token, so give the legacy catalogue skins
    their own surface instead of inheriting the default pale blue. */
 .tankazon-store[data-websurf-chrome-theme="minimal"] {
   --ws-chrome-text: #2f3b42;
   --ws-chrome-muted: #64737a;
+  --ws-tab-text: #2f3b42;
+  --ws-tab-active-bg: #ffffff;
+  --ws-tab-active-text: #1d2730;
+  --ws-tab-hover: #ffffff;
+  --ws-browser-button-hover: #ffffff;
+  --ws-chrome-focus: #147593;
+  --ws-chrome-icon-filter: none;
 }
 .tankazon-store[data-websurf-chrome-theme="aquarium"] .webpage-tab-strip,
 .tankazon-store[data-websurf-chrome-theme="retro"] .webpage-tab-strip,
@@ -24578,12 +24648,11 @@ body.websurf-bookmark-dragging * { cursor: grabbing !important; }
 .tankazon-store .websurf-browser-toolbar { color: var(--ws-chrome-text); }
 .tankazon-store .websurf-browser-toolbar button { border-color: var(--ws-browser-button-border); color: var(--ws-browser-button-text); background: var(--ws-browser-button-bg); }
 .tankazon-store .websurf-browser-toolbar button:hover:not(:disabled) { background: var(--ws-browser-button-hover); }
-.tankazon-store .websurf-address-field input { border-color: var(--ws-browser-button-border); color: var(--ws-input-text); background: var(--ws-input-bg); }
+.tankazon-store .websurf-address-field input { border-color: var(--ws-input-border); color: var(--ws-input-text); caret-color: var(--ws-input-text); background: var(--ws-input-bg); }
+.tankazon-store .websurf-address-field input::placeholder { color: var(--ws-input-placeholder); opacity: 1; }
+.tankazon-store .websurf-address-field input::selection { color: var(--ws-input-selection-text); background: var(--ws-input-selection-bg); }
 .tankazon-store .websurf-browser-toolbar button:focus-visible,
 .tankazon-store .websurf-address-field input:focus-visible { outline-color: var(--ws-chrome-focus, var(--ws-focus)); }
-.tankazon-store[data-websurf-chrome-theme="retro"] .webpage-browser-settings img,
-.tankazon-store[data-websurf-chrome-theme="corporate"] .webpage-browser-settings img,
-.tankazon-store[data-websurf-chrome-theme="aquarium"] .webpage-browser-settings img { filter: brightness(0) invert(1); }
 
 /* The premium chrome themes need a visible signature in the frame itself.
    These are deliberately limited to tabs and browser controls; site pages
@@ -27410,6 +27479,7 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-variants button[aria-pressed="true"] { border-color: #ffb244; background: #2e414b; box-shadow: 0 0 0 2px #5d492b; }
 
 .tankazon-store[data-websurf-theme="dark"] .tankazon-fish-info-card,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-fit,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-fit {
   border-color: #2d7594;
   background: #102b38;
@@ -27417,24 +27487,32 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
 }
 .tankazon-store[data-websurf-theme="dark"] .tankazon-fish-info-heading-icon,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-fish-info-row-icon,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-fit-icon,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-fit-icon {
   background: #173f4f;
   color: #76d5ff;
 }
 .tankazon-store[data-websurf-theme="dark"] .tankazon-fish-info-card-header h2,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-fit-header h2,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-fit-header h2,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-fish-info-row .shop-stat-value,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-fish-info-row .shop-stat-value,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-seller #tankazonItemSeller,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-seller #tankazonItemSeller {
   color: var(--bodega-dark-text) !important;
 }
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-details .tankazon-fish-about > p,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-fish-info-row .shop-stat-label,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-fish-info-row .shop-stat-label,
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-fit-header p,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-fit-header p {
   color: var(--bodega-dark-muted) !important;
 }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-fish-info-row,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-fish-info-row {
   border-bottom-color: #34596a;
 }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-medicine-product .tankazon-item-buybox,
 .tankazon-store[data-websurf-theme="dark"] .tankazon-item-page.is-fish-product .tankazon-item-buybox {
   border-color: #496373;
   background: #10232c;
@@ -28422,4 +28500,130 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
     flex-direction: row;
     gap: 8px;
   }
+}
+/* Pharmacy care and the independent Stillwater WebSurf site. */
+.tankazon-medicine-symptoms { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 240px)); gap: 12px; }
+.tankazon-medicine-symptoms .tankazon-medicine-symptom { margin: 0; cursor: default; }
+.tankazon-store.is-stillwater-open .tankazon-panel { grid-template-rows: 40px auto minmax(0, 1fr) !important; }
+.tankazon-store.is-stillwater-open :is(.tankazon-header, .tankazon-promo-strip, .tankazon-body, .tankazon-account-page, .store-scroll-controls, .proteus-biodyne-page, .proteus-designer-route) { display: none !important; }
+.stillwater-page { grid-row: 3; grid-column: 1 / -1; min-height: 0; overflow: auto; position: relative; background: radial-gradient(ellipse at 50% 12%, #102d3a 0, #0b202b 48%, #081a25 100%); color: #edf7fc; }
+.stillwater-page:has(.stillwater-dialog-backdrop) { overflow: hidden; }
+.stillwater-page[hidden], .pharmacy-symptom-checker[hidden], #inspectorTreatmentGuide[hidden] { display: none !important; }
+.stillwater-page-content { box-sizing: border-box; max-width: 1100px; margin: auto; padding: 42px 32px 28px; }
+.stillwater-page-content > .stillwater-brand { display: grid; justify-items: center; gap: 8px; margin: 0 16px 26px; padding-bottom: 22px; border-bottom: 1px solid #527584; }
+.stillwater-brand img { width: 128px; height: 128px; object-fit: contain; }
+.stillwater-brand span { color: #c5e4f0; font-size: 19px; font-weight: 650; }
+.stillwater-intro { text-align: center; }
+.stillwater-page h1 { margin: 0 0 20px; font-size: clamp(28px, 3vw, 42px); font-weight: 750; line-height: 1.2; }
+.stillwater-intro > p { max-width: 760px; margin: 0 auto; color: #b9d6e4; font-size: 18px; font-weight: 500; }
+.stillwater-page p, .fish-care-guide p { line-height: 1.6; }
+.stillwater-services { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 26px 0 28px; }
+.stillwater-services section { display: grid; grid-template-columns: 66px minmax(0, 1fr); align-items: start; gap: 20px; padding: 20px; border: 1px solid #527b8e; border-radius: 9px; background: #0b202980; }
+.stillwater-services h2 { margin: 6px 0 6px; color: #edf7fc; font-size: 16px; line-height: 1.3; }
+.stillwater-services p { margin: 0; color: #bdd0db; font-size: 15px; }
+.stillwater-service-icon { display: grid; place-items: center; width: 66px; height: 66px; border-radius: 50%; background: #193e4c; }
+.stillwater-service-icon img { width: 40px; height: 40px; object-fit: contain; }
+.stillwater-consultation { display: grid; justify-items: center; gap: 22px; margin: 0 16px; padding-top: 22px; border-top: 1px solid #527584; }
+.stillwater-pricing { display: flex; align-items: center; gap: 20px; }
+.stillwater-pricing > img { width: 50px; height: 50px; object-fit: contain; }
+.stillwater-pricing strong { font-size: 20px; }
+.stillwater-pricing p { margin: 2px 0 0; color: #bddce9; font-size: 16px; }
+.stillwater-page .small-button { box-sizing: border-box; min-height: 42px; padding: 10px 20px; border: 1px solid #29badc; border-radius: 24px; background: #28bbdd; color: #052a38; font-size: 15px; font-weight: 700; }
+.stillwater-page .small-button:hover:not(:disabled) { background: #6adcf6; }
+.stillwater-page .small-button:disabled { opacity: .45; cursor: default; }
+.stillwater-page .small-button.alt { border-color: #39535c; background: #2b444d; color: #f2f8fb; }
+.stillwater-page .small-button.alt:hover:not(:disabled) { background: #3b5b66; }
+.stillwater-page .stillwater-consult-button { width: min(260px, 100%); min-height: 46px; border-radius: 10px; background: linear-gradient(180deg, #80e2fa, #58c8e7); font-size: 17px; }
+.stillwater-confirmation { max-width: 700px; margin: 20px auto 0; padding: 16px; border: 1px solid #527b8e; border-radius: 9px; text-align: center; }
+.stillwater-confirmation p { margin: 0 0 12px; }
+.stillwater-page footer { margin-top: 18px; text-align: center; }
+.stillwater-page .care-text-link { color: #87d7ef; font-size: 13px; }
+.pharmacy-symptom-checker footer { margin-top: 24px; border-top: 1px solid #b7d0df; padding-top: 16px; }
+.care-text-link { background: transparent; border: 0; color: #096b9b; font: inherit; text-decoration: underline; cursor: pointer; padding: 8px 0; text-align: left; }
+.stillwater-dialog-backdrop { position: absolute; inset: 0; z-index: 40; box-sizing: border-box; background: #020f18b3; padding: 24px; display: grid; place-items: center; }
+.stillwater-dialog { position: relative; display: grid; grid-template-rows: auto auto minmax(0, 1fr) auto auto auto; gap: 16px; width: min(608px, 100%); max-height: 100%; padding: 20px 22px; border: 1px solid #18617c; border-radius: 12px; box-sizing: border-box; background: linear-gradient(135deg, #0e2936, #0b202b); color: #edf7fc; box-shadow: 0 18px 56px #0008; overflow: auto; }
+.stillwater-dialog-close { position: absolute; top: 12px; right: 12px; display: grid; place-items: center; width: 32px; height: 32px; padding: 5px; border: 0; border-radius: 6px; background: transparent; cursor: pointer; }
+.stillwater-dialog-close img { width: 22px; height: 22px; object-fit: contain; }
+.stillwater-dialog-close:hover { background: #193e4c; }
+.stillwater-dialog-header { display: flex; align-items: center; gap: 18px; padding-right: 20px; }
+.stillwater-dialog-header > img { flex: 0 0 auto; width: 100px; height: 100px; object-fit: contain; }
+.stillwater-dialog-header h2 { margin: 0 0 6px; font-size: 28px; line-height: 1.2; }
+.stillwater-dialog p { margin: 0; font-size: 16px; line-height: 1.5; }
+.stillwater-fish-picker { display: grid; gap: 8px; min-height: 0; max-height: 430px; overflow-y: auto; padding-right: 6px; }
+.stillwater-fish-picker label { display: grid; grid-template-columns: 18px 100px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 66px; padding: 6px 14px; border: 1px solid #8eb8c9; border-radius: 9px; cursor: pointer; background: #0d2531; }
+.stillwater-fish-picker input { width: 16px; height: 16px; margin: 0; accent-color: #63d9f5; }
+.stillwater-fish-picker label:has(input:checked) { border-color: #66d6f2; background: #153b4a; }
+.stillwater-fish-thumb { display: block; width: 100px; height: 50px; object-fit: contain; border-radius: 5px; background: #061821; }
+.stillwater-fish-picker label > span { min-width: 0; overflow-wrap: anywhere; }
+.stillwater-fish-picker strong { font-size: 16px; }
+.stillwater-fish-picker small { display: block; margin-top: 4px; font-size: 14px; line-height: 1.3; }
+.stillwater-dialog-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
+.stillwater-dialog-actions [data-care-confirm-consult] { margin-left: auto; }
+.stillwater-notice { color: #ffaaa0; }
+.stillwater-notice[hidden] { display: none; }
+.stillwater-fish-report { padding: 18px 0; border-top: 1px solid #7896a5; }
+.pharmacy-symptom-checker { container: pharmacy-checker / inline-size; margin: 10px; padding: 12px; border: 1px solid #87b9d3; border-radius: 10px; background: #edf7fb; color: #173343; }
+.pharmacy-symptom-checker h2 { margin: 0; font-size: 1.1rem; }
+.pharmacy-symptom-checker header p { margin: 3px 0 0; font-size: .8rem; }
+.pharmacy-symptoms { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.pharmacy-symptom { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: auto 1fr; gap: 8px; padding: 8px; border: 1px solid #8cabbc; border-radius: 6px; cursor: pointer; background: #fff; }
+.pharmacy-symptom input { position: absolute; z-index: 1; top: 13px; left: 13px; width: 16px; height: 16px; margin: 0; }
+.pharmacy-symptom img { display: block; width: 100%; height: auto; aspect-ratio: 4 / 3; object-fit: contain; background: #132632; border-radius: 4px; }
+.pharmacy-symptom-text-art { display: grid; place-items: center; aspect-ratio: 4 / 3; padding: 24px 12px; box-sizing: border-box; border-radius: 4px; background: #132632; color: #85d8ff; text-align: center; font-size: .75rem; line-height: 1.3; }
+.pharmacy-symptom strong { align-self: center; min-height: 2.4em; display: grid; place-items: center; padding: 0 4px; text-align: center; font-size: .78rem; line-height: 1.2; }
+.pharmacy-symptom.is-selected { outline: 2px solid #0582bb; border-color: #0582bb; }
+.pharmacy-quiz-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 12px; }
+.pharmacy-symptom-checker .small-button { min-height: 32px; padding: 6px 12px; font-size: .8rem; }
+.pharmacy-symptom-checker .small-button.alt { background: #e2edf2; color: #173343; border: 1px solid #8cabbc; }
+.pharmacy-symptom-checker footer { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px 12px; margin-top: 10px; padding-top: 8px; font-size: .75rem; }
+.pharmacy-symptom-checker footer > div { text-align: right; }
+.pharmacy-symptom-checker footer strong { font-size: .85rem; }
+.pharmacy-symptom-checker footer p { margin: 3px 0 0; }
+.pharmacy-symptom-checker .pharmacy-vet-button { min-height: 36px; flex-shrink: 0; border: 1px solid #047fa7; border-radius: 8px; background: #27bde8; color: #062c3b; font-weight: 700; text-decoration: none; }
+.pharmacy-symptom-checker .pharmacy-vet-button:hover { background: #57d2f4; }
+.pharmacy-results { margin-top: 10px; font-size: .8rem; }
+.pharmacy-result-cards { display: grid; gap: 12px; align-items: start; }
+.pharmacy-treatment-card { box-sizing: border-box; display: grid; grid-template-columns: minmax(0, 1fr); grid-template-rows: 196px 58px 38px; gap: 7px; min-width: 0; height: 323px; padding: 10px; border: 1px solid #d5d9d9; border-radius: 8px; background: #fff; color: #0f1111; box-shadow: 0 1px 2px rgba(15,17,17,.08); }
+.pharmacy-treatment-thumb { display: block; box-sizing: border-box; width: 100%; height: 196px; object-fit: contain; border-radius: 4px; background: #fff; }
+.pharmacy-treatment-card h3 { margin: 0; }
+.pharmacy-treatment-card > button { box-sizing: border-box; align-self: start; width: 100%; height: 36px; margin: 0; }
+.tankazon-store[data-websurf-theme="dark"] .pharmacy-treatment-card { border-color: var(--ws-border); color: var(--ws-text); background: var(--ws-panel-bg); box-shadow: 0 2px 9px rgba(0,0,0,.24); }
+.tankazon-store[data-websurf-theme="dark"] .pharmacy-treatment-thumb { background: #74797d; }
+.tankazon-store:is(.tankazon-item-open, .tankazon-account-open) #pharmacySymptomChecker { display: none !important; }
+.fish-care-guide { padding: 12px; border: 1px solid #507e96; border-radius: 10px; margin: 10px 0; font-size: .85rem; }
+.fish-care-guide p { margin: 8px 0; }
+.tankazon-store[data-websurf-theme="dark"] .pharmacy-symptom-checker { background: #102b38; color: #e4f1f7; border-color: #40819f; }
+.tankazon-store[data-websurf-theme="dark"] .pharmacy-symptom { background: #173946; color: #e4f1f7; border-color: #607e8d; }
+.tankazon-store[data-websurf-theme="dark"] .pharmacy-symptom-checker .small-button.alt { background: #244958; color: #e4f1f7; border-color: #607e8d; }
+.tankazon-store[data-websurf-theme="dark"] :is(.care-text-link, .pharmacy-symptom-text-art) { color: #85d8ff; }
+.tankazon-store[data-websurf-theme="dark"] .stillwater-notice { color: #ffaaa0; }
+:is(.stillwater-page, .pharmacy-symptom-checker) :is(button, input):focus-visible { outline: 3px solid #12a9e5; outline-offset: 3px; }
+@media (max-width: 640px) {
+  .stillwater-page-content { padding: 24px 16px; }
+  .stillwater-page-content > .stillwater-brand { margin: 0 0 22px; }
+  .stillwater-brand img { width: 100px; height: 100px; }
+  .stillwater-intro > p { font-size: 16px; }
+  .stillwater-services { grid-template-columns: 1fr; }
+  .stillwater-services section { gap: 16px; padding: 16px; }
+  .stillwater-consultation { margin: 0; }
+  .stillwater-pricing { gap: 12px; }
+  .stillwater-pricing strong { font-size: 18px; }
+  .stillwater-pricing p { font-size: 14px; }
+  .pharmacy-symptom-checker { margin: 8px; padding: 10px; }
+  .stillwater-dialog-backdrop { padding: 8px; }
+  .stillwater-dialog { gap: 12px; padding: 16px; }
+  .stillwater-dialog-header { gap: 12px; }
+  .stillwater-dialog-header > img { width: 72px; height: 72px; }
+  .stillwater-dialog-header h2 { font-size: 23px; }
+  .stillwater-dialog p { font-size: 14px; }
+  .stillwater-fish-picker label { grid-template-columns: 16px 76px minmax(0, 1fr); gap: 8px; padding: 6px 8px; }
+  .stillwater-fish-thumb { width: 76px; height: 46px; }
+  .stillwater-dialog-actions .small-button { padding: 10px 14px; font-size: 13px; }
+}
+@container pharmacy-checker (max-width: 720px) {
+  .pharmacy-symptoms { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+@container pharmacy-checker (max-width: 380px) {
+  .pharmacy-symptoms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .pharmacy-symptom-text-art { font-size: .66rem; }
 }

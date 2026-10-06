@@ -681,9 +681,6 @@ function completeBoroughTubeTravel(pending, now = Date.now()) {
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
-  runtime.transitTubeBursts.push(
-    { tankId: destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
-  );
   const serviceTank = getTankById(pending.serviceDestinationId);
   const homeTank = getTankById(pending.residenceDestinationId);
   const cause = pending.neededService && serviceTank
@@ -819,13 +816,6 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
           fish.targetXNorm = points.below.xNorm;
           fish.targetYNorm = points.below.yNorm;
           fish.targetAt = now + 60 * 1000;
-          runtime.transitTubeBursts.push({
-            tankId: source.id,
-            decorId: sourceTube.id,
-            mode: "enter",
-            startedAt: now,
-            endsAt: now + 1600
-          });
         }
       } else if (pending.phase === "entering") {
         fish.targetXNorm = points.below.xNorm;

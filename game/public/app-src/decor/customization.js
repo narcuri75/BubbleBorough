@@ -1553,6 +1553,7 @@ function getWebSurfSiteRegistry() {
   return [
     { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
     { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.webp", beginsDiscovered: true, bookmarkable: true },
+    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
@@ -1696,6 +1697,8 @@ function navigateWebSurf(value, options = {}) {
   runtime.webSurfThemesOpen = false;
   updateWebSurfRoute(route.url, options);
   const path = route.path;
+  if (route.site.id !== "stillwater") window.closeStillwaterPage?.();
+  if (route.site.id === "stillwater") return path === "/" ? openStillwaterPage() : showWebSurfRouteError("page-not-found", route.url);
   if (route.site.id === "home") {
     if (path === "/settings") return openWebSurfSettingsPage();
     if (path === "/themes") {
@@ -1743,7 +1746,7 @@ function getWebSurfUrlForDestination(destination) {
     const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     return `bubblebodega.swim/shop/${category}`;
   }
-  return ({ home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
+  return ({ stillwater: "stillwatervet.swim", home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
 }
 
 function closeWebSurfBrowserTab(tab) {
@@ -2225,12 +2228,13 @@ function resetWebSurfToolbarVisibility() {
 }
 
 function normalizeWebSurfSessionPage(value) {
-  return ["home", "themes", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+  return ["home", "themes", "store", "bank", "proteus", "locker", "designer", "stillwater"].includes(value) ? value : "home";
 }
 
 function getActiveWebSurfSessionPage() {
   if (!runtime.storeOverlayOpen) return "";
   if (runtime.settingsOverlayOpen === true) return "settings";
+  if (runtime.stillwaterOpen === true) return "stillwater";
   if (runtime.proteusDesignerOpen === true) return "designer";
   if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
   if (runtime.davyJonesLockerOpen === true) return "locker";
@@ -2241,6 +2245,7 @@ function getActiveWebSurfSessionPage() {
 }
 
 function getWebSurfSessionScrollElement(page) {
+  if (page === "stillwater") return document.getElementById("stillwaterPage");
   if (page === "home") return dom.webHomePage;
   if (page === "themes") return dom.webSurfThemesPage;
   if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
@@ -2344,6 +2349,9 @@ function restoreWebSurfSessionScroll(page) {
 }
 
 function resetWebSurfSessionState() {
+  window.closeStillwaterPage?.();
+  runtime.stillwaterLastEmail = "";
+  runtime.pharmacyQuiz = null;
   runtime.webSurfLastPage = "home";
   runtime.webSurfThemesOpen = false;
   runtime.bubbleBodegaHomeOpen = false;
@@ -2443,6 +2451,7 @@ function closeWebSurfSettingsPage(options = {}) {
 
 function openWebSurfSessionPage() {
   const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "stillwater") return openStillwaterPage();
   if (page === "themes") {
     navigateWebSurf("websurf.swim/themes", { historyMode: "restore" });
     return;
@@ -2508,6 +2517,7 @@ function openStoreOverlay(tab = "food", options = {}) {
   }
 
   if (runtime.storeOverlayOpen) captureWebSurfSessionState();
+  window.closeStillwaterPage?.();
   if (runtime.proteusDesignerOpen === true) closeProteusDesignerSession();
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
@@ -2850,6 +2860,7 @@ function handleWebPageNavigation(event) {
     openDavyJonesLockerPage();
     return;
   }
+  if (destination === "stillwater") { navigateWebSurf("stillwatervet.swim"); return; }
   if (destination === "designer" && runtime.proteusDesignerOpen === true) {
     openProteusDesignerPage();
   }
@@ -3413,10 +3424,22 @@ function hasPlacedCaveSettings(item) {
     return false;
   }
 
-  return Boolean(
-    (item.caveSettings && typeof item.caveSettings === "object")
-    || getAuthoredDecorCaveSettings(item.decorKey)
-  );
+  const authoredSettings = getAuthoredDecorCaveSettings(item.decorKey);
+  if (authoredSettings) return true;
+  if (!item.caveSettings || typeof item.caveSettings !== "object") return false;
+
+  const decor = runtime.decorMap.get(item.decorKey) || runtime.decorMeta[item.decorKey];
+  const profile = decor?.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior;
+  // Older placements copied the same one-entrance/two-seat editor template
+  // into every cave. Recognize that untouched template without discarding
+  // customized coordinates or cave settings explicitly authored in metadata.
+  const hasAuthoredGeometry = (profile?.portals?.length && profile?.insideSlots?.length)
+    || (decor?.path && decor?.bgPath);
+  if (hasAuthoredGeometry
+    && JSON.stringify(sanitizePlacedCaveSettings(item.caveSettings)) === JSON.stringify(sanitizePlacedCaveSettings())) {
+    return false;
+  }
+  return true;
 }
 
 function getPlacedCaveSettings(item) {

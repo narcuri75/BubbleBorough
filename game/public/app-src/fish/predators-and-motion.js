@@ -2063,6 +2063,13 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   if (!blockedX && !blockedY) {
     return;
   }
+  // Cave recovery owns its route and preserves momentum. Ordinary obstacle
+  // resets below would erase velocity before that recovery even runs.
+  if (fish.caveState) {
+    if (resolvedMove.caveInteriorBlocked) recoverFishInsideCave(fish, species, now);
+    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
+    return;
+  }
 
   // Start a recovery from the pose that actually survived collision testing.
   // A previous free-swim velocity otherwise carries into the detour and turns
@@ -2080,12 +2087,6 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     deferFishSchoolFollowForRecovery(fish, now + 900);
   }
 
-  if (fish.caveState) {
-    if (resolvedMove.caveInteriorBlocked) recoverFishInsideCave(fish, species, now);
-    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
-    fish.wallAvoidUntil = now + 220;
-    return;
-  }
 
   if (resolvedMove?.blockingCave) {
     const blocking = resolvedMove.blockingCave;

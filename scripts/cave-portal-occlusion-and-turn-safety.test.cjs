@@ -53,14 +53,14 @@ test("portal exterior clip is a mouth-aligned half-plane, not a whole-sprite alp
 
 test("render order redraws only the exterior portal body after cave front", () => {
   const sandwich = tankSource.slice(
-    tankSource.indexOf('drawDecor(layer, now, { pass: "cave-back"', tankSource.indexOf('for (let layer')),
-    tankSource.indexOf('drawPoops(now, layer);')
+    tankSource.indexOf('drawDecor(layer, now, { pass: "cave-back"'),
+    tankSource.indexOf('function renderTank(')
   );
   const interiorIndex = sandwich.indexOf('caveInteriorOnly: true');
   const frontIndex = sandwich.indexOf('pass: "cave-front"');
   const exteriorIndex = sandwich.indexOf('cavePortalExteriorOverlayOnly: true');
-  const baseIndex = sandwich.indexOf('pass: "base"');
-  assert.ok(interiorIndex >= 0 && frontIndex > interiorIndex && exteriorIndex > frontIndex && baseIndex > exteriorIndex);
+  assert.ok(interiorIndex >= 0 && frontIndex > interiorIndex && exteriorIndex > frontIndex);
+  assert.match(tankSource, /drawCaveLayerScene\(now, layer, decorRenderFrame\)/);
   assert.match(fishRenderSource, /clipContextToFishCavePortalExterior\(tankContext, fish\)/);
   assert.match(fishRenderSource, /!cavePortalExteriorOverlayOnly && !pose\.isDead/);
 });

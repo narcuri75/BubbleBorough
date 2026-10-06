@@ -3,6 +3,7 @@
 // One Node entry for development and hosted use. Physical ownership (/game,
 // /website) intentionally differs from the public URL contract.
 const http = require("node:http");
+const fs = require("node:fs/promises");
 const path = require("node:path");
 const { spawn } = require("node:child_process");
 const website = require("../website/router.cjs");
@@ -96,6 +97,25 @@ function createServer({ debugTools = false, production = process.env.NODE_ENV ==
       return;
     }
     if (pathname === "/sitemap.xml") { send(200, website.sitemap(), mimeTypes[".xml"]); return; }
+    // Opt-in, memory-only playtest. Never serve it in production or load a
+    // player's local/desktop/cloud save into the diagnostic aquarium.
+    if (debugTools && !production && pathname === "/.cave-behavior-audit.html") {
+      void fs.readFile(path.join(gameRoot, "index.html"), "utf8").then(html =>
+        send(200, html.replace('`./public/app.js?v=${appBundleVersion}`', '"/public/cave-behavior-audit.js"'))
+      ).catch(() => send(500, "Could not load cave audit"));
+      return;
+    }
+    if (debugTools && !production && pathname === "/public/cave-behavior-audit.js") {
+      void Promise.all([
+        fs.readFile(path.join(gameRoot, "public/app.js"), "utf8"),
+        fs.readFile(path.join(root, "scripts/cave-behavior-audit-browser.js"), "utf8")
+      ]).then(([app, audit]) => send(200,
+        'getDesktopBridge = () => null; loadState = () => null; saveState = () => {};\n' +
+        'initializeCloudSaveRuntime = async () => { runtime.cloudSession = null; runtime.cloudWritesAllowed = false; runtime.cloudChecked = true; };\n' +
+        app + "\n" + audit, mimeTypes[".js"]
+      )).catch(() => send(500, "Could not load cave audit"));
+      return;
+    }
     // Retire the temporary separate manifest without creating another app ID.
     if (pathname === "/public/play.webmanifest") { redirect("/public/manifest.webmanifest"); return; }
     const file = resolveRequestPath(pathname, debugTools);

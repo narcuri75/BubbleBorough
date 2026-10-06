@@ -464,6 +464,7 @@
                     <button type="button" class="webpage-tab" data-webpage-destination="clearwell" data-websurf-subsidiary-tab="clearwell" hidden><img src="assets/web/proteus/sub/clearwell_logo.webp" alt="" aria-hidden="true" /><span>Clearwell Laboratories</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Clearwell Laboratories tab" title="Close tab">&times;</span></button>
                     <button type="button" class="webpage-tab" data-webpage-destination="commoncurrent" data-websurf-subsidiary-tab="commoncurrent" hidden><img src="assets/web/proteus/sub/common-current_logo.webp" alt="" aria-hidden="true" /><span>Common Current</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Common Current tab" title="Close tab">&times;</span></button>
                     <button type="button" class="webpage-tab" data-webpage-destination="tidewell" data-websurf-subsidiary-tab="tidewell" hidden><img src="assets/web/proteus/sub/tidewell_logo.webp" alt="" aria-hidden="true" /><span>Tidewell</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Tidewell tab" title="Close tab">&times;</span></button>
+                    <button type="button" class="webpage-tab" data-webpage-destination="stillwater" hidden><img src="assets/web/proteus/sub/stillwater-vet_logo.webp" alt="" aria-hidden="true" /><span>Stillwater Vet</span><span class="webpage-tab-close" data-webpage-tab-close role="button" tabindex="0" aria-label="Close Stillwater Vet tab" title="Close tab">&times;</span></button>
                     <button id="webSurfSettingsTab" type="button" class="webpage-tab webpage-tab-settings" data-webpage-destination="settings" data-websurf-temporary-tab="settings" hidden>
 <img data-sprite-src="assets/icons/settings.png" alt="" aria-hidden="true" />
                       <span>Settings</span>
@@ -483,7 +484,7 @@
                     <button id="webSurfBackButton" type="button" data-websurf-browser-action="back" aria-label="Back" title="Back">&#8592;</button>
                     <button id="webSurfForwardButton" type="button" data-websurf-browser-action="forward" aria-label="Forward" title="Forward">&#8594;</button>
                     <button type="button" class="websurf-home-button" data-websurf-browser-action="home" aria-label="WebSurf Home" title="WebSurf Home"><img src="assets/web/websurf/browser_home.png" alt="" aria-hidden="true" /></button>
-                    <label class="websurf-address-field"><span class="sr-only">WebSurf address</span><input id="webSurfAddressInput" type="text" inputmode="url" autocomplete="off" spellcheck="false" aria-label="WebSurf address" /></label>
+                    <div class="websurf-address-field"><input id="webSurfAddressInput" type="text" inputmode="url" autocomplete="off" spellcheck="false" aria-label="WebSurf address" placeholder="Enter an address" /></div>
                     <button id="webSurfBookmarkButton" type="button" data-websurf-browser-action="bookmark" aria-label="Bookmark current page" title="Bookmark current page">&#9734;</button>
                     <button type="button" data-websurf-browser-action="refresh" aria-label="Refresh" title="Refresh">&#8635;</button>
                   </div>
@@ -1085,8 +1086,8 @@
                           <span class="settings-toggle-note">Adjusts decorative bubble density and rise speed.</span>
                         </div>
                         <div class="settings-ambient-bubble-control">
-                          <output id="ambientBubbleLevelOutput" for="ambientBubbleLevelInput">2 · Medium</output>
-                          <input id="ambientBubbleLevelInput" type="range" min="0" max="3" step="1" value="2" aria-label="Ambient bubbles from 0 off to 3 high" />
+                          <output id="ambientBubbleLevelOutput" for="ambientBubbleLevelInput">1 · Light</output>
+                          <input id="ambientBubbleLevelInput" type="range" min="0" max="3" step="1" value="1" aria-label="Ambient bubbles from 0 off to 3 high" />
                           <div class="settings-ambient-bubble-ticks" aria-hidden="true">
                             <span><strong>0</strong><small>Off</small></span>
                             <span><strong>1</strong><small>Light</small></span>
@@ -2101,6 +2102,7 @@
                   </div>
                 </div>
 
+                <div id="inspectorTreatmentGuide" aria-label="Treatment guide" hidden></div>
                 <div id="inspectorLifeStory" class="fish-life-story" aria-label="Fish life and activity"></div>
 
                 <div id="fishInspectorSettings" class="fish-inspector-settings" hidden>

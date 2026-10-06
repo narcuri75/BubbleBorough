@@ -31,7 +31,7 @@ test("fish product price has one visible owner and fake store visit copy is gone
   const shell = read("public/websurf-store.js");
   assert.match(html, /id="tankazonItemPrice"[^>]*hidden/);
   assert.match(html, /id="tankazonItemBuyPrice"/);
-  assert.match(shell, /mainPrice\.hidden = selectedItem\.category === "fish"/);
+  assert.match(shell, /mainPrice\.hidden = selectedItem\.category === "fish" \|\| selectedItem\.category === "pharmacy"/);
   assert.match(shell, /const buyPrice = document\.getElementById\("tankazonItemBuyPrice"\)/);
   assert.doesNotMatch(html, /Visit the [^<]* Store/i);
   assert.doesNotMatch(shell, /Visit the \$\{seller\} Store/);

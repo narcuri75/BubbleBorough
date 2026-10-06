@@ -69,16 +69,17 @@
       }
     },
     "assets/fish/barb__genetics-natural.webp": {
-      "version": "6e884325ca31-v1",
+      "version": "3c6c7e5c228b-v1",
       "files": {
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_black_ruby.png.thumb.webp": "c8da405b03e8ad70c5163272d6409be94725e45a17c36550043666b8e3eea773",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_cherry.png.thumb.webp": "490069d32d8656039d54a7403f7360885f8cf86c63ba83cdc1e380573e86c0c5",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_five_banded.png.thumb.webp": "c5386c8b254e5be3e95f95878fd64f014c8eef7d0eb06b12c2b4fcf857d6b12a",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_black_ruby.png.thumb.webp": "d84cfaaef1b87f50726cccd38548ceb98b74fa3e490111fa0e9883a84954bf2b",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_tiger.png.thumb.webp": "10a85aab0990fb51f8859df8c8e58d3cb2264e73b06176403a63c7228cd30033",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_rosy.png.thumb.webp": "8223c08dfca0631756c8773661199b0031d3866ef12d665c68f180ec2750c228",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_odessa.png.thumb.webp": "416448f1f1921808b4208c1c125ca8a99cea531ca1350f1d06ce95be48df7054",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_green.png.thumb.webp": "a6fa84a3885bc73c5aaa3bcae3ac1209972d0215863c4dbeea41a2448ba5baa2",
         "assets/generated/sprites/fish/barb__genetics-natural/barb_gold.png.thumb.webp": "85bda400ed9ff229bf0e1eaa50bab2c04ebd561a2c9942d329fc3ce412a5ac34",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_green.png.thumb.webp": "cc61bb16d87812fcab2866439435b802d67d15110c01bf33d29e82b9c598732a",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_odessa.png.thumb.webp": "69346b4fb0a14d12f5b93b0f29629be8953bae12ef21441718876b87e5c7d823",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_rosy.png.thumb.webp": "4fa21457c74e784cf476f642ae9be13af94f50ede547525aa7dc299cfdab4ab3",
-        "assets/generated/sprites/fish/barb__genetics-natural/barb_tiger.png.thumb.webp": "025feab00ff6dc24c6e2fec85067e8b345dce3ae4efd8114ec81365e1b6d955e"
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_five_banded.png.thumb.webp": "0cdc055b69321d0ba5b53eb022001969078a9367624382a5a1450767afefb92f",
+        "assets/generated/sprites/fish/barb__genetics-natural/barb_cherry.png.thumb.webp": "b06c9f96f8a8f8d3d163c69166345119ca809ca923c8f02d527f75c2f61f55d1",
+        "assets/generated/sprites/fish/barb__genetics-natural/silver-barb.png.thumb.webp": "e0327b255275aeff6b8bff640e0ba2ec9ce8b873f12a4fad941089b0ca317347"
       }
     },
     "assets/fish/basslets-grammas__genetics-natural.webp": {
@@ -723,16 +724,17 @@
       }
     },
     "assets/fish/small_fish/barb__genetics-natural.webp": {
-      "version": "afd702e1b4c2-v1",
+      "version": "388d999a4ee3-v1",
       "files": {
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_black_ruby.png.thumb.webp": "dd4ebbd292aa65d41a07781b9c6f80f89c64044b4e804d078b003732db4b711f",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_cherry.png.thumb.webp": "88a7f3153d4cb28649d4ed98f009b9067215baca316c7a37b9fc01ee4bd7d9cc",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_five_banded.png.thumb.webp": "1093589d4028e0b122fb97026955456ec374b745896e736daabfe553dd9f89cc",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_gold.png.thumb.webp": "6cf92550e900841edf30941e50cd3af76fa84a0cc0bcdab426dcf24760234d5d",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_green.png.thumb.webp": "d26256e7cb03f937cbdf9439f95e21bece5485461e2faf3d1ca54953fc82c51e",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_odessa.png.thumb.webp": "e681abde015005656bcb427fa37e73b07ff1597942bc562bb0a91c4c347952b8",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_rosy.png.thumb.webp": "becc30e87c223cb36289e2afe6ecaa04b5aeeb0a63323330d4f14f5219bb69a1",
-        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_tiger.png.thumb.webp": "8d3a7d8c75cf85326cb1c9316f5e878c2df6147587e15bd2553ba8f29fb2adcd"
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_black_ruby.png.thumb.webp": "1000d37bd94cc08924736b8a981669de10d89279ff026754ed95df6427cfa102",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_tiger.png.thumb.webp": "11e3db3d80d7c283ba05f8367501cc02247461cee1b372b5e88149c2ba1739cc",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_rosy.png.thumb.webp": "91e90f0c9b558b2ac262167116fab6c083c87750293edaf1ae4e0092aeffe200",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_odessa.png.thumb.webp": "0dd9a5d1e276e6108e7c0298db3f358b5c9da3e5a46ab7cd8182a47233b49182",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_green.png.thumb.webp": "fc47e155740672f6108a494a65477ad414b7147439a55d1b07d1b7bb2dcd0f37",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_gold.png.thumb.webp": "7e078be252ba78d4cdc43a77727869f7325146ce8a035cfd9e9abaeb276ca232",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_five_banded.png.thumb.webp": "1f847743df2196364247d75c95e1e063cb4f90a0830b19daf2cf4597a318a766",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/barb_cherry.png.thumb.webp": "08005f3f2ece70d71554c1c953a3295903e59562cbeb98be197961db6c2a4ce0",
+        "assets/generated/sprites/fish/small_fish/barb__genetics-natural/silver-barb.png.thumb.webp": "5804959f44bce914c095f210512265fd9cf15b128ad9ea61ea422129dd64daab"
       }
     },
     "assets/fish/small_fish/basslets-grammas__genetics-natural.webp": {
@@ -1616,6 +1618,17 @@
       "files": {
         "assets/generated/sprites/tank-frame/top-bottom/tank_frame_top.png.thumb.webp": "b182c417214346bd6d9f8700df77a930703f0cf3e99cc65fae4241508a2c7818",
         "assets/generated/sprites/tank-frame/top-bottom/tank_frame_bottom.png.thumb.webp": "7dcff08888d6ab7a86e85c9c2568aa4e231f0f355d054f40b1642c0e087e0187"
+      }
+    },
+    "assets/web/bodega/symptom-tiles.webp": {
+      "version": "45534867b6a2-v1",
+      "files": {
+        "assets/generated/sprites/web/bodega/symptom-tiles/spots_symptoms.png.thumb.webp": "db8f261843972a99b58f201830cb20a4a179e348e385713df7713f827a946f70",
+        "assets/generated/sprites/web/bodega/symptom-tiles/lesions_symptoms.png.thumb.webp": "8cd96022c84aa1d632a0952c6afb179adffde997003c6cff88f7b5c110ab446b",
+        "assets/generated/sprites/web/bodega/symptom-tiles/cuts_symptoms.png.thumb.webp": "0bc6502f3ed08411530bead49e591c7c7cda02f4f822d9b879071cc94a9d25f9",
+        "assets/generated/sprites/web/bodega/symptom-tiles/faded-color_symptoms.png.thumb.webp": "bd7c646404d9ab26d2d91906003d9538b0718bebc0548e47534c1c22935aff5f",
+        "assets/generated/sprites/web/bodega/symptom-tiles/strange-behavior_symptoms.png.thumb.webp": "54da66c8738ca5a4cf1d7c3812934a03fb7a0329d9e6cab188db477b515479f7",
+        "assets/generated/sprites/web/bodega/symptom-tiles/panic_symptoms.png.thumb.webp": "f1e7ebeae567c65ea5af0f82c2686b33fa0cfe84072973378845f9c9b9fb265d"
       }
     },
     "assets/web/davy/fish/bioluminescent-angler-pike__genetics-enhanced.webp": {

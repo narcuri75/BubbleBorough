@@ -92,7 +92,7 @@ test("a blocked fish holds its depth and bounds escape searches under sustained 
   const c = vm.createContext({ Math, Number, WeakMap, clamp, runtime: {},
     sanitizeTankDepthZ: z => z, getTankDepthZFromLegacyPosition: () => 0.49,
     getFishTankLayer: () => 3, getFishTankSubLayer: () => 3,
-    getDesiredFishTankDepthZ: f => f.desiredZ, getFishPose: () => ({}),
+    getDesiredFishTankDepthZ: f => f.desiredZ, getFishContinuousDepthCollisionPose: () => ({}),
     canFishOccupyContinuousDepth: () => false,
     findFishContinuousDepthEscape: () => { probes++; return null; } });
   load(c, "fish/caves-and-collision.js", ["syncFishContinuousDepth"]);

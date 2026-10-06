@@ -276,6 +276,9 @@ function createFishRecord(speciesId, options = {}) {
     pairBondMourningUntil: Number.isFinite(Number(options.pairBondMourningUntil)) ? Math.max(0, Number(options.pairBondMourningUntil)) : 0,
     veryLowComfortStartedAt: 0,
     veryLowComfortEventDayKey: "",
+    treatmentCourses: {},
+    careKnowledge: {},
+    injuryEpisodeAt: 0,
     diseaseState: DISEASE_STATE_NONE,
     diseaseType: "",
     diseaseInfectedAt: 0,
@@ -503,7 +506,10 @@ function shiftFishStoragePausedTimestamp(fish, key, pauseMs) {
 function resumeFishFromStorageState(fish, now = Date.now()) {
   if (!fish) return 0;
   const storedAt = Number.isFinite(Number(fish.storedAt)) ? Number(fish.storedAt) : now;
+  const knownDiseaseEpisode = fish.careKnowledge?.disease?.episode;
+  const diseaseEpisodeBeforePause = fish.careKnowledge?.disease ? getFishCareEpisode(fish, "disease") : "";
   const pauseMs = Math.max(0, now - storedAt);
+  if (fish.treatmentCourses) shiftFishTreatmentTimes(fish, pauseMs);
   for (const key of [
     "birthAt", "tankAddedAt", "growthStartedAt", "growthEndsAt", "lastAteAt", "satiatedUntil",
     "breedCooldownUntil", "diseaseInfectedAt", "diseaseTreatedUntil", "temporaryImmunityUntil",
@@ -513,6 +519,7 @@ function resumeFishFromStorageState(fish, now = Date.now()) {
   ]) {
     shiftFishStoragePausedTimestamp(fish, key, pauseMs);
   }
+  if (knownDiseaseEpisode && knownDiseaseEpisode === diseaseEpisodeBeforePause) fish.careKnowledge.disease.episode = getFishCareEpisode(fish, "disease");
   fish.needsUpdatedAt = now;
   if ((Number(fish.diseaseLastProgressAt) || 0) > 0) fish.diseaseLastProgressAt = now;
   if ((Number(fish.injuryRecoveryProgressMs) || 0) > 0) fish.injuryRecoveryLastAt = now;

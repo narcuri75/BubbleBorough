@@ -39,6 +39,7 @@ function renderUi(now, options = {}) {
     });
     // The BubbleBodega shell is a regular script while this application is an
     // ES module. Keep its product-fit view data-only and narrowly scoped.
+    window.getBubbleBodegaMedicineCareProfile = getBubbleBodegaMedicineCareProfile;
     window.getBubbleBodegaFishCareProfile = (speciesId, appearanceVariantKey = "") => {
       const species = runtime.fishMap.get(String(speciesId || ""));
       if (!species) return null;
@@ -884,6 +885,7 @@ function renderStoreOverlay() {
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
   const showingSettings = runtime.settingsOverlayOpen === true;
+  const showingStillwater = runtime.stillwaterOpen === true;
   const showingBodegaHome = runtime.bubbleBodegaHomeOpen === true
     && !showingHome && !showingThemes && !showingBank && !showingLocker && !showingDesigner && !showingSettings;
   const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
@@ -909,6 +911,7 @@ function renderStoreOverlay() {
     && !showingLocker
     && !showingDesigner
     && !showingSettings
+    && !showingStillwater
     && !showingRouteError
     && (bubbleBodegaSearchView?.active === true || bubbleBodegaSearchView?.allCategories === true)
   );
@@ -942,7 +945,7 @@ function renderStoreOverlay() {
   dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
   dom.storeOverlay.classList.toggle("is-web-settings-open", runtime.storeOverlayOpen && showingSettings);
   dom.storeOverlay.classList.toggle("is-websurf-route-error", runtime.storeOverlayOpen && showingRouteError);
-  dom.storeOverlay.setAttribute("aria-label", routeError ? "WebSurf address error" : showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingThemes ? "WebSurf Themes Store" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  dom.storeOverlay.setAttribute("aria-label", routeError ? "WebSurf address error" : showingStillwater ? "Stillwater Veterinary Telehealth" : showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingThemes ? "WebSurf Themes Store" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
   if (dom.webSurfRouteErrorPage) {
     dom.webSurfRouteErrorPage.hidden = !runtime.storeOverlayOpen || !routeError;
     if (runtime.storeOverlayOpen && routeError) {
@@ -1011,7 +1014,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingThemes && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingThemes && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && !showingStillwater && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -1029,21 +1032,22 @@ function renderStoreOverlay() {
 
   if (!searchOwnsBubbleBodegaCatalog) {
     if (dom.foodShop) {
-      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
+      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingFood;
     }
     if (dom.pharmacyShop) {
-      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
+      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingPharmacy;
     }
-    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
-    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
+    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingFish;
+    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingDecor;
     if (dom.equipmentShop) {
-      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
+      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingEquipment;
     }
   }
   const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
-  const fallbackStandardWebPage = showingProteus ? "proteus" : showingThemes ? "themes" : showingHome ? "home" : showingBank ? "bank" : "store";
+  const fallbackStandardWebPage = showingStillwater ? "stillwater" : showingProteus ? "proteus" : showingThemes ? "themes" : showingHome ? "home" : showingBank ? "bank" : "store";
   const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
   const activeWebPage = showingSettings ? "settings" : showingDesigner ? "designer" : activeStandardWebPage;
+  renderFishCareWebSurfaces();
   window.syncWebPageTabs?.(activeWebPage);
   if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();

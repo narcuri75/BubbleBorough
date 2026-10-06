@@ -20,6 +20,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
   }
 
   const candidates = collectCaveBehaviorPlansForFish(fish, now).filter((plan) => {
+    if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)) return false;
     const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
     return !item
       || getFishResidenceDecorId(fish) === plan.decorId
@@ -429,6 +430,8 @@ function completeFishCaveEntryArrival(fish, species, decorItem, plan, now = Date
   plan.normalInsideMode = hasEntrySeat ? "seat-hold" : null;
   plan.normalTargetPoint = null;
   plan.normalSeatPoint = shouldHoldEntrySeat && plan.inside ? { ...plan.inside } : null;
+  // Travel time is not time spent enjoying the shelter.
+  fish.caveInsideUntil = now + Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000);
   plan.normalSeatHoldUntil = hasEntrySeat
     ? Math.max(Number(fish.caveInsideUntil) || 0, now + randomBetween(CAVE_NORMAL_SEAT_HOLD_MIN_MS, CAVE_NORMAL_SEAT_HOLD_MAX_MS))
     : null;
@@ -1286,6 +1289,10 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   if (!fish || !species || !decorItem || !plan || !mouthNode) {
     return false;
   }
+  // A seat that cannot finish settling must not trap its occupant forever.
+  if (Number.isFinite(fish.caveInsideUntil) && now >= fish.caveInsideUntil) {
+    return beginFishNormalCaveExit(fish, plan, mouthNode, now);
+  }
 
   const currentPoint = {
     xNorm: clamp(fish.xNorm, 0.08, 0.92),
@@ -1580,12 +1587,18 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   return chooseNextAction();
 }
 
-function getCaveDepthRegions(plan) {
+function getCaveDepthRegions(plan, decorItem = null, fish = null) {
   const frontLayer = clampTankLayer(plan?.frontLayer ?? DEFAULT_TANK_LAYER);
   const backLayer = clampTankLayer(plan?.backLayer ?? frontLayer);
-  const front = getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
-  const interior = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
-  const rear = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
+  const interior = decorItem ? getPlacedDecorDepthZ(decorItem)
+    : getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
+  const clearance = decorItem
+    ? getPlacedDecorDepthRadius(decorItem) + getFishTankDepthRadius(fish) + 0.003
+    : 0;
+  const front = decorItem ? sanitizeTankDepthZ(interior + clearance)
+    : getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
+  const rear = decorItem ? sanitizeTankDepthZ(interior - clearance)
+    : getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
   return { front, interior, rear };
 }
 
@@ -1634,7 +1647,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     ? getDebugCaveSeatSequence(decorItem, fish, species, now, plan.inside || plan.mouth || plan.approach)
     : [];
 
-  const depthRegions = getCaveDepthRegions(plan);
+  const depthRegions = getCaveDepthRegions(plan, decorItem, fish);
   runtime.activeFishCavePlans.set(fish.id, {
     decorId: plan.decorId,
     portalId: plan.portalId,
@@ -1645,6 +1658,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
       : null,
     configuredPoints: plan.configuredPoints === true,
     swimmable,
+    lingerMs: Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000),
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),
     backLayer: clampTankLayer(plan.backLayer),
@@ -1875,6 +1889,10 @@ function recoverFishInsideCave(fish, species, now) {
   const plan = getActiveFishCavePlan(fish);
   const decor = plan && getCaveBehaviorDecorById(plan.decorId);
   if (!plan || !decor) return false;
+  // Both braking and replanning are rate-limited. Damping every animation
+  // frame makes the recovery target impossible to reach.
+  if (now < (Number(plan.collisionRetryAt) || 0)) return true;
+  plan.portalFacingHold = null;
   // A blocked path should shed momentum, not erase it in one frame. Retaining
   // a small fraction lets the replanned route inherit the actual approach
   // direction without letting the fish keep pressing through a solid wall.
@@ -1886,7 +1904,6 @@ function recoverFishInsideCave(fish, species, now) {
   }
   // Collision recovery never changes depth or grants passage through a wall.
   // Replanning is rate-limited because mask route searches are expensive.
-  if (now < (Number(plan.collisionRetryAt) || 0)) return true;
   const progressed = Math.hypot(fish.xNorm - (plan.collisionLastX ?? fish.xNorm),
     fish.yNorm - (plan.collisionLastY ?? fish.yNorm)) > 0.012;
   plan.collisionFailures = progressed ? 1 : (Number(plan.collisionFailures) || 0) + 1;
@@ -2068,6 +2085,21 @@ function enforceActiveCaveMaskRule(fish, species, now = Date.now()) {
   return recoverFishInsideCave(fish, species, now);
 }
 
+function updateFishCaveTransitProgress(fish, plan, now = Date.now()) {
+  if (fish.caveState === "inside" && plan.normalInsideMode === "seat-hold") return false;
+  const distance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
+  const key = `${fish.caveState}|${fish.cavePathIndex ?? ""}|${plan.normalPathIndex ?? ""}|${fish.cavePortalCrossingNodeIndex ?? ""}`;
+  const progress = plan.transitProgress;
+  if (!progress || progress.key !== key || distance < progress.distance - 0.003) {
+    plan.transitProgress = { key, distance, at: now };
+    return false;
+  }
+  if (now - progress.at < 8000) return false;
+  // Refresh the checkpoint before recovery so one stall cannot replan each frame.
+  plan.transitProgress = { key, distance, at: now };
+  return true;
+}
+
 function updateFishCaveBehavior(fish, species, now = Date.now()) {
   if (!fish?.caveState || !fish.caveDecorId || species?.behavior === "sucker" || fish.activity !== "roam") {
     return false;
@@ -2086,6 +2118,27 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
   }
   const debugForcedPlan = Boolean(plan.debugForced) && isDebugCaveTestFish(fish);
   const debugTestLoop = Boolean(plan.debugTestLoop) && isDebugCaveTestFish(fish);
+  if (!debugTestLoop && updateFishCaveTransitProgress(fish, plan, now)) {
+    if (fish.caveState === "portal-enter") {
+      // Back out along the physical portal route when a crossing is blocked.
+      // Cancellation preserves position and starts the existing exit controller.
+      abortFishCaveBehavior(fish, now, true);
+      return true;
+    }
+    if (["approach", "align", "leave"].includes(fish.caveState)) {
+      if (fish.caveState === "leave") {
+        releaseFishFromCaveWithMomentum(fish, species, plan, now);
+      } else {
+        abortFishCaveBehavior(fish, now, true);
+        fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
+        fish.targetAt = now;
+      }
+      return false;
+    }
+    if (["enter", "inside", "exit", "depart"].includes(fish.caveState)) {
+      recoverFishInsideCave(fish, species, now);
+    }
+  }
 
   const triggerRegion = getActiveFishCaveTriggerRegion(fish);
   let seatRegion = getActiveFishCaveSeatRegion(fish);
@@ -2148,6 +2201,18 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_FRONT, TANK_SUBLAYER_FRONT);
     if (reachedTrigger || stalledAtTrigger) {
+      // Reaching the mouth in XY does not authorize crossing from behind the
+      // shell. First reach the exterior depth through a collision-cleared route.
+      if (getFishTankDepthZ(fish) < getFishCaveDepthRegion(fish, "front") - 0.003) return true;
+      // Validate the planned facing before asking for the compact mouth turn.
+      // Testing only the old facing can deadlock an otherwise legal entrance.
+      const entryDirection = getFishCavePortalDesiredDirection(fish, plan, "enter");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, entryDirection)) {
+        fish.targetXNorm = mouthNode.xNorm;
+        fish.targetYNorm = mouthNode.yNorm;
+        return true;
+      }
+      if (!prepareFishCavePortalFacing(fish, species, plan, "enter", now)) return true;
       // Crossing depth is legal only where the whole body fits the opening.
       // A stall timer cannot authorize passage through the solid rim.
       if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
@@ -2166,9 +2231,6 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
         );
         setFishDesiredTankLayer(fish, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER));
         fish.targetAt = now + 900;
-        return true;
-      }
-      if (!prepareFishCavePortalFacing(fish, species, plan, "enter", now)) {
         return true;
       }
       fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
@@ -2266,19 +2328,19 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
         return true;
       }
 
-      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+      const exitDirection = getFishCavePortalDesiredDirection(fish, plan, "exit");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, exitDirection)) {
         fish.targetXNorm = mouthNode.xNorm;
         fish.targetYNorm = mouthNode.yNorm;
         return true;
       }
+      if (!prepareFishCavePortalFacing(fish, species, plan, "exit", now)) return true;
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) return true;
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
       if (!debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER), mouthPose)) {
         fish.targetAt = now + 900;
-        return true;
-      }
-      if (!prepareFishCavePortalFacing(fish, species, plan, "exit", now)) {
         return true;
       }
       fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
@@ -2302,7 +2364,8 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_MIDDLE, TANK_SUBLAYER_MIDDLE);
     if (reachedMouth) {
-      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+      const exitDirection = getFishCavePortalDesiredDirection(fish, plan, "exit");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, exitDirection)) {
         fish.targetXNorm = plan.mouth.xNorm;
         fish.targetYNorm = plan.mouth.yNorm;
         return true;
@@ -5040,6 +5103,13 @@ function canFishOccupyContinuousDepth(fish, species, now, pose, z, fromZ = z) {
     && getOverlappingFishForLayerChange(fish, species, now, pose, collisionOptions).length === 0;
 }
 
+function getFishContinuousDepthCollisionPose(fish, species, now) {
+  // A turning sprite can temporarily be edge-on. Its visual compression must
+  // not grant permission for the full body to cross an opaque decor plane.
+  const pose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
+  return { ...pose, bodyScaleX: Math.max(1, Number(pose.bodyScaleX) || 1) };
+}
+
 function findFishContinuousDepthEscape(fish, species, now, pose, currentZ, preferredDirection) {
   const directions = preferredDirection >= 0 ? [1, -1] : [-1, 1];
   for (const distance of [0.08, 0.14, 0.2]) {
@@ -5075,7 +5145,7 @@ function syncFishContinuousDepth(fish, species, now) {
   const elapsedSeconds = clamp((now - previousAt) / 1000, 0, 0.12);
   fish.depthMotionUpdatedAt = now;
   const candidateZ = currentZ + Math.sign(difference) * Math.min(Math.abs(difference), Math.max(0.002, elapsedSeconds * 0.18));
-  const pose = getFishPose(fish, species, now);
+  const pose = getFishContinuousDepthCollisionPose(fish, species, now);
   const depthProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const depthClear = canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ, currentZ);
   if (runtime.debugFrameProfilerEnabled) endDebugFrameProfilerSection("depthCollision", depthProfileStartedAt);
@@ -5158,7 +5228,15 @@ function syncFishDrawLayer(fish, species, now) {
     const elapsedSeconds = clamp((now - (Number(fish.caveDepthUpdatedAt) || now)) / 1000, 0, 0.12);
     fish.caveDepthUpdatedAt = now;
     const maxStep = Math.max(0.002, elapsedSeconds * 0.2);
-    fish.z = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    const candidateZ = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    if (candidateZ !== currentZ) {
+      const pose = getFishContinuousDepthCollisionPose(fish, species, now);
+      if (canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ, currentZ)) {
+        fish.z = candidateZ;
+      } else {
+        fish.depthMotionBlockedAt = now;
+      }
+    }
     fish.desiredZ = targetZ;
     if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;

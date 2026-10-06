@@ -13,7 +13,8 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 67;
+const STATE_VERSION = 68;
+window.closeStillwaterPage = closeStillwaterPage;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -547,7 +548,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "bottom-graze", preferredY: 0.76, verticalSpread: 0.18,
     targetDistanceMin: 0.05, targetDistanceMax: 0.22, headingPersistence: 0.28,
     hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2800, schoolStrength: 0.05,
-    structureAffinity: 1.7, caveAffinity: 0.1, homeRangeStrength: 0.18, homeRangeRadius: 0.2,
+    structureAffinity: 1.7, caveAffinity: 0.9, homeRangeStrength: 0.18, homeRangeRadius: 0.2,
     startleStrength: 1.25, startleRecoveryScale: 0.82, turnDurationScale: 0.86,
     speedMinBlend: 0.18, speedMaxBlend: 0.54, dartChance: 0.05, dartSpeedMinBlend: 0.72,
     targetDurationScale: 1.18
@@ -556,7 +557,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "bottom-graze", preferredY: 0.75, verticalSpread: 0.2,
     targetDistanceMin: 0.05, targetDistanceMax: 0.24, headingPersistence: 0.3,
     hoverChance: 0.3, hoverMinMs: 900, hoverMaxMs: 2900, schoolStrength: 0.04,
-    structureAffinity: 1.8, caveAffinity: 0.12, homeRangeStrength: 0.16, homeRangeRadius: 0.22,
+    structureAffinity: 1.8, caveAffinity: 1.2, homeRangeStrength: 0.16, homeRangeRadius: 0.22,
     startleStrength: 1.25, startleRecoveryScale: 0.84, turnDurationScale: 0.86,
     speedMinBlend: 0.18, speedMaxBlend: 0.56, dartChance: 0.05, dartSpeedMinBlend: 0.72,
     targetDurationScale: 1.2
@@ -579,6 +580,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMinBlend: 0, speedMaxBlend: 0.08, dartChance: 0,
     targetDurationScale: 2.7
   }),
+  "tang": createFishLocomotionProfile({ caveAffinity: 0.28 }),
   "blue-tang": createFishLocomotionProfile({
     movementPattern: "open-water-cruise", preferredY: 0.48, verticalSpread: 0.74,
     targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
@@ -598,7 +600,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "fast-school-cruise", preferredY: 0.45, verticalSpread: 0.66,
     targetDistanceMin: 0.36, targetDistanceMax: 0.74, headingPersistence: 0.84,
     hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
-    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
+    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72, caveAffinity: 0.22,
     startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
     speedMaxBlend: 1, targetDurationScale: 0.82, cruiseWaypointScale: 1.2
   }),
@@ -606,7 +608,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
     targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
-    structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
+    structureAffinity: 0.88, caveAffinity: 0.38, startleStrength: 0.98, turnDurationScale: 0.88,
     speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9,
     cruiseWaypointScale: 1.16
   }),
@@ -614,7 +616,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
     targetDistanceMin: 0.18, targetDistanceMax: 0.48, headingPersistence: 0.5,
     hoverChance: 0.08, schoolStrength: 0.34, schoolSpacingScale: 1.05,
-    structureAffinity: 1.15, startleStrength: 0.92, turnDurationScale: 1.02,
+    structureAffinity: 1.15, caveAffinity: 0.55, startleStrength: 0.92, turnDurationScale: 1.02,
     speedMinBlend: 0.3, speedMaxBlend: 0.76
   }),
   "livebearer": createFishLocomotionProfile({
@@ -637,14 +639,14 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "area-forage", preferredY: 0.58, verticalSpread: 0.76,
     targetDistanceMin: 0.16, targetDistanceMax: 0.42, headingPersistence: 0.42,
     hoverChance: 0.13, hoverMinMs: 900, hoverMaxMs: 2300, schoolStrength: 0.18,
-    structureAffinity: 1.04, startleStrength: 0.86, turnDurationScale: 1.2,
+    structureAffinity: 1.04, caveAffinity: 0.24, startleStrength: 0.86, turnDurationScale: 1.2,
     speedMinBlend: 0.08, speedMaxBlend: 0.58, targetDurationScale: 1.12
   }),
   "betta": createFishLocomotionProfile({
     movementPattern: "deliberate-hover", preferredY: 0.42, verticalSpread: 0.58,
     targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.36,
     hoverChance: 0.26, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0,
-    structureAffinity: 1.72, caveAffinity: 0.42, homeRangeStrength: 0.45,
+    structureAffinity: 1.72, caveAffinity: 1.5, homeRangeStrength: 0.45,
     homeRangeRadius: 0.2, startleStrength: 1.08, startleRecoveryScale: 1.05,
     turnDurationScale: 1.42, speedMinBlend: 0.04, speedMaxBlend: 0.48,
     targetDurationScale: 1.22
@@ -653,7 +655,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "graceful-cruise", preferredY: 0.48, verticalSpread: 0.6,
     targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
     hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
-    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
+    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.55,
     startleStrength: 1.02, turnDurationScale: 1.5, accelerationScale: 0.72,
     decelerationScale: 0.78, turnRateScale: 0.72, turnRadiusScale: 1.28,
     verticalSteeringLimit: 0.72, coastBias: 0.68, propulsionFrequency: 0.78,
@@ -665,7 +667,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.14, targetDistanceMax: 0.38, headingPersistence: 0.44,
     hoverChance: 0.3, hoverMinMs: 1300, hoverMaxMs: 3400, schoolStrength: 0.56,
     schoolSpacingScale: 1.16, schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.75,
-    structureAffinity: 1.2, startleStrength: 1.2, startleRecoveryScale: 1.22,
+    structureAffinity: 1.2, caveAffinity: 0.5, startleStrength: 1.2, startleRecoveryScale: 1.22,
     turnDurationScale: 1.55, speedMinBlend: 0.02, speedMaxBlend: 0.4,
     targetDurationScale: 1.28
   }),
@@ -673,7 +675,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "slow-area-forage", preferredY: 0.58, verticalSpread: 0.62,
     targetDistanceMin: 0.08, targetDistanceMax: 0.26, headingPersistence: 0.3,
     hoverChance: 0.24, hoverMinMs: 1200, hoverMaxMs: 3100, schoolStrength: 0.12,
-    structureAffinity: 1.12, startleStrength: 0.66, startleRecoveryScale: 1.12,
+    structureAffinity: 1.12, caveAffinity: 0.24, startleStrength: 0.66, startleRecoveryScale: 1.12,
     turnDurationScale: 1.6, speedMinBlend: 0, speedMaxBlend: 0.3,
     targetDurationScale: 1.3
   }),
@@ -816,7 +818,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.14, targetDistanceMax: 0.42, headingPersistence: 0.46,
     hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.68,
     schoolSpacingScale: 0.8, schoolDurationScale: 1.45, schoolVerticalJitterScale: 0.62,
-    structureAffinity: 0.98, startleStrength: 1.3, startleRecoveryScale: 1.12,
+    structureAffinity: 0.98, caveAffinity: 0.6, startleStrength: 1.3, startleRecoveryScale: 1.12,
     turnDurationScale: 0.86, speedMinBlend: 0.08, speedMaxBlend: 0.48,
     targetDurationScale: 1.18
   }),
@@ -832,7 +834,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "precision-hover", preferredY: 0.5, verticalSpread: 0.58,
     targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.34,
     hoverChance: 0.36, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0,
-    structureAffinity: 1.3, caveAffinity: 0.4, startleStrength: 0.78,
+    structureAffinity: 1.3, caveAffinity: 0.7, startleStrength: 0.78,
     startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
@@ -1780,7 +1782,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   ratioLockFrameEnabled: true,
   layoutRatioLockWidth: 0,
   layoutRatioLockHeight: 0,
-  ambientBubbleLevel: 2,
+  ambientBubbleLevel: 1,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
   decorShadowsEnabled: true,
@@ -2094,7 +2096,7 @@ const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
 const AMBIENT_BUBBLE_COUNT = 30;
 const AMBIENT_BUBBLE_LEVEL_MIN = 0;
 const AMBIENT_BUBBLE_LEVEL_MAX = 3;
-const AMBIENT_BUBBLE_LEVEL_DEFAULT = 2;
+const AMBIENT_BUBBLE_LEVEL_DEFAULT = 1;
 const AMBIENT_BUBBLE_LEVEL_PROFILES = Object.freeze({
   0: Object.freeze({ count: 0, speedMultiplier: 0, label: "Off" }),
   1: Object.freeze({ count: 8, speedMultiplier: 0.55, label: "Light" }),
@@ -3570,7 +3572,7 @@ const FISH_TYPES = [
       "Misty",
       "Finn"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -3649,7 +3651,7 @@ const FISH_TYPES = [
       "Scooter",
       "Waffles"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -3854,7 +3856,7 @@ const FISH_TYPES = [
       "Titan",
       "Majesty"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4043,7 +4045,7 @@ const FISH_TYPES = [
       "Starlight",
       "Mirage"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4153,7 +4155,7 @@ const FISH_TYPES = [
       "Waffles",
       "Dumpling"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4337,7 +4339,7 @@ const FISH_TYPES = [
       "Nova",
       "Luster"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4433,7 +4435,7 @@ const FISH_TYPES = [
       "Corona",
       "Mirage"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4532,7 +4534,7 @@ const FISH_TYPES = [
       "Soot",
       "Gloom"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5047,7 +5049,7 @@ const FISH_TYPES = [
       "Winnie",
       "Sprinkles"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5158,7 +5160,7 @@ const FISH_TYPES = [
       "Bandit",
       "Jett"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5229,7 +5231,7 @@ const FISH_TYPES = [
       "Jaws",
       "Slash"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -6120,7 +6122,7 @@ const FISH_TYPES = [
       "Bean",
       "Noodle"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [
         "plants"
@@ -6197,7 +6199,7 @@ const FISH_TYPES = [
       "Nori",
       "Bean"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [
         "plants"
@@ -6931,7 +6933,8 @@ const FISH_TYPES = [
       "/assets/fish/barb_green.png",
       "/assets/fish/barb_odessa.png",
       "/assets/fish/barb_rosy.png",
-      "/assets/fish/barb_tiger.png"
+      "/assets/fish/barb_tiger.png",
+      "/assets/fish/silver-barb.png"
     ],
     "variantLabels": [
       "Barb Black Ruby",
@@ -6941,7 +6944,8 @@ const FISH_TYPES = [
       "Barb Green",
       "Barb Odessa",
       "Barb Rosy",
-      "Barb Tiger"
+      "Barb Tiger",
+      "Silver Barb"
     ],
     "careRequirements": {
       "waterType": "freshwater",
@@ -13270,7 +13274,6 @@ const runtime = {
   boroughOverviewInfoView: "overview",
   boroughOverviewInfoTankId: null,
   boroughOverviewDragPointerId: null,
-  transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
   pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
@@ -14382,7 +14385,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       kicker: "Pharmacy",
       title: "Medicine Inventory",
       body: renderMedicineInventoryOverlay(),
-      footer: `<div class="mini-note">Select a medicine, then click the tank to use one dose on the whole tank.</div>`,
+      footer: `<div class="mini-note">Select a medicine, then click the fish to give one drop. Calming Serum treats the whole tank. Hover a medicine for its treatment instructions.</div>`,
       closable: true
     }),
     onBodyClick: handleMedicineUtilityOverlayBodyClick
@@ -15751,9 +15754,6 @@ function completeBoroughTubeTravel(pending, now = Date.now()) {
   if (runtime.foodTravelDestinations.get(fish.id) === destination.id) {
     runtime.foodTravelDestinations.delete(fish.id);
   }
-  runtime.transitTubeBursts.push(
-    { tankId: destination.id, decorId: targetTube.id, mode: "exit", startedAt: now, endsAt: now + 1600 }
-  );
   const serviceTank = getTankById(pending.serviceDestinationId);
   const homeTank = getTankById(pending.residenceDestinationId);
   const cause = pending.neededService && serviceTank
@@ -15889,13 +15889,6 @@ function processPendingNeighborhoodTravel(now = Date.now()) {
           fish.targetXNorm = points.below.xNorm;
           fish.targetYNorm = points.below.yNorm;
           fish.targetAt = now + 60 * 1000;
-          runtime.transitTubeBursts.push({
-            tankId: source.id,
-            decorId: sourceTube.id,
-            mode: "enter",
-            startedAt: now,
-            endsAt: now + 1600
-          });
         }
       } else if (pending.phase === "entering") {
         fish.targetXNorm = points.below.xNorm;
@@ -20374,6 +20367,7 @@ function getWebSurfSiteRegistry() {
   return [
     { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
     { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.webp", beginsDiscovered: true, bookmarkable: true },
+    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
@@ -20517,6 +20511,8 @@ function navigateWebSurf(value, options = {}) {
   runtime.webSurfThemesOpen = false;
   updateWebSurfRoute(route.url, options);
   const path = route.path;
+  if (route.site.id !== "stillwater") window.closeStillwaterPage?.();
+  if (route.site.id === "stillwater") return path === "/" ? openStillwaterPage() : showWebSurfRouteError("page-not-found", route.url);
   if (route.site.id === "home") {
     if (path === "/settings") return openWebSurfSettingsPage();
     if (path === "/themes") {
@@ -20564,7 +20560,7 @@ function getWebSurfUrlForDestination(destination) {
     const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     return `bubblebodega.swim/shop/${category}`;
   }
-  return ({ home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
+  return ({ stillwater: "stillwatervet.swim", home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
 }
 
 function closeWebSurfBrowserTab(tab) {
@@ -21046,12 +21042,13 @@ function resetWebSurfToolbarVisibility() {
 }
 
 function normalizeWebSurfSessionPage(value) {
-  return ["home", "themes", "store", "bank", "proteus", "locker", "designer"].includes(value) ? value : "home";
+  return ["home", "themes", "store", "bank", "proteus", "locker", "designer", "stillwater"].includes(value) ? value : "home";
 }
 
 function getActiveWebSurfSessionPage() {
   if (!runtime.storeOverlayOpen) return "";
   if (runtime.settingsOverlayOpen === true) return "settings";
+  if (runtime.stillwaterOpen === true) return "stillwater";
   if (runtime.proteusDesignerOpen === true) return "designer";
   if (dom.storeOverlay?.classList.contains("proteus-biodyne-open")) return "proteus";
   if (runtime.davyJonesLockerOpen === true) return "locker";
@@ -21062,6 +21059,7 @@ function getActiveWebSurfSessionPage() {
 }
 
 function getWebSurfSessionScrollElement(page) {
+  if (page === "stillwater") return document.getElementById("stillwaterPage");
   if (page === "home") return dom.webHomePage;
   if (page === "themes") return dom.webSurfThemesPage;
   if (page === "bank") return dom.bubbleBankPage?.querySelector(".bubble-bank-scroll");
@@ -21165,6 +21163,9 @@ function restoreWebSurfSessionScroll(page) {
 }
 
 function resetWebSurfSessionState() {
+  window.closeStillwaterPage?.();
+  runtime.stillwaterLastEmail = "";
+  runtime.pharmacyQuiz = null;
   runtime.webSurfLastPage = "home";
   runtime.webSurfThemesOpen = false;
   runtime.bubbleBodegaHomeOpen = false;
@@ -21264,6 +21265,7 @@ function closeWebSurfSettingsPage(options = {}) {
 
 function openWebSurfSessionPage() {
   const page = normalizeWebSurfSessionPage(runtime.webSurfLastPage);
+  if (page === "stillwater") return openStillwaterPage();
   if (page === "themes") {
     navigateWebSurf("websurf.swim/themes", { historyMode: "restore" });
     return;
@@ -21329,6 +21331,7 @@ function openStoreOverlay(tab = "food", options = {}) {
   }
 
   if (runtime.storeOverlayOpen) captureWebSurfSessionState();
+  window.closeStillwaterPage?.();
   if (runtime.proteusDesignerOpen === true) closeProteusDesignerSession();
   runtime.webHomeOpen = false;
   runtime.bubbleBankOpen = false;
@@ -21671,6 +21674,7 @@ function handleWebPageNavigation(event) {
     openDavyJonesLockerPage();
     return;
   }
+  if (destination === "stillwater") { navigateWebSurf("stillwatervet.swim"); return; }
   if (destination === "designer" && runtime.proteusDesignerOpen === true) {
     openProteusDesignerPage();
   }
@@ -22234,10 +22238,22 @@ function hasPlacedCaveSettings(item) {
     return false;
   }
 
-  return Boolean(
-    (item.caveSettings && typeof item.caveSettings === "object")
-    || getAuthoredDecorCaveSettings(item.decorKey)
-  );
+  const authoredSettings = getAuthoredDecorCaveSettings(item.decorKey);
+  if (authoredSettings) return true;
+  if (!item.caveSettings || typeof item.caveSettings !== "object") return false;
+
+  const decor = runtime.decorMap.get(item.decorKey) || runtime.decorMeta[item.decorKey];
+  const profile = decor?.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior;
+  // Older placements copied the same one-entrance/two-seat editor template
+  // into every cave. Recognize that untouched template without discarding
+  // customized coordinates or cave settings explicitly authored in metadata.
+  const hasAuthoredGeometry = (profile?.portals?.length && profile?.insideSlots?.length)
+    || (decor?.path && decor?.bgPath);
+  if (hasAuthoredGeometry
+    && JSON.stringify(sanitizePlacedCaveSettings(item.caveSettings)) === JSON.stringify(sanitizePlacedCaveSettings())) {
+    return false;
+  }
+  return true;
 }
 
 function getPlacedCaveSettings(item) {
@@ -29544,26 +29560,31 @@ function bindEvents() {
   dom.storeFoodTab?.addEventListener("click", () => {
     runtime.storeTab = "food";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/food");
     renderUi(Date.now());
   });
   dom.storePharmacyTab?.addEventListener("click", () => {
     runtime.storeTab = "pharmacy";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/pharmacy");
     renderUi(Date.now());
   });
   dom.storeFishTab.addEventListener("click", () => {
     runtime.storeTab = "fish";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/fish");
     renderUi(Date.now());
   });
   dom.storeDecorTab.addEventListener("click", () => {
     runtime.storeTab = "decor";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/decor");
     renderUi(Date.now());
   });
   dom.storeEquipmentTab?.addEventListener("click", () => {
     runtime.storeTab = "equipment";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/equipment");
     renderUi(Date.now());
   });
   dom.tankManagementCard?.addEventListener("click", playTankInfoActionSound, true);
@@ -37068,6 +37089,7 @@ function processFishDisease(now = Date.now()) {
       continue;
     }
 
+    if (typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "disease")) continue;
     let stateId = sanitizeDiseaseState(fish.diseaseState);
     if (stateId === DISEASE_STATE_IMMUNE) {
       if ((Number(fish.temporaryImmunityUntil) || 0) <= now) {
@@ -37189,7 +37211,7 @@ function getFishPrimaryCondition(fish, now = Date.now()) {
   const diseaseCondition = getFishDiseaseCondition(fish);
   if (diseaseCondition && diseaseCondition !== "recovering") return diseaseCondition;
   const maxHealth = typeof getFishMaxHealthUnits === "function" ? getFishMaxHealthUnits(fish) : Math.max(1, Number(fish.maxHealthUnits) || 5);
-  const injuryRecovering = (Number(fish.injuryRecoveryProgressMs) || 0) > 0 || (Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0;
+  const injuryRecovering = (typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "injury")) || (Number(fish.injuryRecoveryProgressMs) || 0) > 0 || (Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0;
   if ((Number(fish.healthUnits) || maxHealth) < maxHealth && !injuryRecovering) return "injured";
   if (diseaseCondition === "recovering" || injuryRecovering || hasFishOsmoticRecovery(fish)) return "recovering";
   if (typeof isFishElderly === "function" ? isFishElderly(fish, now) : String(fish.condition || "").toLowerCase() === "elderly") return "elderly";
@@ -37215,9 +37237,9 @@ function syncFishPrimaryCondition(fish, now = Date.now(), options = {}) {
   if (previous === next) return false;
   fish.condition = next;
   if (options.notify !== false) {
-    if (next === "parasites") pushEvent(`${fish.name} has developed parasites.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
-    else if (next === "infection") pushEvent(`${fish.name} has developed an infection.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
-    else if (next === "osmotic-stress") pushEvent(`${fish.name} is suffering from Osmotic Stress.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    if (next === "parasites") pushEvent(`${fish.name} shows signs that need care. Try the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    else if (next === "infection") pushEvent(`${fish.name} shows signs that need care. Try the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    else if (next === "osmotic-stress") pushEvent(`${fish.name} looks uncomfortable. Check its water and the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
     else if (next === "recovering" && ["parasites", "infection", "osmotic-stress", "injured"].includes(previous)) pushEvent(`${fish.name} is recovering.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
   }
   return true;
@@ -37229,6 +37251,7 @@ function processFishConditionFramework(now = Date.now()) {
   const previousSimulatedAt = Math.min(now, Number(state.lastSimulatedAt) || now);
   for (const fish of state.fish) {
     if (!fish || isFishDead(fish)) continue;
+    if (typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
     const waterMismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
     if (waterMismatch) {
       if (!(Number(fish.osmoticStressStartedAt) > 0)) {
@@ -41382,6 +41405,7 @@ function sanitizeWebSurfSentEmails(rawEmails) {
     const time = Number.isFinite(Number(rawEmail.time)) ? Math.max(0, Number(rawEmail.time)) : Date.now();
     const data = rawEmail.data && typeof rawEmail.data === "object" && !Array.isArray(rawEmail.data)
       ? {
+        consultationId: typeof rawEmail.data.consultationId === "string" ? rawEmail.data.consultationId.slice(0, 100) : "",
         orderId: typeof rawEmail.data.orderId === "string" ? rawEmail.data.orderId.slice(0, 100) : "",
         speciesId: typeof rawEmail.data.speciesId === "string" ? rawEmail.data.speciesId.slice(0, 100) : "",
         fishId: typeof rawEmail.data.fishId === "string" ? rawEmail.data.fishId.slice(0, 100) : "",
@@ -41968,6 +41992,9 @@ function getPeacefulModeFishSnapshot(fish) {
   for (const key of timerKeys) {
     if (Number.isFinite(Number(fish[key]))) timers[key] = Number(fish[key]);
   }
+  for (const key of ["calmedUntil", "waterStressBoostUntil", "injuryRecoveryLastAt", "osmoticStressLastProgressAt", "osmoticStressLastDamageAt", "osmoticRecoveryLastAt"]) {
+    if (Number.isFinite(Number(fish[key])) && Number(fish[key]) > 0) timers[key] = Number(fish[key]);
+  }
   return {
     needs: fish.needs && typeof fish.needs === "object" ? { ...fish.needs } : null,
     healthUnits: Number.isFinite(Number(fish.healthUnits)) ? Number(fish.healthUnits) : null,
@@ -42106,6 +42133,7 @@ function restorePeacefulModeState(now = Date.now()) {
   const allFish = [...getAllTankFish(state), ...(Array.isArray(state.storedFish) ? state.storedFish : [])];
   for (const fish of allFish) {
     if (!fish?.id || isFishDead(fish)) continue;
+    if (!fish.storageFrozen && fish.treatmentCourses) shiftFishTreatmentTimes(fish, pauseDuration);
     const snapshot = mode.fishSnapshots[fish.id];
     if (snapshot) {
       fish.needs = snapshot.needs ? sanitizeFishNeeds(snapshot.needs, fish, now) : sanitizeFishNeeds(null, fish, now);
@@ -43204,6 +43232,7 @@ function reconcileState(rawState) {
     purchaseHistory: [],
     webSurfMailStates: {},
     webSurfSenderStates: {},
+    vetConsultations: [],
     webSurfSentEmails: [],
     webSurf: sanitizeWebSurfBrowserState(null),
     proteusCorpseDonationDigests: [],
@@ -43368,6 +43397,7 @@ function reconcileState(rawState) {
     purchaseHistory: sanitizePurchaseHistory(incoming.purchaseHistory),
     webSurfMailStates: sanitizeWebSurfMailStates(incoming.webSurfMailStates),
     webSurfSenderStates: sanitizeWebSurfSenderStates(incoming.webSurfSenderStates),
+    vetConsultations: sanitizeStillwaterConsultations(incoming.vetConsultations),
     webSurfSentEmails: sanitizeWebSurfSentEmails(incoming.webSurfSentEmails),
     webSurf: sanitizeWebSurfBrowserState(incoming.webSurf, incoming),
     proteusCorpseDonationDigests: sanitizeProteusCorpseDonationDigests(incoming.proteusCorpseDonationDigests),
@@ -44793,6 +44823,9 @@ function sanitizeFish(fish, options = {}) {
     relationshipNextCheckAt: dead ? 0 : (Number.isFinite(Number(fish.relationshipNextCheckAt)) ? Math.max(0, Number(fish.relationshipNextCheckAt)) : 0),
     veryLowComfortStartedAt: Number.isFinite(Number(fish.veryLowComfortStartedAt)) ? Number(fish.veryLowComfortStartedAt) : 0,
     veryLowComfortEventDayKey: typeof fish.veryLowComfortEventDayKey === "string" ? fish.veryLowComfortEventDayKey : "",
+    treatmentCourses: dead ? {} : sanitizeFishTreatmentCourses(fish.treatmentCourses),
+    careKnowledge: sanitizeFishCareKnowledge(fish.careKnowledge),
+    injuryEpisodeAt: Math.max(0, Number(fish.injuryEpisodeAt) || 0),
     diseaseState: dead ? DISEASE_STATE_NONE : sanitizeDiseaseState(fish.diseaseState),
     diseaseType: typeof fish.diseaseType === "string" && fish.diseaseType.trim() ? fish.diseaseType.trim() : "",
     diseaseInfectedAt: Number.isFinite(Number(fish.diseaseInfectedAt)) ? Math.max(0, Number(fish.diseaseInfectedAt)) : 0,
@@ -48099,6 +48132,9 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
       xNorm: trigger.xNorm,
       yNorm: trigger.yNorm
     };
+    if (isFishCaveEntranceBusy(fish, item.id, mouthPoint, species, now)) {
+      continue;
+    }
     const entryDirection = Math.abs(mouthPoint.xNorm - fish.xNorm) > 0.0001
       ? (mouthPoint.xNorm >= fish.xNorm ? 1 : -1)
       : (fish.direction || 1);
@@ -48171,13 +48207,13 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
   }
 
   candidates.sort((left, right) => left.score - right.score);
-  return candidates[0] || null;
+  return candidates.find(plan => isCavePlanClearOfNeighbors(item, fish, plan, now)) || null;
 }
 
 function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
   const configuredPlan = buildConfiguredCaveDockingPlan(item, fish, now);
   if (configuredPlan) {
-    return configuredPlan;
+    return isCavePlanClearOfNeighbors(item, fish, configuredPlan, now) ? configuredPlan : null;
   }
 
   const triggerSeatPlan = buildTriggerSeatCavePlan(item, fish, now);
@@ -48291,7 +48327,42 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
   }
 
   candidates.sort((left, right) => left.score - right.score);
-  return candidates[0] || null;
+  return candidates.find(plan => isCavePlanClearOfNeighbors(item, fish, plan, now)) || null;
+}
+
+function isCavePlanClearOfNeighbors(item, fish, plan, now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  if (!item || !fish || !species || !plan) return false;
+  const layers = new Set([clampTankLayer(plan.frontLayer), clampTankLayer(plan.backLayer)]);
+  const neighbors = [...layers].flatMap(layer => getCaveCollisionFrameCandidates(layer, now))
+    .filter(candidate => candidate.item.id !== item.id);
+  if (!neighbors.length) return true;
+  const nodes = [plan.approach, plan.mouth, ...(plan.entryPathNodes || []), plan.inside,
+    ...(plan.exitPathNodes || []), plan.mouth, plan.approach].filter(Boolean);
+  const margin = getFishDisplayWidth(fish, species, now);
+  for (let index = 1; index < nodes.length; index++) {
+    const from = nodes[index - 1], to = nodes[index];
+    const dx = to.xNorm - from.xNorm, dy = to.yNorm - from.yNorm;
+    const sweptBounds = {
+      left: Math.min(from.xNorm, to.xNorm) * TANK_WIDTH - margin,
+      right: Math.max(from.xNorm, to.xNorm) * TANK_WIDTH + margin,
+      top: Math.min(from.yNorm, to.yNorm) * TANK_HEIGHT - margin,
+      bottom: Math.max(from.yNorm, to.yNorm) * TANK_HEIGHT + margin
+    };
+    const nearby = neighbors.filter(candidate => boundsIntersect(sweptBounds, candidate.descriptor.bounds));
+    if (!nearby.length) continue;
+    const direction = Math.abs(dx) > 0.0001 ? (dx < 0 ? -1 : 1) : (fish.direction || 1);
+    const samples = Math.max(1, Math.ceil(Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT) / 4));
+    for (let sample = 0; sample <= samples; sample++) {
+      const progress = sample / samples;
+      const pose = getFishCollisionPose(fish, species, now,
+        from.xNorm + dx * progress, from.yNorm + dy * progress, direction);
+      const shape = getFishShapeDescriptor(fish, species, now, pose);
+      if (!shape || nearby.some(candidate => boundsIntersect(shape.bounds, candidate.descriptor.bounds)
+        && shapesOverlapByMaskStrict(shape, candidate.descriptor, CAVE_STRICT_SAMPLE_STEP_PX))) return false;
+    }
+  }
+  return true;
 }
 
 function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
@@ -48464,6 +48535,27 @@ function getFishActiveCaveInsideLayer(fish, fallbackLayer = DEFAULT_TANK_LAYER) 
 function getPortalMatchForTriggerRegion(item, triggerRegion, profile) {
   if (!item || !triggerRegion || !Array.isArray(profile?.portals) || !profile.portals.length) {
     return null;
+  }
+
+  // Image masks can author an entrance without a behavior profile. Generic
+  // profile coordinates are only a fallback, never a replacement for that
+  // measured opening. Stage outside it, away from the nearest interior seat.
+  if (!hasPlacedCaveSettings(item) && !getExplicitCaveBehaviorPortals(item.decorKey).length) {
+    const mouthPoint = { xNorm: triggerRegion.xNorm, yNorm: triggerRegion.yNorm };
+    const seat = getCaveSeatRegions(item).slice().sort((left, right) =>
+      Math.hypot(left.xNorm - mouthPoint.xNorm, left.yNorm - mouthPoint.yNorm)
+      - Math.hypot(right.xNorm - mouthPoint.xNorm, right.yNorm - mouthPoint.yNorm))[0];
+    const dx = seat ? (mouthPoint.xNorm - seat.xNorm) * TANK_WIDTH : 0;
+    const dy = seat ? (mouthPoint.yNorm - seat.yNorm) * TANK_HEIGHT : 1;
+    const distance = Math.hypot(dx, dy) || 1;
+    return {
+      portal: { id: triggerRegion.id },
+      mouthPoint,
+      approachPoint: {
+        xNorm: clamp(mouthPoint.xNorm + dx / distance * 48 / TANK_WIDTH, 0.08, 0.92),
+        yNorm: clamp(mouthPoint.yNorm + dy / distance * 48 / TANK_HEIGHT, 0.14, 0.8)
+      }
+    };
   }
 
   const exactPortal = triggerRegion.id
@@ -52737,6 +52829,7 @@ function applyCriticalComfortHealthEffects(now) {
     }
 
     fish.comfortDamageProgressMs -= damageUnits * damageTickMs;
+    if (fish.healthUnits >= getFishMaxHealthUnits(fish)) fish.injuryEpisodeAt = now;
     fish.healthUnits = Math.max(0, fish.healthUnits - damageUnits);
     fish.fedStreak = 0;
     totalDamageUnits += damageUnits;
@@ -55491,7 +55584,7 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
       if (!fish || isFishDead(fish)) continue;
       const maxHealth = getFishMaxHealthUnits(fish);
       const health = Math.max(0, Number(fish.healthUnits) || 0);
-      if (inventory.health > 0 && health < maxHealth && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
+      if (inventory.health > 0 && health < maxHealth && (typeof getFishMedicationEligibility !== "function" || getFishMedicationEligibility("firstAid", fish, now).ok) && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
@@ -55591,6 +55684,10 @@ function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, n
   if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.[resourceType]) <= 0) return false;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) return false;
+  if (medicine.id === "firstAid" && typeof applyFishCourseDose === "function") {
+    const result = withActiveTank(target.tank.id, () => applyFishCourseDose(medicine, target.fish, now));
+    if (!result?.ok) return false;
+  }
   withActiveTank(target.tank.id, () => {
     state.medicineClouds.push({
       id: createId("med-cloud"),
@@ -55607,7 +55704,7 @@ function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, n
     };
     if (medicine.id === "firstAid") {
       const maxHealth = getFishMaxHealthUnits(target.fish);
-      if (!isFishDead(target.fish) && target.fish.healthUnits < maxHealth) {
+      if (typeof applyFishCourseDose !== "function" && !isFishDead(target.fish) && target.fish.healthUnits < maxHealth) {
         target.fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(target.fish.healthUnits) || 1);
         target.fish.injuryRecoveryProgressMs = 1;
         target.fish.injuryRecoveryLastAt = now;
@@ -56665,6 +56762,7 @@ function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
   const countBasedDamage = Math.max(0, nextExtraCount - previousExtraCount);
   const damageUnits = canOverfeed ? Math.max(countBasedDamage, repeatedWhileFull ? 1 : 0) : 0;
   if (damageUnits > 0) {
+    if (Number(fish.healthUnits) >= getFishMaxHealthUnits(fish)) fish.injuryEpisodeAt = now;
     fish.healthUnits = Math.max(0, Number(fish.healthUnits) - damageUnits);
   }
 
@@ -57136,6 +57234,8 @@ function consumeSelectedMedicineDose(medicine) {
 function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   if (!medicine || !fish) return { ok: false, message: "Click a fish to treat." };
   if (isFishDead(fish)) return { ok: false, message: "Medicine cannot be used on a dead fish." };
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode." };
+  if (typeof getFishTreatmentDefinitions === "function" && getFishTreatmentDefinitions()[medicine.id]) return applyFishCourseDose(medicine, fish, now);
   const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : String(fish.condition || "healthy");
 
   if (medicine.id === "firstAid") {
@@ -57170,15 +57270,17 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   }
 
   if (medicine.id === "waterStress") {
+    if ((Number(fish.waterStressBoostUntil) || 0) > now) return { ok: false, message: "The recovery boost is still active. Wait before giving another drop." };
     const mismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
-    if (mismatch) return { ok: false, message: "Correct this fish's water type before treating Osmotic Stress." };
+    if (mismatch) return { ok: false, message: "Move this fish to compatible water before giving recovery support." };
     if (!(Number(fish.osmoticStressProgressMs) > 0)) {
-      return { ok: false, message: "This fish is not recovering from Osmotic Stress." };
+      return { ok: false, message: "This recovery support does not match these symptoms. Recheck the Pharmacy questionnaire." };
     }
     if (!(Number(fish.osmoticRecoveryProgressMs) > 0)) {
       fish.osmoticRecoveryProgressMs = 1;
       fish.osmoticRecoveryLastAt = now;
     }
+    if (typeof discoverFishCareCondition === "function") discoverFishCareCondition(fish, "osmotic-stress");
     fish.waterStressBoostUntil = Math.max(Number(fish.waterStressBoostUntil) || 0, now + WATER_STRESS_BOOST_DURATION_MS);
     return { ok: true, message: `${fish.name}'s Osmotic Stress recovery is boosted for 6 hours.` };
   }
@@ -57211,6 +57313,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
       showToast("There are no fish in this tank to calm.");
       return true;
     }
+    if (livingFish.some((fish) => (Number(fish.calmedUntil) || 0) > now)) { showToast("The calming effect is still active. Wait before giving another drop."); return true; }
     if (!consumeSelectedMedicineDose(medicine)) return true;
     for (const fish of livingFish) {
       fish.calmedUntil = Math.max(Number(fish.calmedUntil) || 0, now + CALMING_EFFECT_DURATION_MS);
@@ -57541,6 +57644,9 @@ function createFishRecord(speciesId, options = {}) {
     pairBondMourningUntil: Number.isFinite(Number(options.pairBondMourningUntil)) ? Math.max(0, Number(options.pairBondMourningUntil)) : 0,
     veryLowComfortStartedAt: 0,
     veryLowComfortEventDayKey: "",
+    treatmentCourses: {},
+    careKnowledge: {},
+    injuryEpisodeAt: 0,
     diseaseState: DISEASE_STATE_NONE,
     diseaseType: "",
     diseaseInfectedAt: 0,
@@ -57768,7 +57874,10 @@ function shiftFishStoragePausedTimestamp(fish, key, pauseMs) {
 function resumeFishFromStorageState(fish, now = Date.now()) {
   if (!fish) return 0;
   const storedAt = Number.isFinite(Number(fish.storedAt)) ? Number(fish.storedAt) : now;
+  const knownDiseaseEpisode = fish.careKnowledge?.disease?.episode;
+  const diseaseEpisodeBeforePause = fish.careKnowledge?.disease ? getFishCareEpisode(fish, "disease") : "";
   const pauseMs = Math.max(0, now - storedAt);
+  if (fish.treatmentCourses) shiftFishTreatmentTimes(fish, pauseMs);
   for (const key of [
     "birthAt", "tankAddedAt", "growthStartedAt", "growthEndsAt", "lastAteAt", "satiatedUntil",
     "breedCooldownUntil", "diseaseInfectedAt", "diseaseTreatedUntil", "temporaryImmunityUntil",
@@ -57778,6 +57887,7 @@ function resumeFishFromStorageState(fish, now = Date.now()) {
   ]) {
     shiftFishStoragePausedTimestamp(fish, key, pauseMs);
   }
+  if (knownDiseaseEpisode && knownDiseaseEpisode === diseaseEpisodeBeforePause) fish.careKnowledge.disease.episode = getFishCareEpisode(fish, "disease");
   fish.needsUpdatedAt = now;
   if ((Number(fish.diseaseLastProgressAt) || 0) > 0) fish.diseaseLastProgressAt = now;
   if ((Number(fish.injuryRecoveryProgressMs) || 0) > 0) fish.injuryRecoveryLastAt = now;
@@ -62702,7 +62812,9 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     placedItem.bubblerSettings = createDefaultBubblerSettings();
   }
   if (isCaveDecorKey(decorKey)) {
-    placedItem.caveSettings = getDecorDefaultCaveSettings(decorKey);
+    // Generic editor defaults must not replace artwork-authored entrances.
+    const authoredCaveSettings = getAuthoredDecorCaveSettings(decorKey);
+    if (authoredCaveSettings) placedItem.caveSettings = authoredCaveSettings;
     const defaultCaveColorSettings = getDecorDefaultCaveColorSettings(decorKey);
     if (defaultCaveColorSettings) {
       placedItem.caveColorSettings = defaultCaveColorSettings;
@@ -65914,6 +66026,7 @@ function applyFishDamage(fish, amount = 1, now = Date.now(), injuryText = null, 
     return { changed: true, dead: false, regenerating: true };
   }
 
+  if (fish.healthUnits >= getFishMaxHealthUnits(fish)) fish.injuryEpisodeAt = now;
   fish.healthUnits = Math.max(0, fish.healthUnits - damageUnits);
   fish.fedStreak = 0;
 
@@ -79265,6 +79378,7 @@ function renderUi(now, options = {}) {
     });
     // The BubbleBodega shell is a regular script while this application is an
     // ES module. Keep its product-fit view data-only and narrowly scoped.
+    window.getBubbleBodegaMedicineCareProfile = getBubbleBodegaMedicineCareProfile;
     window.getBubbleBodegaFishCareProfile = (speciesId, appearanceVariantKey = "") => {
       const species = runtime.fishMap.get(String(speciesId || ""));
       if (!species) return null;
@@ -80110,6 +80224,7 @@ function renderStoreOverlay() {
   const showingLocker = runtime.davyJonesLockerOpen === true;
   const showingDesigner = runtime.proteusDesignerOpen === true;
   const showingSettings = runtime.settingsOverlayOpen === true;
+  const showingStillwater = runtime.stillwaterOpen === true;
   const showingBodegaHome = runtime.bubbleBodegaHomeOpen === true
     && !showingHome && !showingThemes && !showingBank && !showingLocker && !showingDesigner && !showingSettings;
   const davyLockerTab = dom.storeOverlay?.querySelector('.webpage-tab[data-webpage-destination="locker"]');
@@ -80135,6 +80250,7 @@ function renderStoreOverlay() {
     && !showingLocker
     && !showingDesigner
     && !showingSettings
+    && !showingStillwater
     && !showingRouteError
     && (bubbleBodegaSearchView?.active === true || bubbleBodegaSearchView?.allCategories === true)
   );
@@ -80168,7 +80284,7 @@ function renderStoreOverlay() {
   dom.storeOverlay.classList.toggle("is-proteus-designer-open", runtime.storeOverlayOpen && showingDesigner);
   dom.storeOverlay.classList.toggle("is-web-settings-open", runtime.storeOverlayOpen && showingSettings);
   dom.storeOverlay.classList.toggle("is-websurf-route-error", runtime.storeOverlayOpen && showingRouteError);
-  dom.storeOverlay.setAttribute("aria-label", routeError ? "WebSurf address error" : showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingThemes ? "WebSurf Themes Store" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
+  dom.storeOverlay.setAttribute("aria-label", routeError ? "WebSurf address error" : showingStillwater ? "Stillwater Veterinary Telehealth" : showingSettings ? "Bubble Borough Settings" : showingDesigner ? "Proteus Biodyne Specimen Designer" : showingThemes ? "WebSurf Themes Store" : showingHome ? "Browser Home" : showingBodegaHome ? "BubbleBodega Home" : showingBank ? "Bubble Borough Bank" : showingLocker ? "Davy Jones' Locker" : "BubbleBodega Store");
   if (dom.webSurfRouteErrorPage) {
     dom.webSurfRouteErrorPage.hidden = !runtime.storeOverlayOpen || !routeError;
     if (runtime.storeOverlayOpen && routeError) {
@@ -80237,7 +80353,7 @@ function renderStoreOverlay() {
   // The BubbleBodega shell owns its catalogue filtering. Keep it in lockstep with
   // gameplay changes such as a tutorial advancing from Fish to Decor; merely
   // changing the selected tab otherwise leaves the old catalogue on screen.
-  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingThemes && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
+  if (!searchOwnsBubbleBodegaCatalog && runtime.storeOverlayOpen && !showingHome && !showingThemes && !showingBodegaHome && !showingBank && !showingLocker && !showingDesigner && !showingSettings && !showingStillwater && dom.storeOverlay.dataset.tankazonCategory !== runtime.storeTab) {
     dom.storeOverlay.dataset.tankazonCategory = runtime.storeTab;
     window.dispatchEvent(new CustomEvent("bubbleborough:store-tab", {
       detail: { category: runtime.storeTab }
@@ -80255,21 +80371,22 @@ function renderStoreOverlay() {
 
   if (!searchOwnsBubbleBodegaCatalog) {
     if (dom.foodShop) {
-      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFood;
+      dom.foodShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingFood;
     }
     if (dom.pharmacyShop) {
-      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingPharmacy;
+      dom.pharmacyShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingPharmacy;
     }
-    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingFish;
-    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingDecor;
+    dom.fishShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingFish;
+    dom.decorShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingDecor;
     if (dom.equipmentShop) {
-      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || !showingEquipment;
+      dom.equipmentShop.hidden = !runtime.storeOverlayOpen || showingRouteError || showingHome || showingThemes || showingBodegaHome || showingBank || showingLocker || showingDesigner || showingSettings || showingStillwater || !showingEquipment;
     }
   }
   const showingProteus = dom.storeOverlay.classList.contains("proteus-biodyne-open");
-  const fallbackStandardWebPage = showingProteus ? "proteus" : showingThemes ? "themes" : showingHome ? "home" : showingBank ? "bank" : "store";
+  const fallbackStandardWebPage = showingStillwater ? "stillwater" : showingProteus ? "proteus" : showingThemes ? "themes" : showingHome ? "home" : showingBank ? "bank" : "store";
   const activeStandardWebPage = showingLocker ? "locker" : fallbackStandardWebPage;
   const activeWebPage = showingSettings ? "settings" : showingDesigner ? "designer" : activeStandardWebPage;
+  renderFishCareWebSurfaces();
   window.syncWebPageTabs?.(activeWebPage);
   if (!runtime.storeOverlayOpen) window.resetOptionalWebPageTabs?.();
   syncWallpaperEngineStoreScrollControls();
@@ -81327,7 +81444,7 @@ function getManagementTankStatus(stats) {
 }
 
 function buildIllnessCareTask(now = Date.now(), tank = getCurrentTank()) {
-  const sickFish = (tank?.fish || []).filter((fish) => !isFishDead(fish) && getFishPrimaryCondition(fish, now));
+  const sickFish = (tank?.fish || []).filter((fish) => !isFishDead(fish) && getFishCareConcerns(fish, now).length > 0);
   if (!sickFish.length) return null;
   return {
     id: "illness-care",
@@ -84999,6 +85116,7 @@ function renderWebSurfProteusAuthorizationEmail(message) {
 }
 
 function renderWebSurfAutoEmailBody(message) {
+  if (message.templateId === "stillwater_consultation") return renderStillwaterEmailBody(message);
   if (message?.templateId === "proteus_zombie_fish_authorization") {
     return renderProteusZombieFishAuthorizationEmail(message);
   }
@@ -85131,6 +85249,9 @@ function handleWebSurfEmailAction(message) {
 }
 
 function getBubbleBodegaDiseaseTreatmentId(fish, now = Date.now()) {
+  const known = fish?.careKnowledge?.disease;
+  const legacyRecovery = fish?.diseaseState === DISEASE_STATE_RECOVERING && !fish?.treatmentCourses?.disease;
+  if (!legacyRecovery && (!known || known.episode !== getFishCareEpisode(fish, "disease"))) return "";
   const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : "";
   return condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : "";
 }
@@ -87099,7 +87220,7 @@ function renderMedicineInventoryOverlay() {
         ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "inventory-card-thumb")}
         <div>
           <strong>${medicine.name}</strong>
-          <div class="fish-meta">${medicine.description}</div>
+          <div class="fish-meta">${medicine.description}</div><p class="fish-meta">${escapeHtml(getMedicineTreatmentInstructions(medicine.id))}</p>
           <div class="mini-note">${quantity} drop${quantity === 1 ? "" : "s"} remaining</div>
         </div>
         <button class="small-button ${active ? "" : "alt"}" data-select-medicine="${medicine.id}" ${quantity > 0 ? "" : "disabled"}>
@@ -89122,7 +89243,7 @@ function renderMedicineTray() {
       ? medicineItems.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
-        const label = `${medicine.name} - ${quantity} left`;
+        const label = `${medicine.name} - ${quantity} left. ${getMedicineTreatmentInstructions(medicine.id)}`;
         return `
           <button
             class="care-medicine-card ${active ? "is-active" : ""}"
@@ -90291,9 +90412,16 @@ function renderFishInspector(now) {
     const condition = dead
       ? "Deceased"
       : inStorage
-        ? (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, getFishStorageSimulationNow(fish, now))) : "Stored")
-        : (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, now)) : "Healthy");
+        ? getFishCareConditionText(fish, getFishStorageSimulationNow(fish, now))
+        : getFishCareConditionText(fish, now);
     setTextIfChanged(dom.inspectorCondition, condition);
+  }
+  const careGuide = document.getElementById("inspectorTreatmentGuide");
+  if (careGuide) {
+    const guideNow = inStorage ? getFishStorageSimulationNow(fish, now) : getPeacefulModeSimulationNow(now);
+    const guideMarkup = dead ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
+    careGuide.hidden = !guideMarkup;
+    setMarkupIfChanged("inspector-treatment-guide", careGuide, guideMarkup);
   }
   setTextIfChanged(dom.inspectorAge, formatFishBiologicalAge(fish, now));
   if (dom.inspectorBreeding) {
@@ -95179,6 +95307,13 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
   if (!blockedX && !blockedY) {
     return;
   }
+  // Cave recovery owns its route and preserves momentum. Ordinary obstacle
+  // resets below would erase velocity before that recovery even runs.
+  if (fish.caveState) {
+    if (resolvedMove.caveInteriorBlocked) recoverFishInsideCave(fish, species, now);
+    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
+    return;
+  }
 
   // Start a recovery from the pose that actually survived collision testing.
   // A previous free-swim velocity otherwise carries into the detour and turns
@@ -95196,12 +95331,6 @@ function retargetFishAfterBlockedMove(fish, species, resolvedMove, attemptedXNor
     deferFishSchoolFollowForRecovery(fish, now + 900);
   }
 
-  if (fish.caveState) {
-    if (resolvedMove.caveInteriorBlocked) recoverFishInsideCave(fish, species, now);
-    fish.targetAt = Math.max(Number(fish.targetAt) || 0, now + 1200);
-    fish.wallAvoidUntil = now + 220;
-    return;
-  }
 
   if (resolvedMove?.blockingCave) {
     const blocking = resolvedMove.blockingCave;
@@ -100768,6 +100897,51 @@ function profileTankRenderPass(name, draw) {
   try { return draw(); } finally { endDebugFrameProfilerSection(name, startedAt); }
 }
 
+function drawCaveLayerScene(now, layer, decorFrame) {
+  const items = decorFrame.layers[layer] || [];
+  if (!items.some(item => isCaveDecorKey(item.decorKey))) return false;
+
+  const records = prepareFishRenderFrameCache(now).buckets[layer] || [];
+  const occupants = new Map();
+  const commands = [];
+  for (const record of records) {
+    if (record.effectiveBehavior === "sucker") continue;
+    if (record.caveInteriorFish && items.some(item => item.id === record.fish.caveDecorId)) {
+      const caveId = record.fish.caveDecorId;
+      if (!occupants.has(caveId)) occupants.set(caveId, []);
+      occupants.get(caveId).push(record);
+    } else {
+      commands.push({ z: record.depthZ, record });
+    }
+  }
+  for (const item of items) commands.push({ z: getDecorRenderDepthZ(item), item });
+  // Compatibility sublayers are rounded positions, not occlusion planes. A
+  // front fish must stay above the shell even while its rounded lane is middle.
+  commands.sort((a, b) => a.z - b.z
+    || (a.item && b.item ? comparePlacedDecorDrawOrder(a.item, b.item)
+      : a.record && b.record ? compareFishRenderRecords(a.record, b.record)
+        : a.item ? -1 : 1));
+  for (const command of commands) {
+    if (command.record) {
+      drawFish(now, layer, { records: [command.record] });
+      continue;
+    }
+    const item = command.item;
+    if (!isCaveDecorKey(item.decorKey)) {
+      drawDecor(layer, now, { pass: "base", items: [item] });
+      continue;
+    }
+    const inside = occupants.get(item.id) || [];
+    // Complete each cave separately. Drawing every cave back before every
+    // occupant can place a neighboring cave's fish above the wrong background.
+    drawDecor(layer, now, { pass: "cave-back", items: [item] });
+    drawFish(now, layer, { records: inside, caveInteriorOnly: true });
+    drawDecor(layer, now, { pass: "cave-front", items: [item] });
+    drawFish(now, layer, { records: inside, cavePortalExteriorOverlayOnly: true });
+  }
+  return true;
+}
+
 function renderTank(now) {
   const previousLayout = runtime.tankStageRenderLayout;
   runtime.tankStageRenderLayout = getTankStageLayoutSize();
@@ -100803,26 +100977,12 @@ function renderTank(now) {
       if (layer === 3) {
         drawAmbientBubbles(now, 2);
       }
-      // Every cave occupies one major layer but completes a private three-part
-      // sandwich inside it: cave back, interior fish, then cave front. Ordinary
-      // decor assigned to that same major layer is painted after the completed
-      // cave, so plants and ornaments sit in front of it as users expect. Front
-      // fish remain foremost within the layer.
-      drawDecor(layer, now, { pass: "cave-back", frameCache: decorRenderFrame });
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
-      // Paint cave backs a second time to occlude ordinary fish travelling in
-      // the rear lanes. Only fish committed to this cave's route are then drawn
-      // into its openings before the front shell closes the sandwich.
-      drawDecor(layer, now, { pass: "cave-back", frameCache: decorRenderFrame });
-      drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
-      drawDecor(layer, now, { pass: "cave-front", frameCache: decorRenderFrame });
-      // Portal crossings straddle the cave mouth. The inside half remains under
-      // the foreground shell while only the body still outside the portal plane
-      // is redrawn above it. This makes occlusion advance continuously with the
-      // fish instead of popping the whole sprite behind the cave at state entry.
-      drawFish(now, layer, { excludeBehavior: "sucker", cavePortalExteriorOverlayOnly: true });
-      drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
+      const caveSceneDrawn = drawCaveLayerScene(now, layer, decorRenderFrame);
+      if (!caveSceneDrawn) {
+        drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
+        drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
+        drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
+      }
       drawPoops(now, layer);
       if (layer !== TANK_DEPTH_LAYERS) {
         drawWaterParticles(now, layer);
@@ -100831,7 +100991,7 @@ function renderTank(now) {
       if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
         drawFish(now, layer, { onlyBehavior: "sucker", excludeCaveInterior: true });
       }
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_FRONT, excludeCaveInterior: true });
+      if (!caveSceneDrawn) drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_FRONT, excludeCaveInterior: true });
       // A tossed pebble belongs with the layer where it will land and disturb
       // gravel, rather than being painted behind every fish and ornament.
       drawFishPebbleTosses(now, layer);
@@ -100844,8 +101004,6 @@ function renderTank(now) {
     // composited after this scene and therefore remain in front of them.
     drawMachinery(now, 0);
     drawCoinGlints(now);
-    drawDecorBubbleStreams(now);
-    drawTransitTubeBursts(now);
     drawBoroughEdgeBursts(now);
     drawBoroughStructureActivityEffects(now);
     drawAmbientBubbles(now, 3);
@@ -106376,7 +106534,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
     ? "cave-front"
     : (options.pass === "cave-back" ? "cave-back" : "base");
   const frame = options.frameCache;
-  const sorted = frame?.source === state.placedDecor && frame.length === state.placedDecor.length
+  const sorted = options.items || (frame?.source === state.placedDecor && frame.length === state.placedDecor.length
     ? (layer === null ? frame.items : frame.layers[layer] || [])
     : getPlacedDecorRenderOrder()
     .filter((item) => {
@@ -106386,7 +106544,7 @@ function drawDecor(layer = null, now = Date.now(), options = {}) {
 
       const span = getDecorLayerSpan(item.decorKey, getDecorTankLayer(item));
       return layer >= span.min && layer <= span.max;
-    });
+    }));
 
   for (const item of sorted) {
     const decor = runtime.decorMap.get(item.decorKey);
@@ -110117,7 +110275,7 @@ function getFishRenderPassLayer(fish) {
       return clampTankLayer(getDecorLayerSpan(decor.decorKey, getDecorTankLayer(decor)).front);
     }
   }
-  if (fish?.caveState) return clampTankLayer(getFishTankLayer(fish));
+  if (fish?.caveState && !["approach", "align", "leave"].includes(fish.caveState)) return clampTankLayer(getFishTankLayer(fish));
   // Movement compatibility helpers can update legacy layers while deliberately
   // preserving Z. Normal rendering must follow the same continuous depth as
   // fish size/collision, rather than alternate around cave fronts on stale mirrors.
@@ -110307,6 +110465,47 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.arc(fishDrawX + width * 0.76, -height * 0.08, Math.max(1.5, height * 0.045), 0, Math.PI * 2);
   tankContext.fill();
   tankContext.restore();
+}
+
+function getFishCaveShadowStrength(fish, exteriorOverlay = false) {
+  if (exteriorOverlay || !isFishInCaveRenderSublayer(fish)) return 0;
+  if (!isFishInCavePortalCrossing(fish)) return 1;
+  const progress = clamp(getFishCavePortalCrossingProgress(fish) ?? (Number(fish.cavePortalProgress) || 0), 0, 1);
+  const inside = fish.caveState === "portal-exit" ? 1 - progress : progress;
+  return inside * inside * (3 - 2 * inside);
+}
+
+function getFishCaveShadowImage(sourceImage, strength) {
+  const step = Math.round(clamp(Number(strength) || 0, 0, 1) * 32);
+  if (!step || !isUsableRuntimeImage(sourceImage)) return sourceImage;
+  if (!(runtime.fishCaveShadowSourceIds instanceof WeakMap)) runtime.fishCaveShadowSourceIds = new WeakMap();
+  if (!(runtime.fishCaveShadowCache instanceof Map)) runtime.fishCaveShadowCache = new Map();
+  let sourceId = runtime.fishCaveShadowSourceIds.get(sourceImage);
+  if (!sourceId) {
+    sourceId = (runtime.fishCaveShadowSourceSequence || 0) + 1;
+    runtime.fishCaveShadowSourceSequence = sourceId;
+    runtime.fishCaveShadowSourceIds.set(sourceImage, sourceId);
+  }
+  const key = `${sourceId}:${step}`;
+  const cache = runtime.fishCaveShadowCache;
+  const cached = cache.get(key);
+  if (cached) { cache.delete(key); cache.set(key, cached); return cached; }
+  const width = Number(sourceImage.naturalWidth || sourceImage.width);
+  const height = Number(sourceImage.naturalHeight || sourceImage.height);
+  const scale = Math.min(1, 384 / Math.max(width, height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return sourceImage;
+  context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
+  // Darken RGB while keeping the fish opaque and preserving the exact alpha
+  // silhouette. Cached small textures avoid live filters and pixel readbacks.
+  context.globalCompositeOperation = "source-atop";
+  context.fillStyle = `rgba(0, 0, 0, ${0.62 * step / 32})`;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  setBoundedCanvasCache(cache, key, canvas, { maxEntries: 128, maxBytes: 16 * 1024 * 1024 });
+  return canvas;
 }
 
 function getFishDepthLightingStyle(poseY) {
@@ -111421,7 +111620,26 @@ function isFishInjurySideFacingViewer(fish) {
   return injuryDisplaySide === facingSide;
 }
 
-function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, healthRatio, now = Date.now()) {
+function getFishSymptomSideVisibility(fish, pose, now = Date.now(), useVolumeTurn = false) {
+  const markedDirection = getFishInjuryDisplaySide(fish) === "left" ? -1 : 1;
+  const turn = getFishRenderedHorizontalTurnState(fish, now);
+  if (!turn.active || !turn.reversing) {
+    const facing = Number(pose?.facingScaleX ?? getFishFacingDirection(fish));
+    return markedDirection === (facing < 0 ? -1 : 1) ? 1 : 0;
+  }
+  let yaw = clamp(turn.progress, 0, 1) * Math.PI;
+  if (useVolumeTurn) {
+    const visualProgress = getFishTurnV26VisualProgress(fish, turn.progress);
+    yaw = computeFishTurnV26StyleTransform(getFishTurnV26Style(fish), visualProgress, getFishTurnV26SourceDirection(), getFishTurnV26DepthSign(fish)).rotationY;
+  }
+  // Fade inside the narrow, edge-on part of the *rendered* turn. Display
+  // direction stays latched to the source until the volume renderer finishes.
+  const surfaceFacing = markedDirection * turn.fromDirection * Math.cos(yaw);
+  const alpha = clamp(surfaceFacing / 0.4, 0, 1);
+  return alpha * alpha * (3 - 2 * alpha);
+}
+
+function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, healthRatio, now = Date.now(), options = {}) {
   if (!fish || !species || !sourceImage?.width || !sourceImage?.height || isFishDead(fish)) {
     return null;
   }
@@ -111429,13 +111647,15 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   const diseaseState = sanitizeDiseaseState(fish.diseaseState);
   const diseaseVisible = isFishDiseaseVisible(fish);
   const diseaseType = typeof normalizeFishDiseaseType === "function" ? normalizeFishDiseaseType(fish.diseaseType) : fish.diseaseType;
-  const activeDiseaseMarks = diseaseVisible && diseaseState !== DISEASE_STATE_RECOVERING;
-  const showSpecks = activeDiseaseMarks && diseaseType === DISEASE_TYPE_PARASITES && isTrypophobiaEnabled();
-  const showCloudy = activeDiseaseMarks
+  const diseaseCourse = fish.treatmentCourses?.disease;
+  const diseaseHealing = typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "disease") ? clamp(diseaseCourse.healingProgressMs / (5 * DAY_MS), 0, 1) : 0;
+  const activeDiseaseMarks = diseaseVisible && (diseaseState !== DISEASE_STATE_RECOVERING || Boolean(diseaseCourse && diseaseCourse.status !== "complete"));
+  const showSpecks = options.mode !== "side" && activeDiseaseMarks && diseaseType === DISEASE_TYPE_PARASITES && isTrypophobiaEnabled();
+  const showCloudy = options.mode !== "global" && activeDiseaseMarks
     && isGoreEnabled()
     && diseaseType === DISEASE_TYPE_INFECTION;
-  const showInjury = isGoreEnabled() && Number(healthRatio) < 0.99;
-  const showSideSpecificMarks = (showCloudy || showInjury) && isFishInjurySideFacingViewer(fish);
+  const showInjury = options.mode !== "global" && isGoreEnabled() && Number(healthRatio) < 0.99;
+  const showSideSpecificMarks = (showCloudy || showInjury) && (options.mode === "side" || isFishInjurySideFacingViewer(fish));
   const showCloudyOnCurrentSide = showCloudy && showSideSpecificMarks;
   const showInjuryOnCurrentSide = showInjury && showSideSpecificMarks;
   if (!showSpecks && !showCloudyOnCurrentSide && !showInjuryOnCurrentSide) {
@@ -111450,6 +111670,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   const heightBucket = Math.max(32, Math.round(widthBucket * sourceImage.height / Math.max(1, sourceImage.width)));
   const cacheKey = [
     fish.id,
+    options.mode || "all",
     imagePath,
     widthBucket,
     heightBucket,
@@ -111457,6 +111678,8 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
     cloudyPath,
     speckPath,
     diseaseState,
+    Math.floor(diseaseHealing * 10),
+    fish.treatmentCourses?.injury?.status === "restartRequired",
     Math.round(clamp(Number(healthRatio) || 0, 0, 1) * 4)
   ].join("|");
   const cached = runtime.fishSymptomOverlayCache.get(cacheKey);
@@ -111485,7 +111708,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
 
   if (speckImage) {
     context.save();
-    context.globalAlpha = diseaseState === DISEASE_STATE_SEVERE ? 0.94 : 0.76;
+    context.globalAlpha = (diseaseState === DISEASE_STATE_SEVERE ? 0.94 : 0.76) * (1 - diseaseHealing);
     context.drawImage(speckImage, 0, 0, canvas.width, canvas.height);
     context.restore();
   }
@@ -111505,7 +111728,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   };
 
   if (cloudyImage) {
-    drawLocalizedMark(cloudyImage, seed ^ 0x5b7a1c3d, diseaseState === DISEASE_STATE_SEVERE ? 0.46 : 0.38, 0.9);
+    drawLocalizedMark(cloudyImage, seed ^ 0x5b7a1c3d, diseaseState === DISEASE_STATE_SEVERE ? 0.46 : 0.38, 0.9 * (1 - diseaseHealing));
   }
   if (woundImage) {
     const damage = 1 - clamp(Number(healthRatio) || 0, 0, 1);
@@ -111535,7 +111758,9 @@ function drawFish(now, layer = null, options = {}) {
     ? cache.buckets.flat()
     : (cache.buckets[targetLayer] || []);
   let recordsArePreFiltered = false;
-  if (passBucket && options.onlyBehavior === "sucker") {
+  if (options.records) {
+    records = options.records;
+  } else if (passBucket && options.onlyBehavior === "sucker") {
     records = options.excludeCaveInterior === true
       ? passBucket.suckerOutsideCave
       : passBucket.sucker;
@@ -111677,7 +111902,10 @@ function drawFish(now, layer = null, options = {}) {
     }
 
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
-    const fishLighting = getFishDepthLightingStyle(pose.y);
+    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly);
+    const caveCausticAlpha = 1 - caveShadowStrength;
+    const fishLighting = { ...getFishDepthLightingStyle(pose.y) };
+    fishLighting.highlightAlpha *= caveCausticAlpha;
     const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
     const fishRenderFilter = combineTankCanvasFilters(
       fishBaseFilter,
@@ -111715,7 +111943,8 @@ function drawFish(now, layer = null, options = {}) {
       const renderImage = layerMotion?.preserveColor === true
         ? sprite.renderImage
         : getFishTintedImage(sprite.path || imagePath, sprite.sourceImage, fish);
-      const depthRenderImage = getTankDepthTreatedImage(renderImage, depthLayer) || renderImage;
+      const litRenderImage = getTankDepthTreatedImage(renderImage, depthLayer) || renderImage;
+      const depthRenderImage = getFishCaveShadowImage(litRenderImage, caveShadowStrength);
       tankContext.filter = layerMotion?.preserveColor ? fishLighting.filter : fishRenderFilter;
       if (v26TurnRendererActive) {
         const renderedByV26 = drawFishTurnV26VolumeMesh(
@@ -111737,7 +111966,7 @@ function drawFish(now, layer = null, options = {}) {
             // The receiver mask therefore follows the actual WebGL silhouette
             // and padded trajectory instead of the old flat source rectangle.
             onRenderedVolumeCanvas: ({ canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight }) => {
-              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight);
+              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha * caveCausticAlpha, sourceWidth, sourceHeight);
             }
           }
         );
@@ -111779,7 +112008,7 @@ function drawFish(now, layer = null, options = {}) {
               -spriteHeight / 2,
               width,
               spriteHeight,
-              v26VisualContinuity.spriteAlpha
+              v26VisualContinuity.spriteAlpha * caveCausticAlpha
             );
             tankContext.restore();
           }
@@ -111805,10 +112034,10 @@ function drawFish(now, layer = null, options = {}) {
         if (!warped) {
           tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
         }
-        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight, caveCausticAlpha);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true) {
+      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true && fishLighting.highlightAlpha > 0) {
         drawFishTopLightOverlay(
           tankContext,
           sprite.sourceImage,
@@ -111884,14 +112113,12 @@ function drawFish(now, layer = null, options = {}) {
         { v26FinBasePass: true }
       );
       if (!pose.isDead) {
-        const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now);
-        if (symptomOverlay) {
-          drawFishSpriteLayer(
-            { sourceImage: symptomOverlay, renderImage: symptomOverlay },
-            1,
-            1,
-            { preserveColor: true }
-          );
+        const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now, { mode: "global" });
+        if (symptomOverlay) drawFishSpriteLayer({ sourceImage: symptomOverlay, renderImage: symptomOverlay }, 1, 1, { preserveColor: true });
+        const sideAlpha = getFishSymptomSideVisibility(fish, pose, now, v26TurnRendererActive);
+        if (sideAlpha > 0) {
+          const sideOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now, { mode: "side" });
+          if (sideOverlay) drawFishSpriteLayer({ sourceImage: sideOverlay, renderImage: sideOverlay }, 1, sideAlpha, { preserveColor: true });
         }
       }
     }
@@ -111966,16 +112193,16 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.restore();
       } else {
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
-      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Happy");
+      const moodLabel = pose.isDead ? "Dead" : (getFishCareConcerns(fish, now).length ? "Needs care" : (snapshot?.mood?.label || "Happy"));
       const progression = pose.isDead ? null : getFishManagementProgressionPresentation(fish, species);
       const moodPresentation = pose.isDead
         ? { tone: "danger", color: "#ff627d" }
-        : getFishMoodPresentation(moodLabel);
+        : moodLabel === "Needs care" ? { tone: "warning", color: "#ffd784" } : getFishMoodPresentation(moodLabel);
       const displayHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !pose.isDead
         ? getFishMaxHealthUnits(fish, species)
         : (Number(fish.healthUnits) || 0);
       const heartCount = Math.max(0, displayHealthUnits / 2);
-      const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
+      const heartLabel = `${Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1)}/${getFishMaxHealthUnits(fish, species) / 2}`;
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
       const fontSize = 13 * stableScale;
@@ -112099,7 +112326,7 @@ function drawFish(now, layer = null, options = {}) {
 
       tankContext.textAlign = "left";
       tankContext.fillStyle = moodPresentation.color || "rgba(244, 251, 255, 0.96)";
-      const moodPillWidth = Math.min(labelWidth * 0.3, 68 * stableScale);
+      const moodPillWidth = Math.min(labelWidth * 0.4, Math.max(68 * stableScale, tankContext.measureText(moodLabel).width + 12 * stableScale));
       const moodPillX = labelX + labelWidth / 2 - moodPillWidth - 12 * stableScale;
       const moodPillY = topY + 50 * stableScale;
       const moodPillHeight = 18 * stableScale;
@@ -114061,98 +114288,6 @@ function drawDecorBubblerEffect(item, decor, image, now = Date.now(), options = 
   drawDecorBubblerEffectToContext(tankContext, item, decor, image, now, options);
 }
 
-function drawTransitTubeBursts(now = Date.now()) {
-  runtime.transitTubeBursts = (runtime.transitTubeBursts || []).filter((burst) => burst.endsAt > now);
-  const tank = getCurrentTank();
-  if (!tank || !runtime.transitTubeBursts.length) {
-    return;
-  }
-  for (const burst of runtime.transitTubeBursts.filter((entry) => entry.tankId === tank.id)) {
-    const item = (tank.placedDecor || []).find((entry) => entry.id === burst.decorId);
-    const decor = item ? runtime.decorMap.get(item.decorKey) : null;
-    const image = decor ? runtime.images.get(decor.path) : null;
-    if (!item || !decor || !image) {
-      continue;
-    }
-    const progress = clamp((now - burst.startedAt) / Math.max(1, burst.endsAt - burst.startedAt), 0, 1);
-    const envelope = Math.sin(progress * Math.PI);
-    const dynamicDecor = {
-      ...decor,
-      bubbler: {
-        spoutQty: 1,
-        spouts: [{
-          horizontalLocation: 0.5,
-          intensity: 10,
-          speed: 1.8,
-          spread: burst.mode === "enter" ? 18 : 52,
-          fadeDistance: burst.mode === "enter" ? 95 : 210,
-          direction: burst.mode === "enter" ? "down" : "up",
-          bubbleColor: "#76efff",
-          bubbleOpacity: 3,
-          bubbleSize: burst.mode === "enter" ? 0.75 : 1.15,
-          bubblePopEnabled: burst.mode === "exit"
-        }]
-      }
-    };
-    drawDecorBubblerEffectToContext(tankContext, item, dynamicDecor, image, now, { alphaScale: envelope });
-  }
-}
-
-function drawDecorBubbleStreams(now) {
-  if (!state.placedDecor.length) {
-    return;
-  }
-
-  const stableScale = getViewportStableAssetScale();
-  for (const item of state.placedDecor) {
-    if (isBubblerDecorKey(item.decorKey)) {
-      continue;
-    }
-
-    const decor = runtime.decorMap.get(item.decorKey);
-    const image = decor ? runtime.images.get(decor.path) : null;
-    if (!decor || !image) {
-      continue;
-    }
-
-    const intensity = getDecorBubbleIntensity(item.decorKey);
-    if (intensity <= 0) {
-      continue;
-    }
-
-    const width = getDecorDisplayWidth(decor, item);
-    const height = width * (image.height / image.width);
-    const sourceX = item.xNorm * TANK_WIDTH;
-    const sourceY = item.yNorm * TANK_HEIGHT - height * 0.2;
-    const streamCount = intensity >= 1.3 ? 2 : 1;
-
-    for (let streamIndex = 0; streamIndex < streamCount; streamIndex += 1) {
-      const laneOffset = (streamIndex - (streamCount - 1) / 2) * (12 * stableScale + width * 0.03);
-      const bubbleCount = 2 + Math.round(intensity);
-      for (let bubbleIndex = 0; bubbleIndex < bubbleCount; bubbleIndex += 1) {
-        const cycle = (now / 1000) * (0.055 + bubbleIndex * 0.008 + streamIndex * 0.006) + item.xNorm * 7 + bubbleIndex * 0.19;
-        const progress = cycle % 1;
-        const x = sourceX + laneOffset + Math.sin(cycle * 8) * (3.2 + bubbleIndex * 0.9) * stableScale;
-        const y = sourceY - progress * (70 + bubbleIndex * 28 + intensity * 12) * stableScale;
-        if (y <= WATER_SURFACE_Y + 6) {
-          continue;
-        }
-
-        const radius = 1.8 + bubbleIndex * 0.7;
-        drawBubbleOrb(x, y, radius, 0.14 + bubbleIndex * 0.05, 1);
-      }
-    }
-  }
-}
-
-function getDecorBubbleIntensity(decorKey) {
-  const categories = new Set(getDecorCategoryList(decorKey));
-  if (categories.has("plant") || categories.has("coral")) return 1.45;
-  if (categories.has("cave")) return 1.05;
-  if (["rock", "wood", "ornament"].some((category) => categories.has(category))) return 0.6;
-  return 0.35;
-}
-
 function getBubbleSpriteByIndex(index) {
   const overrideSprite = getOptionalBubbleOrbSprite();
   if (overrideSprite) {
@@ -115757,6 +115892,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
   }
 
   const candidates = collectCaveBehaviorPlansForFish(fish, now).filter((plan) => {
+    if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)) return false;
     const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
     return !item
       || getFishResidenceDecorId(fish) === plan.decorId
@@ -116166,6 +116302,8 @@ function completeFishCaveEntryArrival(fish, species, decorItem, plan, now = Date
   plan.normalInsideMode = hasEntrySeat ? "seat-hold" : null;
   plan.normalTargetPoint = null;
   plan.normalSeatPoint = shouldHoldEntrySeat && plan.inside ? { ...plan.inside } : null;
+  // Travel time is not time spent enjoying the shelter.
+  fish.caveInsideUntil = now + Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000);
   plan.normalSeatHoldUntil = hasEntrySeat
     ? Math.max(Number(fish.caveInsideUntil) || 0, now + randomBetween(CAVE_NORMAL_SEAT_HOLD_MIN_MS, CAVE_NORMAL_SEAT_HOLD_MAX_MS))
     : null;
@@ -117023,6 +117161,10 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   if (!fish || !species || !decorItem || !plan || !mouthNode) {
     return false;
   }
+  // A seat that cannot finish settling must not trap its occupant forever.
+  if (Number.isFinite(fish.caveInsideUntil) && now >= fish.caveInsideUntil) {
+    return beginFishNormalCaveExit(fish, plan, mouthNode, now);
+  }
 
   const currentPoint = {
     xNorm: clamp(fish.xNorm, 0.08, 0.92),
@@ -117317,12 +117459,18 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   return chooseNextAction();
 }
 
-function getCaveDepthRegions(plan) {
+function getCaveDepthRegions(plan, decorItem = null, fish = null) {
   const frontLayer = clampTankLayer(plan?.frontLayer ?? DEFAULT_TANK_LAYER);
   const backLayer = clampTankLayer(plan?.backLayer ?? frontLayer);
-  const front = getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
-  const interior = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
-  const rear = getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
+  const interior = decorItem ? getPlacedDecorDepthZ(decorItem)
+    : getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_MIDDLE);
+  const clearance = decorItem
+    ? getPlacedDecorDepthRadius(decorItem) + getFishTankDepthRadius(fish) + 0.003
+    : 0;
+  const front = decorItem ? sanitizeTankDepthZ(interior + clearance)
+    : getTankDepthZFromLegacyPosition(frontLayer, TANK_SUBLAYER_FRONT);
+  const rear = decorItem ? sanitizeTankDepthZ(interior - clearance)
+    : getTankDepthZFromLegacyPosition(backLayer, TANK_SUBLAYER_BACK);
   return { front, interior, rear };
 }
 
@@ -117371,7 +117519,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     ? getDebugCaveSeatSequence(decorItem, fish, species, now, plan.inside || plan.mouth || plan.approach)
     : [];
 
-  const depthRegions = getCaveDepthRegions(plan);
+  const depthRegions = getCaveDepthRegions(plan, decorItem, fish);
   runtime.activeFishCavePlans.set(fish.id, {
     decorId: plan.decorId,
     portalId: plan.portalId,
@@ -117382,6 +117530,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
       : null,
     configuredPoints: plan.configuredPoints === true,
     swimmable,
+    lingerMs: Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000),
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),
     backLayer: clampTankLayer(plan.backLayer),
@@ -117612,6 +117761,10 @@ function recoverFishInsideCave(fish, species, now) {
   const plan = getActiveFishCavePlan(fish);
   const decor = plan && getCaveBehaviorDecorById(plan.decorId);
   if (!plan || !decor) return false;
+  // Both braking and replanning are rate-limited. Damping every animation
+  // frame makes the recovery target impossible to reach.
+  if (now < (Number(plan.collisionRetryAt) || 0)) return true;
+  plan.portalFacingHold = null;
   // A blocked path should shed momentum, not erase it in one frame. Retaining
   // a small fraction lets the replanned route inherit the actual approach
   // direction without letting the fish keep pressing through a solid wall.
@@ -117623,7 +117776,6 @@ function recoverFishInsideCave(fish, species, now) {
   }
   // Collision recovery never changes depth or grants passage through a wall.
   // Replanning is rate-limited because mask route searches are expensive.
-  if (now < (Number(plan.collisionRetryAt) || 0)) return true;
   const progressed = Math.hypot(fish.xNorm - (plan.collisionLastX ?? fish.xNorm),
     fish.yNorm - (plan.collisionLastY ?? fish.yNorm)) > 0.012;
   plan.collisionFailures = progressed ? 1 : (Number(plan.collisionFailures) || 0) + 1;
@@ -117805,6 +117957,21 @@ function enforceActiveCaveMaskRule(fish, species, now = Date.now()) {
   return recoverFishInsideCave(fish, species, now);
 }
 
+function updateFishCaveTransitProgress(fish, plan, now = Date.now()) {
+  if (fish.caveState === "inside" && plan.normalInsideMode === "seat-hold") return false;
+  const distance = Math.hypot(fish.targetXNorm - fish.xNorm, fish.targetYNorm - fish.yNorm);
+  const key = `${fish.caveState}|${fish.cavePathIndex ?? ""}|${plan.normalPathIndex ?? ""}|${fish.cavePortalCrossingNodeIndex ?? ""}`;
+  const progress = plan.transitProgress;
+  if (!progress || progress.key !== key || distance < progress.distance - 0.003) {
+    plan.transitProgress = { key, distance, at: now };
+    return false;
+  }
+  if (now - progress.at < 8000) return false;
+  // Refresh the checkpoint before recovery so one stall cannot replan each frame.
+  plan.transitProgress = { key, distance, at: now };
+  return true;
+}
+
 function updateFishCaveBehavior(fish, species, now = Date.now()) {
   if (!fish?.caveState || !fish.caveDecorId || species?.behavior === "sucker" || fish.activity !== "roam") {
     return false;
@@ -117823,6 +117990,27 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
   }
   const debugForcedPlan = Boolean(plan.debugForced) && isDebugCaveTestFish(fish);
   const debugTestLoop = Boolean(plan.debugTestLoop) && isDebugCaveTestFish(fish);
+  if (!debugTestLoop && updateFishCaveTransitProgress(fish, plan, now)) {
+    if (fish.caveState === "portal-enter") {
+      // Back out along the physical portal route when a crossing is blocked.
+      // Cancellation preserves position and starts the existing exit controller.
+      abortFishCaveBehavior(fish, now, true);
+      return true;
+    }
+    if (["approach", "align", "leave"].includes(fish.caveState)) {
+      if (fish.caveState === "leave") {
+        releaseFishFromCaveWithMomentum(fish, species, plan, now);
+      } else {
+        abortFishCaveBehavior(fish, now, true);
+        fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
+        fish.targetAt = now;
+      }
+      return false;
+    }
+    if (["enter", "inside", "exit", "depart"].includes(fish.caveState)) {
+      recoverFishInsideCave(fish, species, now);
+    }
+  }
 
   const triggerRegion = getActiveFishCaveTriggerRegion(fish);
   let seatRegion = getActiveFishCaveSeatRegion(fish);
@@ -117885,6 +118073,18 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_FRONT, TANK_SUBLAYER_FRONT);
     if (reachedTrigger || stalledAtTrigger) {
+      // Reaching the mouth in XY does not authorize crossing from behind the
+      // shell. First reach the exterior depth through a collision-cleared route.
+      if (getFishTankDepthZ(fish) < getFishCaveDepthRegion(fish, "front") - 0.003) return true;
+      // Validate the planned facing before asking for the compact mouth turn.
+      // Testing only the old facing can deadlock an otherwise legal entrance.
+      const entryDirection = getFishCavePortalDesiredDirection(fish, plan, "enter");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, entryDirection)) {
+        fish.targetXNorm = mouthNode.xNorm;
+        fish.targetYNorm = mouthNode.yNorm;
+        return true;
+      }
+      if (!prepareFishCavePortalFacing(fish, species, plan, "enter", now)) return true;
       // Crossing depth is legal only where the whole body fits the opening.
       // A stall timer cannot authorize passage through the solid rim.
       if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
@@ -117903,9 +118103,6 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
         );
         setFishDesiredTankLayer(fish, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER));
         fish.targetAt = now + 900;
-        return true;
-      }
-      if (!prepareFishCavePortalFacing(fish, species, plan, "enter", now)) {
         return true;
       }
       fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
@@ -118003,19 +118200,19 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
         return true;
       }
 
-      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+      const exitDirection = getFishCavePortalDesiredDirection(fish, plan, "exit");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, exitDirection)) {
         fish.targetXNorm = mouthNode.xNorm;
         fish.targetYNorm = mouthNode.yNorm;
         return true;
       }
+      if (!prepareFishCavePortalFacing(fish, species, plan, "exit", now)) return true;
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) return true;
       fish.targetXNorm = fish.xNorm;
       fish.targetYNorm = fish.yNorm;
       const mouthPose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
       if (!debugForcedPlan && !stalledAtTrigger && !canFishChangeToLayer(fish, species, now, clampTankLayer(fish.caveFrontLayer || DEFAULT_TANK_LAYER), mouthPose)) {
         fish.targetAt = now + 900;
-        return true;
-      }
-      if (!prepareFishCavePortalFacing(fish, species, plan, "exit", now)) {
         return true;
       }
       fish.caveTriggerCooldownUntil = now + CAVE_TRIGGER_COOLDOWN_MS;
@@ -118039,7 +118236,8 @@ function updateFishCaveBehavior(fish, species, now = Date.now()) {
     );
     setFishTankSublayers(fish, TANK_SUBLAYER_MIDDLE, TANK_SUBLAYER_MIDDLE);
     if (reachedMouth) {
-      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish)) {
+      const exitDirection = getFishCavePortalDesiredDirection(fish, plan, "exit");
+      if (!portalOpeningFitsFish(decorItem, fish, species, now, fish, exitDirection)) {
         fish.targetXNorm = plan.mouth.xNorm;
         fish.targetYNorm = plan.mouth.yNorm;
         return true;
@@ -120777,6 +120975,13 @@ function canFishOccupyContinuousDepth(fish, species, now, pose, z, fromZ = z) {
     && getOverlappingFishForLayerChange(fish, species, now, pose, collisionOptions).length === 0;
 }
 
+function getFishContinuousDepthCollisionPose(fish, species, now) {
+  // A turning sprite can temporarily be edge-on. Its visual compression must
+  // not grant permission for the full body to cross an opaque decor plane.
+  const pose = getFishCollisionPose(fish, species, now, fish.xNorm, fish.yNorm, fish.direction || 1);
+  return { ...pose, bodyScaleX: Math.max(1, Number(pose.bodyScaleX) || 1) };
+}
+
 function findFishContinuousDepthEscape(fish, species, now, pose, currentZ, preferredDirection) {
   const directions = preferredDirection >= 0 ? [1, -1] : [-1, 1];
   for (const distance of [0.08, 0.14, 0.2]) {
@@ -120812,7 +121017,7 @@ function syncFishContinuousDepth(fish, species, now) {
   const elapsedSeconds = clamp((now - previousAt) / 1000, 0, 0.12);
   fish.depthMotionUpdatedAt = now;
   const candidateZ = currentZ + Math.sign(difference) * Math.min(Math.abs(difference), Math.max(0.002, elapsedSeconds * 0.18));
-  const pose = getFishPose(fish, species, now);
+  const pose = getFishContinuousDepthCollisionPose(fish, species, now);
   const depthProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const depthClear = canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ, currentZ);
   if (runtime.debugFrameProfilerEnabled) endDebugFrameProfilerSection("depthCollision", depthProfileStartedAt);
@@ -120895,7 +121100,15 @@ function syncFishDrawLayer(fish, species, now) {
     const elapsedSeconds = clamp((now - (Number(fish.caveDepthUpdatedAt) || now)) / 1000, 0, 0.12);
     fish.caveDepthUpdatedAt = now;
     const maxStep = Math.max(0.002, elapsedSeconds * 0.2);
-    fish.z = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    const candidateZ = currentZ + Math.sign(targetZ - currentZ) * Math.min(Math.abs(targetZ - currentZ), maxStep);
+    if (candidateZ !== currentZ) {
+      const pose = getFishContinuousDepthCollisionPose(fish, species, now);
+      if (canFishOccupyContinuousDepth(fish, species, now, pose, candidateZ, currentZ)) {
+        fish.z = candidateZ;
+      } else {
+        fish.depthMotionBlockedAt = now;
+      }
+    }
     fish.desiredZ = targetZ;
     if (fish?.id) runtime.fishLayerTravelStepTransitions.delete(fish.id);
     return;
@@ -123866,7 +124079,12 @@ async function signOutCloudAccount() {
       console.warn("Cloud sign out request failed; local session will still be cleared.", error);
     }
   }
+  // Leave the active aquarium entirely; startup will show the main login card
+  // after the local session is cleared. Save without queuing another upload.
+  runtime.cloudWritesAllowed = false;
+  saveState();
   clearCloudSession();
+  window.location.reload();
   return true;
 }
 
@@ -125176,7 +125394,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/barb__genetics-natural.webp",
-      "version": "cddd3e1c1368",
+      "version": "4cbe27ac8842",
       "width": 1536,
       "height": 1152,
       "frames": {
@@ -125186,19 +125404,19 @@ function getSpriteSheetDefinitions() {
           512,
           384
         ],
-        "barb_cherry.png": [
+        "barb_tiger.png": [
           512,
           0,
           512,
           384
         ],
-        "barb_five_banded.png": [
+        "barb_rosy.png": [
           1024,
           0,
           512,
           384
         ],
-        "barb_gold.png": [
+        "barb_odessa.png": [
           0,
           384,
           512,
@@ -125210,20 +125428,26 @@ function getSpriteSheetDefinitions() {
           512,
           384
         ],
-        "barb_odessa.png": [
+        "barb_gold.png": [
           1024,
           384,
           512,
           384
         ],
-        "barb_rosy.png": [
+        "barb_five_banded.png": [
           0,
           768,
           512,
           384
         ],
-        "barb_tiger.png": [
+        "barb_cherry.png": [
           512,
+          768,
+          512,
+          384
+        ],
+        "silver-barb.png": [
+          1024,
           768,
           512,
           384
@@ -125231,7 +125455,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/barb__genetics-natural",
-        "version": "6e884325ca31-v1",
+        "version": "3c6c7e5c228b-v1",
         "standalone": false
       }
     },
@@ -128171,7 +128395,7 @@ function getSpriteSheetDefinitions() {
     },
     {
       "path": "assets/fish/small_fish/barb__genetics-natural.webp",
-      "version": "f96d4aed62df",
+      "version": "5941d4a694b7",
       "width": 192,
       "height": 144,
       "frames": {
@@ -128181,19 +128405,19 @@ function getSpriteSheetDefinitions() {
           64,
           48
         ],
-        "barb_cherry.png": [
+        "barb_tiger.png": [
           64,
           0,
           64,
           48
         ],
-        "barb_five_banded.png": [
+        "barb_rosy.png": [
           128,
           0,
           64,
           48
         ],
-        "barb_gold.png": [
+        "barb_odessa.png": [
           0,
           48,
           64,
@@ -128205,20 +128429,26 @@ function getSpriteSheetDefinitions() {
           64,
           48
         ],
-        "barb_odessa.png": [
+        "barb_gold.png": [
           128,
           48,
           64,
           48
         ],
-        "barb_rosy.png": [
+        "barb_five_banded.png": [
           0,
           96,
           64,
           48
         ],
-        "barb_tiger.png": [
+        "barb_cherry.png": [
           64,
+          96,
+          64,
+          48
+        ],
+        "silver-barb.png": [
+          128,
           96,
           64,
           48
@@ -128226,7 +128456,7 @@ function getSpriteSheetDefinitions() {
       },
       "delivery": {
         "root": "assets/generated/sprites/fish/small_fish/barb__genetics-natural",
-        "version": "afd702e1b4c2-v1",
+        "version": "388d999a4ee3-v1",
         "standalone": false
       }
     },
@@ -132305,6 +132535,55 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/web/bodega/symptom-tiles.webp",
+      "version": "dd2f7f237485",
+      "width": 1536,
+      "height": 768,
+      "frames": {
+        "spots_symptoms.png": [
+          0,
+          0,
+          512,
+          384
+        ],
+        "lesions_symptoms.png": [
+          512,
+          0,
+          512,
+          384
+        ],
+        "cuts_symptoms.png": [
+          1024,
+          0,
+          512,
+          384
+        ],
+        "faded-color_symptoms.png": [
+          0,
+          384,
+          512,
+          384
+        ],
+        "strange-behavior_symptoms.png": [
+          512,
+          384,
+          512,
+          384
+        ],
+        "panic_symptoms.png": [
+          1024,
+          384,
+          512,
+          384
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/web/bodega/symptom-tiles",
+        "version": "45534867b6a2-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/web/davy/fish/bioluminescent-angler-pike__genetics-enhanced.webp",
       "version": "1a7788398270",
       "width": 1024,
@@ -133530,5 +133809,562 @@ function preloadDecorArtwork(decor) {
   }).finally(() => pending.delete(key));
   pending.set(key, promise);
   return promise;
+}
+// </bundle-source>
+
+// <bundle-source path="fish/care-and-vet.js">
+// Fish care courses, the player-led Pharmacy puzzle, and Stillwater telehealth.
+// All artwork comes from the existing asset library.
+
+function getFishTreatmentDefinitions() {
+  return {
+    antiParasite: { slot: "disease", family: "parasites", doses: 5 },
+    infectionTreatment: { slot: "disease", family: "infection", doses: 5 },
+    firstAid: { slot: "injury", family: "injured", doses: 3 }
+  };
+}
+
+function getMedicineTreatmentInstructions(id) {
+  const definition = getFishTreatmentDefinitions()[id];
+  if (definition) return `Give one drop to the affected fish every 24 hours for ${definition.doses} doses. Allow a final 24-hour healing interval. One missed day preserves progress: give the next drop when you return. Two consecutive missed days worsen symptoms and restart the full course. Never give extra drops to catch up. Keep the water compatible, the tank clean, and the fish comfortable.`;
+  if (id === "waterStress") return "Correct the fish's water type first. One drop boosts its recovery for six hours. Wait until that boost ends before using another drop. Correct water allows recovery without medication.";
+  if (id === "betaBlocker") return "One drop into the tank calms its living fish for ten minutes. Address the cause of panic or aggression. Wait until the effect ends before using another drop.";
+  return "";
+}
+
+function sanitizeFishTreatmentCourses(value) {
+  const result = {};
+  for (const slot of ["disease", "injury"]) {
+    const raw = value?.[slot];
+    const definition = getFishTreatmentDefinitions()[raw?.medicineId];
+    if (!definition || definition.slot !== slot || !["active", "delayed", "observing", "restartRequired", "complete"].includes(raw.status)) continue;
+    const course = { medicineId: raw.medicineId, status: raw.status, courseId: String(raw.courseId || "").slice(0, 100), startingStage: sanitizeDiseaseState(raw.startingStage) };
+    for (const key of ["startedAt", "lastDoseAt", "lastEvaluatedAt", "relapseAppliedAt", "completedAt"]) course[key] = Number.isFinite(Number(raw[key])) ? Math.max(0, Number(raw[key])) : 0;
+    course.dosesGiven = clamp(Math.floor(Number(raw.dosesGiven) || 0), 0, definition.doses);
+    course.healingProgressMs = clamp(Number(raw.healingProgressMs) || 0, 0, definition.doses * DAY_MS);
+    course.healingBudgetUnits = clamp(Math.floor(Number(raw.healingBudgetUnits) || 0), 0, FISH_HEALTH_MAX_HEARTS * 2);
+    course.unitsRestored = clamp(Math.floor(Number(raw.unitsRestored) || 0), 0, course.healingBudgetUnits);
+    if (!course.startedAt || !course.lastDoseAt || (course.status !== "restartRequired" && !course.dosesGiven)) continue;
+    if (!course.lastEvaluatedAt) course.lastEvaluatedAt = course.lastDoseAt;
+    result[slot] = course;
+  }
+  return result;
+}
+
+function sanitizeFishCareKnowledge(value) {
+  const result = {};
+  for (const slot of ["disease", "injury", "water"]) {
+    const raw = value?.[slot];
+    if (raw && typeof raw.episode === "string" && ["parasites", "infection", "injured", "osmotic-stress"].includes(raw.condition)) {
+      result[slot] = { episode: raw.episode.slice(0, 180), condition: raw.condition };
+    }
+  }
+  return result;
+}
+
+function getFishCareEpisode(fish, slot) {
+  if (slot === "disease") return `${fish.diseaseInfectedAt || 0}:${normalizeFishDiseaseType(fish.diseaseType)}`;
+  if (slot === "water") return String(fish.osmoticStressStartedAt || 0);
+  return String(fish.injuryEpisodeAt || fish.acquiredAt || fish.id || "legacy");
+}
+
+function discoverFishCareCondition(fish, condition) {
+  const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
+  fish.careKnowledge ||= {};
+  fish.careKnowledge[slot] = { condition, episode: getFishCareEpisode(fish, slot) };
+}
+
+function getFishCareConcerns(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish)) return [];
+  const concerns = [];
+  if (hasActiveFishDisease(fish)) concerns.push(normalizeFishDiseaseType(fish.diseaseType));
+  if (fish.healthUnits < getFishMaxHealthUnits(fish)) concerns.push("injured");
+  if (isFishWaterTypeMismatch(fish) || Number(fish.osmoticStressProgressMs) > 0) concerns.push("osmotic-stress");
+  return concerns;
+}
+
+function getFishCareConditionText(fish, now = Date.now()) {
+  const concerns = getFishCareConcerns(fish, now);
+  if (!concerns.length) return "No care concern observed";
+  return concerns.map((condition) => {
+    const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
+    const known = fish.careKnowledge?.[slot];
+    const legacyRecovery = slot === "disease" && fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease;
+    return legacyRecovery || known?.episode === getFishCareEpisode(fish, slot) ? formatFishConditionLabel(condition) : "Cause not identified";
+  }).filter((label, index, labels) => labels.indexOf(label) === index).join(" · ");
+}
+
+function shiftFishTreatmentTimes(fish, pauseMs) {
+  if (!fish || !(pauseMs > 0)) return;
+  for (const course of Object.values(fish.treatmentCourses || {})) {
+    for (const key of ["startedAt", "lastDoseAt", "lastEvaluatedAt", "relapseAppliedAt", "completedAt"]) {
+      if (course[key] > 0) course[key] += pauseMs;
+    }
+  }
+}
+
+function isFishCourseOngoing(fish, slot) {
+  return ["active", "delayed", "observing"].includes(fish?.treatmentCourses?.[slot]?.status);
+}
+
+function reconcileFishTreatmentCourses(fish, now = Date.now()) {
+  if (!fish || isFishDead(fish) || fish.storageFrozen || isPeacefulModeEnabled()) return false;
+  let changed = false;
+  for (const [slot, course] of Object.entries(fish.treatmentCourses || {})) {
+    if (!["active", "delayed", "observing"].includes(course.status)) continue;
+    const definition = getFishTreatmentDefinitions()[course.medicineId];
+    if (!definition) continue;
+    // Preserve remaining intervals on a backwards clock, without adding credit.
+    if (now < course.lastEvaluatedAt) {
+      const shift = now - course.lastEvaluatedAt;
+      course.startedAt += shift;
+      course.lastDoseAt += shift;
+      course.lastEvaluatedAt = now;
+      changed = true;
+    }
+    const elapsed = Math.max(0, now - course.lastEvaluatedAt);
+    if (!elapsed) continue;
+    const coverageEnd = course.lastDoseAt + DAY_MS;
+    const goodConditions = !isFishWaterTypeMismatch(fish) && getDiseaseTankCleanliness(now) >= DISEASE_LOW_CLEANLINESS_THRESHOLD && getFishComfort(fish, now).value > DISEASE_LOW_COMFORT_THRESHOLD;
+    const covered = course.dosesGiven === definition.doses ? elapsed : Math.max(0, Math.min(now, coverageEnd) - course.lastEvaluatedAt);
+    if (goodConditions) course.healingProgressMs = Math.min(definition.doses * DAY_MS, course.healingProgressMs + covered);
+    course.lastEvaluatedAt = now;
+    changed = true;
+    if (slot === "injury") {
+      const totalUnits = Math.floor(course.healingBudgetUnits * course.healingProgressMs / (definition.doses * DAY_MS));
+      const units = Math.max(0, totalUnits - course.unitsRestored);
+      fish.healthUnits = Math.min(getFishMaxHealthUnits(fish), fish.healthUnits + units);
+      course.unitsRestored += units;
+    } else {
+      fish.diseaseRecoveryProgressMs = Math.min(DISEASE_RECOVERY_REQUIRED_MS - 1, course.healingProgressMs / (definition.doses * DAY_MS) * DISEASE_RECOVERY_REQUIRED_MS);
+      fish.diseaseLastProgressAt = now;
+    }
+    if (course.dosesGiven < definition.doses && now >= course.lastDoseAt + 3 * DAY_MS) {
+      course.status = "restartRequired";
+      course.relapseAppliedAt = course.lastDoseAt + 3 * DAY_MS;
+      course.dosesGiven = 0;
+      course.healingProgressMs = 0;
+      if (slot === "injury") fish.healthUnits = Math.max(1, fish.healthUnits - 1);
+      if (slot === "disease") {
+        const stages = [DISEASE_STATE_CARRIER, DISEASE_STATE_INCUBATING, DISEASE_STATE_EARLY, DISEASE_STATE_VISIBLE, DISEASE_STATE_SEVERE];
+        const index = Math.min(stages.length - 1, Math.max(3, stages.indexOf(course.startingStage) + 1));
+        fish.diseaseState = stages[index];
+        fish.diseaseType = definition.family;
+        fish.diseaseProgressMs = getDebugDiseaseProgressForStage(fish.diseaseState);
+        fish.diseaseRecoveryProgressMs = 0;
+        fish.diseaseRequiresTreatment = true;
+        fish.diseaseTreatedUntil = 0;
+        fish.diseaseLastProgressAt = course.relapseAppliedAt;
+        fish.diseaseLastDamageAt = course.relapseAppliedAt;
+        fish.nextDiseaseCheckAt = now;
+      }
+      pushEvent(`${fish.name}'s symptoms worsened after two missed treatment days. Restart the full course.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+      continue;
+    }
+    course.status = course.dosesGiven === definition.doses ? "observing" : now >= course.lastDoseAt + 2 * DAY_MS ? "delayed" : "active";
+    if (course.dosesGiven === definition.doses && course.healingProgressMs >= definition.doses * DAY_MS) {
+      course.status = "complete";
+      course.completedAt = now;
+      if (slot === "disease") resetFishDiseaseFields(fish, DISEASE_STATE_IMMUNE, now);
+      pushEvent(`${fish.name}'s treatment course is complete.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    }
+  }
+  return changed;
+}
+
+function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
+  if (!fish || isFishDead(fish) || fish.storageFrozen) return { ok: false, message: "Select a living fish in a tank." };
+  if (isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode. Resume normal care before giving the next drop." };
+  if (isFishWaterTypeMismatch(fish)) return { ok: false, message: "Move this fish to compatible water before giving a treatment drop." };
+  const definition = getFishTreatmentDefinitions()[medicineId];
+  if (!definition) return { ok: false, message: "Select a course medication." };
+  const course = fish.treatmentCourses?.[definition.slot];
+  if (isFishCourseOngoing(fish, definition.slot)) {
+    if (course.medicineId !== medicineId) return { ok: false, message: "Continue the medicine already used for this course." };
+    if (course.dosesGiven >= definition.doses) return { ok: false, message: "All doses are given. Allow time to heal in good conditions." };
+    if (now < course.lastDoseAt + DAY_MS) return { ok: false, message: "Today's dose is already given. Wait until the next dose is due." };
+    return { ok: true, definition, course };
+  }
+  const matches = definition.slot === "injury" ? fish.healthUnits < getFishMaxHealthUnits(fish) : hasActiveFishDisease(fish) && normalizeFishDiseaseType(fish.diseaseType) === definition.family;
+  if (!matches) return { ok: false, message: "This treatment does not match these symptoms. Recheck the Pharmacy questionnaire." };
+  // Preserve existing one-dose recoveries from saves made before courses existed.
+  if (definition.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING) return { ok: false, message: "The previous treatment is still working. Allow time to recover." };
+  return { ok: true, definition, course: null };
+}
+
+function applyFishCourseDose(medicine, fish, now = Date.now()) {
+  reconcileFishTreatmentCourses(fish, now);
+  const eligibility = getFishMedicationEligibility(medicine.id, fish, now);
+  if (!eligibility.ok) return eligibility;
+  const { definition } = eligibility;
+  let course = eligibility.course;
+  if (!course) {
+    course = {
+      medicineId: medicine.id, courseId: createId("course"), status: "active", startingStage: fish.diseaseState,
+      startedAt: now, lastDoseAt: now, lastEvaluatedAt: now, dosesGiven: 0, healingProgressMs: 0,
+      healingBudgetUnits: definition.slot === "injury" ? Math.max(0, getFishMaxHealthUnits(fish) - fish.healthUnits) : 0,
+      unitsRestored: 0, relapseAppliedAt: 0, completedAt: 0
+    };
+    fish.treatmentCourses ||= {};
+    fish.treatmentCourses[definition.slot] = course;
+  }
+  course.dosesGiven += 1;
+  course.lastDoseAt = now;
+  course.lastEvaluatedAt = now;
+  course.status = course.dosesGiven === definition.doses ? "observing" : "active";
+  discoverFishCareCondition(fish, definition.family);
+  if (definition.slot === "disease") {
+    fish.diseaseState = DISEASE_STATE_RECOVERING;
+    fish.diseaseRequiresTreatment = true;
+    fish.diseaseTreatedUntil = now + DAY_MS;
+    fish.diseaseLastProgressAt = now;
+  } else {
+    fish.injuryRecoveryProgressMs = 0;
+    fish.injuryRecoveryStartHealthUnits = 0;
+  }
+  syncFishPrimaryCondition(fish, now);
+  return { ok: true, message: `${fish.name}: dose ${course.dosesGiven} of ${definition.doses} given. ${course.dosesGiven === definition.doses ? "Allow the final healing interval." : "Next drop due in 24 hours."}` };
+}
+
+function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
+  const rows = Object.values(fish.treatmentCourses || {}).map((course) => {
+    const definition = getFishTreatmentDefinitions()[course.medicineId];
+    const medicine = getMedicineMeta(course.medicineId);
+    if (!definition || !medicine) return "";
+    const due = course.lastDoseAt + DAY_MS;
+    const status = course.status === "restartRequired" ? "Restart required: symptoms worsened after two missed days." : course.status === "complete" ? "Course complete." : course.status === "observing" ? "All doses given. Healing continues in good conditions." : now < due ? `Next dose: ${new Date(due).toLocaleString()}` : course.status === "delayed" ? "One day missed. Give the next dose now; progress is preserved." : "Next dose is due.";
+    const owned = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
+    const remaining = course.status === "complete" ? 0 : definition.doses - course.dosesGiven;
+    return `<article class="fish-care-guide"><strong>${escapeHtml(medicine.name)} · ${course.dosesGiven}/${definition.doses} doses</strong><p>${escapeHtml(status)}</p><p>${escapeHtml(getMedicineTreatmentInstructions(medicine.id))}</p><small>${remaining} drops remaining · ${owned} owned · ${Math.max(0, remaining - owned)} more needed</small></article>`;
+  }).join("");
+  let support = "";
+  if (fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease) {
+    const remaining = Math.max(0, DISEASE_RECOVERY_REQUIRED_MS - (Number(fish.diseaseRecoveryProgressMs) || 0));
+    support += `<article class="fish-care-guide"><strong>Previous treatment is still working</strong><p>No extra drops are required for this older treatment. About ${Math.ceil(remaining / 3600000)} hours of recovery remain in good conditions.</p></article>`;
+  }
+  if ((Number(fish.osmoticStressProgressMs) > 0 && fish.careKnowledge?.water?.episode === getFishCareEpisode(fish, "water")) || Number(fish.waterStressBoostUntil) > now) {
+    const remaining = Math.max(0, WATER_STRESS_RECOVERY_REQUIRED_MS - (Number(fish.osmoticRecoveryProgressMs) || 0));
+    const boost = Number(fish.waterStressBoostUntil) > now ? ` Recovery boost ends ${new Date(fish.waterStressBoostUntil).toLocaleString()}.` : "";
+    support += `<article class="fish-care-guide"><strong>Water recovery</strong><p>${isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to start recovery." : `About ${Math.ceil(remaining / 3600000)} hours of normal recovery remain; an active boost increases recovery speed.`}${escapeHtml(boost)}</p><p>${escapeHtml(getMedicineTreatmentInstructions("waterStress"))}</p></article>`;
+  }
+  if (Number(fish.calmedUntil) > now) support += `<article class="fish-care-guide"><strong>Calming effect active</strong><p>Ends ${escapeHtml(new Date(fish.calmedUntil).toLocaleString())}.</p><p>${escapeHtml(getMedicineTreatmentInstructions("betaBlocker"))}</p></article>`;
+  return rows + support;
+}
+
+function getPharmacySymptomCatalog() {
+  return [
+    { id: "specks", name: "White specks", text: "Small white spots on the body or fins.", image: "assets/web/bodega/spots_symptoms.png", medicine: "antiParasite", restricted: !isTrypophobiaEnabled() },
+    { id: "lesions", name: "Red / cloudy lesions", text: "Red or cloudy patches; check both sides of the fish.", image: "assets/web/bodega/lesions_symptoms.png", medicine: "infectionTreatment", restricted: !isGoreEnabled() },
+    { id: "wounds", name: "Cuts / wounds", text: "Wound marks or fewer hearts than the fish's maximum.", image: "assets/web/bodega/cuts_symptoms.png", medicine: "firstAid", restricted: !isGoreEnabled() },
+    { id: "color", name: "Faded color", text: "Color looks duller than usual. This clue has several causes.", image: "assets/web/bodega/faded-color_symptoms.png" },
+    { id: "behavior", name: "Unusual behavior", text: "Green bubbles, hiding, slow swimming, or refusing food.", image: "assets/web/bodega/strange-behavior_symptoms.png" },
+    { id: "panic", name: "Panic / aggression", text: "Fish are fleeing, chasing, or acting panicked.", image: "assets/web/bodega/panic_symptoms.png", medicine: "betaBlocker" }
+  ];
+}
+
+function getPharmacyQuizRecommendations(symptomIds) {
+  const selected = new Set(symptomIds);
+  const ambiguous = selected.has("specks") && selected.has("lesions");
+  const medicineIds = getPharmacySymptomCatalog().filter((entry) => selected.has(entry.id) && entry.medicine && !(ambiguous && ["specks", "lesions"].includes(entry.id))).map((entry) => entry.medicine);
+  return { medicineIds: [...new Set(medicineIds)], message: ambiguous ? "White specks and red/cloudy lesions point to different treatments. Check which mark is on this fish, or assess the fish separately." : medicineIds.length ? "Likely treatments based on your choices. Check the instructions before giving a drop." : "More information needed: check for distinctive marks and compare current/max hearts. Check compatible water, cleanliness, and comfort." };
+}
+
+function getBubbleBodegaMedicineCareProfile(id) {
+  const medicine = getMedicineMeta(id);
+  if (!medicine) return null;
+  const care = {
+    firstAid: {
+      about: "First Aid drops support healing after a fish is injured. Use them for cuts, wounds, and lost hearts while keeping the aquarium clean and comfortable.",
+      treats: "Injuries: cuts, wounds, and missing hearts. Compare the fish's current hearts with its maximum; wound marks may only be visible on one side.",
+      symptoms: ["wounds"]
+    },
+    antiParasite: {
+      about: "Anti-Parasite Treatment targets the parasitic illness that causes small white specks on a fish's body and fins.",
+      treats: "Parasitic illness with white specks. Look for distinct small spots on the body or fins; red or cloudy lesions require a different treatment.",
+      symptoms: ["specks"]
+    },
+    infectionTreatment: {
+      about: "Infection Treatment helps fish recover from the illness that causes red or cloudy patches on the body.",
+      treats: "Infection with red or cloudy lesions. Check both sides of the fish for patches; white specks require Anti-Parasite Treatment instead.",
+      symptoms: ["lesions"]
+    },
+    waterStress: {
+      about: "Osmotic Stress Treatment provides a temporary recovery boost after a fish has been moved into compatible water. Fish can recover in the correct water without medication.",
+      treats: "Recovery from osmotic stress caused by incompatible water. Faded color and unusual behavior can be clues, but have several possible causes. Check the fish's required water type before treating it; these drops cannot make incompatible water safe.",
+      symptoms: ["color", "behavior"]
+    },
+    betaBlocker: {
+      about: "Calming Serum temporarily calms the living fish in an aquarium, giving them a break from panic or aggression.",
+      treats: "Temporary relief from panic and aggressive behavior, such as fleeing or chasing other fish. Address the cause of the behavior as well; this serum does not heal injuries or treat disease.",
+      symptoms: ["panic"]
+    }
+  }[id];
+  if (!care) return null;
+  return {
+    about: care.about,
+    treats: care.treats,
+    symptoms: getPharmacySymptomCatalog().filter((entry) => care.symptoms.includes(entry.id)),
+    instructions: getMedicineTreatmentInstructions(id),
+    bottleDrops: medicine.bottleDrops,
+    ownedDrops: Math.max(0, Number(state.medicineInventory?.[id]) || 0)
+  };
+}
+
+function renderPharmacySymptomChecker() {
+  const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
+  const result = getPharmacyQuizRecommendations(quiz.symptoms);
+  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see.</p></div></header>
+    <div class="pharmacy-symptoms">${getPharmacySymptomCatalog().map((entry) => `<label class="pharmacy-symptom ${entry.image && !entry.restricted ? "" : "is-text-only"} ${quiz.symptoms.includes(entry.id) ? "is-selected" : ""}" title="${escapeHtml(entry.text)}"><input type="checkbox" aria-label="${escapeHtml(`${entry.name}: ${entry.text}`)}" data-care-symptom="${entry.id}" ${quiz.symptoms.includes(entry.id) ? "checked" : ""} />${entry.image && !entry.restricted ? `<img ${assetImageAttributes(entry.image)} alt="${escapeHtml(entry.name)} example from the game" />` : `<span class="pharmacy-symptom-text-art" aria-hidden="true">${entry.id === "specks" ? "Look for spots" : entry.id === "wounds" ? "Compare hearts" : entry.id === "lesions" ? "Check both sides" : entry.id === "color" ? "Duller color than usual" : entry.id === "behavior" ? "Hiding, slow swimming, refusing food" : "Fleeing or chasing fish"}</span>`}<strong>${escapeHtml(entry.name)}</strong></label>`).join("")}</div>
+    <div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-clear>Clear symptoms</button><button type="button" class="small-button" data-care-find ${!quiz.symptoms.length ? "disabled" : ""}>Find treatments</button></div>
+    ${quiz.submitted ? `<div class="pharmacy-results" role="status"><p>${escapeHtml(result.message)}</p><div class="pharmacy-result-cards">${result.medicineIds.map((id) => {
+      const medicine = getMedicineMeta(id);
+      // Match catalog tiles without registering recommendations as shop products.
+      return medicine ? `<article class="pharmacy-treatment-card">
+        ${renderFoodAndMedImage("medicine", id, escapeHtml(medicine.name), "pharmacy-treatment-thumb")}
+        <div class="tankazon-tile-info"><h3 class="tankazon-tile-title">${escapeHtml(medicine.name)}</h3><div class="tankazon-tile-cost" aria-label="${medicine.cost} coins"><img class="tankazon-tile-cost-icon" ${assetImageAttributes("assets/misc/coin_unicode.webp")} alt="" aria-hidden="true" /><span class="tankazon-tile-cost-value">${medicine.cost}</span></div></div>
+        <button type="button" class="small-button alt" data-care-view-medicine="${id}">View medicine</button>
+      </article>` : "";
+    }).join("")}</div></div>` : ""}
+    <footer><div><strong>Unsure?</strong></div><button type="button" class="small-button pharmacy-vet-button" data-care-stillwater>Get Vet Consultation</button></footer>`;
+}
+
+function sanitizeStillwaterConsultations(value) {
+  if (!Array.isArray(value)) return [];
+  return value.filter((raw) => raw && typeof raw.id === "string" && Array.isArray(raw.fishReports)).map((raw) => ({
+    id: raw.id.slice(0, 100), tankId: String(raw.tankId || "").slice(0, 100), tankName: String(raw.tankName || "Aquarium").slice(0, 100), time: Math.max(0, Number(raw.time) || 0),
+    total: Math.max(0, Math.floor(Number(raw.total) || 0)),
+    fishReports: raw.fishReports.filter((report) => report && typeof report === "object").slice(0, 200).map((report) => ({
+      fishId: String(report.fishId || "").slice(0, 100), name: String(report.name || "Fish").slice(0, 100), species: String(report.species || "Fish").slice(0, 120),
+      conditions: (Array.isArray(report.conditions) ? report.conditions : []).filter((id) => ["parasites", "infection", "injured", "osmotic-stress"].includes(id)),
+      waterMismatch: report.waterMismatch === true,
+      behaviorConcern: report.behaviorConcern === true,
+      prescriptions: (Array.isArray(report.prescriptions) ? report.prescriptions : []).filter((entry) => entry && ["antiParasite", "infectionTreatment", "firstAid", "waterStress", "betaBlocker"].includes(entry.id)).map((entry) => ({ id: entry.id, drops: clamp(Math.floor(Number(entry.drops) || 0), 0, 5) })),
+      carePlans: (Array.isArray(report.carePlans) ? report.carePlans : (Array.isArray(report.prescriptions) ? report.prescriptions : [])).filter((entry) => entry && ["antiParasite", "infectionTreatment", "firstAid", "waterStress", "betaBlocker"].includes(entry.id)).map((entry) => ({ id: entry.id, dosesGiven: clamp(Math.floor(Number(entry.dosesGiven) || 0), 0, 5), legacyRecovery: entry.legacyRecovery === true }))
+    }))
+  }));
+}
+
+function buildStillwaterFishReport(fish, now = Date.now()) {
+  const conditions = getFishCareConcerns(fish, now);
+  const prescriptions = [];
+  const carePlans = [];
+  for (const condition of conditions) {
+    const id = condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : condition === "injured" ? "firstAid" : "waterStress";
+    const definition = getFishTreatmentDefinitions()[id];
+    const course = definition && fish.treatmentCourses?.[definition.slot];
+    const legacyRecovering = definition?.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING;
+    const drops = legacyRecovering ? 0 : definition ? Math.max(0, definition.doses - (isFishCourseOngoing(fish, definition.slot) ? course.dosesGiven : 0)) : 1;
+    carePlans.push({ id, dosesGiven: definition && isFishCourseOngoing(fish, definition.slot) ? course.dosesGiven : 0, legacyRecovery: legacyRecovering });
+    if (drops) prescriptions.push({ id, drops });
+  }
+  const behaviorConcern = (Number(fish.panicUntil) || 0) > now || fish.bettaRivalRole === "aggressor";
+  if (behaviorConcern) {
+    if (!(Number(fish.calmedUntil) > now)) prescriptions.push({ id: "betaBlocker", drops: 1 });
+    carePlans.push({ id: "betaBlocker", dosesGiven: 0, legacyRecovery: false });
+  }
+  return { fishId: fish.id, name: fish.name || "Fish", species: getSpeciesForFish(fish)?.name || "Fish", conditions, prescriptions, carePlans, behaviorConcern, waterMismatch: isFishWaterTypeMismatch(fish) };
+}
+
+function purchaseStillwaterConsultation(tankId, fishIds, submissionId, now = Date.now()) {
+  if (!submissionId) return { ok: false, message: "Open a new consultation first." };
+  const existing = state.vetConsultations?.find((report) => report.id === submissionId);
+  if (existing) return { ok: true, consultation: existing, alreadyCompleted: true };
+  if (isPeacefulModeEnabled()) return { ok: false, message: "Care is paused in Peaceful Mode. Resume normal care before purchasing an assessment." };
+  const tank = getCurrentTank();
+  const ids = [...new Set(Array.isArray(fishIds) ? fishIds : [])];
+  if (!tank || tank.id !== tankId || !ids.length) return { ok: false, message: "The active tank changed or no fish was selected. Review your selection." };
+  const fish = ids.map((id) => tank.fish.find((entry) => entry.id === id));
+  if (fish.some((entry) => !entry || isFishDead(entry) || entry.storageFrozen)) return { ok: false, message: "A selected fish is no longer available in this tank. Review your selection." };
+  const total = ids.length * 20;
+  if (state.coins < total) return { ok: false, message: `You need ${total} coins for this consultation.` };
+  const report = { id: submissionId, tankId, tankName: getTankLabel(tank), time: now, total, fishReports: fish.map((entry) => buildStillwaterFishReport(entry, now)) };
+  const grants = {};
+  for (const entry of report.fishReports) for (const prescription of entry.prescriptions) {
+    if (!getMedicineMeta(prescription.id)) return { ok: false, message: "Medication information is unavailable. Please try again." };
+    grants[prescription.id] = (grants[prescription.id] || 0) + prescription.drops;
+  }
+  const email = { id: `stillwater-${submissionId}`, templateId: "stillwater_consultation", sender: "consultation@stillwatervet.swim", subject: `Your Stillwater consultation — ${ids.length} fish`, preview: "Your assessment, prescribed medication and treatment instructions are ready.", destination: "stillwater", icon: "assets/web/proteus/sub/stillwater-vet_logo.webp", time: now, data: { consultationId: submissionId } };
+  const previous = { inventory: { ...state.medicineInventory }, consultations: state.vetConsultations, emails: state.webSurfSentEmails, walletTransactions: state.walletTransactions?.slice(), mailStates: { ...state.webSurfMailStates }, knowledge: fish.map((entry) => entry.careKnowledge && { ...entry.careKnowledge }) };
+  try {
+    const transaction = performCoinTransaction({ amount: total, now, place: "Stillwater Veterinary Telehealth", receiptLabel: `Consultation: ${ids.length} fish at 20 coins each`, render: false,
+      apply: () => {
+        state.medicineInventory = { ...state.medicineInventory };
+        for (const [id, count] of Object.entries(grants)) state.medicineInventory[id] = Math.max(0, Number(state.medicineInventory[id]) || 0) + count;
+        state.vetConsultations = [...(state.vetConsultations || []), report];
+        state.webSurfSentEmails = [email, ...(state.webSurfSentEmails || [])];
+        report.fishReports.forEach((entry, index) => entry.conditions.forEach((condition) => discoverFishCareCondition(fish[index], condition)));
+        ensureWebSurfMailState(email);
+        return true;
+      }, toast: "Stillwater sent one consultation email. Prescribed medication is in Fish Care." });
+    if (!transaction.ok) return { ok: false, message: "The consultation could not be purchased. Review your balance and selection." };
+  } catch (error) {
+    state.medicineInventory = previous.inventory;
+    state.vetConsultations = previous.consultations;
+    state.webSurfSentEmails = previous.emails;
+    state.walletTransactions = previous.walletTransactions;
+    state.webSurfMailStates = previous.mailStates;
+    fish.forEach((entry, index) => { entry.careKnowledge = previous.knowledge[index]; });
+    throw error;
+  }
+  // Mail status is persisted with the purchase; re-opening uses the saved report.
+  syncWebSurfUnreadBadge();
+  return { ok: true, consultation: report };
+}
+
+function renderStillwaterEmailBody(message) {
+  const report = state.vetConsultations?.find((entry) => entry.id === message.data?.consultationId);
+  if (!report) return "<p>This consultation report is unavailable.</p>";
+  return `<h2>Stillwater Veterinary Telehealth</h2><h3>Services rendered</h3><p>Assessment, diagnosis, prescribed medication and treatment instructions.</p><p>${escapeHtml(new Date(report.time).toLocaleString())} · ${escapeHtml(report.tankName)}</p><p>${report.fishReports.length} fish × 20 coins · <strong>${report.total} coins paid</strong></p><p>Reference: ${escapeHtml(report.id)}</p>${report.fishReports.map((entry) => `<section class="stillwater-fish-report"><h3>${escapeHtml(entry.name)} · ${escapeHtml(entry.species)}</h3><p>Consultation and care plan: 20 coins.</p><h4>Diagnosis</h4><p>${entry.conditions.length ? entry.conditions.map((condition) => escapeHtml(formatFishConditionLabel(condition))).join(" · ") : entry.behaviorConcern ? "Behavioral care is indicated." : "No active medical condition identified."}</p>${entry.behaviorConcern ? "<p>Panic or aggressive behavior observed. Address its cause as well as using temporary calming support.</p>" : ""}${entry.waterMismatch ? "<p><strong>Correct the water type before treatment.</strong> Move this fish to compatible water. Medicine cannot make incompatible water safe.</p>" : ""}<h4>Medication provided</h4>${entry.prescriptions.length ? entry.prescriptions.map((prescription) => `<p>${escapeHtml(getMedicineMeta(prescription.id)?.name || prescription.id)}: ${prescription.drops} drop${prescription.drops === 1 ? "" : "s"} delivered to Fish Care.</p>`).join("") : "<p>No additional medication indicated. An existing completed-dose course may still need healing time.</p>"}<h4>Treatment instructions</h4>${(entry.carePlans || entry.prescriptions).map((plan) => `<p><strong>${escapeHtml(getMedicineMeta(plan.id)?.name || plan.id)}:</strong> ${plan.legacyRecovery ? "The previous treatment is still working. No additional drops are required; allow recovery in good conditions." : escapeHtml(getMedicineTreatmentInstructions(plan.id))}${plan.dosesGiven ? ` ${plan.dosesGiven} doses were already given at the time of this assessment; continue that course.` : ""}${plan.id === "waterStress" ? " This is optional recovery support after correcting water." : ""}</p>`).join("") || "<p>Maintain compatible water, a clean tank, and a comfortable habitat. Continue any existing course instructions.</p>"}<button type="button" class="small-button" data-care-show-fish="${escapeHtml(entry.fishId)}">View fish and treatment guide</button></section>`).join("")}<p>This report records the assessment above. New symptoms may need another assessment. Medication delivery does not start treatment: give the first drop when ready.</p>`;
+}
+
+function closeStillwaterPage() {
+  runtime.stillwaterOpen = false;
+  runtime.stillwaterVisit = null;
+  dom.storeOverlay?.classList.remove("is-stillwater-open");
+  const page = document.getElementById("stillwaterPage");
+  if (page) page.hidden = true;
+}
+
+function openStillwaterPage() {
+  if (!openStoreOverlay(runtime.storeTab || "pharmacy", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
+  window.closeProteusBiodynePage?.(false);
+  window.closeWebSurfSubsidiaryPage?.(false);
+  runtime.webHomeOpen = false;
+  runtime.webSurfThemesOpen = false;
+  runtime.settingsOverlayOpen = false;
+  runtime.stillwaterOpen = true;
+  runtime.webSurfLastPage = "stillwater";
+  ensureWebSurfBrowserTab("stillwater");
+  updateWebSurfRoute("stillwatervet.swim");
+  renderUi(Date.now());
+  return true;
+}
+
+function renderStillwaterPage() {
+  const visit = runtime.stillwaterVisit;
+  const tank = getCurrentTank();
+  const fish = (tank?.fish || []).filter((entry) => !isFishDead(entry) && !entry.storageFrozen);
+  return `<div class="stillwater-page-content"><header><img ${assetImageAttributes("assets/web/proteus/sub/stillwater-vet_logo.webp")} alt="Stillwater Veterinary Telehealth" /><span>stillwatervet.swim</span></header><h1>Professional care for your aquarium.</h1><p>Stillwater Veterinary Telehealth assesses your fish and sends a diagnosis, prescribed medication, and treatment instructions to your WebSurf inbox.</p><div class="stillwater-services"><section><h2>Assessment</h2><p>A professional answer to the symptoms you have noticed.</p></section><section><h2>Medication</h2><p>Prescribed drops are delivered directly to Fish Care when indicated.</p></section><section><h2>Treatment plan</h2><p>Clear instructions for each fish, including what to do if you miss a day.</p></section></div><p><strong>20 coins per fish.</strong> Select fish from your active tank. One consultation email covers all selected fish.</p><button type="button" class="small-button" data-care-consult>Get a vet consultation</button>
+    ${runtime.stillwaterLastEmail ? `<p role="status">Your consultation report is in your inbox. Prescribed medication has been delivered.</p><button type="button" class="small-button alt" data-care-open-email="${escapeHtml(runtime.stillwaterLastEmail)}">Open consultation email</button>` : ""}
+    <footer><button type="button" class="care-text-link" data-care-return-pharmacy>Return to the Pharmacy questionnaire</button></footer></div>
+    ${visit ? `<div class="stillwater-dialog-backdrop"><section class="stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwaterDialogTitle"><h2 id="stillwaterDialogTitle" tabindex="-1">Vet consultation</h2><p>Active tank: ${escapeHtml(getTankLabel(tank))}</p><p>Select the fish that need care. Assessment, diagnosis, medication when indicated, and instructions are included.</p><div class="stillwater-fish-picker">${fish.map((entry) => `<label><input type="checkbox" data-care-vet-fish="${escapeHtml(entry.id)}" ${visit.fishIds.includes(entry.id) ? "checked" : ""} /><span><strong>${escapeHtml(entry.name || "Fish")}</strong><small>${escapeHtml(getSpeciesForFish(entry)?.name || "Fish")}</small></span></label>`).join("") || "<p>No living fish are available in this tank.</p>"}</div><p>${visit.fishIds.length} selected × 20 coins · <strong>${visit.fishIds.length * 20} coins total</strong> · Wallet: ${state.coins}</p><p class="stillwater-notice" role="status">${escapeHtml(visit.notice || "")}</p><div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-cancel-consult>Cancel</button><button type="button" class="small-button" data-care-confirm-consult ${!visit.fishIds.length || state.coins < visit.fishIds.length * 20 ? "disabled" : ""}>Confirm consultation — ${visit.fishIds.length * 20} coins</button></div></section></div>` : ""}`;
+}
+
+function renderFishCareWebSurfaces() {
+  if (!dom.storeOverlay) return;
+  let page = document.getElementById("stillwaterPage");
+  if (!page) {
+    page = document.createElement("section");
+    page.id = "stillwaterPage";
+    page.className = "stillwater-page";
+    page.setAttribute("aria-label", "Stillwater Veterinary Telehealth");
+    dom.storeOverlay.querySelector(".tankazon-panel")?.append(page);
+  }
+  const open = runtime.storeOverlayOpen && runtime.stillwaterOpen === true && !runtime.settingsOverlayOpen && !runtime.webSurfRouteError;
+  page.hidden = !open;
+  dom.storeOverlay.classList.toggle("is-stillwater-open", Boolean(open));
+  if (open) setMarkupIfChanged("stillwater-page", page, renderStillwaterPage());
+  let checker = document.getElementById("pharmacySymptomChecker");
+  const body = document.getElementById("tankazonCatalogArea");
+  if (!checker && body) {
+    checker = document.createElement("section");
+    checker.id = "pharmacySymptomChecker";
+    checker.className = "pharmacy-symptom-checker";
+    checker.setAttribute("aria-label", "Pharmacy symptom questionnaire");
+    body.prepend(checker);
+  }
+  if (checker) {
+    const category = dom.storeOverlay.dataset.tankazonCategory;
+    checker.hidden = !runtime.storeOverlayOpen || open || category !== "pharmacy" || runtime.webHomeOpen || runtime.webSurfThemesOpen || runtime.bubbleBodegaHomeOpen || runtime.bubbleBankOpen || runtime.davyJonesLockerOpen || runtime.settingsOverlayOpen || runtime.proteusDesignerOpen || runtime.webSurfRouteError || dom.storeOverlay.classList.contains("proteus-biodyne-open") || dom.storeOverlay.classList.contains("websurf-subsidiary-open");
+    if (!checker.hidden) setMarkupIfChanged("pharmacy-symptom-checker", checker, renderPharmacySymptomChecker());
+  }
+  if (!dom.storeOverlay.dataset.careHandlersReady) {
+    dom.storeOverlay.dataset.careHandlersReady = "true";
+    dom.storeOverlay.addEventListener("click", handleFishCareWebClick);
+    dom.storeOverlay.addEventListener("change", handleFishCareWebChange);
+    dom.storeOverlay.addEventListener("keydown", handleFishCareWebKeyDown);
+  }
+}
+
+function handleFishCareWebChange(event) {
+  const target = event.target;
+  const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
+  if (target.matches("[data-care-symptom]")) {
+    quiz.symptoms = quiz.symptoms.filter((id) => id !== target.dataset.careSymptom);
+    if (target.checked) quiz.symptoms.push(target.dataset.careSymptom);
+    quiz.submitted = false;
+  } else if (target.matches("[data-care-vet-fish]") && runtime.stillwaterVisit) {
+    const visit = runtime.stillwaterVisit;
+    visit.fishIds = visit.fishIds.filter((id) => id !== target.dataset.careVetFish);
+    if (target.checked) visit.fishIds.push(target.dataset.careVetFish);
+  } else return;
+  const selector = target.matches("[data-care-symptom]") ? `[data-care-symptom="${target.dataset.careSymptom}"]` : `[data-care-vet-fish="${target.dataset.careVetFish}"]`;
+  renderFishCareWebSurfaces();
+  dom.storeOverlay.querySelector(selector)?.focus({ preventScroll: true });
+}
+
+function handleFishCareWebClick(event) {
+  const button = event.target.closest("button");
+  if (!button) return;
+  if (button.matches("[data-care-stillwater]")) return navigateWebSurf("stillwatervet.swim");
+  if (button.matches("[data-care-return-pharmacy]")) return navigateWebSurf("bubblebodega.swim/shop/pharmacy");
+  if (button.matches("[data-care-clear]")) runtime.pharmacyQuiz = { symptoms: [], submitted: false };
+  else if (button.matches("[data-care-find]")) runtime.pharmacyQuiz.submitted = true;
+  else if (button.matches("[data-care-consult]")) {
+    runtime.stillwaterVisit = { tankId: getCurrentTank()?.id, fishIds: [], submissionId: createId("vet"), notice: "" };
+  } else if (button.matches("[data-care-cancel-consult]")) runtime.stillwaterVisit = null;
+  else if (button.matches("[data-care-confirm-consult]")) {
+    const visit = runtime.stillwaterVisit;
+    if (!visit || visit.busy) return;
+    visit.busy = true;
+    try {
+      const result = purchaseStillwaterConsultation(visit.tankId, visit.fishIds, visit.submissionId);
+      if (result.ok) {
+        runtime.stillwaterLastEmail = `stillwater-${result.consultation.id}`;
+        runtime.stillwaterVisit = null;
+      } else visit.notice = result.message;
+    } catch (error) { visit.notice = "The consultation could not be displayed. Check your inbox or retry this consultation; a completed purchase is charged only once."; }
+    finally { visit.busy = false; }
+  } else if (button.matches("[data-care-open-email]")) {
+    const id = button.dataset.careOpenEmail;
+    navigateWebSurf("websurf.swim");
+    runtime.webSurfSelectedMailId = id;
+    markWebSurfMailRead(id);
+    renderUi(Date.now());
+    return;
+  } else if (button.matches("[data-care-show-fish]")) {
+    const id = button.dataset.careShowFish;
+    const tank = getTankContainingFish(id);
+    if (!tank) return showToast("This fish is no longer in an aquarium. The email remains available as history.");
+    closeStoreOverlay({ force: true });
+    if (tank.id !== getCurrentTank()?.id) { showToast(`Switch to ${getTankLabel(tank)} to view this fish. Its consultation report stays in your inbox.`); return; }
+    openFishInspector(id, { settingsOpen: false });
+    return;
+  } else if (button.matches("[data-care-view-medicine]")) {
+    const id = button.dataset.careViewMedicine;
+    const card = window.getBubbleBodegaCatalogCards?.("pharmacy")?.find((entry) => entry.querySelector(`[data-buy-medicine="${id}"]`));
+    card?.querySelector(".shop-card-image, img")?.click();
+    if (!card) showToast("Browse the Pharmacy products below; clear product filters if needed.");
+    return;
+  } else return;
+  renderFishCareWebSurfaces();
+  if (button.matches("[data-care-consult]")) document.getElementById("stillwaterDialogTitle")?.focus();
+}
+
+function handleFishCareWebKeyDown(event) {
+  if (!runtime.stillwaterVisit || !runtime.stillwaterOpen) return;
+  const dialog = document.querySelector(".stillwater-dialog");
+  if (event.key === "Escape") {
+    event.preventDefault();
+    event.stopPropagation();
+    runtime.stillwaterVisit = null;
+    renderFishCareWebSurfaces();
+    dom.storeOverlay.querySelector("[data-care-consult]")?.focus();
+  } else if (event.key === "Tab" && dialog) {
+    const controls = [...dialog.querySelectorAll("button:not([disabled]), input:not([disabled])")];
+    const first = controls[0], last = controls[controls.length - 1];
+    if (event.shiftKey && (document.activeElement === first || document.activeElement.id === "stillwaterDialogTitle")) { event.preventDefault(); last?.focus(); }
+    else if (!event.shiftKey && document.activeElement === last) { event.preventDefault(); first?.focus(); }
+  }
 }
 // </bundle-source>

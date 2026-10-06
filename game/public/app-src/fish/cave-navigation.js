@@ -419,6 +419,9 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
       xNorm: trigger.xNorm,
       yNorm: trigger.yNorm
     };
+    if (isFishCaveEntranceBusy(fish, item.id, mouthPoint, species, now)) {
+      continue;
+    }
     const entryDirection = Math.abs(mouthPoint.xNorm - fish.xNorm) > 0.0001
       ? (mouthPoint.xNorm >= fish.xNorm ? 1 : -1)
       : (fish.direction || 1);
@@ -491,13 +494,13 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
   }
 
   candidates.sort((left, right) => left.score - right.score);
-  return candidates[0] || null;
+  return candidates.find(plan => isCavePlanClearOfNeighbors(item, fish, plan, now)) || null;
 }
 
 function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
   const configuredPlan = buildConfiguredCaveDockingPlan(item, fish, now);
   if (configuredPlan) {
-    return configuredPlan;
+    return isCavePlanClearOfNeighbors(item, fish, configuredPlan, now) ? configuredPlan : null;
   }
 
   const triggerSeatPlan = buildTriggerSeatCavePlan(item, fish, now);
@@ -611,7 +614,42 @@ function buildSimpleCaveDockingPlan(item, fish, now = Date.now()) {
   }
 
   candidates.sort((left, right) => left.score - right.score);
-  return candidates[0] || null;
+  return candidates.find(plan => isCavePlanClearOfNeighbors(item, fish, plan, now)) || null;
+}
+
+function isCavePlanClearOfNeighbors(item, fish, plan, now = Date.now()) {
+  const species = getSpeciesForFish(fish);
+  if (!item || !fish || !species || !plan) return false;
+  const layers = new Set([clampTankLayer(plan.frontLayer), clampTankLayer(plan.backLayer)]);
+  const neighbors = [...layers].flatMap(layer => getCaveCollisionFrameCandidates(layer, now))
+    .filter(candidate => candidate.item.id !== item.id);
+  if (!neighbors.length) return true;
+  const nodes = [plan.approach, plan.mouth, ...(plan.entryPathNodes || []), plan.inside,
+    ...(plan.exitPathNodes || []), plan.mouth, plan.approach].filter(Boolean);
+  const margin = getFishDisplayWidth(fish, species, now);
+  for (let index = 1; index < nodes.length; index++) {
+    const from = nodes[index - 1], to = nodes[index];
+    const dx = to.xNorm - from.xNorm, dy = to.yNorm - from.yNorm;
+    const sweptBounds = {
+      left: Math.min(from.xNorm, to.xNorm) * TANK_WIDTH - margin,
+      right: Math.max(from.xNorm, to.xNorm) * TANK_WIDTH + margin,
+      top: Math.min(from.yNorm, to.yNorm) * TANK_HEIGHT - margin,
+      bottom: Math.max(from.yNorm, to.yNorm) * TANK_HEIGHT + margin
+    };
+    const nearby = neighbors.filter(candidate => boundsIntersect(sweptBounds, candidate.descriptor.bounds));
+    if (!nearby.length) continue;
+    const direction = Math.abs(dx) > 0.0001 ? (dx < 0 ? -1 : 1) : (fish.direction || 1);
+    const samples = Math.max(1, Math.ceil(Math.hypot(dx * TANK_WIDTH, dy * TANK_HEIGHT) / 4));
+    for (let sample = 0; sample <= samples; sample++) {
+      const progress = sample / samples;
+      const pose = getFishCollisionPose(fish, species, now,
+        from.xNorm + dx * progress, from.yNorm + dy * progress, direction);
+      const shape = getFishShapeDescriptor(fish, species, now, pose);
+      if (!shape || nearby.some(candidate => boundsIntersect(shape.bounds, candidate.descriptor.bounds)
+        && shapesOverlapByMaskStrict(shape, candidate.descriptor, CAVE_STRICT_SAMPLE_STEP_PX))) return false;
+    }
+  }
+  return true;
 }
 
 function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
@@ -784,6 +822,27 @@ function getFishActiveCaveInsideLayer(fish, fallbackLayer = DEFAULT_TANK_LAYER) 
 function getPortalMatchForTriggerRegion(item, triggerRegion, profile) {
   if (!item || !triggerRegion || !Array.isArray(profile?.portals) || !profile.portals.length) {
     return null;
+  }
+
+  // Image masks can author an entrance without a behavior profile. Generic
+  // profile coordinates are only a fallback, never a replacement for that
+  // measured opening. Stage outside it, away from the nearest interior seat.
+  if (!hasPlacedCaveSettings(item) && !getExplicitCaveBehaviorPortals(item.decorKey).length) {
+    const mouthPoint = { xNorm: triggerRegion.xNorm, yNorm: triggerRegion.yNorm };
+    const seat = getCaveSeatRegions(item).slice().sort((left, right) =>
+      Math.hypot(left.xNorm - mouthPoint.xNorm, left.yNorm - mouthPoint.yNorm)
+      - Math.hypot(right.xNorm - mouthPoint.xNorm, right.yNorm - mouthPoint.yNorm))[0];
+    const dx = seat ? (mouthPoint.xNorm - seat.xNorm) * TANK_WIDTH : 0;
+    const dy = seat ? (mouthPoint.yNorm - seat.yNorm) * TANK_HEIGHT : 1;
+    const distance = Math.hypot(dx, dy) || 1;
+    return {
+      portal: { id: triggerRegion.id },
+      mouthPoint,
+      approachPoint: {
+        xNorm: clamp(mouthPoint.xNorm + dx / distance * 48 / TANK_WIDTH, 0.08, 0.92),
+        yNorm: clamp(mouthPoint.yNorm + dy / distance * 48 / TANK_HEIGHT, 0.14, 0.8)
+      }
+    };
   }
 
   const exactPortal = triggerRegion.id

@@ -1190,23 +1190,23 @@
     },
     {
       "key": "barb_black_ruby.png",
-      "path": "assets/fish/barb_black_ruby.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_black_ruby.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_cherry.png",
-      "path": "assets/fish/barb_cherry.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_cherry.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_five_banded.png",
-      "path": "assets/fish/barb_five_banded.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_five_banded.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_gold.png",
-      "path": "assets/fish/barb_gold.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_gold.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_green.png",
-      "path": "assets/fish/barb_green.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_green.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_neon-blue.png",
@@ -1234,15 +1234,15 @@
     },
     {
       "key": "barb_odessa.png",
-      "path": "assets/fish/barb_odessa.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_odessa.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_rosy.png",
-      "path": "assets/fish/barb_rosy.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_rosy.png?v=4cbe27ac8842"
     },
     {
       "key": "barb_tiger.png",
-      "path": "assets/fish/barb_tiger.png?v=cddd3e1c1368"
+      "path": "assets/fish/barb_tiger.png?v=4cbe27ac8842"
     },
     {
       "key": "basslet_swissguard.png",
@@ -2403,6 +2403,10 @@
     {
       "key": "shrimp_legs.png",
       "path": "assets/fish/shrimp_legs.png?v=fae33106c8d4"
+    },
+    {
+      "key": "silver-barb.png",
+      "path": "assets/fish/silver-barb.png?v=4cbe27ac8842"
     },
     {
       "key": "six-line-wrasse_1.png",

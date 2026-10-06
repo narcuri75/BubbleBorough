@@ -681,6 +681,7 @@ function applyCriticalComfortHealthEffects(now) {
     }
 
     fish.comfortDamageProgressMs -= damageUnits * damageTickMs;
+    if (fish.healthUnits >= getFishMaxHealthUnits(fish)) fish.injuryEpisodeAt = now;
     fish.healthUnits = Math.max(0, fish.healthUnits - damageUnits);
     fish.fedStreak = 0;
     totalDamageUnits += damageUnits;

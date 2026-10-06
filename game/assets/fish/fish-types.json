@@ -64,7 +64,7 @@
         "Misty",
         "Finn"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -143,7 +143,7 @@
         "Scooter",
         "Waffles"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -348,7 +348,7 @@
         "Titan",
         "Majesty"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -537,7 +537,7 @@
         "Starlight",
         "Mirage"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -647,7 +647,7 @@
         "Waffles",
         "Dumpling"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -831,7 +831,7 @@
         "Nova",
         "Luster"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -927,7 +927,7 @@
         "Corona",
         "Mirage"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -1026,7 +1026,7 @@
         "Soot",
         "Gloom"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -1541,7 +1541,7 @@
         "Winnie",
         "Sprinkles"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -1652,7 +1652,7 @@
         "Bandit",
         "Jett"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -1723,7 +1723,7 @@
         "Jaws",
         "Slash"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [],
         "friends": {
@@ -2614,7 +2614,7 @@
         "Bean",
         "Noodle"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [
           "plants"
@@ -2691,7 +2691,7 @@
         "Nori",
         "Bean"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
       "needs": {
         "decor": [
           "plants"
@@ -3425,7 +3425,8 @@
         "/assets/fish/barb_green.png",
         "/assets/fish/barb_odessa.png",
         "/assets/fish/barb_rosy.png",
-        "/assets/fish/barb_tiger.png"
+        "/assets/fish/barb_tiger.png",
+        "/assets/fish/silver-barb.png"
       ],
       "variantLabels": [
         "Barb Black Ruby",
@@ -3435,7 +3436,8 @@
         "Barb Green",
         "Barb Odessa",
         "Barb Rosy",
-        "Barb Tiger"
+        "Barb Tiger",
+        "Silver Barb"
       ],
       "careRequirements": {
         "waterType": "freshwater",

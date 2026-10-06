@@ -109,3 +109,22 @@ test("production routes preserve fresh HTML, binary assets, errors, redirects an
   assert.equal((await request("/public/app.js", {}, "POST")).status, 405);
   assert.equal((await request("/public/app.js", { "Accept-Encoding": "identity;q=0, br;q=0, gzip;q=0" })).status, 406);
 });
+
+test("cave playtest is opt-in, unavailable in production, and isolates every save channel", async t => {
+  for (const options of [{ production: false }, { production: true, debugTools: true }]) {
+    const request = await listen(createServer(options), t);
+    for (const url of ["/.cave-behavior-audit.html", "/public/cave-behavior-audit.js"]) {
+      assert.equal((await request(url)).status, 404);
+    }
+  }
+  const request = await listen(createServer({ production: false, debugTools: true }), t);
+  const html = await request("/.cave-behavior-audit.html");
+  assert.equal(html.status, 200);
+  assert.match(html.body.toString(), /script\.src = "\/public\/cave-behavior-audit\.js"/);
+  const script = await request("/public/cave-behavior-audit.js");
+  assert.equal(script.status, 200);
+  assert.equal(script.headers["cache-control"], "no-store");
+  assert.match(script.body.toString(), /^getDesktopBridge = \(\) => null; loadState = \(\) => null; saveState = \(\) => \{\};/);
+  assert.match(script.body.toString(), /initializeCloudSaveRuntime = async \(\) => \{ runtime\.cloudSession = null; runtime\.cloudWritesAllowed = false;/);
+  assert.match(script.body.toString(), /Cave playtest · memory only/);
+});

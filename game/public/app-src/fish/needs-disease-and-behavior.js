@@ -1970,6 +1970,7 @@ function processFishDisease(now = Date.now()) {
       continue;
     }
 
+    if (typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "disease")) continue;
     let stateId = sanitizeDiseaseState(fish.diseaseState);
     if (stateId === DISEASE_STATE_IMMUNE) {
       if ((Number(fish.temporaryImmunityUntil) || 0) <= now) {
@@ -2091,7 +2092,7 @@ function getFishPrimaryCondition(fish, now = Date.now()) {
   const diseaseCondition = getFishDiseaseCondition(fish);
   if (diseaseCondition && diseaseCondition !== "recovering") return diseaseCondition;
   const maxHealth = typeof getFishMaxHealthUnits === "function" ? getFishMaxHealthUnits(fish) : Math.max(1, Number(fish.maxHealthUnits) || 5);
-  const injuryRecovering = (Number(fish.injuryRecoveryProgressMs) || 0) > 0 || (Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0;
+  const injuryRecovering = (typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "injury")) || (Number(fish.injuryRecoveryProgressMs) || 0) > 0 || (Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0;
   if ((Number(fish.healthUnits) || maxHealth) < maxHealth && !injuryRecovering) return "injured";
   if (diseaseCondition === "recovering" || injuryRecovering || hasFishOsmoticRecovery(fish)) return "recovering";
   if (typeof isFishElderly === "function" ? isFishElderly(fish, now) : String(fish.condition || "").toLowerCase() === "elderly") return "elderly";
@@ -2117,9 +2118,9 @@ function syncFishPrimaryCondition(fish, now = Date.now(), options = {}) {
   if (previous === next) return false;
   fish.condition = next;
   if (options.notify !== false) {
-    if (next === "parasites") pushEvent(`${fish.name} has developed parasites.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
-    else if (next === "infection") pushEvent(`${fish.name} has developed an infection.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
-    else if (next === "osmotic-stress") pushEvent(`${fish.name} is suffering from Osmotic Stress.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    if (next === "parasites") pushEvent(`${fish.name} shows signs that need care. Try the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    else if (next === "infection") pushEvent(`${fish.name} shows signs that need care. Try the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
+    else if (next === "osmotic-stress") pushEvent(`${fish.name} looks uncomfortable. Check its water and the Pharmacy symptom questionnaire.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
     else if (next === "recovering" && ["parasites", "infection", "osmotic-stress", "injured"].includes(previous)) pushEvent(`${fish.name} is recovering.`, now, getCurrentTank(), { type: "illness", fishId: fish.id, recapEligible: false });
   }
   return true;
@@ -2131,6 +2132,7 @@ function processFishConditionFramework(now = Date.now()) {
   const previousSimulatedAt = Math.min(now, Number(state.lastSimulatedAt) || now);
   for (const fish of state.fish) {
     if (!fish || isFishDead(fish)) continue;
+    if (typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
     const waterMismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
     if (waterMismatch) {
       if (!(Number(fish.osmoticStressStartedAt) > 0)) {

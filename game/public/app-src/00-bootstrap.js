@@ -10,7 +10,8 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 67;
+const STATE_VERSION = 68;
+window.closeStillwaterPage = closeStillwaterPage;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
 const CUSTOM_IMAGE_DB_STORE = "images";
@@ -544,7 +545,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "bottom-graze", preferredY: 0.76, verticalSpread: 0.18,
     targetDistanceMin: 0.05, targetDistanceMax: 0.22, headingPersistence: 0.28,
     hoverChance: 0.28, hoverMinMs: 900, hoverMaxMs: 2800, schoolStrength: 0.05,
-    structureAffinity: 1.7, caveAffinity: 0.1, homeRangeStrength: 0.18, homeRangeRadius: 0.2,
+    structureAffinity: 1.7, caveAffinity: 0.9, homeRangeStrength: 0.18, homeRangeRadius: 0.2,
     startleStrength: 1.25, startleRecoveryScale: 0.82, turnDurationScale: 0.86,
     speedMinBlend: 0.18, speedMaxBlend: 0.54, dartChance: 0.05, dartSpeedMinBlend: 0.72,
     targetDurationScale: 1.18
@@ -553,7 +554,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "bottom-graze", preferredY: 0.75, verticalSpread: 0.2,
     targetDistanceMin: 0.05, targetDistanceMax: 0.24, headingPersistence: 0.3,
     hoverChance: 0.3, hoverMinMs: 900, hoverMaxMs: 2900, schoolStrength: 0.04,
-    structureAffinity: 1.8, caveAffinity: 0.12, homeRangeStrength: 0.16, homeRangeRadius: 0.22,
+    structureAffinity: 1.8, caveAffinity: 1.2, homeRangeStrength: 0.16, homeRangeRadius: 0.22,
     startleStrength: 1.25, startleRecoveryScale: 0.84, turnDurationScale: 0.86,
     speedMinBlend: 0.18, speedMaxBlend: 0.56, dartChance: 0.05, dartSpeedMinBlend: 0.72,
     targetDurationScale: 1.2
@@ -576,6 +577,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     speedMinBlend: 0, speedMaxBlend: 0.08, dartChance: 0,
     targetDurationScale: 2.7
   }),
+  "tang": createFishLocomotionProfile({ caveAffinity: 0.28 }),
   "blue-tang": createFishLocomotionProfile({
     movementPattern: "open-water-cruise", preferredY: 0.48, verticalSpread: 0.74,
     targetDistanceMin: 0.34, targetDistanceMax: 0.72, headingPersistence: 0.8,
@@ -595,7 +597,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "fast-school-cruise", preferredY: 0.45, verticalSpread: 0.66,
     targetDistanceMin: 0.36, targetDistanceMax: 0.74, headingPersistence: 0.84,
     hoverChance: 0.008, schoolStrength: 0.7, schoolSpacingScale: 0.92,
-    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72,
+    schoolDurationScale: 1.35, schoolVerticalJitterScale: 0.72, structureAffinity: 0.72, caveAffinity: 0.22,
     startleStrength: 1.22, turnDurationScale: 0.84, speedMinBlend: 0.66,
     speedMaxBlend: 1, targetDurationScale: 0.82, cruiseWaypointScale: 1.2
   }),
@@ -603,7 +605,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "strong-cruise", preferredY: 0.46, verticalSpread: 0.72,
     targetDistanceMin: 0.3, targetDistanceMax: 0.68, headingPersistence: 0.8,
     hoverChance: 0.015, schoolStrength: 0.3, schoolDurationScale: 1.08,
-    structureAffinity: 0.88, startleStrength: 0.98, turnDurationScale: 0.88,
+    structureAffinity: 0.88, caveAffinity: 0.38, startleStrength: 0.98, turnDurationScale: 0.88,
     speedMinBlend: 0.58, speedMaxBlend: 0.96, targetDurationScale: 0.9,
     cruiseWaypointScale: 1.16
   }),
@@ -611,7 +613,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "social-graze", preferredY: 0.48, verticalSpread: 0.75,
     targetDistanceMin: 0.18, targetDistanceMax: 0.48, headingPersistence: 0.5,
     hoverChance: 0.08, schoolStrength: 0.34, schoolSpacingScale: 1.05,
-    structureAffinity: 1.15, startleStrength: 0.92, turnDurationScale: 1.02,
+    structureAffinity: 1.15, caveAffinity: 0.55, startleStrength: 0.92, turnDurationScale: 1.02,
     speedMinBlend: 0.3, speedMaxBlend: 0.76
   }),
   "livebearer": createFishLocomotionProfile({
@@ -634,14 +636,14 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "area-forage", preferredY: 0.58, verticalSpread: 0.76,
     targetDistanceMin: 0.16, targetDistanceMax: 0.42, headingPersistence: 0.42,
     hoverChance: 0.13, hoverMinMs: 900, hoverMaxMs: 2300, schoolStrength: 0.18,
-    structureAffinity: 1.04, startleStrength: 0.86, turnDurationScale: 1.2,
+    structureAffinity: 1.04, caveAffinity: 0.24, startleStrength: 0.86, turnDurationScale: 1.2,
     speedMinBlend: 0.08, speedMaxBlend: 0.58, targetDurationScale: 1.12
   }),
   "betta": createFishLocomotionProfile({
     movementPattern: "deliberate-hover", preferredY: 0.42, verticalSpread: 0.58,
     targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.36,
     hoverChance: 0.26, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0,
-    structureAffinity: 1.72, caveAffinity: 0.42, homeRangeStrength: 0.45,
+    structureAffinity: 1.72, caveAffinity: 1.5, homeRangeStrength: 0.45,
     homeRangeRadius: 0.2, startleStrength: 1.08, startleRecoveryScale: 1.05,
     turnDurationScale: 1.42, speedMinBlend: 0.04, speedMaxBlend: 0.48,
     targetDurationScale: 1.22
@@ -650,7 +652,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "graceful-cruise", preferredY: 0.48, verticalSpread: 0.6,
     targetDistanceMin: 0.2, targetDistanceMax: 0.5, headingPersistence: 0.62,
     hoverChance: 0.2, hoverMinMs: 1100, hoverMaxMs: 3000, schoolStrength: 0.28,
-    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.45,
+    schoolSpacingScale: 1.18, structureAffinity: 1.18, caveAffinity: 0.55,
     startleStrength: 1.02, turnDurationScale: 1.5, accelerationScale: 0.72,
     decelerationScale: 0.78, turnRateScale: 0.72, turnRadiusScale: 1.28,
     verticalSteeringLimit: 0.72, coastBias: 0.68, propulsionFrequency: 0.78,
@@ -662,7 +664,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.14, targetDistanceMax: 0.38, headingPersistence: 0.44,
     hoverChance: 0.3, hoverMinMs: 1300, hoverMaxMs: 3400, schoolStrength: 0.56,
     schoolSpacingScale: 1.16, schoolDurationScale: 1.55, schoolVerticalJitterScale: 0.75,
-    structureAffinity: 1.2, startleStrength: 1.2, startleRecoveryScale: 1.22,
+    structureAffinity: 1.2, caveAffinity: 0.5, startleStrength: 1.2, startleRecoveryScale: 1.22,
     turnDurationScale: 1.55, speedMinBlend: 0.02, speedMaxBlend: 0.4,
     targetDurationScale: 1.28
   }),
@@ -670,7 +672,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "slow-area-forage", preferredY: 0.58, verticalSpread: 0.62,
     targetDistanceMin: 0.08, targetDistanceMax: 0.26, headingPersistence: 0.3,
     hoverChance: 0.24, hoverMinMs: 1200, hoverMaxMs: 3100, schoolStrength: 0.12,
-    structureAffinity: 1.12, startleStrength: 0.66, startleRecoveryScale: 1.12,
+    structureAffinity: 1.12, caveAffinity: 0.24, startleStrength: 0.66, startleRecoveryScale: 1.12,
     turnDurationScale: 1.6, speedMinBlend: 0, speedMaxBlend: 0.3,
     targetDurationScale: 1.3
   }),
@@ -813,7 +815,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     targetDistanceMin: 0.14, targetDistanceMax: 0.42, headingPersistence: 0.46,
     hoverChance: 0.1, hoverMinMs: 700, hoverMaxMs: 1900, schoolStrength: 0.68,
     schoolSpacingScale: 0.8, schoolDurationScale: 1.45, schoolVerticalJitterScale: 0.62,
-    structureAffinity: 0.98, startleStrength: 1.3, startleRecoveryScale: 1.12,
+    structureAffinity: 0.98, caveAffinity: 0.6, startleStrength: 1.3, startleRecoveryScale: 1.12,
     turnDurationScale: 0.86, speedMinBlend: 0.08, speedMaxBlend: 0.48,
     targetDurationScale: 1.18
   }),
@@ -829,7 +831,7 @@ const FISH_LOCOMOTION_PROFILES = Object.freeze({
     movementPattern: "precision-hover", preferredY: 0.5, verticalSpread: 0.58,
     targetDistanceMin: 0.1, targetDistanceMax: 0.34, headingPersistence: 0.34,
     hoverChance: 0.36, hoverMinMs: 1100, hoverMaxMs: 3300, schoolStrength: 0,
-    structureAffinity: 1.3, caveAffinity: 0.4, startleStrength: 0.78,
+    structureAffinity: 1.3, caveAffinity: 0.7, startleStrength: 0.78,
     startleRecoveryScale: 0.92, turnDurationScale: 1.32, speedMinBlend: 0,
     speedMaxBlend: 0.42, dartChance: 0.07, dartSpeedMinBlend: 0.86,
     targetDurationScale: 1.22
@@ -1777,7 +1779,7 @@ const DEFAULT_UI_SETTINGS = Object.freeze({
   ratioLockFrameEnabled: true,
   layoutRatioLockWidth: 0,
   layoutRatioLockHeight: 0,
-  ambientBubbleLevel: 2,
+  ambientBubbleLevel: 1,
   waterParticlesEnabled: true,
   causticLightingEnabled: true,
   decorShadowsEnabled: true,
@@ -2091,7 +2093,7 @@ const DEFAULT_GRAVEL_PALETTE = ["#F5C185", "#E07A9C", "#81909F"];
 const AMBIENT_BUBBLE_COUNT = 30;
 const AMBIENT_BUBBLE_LEVEL_MIN = 0;
 const AMBIENT_BUBBLE_LEVEL_MAX = 3;
-const AMBIENT_BUBBLE_LEVEL_DEFAULT = 2;
+const AMBIENT_BUBBLE_LEVEL_DEFAULT = 1;
 const AMBIENT_BUBBLE_LEVEL_PROFILES = Object.freeze({
   0: Object.freeze({ count: 0, speedMultiplier: 0, label: "Off" }),
   1: Object.freeze({ count: 8, speedMultiplier: 0.55, label: "Light" }),
@@ -3567,7 +3569,7 @@ const FISH_TYPES = [
       "Misty",
       "Finn"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -3646,7 +3648,7 @@ const FISH_TYPES = [
       "Scooter",
       "Waffles"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -3851,7 +3853,7 @@ const FISH_TYPES = [
       "Titan",
       "Majesty"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4040,7 +4042,7 @@ const FISH_TYPES = [
       "Starlight",
       "Mirage"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4150,7 +4152,7 @@ const FISH_TYPES = [
       "Waffles",
       "Dumpling"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4334,7 +4336,7 @@ const FISH_TYPES = [
       "Nova",
       "Luster"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4430,7 +4432,7 @@ const FISH_TYPES = [
       "Corona",
       "Mirage"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -4529,7 +4531,7 @@ const FISH_TYPES = [
       "Soot",
       "Gloom"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5044,7 +5046,7 @@ const FISH_TYPES = [
       "Winnie",
       "Sprinkles"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5155,7 +5157,7 @@ const FISH_TYPES = [
       "Bandit",
       "Jett"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -5226,7 +5228,7 @@ const FISH_TYPES = [
       "Jaws",
       "Slash"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [],
       "friends": {
@@ -6117,7 +6119,7 @@ const FISH_TYPES = [
       "Bean",
       "Noodle"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [
         "plants"
@@ -6194,7 +6196,7 @@ const FISH_TYPES = [
       "Nori",
       "Bean"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
     "needs": {
       "decor": [
         "plants"
@@ -6928,7 +6930,8 @@ const FISH_TYPES = [
       "/assets/fish/barb_green.png",
       "/assets/fish/barb_odessa.png",
       "/assets/fish/barb_rosy.png",
-      "/assets/fish/barb_tiger.png"
+      "/assets/fish/barb_tiger.png",
+      "/assets/fish/silver-barb.png"
     ],
     "variantLabels": [
       "Barb Black Ruby",
@@ -6938,7 +6941,8 @@ const FISH_TYPES = [
       "Barb Green",
       "Barb Odessa",
       "Barb Rosy",
-      "Barb Tiger"
+      "Barb Tiger",
+      "Silver Barb"
     ],
     "careRequirements": {
       "waterType": "freshwater",
@@ -13267,7 +13271,6 @@ const runtime = {
   boroughOverviewInfoView: "overview",
   boroughOverviewInfoTankId: null,
   boroughOverviewDragPointerId: null,
-  transitTubeBursts: [],
   pendingNeighborhoodTravel: new Map(),
   pendingMachineryTravel: new Map(),
   foodTravelDestinations: new Map(),
@@ -14379,7 +14382,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       kicker: "Pharmacy",
       title: "Medicine Inventory",
       body: renderMedicineInventoryOverlay(),
-      footer: `<div class="mini-note">Select a medicine, then click the tank to use one dose on the whole tank.</div>`,
+      footer: `<div class="mini-note">Select a medicine, then click the fish to give one drop. Calming Serum treats the whole tank. Hover a medicine for its treatment instructions.</div>`,
       closable: true
     }),
     onBodyClick: handleMedicineUtilityOverlayBodyClick

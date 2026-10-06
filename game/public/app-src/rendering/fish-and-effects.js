@@ -545,7 +545,7 @@ function getFishRenderPassLayer(fish) {
       return clampTankLayer(getDecorLayerSpan(decor.decorKey, getDecorTankLayer(decor)).front);
     }
   }
-  if (fish?.caveState) return clampTankLayer(getFishTankLayer(fish));
+  if (fish?.caveState && !["approach", "align", "leave"].includes(fish.caveState)) return clampTankLayer(getFishTankLayer(fish));
   // Movement compatibility helpers can update legacy layers while deliberately
   // preserving Z. Normal rendering must follow the same continuous depth as
   // fish size/collision, rather than alternate around cave fronts on stale mirrors.
@@ -735,6 +735,47 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.arc(fishDrawX + width * 0.76, -height * 0.08, Math.max(1.5, height * 0.045), 0, Math.PI * 2);
   tankContext.fill();
   tankContext.restore();
+}
+
+function getFishCaveShadowStrength(fish, exteriorOverlay = false) {
+  if (exteriorOverlay || !isFishInCaveRenderSublayer(fish)) return 0;
+  if (!isFishInCavePortalCrossing(fish)) return 1;
+  const progress = clamp(getFishCavePortalCrossingProgress(fish) ?? (Number(fish.cavePortalProgress) || 0), 0, 1);
+  const inside = fish.caveState === "portal-exit" ? 1 - progress : progress;
+  return inside * inside * (3 - 2 * inside);
+}
+
+function getFishCaveShadowImage(sourceImage, strength) {
+  const step = Math.round(clamp(Number(strength) || 0, 0, 1) * 32);
+  if (!step || !isUsableRuntimeImage(sourceImage)) return sourceImage;
+  if (!(runtime.fishCaveShadowSourceIds instanceof WeakMap)) runtime.fishCaveShadowSourceIds = new WeakMap();
+  if (!(runtime.fishCaveShadowCache instanceof Map)) runtime.fishCaveShadowCache = new Map();
+  let sourceId = runtime.fishCaveShadowSourceIds.get(sourceImage);
+  if (!sourceId) {
+    sourceId = (runtime.fishCaveShadowSourceSequence || 0) + 1;
+    runtime.fishCaveShadowSourceSequence = sourceId;
+    runtime.fishCaveShadowSourceIds.set(sourceImage, sourceId);
+  }
+  const key = `${sourceId}:${step}`;
+  const cache = runtime.fishCaveShadowCache;
+  const cached = cache.get(key);
+  if (cached) { cache.delete(key); cache.set(key, cached); return cached; }
+  const width = Number(sourceImage.naturalWidth || sourceImage.width);
+  const height = Number(sourceImage.naturalHeight || sourceImage.height);
+  const scale = Math.min(1, 384 / Math.max(width, height));
+  const canvas = document.createElement("canvas");
+  canvas.width = Math.max(1, Math.round(width * scale));
+  canvas.height = Math.max(1, Math.round(height * scale));
+  const context = canvas.getContext("2d");
+  if (!context) return sourceImage;
+  context.drawImage(sourceImage, 0, 0, canvas.width, canvas.height);
+  // Darken RGB while keeping the fish opaque and preserving the exact alpha
+  // silhouette. Cached small textures avoid live filters and pixel readbacks.
+  context.globalCompositeOperation = "source-atop";
+  context.fillStyle = `rgba(0, 0, 0, ${0.62 * step / 32})`;
+  context.fillRect(0, 0, canvas.width, canvas.height);
+  setBoundedCanvasCache(cache, key, canvas, { maxEntries: 128, maxBytes: 16 * 1024 * 1024 });
+  return canvas;
 }
 
 function getFishDepthLightingStyle(poseY) {
@@ -1849,7 +1890,26 @@ function isFishInjurySideFacingViewer(fish) {
   return injuryDisplaySide === facingSide;
 }
 
-function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, healthRatio, now = Date.now()) {
+function getFishSymptomSideVisibility(fish, pose, now = Date.now(), useVolumeTurn = false) {
+  const markedDirection = getFishInjuryDisplaySide(fish) === "left" ? -1 : 1;
+  const turn = getFishRenderedHorizontalTurnState(fish, now);
+  if (!turn.active || !turn.reversing) {
+    const facing = Number(pose?.facingScaleX ?? getFishFacingDirection(fish));
+    return markedDirection === (facing < 0 ? -1 : 1) ? 1 : 0;
+  }
+  let yaw = clamp(turn.progress, 0, 1) * Math.PI;
+  if (useVolumeTurn) {
+    const visualProgress = getFishTurnV26VisualProgress(fish, turn.progress);
+    yaw = computeFishTurnV26StyleTransform(getFishTurnV26Style(fish), visualProgress, getFishTurnV26SourceDirection(), getFishTurnV26DepthSign(fish)).rotationY;
+  }
+  // Fade inside the narrow, edge-on part of the *rendered* turn. Display
+  // direction stays latched to the source until the volume renderer finishes.
+  const surfaceFacing = markedDirection * turn.fromDirection * Math.cos(yaw);
+  const alpha = clamp(surfaceFacing / 0.4, 0, 1);
+  return alpha * alpha * (3 - 2 * alpha);
+}
+
+function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, healthRatio, now = Date.now(), options = {}) {
   if (!fish || !species || !sourceImage?.width || !sourceImage?.height || isFishDead(fish)) {
     return null;
   }
@@ -1857,13 +1917,15 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   const diseaseState = sanitizeDiseaseState(fish.diseaseState);
   const diseaseVisible = isFishDiseaseVisible(fish);
   const diseaseType = typeof normalizeFishDiseaseType === "function" ? normalizeFishDiseaseType(fish.diseaseType) : fish.diseaseType;
-  const activeDiseaseMarks = diseaseVisible && diseaseState !== DISEASE_STATE_RECOVERING;
-  const showSpecks = activeDiseaseMarks && diseaseType === DISEASE_TYPE_PARASITES && isTrypophobiaEnabled();
-  const showCloudy = activeDiseaseMarks
+  const diseaseCourse = fish.treatmentCourses?.disease;
+  const diseaseHealing = typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "disease") ? clamp(diseaseCourse.healingProgressMs / (5 * DAY_MS), 0, 1) : 0;
+  const activeDiseaseMarks = diseaseVisible && (diseaseState !== DISEASE_STATE_RECOVERING || Boolean(diseaseCourse && diseaseCourse.status !== "complete"));
+  const showSpecks = options.mode !== "side" && activeDiseaseMarks && diseaseType === DISEASE_TYPE_PARASITES && isTrypophobiaEnabled();
+  const showCloudy = options.mode !== "global" && activeDiseaseMarks
     && isGoreEnabled()
     && diseaseType === DISEASE_TYPE_INFECTION;
-  const showInjury = isGoreEnabled() && Number(healthRatio) < 0.99;
-  const showSideSpecificMarks = (showCloudy || showInjury) && isFishInjurySideFacingViewer(fish);
+  const showInjury = options.mode !== "global" && isGoreEnabled() && Number(healthRatio) < 0.99;
+  const showSideSpecificMarks = (showCloudy || showInjury) && (options.mode === "side" || isFishInjurySideFacingViewer(fish));
   const showCloudyOnCurrentSide = showCloudy && showSideSpecificMarks;
   const showInjuryOnCurrentSide = showInjury && showSideSpecificMarks;
   if (!showSpecks && !showCloudyOnCurrentSide && !showInjuryOnCurrentSide) {
@@ -1878,6 +1940,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   const heightBucket = Math.max(32, Math.round(widthBucket * sourceImage.height / Math.max(1, sourceImage.width)));
   const cacheKey = [
     fish.id,
+    options.mode || "all",
     imagePath,
     widthBucket,
     heightBucket,
@@ -1885,6 +1948,8 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
     cloudyPath,
     speckPath,
     diseaseState,
+    Math.floor(diseaseHealing * 10),
+    fish.treatmentCourses?.injury?.status === "restartRequired",
     Math.round(clamp(Number(healthRatio) || 0, 0, 1) * 4)
   ].join("|");
   const cached = runtime.fishSymptomOverlayCache.get(cacheKey);
@@ -1913,7 +1978,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
 
   if (speckImage) {
     context.save();
-    context.globalAlpha = diseaseState === DISEASE_STATE_SEVERE ? 0.94 : 0.76;
+    context.globalAlpha = (diseaseState === DISEASE_STATE_SEVERE ? 0.94 : 0.76) * (1 - diseaseHealing);
     context.drawImage(speckImage, 0, 0, canvas.width, canvas.height);
     context.restore();
   }
@@ -1933,7 +1998,7 @@ function getFishSymptomOverlayCanvas(fish, species, imagePath, sourceImage, heal
   };
 
   if (cloudyImage) {
-    drawLocalizedMark(cloudyImage, seed ^ 0x5b7a1c3d, diseaseState === DISEASE_STATE_SEVERE ? 0.46 : 0.38, 0.9);
+    drawLocalizedMark(cloudyImage, seed ^ 0x5b7a1c3d, diseaseState === DISEASE_STATE_SEVERE ? 0.46 : 0.38, 0.9 * (1 - diseaseHealing));
   }
   if (woundImage) {
     const damage = 1 - clamp(Number(healthRatio) || 0, 0, 1);
@@ -1963,7 +2028,9 @@ function drawFish(now, layer = null, options = {}) {
     ? cache.buckets.flat()
     : (cache.buckets[targetLayer] || []);
   let recordsArePreFiltered = false;
-  if (passBucket && options.onlyBehavior === "sucker") {
+  if (options.records) {
+    records = options.records;
+  } else if (passBucket && options.onlyBehavior === "sucker") {
     records = options.excludeCaveInterior === true
       ? passBucket.suckerOutsideCave
       : passBucket.sucker;
@@ -2105,7 +2172,10 @@ function drawFish(now, layer = null, options = {}) {
     }
 
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
-    const fishLighting = getFishDepthLightingStyle(pose.y);
+    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly);
+    const caveCausticAlpha = 1 - caveShadowStrength;
+    const fishLighting = { ...getFishDepthLightingStyle(pose.y) };
+    fishLighting.highlightAlpha *= caveCausticAlpha;
     const fishBaseFilter = getFishCanvasFilter(fish, healthRatio, now, comfort?.value);
     const fishRenderFilter = combineTankCanvasFilters(
       fishBaseFilter,
@@ -2143,7 +2213,8 @@ function drawFish(now, layer = null, options = {}) {
       const renderImage = layerMotion?.preserveColor === true
         ? sprite.renderImage
         : getFishTintedImage(sprite.path || imagePath, sprite.sourceImage, fish);
-      const depthRenderImage = getTankDepthTreatedImage(renderImage, depthLayer) || renderImage;
+      const litRenderImage = getTankDepthTreatedImage(renderImage, depthLayer) || renderImage;
+      const depthRenderImage = getFishCaveShadowImage(litRenderImage, caveShadowStrength);
       tankContext.filter = layerMotion?.preserveColor ? fishLighting.filter : fishRenderFilter;
       if (v26TurnRendererActive) {
         const renderedByV26 = drawFishTurnV26VolumeMesh(
@@ -2165,7 +2236,7 @@ function drawFish(now, layer = null, options = {}) {
             // The receiver mask therefore follows the actual WebGL silhouette
             // and padded trajectory instead of the old flat source rectangle.
             onRenderedVolumeCanvas: ({ canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight }) => {
-              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha, sourceWidth, sourceHeight);
+              markLightweightCausticImage(tankContext, canvas, drawX, drawY, drawWidth, drawHeight, alpha * caveCausticAlpha, sourceWidth, sourceHeight);
             }
           }
         );
@@ -2207,7 +2278,7 @@ function drawFish(now, layer = null, options = {}) {
               -spriteHeight / 2,
               width,
               spriteHeight,
-              v26VisualContinuity.spriteAlpha
+              v26VisualContinuity.spriteAlpha * caveCausticAlpha
             );
             tankContext.restore();
           }
@@ -2233,10 +2304,10 @@ function drawFish(now, layer = null, options = {}) {
         if (!warped) {
           tankContext.drawImage(depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
         }
-        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight);
+        markLightweightCausticImage(tankContext, depthRenderImage, fishDrawX, -spriteHeight / 2, width, spriteHeight, caveCausticAlpha);
       }
       tankContext.filter = "none";
-      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true) {
+      if (!pose.isDead && !complexTurnRendererActive && layerMotion?.preserveColor !== true && fishLighting.highlightAlpha > 0) {
         drawFishTopLightOverlay(
           tankContext,
           sprite.sourceImage,
@@ -2312,14 +2383,12 @@ function drawFish(now, layer = null, options = {}) {
         { v26FinBasePass: true }
       );
       if (!pose.isDead) {
-        const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now);
-        if (symptomOverlay) {
-          drawFishSpriteLayer(
-            { sourceImage: symptomOverlay, renderImage: symptomOverlay },
-            1,
-            1,
-            { preserveColor: true }
-          );
+        const symptomOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now, { mode: "global" });
+        if (symptomOverlay) drawFishSpriteLayer({ sourceImage: symptomOverlay, renderImage: symptomOverlay }, 1, 1, { preserveColor: true });
+        const sideAlpha = getFishSymptomSideVisibility(fish, pose, now, v26TurnRendererActive);
+        if (sideAlpha > 0) {
+          const sideOverlay = getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, now, { mode: "side" });
+          if (sideOverlay) drawFishSpriteLayer({ sourceImage: sideOverlay, renderImage: sideOverlay }, 1, sideAlpha, { preserveColor: true });
         }
       }
     }
@@ -2394,16 +2463,16 @@ function drawFish(now, layer = null, options = {}) {
         tankContext.restore();
       } else {
       const snapshot = pose.isDead ? null : getFishNeedsSnapshot(fish, now);
-      const moodLabel = pose.isDead ? "Dead" : (snapshot?.mood?.label || "Happy");
+      const moodLabel = pose.isDead ? "Dead" : (getFishCareConcerns(fish, now).length ? "Needs care" : (snapshot?.mood?.label || "Happy"));
       const progression = pose.isDead ? null : getFishManagementProgressionPresentation(fish, species);
       const moodPresentation = pose.isDead
         ? { tone: "danger", color: "#ff627d" }
-        : getFishMoodPresentation(moodLabel);
+        : moodLabel === "Needs care" ? { tone: "warning", color: "#ffd784" } : getFishMoodPresentation(moodLabel);
       const displayHealthUnits = typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled() && !pose.isDead
         ? getFishMaxHealthUnits(fish, species)
         : (Number(fish.healthUnits) || 0);
       const heartCount = Math.max(0, displayHealthUnits / 2);
-      const heartLabel = Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1);
+      const heartLabel = `${Number.isInteger(heartCount) ? String(heartCount) : heartCount.toFixed(1)}/${getFishMaxHealthUnits(fish, species) / 2}`;
       const facingSign = (pose.facingScaleX ?? (pose.direction < 0 ? -1 : 1)) < 0 ? -1 : 1;
       const anchorX = pose.x + pose.swayX + facingSign * width * 0.2;
       const fontSize = 13 * stableScale;
@@ -2527,7 +2596,7 @@ function drawFish(now, layer = null, options = {}) {
 
       tankContext.textAlign = "left";
       tankContext.fillStyle = moodPresentation.color || "rgba(244, 251, 255, 0.96)";
-      const moodPillWidth = Math.min(labelWidth * 0.3, 68 * stableScale);
+      const moodPillWidth = Math.min(labelWidth * 0.4, Math.max(68 * stableScale, tankContext.measureText(moodLabel).width + 12 * stableScale));
       const moodPillX = labelX + labelWidth / 2 - moodPillWidth - 12 * stableScale;
       const moodPillY = topY + 50 * stableScale;
       const moodPillHeight = 18 * stableScale;

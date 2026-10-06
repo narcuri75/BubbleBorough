@@ -189,7 +189,7 @@ function getManagementTankStatus(stats) {
 }
 
 function buildIllnessCareTask(now = Date.now(), tank = getCurrentTank()) {
-  const sickFish = (tank?.fish || []).filter((fish) => !isFishDead(fish) && getFishPrimaryCondition(fish, now));
+  const sickFish = (tank?.fish || []).filter((fish) => !isFishDead(fish) && getFishCareConcerns(fish, now).length > 0);
   if (!sickFish.length) return null;
   return {
     id: "illness-care",
@@ -3861,6 +3861,7 @@ function renderWebSurfProteusAuthorizationEmail(message) {
 }
 
 function renderWebSurfAutoEmailBody(message) {
+  if (message.templateId === "stillwater_consultation") return renderStillwaterEmailBody(message);
   if (message?.templateId === "proteus_zombie_fish_authorization") {
     return renderProteusZombieFishAuthorizationEmail(message);
   }
@@ -3993,6 +3994,9 @@ function handleWebSurfEmailAction(message) {
 }
 
 function getBubbleBodegaDiseaseTreatmentId(fish, now = Date.now()) {
+  const known = fish?.careKnowledge?.disease;
+  const legacyRecovery = fish?.diseaseState === DISEASE_STATE_RECOVERING && !fish?.treatmentCourses?.disease;
+  if (!legacyRecovery && (!known || known.episode !== getFishCareEpisode(fish, "disease"))) return "";
   const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : "";
   return condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : "";
 }

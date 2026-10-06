@@ -753,6 +753,7 @@ function applyFishMealWindowFoodIntake(fish, now = Date.now(), options = {}) {
   const countBasedDamage = Math.max(0, nextExtraCount - previousExtraCount);
   const damageUnits = canOverfeed ? Math.max(countBasedDamage, repeatedWhileFull ? 1 : 0) : 0;
   if (damageUnits > 0) {
+    if (Number(fish.healthUnits) >= getFishMaxHealthUnits(fish)) fish.injuryEpisodeAt = now;
     fish.healthUnits = Math.max(0, Number(fish.healthUnits) - damageUnits);
   }
 
@@ -1224,6 +1225,8 @@ function consumeSelectedMedicineDose(medicine) {
 function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   if (!medicine || !fish) return { ok: false, message: "Click a fish to treat." };
   if (isFishDead(fish)) return { ok: false, message: "Medicine cannot be used on a dead fish." };
+  if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode." };
+  if (typeof getFishTreatmentDefinitions === "function" && getFishTreatmentDefinitions()[medicine.id]) return applyFishCourseDose(medicine, fish, now);
   const condition = typeof getFishPrimaryCondition === "function" ? getFishPrimaryCondition(fish, now) : String(fish.condition || "healthy");
 
   if (medicine.id === "firstAid") {
@@ -1258,15 +1261,17 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   }
 
   if (medicine.id === "waterStress") {
+    if ((Number(fish.waterStressBoostUntil) || 0) > now) return { ok: false, message: "The recovery boost is still active. Wait before giving another drop." };
     const mismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
-    if (mismatch) return { ok: false, message: "Correct this fish's water type before treating Osmotic Stress." };
+    if (mismatch) return { ok: false, message: "Move this fish to compatible water before giving recovery support." };
     if (!(Number(fish.osmoticStressProgressMs) > 0)) {
-      return { ok: false, message: "This fish is not recovering from Osmotic Stress." };
+      return { ok: false, message: "This recovery support does not match these symptoms. Recheck the Pharmacy questionnaire." };
     }
     if (!(Number(fish.osmoticRecoveryProgressMs) > 0)) {
       fish.osmoticRecoveryProgressMs = 1;
       fish.osmoticRecoveryLastAt = now;
     }
+    if (typeof discoverFishCareCondition === "function") discoverFishCareCondition(fish, "osmotic-stress");
     fish.waterStressBoostUntil = Math.max(Number(fish.waterStressBoostUntil) || 0, now + WATER_STRESS_BOOST_DURATION_MS);
     return { ok: true, message: `${fish.name}'s Osmotic Stress recovery is boosted for 6 hours.` };
   }
@@ -1299,6 +1304,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
       showToast("There are no fish in this tank to calm.");
       return true;
     }
+    if (livingFish.some((fish) => (Number(fish.calmedUntil) || 0) > now)) { showToast("The calming effect is still active. Wait before giving another drop."); return true; }
     if (!consumeSelectedMedicineDose(medicine)) return true;
     for (const fish of livingFish) {
       fish.calmedUntil = Math.max(Number(fish.calmedUntil) || 0, now + CALMING_EFFECT_DURATION_MS);

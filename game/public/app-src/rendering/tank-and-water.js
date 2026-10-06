@@ -7,6 +7,51 @@ function profileTankRenderPass(name, draw) {
   try { return draw(); } finally { endDebugFrameProfilerSection(name, startedAt); }
 }
 
+function drawCaveLayerScene(now, layer, decorFrame) {
+  const items = decorFrame.layers[layer] || [];
+  if (!items.some(item => isCaveDecorKey(item.decorKey))) return false;
+
+  const records = prepareFishRenderFrameCache(now).buckets[layer] || [];
+  const occupants = new Map();
+  const commands = [];
+  for (const record of records) {
+    if (record.effectiveBehavior === "sucker") continue;
+    if (record.caveInteriorFish && items.some(item => item.id === record.fish.caveDecorId)) {
+      const caveId = record.fish.caveDecorId;
+      if (!occupants.has(caveId)) occupants.set(caveId, []);
+      occupants.get(caveId).push(record);
+    } else {
+      commands.push({ z: record.depthZ, record });
+    }
+  }
+  for (const item of items) commands.push({ z: getDecorRenderDepthZ(item), item });
+  // Compatibility sublayers are rounded positions, not occlusion planes. A
+  // front fish must stay above the shell even while its rounded lane is middle.
+  commands.sort((a, b) => a.z - b.z
+    || (a.item && b.item ? comparePlacedDecorDrawOrder(a.item, b.item)
+      : a.record && b.record ? compareFishRenderRecords(a.record, b.record)
+        : a.item ? -1 : 1));
+  for (const command of commands) {
+    if (command.record) {
+      drawFish(now, layer, { records: [command.record] });
+      continue;
+    }
+    const item = command.item;
+    if (!isCaveDecorKey(item.decorKey)) {
+      drawDecor(layer, now, { pass: "base", items: [item] });
+      continue;
+    }
+    const inside = occupants.get(item.id) || [];
+    // Complete each cave separately. Drawing every cave back before every
+    // occupant can place a neighboring cave's fish above the wrong background.
+    drawDecor(layer, now, { pass: "cave-back", items: [item] });
+    drawFish(now, layer, { records: inside, caveInteriorOnly: true });
+    drawDecor(layer, now, { pass: "cave-front", items: [item] });
+    drawFish(now, layer, { records: inside, cavePortalExteriorOverlayOnly: true });
+  }
+  return true;
+}
+
 function renderTank(now) {
   const previousLayout = runtime.tankStageRenderLayout;
   runtime.tankStageRenderLayout = getTankStageLayoutSize();
@@ -42,26 +87,12 @@ function renderTank(now) {
       if (layer === 3) {
         drawAmbientBubbles(now, 2);
       }
-      // Every cave occupies one major layer but completes a private three-part
-      // sandwich inside it: cave back, interior fish, then cave front. Ordinary
-      // decor assigned to that same major layer is painted after the completed
-      // cave, so plants and ornaments sit in front of it as users expect. Front
-      // fish remain foremost within the layer.
-      drawDecor(layer, now, { pass: "cave-back", frameCache: decorRenderFrame });
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
-      // Paint cave backs a second time to occlude ordinary fish travelling in
-      // the rear lanes. Only fish committed to this cave's route are then drawn
-      // into its openings before the front shell closes the sandwich.
-      drawDecor(layer, now, { pass: "cave-back", frameCache: decorRenderFrame });
-      drawFish(now, layer, { excludeBehavior: "sucker", caveInteriorOnly: true });
-      drawDecor(layer, now, { pass: "cave-front", frameCache: decorRenderFrame });
-      // Portal crossings straddle the cave mouth. The inside half remains under
-      // the foreground shell while only the body still outside the portal plane
-      // is redrawn above it. This makes occlusion advance continuously with the
-      // fish instead of popping the whole sprite behind the cave at state entry.
-      drawFish(now, layer, { excludeBehavior: "sucker", cavePortalExteriorOverlayOnly: true });
-      drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
+      const caveSceneDrawn = drawCaveLayerScene(now, layer, decorRenderFrame);
+      if (!caveSceneDrawn) {
+        drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
+        drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
+        drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
+      }
       drawPoops(now, layer);
       if (layer !== TANK_DEPTH_LAYERS) {
         drawWaterParticles(now, layer);
@@ -70,7 +101,7 @@ function renderTank(now) {
       if (layer !== TANK_DEPTH_LAYERS && layer !== SUCKER_FISH_FRONT_GLASS_LAYER) {
         drawFish(now, layer, { onlyBehavior: "sucker", excludeCaveInterior: true });
       }
-      drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_FRONT, excludeCaveInterior: true });
+      if (!caveSceneDrawn) drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_FRONT, excludeCaveInterior: true });
       // A tossed pebble belongs with the layer where it will land and disturb
       // gravel, rather than being painted behind every fish and ornament.
       drawFishPebbleTosses(now, layer);
@@ -83,8 +114,6 @@ function renderTank(now) {
     // composited after this scene and therefore remain in front of them.
     drawMachinery(now, 0);
     drawCoinGlints(now);
-    drawDecorBubbleStreams(now);
-    drawTransitTubeBursts(now);
     drawBoroughEdgeBursts(now);
     drawBoroughStructureActivityEffects(now);
     drawAmbientBubbles(now, 3);

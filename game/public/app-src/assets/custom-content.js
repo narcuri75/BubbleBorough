@@ -1777,26 +1777,31 @@ function bindEvents() {
   dom.storeFoodTab?.addEventListener("click", () => {
     runtime.storeTab = "food";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/food");
     renderUi(Date.now());
   });
   dom.storePharmacyTab?.addEventListener("click", () => {
     runtime.storeTab = "pharmacy";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/pharmacy");
     renderUi(Date.now());
   });
   dom.storeFishTab.addEventListener("click", () => {
     runtime.storeTab = "fish";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/fish");
     renderUi(Date.now());
   });
   dom.storeDecorTab.addEventListener("click", () => {
     runtime.storeTab = "decor";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/decor");
     renderUi(Date.now());
   });
   dom.storeEquipmentTab?.addEventListener("click", () => {
     runtime.storeTab = "equipment";
     runtime.bubbleBodegaHomeOpen = false;
+    updateWebSurfRoute("bubblebodega.swim/shop/equipment");
     renderUi(Date.now());
   });
   dom.tankManagementCard?.addEventListener("click", playTankInfoActionSound, true);

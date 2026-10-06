@@ -14,13 +14,13 @@
   "invertEnabled": false,
   "layers": [
     {
-      "id": "003832f5-da1b-4279-a484-f9c0c862ae4a",
+      "id": "b2bde3bf-85c9-4401-b2b8-7ae98d21fab7",
       "name": "Base",
       "visible": true,
       "locked": false,
       "sprites": [
         {
-          "id": "09789428-48d1-49f4-8d49-b1553d10ed6b",
+          "id": "a5ea07dd-3d33-4bb1-ae03-0d4770cf12d4",
           "width": 512,
           "height": 384,
           "x": 0,
@@ -31,7 +31,7 @@
           "name": "barb_black_ruby.png"
         },
         {
-          "id": "489afd42-af05-4217-930a-e364ce0bdf22",
+          "id": "bd72a78c-16fa-4562-ac07-4634f540d84d",
           "width": 512,
           "height": 384,
           "x": 0,
@@ -39,54 +39,10 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "barb_cherry.png"
+          "name": "barb_tiger.png"
         },
         {
-          "id": "e84f9441-8e5a-46e5-8511-709ab7b47851",
-          "width": 512,
-          "height": 384,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "barb_five_banded.png"
-        },
-        {
-          "id": "e9fa4782-2996-4f4b-9ebe-00812a78c38c",
-          "width": 512,
-          "height": 384,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "barb_gold.png"
-        },
-        {
-          "id": "e6d351c9-af1d-4274-a187-a0b1a2cf7b38",
-          "width": 512,
-          "height": 384,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "barb_green.png"
-        },
-        {
-          "id": "46f68d53-a918-4c67-bddd-3047114eeb85",
-          "width": 512,
-          "height": 384,
-          "x": 0,
-          "y": 0,
-          "rotation": 0,
-          "flipX": false,
-          "flipY": false,
-          "name": "barb_odessa.png"
-        },
-        {
-          "id": "3d1cd931-8f0e-4f39-b954-6b76c3513923",
+          "id": "7b3c56e4-4e3b-4195-99e6-5f8f86a2b09d",
           "width": 512,
           "height": 384,
           "x": 0,
@@ -97,7 +53,7 @@
           "name": "barb_rosy.png"
         },
         {
-          "id": "746d3e56-806f-42e4-9bda-6552391f7628",
+          "id": "0da9a133-4043-4ce5-9477-60c81cb3bc6e",
           "width": 512,
           "height": 384,
           "x": 0,
@@ -105,7 +61,62 @@
           "rotation": 0,
           "flipX": false,
           "flipY": false,
-          "name": "barb_tiger.png"
+          "name": "barb_odessa.png"
+        },
+        {
+          "id": "a4229fea-b9d8-4064-9110-32af3c52e988",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_green.png"
+        },
+        {
+          "id": "e20e47a6-843d-4ce7-b728-69289b81e57c",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_gold.png"
+        },
+        {
+          "id": "d433a263-b1b1-4ee0-85ce-644917ce81da",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_five_banded.png"
+        },
+        {
+          "id": "ad55ecfa-94d0-4613-a41b-d6228573b1af",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "barb_cherry.png"
+        },
+        {
+          "id": "49fb2796-c9a8-41a0-93cb-5ab1aca835b0",
+          "width": 512,
+          "height": 384,
+          "x": 0,
+          "y": 0,
+          "rotation": 0,
+          "flipX": false,
+          "flipY": false,
+          "name": "silver-barb.png"
         }
       ]
     }

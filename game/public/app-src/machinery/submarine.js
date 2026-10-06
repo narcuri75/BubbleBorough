@@ -2630,7 +2630,7 @@ function findSubmarineCareCandidate(submarine, now = Date.now()) {
       if (!fish || isFishDead(fish)) continue;
       const maxHealth = getFishMaxHealthUnits(fish);
       const health = Math.max(0, Number(fish.healthUnits) || 0);
-      if (inventory.health > 0 && health < maxHealth && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
+      if (inventory.health > 0 && health < maxHealth && (typeof getFishMedicationEligibility !== "function" || getFishMedicationEligibility("firstAid", fish, now).ok) && !hasSubmarineMedicineEffect(tank, "firstAid", now)) {
         const score = 400 + (1 - health / Math.max(1, maxHealth)) * 120;
         if (!best || score > best.score) best = { kind: "health", fishId: fish.id, targetTankId: tank.id, score };
       }
@@ -2730,6 +2730,10 @@ function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, n
   if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.[resourceType]) <= 0) return false;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) return false;
+  if (medicine.id === "firstAid" && typeof applyFishCourseDose === "function") {
+    const result = withActiveTank(target.tank.id, () => applyFishCourseDose(medicine, target.fish, now));
+    if (!result?.ok) return false;
+  }
   withActiveTank(target.tank.id, () => {
     state.medicineClouds.push({
       id: createId("med-cloud"),
@@ -2746,7 +2750,7 @@ function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, n
     };
     if (medicine.id === "firstAid") {
       const maxHealth = getFishMaxHealthUnits(target.fish);
-      if (!isFishDead(target.fish) && target.fish.healthUnits < maxHealth) {
+      if (typeof applyFishCourseDose !== "function" && !isFishDead(target.fish) && target.fish.healthUnits < maxHealth) {
         target.fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(target.fish.healthUnits) || 1);
         target.fish.injuryRecoveryProgressMs = 1;
         target.fish.injuryRecoveryLastAt = now;

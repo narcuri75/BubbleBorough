@@ -506,7 +506,7 @@ test("normal fish draw depth stays stable when legacy compatibility fields chang
   assert.equal(c.getFishRenderPassLayer(fish), 2, "cave occupants keep their private sandwich");
   fish.caveState = "approach";
   fish.tankLayer = 1;
-  assert.equal(c.getFishRenderPassLayer(fish), 1, "approaches keep their authored front lane");
+  assert.equal(c.getFishRenderPassLayer(fish), 3, "approaches follow physical Z until they reach the opening");
 });
 
 test("spatial shadow queries preserve every eligible receiver and reverse painter order", () => {

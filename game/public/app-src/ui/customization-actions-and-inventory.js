@@ -490,7 +490,7 @@ function renderMedicineInventoryOverlay() {
         ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "inventory-card-thumb")}
         <div>
           <strong>${medicine.name}</strong>
-          <div class="fish-meta">${medicine.description}</div>
+          <div class="fish-meta">${medicine.description}</div><p class="fish-meta">${escapeHtml(getMedicineTreatmentInstructions(medicine.id))}</p>
           <div class="mini-note">${quantity} drop${quantity === 1 ? "" : "s"} remaining</div>
         </div>
         <button class="small-button ${active ? "" : "alt"}" data-select-medicine="${medicine.id}" ${quantity > 0 ? "" : "disabled"}>
@@ -2513,7 +2513,7 @@ function renderMedicineTray() {
       ? medicineItems.map((medicine) => {
         const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
         const active = runtime.medicineModeKey === medicine.id;
-        const label = `${medicine.name} - ${quantity} left`;
+        const label = `${medicine.name} - ${quantity} left. ${getMedicineTreatmentInstructions(medicine.id)}`;
         return `
           <button
             class="care-medicine-card ${active ? "is-active" : ""}"
@@ -3682,9 +3682,16 @@ function renderFishInspector(now) {
     const condition = dead
       ? "Deceased"
       : inStorage
-        ? (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, getFishStorageSimulationNow(fish, now))) : "Stored")
-        : (typeof formatFishConditionLabel === "function" ? formatFishConditionLabel(getFishPrimaryCondition(fish, now)) : "Healthy");
+        ? getFishCareConditionText(fish, getFishStorageSimulationNow(fish, now))
+        : getFishCareConditionText(fish, now);
     setTextIfChanged(dom.inspectorCondition, condition);
+  }
+  const careGuide = document.getElementById("inspectorTreatmentGuide");
+  if (careGuide) {
+    const guideNow = inStorage ? getFishStorageSimulationNow(fish, now) : getPeacefulModeSimulationNow(now);
+    const guideMarkup = dead ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
+    careGuide.hidden = !guideMarkup;
+    setMarkupIfChanged("inspector-treatment-guide", careGuide, guideMarkup);
   }
   setTextIfChanged(dom.inspectorAge, formatFishBiologicalAge(fish, now));
   if (dom.inspectorBreeding) {

@@ -610,7 +610,7 @@ test("chum clouds render with food before decor while other blood keeps its fron
   c.updateChumBloodClouds(1000);
   c.spawnBloodCloud(0.5, 0.5);
   assert.deepEqual(clouds.map(cloud => cloud.layer), ["food", "front"]);
-  const source = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
+  const source = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8").split("function renderTank(now)")[1];
   assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") > source.indexOf("drawPellets(now)"));
   assert.ok(source.indexOf("drawEffectClouds(EFFECT_CLOUD_LAYER_FOOD)") < source.indexOf('drawDecor(layer, now, { pass: "base"'));
 });
@@ -3334,8 +3334,8 @@ test("caves stay on one main layer and use the shared back, middle, and front su
   assert.equal(c.getDecorFrontLayer("coral-shelf-1__cave-coral__theme-reef__front.png", 5), 5);
 
   const tankRendering = fs.readFileSync(path.join(root, "../../public/app-src/rendering/tank-and-water.js"), "utf8");
-  assert.match(tankRendering, /drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*subLayer: TANK_SUBLAYER_BACK[\s\S]*subLayer: TANK_SUBLAYER_MIDDLE[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*drawDecor\(layer, now, \{ pass: "base"(?:, frameCache: decorRenderFrame)? \}\)[\s\S]*subLayer: TANK_SUBLAYER_FRONT/);
-  assert.match(tankRendering, /Ordinary[\s\S]*decor assigned to that same major layer is painted after the completed[\s\S]*cave/);
+  assert.match(tankRendering, /pass: "cave-back", items: \[item\][\s\S]*caveInteriorOnly: true[\s\S]*pass: "cave-front", items: \[item\]/);
+  assert.match(tankRendering, /commands\.sort\(\(a, b\) => a\.z - b\.z/);
 });
 
 test("Lure decor is tank-top locked until Free Placement is explicitly enabled", () => {
@@ -3406,9 +3406,10 @@ test("ambient decorative bubbles use the four-level density and speed setting wi
   const bubbles = fs.readFileSync(path.join(root, "ui/tool-modes-and-debug-panels.js"), "utf8");
   const water = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
 
-  assert.match(html, /ambientBubbleLevelInput[^>]*type="range"[^>]*min="0"[^>]*max="3"[^>]*step="1"[^>]*value="2"/);
-  assert.match(html, /ambientBubbleLevelOutput[^>]*>2 · Medium</);
-  assert.match(bootstrap, /ambientBubbleLevel:\s*2/);
+  assert.match(html, /ambientBubbleLevelInput[^>]*type="range"[^>]*min="0"[^>]*max="3"[^>]*step="1"[^>]*value="1"/);
+  assert.match(html, /ambientBubbleLevelOutput[^>]*>1 · Light</);
+  assert.match(bootstrap, /ambientBubbleLevel:\s*1/);
+  assert.match(bootstrap, /const AMBIENT_BUBBLE_LEVEL_DEFAULT = 1;/);
   assert.match(bootstrap, /0:\s*Object\.freeze\(\{ count: 0, speedMultiplier: 0, label: "Off" \}\)/);
   assert.match(bootstrap, /1:\s*Object\.freeze\(\{ count: 8, speedMultiplier: 0\.55, label: "Light" \}\)/);
   assert.match(bootstrap, /2:\s*Object\.freeze\(\{ count: 16, speedMultiplier: 0\.75, label: "Medium" \}\)/);
@@ -3942,7 +3943,7 @@ test("ordinary rear fish are occluded before cave-authorized fish enter the cave
   const water = fs.readFileSync(path.join(root, "rendering/tank-and-water.js"), "utf8");
   assert.match(
     water,
-    /drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\);[\s\S]*excludeCaveInterior: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-back"(?:, frameCache: decorRenderFrame)? \}\);[\s\S]*caveInteriorOnly: true[\s\S]*drawDecor\(layer, now, \{ pass: "cave-front"(?:, frameCache: decorRenderFrame)? \}\)/
+    /commands\.sort\(\(a, b\) => a\.z - b\.z[\s\S]*pass: "cave-back", items: \[item\][\s\S]*records: inside, caveInteriorOnly: true[\s\S]*pass: "cave-front", items: \[item\]/
   );
 });
 
@@ -5379,7 +5380,7 @@ test("Phase 15 local sublayer passing is attempted before planar collision detou
   assert.match(collision, /queueFishCollisionAvoidance[\s\S]*tryFishSubLayerPass\(fish, species/);
   assert.match(collision, /getOverlappingFishForLayerChange[\s\S]*getFishTankSubLayer\(otherFish\) !== targetSubLayer/);
   assert.match(collision, /getOverlappingDecorForFish[\s\S]*doesDecorBlockTankSubLayer\(item, targetSubLayer\)/);
-  assert.match(tankRender, /pass: "cave-back"[\s\S]*TANK_SUBLAYER_BACK[\s\S]*TANK_SUBLAYER_MIDDLE[\s\S]*pass: "cave-front"[\s\S]*pass: "base"[\s\S]*TANK_SUBLAYER_FRONT/);
+  assert.match(tankRender, /pass: "cave-back"[\s\S]*caveInteriorOnly: true[\s\S]*pass: "cave-front"[\s\S]*cavePortalExteriorOverlayOnly: true/);
   assert.match(decorRender, /options\.pass === "cave-back"/);
 });
 
@@ -10096,7 +10097,7 @@ test("Expansion Phase 6 Osmotic Stress is noncontagious, progresses independentl
   assert.equal(contagious.isFishDiseaseContagious({ diseaseState: "recovering" }), false);
   assert.equal(contagious.isFishDiseaseContagious({ diseaseState: "visible" }), true);
   assert.match(source, /OSMOTIC_STRESS_FATAL_MS/);
-  assert.match(medicine, /Correct this fish's water type before treating Osmotic Stress/);
+  assert.match(medicine, /Move this fish to compatible water before giving recovery support/);
   assert.match(medicine, /waterStressBoostUntil = Math\.max/);
   assert.match(rendering, /activeDiseaseMarks[\s\S]*DISEASE_TYPE_PARASITES/);
   assert.match(rendering, /diseaseType === DISEASE_TYPE_INFECTION/);
@@ -10145,7 +10146,8 @@ test("Expansion Phase 6 Osmotic Stress progression stops in correct water and re
   fish.waterStressBoostUntil = correctedAt + 6 * 3_600_000;
   c.processFishConditionFramework(correctedAt + 3 * 3_600_000);
   assert.ok(fish.osmoticRecoveryProgressMs >= beforeBoost + 6 * 3_600_000 - 2, "three boosted hours should count as roughly six recovery hours");
-  assert.ok(events.some(text => /Osmotic Stress/.test(text)));
+  assert.ok(events.some(text => /looks uncomfortable/.test(text)));
+  assert.ok(events.every(text => !/Osmotic Stress/.test(text)), "unsolicited notices must preserve the diagnosis puzzle");
 });
 
 test("Expansion Phase 7 audits every first-party species with explicit adult and juvenile food lists", () => {

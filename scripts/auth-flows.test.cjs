@@ -89,6 +89,51 @@ test('normal loads preserve session and unrelated URL state',async () => {
   assert.equal(c.getCloudSession().access_token,'existing');
   assert.equal(c.window.location.hash,'#tank');
 });
+for (const scenario of ['signed in', 'logout request fails', 'expired session', 'already signed out']) {
+  test(`Settings logout exits to startup and preserves the aquarium: ${scenario}`, async () => {
+    const existing = scenario === 'already signed out' ? null : {
+      access_token: 'existing', refresh_token: 'refresh', user: {id: 'user'},
+      expires_at: scenario === 'expired session' ? 1 : Date.now() + 3600000
+    };
+    const {c, storage, calls} = harness('https://bubbleborough.com/play', existing);
+    c.runtime.cloudSession = existing;
+    c.runtime.cloudWritesAllowed = true;
+    c.console = {warn() {}, error() {}};
+    c.supabaseAuthFetch = async (path, options) => {
+      calls.push({path, options});
+      if (scenario !== 'signed in') throw new TypeError('Failed to fetch');
+      return {};
+    };
+    const aquarium = {coins: 130, tanks: [{fish: [{id: 'fish-1'}]}]};
+    let saved = false, reloaded = false;
+    c.saveState = () => {
+      assert.equal(c.runtime.cloudWritesAllowed, false, 'exit save must not schedule an upload');
+      storage.set('aquarium', JSON.stringify(aquarium));
+      saved = true;
+    };
+    c.window.location.reload = () => {
+      assert.equal(saved, true);
+      assert.equal(c.getCloudSession(), null, 'startup must not restore the old login');
+      assert.equal(c.runtime.cloudSession, null);
+      assert.deepEqual(JSON.parse(storage.get('aquarium')), aquarium);
+      reloaded = true;
+    };
+    c.Element = class {};
+    const target = new c.Element();
+    target.closest = selector => selector === '[data-cloud-account-panel]'
+      ? {querySelector: () => null}
+      : selector === '[data-cloud-signout]' ? target : null;
+
+    assert.equal(await c.handleCloudSettingsClick({target}), true);
+    assert.equal(reloaded, true, 'logout must leave the current game');
+    assert.equal(storage.has('session'), false);
+    assert.equal(c.runtime.cloudWritesAllowed, false);
+    const expectedPath = scenario === 'already signed out' ? null
+      : scenario === 'expired session' ? '/auth/v1/token?grant_type=refresh_token' : '/auth/v1/logout';
+    assert.deepEqual(calls.map(call => call.path), expectedPath ? [expectedPath] : []);
+  });
+}
+
 test('invite lands on login; legacy magic links retain their session behavior',async () => {
   const invite = harness(callback('','invite')).c;
   await invite.handleAuthRoute();

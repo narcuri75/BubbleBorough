@@ -533,6 +533,7 @@
   }
 
   function syncWebPageTabs(activePage) {
+    if (activePage !== "stillwater") window.closeStillwaterPage?.();
     const storeOverlay = overlay();
     const routeVisible = activePage === "store"
       && Boolean(storeOverlay && !storeOverlay.hidden && storeOverlay.classList.contains("is-open"));
@@ -1403,10 +1404,66 @@
     return true;
   }
 
+  function renderTankazonMedicineProductDetails(item, details) {
+    if (item?.category !== "pharmacy" || !details || typeof window.getBubbleBodegaMedicineCareProfile !== "function") return false;
+    const profile = window.getBubbleBodegaMedicineCareProfile(item.id);
+    if (!profile) return false;
+    details.replaceChildren();
+
+    const appendCard = (title, icon, copy) => {
+      const card = document.createElement("section");
+      card.className = "tankazon-fish-info-card tankazon-medicine-info-card";
+      card.setAttribute("aria-label", title);
+      card.append(createTankazonFishInfoHeader(icon, title));
+      const body = document.createElement("div");
+      body.className = "tankazon-item-facts tankazon-fish-about";
+      const paragraph = document.createElement("p");
+      paragraph.textContent = copy;
+      body.append(paragraph);
+      card.append(body);
+      details.append(card);
+      return body;
+    };
+
+    appendCard("About", "info", profile.about);
+    const symptomsBody = appendCard("Symptoms & Ailments", "document", profile.treats);
+    const examples = document.createElement("div");
+    examples.className = "tankazon-medicine-symptoms";
+    profile.symptoms.forEach((symptom) => {
+      const example = document.createElement("figure");
+      example.className = "pharmacy-symptom tankazon-medicine-symptom";
+      if (symptom.image && !symptom.restricted) {
+        const image = document.createElement("img");
+        image.setAttribute("data-sprite-src", symptom.image);
+        image.alt = `${symptom.name} example from the game`;
+        example.append(image);
+      } else {
+        const text = document.createElement("span");
+        text.className = "pharmacy-symptom-text-art";
+        text.textContent = symptom.text;
+        example.append(text);
+      }
+      const caption = document.createElement("figcaption");
+      const label = document.createElement("strong");
+      label.textContent = symptom.name;
+      caption.append(label);
+      example.append(caption);
+      examples.append(example);
+    });
+    symptomsBody.append(examples);
+
+    const instructions = appendCard("Treatment Instructions", "info", profile.instructions);
+    const stock = document.createElement("p");
+    stock.textContent = `${profile.bottleDrops} drops per bottle · ${profile.ownedDrops} drops owned`;
+    instructions.append(stock);
+    return true;
+  }
+
   function refreshTankazonItemDetailsFromCard(item) {
     const details = document.getElementById("tankazonItemDetails");
     if (!details) return;
     if (typeof renderTankazonFishProductDetails === "function" && renderTankazonFishProductDetails(item, details)) return;
+    if (renderTankazonMedicineProductDetails(item, details)) return;
     const button = findTankazonNativePurchaseButton(item);
     const card = button?.closest(".shop-card");
     if (!card) return;
@@ -1551,22 +1608,25 @@
     document.getElementById("tankazonItemCategory").textContent = `BubbleBodega › ${categoryLabels[descriptor.category]}`;
     const itemPage = document.getElementById("tankazonItemPage");
     const isFishProduct = descriptor.category === "fish";
+    const isMedicineProduct = descriptor.category === "pharmacy";
     itemPage?.classList.toggle("is-fish-product", isFishProduct);
+    itemPage?.classList.toggle("is-medicine-product", isMedicineProduct);
     const genericAboutHeading = document.getElementById("tankazonGenericAboutHeading");
-    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct;
+    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct || isMedicineProduct;
     const details = document.getElementById("tankazonItemDetails");
     details.replaceChildren();
     const renderedFishDetails = typeof renderTankazonFishProductDetails === "function"
       && renderTankazonFishProductDetails(selectedItem, details);
+    const renderedMedicineDetails = renderTankazonMedicineProductDetails(selectedItem, details);
     const aboutOverride = TANKAZON_ITEM_ABOUT_COPY[`${descriptor.fnName}:${descriptor.id}`] || "";
-    if (!renderedFishDetails && aboutOverride) {
+    if (!renderedFishDetails && !renderedMedicineDetails && aboutOverride) {
       const copy = document.createElement("div");
       copy.className = "tankazon-item-facts";
       // These strings are static first-party BubbleBodega copy. Render the
       // paragraph markup so long descriptions are readable and emphasis is kept.
       copy.innerHTML = aboutOverride;
       details.append(copy);
-    } else if (!renderedFishDetails) {
+    } else if (!renderedFishDetails && !renderedMedicineDetails) {
       // Reuse the real catalog's descriptions and product metadata for non-fish items.
       card.querySelectorAll(":scope > .shop-card-main, :scope > .shop-meta:not(:last-child):not(.shop-card-main)").forEach((source) => {
         const copy = source.cloneNode(true);
@@ -1647,9 +1707,11 @@
     document.getElementById("tankazonItemTitle").textContent = getTankazonItemTitle(selectedItem);
     const itemPage = document.getElementById("tankazonItemPage");
     const isFishProduct = selectedItem.category === "fish";
+    const isMedicineProduct = selectedItem.category === "pharmacy";
     itemPage?.classList.toggle("is-fish-product", isFishProduct);
+    itemPage?.classList.toggle("is-medicine-product", isMedicineProduct);
     const genericAboutHeading = document.getElementById("tankazonGenericAboutHeading");
-    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct;
+    if (genericAboutHeading) genericAboutHeading.hidden = isFishProduct || isMedicineProduct;
     renderTankazonFoodSizes(selectedItem);
     renderTankazonItemFit(selectedItem);
     const available = Boolean(button && !button.disabled && variantExists);
@@ -1676,7 +1738,7 @@
     if (sellerLabel && sellerLabel.textContent !== seller) sellerLabel.textContent = seller;
     const mainPrice = document.getElementById("tankazonItemPrice");
     if (mainPrice) {
-      mainPrice.hidden = selectedItem.category === "fish";
+      mainPrice.hidden = selectedItem.category === "fish" || selectedItem.category === "pharmacy";
       if (!mainPrice.hidden && mainPrice.innerHTML !== priceMarkup) mainPrice.innerHTML = priceMarkup;
     }
     const buyPrice = document.getElementById("tankazonItemBuyPrice");
@@ -2130,6 +2192,7 @@
     allCategoriesMode = true;
     tankazonSession.allScrollTop = 0;
     saveTankazonView("all");
+    window.updateWebSurfRoute?.("bubblebodega.swim");
     if (tankazonSession.searchActive) {
       tankazonSession.searchScope = "all";
       tankazonSession.searchActive = Boolean(tankazonSession.searchQuery);

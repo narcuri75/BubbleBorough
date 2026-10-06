@@ -100,6 +100,9 @@ for (const phase of ["align", "exit", "depart"]) {
     const update = load("updateFishCaveBehavior", {
       getActiveFishCavePlan: () => plan, getCaveBehaviorDecorById: () => ({}),
       getActiveFishCaveTriggerRegion: () => mouth, getActiveFishCaveSeatRegion: () => null,
+      updateFishCaveTransitProgress: () => false,
+      getFishCavePortalDesiredDirection: () => -1,
+      getFishTankDepthZ: () => 0.65, getFishCaveDepthRegion: () => 0.6,
       isFishWithinRegionBounds: () => true, portalOpeningFitsFish: () => false,
       isFishCaveEntranceBusy: () => false,
       getFishActiveCaveInsideLayer: () => 3, clampTankLayer: x => x,

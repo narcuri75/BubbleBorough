@@ -445,7 +445,12 @@ async function signOutCloudAccount() {
       console.warn("Cloud sign out request failed; local session will still be cleared.", error);
     }
   }
+  // Leave the active aquarium entirely; startup will show the main login card
+  // after the local session is cleared. Save without queuing another upload.
+  runtime.cloudWritesAllowed = false;
+  saveState();
   clearCloudSession();
+  window.location.reload();
   return true;
 }
 

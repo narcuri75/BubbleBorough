@@ -29,6 +29,7 @@ h3{margin:0 0 .55rem}
 .screenshot-placeholder{aspect-ratio:16/10;min-height:12rem;display:grid;place-content:center;gap:.55rem;padding:1.5rem;text-align:center;border:1px dashed color-mix(in srgb,var(--accent) 65%,var(--line));border-radius:20px;background:repeating-linear-gradient(135deg,color-mix(in srgb,var(--raised) 82%,transparent),color-mix(in srgb,var(--raised) 82%,transparent) 12px,transparent 12px,transparent 24px);color:var(--muted)}
 .screenshot-placeholder strong{color:var(--ink);letter-spacing:.08em;text-transform:uppercase;font-size:.82rem}
 .screenshot-placeholder span{font-size:.9rem}
+.showcase-media{display:block;width:100%;height:auto;max-width:100%;border:1px solid var(--line);border-radius:20px;background:var(--raised);box-shadow:0 12px 28px rgba(0,0,0,.18)}
 .feature-grid,.preview-grid,.roadmap-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem}
 .feature-grid{margin-block:2rem 4.5rem}
 .feature-grid article,.roadmap-grid article{padding:1.35rem;border:1px solid var(--line);border-radius:18px;background:color-mix(in srgb,var(--surface) 84%,transparent)}

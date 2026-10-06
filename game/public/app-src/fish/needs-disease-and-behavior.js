@@ -4495,14 +4495,14 @@ function getFishFoodRefusalReason(fish, foodKey = "basic", now = Date.now()) {
     return "";
   }
 
-  // Panic is an immediate survival response and always outranks feeding.
-  // Phase 21 keeps the feeding decision aligned with the visible mood, including
-  // Panicked states caused by catastrophic overall welfare rather than only the
-  // explicit panic timer.
+  // Immediate fright still outranks feeding. General welfare panic must not
+  // lock a critically hungry fish out of the meal that could help it recover.
   if ((Number(fish.panicUntil) || 0) > now) {
     return "panic";
   }
-  if (typeof getFishDisposition === "function" && getFishDisposition(fish, now)?.mood === "Panicked") {
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  if (hunger > FISH_HUNGER_CRITICAL_THRESHOLD
+      && typeof getFishDisposition === "function" && getFishDisposition(fish, now)?.mood === "Panicked") {
     return "panic";
   }
 
@@ -4513,7 +4513,6 @@ function getFishFoodRefusalReason(fish, foodKey = "basic", now = Date.now()) {
 
   // Immediate fear can delay a normal meal, but critical hunger overrides
   // ordinary hesitation. This is deterministic: there is no probability roll.
-  const hunger = getFishNeedValue(fish, "hunger", now);
   if (hunger > FISH_HUNGER_CRITICAL_THRESHOLD) {
     const threat = getFishImmediateFoodThreat(fish, now);
     if (threat) {

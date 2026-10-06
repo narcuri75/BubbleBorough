@@ -737,12 +737,27 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.restore();
 }
 
-function getFishCaveShadowStrength(fish, exteriorOverlay = false) {
+function getFishCaveShadowTargetStrength(fish, exteriorOverlay = false) {
   if (exteriorOverlay || !isFishInCaveRenderSublayer(fish)) return 0;
   if (!isFishInCavePortalCrossing(fish)) return 1;
   const progress = clamp(getFishCavePortalCrossingProgress(fish) ?? (Number(fish.cavePortalProgress) || 0), 0, 1);
   const inside = fish.caveState === "portal-exit" ? 1 - progress : progress;
   return inside * inside * (3 - 2 * inside);
+}
+
+function getFishCaveShadowStrength(fish, exteriorOverlay = false, now = Date.now()) {
+  if (exteriorOverlay || !fish) return 0;
+  const target = getFishCaveShadowTargetStrength(fish);
+  runtime.fishCaveShadowTransitions ||= new WeakMap();
+  const previous = runtime.fishCaveShadowTransitions.get(fish);
+  const elapsed = previous ? Math.max(0, now - previous.at) : 0;
+  // Follow portal progress, while also easing discontinuities when a cave
+  // state is handed off or cleared. Render-only state never enters saves.
+  const strength = previous
+    ? previous.strength + (target - previous.strength) * (1 - Math.exp(-elapsed / 180))
+    : target;
+  runtime.fishCaveShadowTransitions.set(fish, { strength, at: now });
+  return strength;
 }
 
 function getFishCaveShadowImage(sourceImage, strength) {
@@ -2172,7 +2187,7 @@ function drawFish(now, layer = null, options = {}) {
     }
 
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
-    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly);
+    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly, now);
     const caveCausticAlpha = 1 - caveShadowStrength;
     const fishLighting = { ...getFishDepthLightingStyle(pose.y) };
     fishLighting.highlightAlpha *= caveCausticAlpha;

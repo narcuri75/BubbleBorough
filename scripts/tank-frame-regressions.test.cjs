@@ -329,6 +329,46 @@ frame.setDebugCalibrationOffset("horizontal", "badge", 0.25);
 assert.strictEqual(frame.computeBadgeGeometry(scaledLockedGeometry, badgeImage, frame.FRAME_CONFIG, 0.5).x, scaledBadge.x + 0.25, "Badge debug trim must remain a visible final CSS-pixel adjustment under Ratio Lock");
 frame.setDebugCalibrationOffset("horizontal", "badge", 0);
 
+// Editor camera coordinates must follow the tank, including a transformed
+// app-shell, rather than the full stage that still contains the tray.
+const stageRect = { left: 100, top: 0, right: 1380, bottom: 720, width: 1280, height: 720 };
+const editCamera = { left: 160, top: 30, width: 960, height: 540 };
+const editPresentation = frame.computeTankPresentation(stageRect, 1280, 720, editCamera, true);
+assert.deepStrictEqual(editPresentation.aquarium, { left: 260, top: 30, right: 1220, bottom: 570, width: 960, height: 540 });
+assert.strictEqual(editPresentation.scale, 0.75);
+assert.strictEqual(editPresentation.aquarium.width / editPresentation.aquarium.height, 16 / 9);
+const transformedPresentation = frame.computeTankPresentation(
+  { left: 50, top: 20, width: 640, height: 360 }, 1280, 720, editCamera, true
+);
+assert.deepStrictEqual(transformedPresentation.aquarium, { left: 130, top: 35, right: 610, bottom: 305, width: 480, height: 270 });
+assert.strictEqual(transformedPresentation.scale, 0.75, "Shell scaling must not be counted twice in the camera zoom");
+assert.deepStrictEqual(frame.computeTankPresentation(stageRect, 1280, 720, editCamera), editPresentation, "Closing must keep following the fitted tank after the edit class disappears");
+assert.deepStrictEqual(
+  frame.computeTankPresentation(stageRect, 1280, 720, { left: 0, top: 0, width: 1280, height: 720 }),
+  { aquarium: stageRect, editing: false, scale: 1 },
+  "The normal camera must return the frame to the stage perimeter"
+);
+assert.strictEqual(frame.computeTankPresentation(stageRect, 1280, 720, { width: 1440, height: 810 }).editing, false, "Normal cover cropping must not activate the editor frame");
+assert.strictEqual(frame.computeTankPresentation(stageRect, 1280, 720, { width: NaN, height: NaN }, true).editing, false, "Startup without camera geometry must use the stage bounds");
+
+for (const shellScale of [1, 0.5]) {
+  const scale = editPresentation.scale * shellScale;
+  const editFrame = frame.computeFrameGeometry(editPresentation.aquarium, sprites, frame.FRAME_CONFIG, "edit", scale);
+  assert.strictEqual(editFrame.top.y, editFrame.aquarium.top);
+  assert.strictEqual(editFrame.bottom.y + editFrame.bottom.height, editFrame.aquarium.bottom);
+  assert.strictEqual(editFrame.left.x, editFrame.aquarium.left);
+  assert.strictEqual(editFrame.right.x + editFrame.right.width, editFrame.aquarium.right);
+  assert.strictEqual(editFrame.left.height, editFrame.aquarium.height);
+  assert.strictEqual(editFrame.top.height, 79 * scale);
+  assert.strictEqual(editFrame["top-left"].width / editFrame["top-left"].height, 37 / 79);
+  assert.ok(editFrame.top.x <= editFrame["top-left"].x + editFrame["top-left"].width);
+  assert.ok(editFrame.top.x + editFrame.top.width >= editFrame["top-right"].x);
+  const editBadge = frame.computeBadgeGeometry(editFrame, badgeImage, frame.FRAME_CONFIG, scale);
+  assert.strictEqual(editBadge.height, frame.FRAME_CONFIG.badgeHeight * scale);
+  assert.strictEqual(editBadge.width / editBadge.height, 512 / 171);
+  assert.ok(editBadge.y + editBadge.height <= editFrame.aquarium.bottom, "The badge must stay above the tray along with the bottom frame");
+}
+
 // Exact live-prototype reference size from the calibrated viewer.
 const referenceGeometry = frame.computeFrameGeometry(
   { left: 0, top: 0, right: 1754, bottom: 1200 },
@@ -404,13 +444,14 @@ assert(jsText.includes('pointerEvents: "none"'), "Frame presentation must not bl
 assert(jsText.includes('position: "fixed"'), "Frame presentation must live in viewport coordinates outside tank layout");
 assert(jsText.includes('document.body.insertBefore(layer, appShell)'), "Frame layer must mount outside the clipped game shell");
 assert(jsText.includes('document.querySelector(".app-shell")'), "Frame layer must explicitly anchor its body-level stacking relative to the game shell");
-assert(!jsText.includes('state.tankStage.appendChild(layer)'), "Frame must never be mounted inside the clipped playable aquarium");
+assert(jsText.includes('state.tankStage.appendChild(state.layer)'), "The fitted editor frame must paint within the stage below its controls");
+assert(jsText.includes('state.layer.style.position = "fixed"'), "Closing the editor must restore the unclipped body-level frame");
 assert(jsText.includes('zIndex: "10"'), "External frame artwork must render above the aquarium shell instead of behind it");
 assert(jsText.includes('data-tank-frame-role'), "Frame should render as small per-piece canvases rather than one full-viewport canvas");
 assert(jsText.includes('configurePieceCanvas'), "Frame should size only the visible piece canvases");
 assert(jsText.includes('createSpriteRenderSpec'), "Frame must keep source crop data separate from displayed dimensions");
 assert(jsText.includes('renderSpritePiece'), "Frame pieces should use one reusable sprite renderer");
-assert(jsText.includes('bubble-borough_badge.png'), "Frame must load the Bubble Borough badge artwork");
+assert(jsText.includes('bubble-borough_badge.webp'), "Frame must load the Bubble Borough badge artwork");
 assert(jsText.includes('computeBadgeGeometry'), "Badge must be positioned from the final bottom-bar geometry");
 assert(jsText.includes('getSpriteOpaqueBottomRatio(bottomSprite)'), "Bottom bar zero alignment must use its opaque artwork bottom rather than the source rectangle");
 assert(jsText.includes('getSpriteOpaqueBottomRatio(bottomLeftSprite)'), "Bottom corners zero alignment must use their opaque artwork bottoms rather than source rectangles");
@@ -435,7 +476,7 @@ assert.deepStrictEqual(unexpectedPngs, [], "Sprite sheets must not be split back
 
 const indexText = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 assert(
-  indexText.includes('public/tank-physical-frame.js?v=20260926-frame-sprites'),
+  indexText.includes('public/tank-physical-frame.js?v=20261006-edit-frame'),
   "The physical frame sprite loader must be included by the game entry page"
 );
 assert.strictEqual(

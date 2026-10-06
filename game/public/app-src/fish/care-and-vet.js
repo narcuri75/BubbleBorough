@@ -241,17 +241,22 @@ function getPharmacySymptomCatalog() {
     { id: "specks", name: "White specks", text: "Small white spots on the body or fins.", image: "assets/web/bodega/spots_symptoms.png", medicine: "antiParasite", restricted: !isTrypophobiaEnabled() },
     { id: "lesions", name: "Red / cloudy lesions", text: "Red or cloudy patches; check both sides of the fish.", image: "assets/web/bodega/lesions_symptoms.png", medicine: "infectionTreatment", restricted: !isGoreEnabled() },
     { id: "wounds", name: "Cuts / wounds", text: "Wound marks or fewer hearts than the fish's maximum.", image: "assets/web/bodega/cuts_symptoms.png", medicine: "firstAid", restricted: !isGoreEnabled() },
-    { id: "color", name: "Faded color", text: "Color looks duller than usual. This clue has several causes.", image: "assets/web/bodega/faded-color_symptoms.png" },
-    { id: "behavior", name: "Unusual behavior", text: "Green bubbles, hiding, slow swimming, or refusing food.", image: "assets/web/bodega/strange-behavior_symptoms.png" },
+    { id: "color", name: "Faded color", text: "Color looks duller than usual. This clue has several causes.", image: "assets/web/bodega/faded-color_symptoms.png", medicine: "waterStress" },
+    { id: "behavior", name: "Unusual behavior", text: "Green bubbles, hiding, slow swimming, or refusing food.", image: "assets/web/bodega/strange-behavior_symptoms.png", medicine: "waterStress" },
     { id: "panic", name: "Panic / aggression", text: "Fish are fleeing, chasing, or acting panicked.", image: "assets/web/bodega/panic_symptoms.png", medicine: "betaBlocker" }
   ];
 }
 
 function getPharmacyQuizRecommendations(symptomIds) {
-  const selected = new Set(symptomIds);
+  const selected = new Set(Array.isArray(symptomIds) ? symptomIds : []);
   const ambiguous = selected.has("specks") && selected.has("lesions");
-  const medicineIds = getPharmacySymptomCatalog().filter((entry) => selected.has(entry.id) && entry.medicine && !(ambiguous && ["specks", "lesions"].includes(entry.id))).map((entry) => entry.medicine);
-  return { medicineIds: [...new Set(medicineIds)], message: ambiguous ? "White specks and red/cloudy lesions point to different treatments. Check which mark is on this fish, or assess the fish separately." : medicineIds.length ? "Likely treatments based on your choices. Check the instructions before giving a drop." : "More information needed: check for distinctive marks and compare current/max hearts. Check compatible water, cleanliness, and comfort." };
+  const medicineIds = getPharmacySymptomCatalog().filter((entry) => selected.has(entry.id) && entry.medicine).map((entry) => entry.medicine);
+  let message = medicineIds.length
+    ? "Possible treatments matching your selected symptoms. Compare the symptoms and read each treatment's instructions before giving a drop."
+    : "Select a matching symptom to see possible treatments.";
+  if (ambiguous) message += " White specks and red/cloudy lesions point to different treatments. Check which mark is on each fish.";
+  if (medicineIds.includes("waterStress")) message += " For Osmotic Stress Treatment, correct incompatible water first; faded color and unusual behavior can have several causes.";
+  return { medicineIds: [...new Set(medicineIds)], message };
 }
 
 function getBubbleBodegaMedicineCareProfile(id) {
@@ -427,31 +432,36 @@ function openStillwaterPage() {
 
 function renderStillwaterPage() {
   const visit = runtime.stillwaterVisit;
+  const coinIcon = `<img class="stillwater-summary-coin" ${assetImageAttributes("assets/misc/coin_unicode.webp")} alt="coins" />`;
   const tank = getCurrentTank();
   const fish = (tank?.fish || []).filter((entry) => !isFishDead(entry) && !entry.storageFrozen);
   const logo = "assets/web/proteus/sub/stillwater-vet_logo.webp";
   const services = [
-    ["Assessment", "We assess the health and symptoms of each selected fish.", "assets/icons/settings_2/page.png"],
-    ["Medication", "If needed, prescribed drops and the required quantity are delivered to Fish Care.", "assets/icons/settings_2/eyedropper.png"],
-    ["Email delivery", "A consultation covering each selected fish is sent to your WebSurf inbox with a diagnosis and step-by-step treatment instructions.", "assets/icons/settings_2/letter.png"]
+    ["Assessment", "We assess the health and symptoms of each selected fish.", "assets/icons/page.png"],
+    ["Medication", "If needed, prescribed drops and the required quantity are delivered to Fish Care.", "assets/icons/eyedropper.png"],
+    ["Email delivery", "A consultation covering each selected fish is sent to your WebSurf inbox with a diagnosis and step-by-step treatment instructions.", "assets/icons/letter.png"]
   ];
   return `<div class="stillwater-page-content">
     <header class="stillwater-brand"><img ${assetImageAttributes(logo)} alt="Stillwater Veterinary Telehealth" /><span>stillwatervet.swim</span></header>
     <div class="stillwater-intro"><h1>Professional care for your aquarium.</h1><p>Stillwater Veterinary Telehealth reviews your fish's symptoms and sends a detailed consultation to your WebSurf inbox, including a diagnosis, recommended medications, the required quantity of each medication, and treatment instructions.</p></div>
     <div class="stillwater-services">${services.map(([name, copy, icon]) => `<section><span class="stillwater-service-icon" aria-hidden="true"><img ${assetImageAttributes(icon)} alt="" /></span><div><h2>${name}</h2><p>${copy}</p></div></section>`).join("")}</div>
-    <div class="stillwater-consultation"><div class="stillwater-pricing"><img ${assetImageAttributes("assets/icons/settings_2/coin.png")} alt="" aria-hidden="true" /><div><strong>20 coins per fish</strong><p>Select one or more fish from your active tank.</p></div></div><button type="button" class="small-button stillwater-consult-button" data-care-consult>Get vet consultation</button></div>
+    <div class="stillwater-consultation"><div class="stillwater-pricing"><img ${assetImageAttributes("assets/icons/coin.png")} alt="" aria-hidden="true" /><div><strong>20 coins per fish</strong><p>Select one or more fish from your active tank.</p></div></div><button type="button" class="small-button stillwater-consult-button" data-care-consult>Get vet consultation</button></div>
     ${runtime.stillwaterLastEmail ? `<div class="stillwater-confirmation"><p role="status">Your consultation report is in your inbox. Prescribed medication has been delivered.</p><button type="button" class="small-button alt" data-care-open-email="${escapeHtml(runtime.stillwaterLastEmail)}">Open consultation email</button></div>` : ""}
-    <footer><button type="button" class="care-text-link" data-care-return-pharmacy>Return to the Pharmacy questionnaire</button></footer></div>
+    </div>
     ${visit ? `<div class="stillwater-dialog-backdrop"><section class="stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwaterDialogTitle" aria-describedby="stillwaterDialogDescription">
-      <button type="button" class="stillwater-dialog-close" data-care-cancel-consult aria-label="Close consultation"><img ${assetImageAttributes("assets/icons/settings_2/close.png")} alt="" aria-hidden="true" /></button>
+      <button type="button" class="stillwater-dialog-close" data-care-cancel-consult aria-label="Close consultation"><img ${assetImageAttributes("assets/icons/close.png")} alt="" aria-hidden="true" /></button>
       <header class="stillwater-dialog-header"><img ${assetImageAttributes(logo)} alt="" /><div><h2 id="stillwaterDialogTitle" tabindex="-1">Vet consultation</h2><p>Active tank: ${escapeHtml(tank ? getTankLabel(tank) : "No active tank")}</p></div></header>
       <p id="stillwaterDialogDescription">Select one or more fish that need care. Assessment, diagnosis, medication when indicated, and instructions are included.</p>
       <div class="stillwater-fish-picker">${fish.map((entry) => {
         const species = getSpeciesForFish(entry);
-        const image = getFishDisplayAssetPath(entry, species) || species?.fallbackAsset || species?.asset || "assets/icons/fish_box.png";
-        return `<label><input type="checkbox" data-care-vet-fish="${escapeHtml(entry.id)}" ${visit.fishIds.includes(entry.id) ? "checked" : ""} /><img class="stillwater-fish-thumb" ${assetImageAttributes(image)} alt="" /><span><strong>${escapeHtml(entry.name || "Fish")}</strong><small>${escapeHtml(species?.name || "Fish")}</small></span></label>`;
+        const thumbnail = renderFishTrayThumbnail(entry, species, entry.name || "Fish").replaceAll("edit-decor-tile-thumb", "stillwater-fish-art");
+        return `<label><input type="checkbox" data-care-vet-fish="${escapeHtml(entry.id)}" ${visit.fishIds.includes(entry.id) ? "checked" : ""} /><span class="stillwater-fish-thumb">${thumbnail}</span><span><strong>${escapeHtml(entry.name || "Fish")}</strong><small>${escapeHtml(species?.name || "Fish")}</small></span></label>`;
       }).join("") || "<p>No living fish are available in this tank.</p>"}</div>
-      <p class="stillwater-consult-total">${visit.fishIds.length} selected × 20 coins · <strong>${visit.fishIds.length * 20} coins total</strong> · Wallet: ${state.coins}</p>
+      <div class="stillwater-consult-total" aria-live="polite" aria-atomic="true">
+        <p class="stillwater-consult-calculation">${visit.fishIds.length} fish × <span>20 ${coinIcon}</span></p>
+        <div class="stillwater-consult-summary-row is-total"><span>Total:</span><strong>${visit.fishIds.length * 20} ${coinIcon}</strong></div>
+        <div class="stillwater-consult-summary-row"><span>Wallet:</span><strong>${state.coins} ${coinIcon}</strong></div>
+      </div>
       <p class="stillwater-notice" role="status" ${visit.notice ? "" : "hidden"}>${escapeHtml(visit.notice || "")}</p>
       <div class="stillwater-dialog-actions"><button type="button" class="small-button alt" data-care-cancel-consult>Cancel</button><button type="button" class="small-button" data-care-confirm-consult ${!visit.fishIds.length || state.coins < visit.fishIds.length * 20 ? "disabled" : ""}>Confirm consultation — ${visit.fishIds.length * 20} coins</button></div>
     </section></div>` : ""}`;
@@ -470,7 +480,14 @@ function renderFishCareWebSurfaces() {
   const open = runtime.storeOverlayOpen && runtime.stillwaterOpen === true && !runtime.settingsOverlayOpen && !runtime.webSurfRouteError;
   page.hidden = !open;
   dom.storeOverlay.classList.toggle("is-stillwater-open", Boolean(open));
-  if (open) setMarkupIfChanged("stillwater-page", page, renderStillwaterPage());
+  if (open) {
+    setMarkupIfChanged("stillwater-page", page, renderStillwaterPage());
+    for (const image of page.querySelectorAll(".stillwater-fish-thumb img")) {
+      const path = image.getAttribute("data-sprite-src") || image.getAttribute("src");
+      if (path) void setAssetImageSource(image, path);
+      image.loading = "eager";
+    }
+  }
   let checker = document.getElementById("pharmacySymptomChecker");
   const body = document.getElementById("tankazonCatalogArea");
   if (!checker && body) {
@@ -514,7 +531,6 @@ function handleFishCareWebClick(event) {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.matches("[data-care-stillwater]")) return navigateWebSurf("stillwatervet.swim");
-  if (button.matches("[data-care-return-pharmacy]")) return navigateWebSurf("bubblebodega.swim/shop/pharmacy");
   if (button.matches("[data-care-clear]")) runtime.pharmacyQuiz = { symptoms: [], submitted: false };
   else if (button.matches("[data-care-find]")) runtime.pharmacyQuiz.submitted = true;
   else if (button.matches("[data-care-consult]")) {

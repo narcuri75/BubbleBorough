@@ -12,7 +12,7 @@ const html = read("index.html");
 
 test("decor depth controls map up to back and down to front", () => {
   assert.match(placement, /stepActiveDecorDepth\(action === "layer-up" \? -1 : 1\)/);
-  assert.match(input, /const direction = event\.deltaY < 0 \? -1 : 1/);
+  assert.match(input, /const direction = runtime\.decorDepthWheelAccumulator < 0 \? -1 : 1/);
   assert.match(html, /selectedDecorLayerUpButton[\s\S]*?Move decor backward/);
   assert.match(html, /selectedDecorLayerDownButton[\s\S]*?Move decor forward/);
 });

@@ -341,10 +341,12 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
 
     const tank = snapAquariumRect(aquariumRect);
     const ratioLockPresentation = placement === "ratio-lock";
+    const editPresentation = placement === "edit";
+    const continuousPerimeter = ratioLockPresentation || editPresentation;
     // The tank rectangle is already the final transformed rectangle. Scale the
-    // frame artwork and its calibration values by the same Ratio Lock factor,
-    // keeping the physical frame proportionate at every presentation size.
-    const scale = ratioLockPresentation
+    // frame artwork by the same camera and Ratio Lock factor, keeping the
+    // physical frame proportionate at every presentation size.
+    const scale = continuousPerimeter
       ? Math.max(0.05, Math.min(8, finiteNumber(presentationScale, 1)))
       : 1;
     const scaled = (value) => finiteNumber(value, 0) * scale;
@@ -430,32 +432,34 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       Math.round(tank.height - scaled(config.sideTopSeam) - scaled(config.sideBottomSeam))
     );
     const edgeReveal = Math.max(0, scaled(config.ratioLockEdgeReveal));
-    const verticalHeight = ratioLockPresentation ? outerHeight : seamBoundVerticalHeight;
+    const verticalHeight = continuousPerimeter ? outerHeight : seamBoundVerticalHeight;
 
     // A Ratio Lock composition can be flush with its browser viewport above
     // and below. Keep only a narrow physical lip visible there, while the side
     // rails stay fully visible and are centered precisely on the glass edge.
-    const topBarY = ratioLockPresentation
+    // Keep the editor frame inside the fitted 16:9 perimeter so its artwork
+    // neither clips at the viewport top nor extends over the tray below.
+    const topBarY = editPresentation ? outerTop : ratioLockPresentation
       ? outerTop - horizontalBarHeight + edgeReveal
       : outerTop - horizontalBarHeight;
-    const bottomBarY = ratioLockPresentation
+    const bottomBarY = editPresentation ? outerBottom - horizontalBarHeight : ratioLockPresentation
       ? outerBottom - edgeReveal
       : outerBottom;
     // Keep the established bar-to-glass placement, then use its opaque-art
     // bottom as the shared zero baseline for both lower corners.
     const bottomArtworkBaselineY = bottomBarY
       + horizontalBarHeight * getSpriteOpaqueBottomRatio(bottomSprite);
-    const leftRailX = ratioLockPresentation
+    const leftRailX = editPresentation ? outerLeft : ratioLockPresentation
       ? outerLeft - verticalRailWidth / 2
       : outerLeft - verticalRailWidth - scaled(config.leftRailOffset);
-    const rightRailX = ratioLockPresentation
+    const rightRailX = editPresentation ? outerRight - verticalRailWidth : ratioLockPresentation
       ? outerRight - verticalRailWidth / 2
       : outerRight + scaled(config.rightRailOffset);
-    const railY = ratioLockPresentation ? outerTop : outerTop + scaled(config.sideTopSeam);
-    const leftCornerX = ratioLockPresentation
+    const railY = continuousPerimeter ? outerTop : outerTop + scaled(config.sideTopSeam);
+    const leftCornerX = editPresentation ? outerLeft : ratioLockPresentation
       ? outerLeft - topLeftWidth / 2
       : outerLeft - topLeftWidth;
-    const rightCornerX = ratioLockPresentation
+    const rightCornerX = editPresentation ? outerRight - topRightWidth : ratioLockPresentation
       ? outerRight - topRightWidth / 2
       : outerRight;
     // Calibration is a final CSS-pixel trim. Scaling it with the composition
@@ -468,9 +472,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     const railHeight = Math.max(0, verticalHeight - topSectionY + bottomSectionY);
     const topLeftX = leftCornerX + getDebugCalibrationOffset("horizontal", "top-left");
     const topRightX = rightCornerX + getDebugCalibrationOffset("horizontal", "top-right");
-    const bottomLeftX = (ratioLockPresentation ? outerLeft - bottomLeftWidth / 2 : outerLeft - bottomLeftWidth)
+    const bottomLeftX = (editPresentation ? outerLeft : ratioLockPresentation ? outerLeft - bottomLeftWidth / 2 : outerLeft - bottomLeftWidth)
       + getDebugCalibrationOffset("horizontal", "bottom-left");
-    const bottomRightX = (ratioLockPresentation ? outerRight - bottomRightWidth / 2 : outerRight)
+    const bottomRightX = (editPresentation ? outerRight - bottomRightWidth : ratioLockPresentation ? outerRight - bottomRightWidth / 2 : outerRight)
       + getDebugCalibrationOffset("horizontal", "bottom-right");
     const extendBarBetweenCorners = (preferredX, preferredWidth, leftCornerRight, rightCornerLeft) => {
       // Intentionally tuck the bars behind both corners. A zero-width join is
@@ -537,13 +541,13 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       }),
       "top-left": Object.freeze({
         x: topLeftX,
-        y: (ratioLockPresentation ? outerTop - topLeftHeight + edgeReveal : outerTop - topLeftHeight) + topSectionY,
+        y: (editPresentation ? outerTop : ratioLockPresentation ? outerTop - topLeftHeight + edgeReveal : outerTop - topLeftHeight) + topSectionY,
         width: topLeftWidth,
         height: topLeftHeight
       }),
       "top-right": Object.freeze({
         x: topRightX,
-        y: (ratioLockPresentation ? outerTop - topRightHeight + edgeReveal : outerTop - topRightHeight) + topSectionY,
+        y: (editPresentation ? outerTop : ratioLockPresentation ? outerTop - topRightHeight + edgeReveal : outerTop - topRightHeight) + topSectionY,
         width: topRightWidth,
         height: topRightHeight
       }),
@@ -858,12 +862,58 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     )));
   }
 
+  function computeTankPresentation(stageRect, layoutWidth, layoutHeight, renderRect, editing = false) {
+    const width = finiteNumber(renderRect?.width, 0);
+    const height = finiteNumber(renderRect?.height, 0);
+    if (layoutWidth <= 0 || layoutHeight <= 0 || width <= 0 || height <= 0) {
+      return { aquarium: stageRect, editing: false, scale: 1 };
+    }
+    // CSS camera coordinates are local to the stage. Its DOM rectangle also
+    // includes the app-shell Ratio Lock transform, which must be applied once.
+    // Follow the fitted camera during closing as well, after the edit class is
+    // removed, until the scene fills the stage again.
+    const fitted = width < layoutWidth - FRAME_CONFIG.epsilon
+      && height < layoutHeight - FRAME_CONFIG.epsilon;
+    if (!editing && !fitted) return { aquarium: stageRect, editing: false, scale: 1 };
+
+    const scaleX = stageRect.width / layoutWidth;
+    const scaleY = stageRect.height / layoutHeight;
+    const left = stageRect.left + finiteNumber(renderRect.left, 0) * scaleX;
+    const top = stageRect.top + finiteNumber(renderRect.top, 0) * scaleY;
+    return {
+      aquarium: {
+        left,
+        top,
+        right: left + width * scaleX,
+        bottom: top + height * scaleY,
+        width: width * scaleX,
+        height: height * scaleY
+      },
+      editing: true,
+      scale: Math.min(width / layoutWidth, height / layoutHeight)
+    };
+  }
+
   function render() {
     if (!state.layer || !state.pieces || !state.tankStage || !state.assetsReady || !state.sprites || !state.badgeImage) {
       return;
     }
 
-    const tankRect = state.tankStage.getBoundingClientRect();
+    const stageRect = state.tankStage.getBoundingClientRect();
+    const style = state.tankStage.style;
+    const presentation = computeTankPresentation(
+      stageRect,
+      state.tankStage.clientWidth,
+      state.tankStage.clientHeight,
+      {
+        left: Number.parseFloat(style.getPropertyValue("--tank-render-left")),
+        top: Number.parseFloat(style.getPropertyValue("--tank-render-top")),
+        width: Number.parseFloat(style.getPropertyValue("--tank-render-width")),
+        height: Number.parseFloat(style.getPropertyValue("--tank-render-height"))
+      },
+      state.tankStage.classList.contains("is-decor-edit-framed")
+    );
+    const tankRect = presentation.aquarium;
     const viewport = getViewportRect();
 
     if (
@@ -887,9 +937,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     }
     const exposed = computeExposedEdges(tankRect, viewport, FRAME_CONFIG.epsilon);
     // Ratio Lock presents one continuous physical perimeter, including where
-    // the locked composition meets the browser edge. Ordinary layouts retain
-    // the exposed-edge-only rule, so they do not acquire a permanent border.
-    const visible = ratioLockPresentation
+    // the locked composition meets the browser edge. Editors also show the
+    // complete perimeter; ordinary viewing retains the exposed-edge rule.
+    const visible = ratioLockPresentation || presentation.editing
       ? Object.freeze(Object.fromEntries(EXPECTED_ROLES.map((role) => [role, true])))
       : roleVisibility(exposed);
     if (!Object.values(visible).some(Boolean)) {
@@ -897,12 +947,38 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       return;
     }
 
+    let presentationScale = (ratioLockPresentation ? getRatioLockPresentationScale() : 1) * presentation.scale;
+    let frameRect = tankRect;
+    if (presentation.editing) {
+      // The fitted editor frame stays within the stage. Paint it above the
+      // glass but below the editor controls and hints, in local CSS coordinates.
+      if (state.layer.parentNode !== state.tankStage) state.tankStage.appendChild(state.layer);
+      state.layer.style.position = "absolute";
+      state.layer.style.zIndex = "3";
+      const scaleX = stageRect.width / state.tankStage.clientWidth;
+      const scaleY = stageRect.height / state.tankStage.clientHeight;
+      const left = (tankRect.left - stageRect.left) / scaleX;
+      const top = (tankRect.top - stageRect.top) / scaleY;
+      const width = tankRect.width / scaleX;
+      const height = tankRect.height / scaleY;
+      frameRect = { left, top, right: left + width, bottom: top + height, width, height };
+      presentationScale /= scaleX;
+    } else {
+      // Normal viewing can expose artwork outside the clipped stage, so return
+      // the frame to the body-level layer and viewport coordinates on close.
+      if (state.layer.parentNode !== document.body) {
+        const appShell = document.querySelector(".app-shell");
+        document.body.insertBefore(state.layer, appShell?.parentNode === document.body ? appShell : null);
+      }
+      state.layer.style.position = "fixed";
+      state.layer.style.zIndex = "10";
+    }
     const geometry = computeFrameGeometry(
-      tankRect,
+      frameRect,
       state.sprites,
       FRAME_CONFIG,
-      ratioLockPresentation ? "ratio-lock" : "outside",
-      ratioLockPresentation ? getRatioLockPresentationScale() : 1
+      presentation.editing ? "edit" : ratioLockPresentation ? "ratio-lock" : "outside",
+      presentationScale
     );
     if (!geometry) {
       state.layer.hidden = true;
@@ -932,7 +1008,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
           geometry,
           state.badgeImage,
           FRAME_CONFIG,
-          ratioLockPresentation ? getRatioLockPresentationScale() : 1
+          presentationScale
         );
         if (destination) {
           const display = configurePieceCanvas(badge, destination);
@@ -984,9 +1060,10 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       });
 
       /*
-        Keep the physical frame as a body-level presentation sibling, never a
-        child of #tankStage or .app-shell. Both of those are intentionally
-        clipped by the game layout. Mounting immediately BEFORE .app-shell also
+        Start the viewing frame as a body-level presentation sibling because
+        #tankStage and .app-shell are intentionally clipped by the game layout.
+        The fitted editor frame moves inside the stage while editing so the
+        controls can paint above it. Mounting initially BEFORE .app-shell also
         keeps the frame independent of the clipped composition.  Its pieces
         occupy only the exposed space outside the final aquarium bounds, while
         pointer-events remain disabled so the game/UI retains all interaction.
@@ -1247,6 +1324,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     computeAvailableViewportRect,
     computeExposedEdges,
     computeFrameGeometry,
+    computeTankPresentation,
     computeBadgeGeometry,
     roleVisibility,
     isRatioLockPresentationActive,

@@ -586,9 +586,10 @@ function drawNaturalSubstrateFloor() {
   const drawBounds = getNaturalSubstrateDrawBounds(image, getImageAlphaMask(path));
   if (!drawBounds) return false;
   tankContext.save();
-  // Deliberately draw the source image untouched: no gravel mask, fallback
-  // color, tint, depth overlay, or non-uniform stretching.
-  tankContext.drawImage(image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
+  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorize
+    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: true, cacheScope: "sand" })
+    : null;
+  tankContext.drawImage(coloredSand || image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
   tankContext.restore();
   return true;
 }

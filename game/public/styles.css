@@ -28511,7 +28511,7 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
 .stillwater-page[hidden], .pharmacy-symptom-checker[hidden], #inspectorTreatmentGuide[hidden] { display: none !important; }
 .stillwater-page-content { box-sizing: border-box; max-width: 1100px; margin: auto; padding: 42px 32px 28px; }
 .stillwater-page-content > .stillwater-brand { display: grid; justify-items: center; gap: 8px; margin: 0 16px 26px; padding-bottom: 22px; border-bottom: 1px solid #527584; }
-.stillwater-brand img { width: 128px; height: 128px; object-fit: contain; }
+.stillwater-page-content > .stillwater-brand img { width: 128px; height: 128px; max-width: 128px; object-fit: contain; }
 .stillwater-brand span { color: #c5e4f0; font-size: 19px; font-weight: 650; }
 .stillwater-intro { text-align: center; }
 .stillwater-page h1 { margin: 0 0 20px; font-size: clamp(28px, 3vw, 42px); font-weight: 750; line-height: 1.2; }
@@ -28546,20 +28546,73 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
 .stillwater-dialog-close img { width: 22px; height: 22px; object-fit: contain; }
 .stillwater-dialog-close:hover { background: #193e4c; }
 .stillwater-dialog-header { display: flex; align-items: center; gap: 18px; padding-right: 20px; }
-.stillwater-dialog-header > img { flex: 0 0 auto; width: 100px; height: 100px; object-fit: contain; }
+.stillwater-dialog-header > img { flex: 0 0 auto; width: 50px; height: 50px; object-fit: contain; }
 .stillwater-dialog-header h2 { margin: 0 0 6px; font-size: 28px; line-height: 1.2; }
 .stillwater-dialog p { margin: 0; font-size: 16px; line-height: 1.5; }
+.stillwater-consult-total { display: grid; gap: 8px; padding: 12px 16px; border: 1px solid #285a6c; border-radius: 10px; background: #08202c; font-variant-numeric: tabular-nums; }
+.stillwater-dialog .stillwater-consult-calculation { display: flex; align-items: center; gap: 6px; color: #b7d4e0; font-size: 14px; }
+.stillwater-consult-calculation > span, .stillwater-consult-summary-row > strong { display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.stillwater-consult-summary-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; color: #b7d4e0; font-size: 14px; }
+.stillwater-consult-summary-row > strong { color: #edf7fc; }
+.stillwater-consult-summary-row.is-total { padding-top: 8px; border-top: 1px solid #285a6c; color: #86e6ff; font-size: 18px; font-weight: 700; }
+.stillwater-consult-summary-row.is-total > strong { color: #86e6ff; }
+.stillwater-summary-coin { width: 18px; height: 18px; object-fit: contain; filter: brightness(0) saturate(100%) invert(81%) sepia(71%) saturate(562%) hue-rotate(350deg) brightness(104%) contrast(104%); }
 .stillwater-fish-picker { display: grid; gap: 8px; min-height: 0; max-height: 430px; overflow-y: auto; padding-right: 6px; }
 .stillwater-fish-picker label { display: grid; grid-template-columns: 18px 100px minmax(0, 1fr); align-items: center; gap: 12px; min-height: 66px; padding: 6px 14px; border: 1px solid #8eb8c9; border-radius: 9px; cursor: pointer; background: #0d2531; }
 .stillwater-fish-picker input { width: 16px; height: 16px; margin: 0; accent-color: #63d9f5; }
 .stillwater-fish-picker label:has(input:checked) { border-color: #66d6f2; background: #153b4a; }
-.stillwater-fish-thumb { display: block; width: 100px; height: 50px; object-fit: contain; border-radius: 5px; background: #061821; }
+.stillwater-fish-thumb { position: relative; display: block; width: 100px; height: 50px; object-fit: contain; border-radius: 5px; background: #061821; }
+.stillwater-fish-thumb > img, .stillwater-fish-thumb > span { width: 100%; height: 100%; object-fit: contain; }
+.stillwater-fish-thumb > img { position: static; display: block; }
 .stillwater-fish-picker label > span { min-width: 0; overflow-wrap: anywhere; }
 .stillwater-fish-picker strong { font-size: 16px; }
 .stillwater-fish-picker small { display: block; margin-top: 4px; font-size: 14px; line-height: 1.3; }
 .stillwater-dialog-actions { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px; }
 .stillwater-dialog-actions [data-care-confirm-consult] { margin-left: auto; }
 .stillwater-notice { color: #ffaaa0; }
+
+.bubble-bank-care-support { padding: 16px; border: 1px solid #32a7bd; border-radius: 12px; background: rgba(32, 166, 188, .1); }
+.bubble-bank-care-support h3 { margin: 0 0 8px; }
+.bubble-bank-care-support p { margin: 0 0 12px; }
+
+/* Substrate controls stay inside the existing edit tray height. */
+.substrate-editor { display: flex; align-items: stretch; gap: 14px; height: 100%; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: hidden; color: #c5f5ff; }
+.substrate-type-choices { display: flex; align-items: center; gap: 4px; flex: 0 0 230px; padding-right: 12px; border-right: 1px solid #2487a6; }
+.substrate-type-choices button { min-width: 64px; padding: 12px 8px; border: 1px solid #17607d; border-radius: 10px; background: #082c41; color: #bceaff; font: 700 11px var(--ui-font-stack); cursor: pointer; }
+.substrate-type-choices button:last-child { min-width: 54px; font-size: 9px; }
+.substrate-type-choices button.is-selected { color: #032638; background: #41d5f4; border-color: #76edff; }
+.substrate-type-choices button:disabled { opacity: .4; cursor: default; }
+.substrate-presets { flex: 1 0 280px; min-width: 0; display: grid; grid-template-rows: 18px minmax(0, 1fr); }
+.substrate-presets > strong, .substrate-custom-colors > strong { font-size: 12px; line-height: 18px; color: #73e8ff; }
+.substrate-preset-carousel { display: flex; align-items: center; gap: 5px; min-width: 0; min-height: 0; }
+.substrate-preset-carousel > button { flex: 0 0 22px; width: 22px; height: 32px; padding: 0; border: 1px solid #229fc8; border-radius: 50%; background: #063044; color: #6bdfff; font-size: 26px; cursor: pointer; }
+.substrate-preset-list { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; height: 100%; overflow-x: auto; overflow-y: hidden; scrollbar-width: thin; }
+.substrate-preset { flex: 0 0 72px; display: grid; justify-items: center; gap: 3px; border: 0; padding: 0 2px; background: transparent; color: #bceaff; cursor: pointer; }
+.substrate-preset > svg { width: 58px; height: 58px; border: 2px solid #149fcb; border-radius: 50%; overflow: hidden; background: #031c29; }
+.substrate-preset > span { font: 700 9px/12px var(--ui-font-stack); white-space: nowrap; }
+.substrate-preset.is-selected > svg { border-color: #a2f9ff; box-shadow: 0 0 7px #3de5ff; }
+.substrate-custom-colors { flex: 0 0 202px; padding-left: 12px; border-left: 1px solid #2487a6; }
+.substrate-custom-colors > div { display: flex; align-items: center; justify-content: space-between; gap: 8px; height: calc(100% - 18px); }
+.substrate-custom-color { display: grid; justify-items: center; align-content: center; gap: 5px; font: 700 10px var(--ui-font-stack); }
+.substrate-color-button { display: flex; align-items: center; gap: 4px; padding: 0; border: 0; background: transparent; color: #d1faff; cursor: pointer; }
+.substrate-color-button > span { display: block; width: 39px; height: 39px; border-radius: 50%; border: 2px solid #60ddfc; background: var(--swatch); box-shadow: inset 0 3px 5px #fff4, 0 0 5px #1cc1ef70; }
+.substrate-color-button > b { font-size: 17px; }
+.substrate-colorize { display: flex; align-items: center; gap: 2px; font-size: 8px; color: #b1ccd7; }
+.substrate-colorize input { width: 11px; height: 11px; margin: 0; accent-color: #3cd9f5; }
+.substrate-current-preview { flex: 0 0 84px; display: grid; place-items: center; padding-left: 12px; border-left: 1px solid #2487a6; }
+.substrate-current-preview > svg { width: 76px; height: 76px; border: 2px solid #20b8de; border-radius: 9px; overflow: hidden; background: #031c29; }
+.substrate-sand-colors { display: flex; align-items: center; gap: 22px; padding: 0 15px; }
+.substrate-sand-colors > span, .substrate-natural-note { align-self: center; font-size: 12px; color: #a5c7d6; }
+.substrate-color-popover { position: fixed; inset: auto; margin: 0; width: 256px; box-sizing: content-box; padding: 12px; border: 2px solid #1db9eb; border-radius: 14px; background: #032335; box-shadow: 0 4px 22px #00121ee0; }
+.substrate-color-popover:popover-open { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }
+.substrate-color-popover button { width: 27px; height: 27px; padding: 0; border: 1px solid #ffffff60; border-radius: 7px; background: var(--swatch); box-shadow: inset 0 3px 4px #ffffff66, inset 0 -2px 3px #0004; cursor: pointer; }
+.substrate-color-popover button[aria-pressed="true"] { outline: 2px solid #8bf1ff; outline-offset: 1px; }
+.substrate-editor button:focus-visible, .substrate-color-popover button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+@media (max-width: 980px) {
+  .substrate-editor { gap: 8px; }
+  .substrate-type-choices { flex-basis: 180px; flex-wrap: wrap; align-content: center; }
+  .substrate-type-choices button { min-width: 74px; padding: 8px; }
+}
 .stillwater-notice[hidden] { display: none; }
 .stillwater-fish-report { padding: 18px 0; border-top: 1px solid #7896a5; }
 .pharmacy-symptom-checker { container: pharmacy-checker / inline-size; margin: 10px; padding: 12px; border: 1px solid #87b9d3; border-radius: 10px; background: #edf7fb; color: #173343; }
@@ -28601,7 +28654,7 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
 @media (max-width: 640px) {
   .stillwater-page-content { padding: 24px 16px; }
   .stillwater-page-content > .stillwater-brand { margin: 0 0 22px; }
-  .stillwater-brand img { width: 100px; height: 100px; }
+  .stillwater-page-content > .stillwater-brand img { width: 100px; height: 100px; max-width: 100px; }
   .stillwater-intro > p { font-size: 16px; }
   .stillwater-services { grid-template-columns: 1fr; }
   .stillwater-services section { gap: 16px; padding: 16px; }
@@ -28613,7 +28666,7 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
   .stillwater-dialog-backdrop { padding: 8px; }
   .stillwater-dialog { gap: 12px; padding: 16px; }
   .stillwater-dialog-header { gap: 12px; }
-  .stillwater-dialog-header > img { width: 72px; height: 72px; }
+  .stillwater-dialog-header > img { width: 36px; height: 36px; }
   .stillwater-dialog-header h2 { font-size: 23px; }
   .stillwater-dialog p { font-size: 14px; }
   .stillwater-fish-picker label { grid-template-columns: 16px 76px minmax(0, 1fr); gap: 8px; padding: 6px 8px; }

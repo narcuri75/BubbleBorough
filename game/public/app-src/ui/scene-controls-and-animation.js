@@ -669,6 +669,49 @@ function renderSolidBackgroundControls() {
 }
 
 
+function renderGravelPalettePreview(colors, key) {
+  // Each atlas frame is a complete tile layer: 1 at the back, 3 at the front.
+  const filters = colors.map((color, index) => {
+    const rgb = hexToRgb(color) || { r: 255, g: 255, b: 255 };
+    const row = (channel) => [0.299, 0.587, 0.114].map((weight) => (weight * channel / 255).toFixed(5)).join(" ");
+    return `<filter id="${key}-${index}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${row(rgb.r)} 0 0 ${row(rgb.g)} 0 0 ${row(rgb.b)} 0 0 0 0 0 1 0" /></filter>`;
+  }).join("");
+  return `<svg class="substrate-palette-preview" viewBox="0 0 100 100" aria-hidden="true"><defs>${filters}</defs>${colors.map((color, index) => `<svg x="0" y="0" width="100" height="100" viewBox="${index * 100} 0 100 100"><image href="assets/gravel/gravel-preset-tile.webp" width="300" height="100" filter="url(#${key}-${index})" /></svg>`).join("")}</svg>`;
+}
+
+function renderSubstrateColorControl(index, color, colorize, sand = false) {
+  const label = sand ? "Sand Color" : `Color ${index + 1}`;
+  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${sand ? "sand" : index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" ${sand ? "data-sand-colorize" : `data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}"`} ${colorize ? "checked" : ""} />Colorize</label></div>`;
+}
+
+function openSubstrateColorPicker(context, button) {
+  let popup = document.getElementById("substrateColorPopover");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "substrateColorPopover";
+    popup.className = "substrate-color-popover";
+    popup.setAttribute("popover", "auto");
+    popup.setAttribute("role", "dialog");
+    popup.addEventListener("click", (event) => {
+      const swatch = event.target.closest("[data-substrate-swatch]");
+      if (!swatch) return;
+      if (popup.dataset.context === "sand") setSandColor(swatch.dataset.substrateSwatch);
+      else setCustomGravelLayerColor(Number(popup.dataset.context), swatch.dataset.substrateSwatch);
+      popup.hidePopover();
+    });
+    document.body.append(popup);
+  }
+  const active = context === "sand" ? state.sandColor : getActiveCustomGravelLayerColors()[Number(context)];
+  popup.dataset.context = context;
+  popup.setAttribute("aria-label", context === "sand" ? "Sand colors" : `Gravel color ${Number(context) + 1}`);
+  popup.innerHTML = getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${choice.color === active}"></button>`).join("");
+  const bounds = button.getBoundingClientRect();
+  popup.style.left = `${Math.max(8, Math.min(window.innerWidth - 288, bounds.left - 110))}px`;
+  popup.style.top = `${Math.max(8, bounds.top - 250)}px`;
+  popup.showPopover();
+  popup.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+}
+
 function renderCustomGravelControls() {
   const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
@@ -715,6 +758,8 @@ function renderCustomGravelControls() {
   `;
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
+  const sandMarkup = `<article class="custom-gravel-layer-card"><strong>Sand Color</strong><div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div><label class="cave-colorize-toggle"><input type="checkbox" data-sand-colorize ${state.sandColorize ? "checked" : ""} />Colorize</label></article>`;
+  const resolvedStyle = getResolvedTankSubstrateStyle();
 
   const layerMarkup = layerCatalog
     .map((layer, index) => {
@@ -768,7 +813,7 @@ function renderCustomGravelControls() {
   if (standardContainers.length) {
     const markup = `
       <div class="custom-gravel-panel-shell">
-        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
+        <div class="custom-gravel-layer-list">${substrateMarkup}${resolvedStyle === "sand" ? sandMarkup : resolvedStyle === "custom" ? layerMarkup : ""}</div>
       </div>
     `;
     for (const [cacheKey, container] of standardContainers) {
@@ -777,11 +822,11 @@ function renderCustomGravelControls() {
   }
 
   if (editContainer) {
-    const editMarkup = `
-      <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
-        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
-      </div>
-    `;
+    const presetMarkup = getGravelColorPresets().map((preset) => {
+      const selected = preset.colors.every((color, index) => color === activeColors[index]) && activeColorizeSettings.every(Boolean);
+      return `<button type="button" class="substrate-preset ${selected ? "is-selected" : ""}" data-gravel-preset="${preset.id}" aria-pressed="${selected}" title="${preset.name}">${renderGravelPalettePreview(preset.colors, `preset-${preset.id}`)}<span>${preset.name}</span></button>`;
+    }).join("");
+    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"], ["auto", "Match Water"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>Choose one color for your sand.</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
@@ -1299,7 +1344,7 @@ function renderScrubProgress() {
     const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
       ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
       : 0;
-    const earningsText = `Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`;
+    const earningsText = `Earned today: Tank ${cleaningIncome.coinsEarned} · Borough ${cleaningIncome.boroughCoinsEarned}`;
     dom.scrubProgressLabel.textContent = autoCompleteSeconds
       ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
       : `${scrubPercent}% - ${earningsText}`;

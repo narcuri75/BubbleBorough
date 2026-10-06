@@ -98,7 +98,7 @@ test("cave depth anchors follow the placed artwork and scaled collision clearanc
 });
 
 test("cave shading follows physical portal progress and leaves exterior bodies illuminated", () => {
-  const shade = load("rendering/fish-and-effects.js", "getFishCaveShadowStrength", {
+  const shade = load("rendering/fish-and-effects.js", "getFishCaveShadowTargetStrength", {
     clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
     isFishInCaveRenderSublayer: f => Boolean(f.caveDecorId) && !["approach", "align", "leave"].includes(f.caveState),
     isFishInCavePortalCrossing: f => f.caveState.startsWith("portal-"),

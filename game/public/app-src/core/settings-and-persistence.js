@@ -1833,6 +1833,8 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     customGravelLayerColors: sanitizeCustomGravelLayerColors(incomingTank.customGravelLayerColors),
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     substrateStyle: normalizeSubstrateStyle(incomingTank.substrateStyle, "custom"),
+    sandColor: normalizeHexColor(incomingTank.sandColor) || "#FFFFFF",
+    sandColorize: incomingTank.sandColorize === true,
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
     gravelHillSeed: Number.isFinite(incomingTank.gravelHillSeed) ? Math.abs(Math.floor(incomingTank.gravelHillSeed)) : undefined,
@@ -1905,6 +1907,8 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     customGravelLayerColors: incoming?.customGravelLayerColors,
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     substrateStyle: incoming?.substrateStyle || "custom",
+    sandColor: incoming?.sandColor,
+    sandColorize: incoming?.sandColorize,
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,
     gravelHillSeed: incoming?.gravelHillSeed,
@@ -2050,6 +2054,7 @@ function reconcileState(rawState) {
     proteusDiscovered: false,
     proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
+    emergencyCareSupportClaimedAt: 0,
     walletTransactions: [],
     incomeHistoryByDay: {},
     lifetimeDeaths: 0,
@@ -2193,6 +2198,8 @@ function reconcileState(rawState) {
       ? Math.max(0, Number(incoming.proteusDiscoveredAt))
       : 0,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
+    emergencyCareSupportClaimedAt: Number.isFinite(Number(incoming.emergencyCareSupportClaimedAt))
+      ? Math.max(0, Number(incoming.emergencyCareSupportClaimedAt)) : 0,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({
         id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
@@ -2261,7 +2268,8 @@ function reconcileState(rawState) {
     davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     boroughCleaningIncomeDayKey: typeof incoming.boroughCleaningIncomeDayKey === "string" ? incoming.boroughCleaningIncomeDayKey : "",
-    boroughCleaningCoinsEarned: clamp(Math.floor(Number(incoming.boroughCleaningCoinsEarned) || 0), 0, BOROUGH_DAILY_CLEANING_COIN_CAP),
+    boroughCleaningCoinsEarned: Number.isFinite(Number(incoming.boroughCleaningCoinsEarned))
+      ? Math.max(0, Math.floor(Number(incoming.boroughCleaningCoinsEarned))) : 0,
     gravelCoinFindDayKey: inferredGravelDayKey,
     gravelCoinsFoundToday: migratedGravelCoinsFoundToday,
     lastGravelCoinFoundAt: migratedLastGravelCoinFoundAt,

@@ -1669,13 +1669,26 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
   return changed;
 }
 
-function beginFishDrag(fish, point, pointerId) {
+function beginFishDrag(fish, point, pointerId, options = {}) {
   if (!fish || isFishDead(fish)) {
     return;
   }
 
   const species = getSpeciesForFish(fish);
   if (!species) {
+    return;
+  }
+
+  if (!options.activate) {
+    runtime.pendingFishDrag = { fishId: fish.id, point: { ...point }, pointerId };
+    runtime.fishPointerClickId = null;
+    runtime.pointerDown = true;
+    try {
+      dom.tankStage.setPointerCapture(pointerId);
+      rememberTankPointerCapture(pointerId);
+    } catch (error) {
+      console.debug("Pointer capture skipped.", error);
+    }
     return;
   }
 
@@ -1715,6 +1728,13 @@ function beginFishDrag(fish, point, pointerId) {
 }
 
 function updateDraggedFish(point) {
+  const pending = runtime.pendingFishDrag;
+  if (pending && point) {
+    if (Math.hypot(point.x - pending.point.x, point.y - pending.point.y) < 4) return;
+    runtime.pendingFishDrag = null;
+    const fish = state.fish.find((entry) => entry.id === pending.fishId);
+    beginFishDrag(fish, pending.point, pending.pointerId, { activate: true });
+  }
   const drag = runtime.fishDragState;
   if (!drag || !point) {
     return;

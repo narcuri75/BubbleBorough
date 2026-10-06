@@ -5,6 +5,54 @@ function getInsufficientFundsMessage() {
   return "Payment method declined. Insufficient Funds.";
 }
 
+function getEmergencyCareSupportStatus(now = Date.now()) {
+  const lastClaimedAt = Math.max(0, Number(state.emergencyCareSupportClaimedAt) || 0);
+  const nextClaimAt = lastClaimedAt > 0 ? lastClaimedAt + DAY_MS : 0;
+  const amount = Math.max(0, EMERGENCY_CARE_SUPPORT_BALANCE - state.coins);
+  if (isPeacefulModeEnabled() || !amount || (nextClaimAt && now < nextClaimAt)) {
+    return { eligible: false, amount: 0, nextClaimAt };
+  }
+  const livingFish = getAllTankFish().filter((fish) => fish && !isFishDead(fish) && !fish.storageFrozen && !isProteusZombieFish(fish));
+  const blockedCare = livingFish.some((fish) => {
+    const accepted = isMealFreeFish(fish) ? [] : getFishAcceptedFoodKeys(fish);
+    const foodKeys = accepted.includes("basic") ? [...new Set([...accepted, "fishFlakes"])] : accepted;
+    const hasFood = foodKeys.some((key) => Number(state.foodInventory?.[key]) > 0);
+    if (!hasFood && foodKeys.length) {
+      const prices = foodKeys.flatMap((key) => {
+        const food = getFoodMeta(key);
+        return food && shouldShowFoodInStore(food) ? getFoodPackageOptions(food).map((pack) => pack.cost) : [];
+      }).filter((cost) => Number.isFinite(cost) && cost >= 0);
+      if (prices.length && state.coins < Math.min(...prices)) return true;
+    }
+    const report = buildStillwaterFishReport(fish, now);
+    const pharmacyCost = report.prescriptions.reduce((total, prescription) => {
+      const missingDrops = Math.max(0, prescription.drops - (Number(state.medicineInventory?.[prescription.id]) || 0));
+      const medicine = getMedicineMeta(prescription.id);
+      return total + (medicine?.bottleDrops > 0 ? Math.ceil(missingDrops / medicine.bottleDrops) * medicine.cost : 0);
+    }, 0);
+    // Stillwater includes all prescribed drops for one fish for 20 coins.
+    return pharmacyCost > 0 && state.coins < Math.min(20, pharmacyCost);
+  });
+  return { eligible: blockedCare, amount: blockedCare ? amount : 0, nextClaimAt };
+}
+
+function claimEmergencyCareSupport(now = Date.now()) {
+  const support = getEmergencyCareSupportStatus(now);
+  if (!support.eligible) {
+    showToast("Emergency care support is not available right now.");
+    return { ok: false, reason: "ineligible" };
+  }
+  return performCoinTransaction({
+    amount: support.amount, direction: "credit", now, place: "Bubble Borough Bank",
+    receiptLabel: "Emergency care support", render: false,
+    apply: () => {
+      state.emergencyCareSupportClaimedAt = now;
+      recordDailyIncomeCategory("awards", support.amount, now);
+    },
+    toast: "Emergency care support received. Buy food or get treatment through the Pharmacy or Stillwater."
+  });
+}
+
 function setStorePurchaseSoundBatch(active = false) {
   runtime.storePurchaseSoundBatch = active === true;
 }
@@ -377,7 +425,7 @@ function selectFoodMode(foodKey, options = {}) {
   }
 
   if (quantity <= 0) {
-    showToast("Buy that food first.");
+    showToast("Buy that food first. If you cannot afford it, check Bubble Borough Bank for emergency care support.");
     return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 

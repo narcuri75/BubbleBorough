@@ -214,13 +214,21 @@ test("failed purchase rolls coins, receipt, delivered medicine, diagnosis and re
   assert.equal(c.state.webSurfSentEmails.length, 0);
   assert.equal(Object.keys(f.careKnowledge).length, 0);
 });
-test("quiz follows selected clues and resolves ambiguous disease clues without inspecting fish", () => {
+test("quiz suggests every matching treatment without inspecting fish or suppressing mixed clues", () => {
   const c = fixture();
   assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["specks"]).medicineIds), ["antiParasite"]);
   assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["lesions", "wounds"]).medicineIds), ["infectionTreatment", "firstAid"]);
-  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["color", "behavior"]).medicineIds), []);
-  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["specks", "lesions"]).medicineIds), []);
+  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["color"]).medicineIds), ["waterStress"]);
+  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["behavior"]).medicineIds), ["waterStress"]);
+  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["color", "behavior"]).medicineIds), ["waterStress"]);
+  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["specks", "lesions"]).medicineIds), ["antiParasite", "infectionTreatment"]);
   assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations([], true).medicineIds), []); // An assumed water mismatch is not a symptom.
+  for (const medicineId of ["firstAid", "antiParasite", "infectionTreatment", "waterStress", "betaBlocker"]) {
+    for (const symptom of c.getBubbleBodegaMedicineCareProfile(medicineId).symptoms) {
+      assert.ok(c.getPharmacyQuizRecommendations([symptom.id]).medicineIds.includes(medicineId), `${medicineId} should match ${symptom.id} by itself`);
+    }
+  }
+  assert.match(c.getPharmacyQuizRecommendations(["color"]).message, /correct incompatible water first/);
   const sheets = require("./generate-sprite-sheets.cjs").buildDefinitions();
   for (const clue of c.getPharmacySymptomCatalog()) if (clue.image) {
     const physical = fs.existsSync(path.join(root, clue.image));
@@ -358,7 +366,7 @@ test("Bodega home only recommends medicine for a discovered current episode", ()
   assert.equal(c.getBubbleBodegaDiseaseTreatmentId(f, START), "antiParasite");
   f.diseaseInfectedAt += 1;
   assert.equal(c.getBubbleBodegaDiseaseTreatmentId(f, START), "");
-  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["specks", "lesions", "wounds"]).medicineIds), ["firstAid"]);
+  assert.deepEqual(Array.from(c.getPharmacyQuizRecommendations(["specks", "lesions", "wounds"]).medicineIds), ["antiParasite", "infectionTreatment", "firstAid"]);
 });
 test("Peaceful Mode captures support and recovery timers without inventing inactive effects", () => {
   const c = fixture(), f = fish({ calmedUntil: START + 600000, waterStressBoostUntil: 0, osmoticRecoveryLastAt: START });

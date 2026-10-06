@@ -1632,9 +1632,7 @@ const SCRUB_AUTO_COMPLETE_GRACE_MS = 5 * 1000;
 const SCRUB_BRUSH_RADIUS = 62;
 const SCRUB_STROKE_STEP = 17;
 const SCRUB_MAX_STAMPS = 2400;
-const CLEANING_DAILY_COIN_CAP = 4;
-const CLEANING_FULL_TANK_COIN_CREDIT = 4;
-const BOROUGH_DAILY_CLEANING_COIN_CAP = 8;
+const CLEANING_FULL_TANK_COIN_CREDIT = 8;
 const GRIME_CACHE_PRECISION = 240;
 const GRIME_CANVAS_RENDER_SCALE = 0.5;
 const GRIME_VISUAL_START_DIRTINESS = 0;
@@ -2272,7 +2270,9 @@ const FISH_ENERGY_CRITICAL_THRESHOLD = 15;
 const FISH_AUTO_FEEDER_COOLDOWN_MS = 8 * MINUTE_MS;
 const FISH_AUTO_FEEDER_TANK_COOLDOWN_MS = 55 * 1000;
 const FISH_NEEDS_MAX_OFFLINE_MS = 6 * HOUR_MS;
-const FISH_DAILY_FEEDING_CARE_COIN_CAP = 5;
+const FISH_DAILY_FEEDING_CARE_COIN_CAP = 10;
+const FISH_MEAL_COIN_REWARD_MULTIPLIER = 2;
+const EMERGENCY_CARE_SUPPORT_BALANCE = 25;
 const MOBILE_VIEWPORT_OBJECT_SCALE_MIN = 0.22;
 const SUBSTRATE_CONTOUR_POINTS = 26;
 const ALPHA_HIT_THRESHOLD = 26;
@@ -3073,6 +3073,8 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "customGravelLayerColors",
   "customGravelLayerColorize",
   "substrateStyle",
+  "sandColor",
+  "sandColorize",
   "gravelPalette",
   "gravelSeed",
   "gravelHillSeed",
@@ -18943,6 +18945,8 @@ function createTankState(options = {}) {
       : (["auto", "custom", "river-rock", "sand"].includes(String(options.substrateStyle || ""))
         ? String(options.substrateStyle)
         : "auto"),
+    sandColor: normalizeHexColor(options.sandColor) || "#FFFFFF",
+    sandColorize: options.sandColorize === true,
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
     gravelSeed,
     gravelHillSeed,
@@ -18973,12 +18977,10 @@ function createTankState(options = {}) {
     cleaningIncomeDayKey: typeof options.cleaningIncomeDayKey === "string" && options.cleaningIncomeDayKey
       ? options.cleaningIncomeDayKey
       : getLocalDayKey(now),
-    cleaningIncomeCredit: clamp(Number(options.cleaningIncomeCredit) || 0, 0, CLEANING_DAILY_COIN_CAP),
-    cleaningIncomeCoinsEarned: clamp(
-      Math.floor(Number(options.cleaningIncomeCoinsEarned) || 0),
-      0,
-      CLEANING_DAILY_COIN_CAP
-    ),
+    cleaningIncomeCredit: Number.isFinite(Number(options.cleaningIncomeCredit))
+      ? Math.max(0, Number(options.cleaningIncomeCredit)) : 0,
+    cleaningIncomeCoinsEarned: Number.isFinite(Number(options.cleaningIncomeCoinsEarned))
+      ? Math.max(0, Math.floor(Number(options.cleaningIncomeCoinsEarned))) : 0,
     otocinclusCoinFindDayKey: typeof options.otocinclusCoinFindDayKey === "string" && options.otocinclusCoinFindDayKey
       ? options.otocinclusCoinFindDayKey
       : getLocalDayKey(now),
@@ -26164,6 +26166,8 @@ function clearPrimaryToolModes(options = {}) {
   runtime.dragState = null;
   runtime.decorResizeState = null;
   runtime.fishDragState = null;
+  runtime.pendingFishDrag = null;
+  runtime.fishPointerClickId = null;
   runtime.eggDragState = null;
   runtime.pebbleDragState = null;
   runtime.selectedDecorId = null;
@@ -30077,6 +30081,21 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const picker = event.target.closest("[data-substrate-picker]");
+    if (picker) {
+      openSubstrateColorPicker(picker.dataset.substratePicker, picker);
+      return;
+    }
+    const preset = event.target.closest("[data-gravel-preset]");
+    if (preset) {
+      setGravelColorPreset(preset.dataset.gravelPreset);
+      return;
+    }
+    const presetScroll = event.target.closest("[data-gravel-preset-scroll]");
+    if (presetScroll) {
+      dom.editTankCustomGravelPanel.querySelector(".substrate-preset-list")?.scrollBy({ left: Number(presetScroll.dataset.gravelPresetScroll) * 280, behavior: "smooth" });
+      return;
+    }
     if (event.target.closest("[data-randomize-gravel-hill]")) {
       randomizeCurrentTankGravelHill();
       playToolbarButtonSoundEffect("press");
@@ -30971,6 +30990,12 @@ function bindEvents() {
         return;
       }
 
+      const sandColorButton = event.target.closest("[data-sand-color]");
+      if (sandColorButton) {
+        setSandColor(sandColorButton.dataset.sandColor);
+        return;
+      }
+
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
         setCustomGravelLayerColor(
@@ -30983,6 +31008,11 @@ function bindEvents() {
 
     container?.addEventListener("change", playEquipmentSurfaceChangeSound, true);
     container?.addEventListener("change", (event) => {
+      const sandColorize = event.target.closest("[data-sand-colorize]");
+      if (sandColorize instanceof HTMLInputElement) {
+        setSandColorize(sandColorize.checked);
+        return;
+      }
       const customGravelColorizeToggle = event.target.closest("[data-custom-gravel-colorize]");
       if (customGravelColorizeToggle instanceof HTMLInputElement) {
         setCustomGravelLayerColorize(
@@ -31024,7 +31054,8 @@ function bindEvents() {
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
   dom.tankStage.addEventListener("wheel", (event) => {
-    if (!runtime.editTankMode || !getActiveDecorShortcutTarget()) return;
+    if (!runtime.editTankMode || (!runtime.placementMode && !runtime.dragState) || !getActiveDecorShortcutTarget()) return;
+    if (runtime.utilityOverlayOpen || runtime.settingsOverlayOpen || isTankOverlayTarget(event.target)) return;
     if (event.target.closest("button, input, select, textarea, [data-scrollable]")) return;
 
     event.preventDefault();
@@ -31175,6 +31206,8 @@ function bindEvents() {
 
   dom.tankStage.addEventListener("click", (event) => {
     const quickGlassTapForThisClick = consumePendingGlassTapClick();
+    const fishPointerClickId = runtime.fishPointerClickId;
+    runtime.fishPointerClickId = null;
     if (isTankMouseInputLocked()) {
       runtime.suppressNextTankClick = false;
       runtime.suppressNextGlassTap = false;
@@ -31230,7 +31263,8 @@ function bindEvents() {
       return;
     }
 
-    const hitFish = findFishAtPoint(point.x, point.y, Date.now());
+    const hitFish = state.fish.find((fish) => fish.id === fishPointerClickId)
+      || findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
       if (runtime.fishEditMode) {
         openFishInspector(hitFish.id, { settingsOpen: true });
@@ -31390,7 +31424,7 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.fishDragState) {
+    if (runtime.fishDragState || runtime.pendingFishDrag) {
       if (point) {
         updateDraggedFish(point);
       }
@@ -31800,6 +31834,10 @@ function bindEvents() {
     if (runtime.autoDispenserDragState) {
       runtime.autoDispenserDragState = null;
       saveState();
+    }
+    if (runtime.pendingFishDrag) {
+      runtime.fishPointerClickId = event?.type === "pointerup" ? runtime.pendingFishDrag.fishId : null;
+      runtime.pendingFishDrag = null;
     }
     if (runtime.fishDragState) {
       finalizeFishDrag();
@@ -33535,7 +33573,7 @@ function resolveSpeciesMealCoins(species) {
 
   const profileMealCoins = getSpeciesComfortProfile(species).mealCoins;
   if (Number.isFinite(Number(profileMealCoins))) {
-    return clamp(Math.max(0, Math.round(Number(profileMealCoins))), 0, 2);
+    return clamp(Math.max(0, Math.round(Number(profileMealCoins))), 0, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
   }
 
   if (isMealFreeFish(species)) {
@@ -33544,11 +33582,11 @@ function resolveSpeciesMealCoins(species) {
 
   const explicitOverride = Number(species.mealCoinOverride ?? species.coinsPerMealOverride);
   if (Number.isFinite(explicitOverride)) {
-    return clamp(Math.max(0, Math.round(explicitOverride)), 0, 2);
+    return clamp(Math.max(0, Math.round(explicitOverride)), 0, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
   }
 
   const cost = Math.max(1, Math.floor(Number(species.cost) || 1));
-  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, 2);
+  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
 }
 
 function getDecorCompanionType(decorKey = "") {
@@ -39614,14 +39652,14 @@ function getFishFoodRefusalReason(fish, foodKey = "basic", now = Date.now()) {
     return "";
   }
 
-  // Panic is an immediate survival response and always outranks feeding.
-  // Phase 21 keeps the feeding decision aligned with the visible mood, including
-  // Panicked states caused by catastrophic overall welfare rather than only the
-  // explicit panic timer.
+  // Immediate fright still outranks feeding. General welfare panic must not
+  // lock a critically hungry fish out of the meal that could help it recover.
   if ((Number(fish.panicUntil) || 0) > now) {
     return "panic";
   }
-  if (typeof getFishDisposition === "function" && getFishDisposition(fish, now)?.mood === "Panicked") {
+  const hunger = getFishNeedValue(fish, "hunger", now);
+  if (hunger > FISH_HUNGER_CRITICAL_THRESHOLD
+      && typeof getFishDisposition === "function" && getFishDisposition(fish, now)?.mood === "Panicked") {
     return "panic";
   }
 
@@ -39632,7 +39670,6 @@ function getFishFoodRefusalReason(fish, foodKey = "basic", now = Date.now()) {
 
   // Immediate fear can delay a normal meal, but critical hunger overrides
   // ordinary hesitation. This is deterministic: there is no probability roll.
-  const hunger = getFishNeedValue(fish, "hunger", now);
   if (hunger > FISH_HUNGER_CRITICAL_THRESHOLD) {
     const threat = getFishImmediateFoodThreat(fish, now);
     if (threat) {
@@ -43008,6 +43045,8 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     customGravelLayerColors: sanitizeCustomGravelLayerColors(incomingTank.customGravelLayerColors),
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     substrateStyle: normalizeSubstrateStyle(incomingTank.substrateStyle, "custom"),
+    sandColor: normalizeHexColor(incomingTank.sandColor) || "#FFFFFF",
+    sandColorize: incomingTank.sandColorize === true,
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
     gravelHillSeed: Number.isFinite(incomingTank.gravelHillSeed) ? Math.abs(Math.floor(incomingTank.gravelHillSeed)) : undefined,
@@ -43080,6 +43119,8 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     customGravelLayerColors: incoming?.customGravelLayerColors,
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     substrateStyle: incoming?.substrateStyle || "custom",
+    sandColor: incoming?.sandColor,
+    sandColorize: incoming?.sandColorize,
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,
     gravelHillSeed: incoming?.gravelHillSeed,
@@ -43225,6 +43266,7 @@ function reconcileState(rawState) {
     proteusDiscovered: false,
     proteusDiscoveredAt: 0,
     coins: STARTING_COINS,
+    emergencyCareSupportClaimedAt: 0,
     walletTransactions: [],
     incomeHistoryByDay: {},
     lifetimeDeaths: 0,
@@ -43368,6 +43410,8 @@ function reconcileState(rawState) {
       ? Math.max(0, Number(incoming.proteusDiscoveredAt))
       : 0,
     coins: Number.isFinite(incoming.coins) ? clamp(Math.floor(incoming.coins), 0, MAX_WALLET_COINS) : base.coins,
+    emergencyCareSupportClaimedAt: Number.isFinite(Number(incoming.emergencyCareSupportClaimedAt))
+      ? Math.max(0, Number(incoming.emergencyCareSupportClaimedAt)) : 0,
     walletTransactions: Array.isArray(incoming.walletTransactions)
       ? incoming.walletTransactions.map((entry) => ({
         id: typeof entry?.id === "string" ? entry.id.slice(0, 80) : createId("receipt"),
@@ -43436,7 +43480,8 @@ function reconcileState(rawState) {
     davyJonesLockerUnlockedAt: Number.isFinite(Number(incoming.davyJonesLockerUnlockedAt)) ? Math.max(0, Number(incoming.davyJonesLockerUnlockedAt)) : 0,
     mealHistory: mergeUniversalMealHistories(incoming.mealHistory, ...tanks.map((tank) => tank.feedHistory)),
     boroughCleaningIncomeDayKey: typeof incoming.boroughCleaningIncomeDayKey === "string" ? incoming.boroughCleaningIncomeDayKey : "",
-    boroughCleaningCoinsEarned: clamp(Math.floor(Number(incoming.boroughCleaningCoinsEarned) || 0), 0, BOROUGH_DAILY_CLEANING_COIN_CAP),
+    boroughCleaningCoinsEarned: Number.isFinite(Number(incoming.boroughCleaningCoinsEarned))
+      ? Math.max(0, Math.floor(Number(incoming.boroughCleaningCoinsEarned))) : 0,
     gravelCoinFindDayKey: inferredGravelDayKey,
     gravelCoinsFoundToday: migratedGravelCoinsFoundToday,
     lastGravelCoinFoundAt: migratedLastGravelCoinFoundAt,
@@ -56623,7 +56668,7 @@ function loadSelectedFoodIntoAutoDispenser(now = Date.now()) {
   if (quantity <= 0) {
     runtime.feedingModeFoodKey = "";
     renderUi(now);
-    showToast("That food is out of stock.");
+    showToast("That food is out of stock. Visit BubbleBodega to restock, or Bubble Borough Bank for emergency care support.");
     return true;
   }
 
@@ -61120,6 +61165,54 @@ function getInsufficientFundsMessage() {
   return "Payment method declined. Insufficient Funds.";
 }
 
+function getEmergencyCareSupportStatus(now = Date.now()) {
+  const lastClaimedAt = Math.max(0, Number(state.emergencyCareSupportClaimedAt) || 0);
+  const nextClaimAt = lastClaimedAt > 0 ? lastClaimedAt + DAY_MS : 0;
+  const amount = Math.max(0, EMERGENCY_CARE_SUPPORT_BALANCE - state.coins);
+  if (isPeacefulModeEnabled() || !amount || (nextClaimAt && now < nextClaimAt)) {
+    return { eligible: false, amount: 0, nextClaimAt };
+  }
+  const livingFish = getAllTankFish().filter((fish) => fish && !isFishDead(fish) && !fish.storageFrozen && !isProteusZombieFish(fish));
+  const blockedCare = livingFish.some((fish) => {
+    const accepted = isMealFreeFish(fish) ? [] : getFishAcceptedFoodKeys(fish);
+    const foodKeys = accepted.includes("basic") ? [...new Set([...accepted, "fishFlakes"])] : accepted;
+    const hasFood = foodKeys.some((key) => Number(state.foodInventory?.[key]) > 0);
+    if (!hasFood && foodKeys.length) {
+      const prices = foodKeys.flatMap((key) => {
+        const food = getFoodMeta(key);
+        return food && shouldShowFoodInStore(food) ? getFoodPackageOptions(food).map((pack) => pack.cost) : [];
+      }).filter((cost) => Number.isFinite(cost) && cost >= 0);
+      if (prices.length && state.coins < Math.min(...prices)) return true;
+    }
+    const report = buildStillwaterFishReport(fish, now);
+    const pharmacyCost = report.prescriptions.reduce((total, prescription) => {
+      const missingDrops = Math.max(0, prescription.drops - (Number(state.medicineInventory?.[prescription.id]) || 0));
+      const medicine = getMedicineMeta(prescription.id);
+      return total + (medicine?.bottleDrops > 0 ? Math.ceil(missingDrops / medicine.bottleDrops) * medicine.cost : 0);
+    }, 0);
+    // Stillwater includes all prescribed drops for one fish for 20 coins.
+    return pharmacyCost > 0 && state.coins < Math.min(20, pharmacyCost);
+  });
+  return { eligible: blockedCare, amount: blockedCare ? amount : 0, nextClaimAt };
+}
+
+function claimEmergencyCareSupport(now = Date.now()) {
+  const support = getEmergencyCareSupportStatus(now);
+  if (!support.eligible) {
+    showToast("Emergency care support is not available right now.");
+    return { ok: false, reason: "ineligible" };
+  }
+  return performCoinTransaction({
+    amount: support.amount, direction: "credit", now, place: "Bubble Borough Bank",
+    receiptLabel: "Emergency care support", render: false,
+    apply: () => {
+      state.emergencyCareSupportClaimedAt = now;
+      recordDailyIncomeCategory("awards", support.amount, now);
+    },
+    toast: "Emergency care support received. Buy food or get treatment through the Pharmacy or Stillwater."
+  });
+}
+
 function setStorePurchaseSoundBatch(active = false) {
   runtime.storePurchaseSoundBatch = active === true;
 }
@@ -61492,7 +61585,7 @@ function selectFoodMode(foodKey, options = {}) {
   }
 
   if (quantity <= 0) {
-    showToast("Buy that food first.");
+    showToast("Buy that food first. If you cannot afford it, check Bubble Borough Bank for emergency care support.");
     return { ok: false, reason: "out-of-stock", foodId: food.id };
   }
 
@@ -64303,13 +64396,26 @@ function enforceFishLayerBoundary(fish, species = getSpeciesForFish(fish)) {
   return changed;
 }
 
-function beginFishDrag(fish, point, pointerId) {
+function beginFishDrag(fish, point, pointerId, options = {}) {
   if (!fish || isFishDead(fish)) {
     return;
   }
 
   const species = getSpeciesForFish(fish);
   if (!species) {
+    return;
+  }
+
+  if (!options.activate) {
+    runtime.pendingFishDrag = { fishId: fish.id, point: { ...point }, pointerId };
+    runtime.fishPointerClickId = null;
+    runtime.pointerDown = true;
+    try {
+      dom.tankStage.setPointerCapture(pointerId);
+      rememberTankPointerCapture(pointerId);
+    } catch (error) {
+      console.debug("Pointer capture skipped.", error);
+    }
     return;
   }
 
@@ -64349,6 +64455,13 @@ function beginFishDrag(fish, point, pointerId) {
 }
 
 function updateDraggedFish(point) {
+  const pending = runtime.pendingFishDrag;
+  if (pending && point) {
+    if (Math.hypot(point.x - pending.point.x, point.y - pending.point.y) < 4) return;
+    runtime.pendingFishDrag = null;
+    const fish = state.fish.find((entry) => entry.id === pending.fishId);
+    beginFishDrag(fish, pending.point, pending.pointerId, { activate: true });
+  }
   const drag = runtime.fishDragState;
   if (!drag || !point) {
     return;
@@ -69887,6 +70000,56 @@ function setTankSubstrateStyle(style) {
   return true;
 }
 
+function setSandColor(color, options = {}) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) return false;
+  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorize: true }, save: options.save, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    if (options.render !== false) renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function setSandColorize(enabled) {
+  const changed = updateTankAppearance({ changes: { sandColorize: enabled === true }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function getGravelColorPresets() {
+  return [
+    { id: "tropical-punch", name: "Tropical Punch", colors: ["#2F80FF", "#FF4FBF", "#A8FF2A"] },
+    { id: "coral-reef", name: "Coral Reef", colors: ["#FF6B35", "#1FE7C9", "#FFD93D"] },
+    { id: "deep-ocean", name: "Deep Ocean", colors: ["#1D2A6D", "#4169E1", "#18D6FF"] },
+    { id: "sunset", name: "Sunset", colors: ["#FF8C42", "#FF3355", "#E83DFF"] },
+    { id: "cotton-candy", name: "Cotton Candy", colors: ["#67C8E0", "#FF77E1", "#B98DEB"] },
+    { id: "jungle", name: "Jungle", colors: ["#2E6B3E", "#57F000", "#A8FF2A"] },
+    { id: "amethyst", name: "Amethyst", colors: ["#4B1D95", "#B55CFF", "#FF4FBF"] },
+    { id: "riverbed", name: "Riverbed", colors: ["#5A3825", "#D9BA82", "#8C96A8"] },
+    { id: "monochrome", name: "Monochrome", colors: ["#000000", "#4E5966", "#FFFFFF"] },
+    { id: "candy-mix", name: "Candy Mix", colors: ["#18D6FF", "#E83DFF", "#FFD93D"] },
+    { id: "neon", name: "Neon", colors: ["#18D6FF", "#57F000", "#E83DFF"] }
+  ];
+}
+
+function setGravelColorPreset(id) {
+  const preset = getGravelColorPresets().find((entry) => entry.id === id);
+  if (!preset) return false;
+  const changed = updateTankAppearance({ changes: { customGravelLayerColors: [...preset.colors], customGravelLayerColorize: [true, true, true] }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
 // Source fragment: tank/appearance-controls.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
@@ -75189,9 +75352,7 @@ function getBoroughCleaningIncomeStatus(now = Date.now()) {
   if (!state || typeof state !== "object") {
     return {
       dayKey,
-      coinsEarned: 0,
-      cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
-      remainingCoins: BOROUGH_DAILY_CLEANING_COIN_CAP
+      coinsEarned: 0
     };
   }
 
@@ -75200,18 +75361,13 @@ function getBoroughCleaningIncomeStatus(now = Date.now()) {
     state.boroughCleaningCoinsEarned = 0;
   }
 
-  const coinsEarned = clamp(
-    Math.floor(Number(state.boroughCleaningCoinsEarned) || 0),
-    0,
-    BOROUGH_DAILY_CLEANING_COIN_CAP
-  );
+  const coinsEarned = Number.isFinite(Number(state.boroughCleaningCoinsEarned))
+    ? Math.max(0, Math.floor(Number(state.boroughCleaningCoinsEarned))) : 0;
   state.boroughCleaningCoinsEarned = coinsEarned;
 
   return {
     dayKey,
-    coinsEarned,
-    cap: BOROUGH_DAILY_CLEANING_COIN_CAP,
-    remainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - coinsEarned)
+    coinsEarned
   };
 }
 
@@ -75223,26 +75379,21 @@ function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) 
       dayKey,
       credit: 0,
       coinsEarned: 0,
-      cap: CLEANING_DAILY_COIN_CAP,
-      remainingCredit: CLEANING_DAILY_COIN_CAP,
-      boroughCoinsEarned: boroughStatus.coinsEarned,
-      boroughCap: boroughStatus.cap,
-      boroughRemainingCoins: boroughStatus.remainingCoins
+      pendingCredit: 0,
+      boroughCoinsEarned: boroughStatus.coinsEarned
     };
   }
 
+  let credit = Number.isFinite(Number(tank.cleaningIncomeCredit))
+    ? Math.max(0, Number(tank.cleaningIncomeCredit)) : 0;
+  let coinsEarned = Number.isFinite(Number(tank.cleaningIncomeCoinsEarned))
+    ? clamp(Math.floor(Number(tank.cleaningIncomeCoinsEarned)), 0, Math.floor(credit + 1e-9)) : 0;
   if (tank.cleaningIncomeDayKey !== dayKey) {
+    // Reset the daily receipt total, but retain all cleaning that has not paid out.
+    credit = Math.max(0, credit - coinsEarned);
+    coinsEarned = 0;
     tank.cleaningIncomeDayKey = dayKey;
-    tank.cleaningIncomeCredit = 0;
-    tank.cleaningIncomeCoinsEarned = 0;
   }
-
-  const credit = clamp(Number(tank.cleaningIncomeCredit) || 0, 0, CLEANING_DAILY_COIN_CAP);
-  const coinsEarned = clamp(
-    Math.floor(Number(tank.cleaningIncomeCoinsEarned) || 0),
-    0,
-    Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(credit + 1e-9))
-  );
   tank.cleaningIncomeCredit = credit;
   tank.cleaningIncomeCoinsEarned = coinsEarned;
 
@@ -75250,11 +75401,8 @@ function getTankCleaningIncomeStatus(tank = getCurrentTank(), now = Date.now()) 
     dayKey,
     credit,
     coinsEarned,
-    cap: CLEANING_DAILY_COIN_CAP,
-    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - credit),
-    boroughCoinsEarned: boroughStatus.coinsEarned,
-    boroughCap: boroughStatus.cap,
-    boroughRemainingCoins: boroughStatus.remainingCoins
+    pendingCredit: Math.max(0, credit - coinsEarned),
+    boroughCoinsEarned: boroughStatus.coinsEarned
   };
 }
 
@@ -75269,18 +75417,19 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
     };
   }
 
-  const cleanedAmount = clamp(Number(dirtinessRemoved) || 0, 0, 1);
-  const rawCredit = cleanedAmount * CLEANING_FULL_TANK_COIN_CREDIT;
-  const creditAdded = Math.min(status.remainingCredit, rawCredit);
-  const nextCredit = clamp(status.credit + creditAdded, 0, CLEANING_DAILY_COIN_CAP);
-  const nextWholeCoins = Math.min(CLEANING_DAILY_COIN_CAP, Math.floor(nextCredit + 1e-9));
+  const cleanedAmount = Number.isFinite(Number(dirtinessRemoved))
+    ? clamp(Number(dirtinessRemoved), 0, 1) : 0;
+  const creditAdded = cleanedAmount * CLEANING_FULL_TANK_COIN_CREDIT;
+  const nextCredit = status.credit + creditAdded;
+  const nextWholeCoins = Math.floor(nextCredit + 1e-9);
   const newlyEarnedTankCoins = Math.max(0, nextWholeCoins - status.coinsEarned);
-  const coinsAwarded = Math.min(newlyEarnedTankCoins, status.boroughRemainingCoins);
+  const walletRoom = Math.max(0, Math.floor(MAX_WALLET_COINS - (Number(state.coins) || 0)));
+  const coinsAwarded = Math.min(newlyEarnedTankCoins, walletRoom);
   const nextBoroughCoinsEarned = status.boroughCoinsEarned + coinsAwarded;
 
   tank.cleaningIncomeDayKey = status.dayKey;
   tank.cleaningIncomeCredit = nextCredit;
-  tank.cleaningIncomeCoinsEarned = nextWholeCoins;
+  tank.cleaningIncomeCoinsEarned = status.coinsEarned + coinsAwarded;
   state.boroughCleaningIncomeDayKey = status.dayKey;
   state.boroughCleaningCoinsEarned = nextBoroughCoinsEarned;
 
@@ -75288,11 +75437,8 @@ function awardManualCleaningIncome(dirtinessRemoved, now = Date.now(), tank = ge
     dayKey: status.dayKey,
     credit: nextCredit,
     coinsEarned: tank.cleaningIncomeCoinsEarned,
-    cap: CLEANING_DAILY_COIN_CAP,
-    remainingCredit: Math.max(0, CLEANING_DAILY_COIN_CAP - nextCredit),
+    pendingCredit: Math.max(0, nextCredit - tank.cleaningIncomeCoinsEarned),
     boroughCoinsEarned: nextBoroughCoinsEarned,
-    boroughCap: BOROUGH_DAILY_CLEANING_COIN_CAP,
-    boroughRemainingCoins: Math.max(0, BOROUGH_DAILY_CLEANING_COIN_CAP - nextBoroughCoinsEarned),
     creditAdded,
     coinsAwarded,
     dirtinessRemoved: cleanedAmount
@@ -75354,7 +75500,7 @@ function completeCleaning(options = {}) {
   renderToolCursor();
 
   const cleaningEarningsSummary = manualCleaning
-    ? ` Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
+    ? ` Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}. Borough ${cleaningIncome.boroughCoinsEarned}.`
     : "";
   pushEvent(
     cleanReward > 0
@@ -75374,14 +75520,12 @@ function completeCleaning(options = {}) {
   renderUi(now);
   showToast(
     cleanReward > 0
-      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
-      : manualCleaning && cleaningIncome.boroughCoinsEarned >= BOROUGH_DAILY_CLEANING_COIN_CAP
-        ? `Tank cleaned. Borough cleaning income cap reached: ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}.`
-        : manualCleaning && cleaningIncome.creditAdded > 0 && cleaningIncome.coinsEarned < CLEANING_DAILY_COIN_CAP
-          ? `Tank cleaned. Cleaning credit saved toward your next coin. Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
-          : manualCleaning && cleaningIncome.coinsEarned >= CLEANING_DAILY_COIN_CAP
-            ? `Tank cleaned. Tank cleaning credit cap reached: ${CLEANING_DAILY_COIN_CAP}/${CLEANING_DAILY_COIN_CAP}. Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}.`
-            : "Tank cleaned. The haze is gone."
+      ? `Tank cleaned. +${cleanReward} ${pluralize("coin", cleanReward)}.`
+      : manualCleaning && cleaningIncome.pendingCredit >= 1
+        ? "Tank cleaned. Cleaning earnings saved until there is room in your wallet."
+        : manualCleaning && cleaningIncome.creditAdded > 0
+          ? "Tank cleaned. Cleaning progress saved toward your next coin."
+          : "Tank cleaned. The haze is gone."
   );
   return {
     ok: true,
@@ -85554,6 +85698,7 @@ function renderBubbleBankCoinAmount(amount, options = {}) {
 }
 
 function renderBubbleBankAccount() {
+  const support = getEmergencyCareSupportStatus();
   const filter = String(runtime.bubbleBankTransactionFilter || "all");
   const entries = (Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [])
     .filter((entry) => bubbleBankTransactionMatchesFilter(entry, filter));
@@ -85584,6 +85729,7 @@ function renderBubbleBankAccount() {
     <div class="bubble-bank-balance-card">
       <div><span>Current Account Balance</span>${renderBubbleBankCoinAmount(state.coins)}<small>Fish Coins</small></div>
     </div>
+    ${support.eligible ? `<section class="bubble-bank-care-support"><h3>Emergency care support</h3><p>Cannot afford food or treatment? Receive ${support.amount} coins to bring your balance to ${EMERGENCY_CARE_SUPPORT_BALANCE}. Available once every 24 hours while essential care is unaffordable.</p><button type="button" class="small-button" data-bank-care-support>Receive ${support.amount} coins</button></section>` : ""}
     <div class="bubble-bank-ledger"><header><div><span aria-hidden="true">▤</span><h3>Transaction history</h3></div>${getBubbleBankTransactionFilterMarkup()}</header>${transactions}</div>
   </section>`;
 }
@@ -85802,6 +85948,11 @@ function renderBubbleBankPage() {
 
 function handleBubbleBankPageClick(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  if (target?.closest?.("[data-bank-care-support]")) {
+    claimEmergencyCareSupport();
+    renderUi(Date.now());
+    return true;
+  }
   const purchaseButton = target?.closest?.("[data-bank-order-id]");
   if (purchaseButton) {
     const orderId = String(purchaseButton.dataset.bankOrderId || "");
@@ -89197,7 +89348,7 @@ function renderMedicineTray() {
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
     cleaningIncome.dayKey,
-    `T ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · B ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`,
+    `T ${cleaningIncome.coinsEarned} · B ${cleaningIncome.boroughCoinsEarned}`,
     ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
@@ -89298,7 +89449,7 @@ function renderMedicineTray() {
         <div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-tools" aria-label="Care tools">
-          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}; Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
+          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}; Borough ${cleaningIncome.boroughCoinsEarned}. Credit accumulates with grime removed and pays in whole coins.">Tools · Clean ${cleaningIncome.coinsEarned}</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
               <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />
@@ -91573,6 +91724,49 @@ function renderSolidBackgroundControls() {
 }
 
 
+function renderGravelPalettePreview(colors, key) {
+  // Each atlas frame is a complete tile layer: 1 at the back, 3 at the front.
+  const filters = colors.map((color, index) => {
+    const rgb = hexToRgb(color) || { r: 255, g: 255, b: 255 };
+    const row = (channel) => [0.299, 0.587, 0.114].map((weight) => (weight * channel / 255).toFixed(5)).join(" ");
+    return `<filter id="${key}-${index}" color-interpolation-filters="sRGB"><feColorMatrix type="matrix" values="${row(rgb.r)} 0 0 ${row(rgb.g)} 0 0 ${row(rgb.b)} 0 0 0 0 0 1 0" /></filter>`;
+  }).join("");
+  return `<svg class="substrate-palette-preview" viewBox="0 0 100 100" aria-hidden="true"><defs>${filters}</defs>${colors.map((color, index) => `<svg x="0" y="0" width="100" height="100" viewBox="${index * 100} 0 100 100"><image href="assets/gravel/gravel-preset-tile.webp" width="300" height="100" filter="url(#${key}-${index})" /></svg>`).join("")}</svg>`;
+}
+
+function renderSubstrateColorControl(index, color, colorize, sand = false) {
+  const label = sand ? "Sand Color" : `Color ${index + 1}`;
+  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${sand ? "sand" : index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" ${sand ? "data-sand-colorize" : `data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}"`} ${colorize ? "checked" : ""} />Colorize</label></div>`;
+}
+
+function openSubstrateColorPicker(context, button) {
+  let popup = document.getElementById("substrateColorPopover");
+  if (!popup) {
+    popup = document.createElement("div");
+    popup.id = "substrateColorPopover";
+    popup.className = "substrate-color-popover";
+    popup.setAttribute("popover", "auto");
+    popup.setAttribute("role", "dialog");
+    popup.addEventListener("click", (event) => {
+      const swatch = event.target.closest("[data-substrate-swatch]");
+      if (!swatch) return;
+      if (popup.dataset.context === "sand") setSandColor(swatch.dataset.substrateSwatch);
+      else setCustomGravelLayerColor(Number(popup.dataset.context), swatch.dataset.substrateSwatch);
+      popup.hidePopover();
+    });
+    document.body.append(popup);
+  }
+  const active = context === "sand" ? state.sandColor : getActiveCustomGravelLayerColors()[Number(context)];
+  popup.dataset.context = context;
+  popup.setAttribute("aria-label", context === "sand" ? "Sand colors" : `Gravel color ${Number(context) + 1}`);
+  popup.innerHTML = getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${choice.color === active}"></button>`).join("");
+  const bounds = button.getBoundingClientRect();
+  popup.style.left = `${Math.max(8, Math.min(window.innerWidth - 288, bounds.left - 110))}px`;
+  popup.style.top = `${Math.max(8, bounds.top - 250)}px`;
+  popup.showPopover();
+  popup.querySelector('[aria-pressed="true"]')?.focus({ preventScroll: true });
+}
+
 function renderCustomGravelControls() {
   const standardContainers = [
     ["custom-gravel-panel", dom.customGravelPanel],
@@ -91619,6 +91813,8 @@ function renderCustomGravelControls() {
   `;
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
+  const sandMarkup = `<article class="custom-gravel-layer-card"><strong>Sand Color</strong><div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div><label class="cave-colorize-toggle"><input type="checkbox" data-sand-colorize ${state.sandColorize ? "checked" : ""} />Colorize</label></article>`;
+  const resolvedStyle = getResolvedTankSubstrateStyle();
 
   const layerMarkup = layerCatalog
     .map((layer, index) => {
@@ -91672,7 +91868,7 @@ function renderCustomGravelControls() {
   if (standardContainers.length) {
     const markup = `
       <div class="custom-gravel-panel-shell">
-        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
+        <div class="custom-gravel-layer-list">${substrateMarkup}${resolvedStyle === "sand" ? sandMarkup : resolvedStyle === "custom" ? layerMarkup : ""}</div>
       </div>
     `;
     for (const [cacheKey, container] of standardContainers) {
@@ -91681,11 +91877,11 @@ function renderCustomGravelControls() {
   }
 
   if (editContainer) {
-    const editMarkup = `
-      <div class="custom-gravel-panel-shell edit-tank-gravel-sections">
-        <div class="custom-gravel-layer-list">${substrateMarkup}${layerMarkup}</div>
-      </div>
-    `;
+    const presetMarkup = getGravelColorPresets().map((preset) => {
+      const selected = preset.colors.every((color, index) => color === activeColors[index]) && activeColorizeSettings.every(Boolean);
+      return `<button type="button" class="substrate-preset ${selected ? "is-selected" : ""}" data-gravel-preset="${preset.id}" aria-pressed="${selected}" title="${preset.name}">${renderGravelPalettePreview(preset.colors, `preset-${preset.id}`)}<span>${preset.name}</span></button>`;
+    }).join("");
+    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"], ["auto", "Match Water"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>Choose one color for your sand.</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
@@ -92203,7 +92399,7 @@ function renderScrubProgress() {
     const autoCompleteSeconds = runtime.cleaningMode && runtime.scrubAutoCompleteAt
       ? Math.max(0, Math.ceil((runtime.scrubAutoCompleteAt - now) / 1000))
       : 0;
-    const earningsText = `Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`;
+    const earningsText = `Earned today: Tank ${cleaningIncome.coinsEarned} · Borough ${cleaningIncome.boroughCoinsEarned}`;
     dom.scrubProgressLabel.textContent = autoCompleteSeconds
       ? `${scrubPercent}% - auto in ${autoCompleteSeconds}s - ${earningsText}`
       : `${scrubPercent}% - ${earningsText}`;
@@ -103641,9 +103837,10 @@ function drawNaturalSubstrateFloor() {
   const drawBounds = getNaturalSubstrateDrawBounds(image, getImageAlphaMask(path));
   if (!drawBounds) return false;
   tankContext.save();
-  // Deliberately draw the source image untouched: no gravel mask, fallback
-  // color, tint, depth overlay, or non-uniform stretching.
-  tankContext.drawImage(image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
+  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorize
+    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: true, cacheScope: "sand" })
+    : null;
+  tankContext.drawImage(coloredSand || image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
   tankContext.restore();
   return true;
 }
@@ -110467,12 +110664,27 @@ function drawMissingFishArtworkFallback(fish, species, now = Date.now()) {
   tankContext.restore();
 }
 
-function getFishCaveShadowStrength(fish, exteriorOverlay = false) {
+function getFishCaveShadowTargetStrength(fish, exteriorOverlay = false) {
   if (exteriorOverlay || !isFishInCaveRenderSublayer(fish)) return 0;
   if (!isFishInCavePortalCrossing(fish)) return 1;
   const progress = clamp(getFishCavePortalCrossingProgress(fish) ?? (Number(fish.cavePortalProgress) || 0), 0, 1);
   const inside = fish.caveState === "portal-exit" ? 1 - progress : progress;
   return inside * inside * (3 - 2 * inside);
+}
+
+function getFishCaveShadowStrength(fish, exteriorOverlay = false, now = Date.now()) {
+  if (exteriorOverlay || !fish) return 0;
+  const target = getFishCaveShadowTargetStrength(fish);
+  runtime.fishCaveShadowTransitions ||= new WeakMap();
+  const previous = runtime.fishCaveShadowTransitions.get(fish);
+  const elapsed = previous ? Math.max(0, now - previous.at) : 0;
+  // Follow portal progress, while also easing discontinuities when a cave
+  // state is handed off or cleared. Render-only state never enters saves.
+  const strength = previous
+    ? previous.strength + (target - previous.strength) * (1 - Math.exp(-elapsed / 180))
+    : target;
+  runtime.fishCaveShadowTransitions.set(fish, { strength, at: now });
+  return strength;
 }
 
 function getFishCaveShadowImage(sourceImage, strength) {
@@ -111902,7 +112114,7 @@ function drawFish(now, layer = null, options = {}) {
     }
 
     const comfort = !pose.isDead ? getFishComfort(fish, now) : null;
-    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly);
+    const caveShadowStrength = getFishCaveShadowStrength(fish, cavePortalExteriorOverlayOnly, now);
     const caveCausticAlpha = 1 - caveShadowStrength;
     const fishLighting = { ...getFishDepthLightingStyle(pose.y) };
     fishLighting.highlightAlpha *= caveCausticAlpha;
@@ -131519,6 +131731,68 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/gravel/gravel-preset-tile.webp",
+      "version": "fe94d712be98",
+      "width": 300,
+      "height": 100,
+      "frames": {
+        "gravel-preset-tile_1.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_2.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_3.png": [
+          200,
+          0,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/gravel/gravel-preset-tile",
+        "version": "8158efb5e1ce-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/gravel/gravel-preset-tile_1.webp",
+      "version": "b7f7f610e798",
+      "width": 300,
+      "height": 100,
+      "frames": {
+        "gravel-preset-tile_1.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_3.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_2.png": [
+          200,
+          0,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/gravel/gravel-preset-tile_1",
+        "version": "c7010e05ab36-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/grime/Grime.webp",
       "version": "b667792805a5",
       "width": 3344,
@@ -134056,17 +134330,22 @@ function getPharmacySymptomCatalog() {
     { id: "specks", name: "White specks", text: "Small white spots on the body or fins.", image: "assets/web/bodega/spots_symptoms.png", medicine: "antiParasite", restricted: !isTrypophobiaEnabled() },
     { id: "lesions", name: "Red / cloudy lesions", text: "Red or cloudy patches; check both sides of the fish.", image: "assets/web/bodega/lesions_symptoms.png", medicine: "infectionTreatment", restricted: !isGoreEnabled() },
     { id: "wounds", name: "Cuts / wounds", text: "Wound marks or fewer hearts than the fish's maximum.", image: "assets/web/bodega/cuts_symptoms.png", medicine: "firstAid", restricted: !isGoreEnabled() },
-    { id: "color", name: "Faded color", text: "Color looks duller than usual. This clue has several causes.", image: "assets/web/bodega/faded-color_symptoms.png" },
-    { id: "behavior", name: "Unusual behavior", text: "Green bubbles, hiding, slow swimming, or refusing food.", image: "assets/web/bodega/strange-behavior_symptoms.png" },
+    { id: "color", name: "Faded color", text: "Color looks duller than usual. This clue has several causes.", image: "assets/web/bodega/faded-color_symptoms.png", medicine: "waterStress" },
+    { id: "behavior", name: "Unusual behavior", text: "Green bubbles, hiding, slow swimming, or refusing food.", image: "assets/web/bodega/strange-behavior_symptoms.png", medicine: "waterStress" },
     { id: "panic", name: "Panic / aggression", text: "Fish are fleeing, chasing, or acting panicked.", image: "assets/web/bodega/panic_symptoms.png", medicine: "betaBlocker" }
   ];
 }
 
 function getPharmacyQuizRecommendations(symptomIds) {
-  const selected = new Set(symptomIds);
+  const selected = new Set(Array.isArray(symptomIds) ? symptomIds : []);
   const ambiguous = selected.has("specks") && selected.has("lesions");
-  const medicineIds = getPharmacySymptomCatalog().filter((entry) => selected.has(entry.id) && entry.medicine && !(ambiguous && ["specks", "lesions"].includes(entry.id))).map((entry) => entry.medicine);
-  return { medicineIds: [...new Set(medicineIds)], message: ambiguous ? "White specks and red/cloudy lesions point to different treatments. Check which mark is on this fish, or assess the fish separately." : medicineIds.length ? "Likely treatments based on your choices. Check the instructions before giving a drop." : "More information needed: check for distinctive marks and compare current/max hearts. Check compatible water, cleanliness, and comfort." };
+  const medicineIds = getPharmacySymptomCatalog().filter((entry) => selected.has(entry.id) && entry.medicine).map((entry) => entry.medicine);
+  let message = medicineIds.length
+    ? "Possible treatments matching your selected symptoms. Compare the symptoms and read each treatment's instructions before giving a drop."
+    : "Select a matching symptom to see possible treatments.";
+  if (ambiguous) message += " White specks and red/cloudy lesions point to different treatments. Check which mark is on each fish.";
+  if (medicineIds.includes("waterStress")) message += " For Osmotic Stress Treatment, correct incompatible water first; faded color and unusual behavior can have several causes.";
+  return { medicineIds: [...new Set(medicineIds)], message };
 }
 
 function getBubbleBodegaMedicineCareProfile(id) {
@@ -134242,12 +134521,39 @@ function openStillwaterPage() {
 
 function renderStillwaterPage() {
   const visit = runtime.stillwaterVisit;
+  const coinIcon = `<img class="stillwater-summary-coin" ${assetImageAttributes("assets/misc/coin_unicode.webp")} alt="coins" />`;
   const tank = getCurrentTank();
   const fish = (tank?.fish || []).filter((entry) => !isFishDead(entry) && !entry.storageFrozen);
-  return `<div class="stillwater-page-content"><header><img ${assetImageAttributes("assets/web/proteus/sub/stillwater-vet_logo.webp")} alt="Stillwater Veterinary Telehealth" /><span>stillwatervet.swim</span></header><h1>Professional care for your aquarium.</h1><p>Stillwater Veterinary Telehealth assesses your fish and sends a diagnosis, prescribed medication, and treatment instructions to your WebSurf inbox.</p><div class="stillwater-services"><section><h2>Assessment</h2><p>A professional answer to the symptoms you have noticed.</p></section><section><h2>Medication</h2><p>Prescribed drops are delivered directly to Fish Care when indicated.</p></section><section><h2>Treatment plan</h2><p>Clear instructions for each fish, including what to do if you miss a day.</p></section></div><p><strong>20 coins per fish.</strong> Select fish from your active tank. One consultation email covers all selected fish.</p><button type="button" class="small-button" data-care-consult>Get a vet consultation</button>
-    ${runtime.stillwaterLastEmail ? `<p role="status">Your consultation report is in your inbox. Prescribed medication has been delivered.</p><button type="button" class="small-button alt" data-care-open-email="${escapeHtml(runtime.stillwaterLastEmail)}">Open consultation email</button>` : ""}
-    <footer><button type="button" class="care-text-link" data-care-return-pharmacy>Return to the Pharmacy questionnaire</button></footer></div>
-    ${visit ? `<div class="stillwater-dialog-backdrop"><section class="stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwaterDialogTitle"><h2 id="stillwaterDialogTitle" tabindex="-1">Vet consultation</h2><p>Active tank: ${escapeHtml(getTankLabel(tank))}</p><p>Select the fish that need care. Assessment, diagnosis, medication when indicated, and instructions are included.</p><div class="stillwater-fish-picker">${fish.map((entry) => `<label><input type="checkbox" data-care-vet-fish="${escapeHtml(entry.id)}" ${visit.fishIds.includes(entry.id) ? "checked" : ""} /><span><strong>${escapeHtml(entry.name || "Fish")}</strong><small>${escapeHtml(getSpeciesForFish(entry)?.name || "Fish")}</small></span></label>`).join("") || "<p>No living fish are available in this tank.</p>"}</div><p>${visit.fishIds.length} selected × 20 coins · <strong>${visit.fishIds.length * 20} coins total</strong> · Wallet: ${state.coins}</p><p class="stillwater-notice" role="status">${escapeHtml(visit.notice || "")}</p><div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-cancel-consult>Cancel</button><button type="button" class="small-button" data-care-confirm-consult ${!visit.fishIds.length || state.coins < visit.fishIds.length * 20 ? "disabled" : ""}>Confirm consultation — ${visit.fishIds.length * 20} coins</button></div></section></div>` : ""}`;
+  const logo = "assets/web/proteus/sub/stillwater-vet_logo.webp";
+  const services = [
+    ["Assessment", "We assess the health and symptoms of each selected fish.", "assets/icons/page.png"],
+    ["Medication", "If needed, prescribed drops and the required quantity are delivered to Fish Care.", "assets/icons/eyedropper.png"],
+    ["Email delivery", "A consultation covering each selected fish is sent to your WebSurf inbox with a diagnosis and step-by-step treatment instructions.", "assets/icons/letter.png"]
+  ];
+  return `<div class="stillwater-page-content">
+    <header class="stillwater-brand"><img ${assetImageAttributes(logo)} alt="Stillwater Veterinary Telehealth" /><span>stillwatervet.swim</span></header>
+    <div class="stillwater-intro"><h1>Professional care for your aquarium.</h1><p>Stillwater Veterinary Telehealth reviews your fish's symptoms and sends a detailed consultation to your WebSurf inbox, including a diagnosis, recommended medications, the required quantity of each medication, and treatment instructions.</p></div>
+    <div class="stillwater-services">${services.map(([name, copy, icon]) => `<section><span class="stillwater-service-icon" aria-hidden="true"><img ${assetImageAttributes(icon)} alt="" /></span><div><h2>${name}</h2><p>${copy}</p></div></section>`).join("")}</div>
+    <div class="stillwater-consultation"><div class="stillwater-pricing"><img ${assetImageAttributes("assets/icons/coin.png")} alt="" aria-hidden="true" /><div><strong>20 coins per fish</strong><p>Select one or more fish from your active tank.</p></div></div><button type="button" class="small-button stillwater-consult-button" data-care-consult>Get vet consultation</button></div>
+    ${runtime.stillwaterLastEmail ? `<div class="stillwater-confirmation"><p role="status">Your consultation report is in your inbox. Prescribed medication has been delivered.</p><button type="button" class="small-button alt" data-care-open-email="${escapeHtml(runtime.stillwaterLastEmail)}">Open consultation email</button></div>` : ""}
+    </div>
+    ${visit ? `<div class="stillwater-dialog-backdrop"><section class="stillwater-dialog" role="dialog" aria-modal="true" aria-labelledby="stillwaterDialogTitle" aria-describedby="stillwaterDialogDescription">
+      <button type="button" class="stillwater-dialog-close" data-care-cancel-consult aria-label="Close consultation"><img ${assetImageAttributes("assets/icons/close.png")} alt="" aria-hidden="true" /></button>
+      <header class="stillwater-dialog-header"><img ${assetImageAttributes(logo)} alt="" /><div><h2 id="stillwaterDialogTitle" tabindex="-1">Vet consultation</h2><p>Active tank: ${escapeHtml(tank ? getTankLabel(tank) : "No active tank")}</p></div></header>
+      <p id="stillwaterDialogDescription">Select one or more fish that need care. Assessment, diagnosis, medication when indicated, and instructions are included.</p>
+      <div class="stillwater-fish-picker">${fish.map((entry) => {
+        const species = getSpeciesForFish(entry);
+        const thumbnail = renderFishTrayThumbnail(entry, species, entry.name || "Fish").replaceAll("edit-decor-tile-thumb", "stillwater-fish-art");
+        return `<label><input type="checkbox" data-care-vet-fish="${escapeHtml(entry.id)}" ${visit.fishIds.includes(entry.id) ? "checked" : ""} /><span class="stillwater-fish-thumb">${thumbnail}</span><span><strong>${escapeHtml(entry.name || "Fish")}</strong><small>${escapeHtml(species?.name || "Fish")}</small></span></label>`;
+      }).join("") || "<p>No living fish are available in this tank.</p>"}</div>
+      <div class="stillwater-consult-total" aria-live="polite" aria-atomic="true">
+        <p class="stillwater-consult-calculation">${visit.fishIds.length} fish × <span>20 ${coinIcon}</span></p>
+        <div class="stillwater-consult-summary-row is-total"><span>Total:</span><strong>${visit.fishIds.length * 20} ${coinIcon}</strong></div>
+        <div class="stillwater-consult-summary-row"><span>Wallet:</span><strong>${state.coins} ${coinIcon}</strong></div>
+      </div>
+      <p class="stillwater-notice" role="status" ${visit.notice ? "" : "hidden"}>${escapeHtml(visit.notice || "")}</p>
+      <div class="stillwater-dialog-actions"><button type="button" class="small-button alt" data-care-cancel-consult>Cancel</button><button type="button" class="small-button" data-care-confirm-consult ${!visit.fishIds.length || state.coins < visit.fishIds.length * 20 ? "disabled" : ""}>Confirm consultation — ${visit.fishIds.length * 20} coins</button></div>
+    </section></div>` : ""}`;
 }
 
 function renderFishCareWebSurfaces() {
@@ -134263,7 +134569,14 @@ function renderFishCareWebSurfaces() {
   const open = runtime.storeOverlayOpen && runtime.stillwaterOpen === true && !runtime.settingsOverlayOpen && !runtime.webSurfRouteError;
   page.hidden = !open;
   dom.storeOverlay.classList.toggle("is-stillwater-open", Boolean(open));
-  if (open) setMarkupIfChanged("stillwater-page", page, renderStillwaterPage());
+  if (open) {
+    setMarkupIfChanged("stillwater-page", page, renderStillwaterPage());
+    for (const image of page.querySelectorAll(".stillwater-fish-thumb img")) {
+      const path = image.getAttribute("data-sprite-src") || image.getAttribute("src");
+      if (path) void setAssetImageSource(image, path);
+      image.loading = "eager";
+    }
+  }
   let checker = document.getElementById("pharmacySymptomChecker");
   const body = document.getElementById("tankazonCatalogArea");
   if (!checker && body) {
@@ -134307,7 +134620,6 @@ function handleFishCareWebClick(event) {
   const button = event.target.closest("button");
   if (!button) return;
   if (button.matches("[data-care-stillwater]")) return navigateWebSurf("stillwatervet.swim");
-  if (button.matches("[data-care-return-pharmacy]")) return navigateWebSurf("bubblebodega.swim/shop/pharmacy");
   if (button.matches("[data-care-clear]")) runtime.pharmacyQuiz = { symptoms: [], submitted: false };
   else if (button.matches("[data-care-find]")) runtime.pharmacyQuiz.submitted = true;
   else if (button.matches("[data-care-consult]")) {
@@ -134349,6 +134661,7 @@ function handleFishCareWebClick(event) {
   } else return;
   renderFishCareWebSurfaces();
   if (button.matches("[data-care-consult]")) document.getElementById("stillwaterDialogTitle")?.focus();
+  if (button.matches("[data-care-cancel-consult]")) dom.storeOverlay.querySelector("[data-care-consult]")?.focus();
 }
 
 function handleFishCareWebKeyDown(event) {

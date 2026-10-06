@@ -2294,6 +2294,21 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    const picker = event.target.closest("[data-substrate-picker]");
+    if (picker) {
+      openSubstrateColorPicker(picker.dataset.substratePicker, picker);
+      return;
+    }
+    const preset = event.target.closest("[data-gravel-preset]");
+    if (preset) {
+      setGravelColorPreset(preset.dataset.gravelPreset);
+      return;
+    }
+    const presetScroll = event.target.closest("[data-gravel-preset-scroll]");
+    if (presetScroll) {
+      dom.editTankCustomGravelPanel.querySelector(".substrate-preset-list")?.scrollBy({ left: Number(presetScroll.dataset.gravelPresetScroll) * 280, behavior: "smooth" });
+      return;
+    }
     if (event.target.closest("[data-randomize-gravel-hill]")) {
       randomizeCurrentTankGravelHill();
       playToolbarButtonSoundEffect("press");
@@ -3188,6 +3203,12 @@ function bindEvents() {
         return;
       }
 
+      const sandColorButton = event.target.closest("[data-sand-color]");
+      if (sandColorButton) {
+        setSandColor(sandColorButton.dataset.sandColor);
+        return;
+      }
+
       const swatchButton = event.target.closest("[data-custom-gravel-color]");
       if (swatchButton) {
         setCustomGravelLayerColor(
@@ -3200,6 +3221,11 @@ function bindEvents() {
 
     container?.addEventListener("change", playEquipmentSurfaceChangeSound, true);
     container?.addEventListener("change", (event) => {
+      const sandColorize = event.target.closest("[data-sand-colorize]");
+      if (sandColorize instanceof HTMLInputElement) {
+        setSandColorize(sandColorize.checked);
+        return;
+      }
       const customGravelColorizeToggle = event.target.closest("[data-custom-gravel-colorize]");
       if (customGravelColorizeToggle instanceof HTMLInputElement) {
         setCustomGravelLayerColorize(
@@ -3241,7 +3267,8 @@ function bindEvents() {
   const shouldCaptureTankDesktopInput = (target) => !isTankMouseInputLocked() && !isTankOverlayTarget(target);
 
   dom.tankStage.addEventListener("wheel", (event) => {
-    if (!runtime.editTankMode || !getActiveDecorShortcutTarget()) return;
+    if (!runtime.editTankMode || (!runtime.placementMode && !runtime.dragState) || !getActiveDecorShortcutTarget()) return;
+    if (runtime.utilityOverlayOpen || runtime.settingsOverlayOpen || isTankOverlayTarget(event.target)) return;
     if (event.target.closest("button, input, select, textarea, [data-scrollable]")) return;
 
     event.preventDefault();
@@ -3392,6 +3419,8 @@ function bindEvents() {
 
   dom.tankStage.addEventListener("click", (event) => {
     const quickGlassTapForThisClick = consumePendingGlassTapClick();
+    const fishPointerClickId = runtime.fishPointerClickId;
+    runtime.fishPointerClickId = null;
     if (isTankMouseInputLocked()) {
       runtime.suppressNextTankClick = false;
       runtime.suppressNextGlassTap = false;
@@ -3447,7 +3476,8 @@ function bindEvents() {
       return;
     }
 
-    const hitFish = findFishAtPoint(point.x, point.y, Date.now());
+    const hitFish = state.fish.find((fish) => fish.id === fishPointerClickId)
+      || findFishAtPoint(point.x, point.y, Date.now());
     if (hitFish) {
       if (runtime.fishEditMode) {
         openFishInspector(hitFish.id, { settingsOpen: true });
@@ -3607,7 +3637,7 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.fishDragState) {
+    if (runtime.fishDragState || runtime.pendingFishDrag) {
       if (point) {
         updateDraggedFish(point);
       }
@@ -4017,6 +4047,10 @@ function bindEvents() {
     if (runtime.autoDispenserDragState) {
       runtime.autoDispenserDragState = null;
       saveState();
+    }
+    if (runtime.pendingFishDrag) {
+      runtime.fishPointerClickId = event?.type === "pointerup" ? runtime.pendingFishDrag.fishId : null;
+      runtime.pendingFishDrag = null;
     }
     if (runtime.fishDragState) {
       finalizeFishDrag();
@@ -5752,7 +5786,7 @@ function resolveSpeciesMealCoins(species) {
 
   const profileMealCoins = getSpeciesComfortProfile(species).mealCoins;
   if (Number.isFinite(Number(profileMealCoins))) {
-    return clamp(Math.max(0, Math.round(Number(profileMealCoins))), 0, 2);
+    return clamp(Math.max(0, Math.round(Number(profileMealCoins))), 0, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
   }
 
   if (isMealFreeFish(species)) {
@@ -5761,11 +5795,11 @@ function resolveSpeciesMealCoins(species) {
 
   const explicitOverride = Number(species.mealCoinOverride ?? species.coinsPerMealOverride);
   if (Number.isFinite(explicitOverride)) {
-    return clamp(Math.max(0, Math.round(explicitOverride)), 0, 2);
+    return clamp(Math.max(0, Math.round(explicitOverride)), 0, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
   }
 
   const cost = Math.max(1, Math.floor(Number(species.cost) || 1));
-  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, 2);
+  return clamp(Math.ceil(cost / FISH_MEAL_COIN_COST_DIVISOR), 1, 2) * FISH_MEAL_COIN_REWARD_MULTIPLIER;
 }
 
 function getDecorCompanionType(decorKey = "") {

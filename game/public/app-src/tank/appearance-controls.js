@@ -23,6 +23,56 @@ function setTankSubstrateStyle(style) {
   return true;
 }
 
+function setSandColor(color, options = {}) {
+  const normalizedColor = normalizeHexColor(color);
+  if (!normalizedColor) return false;
+  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorize: true }, save: options.save, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    if (options.render !== false) renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function setSandColorize(enabled) {
+  const changed = updateTankAppearance({ changes: { sandColorize: enabled === true }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function getGravelColorPresets() {
+  return [
+    { id: "tropical-punch", name: "Tropical Punch", colors: ["#2F80FF", "#FF4FBF", "#A8FF2A"] },
+    { id: "coral-reef", name: "Coral Reef", colors: ["#FF6B35", "#1FE7C9", "#FFD93D"] },
+    { id: "deep-ocean", name: "Deep Ocean", colors: ["#1D2A6D", "#4169E1", "#18D6FF"] },
+    { id: "sunset", name: "Sunset", colors: ["#FF8C42", "#FF3355", "#E83DFF"] },
+    { id: "cotton-candy", name: "Cotton Candy", colors: ["#67C8E0", "#FF77E1", "#B98DEB"] },
+    { id: "jungle", name: "Jungle", colors: ["#2E6B3E", "#57F000", "#A8FF2A"] },
+    { id: "amethyst", name: "Amethyst", colors: ["#4B1D95", "#B55CFF", "#FF4FBF"] },
+    { id: "riverbed", name: "Riverbed", colors: ["#5A3825", "#D9BA82", "#8C96A8"] },
+    { id: "monochrome", name: "Monochrome", colors: ["#000000", "#4E5966", "#FFFFFF"] },
+    { id: "candy-mix", name: "Candy Mix", colors: ["#18D6FF", "#E83DFF", "#FFD93D"] },
+    { id: "neon", name: "Neon", colors: ["#18D6FF", "#57F000", "#E83DFF"] }
+  ];
+}
+
+function setGravelColorPreset(id) {
+  const preset = getGravelColorPresets().find((entry) => entry.id === id);
+  if (!preset) return false;
+  const changed = updateTankAppearance({ changes: { customGravelLayerColors: [...preset.colors], customGravelLayerColorize: [true, true, true] }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
 // Source fragment: tank/appearance-controls.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 

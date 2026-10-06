@@ -614,7 +614,7 @@ function loadSelectedFoodIntoAutoDispenser(now = Date.now()) {
   if (quantity <= 0) {
     runtime.feedingModeFoodKey = "";
     renderUi(now);
-    showToast("That food is out of stock.");
+    showToast("That food is out of stock. Visit BubbleBodega to restock, or Bubble Borough Bank for emergency care support.");
     return true;
   }
 

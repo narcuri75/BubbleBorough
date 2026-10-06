@@ -6422,6 +6422,68 @@ function getSpriteSheetDefinitions() {
       }
     },
     {
+      "path": "assets/gravel/gravel-preset-tile.webp",
+      "version": "fe94d712be98",
+      "width": 300,
+      "height": 100,
+      "frames": {
+        "gravel-preset-tile_1.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_2.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_3.png": [
+          200,
+          0,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/gravel/gravel-preset-tile",
+        "version": "8158efb5e1ce-v1",
+        "standalone": false
+      }
+    },
+    {
+      "path": "assets/gravel/gravel-preset-tile_1.webp",
+      "version": "b7f7f610e798",
+      "width": 300,
+      "height": 100,
+      "frames": {
+        "gravel-preset-tile_1.png": [
+          0,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_3.png": [
+          100,
+          0,
+          100,
+          100
+        ],
+        "gravel-preset-tile_2.png": [
+          200,
+          0,
+          100,
+          100
+        ]
+      },
+      "delivery": {
+        "root": "assets/generated/sprites/gravel/gravel-preset-tile_1",
+        "version": "c7010e05ab36-v1",
+        "standalone": false
+      }
+    },
+    {
       "path": "assets/grime/Grime.webp",
       "version": "b667792805a5",
       "width": 3344,

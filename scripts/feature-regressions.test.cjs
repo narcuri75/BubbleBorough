@@ -1519,7 +1519,7 @@ test("idle hover holds its simulation position for render-time bobbing", () => {
   assert.equal(target.yNorm, fish.yNorm);
 });
 
-test("manual cleaning accumulates proportional credit, caps at four coins per tank per local day, and resets the next day", () => {
+test("manual cleaning accumulates proportional credit without daily caps and resets only paid daily totals", () => {
   const tank = {
     cleaningIncomeDayKey: "day-1",
     cleaningIncomeCredit: 0,
@@ -1527,9 +1527,8 @@ test("manual cleaning accumulates proportional credit, caps at four coins per ta
   };
   const state = { boroughCleaningIncomeDayKey: "day-1", boroughCleaningCoinsEarned: 0 };
   const c = load("tank/cleaning-and-glass.js", ["getBoroughCleaningIncomeStatus", "getTankCleaningIncomeStatus", "awardManualCleaningIncome"], {
-    CLEANING_DAILY_COIN_CAP: 4,
     CLEANING_FULL_TANK_COIN_CREDIT: 4,
-    BOROUGH_DAILY_CLEANING_COIN_CAP: 8,
+    MAX_WALLET_COINS: 9999,
     state,
     getCurrentTank: () => tank,
     getLocalDayKey: now => Number(now) < 200 ? "day-1" : "day-2"
@@ -1546,15 +1545,15 @@ test("manual cleaning accumulates proportional credit, caps at four coins per ta
   assert.equal(result.coinsEarned, 1);
 
   result = c.awardManualCleaningIncome(1, 120, tank);
-  assert.equal(result.credit, 4);
-  assert.equal(result.coinsAwarded, 3);
-  assert.equal(result.coinsEarned, 4);
-  assert.equal(result.boroughCoinsEarned, 4);
+  assert.equal(result.credit, 5);
+  assert.equal(result.coinsAwarded, 4);
+  assert.equal(result.coinsEarned, 5);
+  assert.equal(result.boroughCoinsEarned, 5);
 
   result = c.awardManualCleaningIncome(1, 130, tank);
-  assert.equal(result.credit, 4);
-  assert.equal(result.coinsAwarded, 0);
-  assert.equal(result.coinsEarned, 4);
+  assert.equal(result.credit, 9);
+  assert.equal(result.coinsAwarded, 4);
+  assert.equal(result.coinsEarned, 9);
 
   const nextDay = c.getTankCleaningIncomeStatus(tank, 200);
   assert.equal(nextDay.dayKey, "day-2");
@@ -1563,13 +1562,12 @@ test("manual cleaning accumulates proportional credit, caps at four coins per ta
   assert.equal(nextDay.boroughCoinsEarned, 0);
 });
 
-test("manual cleaning pays no more than eight coins borough-wide while later tanks still clean and build their own daily credit", () => {
+test("manual cleaning continues paying for later tanks after the former borough cap", () => {
   const state = { boroughCleaningIncomeDayKey: "day-1", boroughCleaningCoinsEarned: 0 };
   const tanks = ["a", "b", "c"].map(id => ({ id, cleaningIncomeDayKey: "day-1", cleaningIncomeCredit: 0, cleaningIncomeCoinsEarned: 0 }));
   const c = load("tank/cleaning-and-glass.js", ["getBoroughCleaningIncomeStatus", "getTankCleaningIncomeStatus", "awardManualCleaningIncome"], {
-    CLEANING_DAILY_COIN_CAP: 4,
     CLEANING_FULL_TANK_COIN_CREDIT: 4,
-    BOROUGH_DAILY_CLEANING_COIN_CAP: 8,
+    MAX_WALLET_COINS: 9999,
     state,
     getCurrentTank: () => tanks[0],
     getLocalDayKey: now => Number(now) < 200 ? "day-1" : "day-2"
@@ -1583,15 +1581,14 @@ test("manual cleaning pays no more than eight coins borough-wide while later tan
   assert.equal(second.coinsAwarded, 4);
   assert.equal(second.boroughCoinsEarned, 8);
 
-  const capped = c.awardManualCleaningIncome(1, 120, tanks[2]);
-  assert.equal(capped.coinsAwarded, 0, "borough cap blocks money, not cleaning");
-  assert.equal(capped.credit, 4, "the third tank still receives its full daily cleaning credit");
-  assert.equal(capped.coinsEarned, 4, "tank progress reaches 4/4 even when borough payout is capped");
-  assert.equal(capped.boroughCoinsEarned, 8);
-  assert.equal(capped.boroughRemainingCoins, 0);
+  const third = c.awardManualCleaningIncome(1, 120, tanks[2]);
+  assert.equal(third.coinsAwarded, 4);
+  assert.equal(third.credit, 4);
+  assert.equal(third.coinsEarned, 4);
+  assert.equal(third.boroughCoinsEarned, 12);
 
   const nextDay = c.getTankCleaningIncomeStatus(tanks[2], 200);
-  assert.equal(nextDay.credit, 0, "unpaid prior-day cleaning credit must not carry forward");
+  assert.equal(nextDay.credit, 0, "already paid credit must not pay again on another day");
   assert.equal(nextDay.coinsEarned, 0);
   assert.equal(nextDay.boroughCoinsEarned, 0);
 });
@@ -6183,7 +6180,7 @@ test("Phase 22 Orca breathing remains an actual surfaced behavior cycle", () => 
   assert.equal(sound, 1);
 });
 
-test("Phase 22 old tank saves initialize new economy fields without NaN or over-cap values", () => {
+test("old tank saves initialize valid cleaning credit without discarding earnings above former caps", () => {
   const c = load("decor/customization.js", ["createTankState"], {
     getTankTypeMeta: () => ({ id: "rectangular", defaultWaterType: "freshwater" }),
     sanitizeAnimatedBackgroundColors: () => ({ surfaceBloom: "#fff", shadowBloom: "#000", surface: "#111", mid: "#222", deep: "#333", abyss: "#444", highlight: "#555", driftA: "#666", driftB: "#777", driftC: "#888" }),
@@ -6206,7 +6203,6 @@ test("Phase 22 old tank saves initialize new economy fields without NaN or over-
     createDefaultAutoDispenserState: value => value || {},
     DEFAULT_THEME: "classic",
     getLocalDayKey: () => "2026-09-18",
-    CLEANING_DAILY_COIN_CAP: 4,
     OTOCINCLUS_DAILY_COIN_FIND_CAP: 5
   });
   const old = c.createTankState({ now: 1000, fish: [] });
@@ -6217,9 +6213,16 @@ test("Phase 22 old tank saves initialize new economy fields without NaN or over-
   assert.equal(old.otocinclusCoinsFoundToday, 0);
   assert.equal(old.otocinclusCoinFindLastAttemptAt, 0);
   const clamped = c.createTankState({ now: 1000, cleaningIncomeCredit: 99, cleaningIncomeCoinsEarned: 99, otocinclusCoinsFoundToday: 99 });
-  assert.equal(clamped.cleaningIncomeCredit, 4);
-  assert.equal(clamped.cleaningIncomeCoinsEarned, 4);
+  assert.equal(clamped.cleaningIncomeCredit, 99);
+  assert.equal(clamped.cleaningIncomeCoinsEarned, 99);
   assert.equal(clamped.otocinclusCoinsFoundToday, 5);
+  const saved = c.createTankState({ now: 1000, cleaningIncomeCredit: 12.6, cleaningIncomeCoinsEarned: 12 });
+  const restored = c.createTankState(JSON.parse(JSON.stringify(saved)));
+  assert.equal(restored.cleaningIncomeCredit, 12.6, "save loading retains sub-coin progress above old daily limits");
+  assert.equal(restored.cleaningIncomeCoinsEarned, 12, "save loading retains the paid amount to prevent duplicate coins");
+  const invalid = c.createTankState({ now: 1000, cleaningIncomeCredit: Infinity, cleaningIncomeCoinsEarned: NaN });
+  assert.equal(invalid.cleaningIncomeCredit, 0);
+  assert.equal(invalid.cleaningIncomeCoinsEarned, 0);
   for (const value of [old.cleaningIncomeCredit, old.cleaningIncomeCoinsEarned, old.otocinclusCoinsFoundToday, old.otocinclusCoinFindLastAttemptAt]) {
     assert.equal(Number.isFinite(value), true);
   }

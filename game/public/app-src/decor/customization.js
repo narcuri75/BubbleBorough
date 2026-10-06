@@ -129,6 +129,8 @@ function createTankState(options = {}) {
       : (["auto", "custom", "river-rock", "sand"].includes(String(options.substrateStyle || ""))
         ? String(options.substrateStyle)
         : "auto"),
+    sandColor: normalizeHexColor(options.sandColor) || "#FFFFFF",
+    sandColorize: options.sandColorize === true,
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
     gravelSeed,
     gravelHillSeed,
@@ -159,12 +161,10 @@ function createTankState(options = {}) {
     cleaningIncomeDayKey: typeof options.cleaningIncomeDayKey === "string" && options.cleaningIncomeDayKey
       ? options.cleaningIncomeDayKey
       : getLocalDayKey(now),
-    cleaningIncomeCredit: clamp(Number(options.cleaningIncomeCredit) || 0, 0, CLEANING_DAILY_COIN_CAP),
-    cleaningIncomeCoinsEarned: clamp(
-      Math.floor(Number(options.cleaningIncomeCoinsEarned) || 0),
-      0,
-      CLEANING_DAILY_COIN_CAP
-    ),
+    cleaningIncomeCredit: Number.isFinite(Number(options.cleaningIncomeCredit))
+      ? Math.max(0, Number(options.cleaningIncomeCredit)) : 0,
+    cleaningIncomeCoinsEarned: Number.isFinite(Number(options.cleaningIncomeCoinsEarned))
+      ? Math.max(0, Math.floor(Number(options.cleaningIncomeCoinsEarned))) : 0,
     otocinclusCoinFindDayKey: typeof options.otocinclusCoinFindDayKey === "string" && options.otocinclusCoinFindDayKey
       ? options.otocinclusCoinFindDayKey
       : getLocalDayKey(now),

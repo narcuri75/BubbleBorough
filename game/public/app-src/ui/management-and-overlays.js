@@ -4299,6 +4299,7 @@ function renderBubbleBankCoinAmount(amount, options = {}) {
 }
 
 function renderBubbleBankAccount() {
+  const support = getEmergencyCareSupportStatus();
   const filter = String(runtime.bubbleBankTransactionFilter || "all");
   const entries = (Array.isArray(state.walletTransactions) ? state.walletTransactions.slice(0, 60) : [])
     .filter((entry) => bubbleBankTransactionMatchesFilter(entry, filter));
@@ -4329,6 +4330,7 @@ function renderBubbleBankAccount() {
     <div class="bubble-bank-balance-card">
       <div><span>Current Account Balance</span>${renderBubbleBankCoinAmount(state.coins)}<small>Fish Coins</small></div>
     </div>
+    ${support.eligible ? `<section class="bubble-bank-care-support"><h3>Emergency care support</h3><p>Cannot afford food or treatment? Receive ${support.amount} coins to bring your balance to ${EMERGENCY_CARE_SUPPORT_BALANCE}. Available once every 24 hours while essential care is unaffordable.</p><button type="button" class="small-button" data-bank-care-support>Receive ${support.amount} coins</button></section>` : ""}
     <div class="bubble-bank-ledger"><header><div><span aria-hidden="true">▤</span><h3>Transaction history</h3></div>${getBubbleBankTransactionFilterMarkup()}</header>${transactions}</div>
   </section>`;
 }
@@ -4547,6 +4549,11 @@ function renderBubbleBankPage() {
 
 function handleBubbleBankPageClick(event) {
   const target = event?.target instanceof Element ? event.target : null;
+  if (target?.closest?.("[data-bank-care-support]")) {
+    claimEmergencyCareSupport();
+    renderUi(Date.now());
+    return true;
+  }
   const purchaseButton = target?.closest?.("[data-bank-order-id]");
   if (purchaseButton) {
     const orderId = String(purchaseButton.dataset.bankOrderId || "");

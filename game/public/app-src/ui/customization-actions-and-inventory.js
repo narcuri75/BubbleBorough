@@ -2467,7 +2467,7 @@ function renderMedicineTray() {
     runtime.cleaningMode ? "scrub" : "",
     runtime.scoopMode ? "scoop" : "",
     cleaningIncome.dayKey,
-    `T ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP} · B ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}`,
+    `T ${cleaningIncome.coinsEarned} · B ${cleaningIncome.boroughCoinsEarned}`,
     ...getFoodCatalog().filter((food) => (food.id === "halloweenCandy" || shouldShowFoodInStore(food))).map((food) => `${food.id}:${state.foodInventory?.[food.id] || 0}`),
     ...getMedicineCatalog().filter((medicine) => shouldShowMedicineInStore(medicine)).map((medicine) => `${medicine.id}:${state.medicineInventory?.[medicine.id] || 0}`)
   ].join("|");
@@ -2568,7 +2568,7 @@ function renderMedicineTray() {
         <div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-tools" aria-label="Care tools">
-          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}; Borough ${cleaningIncome.boroughCoinsEarned}/${BOROUGH_DAILY_CLEANING_COIN_CAP}">Tools · Clean ${cleaningIncome.coinsEarned}/${CLEANING_DAILY_COIN_CAP}</div>
+          <div class="care-tray-heading" title="Cleaning earnings today: Tank ${cleaningIncome.coinsEarned}; Borough ${cleaningIncome.boroughCoinsEarned}. Credit accumulates with grime removed and pays in whole coins.">Tools · Clean ${cleaningIncome.coinsEarned}</div>
           <div class="care-tray-tool-row">
             <button class="care-tool-tile ${runtime.cleaningMode ? "is-active" : ""}" type="button" data-care-tool="scrub" title="Scrub Tank" aria-label="Scrub Tank">
               <img ${assetImageAttributes("assets/icons/sponge.png")} alt="" aria-hidden="true" draggable="false" />

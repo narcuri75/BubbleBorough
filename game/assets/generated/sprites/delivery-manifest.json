@@ -1411,6 +1411,22 @@
         "assets/generated/sprites/foodandmeds/medicine/anti-parasite-treatment.png.thumb.webp": "4871f85a1b6b19b4077944d10e621d8dc5d576fe857fe10d9b4cb7e798515ba7"
       }
     },
+    "assets/gravel/gravel-preset-tile.webp": {
+      "version": "8158efb5e1ce-v1",
+      "files": {
+        "assets/generated/sprites/gravel/gravel-preset-tile/gravel-preset-tile_1.png.thumb.webp": "ed42fd521fb412bb0bd029eba13cdcc287103897d1998a4a0bf72808853389a3",
+        "assets/generated/sprites/gravel/gravel-preset-tile/gravel-preset-tile_2.png.thumb.webp": "f6a4afb0a8e754871fc779229e606466f9d2e34d4c443d30148d1fa37d639809",
+        "assets/generated/sprites/gravel/gravel-preset-tile/gravel-preset-tile_3.png.thumb.webp": "a233d8dab6b6a01c601aab13016e8eb496028f87f1065ca84f88d42b4672876e"
+      }
+    },
+    "assets/gravel/gravel-preset-tile_1.webp": {
+      "version": "c7010e05ab36-v1",
+      "files": {
+        "assets/generated/sprites/gravel/gravel-preset-tile_1/gravel-preset-tile_1.png.thumb.webp": "59f96c739b1c43f1189edf69ee3a67569e53d48f63b88d5af43248be339c1d76",
+        "assets/generated/sprites/gravel/gravel-preset-tile_1/gravel-preset-tile_3.png.thumb.webp": "44f0ebe9e16f0f8051dcb71f0d7d87dd9770d15ba9d0f3d2182eb0aa64d784fe",
+        "assets/generated/sprites/gravel/gravel-preset-tile_1/gravel-preset-tile_2.png.thumb.webp": "b90b1e5168e2de73feb8cbaadd593a3cc494eee75b142b112e89a2fecacddbfc"
+      }
+    },
     "assets/grime/Grime.webp": {
       "version": "7e0a7da6ef39-v1",
       "files": {

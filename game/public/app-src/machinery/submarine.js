@@ -1682,13 +1682,14 @@ function closeEditEquipmentTrayContextMenu(options = {}) {
 }
 
 function openEditEquipmentTrayContextMenu(machineryId, anchor = null) {
+  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editEquipmentTray, anchor);
   const machinery = getMachineryById(machineryId);
   const currentTank = getCurrentTank();
   if (!machinery || ![MACHINERY_TYPE_SUBMARINE, MACHINERY_TYPE_BOAT].includes(machinery.type) || machinery.tankId !== currentTank?.id) {
     closeEditEquipmentTrayContextMenu();
     return false;
   }
-  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editEquipmentTray, anchor);
+  activateEditWorkspaceTool("equipment");
   runtime.editEquipmentTrayContextMenuState.machineryId = machinery.id;
   runtime.editEquipmentTrayContextMenuState.anchorX = nextAnchor.x;
   runtime.editEquipmentTrayContextMenuState.anchorY = nextAnchor.y;
@@ -1753,7 +1754,8 @@ function renderEditEquipmentTrayContextMenu() {
 }
 
 function renderEditEquipmentTray() {
-  const visible = runtime.equipmentEditMode === true;
+  const visible = isEditWorkspaceSidebarLayout()
+    ? runtime.editWorkspaceRightTab === "equipment" : runtime.equipmentEditMode === true;
   if (dom.editEquipmentTray) dom.editEquipmentTray.hidden = !visible;
   syncTankTrayStageClass();
   if (!visible || !dom.editEquipmentTray || !dom.editEquipmentTrayScroller) {

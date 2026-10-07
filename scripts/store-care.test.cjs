@@ -203,6 +203,47 @@ test("facet choices OR within a group, AND across groups, and handle no matches"
   selection.Theme.clear();
   assert.equal(c.matches({ Type: ["plants"], Theme: ["Halloween"] }), true);
 });
+
+test("automatic water facets select the active tank water and Universal across tank changes", () => {
+  let activeTank = { id: "fresh-tank", waterType: "freshwater" };
+  const selections = new Map();
+  const c = vm.createContext({
+    selections, autoWaterTankKeys: new Map(),
+    window: { getBubbleBodegaActiveTankFilter: () => activeTank },
+    current: () => selections.get("decor"), values: card => card
+  });
+  addFunctions(c, "../store-facets.js", ["syncAutomaticWaterFacet", "matches"]);
+
+  for (const scope of ["fish", "decor"]) {
+    c.syncAutomaticWaterFacet(scope);
+    assert.deepEqual([...selections.get(scope)["Water type"]], ["Freshwater", "Universal"]);
+  }
+  assert.equal(c.matches({ "Water type": ["Freshwater"] }), true);
+  assert.equal(c.matches({ "Water type": ["Saltwater"] }), false);
+  assert.equal(c.matches({ "Water type": ["Universal"] }), true);
+
+  selections.get("decor")["Water type"].delete("Universal");
+  c.syncAutomaticWaterFacet("decor");
+  assert.equal(c.matches({ "Water type": ["Universal"] }), false);
+  selections.delete("decor");
+  c.syncAutomaticWaterFacet("decor");
+  assert.equal(selections.has("decor"), false, "cleared filters stay cleared for the same tank");
+
+  activeTank = { id: "salt-tank", waterType: "saltwater" };
+  for (const scope of ["fish", "decor"]) {
+    c.syncAutomaticWaterFacet(scope);
+    assert.deepEqual([...selections.get(scope)["Water type"]], ["Saltwater", "Universal"]);
+  }
+  assert.equal(c.matches({ "Water type": ["Freshwater"] }), false);
+  assert.equal(c.matches({ "Water type": ["Saltwater"] }), true);
+  assert.equal(c.matches({ "Water type": ["Universal"] }), true);
+
+  activeTank.waterType = "freshwater";
+  c.syncAutomaticWaterFacet("decor");
+  assert.deepEqual([...selections.get("decor")["Water type"]], ["Freshwater", "Universal"]);
+  c.syncAutomaticWaterFacet("food");
+  assert.equal(selections.has("food"), false);
+});
 test("cost sorting uses the actual price before featured product placement", () => {
   const c = vm.createContext({
     normalizeCatalogTheme: value => value || "",

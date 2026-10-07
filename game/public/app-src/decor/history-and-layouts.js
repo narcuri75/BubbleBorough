@@ -216,7 +216,7 @@ function applySavedDecorLayout(layoutId, tankId) {
 
 function renderDecorHistoryControls() {
   const tray = dom.editDecorTray;
-  if (!tray?.querySelector || !runtime.editTankMode) return;
+  if (!tray?.querySelector || (!runtime.editTankMode && !isEditWorkspaceSidebarLayout())) return;
   let controls = tray.querySelector(".decor-history-controls");
   if (!controls) {
     controls = document.createElement("div");

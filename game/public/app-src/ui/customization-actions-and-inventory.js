@@ -1286,6 +1286,21 @@ function positionEditTrayContextMenu(tray, menu, anchorX, anchorY) {
   menu.style.left = "0px";
   menu.style.top = "0px";
   const menuRect = menu.getBoundingClientRect();
+  if (runtime.editWorkspaceGeometry) {
+    // Menu anchors are client-space coordinates; the locked shell scales them.
+    // Position sidebar menus in logical stage space and keep them inside it.
+    const metrics = getTankStageVisualMetrics();
+    const localTray = getElementRectInTankStageLayout(tray);
+    const menuWidth = menuRect.width * metrics.visualToLayoutX;
+    const menuHeight = menuRect.height * metrics.visualToLayoutY;
+    const left = clamp(localTray.left + anchorX * metrics.visualToLayoutX - menuWidth / 2,
+      8, Math.max(8, metrics.layoutWidth - menuWidth - 8));
+    const top = clamp(localTray.top + anchorY * metrics.visualToLayoutY - menuHeight - 12,
+      8, Math.max(8, metrics.layoutHeight - menuHeight - 8));
+    menu.style.left = `${Math.round(left - localTray.left)}px`;
+    menu.style.top = `${Math.round(top - localTray.top)}px`;
+    return;
+  }
   const maxLeft = Math.max(
     EDIT_TRAY_CONTEXT_MENU_GUTTER_PX,
     trayRect.width - menuRect.width - EDIT_TRAY_CONTEXT_MENU_GUTTER_PX
@@ -1306,6 +1321,8 @@ function positionEditTrayContextMenu(tray, menu, anchorX, anchorY) {
 }
 
 function openEditDecorTrayContextMenu(entryId, anchor = null) {
+  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editDecorTray, anchor);
+  activateEditWorkspaceTool("decor");
   if (getActiveTutorial() && isTutorialStage(TUTORIAL_STAGE_PLACE_DECORATION)) {
     closeEditDecorTrayContextMenu();
     return;
@@ -1317,7 +1334,6 @@ function openEditDecorTrayContextMenu(entryId, anchor = null) {
     return;
   }
 
-  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editDecorTray, anchor);
   runtime.editDecorTrayContextMenuState.entryId = entry.id;
   runtime.editDecorTrayContextMenuState.decorKey = entry.decorKey;
   runtime.editDecorTrayContextMenuState.anchorX = nextAnchor.x;
@@ -1494,6 +1510,30 @@ function decorMatchesTrayTab(decor, decorKey, tab) {
 }
 
 function syncTankTrayStageClass() {
+  const sidebarLayout = isEditWorkspaceSidebarLayout();
+  const stage = dom.tankStage;
+  stage?.classList.toggle("is-edit-workspace", sidebarLayout);
+  stage?.classList.toggle("is-edit-workspace-left-collapsed", sidebarLayout && Boolean(runtime.editWorkspaceLeftCollapsed));
+  stage?.classList.toggle("is-edit-workspace-right-collapsed", sidebarLayout && Boolean(runtime.editWorkspaceRightCollapsed));
+  runtime.editWorkspaceGeometry = sidebarLayout
+    ? getEditWorkspaceGeometry(getTankStageLayoutSize(), {
+      leftCollapsed: runtime.editWorkspaceLeftCollapsed,
+      rightCollapsed: runtime.editWorkspaceRightCollapsed
+    }) : null;
+  if (runtime.editWorkspaceGeometry && stage) {
+    for (const [key, value] of Object.entries(runtime.editWorkspaceGeometry)) {
+      stage.style.setProperty(`--edit-workspace-${key}`, `${value}px`);
+    }
+  }
+  for (const tray of [dom.editFishTray, dom.editDecorTray, dom.editEquipmentTray]) {
+    const button = tray?.querySelector("[data-edit-workspace-collapse]");
+    if (!button) continue;
+    const left = button.dataset.editWorkspaceCollapse === "left";
+    const collapsed = Boolean(left ? runtime.editWorkspaceLeftCollapsed : runtime.editWorkspaceRightCollapsed);
+    button.textContent = left === collapsed ? "›" : "‹";
+    button.setAttribute("aria-expanded", String(!collapsed));
+    button.setAttribute("aria-label", `${collapsed ? "Expand" : "Collapse"} ${left ? "fish" : "decor and equipment"} panel`);
+  }
   const open = hasInlineToolTrayOpen();
   if (dom.tankStage?.classList.contains("has-edit-decor-tray") !== open) {
     dom.tankStage?.classList.toggle("has-edit-decor-tray", open);
@@ -1758,8 +1798,22 @@ function setFreeDecorPlacementEnabled(enabled) {
   return true;
 }
 
+function setEditDecorTypeFilter(value) {
+  const validTypes = ["all", "caves", "plants", "coral", "rocks", "wood", "ornaments", "bubbler", "seasonal", "custom"];
+  const nextType = validTypes.includes(value) ? value : "all";
+  if (runtime.editDecorTrayTab === nextType) return;
+  runtime.editDecorTrayTab = nextType;
+  closeEditDecorTrayContextMenu({ render: false });
+  if (dom.editDecorTrayScroller) {
+    dom.editDecorTrayScroller.scrollLeft = 0;
+    dom.editDecorTrayScroller.scrollTop = 0;
+  }
+  renderEditDecorTray();
+}
+
 function renderEditDecorTray() {
-  const visible = runtime.editTankMode;
+  const visible = isEditWorkspaceSidebarLayout()
+    ? runtime.editWorkspaceRightTab !== "equipment" : runtime.editTankMode;
   if (typeof renderDecorHistoryControls === "function") renderDecorHistoryControls();
   if (dom.editDecorTray) {
     dom.editDecorTray.hidden = !visible;
@@ -1777,6 +1831,8 @@ function renderEditDecorTray() {
   if (!validTabs.has(runtime.editDecorTrayTab)) {
     runtime.editDecorTrayTab = "all";
   }
+  const typeFilter = dom.editDecorTray.querySelector("[data-decor-type-filter]");
+  if (typeFilter) typeFilter.value = runtime.editDecorTrayTab;
   for (const tab of dom.editDecorTray?.querySelectorAll?.("[data-decor-tray-tab]") || []) {
     const selected = tab.dataset.decorTrayTab === runtime.editDecorTrayTab;
     tab.classList.toggle("is-active", selected);
@@ -2001,13 +2057,14 @@ function closeEditFishTrayContextMenu(options = {}) {
 }
 
 function openEditFishTrayContextMenu(fishId, anchor = null) {
+  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editFishTray, anchor);
+  activateEditWorkspaceTool("fish");
   const managed = getManagedFishById(fishId);
   if (!managed || (!managed.inStorage && !isFishDead(managed.fish))) {
     closeEditFishTrayContextMenu();
     return;
   }
 
-  const nextAnchor = resolveEditTrayContextMenuAnchor(dom.editFishTray, anchor);
   runtime.editFishTrayContextMenuState.fishId = fishId;
   runtime.editFishTrayContextMenuState.anchorX = nextAnchor.x;
   runtime.editFishTrayContextMenuState.anchorY = nextAnchor.y;
@@ -2154,7 +2211,7 @@ function renderFishTrayThumbnail(fish, species, label) {
 }
 
 function renderEditFishTray() {
-  const visible = runtime.fishEditMode;
+  const visible = runtime.fishEditMode || isEditWorkspaceSidebarLayout();
   if (dom.editFishTray) {
     dom.editFishTray.hidden = !visible;
   }
@@ -2247,7 +2304,7 @@ function renderEditFishTray() {
 }
 
 function renderEditTankTray() {
-  const visible = runtime.tankEditMode;
+  const visible = runtime.tankEditMode || isEditWorkspaceSidebarLayout();
   if (dom.editTankTray) {
     dom.editTankTray.hidden = !visible;
   }

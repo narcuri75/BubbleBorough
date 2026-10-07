@@ -286,6 +286,7 @@ function getWallpaperScrollButtonFromEvent(event) {
 }
 
 function handleEditDecorTrayWheel(event) {
+  if (runtime.editWorkspaceGeometry) return;
   if (dom.editDecorTray?.hidden || !dom.editDecorTrayScroller) {
     return;
   }
@@ -322,6 +323,7 @@ function getRememberedEditOverlayMode() {
 function rememberEditOverlayMode(mode, options = {}) {
   const normalized = normalizeEditOverlayMode(mode);
   runtime.editOverlayMode = normalized;
+  if (normalized === "decor" || normalized === "equipment") runtime.editWorkspaceRightTab = normalized;
   const settings = state.uiSettings && typeof state.uiSettings === "object"
     ? state.uiSettings
     : (state.uiSettings = {});
@@ -354,6 +356,9 @@ function closeActiveEditOverlay() {
 }
 
 function openEditOverlayMode(mode = null, options = {}) {
+  const scrollPositions = isEditWorkspaceSidebarLayout()
+    ? [dom.editFishTrayScroller, dom.editDecorTrayScroller, dom.editEquipmentTrayScroller, dom.editTankTrayScroller]
+      .filter(Boolean).map((element) => ({ element, left: element.scrollLeft, top: element.scrollTop })) : [];
   const nextMode = rememberEditOverlayMode(mode || getRememberedEditOverlayMode());
   const openOptions = {
     source: options.source || "toolbar",
@@ -368,7 +373,48 @@ function openEditOverlayMode(mode = null, options = {}) {
   } else {
     toggleFishEditMode(true, openOptions);
   }
+  for (const { element, left, top } of scrollPositions) {
+    element.scrollLeft = left;
+    element.scrollTop = top;
+  }
   return nextMode;
+}
+
+function isEditWorkspaceActive() {
+  return Boolean(runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode);
+}
+
+function isEditWorkspaceSidebarLayout() {
+  if (!isEditWorkspaceActive()) return false;
+  const layout = getTankStageLayoutSize();
+  return layout.width >= 900 && layout.height >= 480;
+}
+
+function activateEditWorkspaceTool(mode) {
+  if (!isEditWorkspaceSidebarLayout()) return;
+  const active = mode === "fish" ? runtime.fishEditMode
+    : mode === "decor" ? runtime.editTankMode
+      : mode === "equipment" ? runtime.equipmentEditMode : runtime.tankEditMode;
+  if (!active) openEditOverlayMode(mode, { source: "tray", collapseSidebar: true });
+}
+
+function bindEditWorkspaceEvents() {
+  for (const [tray, mode] of [[dom.editFishTray, "fish"], [dom.editDecorTray, "decor"], [dom.editEquipmentTray, "equipment"]]) {
+    if (!tray) continue;
+    tray.addEventListener("click", (event) => {
+      const collapse = event.target.closest("[data-edit-workspace-collapse]");
+      if (collapse) {
+        event.stopImmediatePropagation();
+        const key = collapse.dataset.editWorkspaceCollapse === "left" ? "editWorkspaceLeftCollapsed" : "editWorkspaceRightCollapsed";
+        runtime[key] = !runtime[key];
+        syncTankTrayStageClass();
+        refreshStageRenderViewAfterInlineEditorMutation();
+        return;
+      }
+      if (event.target.closest("[data-edit-overlay-mode], .edit-tray-done-button, [data-open-fish-tray-menu], [data-open-decor-tray-menu], [data-open-equipment-menu]")) return;
+      if (event.target.closest("button")) activateEditWorkspaceTool(mode);
+    }, true);
+  }
 }
 
 function toggleEditTankMode(force = null, options = {}) {
@@ -402,6 +448,7 @@ function toggleEditTankMode(force = null, options = {}) {
 }
 
 function handleEditFishTrayWheel(event) {
+  if (runtime.editWorkspaceGeometry) return;
   if (dom.editFishTray?.hidden || !dom.editFishTrayScroller) {
     return;
   }

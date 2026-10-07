@@ -98,7 +98,7 @@
     autoWaterTankKeys.set(scope, contextKey);
     if (!selections.has(scope)) selections.set(scope, {});
     const scopeSelections = selections.get(scope);
-    scopeSelections["Water type"] = new Set([label]);
+    scopeSelections["Water type"] = new Set([label, "Universal"]);
   }
 
   function matches(card, exceptGroup = "") {
@@ -106,7 +106,6 @@
     return Object.entries(current()).every(([group, selected]) => {
       if (group === exceptGroup || !selected.size) return true;
       const cardValues = facets[group] || [];
-      if (group === "Water type" && cardValues.includes("Universal")) return true;
       return cardValues.some(value => selected.has(value));
     });
   }

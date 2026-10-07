@@ -9818,7 +9818,6 @@ test("Expansion Phase 4 BubbleBodega auto-selects a removable visible water face
   assert.match(facets, /function syncAutomaticWaterFacet/);
   assert.match(facets, /autoWaterTankKeys/);
   assert.match(facets, /Water type/);
-  assert.match(facets, /cardValues\.includes\("Universal"\)/);
   assert.match(styles, /\.shop-water-filter-control \{ display: none !important; \}/);
   assert.match(styles, /\.shop-water-requirement/);
 });

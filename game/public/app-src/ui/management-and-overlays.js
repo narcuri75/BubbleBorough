@@ -4229,7 +4229,7 @@ function renderWebSurfHomePage() {
     </article>`;
   }).join("");
   return `<header class="websurf-home-header websurf-home-dashboard-header">
-      <img ${assetImageAttributes("assets/web/websurf/WebSurf_icon.png")} alt="WebSurf" />
+      <img ${assetImageAttributes("assets/web/websurf/WebSurf-Email_icon.png")} alt="WebSurf Email" />
       <div><span>WEBSURF.SWIM</span><h1 id="webHomeTitle">Welcome, ${escapeHtml(username)}</h1><p>${escapeHtml(addressName)}@WebSurf.swim</p></div>
     </header>
     <main class="websurf-home-main websurf-home-dashboard-main">

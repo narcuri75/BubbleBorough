@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 57,
-  "functionCount": 4165,
+  "functionCount": 4171,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -169,7 +169,7 @@
     },
     {
       "path": "ui/tool-modes-and-debug-panels.js",
-      "functionCount": 91,
+      "functionCount": 95,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",
@@ -210,7 +210,7 @@
     },
     {
       "path": "assets/custom-content.js",
-      "functionCount": 158,
+      "functionCount": 159,
       "dependencies": [
         "assets/image-storage-and-import.js",
         "audio/system.js",
@@ -1007,7 +1007,7 @@
     },
     {
       "path": "ui/customization-actions-and-inventory.js",
-      "functionCount": 107,
+      "functionCount": 108,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",

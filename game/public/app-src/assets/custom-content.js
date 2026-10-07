@@ -509,6 +509,7 @@ function isolateDebugModalPointerEvents(root) {
 }
 
 function bindEvents() {
+  bindEditWorkspaceEvents();
   const webSurfColorSchemeQuery = window.matchMedia?.(WEBSURF_COLOR_SCHEME_QUERY);
   const handleWebSurfSystemThemeChange = () => {
     if (getUiSettings().webSurfThemeMode === WEBSURF_THEME_MODE_AUTO) {
@@ -528,7 +529,7 @@ function bindEvents() {
   const refreshViewportLayoutNow = () => {
     syncViewportCssVariables();
     resizeDisplayCanvases();
-    if (isIntroTutorialActive()) {
+    if (isIntroTutorialActive() || isEditWorkspaceActive()) {
       renderUi(Date.now(), { full: false });
     }
   };
@@ -1496,7 +1497,7 @@ function bindEvents() {
   dom.closeEditDecorTrayButton?.addEventListener("click", () => toggleEditTankMode(false));
   dom.closeEditFishTrayButton?.addEventListener("click", () => toggleFishEditMode(false));
   dom.closeEditEquipmentTrayButton?.addEventListener("click", () => toggleEquipmentEditMode(false));
-  dom.closeEditTankTrayButton?.addEventListener("click", () => toggleTankEditMode(false));
+  dom.closeEditTankTrayButton?.addEventListener("click", () => closeActiveEditOverlay());
   dom.editLayerUpButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-up"));
   dom.editLayerDownButton?.addEventListener("click", () => performDecorEditShortcutAction("layer-down"));
   dom.editScaleUpButton?.addEventListener("click", () => performDecorEditShortcutAction("scale-up"));
@@ -1927,6 +1928,11 @@ function bindEvents() {
     }
   });
   dom.editDecorTray?.addEventListener("change", (event) => {
+    const typeFilter = event.target.closest("[data-decor-type-filter]");
+    if (typeFilter) {
+      setEditDecorTypeFilter(typeFilter.value);
+      return;
+    }
     const freePlacementToggle = event.target.closest("[data-decor-free-placement-toggle]");
     if (freePlacementToggle) {
       setFreeDecorPlacementEnabled(Boolean(freePlacementToggle.checked));
@@ -1940,6 +1946,7 @@ function bindEvents() {
     closeEditDecorTrayContextMenu({ render: false });
     if (dom.editDecorTrayScroller) {
       dom.editDecorTrayScroller.scrollLeft = 0;
+      dom.editDecorTrayScroller.scrollTop = 0;
     }
     renderEditDecorTray();
   });
@@ -2171,6 +2178,7 @@ function bindEvents() {
       if (runtime.equipmentEditTrayTab !== nextTab) {
         runtime.equipmentEditTrayTab = nextTab;
         if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollLeft = 0;
+        if (dom.editEquipmentTrayScroller) dom.editEquipmentTrayScroller.scrollTop = 0;
         renderEditEquipmentTray();
       }
       return;
@@ -2515,6 +2523,7 @@ function bindEvents() {
         closeEditFishTrayContextMenu({ render: false });
         if (dom.editFishTrayScroller) {
           dom.editFishTrayScroller.scrollLeft = 0;
+          dom.editFishTrayScroller.scrollTop = 0;
         }
         renderEditFishTray();
       }
@@ -4275,6 +4284,26 @@ function refreshStageRenderViewAfterInlineEditorMutation(options = {}) {
   }
 }
 
+function getEditWorkspaceGeometry(layout, options = {}) {
+  const width = Number(layout.width);
+  const height = Number(layout.height);
+  const edge = 14;
+  const gap = 14;
+  const top = 18;
+  const bottom = 70;
+  const bottomHeight = clamp(Math.round(height * 0.25), 154, 218);
+  const sideWidth = clamp(Math.round(width * 0.18), 180, 260);
+  const leftWidth = options.leftCollapsed ? 44 : sideWidth;
+  const rightWidth = options.rightCollapsed ? 44 : sideWidth;
+  const sideHeight = height - top - bottom - bottomHeight - gap;
+  return {
+    edge, gap, top, bottom, bottomHeight, leftWidth, rightWidth, sideHeight,
+    viewportLeft: edge + leftWidth + gap,
+    viewportWidth: width - edge * 2 - leftWidth - rightWidth - gap * 2,
+    viewportHeight: sideHeight
+  };
+}
+
 function getStageRenderViewTarget() {
   const layout = getTankStageLayoutSize();
   if (!layout.width || !layout.height) {
@@ -4306,13 +4335,14 @@ function getStageRenderViewTarget() {
     };
   }
 
+  const workspace = runtime.editWorkspaceGeometry;
   const trayRect = getElementRectInTankStageLayout(activeEditTray);
   const topPaddingCss = Math.max(18, Math.min(34, layout.height * 0.035));
   const sidePaddingCss = Math.max(28, Math.min(64, layout.width * 0.035));
   const trayGapCss = 14;
   const trayTopCss = clamp((trayRect?.top ?? layout.height) - trayGapCss, layout.height * 0.42, layout.height - 120);
-  const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
-  const availableWidthCss = Math.max(320, layout.width - sidePaddingCss * 2);
+  const availableHeightCss = workspace ? workspace.viewportHeight : Math.max(220, trayTopCss - topPaddingCss);
+  const availableWidthCss = workspace ? workspace.viewportWidth : Math.max(320, layout.width - sidePaddingCss * 2);
   const glassFrame = getDecorEditTankFrameGeometry();
   const barHeight = (window.BubbleBoroughTankFrame?.FRAME_CONFIG.horizontalBarHeight ?? 79) * TANK_WIDTH / layout.width;
   const framedHeight = glassFrame.height + barHeight * 2;
@@ -4323,12 +4353,14 @@ function getStageRenderViewTarget() {
   );
   const renderedWidth = TANK_WIDTH * editScale;
   const renderedHeight = framedHeight * editScale;
-  const availableTopPx = topPaddingCss * dpr;
+  const availableTopPx = (workspace ? workspace.top : topPaddingCss) * dpr;
   const availableHeightPx = availableHeightCss * dpr;
 
   return {
     scale: editScale,
-    offsetX: (displayWidth - renderedWidth) * 0.5,
+    offsetX: workspace
+      ? workspace.viewportLeft * dpr + (availableWidthCss * dpr - renderedWidth) * 0.5
+      : (displayWidth - renderedWidth) * 0.5,
     offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5) + (barHeight - glassFrame.top) * editScale,
     editAmount: 1
   };
@@ -4399,7 +4431,7 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
   const trayGeometryKey = trayRect
     ? [trayRect.left, trayRect.top, trayRect.width, trayRect.height].map((value) => Math.round(value)).join(",")
     : "hidden";
-  const viewKey = runtime.editTankMode
+  let viewKey = runtime.editTankMode
     ? `decor:${trayGeometryKey}`
     : runtime.fishEditMode
       ? `fish:${trayGeometryKey}`
@@ -4408,6 +4440,7 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
         : runtime.tankEditMode
           ? `tank:${trayGeometryKey}`
           : "view";
+  if (runtime.editWorkspaceGeometry) viewKey += `:${JSON.stringify(runtime.editWorkspaceGeometry)}`;
   if (runtime.stageRenderViewTargetKey !== viewKey) {
     runtime.stageRenderViewTargetKey = viewKey;
     runtime.stageRenderViewTarget = null;

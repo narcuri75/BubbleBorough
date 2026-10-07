@@ -28696,3 +28696,117 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
   .pharmacy-symptoms { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .pharmacy-symptom-text-art { font-size: .66rem; }
 }
+
+/* Edit-only workspace. Geometry comes from the stage's logical size, so Ratio
+   Lock scales the composition without triggering browser-width reflow. */
+.edit-workspace-only { display: none; }
+.edit-decor-type-filter {
+  display: flex; align-items: center; gap: 8px; min-width: 0;
+  color: #d8f1ff; font-size: 12px; font-weight: 700;
+}
+.edit-decor-type-filter select {
+  min-width: 110px; max-width: 100%; padding: 6px 8px;
+  border: 1px solid #39778e; border-radius: 8px;
+  background: #082c41; color: #d8f1ff; font: inherit;
+}
+#editDecorTray .edit-decor-tray-header { max-height: none; height: auto; flex-wrap: wrap; overflow: visible; }
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray, #editTankTray) {
+  transform: none !important; max-width: none !important; box-sizing: border-box;
+  padding: 10px; border-radius: 14px; z-index: 9;
+}
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) {
+  top: var(--edit-workspace-top); bottom: auto !important;
+  height: var(--edit-workspace-sideHeight) !important;
+  min-height: 0 !important; max-height: var(--edit-workspace-sideHeight) !important;
+  display: grid; grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto auto minmax(0, 1fr) !important;
+  align-items: stretch; gap: 10px; backdrop-filter: none;
+}
+.tank-stage.is-edit-workspace #editFishTray {
+  left: var(--edit-workspace-edge) !important; right: auto;
+  width: var(--edit-workspace-leftWidth) !important;
+}
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editEquipmentTray) {
+  left: auto !important; right: var(--edit-workspace-edge);
+  width: var(--edit-workspace-rightWidth) !important;
+}
+.tank-stage.is-edit-workspace #editTankTray {
+  left: var(--edit-workspace-edge) !important; right: var(--edit-workspace-edge);
+  top: auto; bottom: var(--edit-workspace-bottom) !important;
+  width: calc(100% - var(--edit-workspace-edge) * 2) !important;
+  height: var(--edit-workspace-bottomHeight) !important;
+  min-height: 0 !important; max-height: var(--edit-workspace-bottomHeight) !important;
+}
+.tank-stage.is-edit-workspace .edit-workspace-only { display: block; }
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) > .edit-tray-mode-header {
+  display: flex !important; align-items: center; gap: 6px;
+  min-width: 0; grid-column: 1 / -1;
+}
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editEquipmentTray) .edit-overlay-mode-tabs {
+  flex: 1; width: auto !important; min-width: 0; max-width: 100%;
+  justify-content: stretch; overflow: visible; gap: 4px;
+}
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editEquipmentTray) [data-edit-overlay-mode]:not([data-edit-overlay-mode="decor"]):not([data-edit-overlay-mode="equipment"]),
+.tank-stage.is-edit-workspace #editFishTray .edit-overlay-mode-tabs,
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) .edit-tray-done-button,
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray) .edit-decor-tray-arrow,
+.tank-stage.is-edit-workspace #editTankTray :is([data-edit-overlay-mode="fish"], [data-edit-overlay-mode="decor"], [data-edit-overlay-mode="equipment"]) {
+  display: none !important;
+}
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editEquipmentTray) .edit-overlay-mode-tab {
+  flex: 1 1 0; width: auto !important; min-width: 0 !important;
+  padding: 6px 4px; gap: 4px; font-size: 11px;
+}
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editEquipmentTray) .edit-overlay-mode-icon { width: 16px; height: 16px; }
+.tank-stage.is-edit-workspace .edit-workspace-collapse,
+.tank-stage.is-edit-workspace .edit-workspace-fish-title {
+  border: 1px solid #39778e; border-radius: 8px; background: #082c41;
+  color: #d8f1ff; cursor: pointer; font-weight: 800;
+}
+.tank-stage.is-edit-workspace .edit-workspace-collapse { order: 2; flex: 0 0 26px; width: 26px; min-height: 30px; padding: 0; font-size: 20px; }
+.tank-stage.is-edit-workspace .edit-workspace-fish-title { flex: 1; padding: 7px; text-align: left; font-size: 14px; }
+.tank-stage.is-edit-workspace :is(#editDecorTray, #editFishTray, #editEquipmentTray) :is(.edit-decor-tray-header, .edit-fish-tray-header) {
+  grid-column: 1 / -1; min-width: 0; max-height: none; height: auto;
+  flex-wrap: wrap; justify-content: flex-start; gap: 8px;
+}
+.tank-stage.is-edit-workspace .edit-decor-type-filter { flex: 1 1 100%; flex-direction: column; align-items: stretch; gap: 4px; }
+.tank-stage.is-edit-workspace .edit-decor-type-filter select { width: 100%; }
+.tank-stage.is-edit-workspace .edit-decor-in-tank-toggle { padding: 5px 7px; gap: 5px; font-size: 11px; }
+.tank-stage.is-edit-workspace .decor-history-controls { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; }
+.tank-stage.is-edit-workspace .decor-history-controls .small-button { min-width: 0; padding: 5px 7px; font-size: 11px; }
+.tank-stage.is-edit-workspace :is(#editFishTrayScroller, #editDecorTrayScroller, #editEquipmentTrayScroller) {
+  display: grid !important; grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-column: 1 / -1; gap: 10px 8px; align-content: start; align-items: start;
+  min-height: 0 !important; height: 100%; overflow-x: hidden; overflow-y: auto;
+  touch-action: pan-y; padding: 2px 3px 6px 0; overscroll-behavior: contain;
+}
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) .edit-decor-tile {
+  width: 100%; min-width: 0 !important; max-width: none !important;
+  height: 118px !important;
+}
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) .edit-decor-tile-primary { height: 88px; }
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) .edit-decor-tile::before { display: none; }
+.tank-stage.is-edit-workspace :is(#editFishTray, #editDecorTray, #editEquipmentTray) .edit-decor-tile::after {
+  content: attr(data-decor-name); display: -webkit-box; -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2; overflow: hidden; margin-top: 4px;
+  font-size: 11px; line-height: 13px; text-align: center; color: #d8f1ff;
+}
+.tank-stage.is-edit-workspace .edit-decor-tray-empty { grid-column: 1 / -1; white-space: normal; font-size: 12px; }
+.tank-stage.is-edit-workspace .edit-fish-tray-context-menu {
+  width: min(300px, calc(var(--app-viewport-width) - 24px));
+  max-height: calc(var(--app-viewport-height) - 24px); overflow-y: auto; z-index: 12;
+}
+.tank-stage.is-edit-workspace #editTankTray > .edit-tray-mode-header {
+  display: flex !important; align-items: center; justify-content: space-between; gap: 10px;
+}
+.tank-stage.is-edit-workspace #editTankTray .edit-overlay-mode-tabs { margin: 0; order: 0; }
+.tank-stage.is-edit-workspace #editTankTray .edit-tray-done-button { order: 2; margin-left: auto; }
+.tank-stage.is-edit-workspace #editTankTray .randomize-gravel-hill-button { position: static; order: 1; }
+.tank-stage.is-edit-workspace #editTankTray .edit-tank-custom-storage-meter { flex-basis: 320px; }
+.tank-stage.is-edit-workspace #editTankTray .edit-tank-custom-storage-meter .custom-content-storage-meter > div { white-space: normal; font-size: 11px; }
+.tank-stage.is-edit-workspace-left-collapsed #editFishTray > :not(.edit-tray-mode-header),
+.tank-stage.is-edit-workspace-left-collapsed #editFishTray .edit-workspace-fish-title,
+.tank-stage.is-edit-workspace-right-collapsed :is(#editDecorTray, #editEquipmentTray) > :not(.edit-tray-mode-header),
+.tank-stage.is-edit-workspace-right-collapsed :is(#editDecorTray, #editEquipmentTray) .edit-overlay-mode-tabs { display: none !important; }
+.tank-stage.is-edit-workspace-left-collapsed #editFishTray,
+.tank-stage.is-edit-workspace-right-collapsed :is(#editDecorTray, #editEquipmentTray) { padding: 8px; }

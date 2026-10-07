@@ -126,19 +126,6 @@
               <span id="notificationBellBadge" class="notification-bell-badge" hidden aria-hidden="true"></span>
             </button>
 
-            <aside id="editQuickRef" class="edit-quick-ref" hidden aria-label="Edit mode quick reference">
-              <div id="editQuickRefCard" class="edit-quick-ref-card">
-                <div class="edit-quick-ref-row">
-                  <span class="edit-quick-ref-key">Click Decor</span>
-                  <span class="edit-quick-ref-copy">Select to edit</span>
-                </div>
-                <div class="edit-quick-ref-row">
-                  <span class="edit-quick-ref-key">Shift/Ctrl Click</span>
-                  <span class="edit-quick-ref-copy">Select multiple decor</span>
-                </div>
-              </div>
-            </aside>
-
             <button id="prevTankButton" class="tank-nav-button tank-nav-button-left" type="button" hidden
               aria-label="Previous tank">
               &#10094;
@@ -1408,6 +1395,7 @@
 
             <section id="editDecorTray" class="edit-decor-tray" hidden aria-label="Edit decor tray">
               <div class="edit-tray-mode-header">
+                <button class="edit-workspace-collapse edit-workspace-only" type="button" data-edit-workspace-collapse="right" aria-expanded="true" aria-label="Collapse decor and equipment panel">›</button>
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
@@ -1420,18 +1408,20 @@
                   aria-label="Finish editing decor" title="Done editing decor">Done</button>
               </div>
               <div class="edit-decor-tray-header">
-                <div class="edit-decor-tray-tabs" role="tablist" aria-label="Decor type">
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="all" data-decor-tone="all">All</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="caves" data-decor-tone="caves">Caves</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="plants" data-decor-tone="plants">Plants</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="coral" data-decor-tone="coral">Coral</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="rocks" data-decor-tone="ornaments">Rocks</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="wood" data-decor-tone="ornaments">Wood</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="ornaments" data-decor-tone="ornaments">Ornaments</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="bubbler" data-decor-tone="bubbler">Bubblers</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="seasonal" data-decor-tone="custom">Seasonal</button>
-                  <button class="edit-decor-tray-tab" type="button" role="tab" data-decor-tray-tab="custom" data-decor-tone="custom">Custom</button>
-                </div>
+                <label class="edit-decor-type-filter">Decor type
+                  <select data-decor-type-filter>
+                    <option value="all">All types</option>
+                    <option value="plants">Plants</option>
+                    <option value="caves">Caves</option>
+                    <option value="coral">Coral</option>
+                    <option value="rocks">Rocks</option>
+                    <option value="wood">Wood</option>
+                    <option value="ornaments">Ornaments</option>
+                    <option value="bubbler">Bubblers</option>
+                    <option value="seasonal">Seasonal</option>
+                    <option value="custom">Custom</option>
+                  </select>
+                </label>
                 <label class="edit-decor-in-tank-toggle">
                   <input type="checkbox" data-decor-in-tank-toggle />
                   <span>In Tank</span>
@@ -1455,6 +1445,8 @@
 
             <section id="editFishTray" class="edit-decor-tray edit-fish-tray" hidden aria-label="Manage fish tray">
               <div class="edit-tray-mode-header">
+                <button class="edit-workspace-fish-title edit-workspace-only" type="button" data-edit-workspace-tool="fish">Fish</button>
+                <button class="edit-workspace-collapse edit-workspace-only" type="button" data-edit-workspace-collapse="left" aria-expanded="true" aria-label="Collapse fish panel">‹</button>
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>
@@ -1487,6 +1479,7 @@
 
             <section id="editEquipmentTray" class="edit-decor-tray edit-equipment-tray" hidden aria-label="Equipment tray">
               <div class="edit-tray-mode-header">
+                <button class="edit-workspace-collapse edit-workspace-only" type="button" data-edit-workspace-collapse="right" aria-expanded="true" aria-label="Collapse decor and equipment panel">›</button>
                 <div class="edit-overlay-mode-tabs" role="tablist" aria-label="Edit overlay mode">
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="fish"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/fish_box.png" alt="" aria-hidden="true" draggable="false" /><span>Fish</span></button>
                   <button class="edit-overlay-mode-tab" type="button" role="tab" data-edit-overlay-mode="decor"><img class="edit-overlay-mode-icon" data-sprite-src="assets/icons/decor_box.png" alt="" aria-hidden="true" draggable="false" /><span>Decor</span></button>

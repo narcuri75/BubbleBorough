@@ -3422,6 +3422,12 @@ function bindEvents() {
     }
 
     const now = Date.now();
+    if (runtime.medicineModeKey) {
+      // Capture the intended fish before it swims away. A medicine press must
+      // not become a fish/egg drag and suppress the following dose click.
+      runtime.fishPointerClickId = findFishAtPoint(point.x, point.y, now)?.id || null;
+      return;
+    }
     const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
     if (hitMachinery) {
       runtime.suppressNextTankClick = false;
@@ -3482,17 +3488,17 @@ function bindEvents() {
     }
     runtime.lastTankPoint = point;
 
+    if (runtime.medicineModeKey) {
+      applySelectedMedicineAtPoint(point, Date.now(), fishPointerClickId);
+      return;
+    }
+
     if (handleAutoDispenserInteractionAtPoint(point, Date.now())) {
       return;
     }
 
     if (runtime.feedingModeFoodKey) {
       dropSelectedFoodAtPoint(point, Date.now());
-      return;
-    }
-
-    if (runtime.medicineModeKey) {
-      applySelectedMedicineAtPoint(point, Date.now());
       return;
     }
 
@@ -4078,6 +4084,7 @@ function bindEvents() {
       runtime.fishPointerClickId = event?.type === "pointerup" ? runtime.pendingFishDrag.fishId : null;
       runtime.pendingFishDrag = null;
     }
+    if (event?.type !== "pointerup") runtime.fishPointerClickId = null;
     if (runtime.fishDragState) {
       finalizeFishDrag();
     }

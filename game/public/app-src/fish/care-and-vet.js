@@ -11,9 +11,9 @@ function getFishTreatmentDefinitions() {
 
 function getMedicineTreatmentInstructions(id) {
   const definition = getFishTreatmentDefinitions()[id];
-  if (definition) return `Give one drop to the affected fish every 24 hours for ${definition.doses} doses. Allow a final 24-hour healing interval. One missed day preserves progress: give the next drop when you return. Two consecutive missed days worsen symptoms and restart the full course. Never give extra drops to catch up. Keep the water compatible, the tank clean, and the fish comfortable.`;
-  if (id === "waterStress") return "Correct the fish's water type first. One drop boosts its recovery for six hours. Wait until that boost ends before using another drop. Correct water allows recovery without medication.";
-  if (id === "betaBlocker") return "One drop into the tank calms its living fish for ten minutes. Address the cause of panic or aggression. Wait until the effect ends before using another drop.";
+  if (definition) return `Select this medicine in Fish Care, then click directly on the affected fish with the eyedropper to give one drop. Each drop treats only the fish you click. Give one drop every 24 hours for ${definition.doses} doses. Allow a final 24-hour healing interval. One missed day preserves progress: give the next drop when you return. Two consecutive missed days worsen symptoms and restart the full course. Never give extra drops to catch up. Keep the water compatible, the tank clean, and the fish comfortable.`;
+  if (id === "waterStress") return "Correct the fish's water type first. Select this medicine in Fish Care, then click directly on the affected fish with the eyedropper. One drop boosts only that fish's recovery for six hours. Wait until that boost ends before using another drop. Correct water allows recovery without medication.";
+  if (id === "betaBlocker") return "Select Calming Serum in Fish Care, then click anywhere inside the tank with the eyedropper to give one drop. One drop into the tank calms all its living fish for ten minutes. Address the cause of panic or aggression. Wait until the effect ends before using another drop.";
   return "";
 }
 
@@ -220,7 +220,7 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
         ? `This fish has missing hearts. ${medicine?.name || "First Aid"} treats that damage; disease or incompatible water may still need separate care. ${dosing}`
         : `${condition === "parasites" ? "White specks indicate parasites. First Aid and Anti-Infection do not clear parasites." : "Red or cloudy patches indicate infection. First Aid treats missing hearts, but does not clear the infection."} Use ${medicine?.name || medicineId}. ${dosing}`;
     return `<p><strong>${escapeHtml(formatFishConditionLabel(condition))}:</strong> ${escapeHtml(advice)}</p>`;
-  }).join("")}<p>Buying a bottle stocks your medicine. Select it in Fish Care, then click the affected fish to give one drop. Improvement takes time; check the course below for the next dose.</p></article>` : "";
+  }).join("")}<p>Buying a bottle stocks your medicine. <strong>Select it in Fish Care, then click directly on the affected fish with the eyedropper to give one drop.</strong> Each drop treats only that fish. Improvement takes time; check the course below for the next dose.</p></article>` : "";
   const rows = Object.values(fish.treatmentCourses || {}).map((course) => {
     const definition = getFishTreatmentDefinitions()[course.medicineId];
     const medicine = getMedicineMeta(course.medicineId);

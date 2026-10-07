@@ -2579,7 +2579,7 @@ function renderMedicineTray() {
             type="button"
             data-select-medicine="${medicine.id}"
             title="${label}"
-            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }"
+            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }. ${getMedicineTreatmentInstructions(medicine.id)}"
             style="--tray-accent: ${medicine.color};"
           >
             ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "care-medicine-card-image")}

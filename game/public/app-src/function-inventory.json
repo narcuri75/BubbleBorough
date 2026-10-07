@@ -353,8 +353,8 @@
       "module": "assets/custom-content.js",
       "sourceLine": 511,
       "originalLine": 10034,
-      "characters": 151200,
-      "sourceHash": "611eb2af32470c9e303f6492874cb1f9f5d48d3720d8983d4d921d54bda9b6f9",
+      "characters": 151595,
+      "sourceHash": "2322210287d512dae9e99be8b8ffed7fb90ed8668fafe3974b2ffb924c48ed92",
       "calls": [
         "addDebugCoins",
         "adjustDecorDefaultSize",
@@ -742,7 +742,7 @@
     {
       "name": "configureCanvasContext",
       "module": "assets/custom-content.js",
-      "sourceLine": 4175,
+      "sourceLine": 4182,
       "originalLine": 12281,
       "characters": 220,
       "sourceHash": "71dcf201d1e75c2f1b7ce26d0baa4643e4b1fb8978d83e197954e2e39d71b140",
@@ -751,7 +751,7 @@
     {
       "name": "updatePlayfieldCssVariables",
       "module": "assets/custom-content.js",
-      "sourceLine": 4186,
+      "sourceLine": 4193,
       "originalLine": 12292,
       "characters": 774,
       "sourceHash": "9d0907a1dfee08a4db179b7b0f54c0c980ceffbff783e64dfae8440dd385b2b0",
@@ -760,7 +760,7 @@
     {
       "name": "resetStageRenderViewAfterToolClose",
       "module": "assets/custom-content.js",
-      "sourceLine": 4204,
+      "sourceLine": 4211,
       "originalLine": null,
       "characters": 1586,
       "sourceHash": "1d4e72728fba21b8ffaa50dcc43975049d3e3c6448e3e8416303a17e1cccac23",
@@ -773,7 +773,7 @@
     {
       "name": "isStageEditTrayActuallyVisible",
       "module": "assets/custom-content.js",
-      "sourceLine": 4239,
+      "sourceLine": 4246,
       "originalLine": null,
       "characters": 920,
       "sourceHash": "887f51b093b0e34d6b4e1ca821ed28617f1857940410dcdc677a27c7f752f9eb",
@@ -782,7 +782,7 @@
     {
       "name": "refreshStageRenderViewAfterInlineEditorMutation",
       "module": "assets/custom-content.js",
-      "sourceLine": 4266,
+      "sourceLine": 4273,
       "originalLine": null,
       "characters": 729,
       "sourceHash": "4954dfb9458cd5e79f85e4d4a68fb830857efe6d207831693a5f04a33682815b",
@@ -794,7 +794,7 @@
     {
       "name": "getEditWorkspaceGeometry",
       "module": "assets/custom-content.js",
-      "sourceLine": 4287,
+      "sourceLine": 4294,
       "originalLine": null,
       "characters": 786,
       "sourceHash": "468315221a1de6958b094f329540fb74c4c87a4e8039586206d0c2eecc457587",
@@ -805,7 +805,7 @@
     {
       "name": "getStageRenderViewTarget",
       "module": "assets/custom-content.js",
-      "sourceLine": 4307,
+      "sourceLine": 4314,
       "originalLine": null,
       "characters": 2659,
       "sourceHash": "a4a0ca3e3f649abfb54e7ca7df24d46a854fd90b032754672b22c770373ef1d2",
@@ -821,7 +821,7 @@
     {
       "name": "syncTankStageRenderCssGeometry",
       "module": "assets/custom-content.js",
-      "sourceLine": 4369,
+      "sourceLine": 4376,
       "originalLine": null,
       "characters": 1212,
       "sourceHash": "dbdbc4633965714184bde33eb8deec40c61518b84772ce555364661b91f03294",
@@ -833,7 +833,7 @@
     {
       "name": "applyStageRenderViewTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 4390,
+      "sourceLine": 4397,
       "originalLine": null,
       "characters": 876,
       "sourceHash": "f7043bf8ff53de48261dd80de0e59625cee956316730fb29e90a31023ab23cb3",
@@ -845,7 +845,7 @@
     {
       "name": "updateStageRenderView",
       "module": "assets/custom-content.js",
-      "sourceLine": 4415,
+      "sourceLine": 4422,
       "originalLine": null,
       "characters": 5648,
       "sourceHash": "be90cebbdde5fb188787bb123546e769e0389e317ef17013a126ab69a818fd0c",
@@ -860,7 +860,7 @@
     {
       "name": "resizeDisplayCanvases",
       "module": "assets/custom-content.js",
-      "sourceLine": 4518,
+      "sourceLine": 4525,
       "originalLine": 12310,
       "characters": 3533,
       "sourceHash": "6371abf5ff2bd53a820784f2aff0bdcb77d2bee77c52da72c48a1b92ec0c312a",
@@ -880,7 +880,7 @@
     {
       "name": "fetchAssetList",
       "module": "assets/custom-content.js",
-      "sourceLine": 4607,
+      "sourceLine": 4614,
       "originalLine": 12386,
       "characters": 233,
       "sourceHash": "59e5b178cd07e703c64285936581c7b373ccc60baac2f5d27322e5a4b8ffd9c3",
@@ -891,7 +891,7 @@
     {
       "name": "fetchAssetManifest",
       "module": "assets/custom-content.js",
-      "sourceLine": 4617,
+      "sourceLine": 4624,
       "originalLine": 12396,
       "characters": 553,
       "sourceHash": "d52a5940966523097a3804951a8b44d9be2ca1b1699e805fc0c9402f124a6740",
@@ -902,7 +902,7 @@
     {
       "name": "fetchFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4636,
+      "sourceLine": 4643,
       "originalLine": 12415,
       "characters": 584,
       "sourceHash": "9e6ae1c01d2834cd260f41f7458c0e52115a6d8d8e7fd4a2faf22569b7d4acf1",
@@ -913,7 +913,7 @@
     {
       "name": "fetchDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4654,
+      "sourceLine": 4661,
       "originalLine": 12447,
       "characters": 450,
       "sourceHash": "e07abf2244149eb0aa07d81f0c26887a5696faec8105ab2bd9d5e8b29eeab3bf",
@@ -924,7 +924,7 @@
     {
       "name": "fetchBackgroundCatalogMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4674,
+      "sourceLine": 4681,
       "originalLine": 12485,
       "characters": 371,
       "sourceHash": "3b37a60b69aff644611e7620ef2fe119cff0c9dd209b90d81c698e52858899f3",
@@ -935,7 +935,7 @@
     {
       "name": "fetchFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4688,
+      "sourceLine": 4695,
       "originalLine": 12499,
       "characters": 460,
       "sourceHash": "d33b34d64d780bf56f4042816aaa627bc307df45f65566ecc82cd76fb1435d15",
@@ -946,7 +946,7 @@
     {
       "name": "normalizeFoodAndMedCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 4706,
+      "sourceLine": 4713,
       "originalLine": 12517,
       "characters": 5344,
       "sourceHash": "7113f9a1c29146b6b493ef39e3414c27a8adacb84746d83955d5264a19f9a36d",
@@ -960,7 +960,7 @@
     {
       "name": "normalizeBackgroundMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4818,
+      "sourceLine": 4825,
       "originalLine": 12606,
       "characters": 967,
       "sourceHash": "906b86ac612de784381068d13100543f9e8bad7c0a8887a0b99023da9c6c0535",
@@ -971,7 +971,7 @@
     {
       "name": "normalizeDecorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 4853,
+      "sourceLine": 4860,
       "originalLine": 12638,
       "characters": 4675,
       "sourceHash": "d4b1f2fc999444bb61dd3f6b1f16d244c5197c5fe5babf09db3b5b7f41faf9bb",
@@ -995,7 +995,7 @@
     {
       "name": "hasBubblerMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 4943,
+      "sourceLine": 4950,
       "originalLine": 12723,
       "characters": 291,
       "sourceHash": "74116a3a5b4bbbb24278527e0b28e10473dcd5897c31187409fae838f9f5ba58",
@@ -1006,7 +1006,7 @@
     {
       "name": "hasBubblerSpoutMetaFields",
       "module": "assets/custom-content.js",
-      "sourceLine": 4954,
+      "sourceLine": 4961,
       "originalLine": 12734,
       "characters": 998,
       "sourceHash": "bcd11b853c04f5f0f1fb4b98b32442690c26901f0acfcdba9392cb2d123880a6",
@@ -1015,7 +1015,7 @@
     {
       "name": "isBubblerDecorFileKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 4996,
+      "sourceLine": 5003,
       "originalLine": 12773,
       "characters": 125,
       "sourceHash": "9d9cc528069aea4d84d0bb5b5f0b9947119f8a4bf16056324260daab8ab11b11",
@@ -1024,7 +1024,7 @@
     {
       "name": "normalizeBubblerHorizontalPosition",
       "module": "assets/custom-content.js",
-      "sourceLine": 5000,
+      "sourceLine": 5007,
       "originalLine": 12777,
       "characters": 900,
       "sourceHash": "b578cc71edeb806bb0010e554538a77ce2a0f9d705781e3be48b7f874406222b",
@@ -1035,7 +1035,7 @@
     {
       "name": "getBubblerCadenceFromIntensity",
       "module": "assets/custom-content.js",
-      "sourceLine": 5036,
+      "sourceLine": 5043,
       "originalLine": 12813,
       "characters": 663,
       "sourceHash": "a9c65e18fb56d34ff8b26628719620d06cf52426d84a8cf4db4c5167b5a26a86",
@@ -1046,7 +1046,7 @@
     {
       "name": "getBubblerTravelDurationFromSpeed",
       "module": "assets/custom-content.js",
-      "sourceLine": 5052,
+      "sourceLine": 5059,
       "originalLine": 12829,
       "characters": 341,
       "sourceHash": "506911fddf466e02195bf0147481e545512d60f9d960eb4f5c82c4fb69236dd4",
@@ -1057,7 +1057,7 @@
     {
       "name": "buildDefaultBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5061,
+      "sourceLine": 5068,
       "originalLine": 12838,
       "characters": 1202,
       "sourceHash": "7bb38e7e6d096adca15bb9554ecf39e4dc497a44ff61f626778709a62d03991c",
@@ -1068,7 +1068,7 @@
     {
       "name": "normalizeBubblerSpoutMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5088,
+      "sourceLine": 5095,
       "originalLine": 12864,
       "characters": 6233,
       "sourceHash": "2280e2e9bcde63f189da9e331276a3dc1dc1da70a5a29e3d4c2b0f01d293fae3",
@@ -1085,7 +1085,7 @@
     {
       "name": "normalizeBubblerMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5247,
+      "sourceLine": 5254,
       "originalLine": 13020,
       "characters": 1044,
       "sourceHash": "7fb0f7b9d45cd54859630941b7b037834458168030367803eab8085b8d98fae6",
@@ -1098,7 +1098,7 @@
     {
       "name": "normalizeCavePortalMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5283,
+      "sourceLine": 5290,
       "originalLine": 13056,
       "characters": 1570,
       "sourceHash": "2d59a9729085681a9c5d68104c66e9642a8152dbc7a99c3bece8aad0b98f2457",
@@ -1111,7 +1111,7 @@
     {
       "name": "normalizeCaveInsideSlotMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5330,
+      "sourceLine": 5337,
       "originalLine": 13103,
       "characters": 1002,
       "sourceHash": "4b7fff8ee984788cda055dc3fe9684741db1859a0d83539ddc94f2c7950ea136",
@@ -1125,7 +1125,7 @@
     {
       "name": "normalizeCaveBehaviorMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5360,
+      "sourceLine": 5367,
       "originalLine": 13133,
       "characters": 1594,
       "sourceHash": "6aa50baf1fa45bf542daf490066b4fbcb543108c8ca4a6a1a9fa30ee36ef7761",
@@ -1139,7 +1139,7 @@
     {
       "name": "getDataImageByteSize",
       "module": "assets/custom-content.js",
-      "sourceLine": 5409,
+      "sourceLine": 5416,
       "originalLine": null,
       "characters": 754,
       "sourceHash": "a87c1f5b6690c8df04336895bffe26019f2cde9da158de14d34465546f3ada02",
@@ -1148,7 +1148,7 @@
     {
       "name": "getCustomContentImageRecords",
       "module": "assets/custom-content.js",
-      "sourceLine": 5429,
+      "sourceLine": 5436,
       "originalLine": null,
       "characters": 1285,
       "sourceHash": "46d2137e89a670a419bab7a1237be1ebd322bf8841230e51862970d3d26e6d3b",
@@ -1160,7 +1160,7 @@
     {
       "name": "getCustomContentUsageStats",
       "module": "assets/custom-content.js",
-      "sourceLine": 5449,
+      "sourceLine": 5456,
       "originalLine": null,
       "characters": 738,
       "sourceHash": "600a261d35bb2e89e46ee33def47b7d7be0c2c0287de00b79ce256751f0fd299",
@@ -1173,7 +1173,7 @@
     {
       "name": "getCustomContentUploadLimitBytes",
       "module": "assets/custom-content.js",
-      "sourceLine": 5471,
+      "sourceLine": 5478,
       "originalLine": null,
       "characters": 238,
       "sourceHash": "257f15795ef36fc2e6518b4333211ce6a19480f41eba8bbdb5718d1fffcef611",
@@ -1182,7 +1182,7 @@
     {
       "name": "validateCustomContentUpload",
       "module": "assets/custom-content.js",
-      "sourceLine": 5477,
+      "sourceLine": 5484,
       "originalLine": null,
       "characters": 1567,
       "sourceHash": "b2fb48726f0c41901a91398e9dd4908d2421c604dc31c787da7c2b784d518ef4",
@@ -1196,7 +1196,7 @@
     {
       "name": "getCustomContentAssetUsage",
       "module": "assets/custom-content.js",
-      "sourceLine": 5502,
+      "sourceLine": 5509,
       "originalLine": null,
       "characters": 1307,
       "sourceHash": "c7ab5033f1027cde34fd8258b33fa521a972376a84f288ac2395c71bb5b654f3",
@@ -1207,7 +1207,7 @@
     {
       "name": "getCustomContentLibraryEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 5526,
+      "sourceLine": 5533,
       "originalLine": null,
       "characters": 1474,
       "sourceHash": "89be58705af3d7c97a1707cef2f6b7bf7cd320a6b1c1931f8d7bd6928ca4d0ca",
@@ -1220,7 +1220,7 @@
     {
       "name": "renderCustomContentLibraryManager",
       "module": "assets/custom-content.js",
-      "sourceLine": 5562,
+      "sourceLine": 5569,
       "originalLine": null,
       "characters": 1139,
       "sourceHash": "70e311dd077b382049c79ea34d78556d15ba3c646656e5db204a3db07120644b",
@@ -1233,7 +1233,7 @@
     {
       "name": "renderCustomContentStorageMeter",
       "module": "assets/custom-content.js",
-      "sourceLine": 5577,
+      "sourceLine": 5584,
       "originalLine": null,
       "characters": 2108,
       "sourceHash": "e529661e9eefcfdf6a4152733e0cab38a0a7f4199c5c3a2e7c78bafc5e6f0be4",
@@ -1247,7 +1247,7 @@
     {
       "name": "sanitizeCustomBackgroundAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 5607,
+      "sourceLine": 5614,
       "originalLine": null,
       "characters": 705,
       "sourceHash": "adda0d8cdd156b43362f52d7958517a6d0edf99b3e006d5a4bf90985669fcbe3",
@@ -1258,7 +1258,7 @@
     {
       "name": "sanitizeCustomBackgroundAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 5623,
+      "sourceLine": 5630,
       "originalLine": null,
       "characters": 319,
       "sourceHash": "e5fc27db1bdbd333622d788a23307447e1677d295086bbaab8c794b40678ec4d",
@@ -1269,7 +1269,7 @@
     {
       "name": "syncRuntimeCustomBackgroundAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 5632,
+      "sourceLine": 5639,
       "originalLine": null,
       "characters": 874,
       "sourceHash": "9350888cd86ae08291f52b7d284e0f960f29dbce1e8175a751a9e3bc0c45f48c",
@@ -1281,7 +1281,7 @@
     {
       "name": "findCustomBackgroundAssetByDataUrl",
       "module": "assets/custom-content.js",
-      "sourceLine": 5654,
+      "sourceLine": 5661,
       "originalLine": null,
       "characters": 225,
       "sourceHash": "5ac5562ad1b57f0b05a665fec15c807d3586c69166b2a55f5d3f5f02ba297305",
@@ -1290,7 +1290,7 @@
     {
       "name": "deleteCustomBackgroundAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5659,
+      "sourceLine": 5666,
       "originalLine": null,
       "characters": 1067,
       "sourceHash": "19e34adef090c908dbf77f04dcacc1b30daee456cba3656774f859689dbfb568",
@@ -1311,7 +1311,7 @@
     {
       "name": "deleteCustomContentAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 5682,
+      "sourceLine": 5689,
       "originalLine": null,
       "characters": 1456,
       "sourceHash": "179f0f35e33d739b2c0be30d260d6d36fdb7e1fd4ac0891a0c89ce568f9d5161",
@@ -1330,7 +1330,7 @@
     {
       "name": "getSubstrateMeta",
       "module": "assets/custom-content.js",
-      "sourceLine": 5716,
+      "sourceLine": 5723,
       "originalLine": null,
       "characters": 205,
       "sourceHash": "2297ed4babf1854d60fbaa87d49148579b1a49af7bab9b10c358be871299fd3c",
@@ -1341,7 +1341,7 @@
     {
       "name": "sanitizeOwnedSubstrateInventory",
       "module": "assets/custom-content.js",
-      "sourceLine": 5721,
+      "sourceLine": 5728,
       "originalLine": null,
       "characters": 566,
       "sourceHash": "275f066f6d96cb06ddca54f6394c7286c5346b543261de8c4956d4e7b69218c0",
@@ -1352,7 +1352,7 @@
     {
       "name": "isSubstrateOwned",
       "module": "assets/custom-content.js",
-      "sourceLine": 5734,
+      "sourceLine": 5741,
       "originalLine": null,
       "characters": 218,
       "sourceHash": "891d78b1fa51a90ffe3da9d3d756984575a3d33117e262d4b53a67e325fdbc49",
@@ -1363,7 +1363,7 @@
     {
       "name": "buildBackgroundCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5740,
+      "sourceLine": 5747,
       "originalLine": 13181,
       "characters": 2025,
       "sourceHash": "4d165070091bb856d56b5299a538bac647f489259ea03890bc08bff781a144d2",
@@ -1375,7 +1375,7 @@
     {
       "name": "buildSimpleAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5784,
+      "sourceLine": 5791,
       "originalLine": 13214,
       "characters": 333,
       "sourceHash": "28785b6d251a925986b1603c362764493d833e7ae2c79ffde3f15c60165c747e",
@@ -1386,7 +1386,7 @@
     {
       "name": "buildCustomGravelAssetCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5797,
+      "sourceLine": 5804,
       "originalLine": 13231,
       "characters": 934,
       "sourceHash": "6c7ddfbb99b1f3bd593622d364b2a36ca3ef84b718c2f2844ab8064741745672",
@@ -1397,7 +1397,7 @@
     {
       "name": "buildCustomGravelLayerCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5824,
+      "sourceLine": 5831,
       "originalLine": 13253,
       "characters": 200,
       "sourceHash": "45a89f9622517b62d9b2fab945acf94db384cfae5f8c2709bcc00ed1aa328be6",
@@ -1408,7 +1408,7 @@
     {
       "name": "buildCustomGravelPebbleCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 5831,
+      "sourceLine": 5838,
       "originalLine": 13260,
       "characters": 209,
       "sourceHash": "6aa5a212a9b18f9ab35b31ce8377be5b9bf1d5d60c86914de57d4b124fefe893",
@@ -1419,7 +1419,7 @@
     {
       "name": "buildFishSizeRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 5839,
+      "sourceLine": 5846,
       "originalLine": 13298,
       "characters": 438,
       "sourceHash": "30e921dc5fd627bc402f3f9955753eec473b76daacc87cb3183c1052a25abc82",
@@ -1430,7 +1430,7 @@
     {
       "name": "buildFishCostRange",
       "module": "assets/custom-content.js",
-      "sourceLine": 5853,
+      "sourceLine": 5860,
       "originalLine": 13312,
       "characters": 363,
       "sourceHash": "cf28d8cffbf14e9de4032e0da4bd0404020fc0ca6cbafaa083fc3e905cd930c2",
@@ -1439,7 +1439,7 @@
     {
       "name": "resolveSpeciesMealCoins",
       "module": "assets/custom-content.js",
-      "sourceLine": 5867,
+      "sourceLine": 5874,
       "originalLine": 13326,
       "characters": 807,
       "sourceHash": "248626fde0c91c1f5157d07a50149ac4a541f63c4d93ef4dcdbf06abd001ad57",
@@ -1452,7 +1452,7 @@
     {
       "name": "getDecorCompanionType",
       "module": "assets/custom-content.js",
-      "sourceLine": 5890,
+      "sourceLine": 5897,
       "originalLine": 13349,
       "characters": 2079,
       "sourceHash": "931f68c99dd800e474300943ec3352f5a6508cce6733e9203cb2385f3547b7e8",
@@ -1461,7 +1461,7 @@
     {
       "name": "getDecorBaseKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 5932,
+      "sourceLine": 5939,
       "originalLine": 13387,
       "characters": 1301,
       "sourceHash": "ffb0c8b47ad9d0a30c57c9e231e98ef655715a463a9ac41568d54a855030f2da",
@@ -1470,7 +1470,7 @@
     {
       "name": "buildDecorCaveColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 5957,
+      "sourceLine": 5964,
       "originalLine": 13399,
       "characters": 1950,
       "sourceHash": "3cb1c4d55c5504a57a92ea2ee09228b8ce7650b59b1ed82ae1e64483e09c739c",
@@ -1479,7 +1479,7 @@
     {
       "name": "getExpectedCaveCompanionPaths",
       "module": "assets/custom-content.js",
-      "sourceLine": 6020,
+      "sourceLine": 6027,
       "originalLine": null,
       "characters": 740,
       "sourceHash": "6285f8ae4f39ef8889557010fb7ee0dbff4e59c824b9ebb9ae045d81393d95bd",
@@ -1491,7 +1491,7 @@
     {
       "name": "buildDecorCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 6035,
+      "sourceLine": 6042,
       "originalLine": 13456,
       "characters": 5455,
       "sourceHash": "bdf2812b35d57d849b1254cf4653c6a819ebd294ceacdb0d0bd944c4f8f9156d",
@@ -1514,7 +1514,7 @@
     {
       "name": "isCustomDecorShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6173,
+      "sourceLine": 6180,
       "originalLine": 13542,
       "characters": 109,
       "sourceHash": "59212ced33995b5fb2de11bc39c053bf6de13de5133d6941431ff9b3b9015118",
@@ -1523,7 +1523,7 @@
     {
       "name": "isCustomHideShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6177,
+      "sourceLine": 6184,
       "originalLine": 13546,
       "characters": 107,
       "sourceHash": "781c9e3cdf569c437a1127f7c599be6d51df3236dc801f303d0e3f421e42f4dd",
@@ -1532,7 +1532,7 @@
     {
       "name": "isCustomDecorUploadShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6181,
+      "sourceLine": 6188,
       "originalLine": 13550,
       "characters": 130,
       "sourceHash": "f536a73d9e8778a61763ce069c66e0f1711e434e58d4b9063daaf715da9b83c5",
@@ -1544,7 +1544,7 @@
     {
       "name": "isCustomHideAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6185,
+      "sourceLine": 6192,
       "originalLine": 13554,
       "characters": 170,
       "sourceHash": "edaae036a959a58d6b0a9869957b414fcb6b2c0254ba80fdee6e0d01433ae499",
@@ -1553,7 +1553,7 @@
     {
       "name": "isCustomDecorAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6190,
+      "sourceLine": 6197,
       "originalLine": 13559,
       "characters": 204,
       "sourceHash": "e745d9a72c8b6e67fb0a0c4169b1a8a1db47875e04e0f06546aa2411f7de92a6",
@@ -1564,7 +1564,7 @@
     {
       "name": "isCustomBubblerDecorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6195,
+      "sourceLine": 6202,
       "originalLine": 13564,
       "characters": 115,
       "sourceHash": "7fbb5e6610e286ff3624c12d70f2d48781f84fb8512a64ab7b6e324277c6854e",
@@ -1573,7 +1573,7 @@
     {
       "name": "getDecorThumbnailPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 6199,
+      "sourceLine": 6206,
       "originalLine": 13568,
       "characters": 1021,
       "sourceHash": "082191bc32f86137207fbd253f0ca016ca214316524f4b0302cef9091b26323e",
@@ -1585,7 +1585,7 @@
     {
       "name": "buildVirtualDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 6222,
+      "sourceLine": 6229,
       "originalLine": 13572,
       "characters": 2890,
       "sourceHash": "57c301de902ec418c517188b50970d695bd475042e2d111dba63f1443438c8a6",
@@ -1597,7 +1597,7 @@
     {
       "name": "sanitizeCustomDecorAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 6333,
+      "sourceLine": 6340,
       "originalLine": 13665,
       "characters": 2817,
       "sourceHash": "aaa6a25bc840ecd336e6b133ed7e498841411d40f472302115f7fb22e1570943",
@@ -1618,7 +1618,7 @@
     {
       "name": "sanitizeCustomDecorAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 6398,
+      "sourceLine": 6405,
       "originalLine": 13729,
       "characters": 349,
       "sourceHash": "2c805a853a9ea657e55c9cd6f7f7fe3014a6008d4a58a93b8e59d2ec6bfdbb2e",
@@ -1629,7 +1629,7 @@
     {
       "name": "buildCustomDecorColorLayers",
       "module": "assets/custom-content.js",
-      "sourceLine": 6413,
+      "sourceLine": 6420,
       "originalLine": 13744,
       "characters": 486,
       "sourceHash": "9ce3d52287e2f68d9dbb4ca1aa605bd2e61c6acf6520e7534d4d7f93ac79b137",
@@ -1641,7 +1641,7 @@
     {
       "name": "buildCustomDecorCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 6437,
+      "sourceLine": 6444,
       "originalLine": 13768,
       "characters": 2229,
       "sourceHash": "a391c969b7f73291a57d8a2937f76f6db4f405c7b8b61674a0a4acbb95acd419",
@@ -1662,7 +1662,7 @@
     {
       "name": "getCustomDecorCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 6487,
+      "sourceLine": 6494,
       "originalLine": 13815,
       "characters": 206,
       "sourceHash": "73a208bb0f6c4f0f458710e60ec1c48879dfa739f1532477f88fa4c0026e706f",
@@ -1673,7 +1673,7 @@
     {
       "name": "syncRuntimeCustomDecorAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 6493,
+      "sourceLine": 6500,
       "originalLine": 13821,
       "characters": 333,
       "sourceHash": "24134b3f519b812fdc66b420c60daf5d4885f7114313580e37c765ecdba6608f",
@@ -1685,7 +1685,7 @@
     {
       "name": "isCustomFishShopKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6505,
+      "sourceLine": 6512,
       "originalLine": 13833,
       "characters": 109,
       "sourceHash": "0a9e41ab8a35a1bbea1847c927a00113c03d92c9ae185a2899b7e67c9a735453",
@@ -1694,7 +1694,7 @@
     {
       "name": "isCustomFishAssetKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6509,
+      "sourceLine": 6516,
       "originalLine": 13837,
       "characters": 172,
       "sourceHash": "54aef44fb55bdf6992f5ef98b22bee2e7b9a9213ebcb3984d9ece8d09efcd3a8",
@@ -1703,7 +1703,7 @@
     {
       "name": "buildVirtualFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 6514,
+      "sourceLine": 6521,
       "originalLine": 13842,
       "characters": 2589,
       "sourceHash": "f1c2611b1cd20d1f4a2b9339d4e9d41e15cafb482004d0c39be2a265cf0fa933",
@@ -1712,7 +1712,7 @@
     {
       "name": "getCustomFishBehaviorProfiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 6572,
+      "sourceLine": 6579,
       "originalLine": 13894,
       "characters": 514,
       "sourceHash": "cbb1d080986c7e956088ffc69d238bbf8714523fe0c9d1264cde53ed16969c92",
@@ -1725,7 +1725,7 @@
     {
       "name": "getCustomFishBehaviorKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 6591,
+      "sourceLine": 6598,
       "originalLine": 13912,
       "characters": 384,
       "sourceHash": "4fc2cfea662ecc26b70989a7a96e5a1e481d0a9c63c78bc13cec4c43df3b8cf9",
@@ -1734,7 +1734,7 @@
     {
       "name": "formatCustomFishBehaviorLabel",
       "module": "assets/custom-content.js",
-      "sourceLine": 6601,
+      "sourceLine": 6608,
       "originalLine": 13925,
       "characters": 203,
       "sourceHash": "5c9e9411dd03b42e3f5b4fe48f75517c4d16601adef8dc69009e6afba0869811",
@@ -1745,7 +1745,7 @@
     {
       "name": "getDefaultCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 6608,
+      "sourceLine": 6615,
       "originalLine": 13932,
       "characters": 195,
       "sourceHash": "591e403c3a26d728a368525a6c164a9ff3f13ad42e4d122e27fff00ad3fd5161",
@@ -1756,7 +1756,7 @@
     {
       "name": "getCustomFishBehaviorProfile",
       "module": "assets/custom-content.js",
-      "sourceLine": 6614,
+      "sourceLine": 6621,
       "originalLine": 13938,
       "characters": 256,
       "sourceHash": "4285ad35d4481475ae9563562640857226629c7d601a8b856d915544d9bf3b95",
@@ -1767,7 +1767,7 @@
     {
       "name": "normalizeCustomFishBehaviorProfileId",
       "module": "assets/custom-content.js",
-      "sourceLine": 6623,
+      "sourceLine": 6630,
       "originalLine": 13947,
       "characters": 169,
       "sourceHash": "a5e0e9d223dae258c1734b157aa4bc45df7e8e7ddeefe98b1afd757b1a1da7da",
@@ -1779,7 +1779,7 @@
     {
       "name": "normalizeCustomFishDiet",
       "module": "assets/custom-content.js",
-      "sourceLine": 6629,
+      "sourceLine": 6636,
       "originalLine": null,
       "characters": 127,
       "sourceHash": "8c26630bd80014cca84c8feb048f171c8caa6bc9ee726f2fbbbbfc4e02263d41",
@@ -1788,7 +1788,7 @@
     {
       "name": "getDefaultCustomFishDiet",
       "module": "assets/custom-content.js",
-      "sourceLine": 6633,
+      "sourceLine": 6640,
       "originalLine": null,
       "characters": 102,
       "sourceHash": "4777198a91953bee36a5645d74c31bbf8bbfd53f19c93c76d50c94c0216bb289",
@@ -1799,7 +1799,7 @@
     {
       "name": "normalizeCustomFishActivityRegulation",
       "module": "assets/custom-content.js",
-      "sourceLine": 6637,
+      "sourceLine": 6644,
       "originalLine": null,
       "characters": 205,
       "sourceHash": "3a0aa0b971ba8dd9d0da007d8a4e773a4408b66028ec095171417b716197d1d0",
@@ -1808,7 +1808,7 @@
     {
       "name": "getCustomFishActivitySwimStyle",
       "module": "assets/custom-content.js",
-      "sourceLine": 6642,
+      "sourceLine": 6649,
       "originalLine": null,
       "characters": 380,
       "sourceHash": "fd2a052da440c80498fae630fad8ade621af5e540ecdf3a78e530e056ade51b8",
@@ -1819,7 +1819,7 @@
     {
       "name": "getCustomFishActivityRegulationDisplay",
       "module": "assets/custom-content.js",
-      "sourceLine": 6650,
+      "sourceLine": 6657,
       "originalLine": null,
       "characters": 308,
       "sourceHash": "cc8f1a62a934352cc03a5787640dabc27b6baf358aa98c88aff905fe0a11e874",
@@ -1830,7 +1830,7 @@
     {
       "name": "normalizeCustomFishSwimZone",
       "module": "assets/custom-content.js",
-      "sourceLine": 6658,
+      "sourceLine": 6665,
       "originalLine": null,
       "characters": 201,
       "sourceHash": "389f989b255caeb5fb2379b339e017ed21945e574a94ac0a9f7a6fffa6c615af",
@@ -1839,7 +1839,7 @@
     {
       "name": "getCustomFishSwimZoneDisplay",
       "module": "assets/custom-content.js",
-      "sourceLine": 6663,
+      "sourceLine": 6670,
       "originalLine": null,
       "characters": 418,
       "sourceHash": "1c9ec05c2804fb329aace50700583208928831bfce5820c693ddd745e45e0cfe",
@@ -1850,7 +1850,7 @@
     {
       "name": "normalizeCustomFishSocialAffinity",
       "module": "assets/custom-content.js",
-      "sourceLine": 6672,
+      "sourceLine": 6679,
       "originalLine": null,
       "characters": 205,
       "sourceHash": "93a761c05796bb83a2fddb1cd5b1401d1b4bb2e2595280be072e1f261ba34d3d",
@@ -1859,7 +1859,7 @@
     {
       "name": "sanitizeCustomFishName",
       "module": "assets/custom-content.js",
-      "sourceLine": 6677,
+      "sourceLine": 6684,
       "originalLine": 13953,
       "characters": 297,
       "sourceHash": "f348044eca25392e6ee35a499753256b5fd83fe89e523cfe70f8d518b531d046",
@@ -1868,7 +1868,7 @@
     {
       "name": "formatCustomFishBehaviorOption",
       "module": "assets/custom-content.js",
-      "sourceLine": 6685,
+      "sourceLine": 6692,
       "originalLine": 13961,
       "characters": 174,
       "sourceHash": "b694d2b1790c5b12c76a77ab87b1394c70e88c53509d51f61b00e68786d04fc8",
@@ -1879,7 +1879,7 @@
     {
       "name": "openCustomFishCreationOverlay",
       "module": "assets/custom-content.js",
-      "sourceLine": 6693,
+      "sourceLine": 6700,
       "originalLine": 13969,
       "characters": 2125,
       "sourceHash": "4eb5600dac5fc44d9c6c8e9175e4e8b49020cd809e59f7e224bfaa6c2f2e2de0",
@@ -1901,7 +1901,7 @@
     {
       "name": "getCustomAssetTypeDef",
       "module": "assets/custom-content.js",
-      "sourceLine": 6732,
+      "sourceLine": 6739,
       "originalLine": 13985,
       "characters": 230,
       "sourceHash": "df12239a39e6603a678a65e50be13e2532d4791ba62d44526d75eeb053465e0d",
@@ -1910,7 +1910,7 @@
     {
       "name": "getCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 6739,
+      "sourceLine": 6746,
       "originalLine": 13992,
       "characters": 236,
       "sourceHash": "d40dbd168e3d6fe56a6c8582afb2c852150b75cf47e0a1bab5d8e0ee4a78f9fb",
@@ -1921,7 +1921,7 @@
     {
       "name": "resetCustomAssetInput",
       "module": "assets/custom-content.js",
-      "sourceLine": 6746,
+      "sourceLine": 6753,
       "originalLine": 13999,
       "characters": 114,
       "sourceHash": "0add18bd74677ec4fe3dbf2898f0705da8be502704ae9fa27c470724451e58b3",
@@ -1930,7 +1930,7 @@
     {
       "name": "ensureCustomAssetCost",
       "module": "assets/custom-content.js",
-      "sourceLine": 6752,
+      "sourceLine": 6759,
       "originalLine": 14005,
       "characters": 350,
       "sourceHash": "2096774417aceaf612b86e9105c8cf85c7147c1ab0caad7a58ee072bb4b7748d",
@@ -1942,7 +1942,7 @@
     {
       "name": "getPendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 6764,
+      "sourceLine": 6771,
       "originalLine": 14017,
       "characters": 150,
       "sourceHash": "0cee3b04624db290bdb1fc3424ba16e9b94e1e14fc56d86fde6aeedfc232e2a0",
@@ -1953,7 +1953,7 @@
     {
       "name": "finalizeCustomAssetCreation",
       "module": "assets/custom-content.js",
-      "sourceLine": 6769,
+      "sourceLine": 6776,
       "originalLine": 14022,
       "characters": 645,
       "sourceHash": "47314aaf3761a0079552c25631b2c5152441cbb9deb56f3cdc655ead0e2f4f57",
@@ -1970,7 +1970,7 @@
     {
       "name": "openCustomAssetPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 6789,
+      "sourceLine": 6796,
       "originalLine": 14042,
       "characters": 662,
       "sourceHash": "2170aca8c5cf8b07b7382958709e801beac30312d53cedc3e28e1e9141957404",
@@ -1985,7 +1985,7 @@
     {
       "name": "importCustomAssetFromPicker",
       "module": "assets/custom-content.js",
-      "sourceLine": 6811,
+      "sourceLine": 6818,
       "originalLine": 14064,
       "characters": 965,
       "sourceHash": "0e2c0d516d11f1c07f036033042a82e41953a818e1f467c02c5a8bc8421efcec",
@@ -2000,7 +2000,7 @@
     {
       "name": "savePendingCustomAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 6847,
+      "sourceLine": 6854,
       "originalLine": 14098,
       "characters": 844,
       "sourceHash": "43cc0d41671dab26d4495bfc5fe5ce27c7baf41f0b3b222d89505b0b09ba68f7",
@@ -2014,7 +2014,7 @@
     {
       "name": "sanitizeCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 6877,
+      "sourceLine": 6884,
       "originalLine": 14411,
       "characters": 184,
       "sourceHash": "9a471d43b4adb464c2936381d39be7f3f84947daa5463855683e501c6d57757e",
@@ -2025,7 +2025,7 @@
     {
       "name": "getPendingCustomFishTransform",
       "module": "assets/custom-content.js",
-      "sourceLine": 6885,
+      "sourceLine": 6892,
       "originalLine": 14419,
       "characters": 214,
       "sourceHash": "cb449045b2e4eac26d8733ae2283600facb9e0c1e9f7e7d0950e05687a6a0cda",
@@ -2036,7 +2036,7 @@
     {
       "name": "updatePendingCustomFishTransformControls",
       "module": "assets/custom-content.js",
-      "sourceLine": 6891,
+      "sourceLine": 6898,
       "originalLine": 14425,
       "characters": 906,
       "sourceHash": "d58e6c1640a63a78e588084461cd59187651d0fe285f0a260ffd59abe8cdcb77",
@@ -2047,7 +2047,7 @@
     {
       "name": "getPendingCustomFishOutputDataUrl",
       "module": "assets/custom-content.js",
-      "sourceLine": 6909,
+      "sourceLine": 6916,
       "originalLine": 14443,
       "characters": 1407,
       "sourceHash": "d6c2310e3100bf75a396d145ed4681d64736538508a3385c2750d4311611ac8f",
@@ -2060,7 +2060,7 @@
     {
       "name": "updatePendingCustomFishPreview",
       "module": "assets/custom-content.js",
-      "sourceLine": 6945,
+      "sourceLine": 6952,
       "originalLine": 14479,
       "characters": 1077,
       "sourceHash": "89b246cf23b19d5ab442caaa95a1cec30a44524acd1787fab31632a1513789a3",
@@ -2073,7 +2073,7 @@
     {
       "name": "updatePendingCustomFishSize",
       "module": "assets/custom-content.js",
-      "sourceLine": 6968,
+      "sourceLine": 6975,
       "originalLine": 14502,
       "characters": 320,
       "sourceHash": "a34d93b02f1c66aa235d707a043bcdc3072bb2a0a93a4bd51b69830b0f55f2fd",
@@ -2085,7 +2085,7 @@
     {
       "name": "updatePendingCustomFishFlip",
       "module": "assets/custom-content.js",
-      "sourceLine": 6981,
+      "sourceLine": 6988,
       "originalLine": 14515,
       "characters": 207,
       "sourceHash": "aa9414eadf0889978929ce66d86d9ee77ac5957a34711861a5958d27d6b4fb08",
@@ -2096,7 +2096,7 @@
     {
       "name": "updatePendingCustomFishRotation",
       "module": "assets/custom-content.js",
-      "sourceLine": 6990,
+      "sourceLine": 6997,
       "originalLine": 14524,
       "characters": 233,
       "sourceHash": "a8c26ea4af3d63ed85913922a8da30475726f846215361e57a628981485fc9f7",
@@ -2108,7 +2108,7 @@
     {
       "name": "sanitizeCustomFishAssetEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 6999,
+      "sourceLine": 7006,
       "originalLine": 14533,
       "characters": 1804,
       "sourceHash": "6c9e4359667f14f9139fdcdd44f1946c651e7cacc502539b4c328778d3af1068",
@@ -2127,7 +2127,7 @@
     {
       "name": "sanitizeCustomFishAssets",
       "module": "assets/custom-content.js",
-      "sourceLine": 7043,
+      "sourceLine": 7050,
       "originalLine": 14568,
       "characters": 347,
       "sourceHash": "d54ba0e596670ee64468a950d40ffaebcbad1ab1ed24136dfbd4ee0242222b33",
@@ -2138,7 +2138,7 @@
     {
       "name": "buildCustomFishCatalogEntry",
       "module": "assets/custom-content.js",
-      "sourceLine": 7058,
+      "sourceLine": 7065,
       "originalLine": 14583,
       "characters": 4185,
       "sourceHash": "a508e4ae5fa8b7d79a5bcccfbe945d68fb6a51c9b28849a7192972fdac56a493",
@@ -2158,7 +2158,7 @@
     {
       "name": "getCustomFishCatalogEntries",
       "module": "assets/custom-content.js",
-      "sourceLine": 7140,
+      "sourceLine": 7147,
       "originalLine": 14650,
       "characters": 203,
       "sourceHash": "0dbda8e3f45a6af1d400e48c16ad293844c532e96ca2e285d1aadf787b994f3f",
@@ -2169,7 +2169,7 @@
     {
       "name": "syncRuntimeCustomFishAssetsFromState",
       "module": "assets/custom-content.js",
-      "sourceLine": 7146,
+      "sourceLine": 7153,
       "originalLine": 14656,
       "characters": 326,
       "sourceHash": "1eb6a3caa937747f5e3e17f1617b54ada23ef67363f2222464359f14803120c9",
@@ -2181,7 +2181,7 @@
     {
       "name": "savePendingCustomFishUpload",
       "module": "assets/custom-content.js",
-      "sourceLine": 7158,
+      "sourceLine": 7165,
       "originalLine": 14668,
       "characters": 179,
       "sourceHash": "6a59fb6bc9b774c9e9da0b7bba63a218fc319cb3f4fd5e0f9ed45fc899c12faf",
@@ -2193,7 +2193,7 @@
     {
       "name": "normalizeFishCatalog",
       "module": "assets/custom-content.js",
-      "sourceLine": 7164,
+      "sourceLine": 7171,
       "originalLine": 14674,
       "characters": 302,
       "sourceHash": "812f528daccd4ead6c73e874457773b62c146def9da48e2aee97a98f14f994e7",
@@ -2204,7 +2204,7 @@
     {
       "name": "collectFishCatalogAssetFiles",
       "module": "assets/custom-content.js",
-      "sourceLine": 7175,
+      "sourceLine": 7182,
       "originalLine": 14688,
       "characters": 259,
       "sourceHash": "eb15555367a9f8260a8c4aa729dc40a67df11d3d87887e78a666a94b97e2cd6d",
@@ -2215,7 +2215,7 @@
     {
       "name": "normalizeCatalogAssetLookupKey",
       "module": "assets/custom-content.js",
-      "sourceLine": 7182,
+      "sourceLine": 7189,
       "originalLine": 14695,
       "characters": 180,
       "sourceHash": "8c7c8c31ceb9694de7847a0a04e2154df3e2598d1a9511f7e6ddb03a57c15703",
@@ -2224,7 +2224,7 @@
     {
       "name": "findCatalogAssetManifestItem",
       "module": "assets/custom-content.js",
-      "sourceLine": 7190,
+      "sourceLine": 7197,
       "originalLine": 14703,
       "characters": 617,
       "sourceHash": "1d0b81f783d03158097f0e2e2de6c50a82e4476576438690514059a207c0b0d8",
@@ -2235,7 +2235,7 @@
     {
       "name": "normalizeFishFoodList",
       "module": "assets/custom-content.js",
-      "sourceLine": 7207,
+      "sourceLine": 7214,
       "originalLine": null,
       "characters": 446,
       "sourceHash": "c6e387b4fe15b4c2ab4ded44e000fbf7eb744d86bca93e0b3d3bb4cd57e2df22",
@@ -2246,7 +2246,7 @@
     {
       "name": "deriveFishAcceptedFoods",
       "module": "assets/custom-content.js",
-      "sourceLine": 7216,
+      "sourceLine": 7223,
       "originalLine": null,
       "characters": 900,
       "sourceHash": "93b3e9b5905f535f38579edb27f0ed4134430700c03cb54bfdc63290ef9c8a54",
@@ -2257,7 +2257,7 @@
     {
       "name": "resolveFishCatalogAssetFolderPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 7241,
+      "sourceLine": 7248,
       "originalLine": 14720,
       "characters": 370,
       "sourceHash": "72a99e7e1dd7c7a99624fe53cbf98584886b45d5eb313be796274b246dd0e7e8",
@@ -2266,7 +2266,7 @@
     {
       "name": "encodeCatalogAssetPath",
       "module": "assets/custom-content.js",
-      "sourceLine": 7250,
+      "sourceLine": 7257,
       "originalLine": 14729,
       "characters": 166,
       "sourceHash": "52f99bc09661cec2d9b8f173ba1bc9e0261b2cceb8755dbce26107a49c9b05f6",
@@ -2275,7 +2275,7 @@
     {
       "name": "resolveFishCatalogAsset",
       "module": "assets/custom-content.js",
-      "sourceLine": 7257,
+      "sourceLine": 7264,
       "originalLine": 14736,
       "characters": 840,
       "sourceHash": "d0eebd4c3f83245efcc23361f983d012bef670f65957fa69cfa521408cb0a6cc",
@@ -2289,7 +2289,7 @@
     {
       "name": "normalizeFishDefinition",
       "module": "assets/custom-content.js",
-      "sourceLine": 7273,
+      "sourceLine": 7280,
       "originalLine": 14767,
       "characters": 11520,
       "sourceHash": "a22e0db8a8737a51cc1b768c66c9d0235d8907f9e458c1cd70ef29a286aa622e",
@@ -20263,8 +20263,8 @@
       "module": "fish/care-and-vet.js",
       "sourceLine": 12,
       "originalLine": null,
-      "characters": 935,
-      "sourceHash": "6e08fe4a5ba6bcb701af0b3c102c48d3e15665d5ea4361d8468ab3081052c776",
+      "characters": 1293,
+      "sourceHash": "7f883864a1537fa1942019a4d1d82c7d8a073b4198ae32f2a254f86cb35a0441",
       "calls": [
         "getFishTreatmentDefinitions"
       ]
@@ -20420,8 +20420,8 @@
       "module": "fish/care-and-vet.js",
       "sourceLine": 209,
       "originalLine": null,
-      "characters": 5636,
-      "sourceHash": "0b773980bd378e90df80d9807b8b52499c6c63f5f150cf27d997014eb51dc58f",
+      "characters": 5718,
+      "sourceHash": "32dc2ac56d89c53775f8422952bb2be241229e6364c343a70ab2390b424b556b",
       "calls": [
         "escapeHtml",
         "formatFishConditionLabel",
@@ -24869,8 +24869,8 @@
       "module": "fish/feeding-and-medicine.js",
       "sourceLine": 1283,
       "originalLine": 27864,
-      "characters": 2647,
-      "sourceHash": "f57db73f05bf895bf2e9fc12890c5f4ca5f1b6ce5ed2aaadc33ebe05f5adc22b",
+      "characters": 2745,
+      "sourceHash": "44bd909a7b7aea51a5fa0fc9368c71cb39484d6a1441ce9eea31a03b53782caf",
       "calls": [
         "addMedicineVisualEffect",
         "applyTargetedMedicineToFish",
@@ -24892,7 +24892,7 @@
     {
       "name": "processTankMedicineEffects",
       "module": "fish/feeding-and-medicine.js",
-      "sourceLine": 1352,
+      "sourceLine": 1354,
       "originalLine": 27920,
       "characters": 328,
       "sourceHash": "0321333db4a71ed5727d0024ee79794b37cf407c620c89811643a95e81e2d588",
@@ -42441,9 +42441,11 @@
       "module": "store/purchases.js",
       "sourceLine": 582,
       "originalLine": 30335,
-      "characters": 1031,
-      "sourceHash": "33eb4bd968dc5b49f0bc6655ae75440e240f0d8fae74d8f5d53b386a864a2079",
+      "characters": 1485,
+      "sourceHash": "fa2d7aaa62c0ed4dfb64e640be8dbd0e8c79bf350f9f7e3203711b9e02c3fd15",
       "calls": [
+        "clearPrimaryToolModes",
+        "closeUtilityOverlayState",
         "getMedicineMeta",
         "renderUi",
         "shouldShowMedicineInStore",
@@ -42453,7 +42455,7 @@
     {
       "name": "ensureFishPurchaseImageReady",
       "module": "store/purchases.js",
-      "sourceLine": 614,
+      "sourceLine": 620,
       "originalLine": null,
       "characters": 1011,
       "sourceHash": "abf9aacc28dcf9f98f01935d013f55ea8e1d1cfd03c35935b2d16828c4343662",
@@ -42468,7 +42470,7 @@
     {
       "name": "buyFish",
       "module": "store/purchases.js",
-      "sourceLine": 644,
+      "sourceLine": 650,
       "originalLine": 30366,
       "characters": 8352,
       "sourceHash": "8c845628bcc026b13401f51adb0ce319915874c15f0c6a0835ce818c0eaef447",
@@ -42515,7 +42517,7 @@
     {
       "name": "prepareProteusZombieFishForTank",
       "module": "store/purchases.js",
-      "sourceLine": 827,
+      "sourceLine": 833,
       "originalLine": null,
       "characters": 423,
       "sourceHash": "7409472f146f6e3c4d258857e2ffb5e183b35b444a7d350221b90f92ff15e181",
@@ -42527,7 +42529,7 @@
     {
       "name": "getProteusZombieFishVariantPurchaseOptions",
       "module": "store/purchases.js",
-      "sourceLine": 841,
+      "sourceLine": 847,
       "originalLine": null,
       "characters": 509,
       "sourceHash": "4e8e83d2b539f1429a3b9970561b79f78250e3adf831aee64b99f0e47e21f27b",
@@ -42539,7 +42541,7 @@
     {
       "name": "claimProteusZombieFish",
       "module": "store/purchases.js",
-      "sourceLine": 854,
+      "sourceLine": 860,
       "originalLine": null,
       "characters": 3254,
       "sourceHash": "f4f75c04e5e10dbd2f9035fdaafb58abe6dbc91569ef41e64ba33b3cd037be55",
@@ -42565,7 +42567,7 @@
     {
       "name": "purchaseProteusZombieFishVariant",
       "module": "store/purchases.js",
-      "sourceLine": 939,
+      "sourceLine": 945,
       "originalLine": null,
       "characters": 2396,
       "sourceHash": "6d55c9d01fed76ad28194240868f97e8a46773bb5f714bead565f1c5e7b46868",
@@ -42585,7 +42587,7 @@
     {
       "name": "buyAnotherCustomFish",
       "module": "store/purchases.js",
-      "sourceLine": 1002,
+      "sourceLine": 1008,
       "originalLine": 30442,
       "characters": 3828,
       "sourceHash": "c9882ab22f0d8c0e89e4841715d654de41a27953914e11836fdf05ec1d89720f",
@@ -42617,7 +42619,7 @@
     {
       "name": "buyAnotherFishFromSource",
       "module": "store/purchases.js",
-      "sourceLine": 1101,
+      "sourceLine": 1107,
       "originalLine": 30507,
       "characters": 391,
       "sourceHash": "9f429b929a1832bb9973bbacc102e6d5ce333c62821f554f9d73aaf9c17ef7cf",
@@ -42633,7 +42635,7 @@
     {
       "name": "requestCommerceConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 1117,
+      "sourceLine": 1123,
       "originalLine": null,
       "characters": 510,
       "sourceHash": "b0c2b8b534a6f8fc20b35f7a8d587978ce3995e3d2a159bf6a87ee15fae8a3a5",
@@ -42645,7 +42647,7 @@
     {
       "name": "confirmCommerceAction",
       "module": "store/purchases.js",
-      "sourceLine": 1131,
+      "sourceLine": 1137,
       "originalLine": null,
       "characters": 513,
       "sourceHash": "da358d8d23e39e6a7fc99baccf3cd9c1a2923ca70f866e6e72300baf31b8bf3b",
@@ -42658,7 +42660,7 @@
     {
       "name": "getPendingFishActionDetails",
       "module": "store/purchases.js",
-      "sourceLine": 1145,
+      "sourceLine": 1151,
       "originalLine": 30523,
       "characters": 607,
       "sourceHash": "8fe1b2e2d59f6896f3f0718f06f9e605669409542007018a04b46c454e54a587",
@@ -42671,7 +42673,7 @@
     {
       "name": "getPendingFishBuyAnotherDetails",
       "module": "store/purchases.js",
-      "sourceLine": 1173,
+      "sourceLine": 1179,
       "originalLine": 30551,
       "characters": 542,
       "sourceHash": "dc6cde1b62400bcd3337f29103c333e56c87f61a25877e5bab2dcf9d34200a10",
@@ -42685,7 +42687,7 @@
     {
       "name": "getPendingFishSellDetails",
       "module": "store/purchases.js",
-      "sourceLine": 1194,
+      "sourceLine": 1200,
       "originalLine": 30572,
       "characters": 578,
       "sourceHash": "d3a1145ad8ea6b098cd6670c12e45e49838ecd2d94e01f7abb091e2bb70c284c",
@@ -42701,7 +42703,7 @@
     {
       "name": "openFishBuyAnotherConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 1214,
+      "sourceLine": 1220,
       "originalLine": 30589,
       "characters": 768,
       "sourceHash": "a8d5bc3028a39ce3ed34e3d3fdc22cc8b9a9a25be39f4e900a467ebf3eac782b",
@@ -42714,7 +42716,7 @@
     {
       "name": "openFishSellConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 1235,
+      "sourceLine": 1241,
       "originalLine": 30625,
       "characters": 749,
       "sourceHash": "a95c2db5826797ac74054481173272b702b9a7888cf9a00f60aa5aed866c55ac",
@@ -42726,7 +42728,7 @@
     {
       "name": "confirmFishBuyAnother",
       "module": "store/purchases.js",
-      "sourceLine": 1256,
+      "sourceLine": 1262,
       "originalLine": 30655,
       "characters": 537,
       "sourceHash": "e6892fd192cc05ab30d1dd66e00f5d0dcfe21265a9d953396a809cabf0c7f2d7",
@@ -42739,7 +42741,7 @@
     {
       "name": "confirmFishSell",
       "module": "store/purchases.js",
-      "sourceLine": 1271,
+      "sourceLine": 1277,
       "originalLine": 30681,
       "characters": 530,
       "sourceHash": "3418a9af0916e7de94faf3ba1cae628a050ef440ff57f4ded95518192d70c1d8",
@@ -42751,7 +42753,7 @@
     {
       "name": "getDecorPurchaseCost",
       "module": "store/purchases.js",
-      "sourceLine": 1286,
+      "sourceLine": 1292,
       "originalLine": 30701,
       "characters": 258,
       "sourceHash": "99c7565f935f600129d80b812abb40e726bcb2577dc1083247aea9e4c1119d4a",
@@ -42762,7 +42764,7 @@
     {
       "name": "buyDecor",
       "module": "store/purchases.js",
-      "sourceLine": 1292,
+      "sourceLine": 1298,
       "originalLine": 30706,
       "characters": 3219,
       "sourceHash": "42eb35341485eafea487943cb858cb5749d19246ad07d1475e9966211f6ee21c",
@@ -42795,7 +42797,7 @@
     {
       "name": "buyAnotherDecor",
       "module": "store/purchases.js",
-      "sourceLine": 1377,
+      "sourceLine": 1383,
       "originalLine": 30773,
       "characters": 1492,
       "sourceHash": "84346689d05f419f882808add11228312d81c85a62ae4bbf738de19b7f2e8483",
@@ -42816,7 +42818,7 @@
     {
       "name": "getPendingDecorBuyAnotherDetails",
       "module": "store/purchases.js",
-      "sourceLine": 1425,
+      "sourceLine": 1431,
       "originalLine": 30811,
       "characters": 433,
       "sourceHash": "1db8d1dfd745f3d10d1ef0241d3d64c5705bb1afcffb5be82cd3a37837bb283b",
@@ -42827,7 +42829,7 @@
     {
       "name": "getPendingDecorSellDetails",
       "module": "store/purchases.js",
-      "sourceLine": 1446,
+      "sourceLine": 1452,
       "originalLine": 30832,
       "characters": 621,
       "sourceHash": "05cbeea221b774f7fd81a66f2560d1eedf8b59dbce4907d8933d06767f247318",
@@ -42842,7 +42844,7 @@
     {
       "name": "openDecorBuyAnotherConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 1472,
+      "sourceLine": 1478,
       "originalLine": 30857,
       "characters": 806,
       "sourceHash": "958f80d006fef37c6c6fee06c4d2aa8e027524d383fe146879a576f84888cb78",
@@ -42856,7 +42858,7 @@
     {
       "name": "openDecorSellConfirmation",
       "module": "store/purchases.js",
-      "sourceLine": 1494,
+      "sourceLine": 1500,
       "originalLine": 30882,
       "characters": 551,
       "sourceHash": "abc1f70c9538bd4cdf9418c8128dcc7a29d9113fb9f67aaa3f4495e04d5ff22d",
@@ -42868,7 +42870,7 @@
     {
       "name": "confirmDecorBuyAnother",
       "module": "store/purchases.js",
-      "sourceLine": 1509,
+      "sourceLine": 1515,
       "originalLine": 30900,
       "characters": 341,
       "sourceHash": "da680bfd5e5d4adf0189e1943c032ece644f28ec4ab4da661cd2189d9828d974",
@@ -42881,7 +42883,7 @@
     {
       "name": "confirmDecorSell",
       "module": "store/purchases.js",
-      "sourceLine": 1520,
+      "sourceLine": 1526,
       "originalLine": 30918,
       "characters": 326,
       "sourceHash": "1da048bd738383628b884f2612ca2842f866c51f53a2c787066c2d3e6f95d1fe",
@@ -42893,7 +42895,7 @@
     {
       "name": "buySubstrate",
       "module": "store/purchases.js",
-      "sourceLine": 1529,
+      "sourceLine": 1535,
       "originalLine": null,
       "characters": 915,
       "sourceHash": "f315df39078d03420810952365a72339871825dee9a9e0d0c9b78b475e23acdb",
@@ -42910,7 +42912,7 @@
     {
       "name": "buyBackground",
       "module": "store/purchases.js",
-      "sourceLine": 1554,
+      "sourceLine": 1560,
       "originalLine": 30936,
       "characters": 815,
       "sourceHash": "5c9cced1cc2c46637962286a7262e84caa6dfa35ae89e82deeb74bc46b7430d5",
@@ -42925,7 +42927,7 @@
     {
       "name": "buyWaterTreatmentKit",
       "module": "store/purchases.js",
-      "sourceLine": 1582,
+      "sourceLine": 1588,
       "originalLine": null,
       "characters": 659,
       "sourceHash": "e77aaff163fade856617ae8bba41b8a04f61da074fb03687d83e28e24dc51bd9",
@@ -42937,7 +42939,7 @@
     {
       "name": "getWaterConversionIncompatibilities",
       "module": "store/purchases.js",
-      "sourceLine": 1597,
+      "sourceLine": 1603,
       "originalLine": null,
       "characters": 902,
       "sourceHash": "956e0d7ca63a02812c3f286def2ba81b2b0cdd13d6902237d1811fe28e9a717e",
@@ -42953,7 +42955,7 @@
     {
       "name": "requestWaterTypeConversion",
       "module": "store/purchases.js",
-      "sourceLine": 1615,
+      "sourceLine": 1621,
       "originalLine": null,
       "characters": 870,
       "sourceHash": "cb08cd755ea257a3e3cf9062579d1b9f43a1b18df90e16286cc5370cfada2f3b",
@@ -42969,7 +42971,7 @@
     {
       "name": "cancelWaterTypeConversion",
       "module": "store/purchases.js",
-      "sourceLine": 1633,
+      "sourceLine": 1639,
       "originalLine": null,
       "characters": 124,
       "sourceHash": "82b55e64e3cb229620d6fdf93ca148d37884c9f7c6612343bc59472fe548128c",
@@ -42980,7 +42982,7 @@
     {
       "name": "confirmWaterTypeConversion",
       "module": "store/purchases.js",
-      "sourceLine": 1639,
+      "sourceLine": 1645,
       "originalLine": null,
       "characters": 2254,
       "sourceHash": "8f36c5a92d10fbe50f034c952ca364ec7211591660893c40c01d291d738246c6",
@@ -43004,7 +43006,7 @@
     {
       "name": "useWaterTreatmentKit",
       "module": "store/purchases.js",
-      "sourceLine": 1679,
+      "sourceLine": 1685,
       "originalLine": null,
       "characters": 288,
       "sourceHash": "8251cfbcef446a18f499d905c50311c04d8aaab142929751ff801c3cc2c97d2d",
@@ -43016,7 +43018,7 @@
     {
       "name": "buyAutoDispenser",
       "module": "store/purchases.js",
-      "sourceLine": 1686,
+      "sourceLine": 1692,
       "originalLine": 30992,
       "characters": 861,
       "sourceHash": "81065446793867f0702dde6fe3134f6697cc8fe4e2d45e723a929dc518ee1629",
@@ -49510,8 +49512,8 @@
       "module": "ui/customization-actions-and-inventory.js",
       "sourceLine": 2487,
       "originalLine": 46622,
-      "characters": 8600,
-      "sourceHash": "5adf479cec53e00b4f7eb88b35cd4f68313a839b8cf5991631e774a3b3f19996",
+      "characters": 8650,
+      "sourceHash": "ed3d53e642132faa002d55c2309c2c98130bfefc8f87c58eca12f7586d07f911",
       "calls": [
         "assetImageAttributes",
         "getCurrentTank",

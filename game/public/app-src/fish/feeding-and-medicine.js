@@ -1280,7 +1280,7 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   return { ok: false, message: "That medicine cannot be used on this fish." };
 }
 
-function applySelectedMedicineAtPoint(point, now = Date.now()) {
+function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = "") {
   const medicineKey = runtime.medicineModeKey;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine || !point) return false;
@@ -1327,7 +1327,9 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
     return true;
   }
 
-  const fish = typeof findFishAtPoint === "function" ? findFishAtPoint(point.x, point.y, now) : null;
+  const fish = targetFishId
+    ? state.fish.find((entry) => entry.id === targetFishId)
+    : typeof findFishAtPoint === "function" ? findFishAtPoint(point.x, point.y, now) : null;
   if (!fish) {
     showToast("Click a fish to treat.");
     return true;

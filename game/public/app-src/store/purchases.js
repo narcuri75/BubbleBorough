@@ -598,16 +598,22 @@ function selectMedicineMode(medicineKey) {
     return;
   }
 
+  const selectedMedicineKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
+  if (typeof clearPrimaryToolModes === "function") clearPrimaryToolModes();
+  if (runtime.utilityOverlayOpen && typeof closeUtilityOverlayState === "function") closeUtilityOverlayState();
   runtime.medicineTrayOpen = true;
   runtime.foodTrayOpen = false;
   runtime.cleaningMode = false;
   runtime.scoopMode = false;
   runtime.feedingModeFoodKey = "";
-  runtime.medicineModeKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
+  runtime.medicineModeKey = selectedMedicineKey;
+  runtime.toolModeSource = "care-tray";
+  runtime.suppressNextTankClick = false;
+  runtime.suppressNextGlassTap = false;
   renderUi(Date.now());
   const usePrompt = medicine.id === "betaBlocker"
-    ? `${medicine.name} selected. Click inside the tank to calm the whole tank.`
-    : `${medicine.name} selected. Click the fish you want to treat.`;
+    ? `${medicine.name} selected. Click anywhere inside the tank with the eyedropper to give one drop to the whole tank.`
+    : `${medicine.name} selected. Click directly on the affected fish with the eyedropper to give one drop to that fish.`;
   showToast(runtime.medicineModeKey ? usePrompt : "Medicine mode cleared.");
 }
 

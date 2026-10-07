@@ -14392,7 +14392,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       kicker: "Pharmacy",
       title: "Medicine Inventory",
       body: renderMedicineInventoryOverlay(),
-      footer: `<div class="mini-note">Select a medicine, then click the fish to give one drop. Calming Serum treats the whole tank. Hover a medicine for its treatment instructions.</div>`,
+      footer: `<div class="mini-note"><strong>Select a medicine, then click directly on the affected fish with the eyedropper to give one drop.</strong> Each drop treats only that fish. For Calming Serum, click anywhere inside the tank to treat all fish. Hover a medicine for its treatment instructions.</div>`,
       closable: true
     }),
     onBodyClick: handleMedicineUtilityOverlayBodyClick
@@ -31272,6 +31272,12 @@ function bindEvents() {
     }
 
     const now = Date.now();
+    if (runtime.medicineModeKey) {
+      // Capture the intended fish before it swims away. A medicine press must
+      // not become a fish/egg drag and suppress the following dose click.
+      runtime.fishPointerClickId = findFishAtPoint(point.x, point.y, now)?.id || null;
+      return;
+    }
     const hitMachinery = findMachineryAtPoint(point.x, point.y, now);
     if (hitMachinery) {
       runtime.suppressNextTankClick = false;
@@ -31332,17 +31338,17 @@ function bindEvents() {
     }
     runtime.lastTankPoint = point;
 
+    if (runtime.medicineModeKey) {
+      applySelectedMedicineAtPoint(point, Date.now(), fishPointerClickId);
+      return;
+    }
+
     if (handleAutoDispenserInteractionAtPoint(point, Date.now())) {
       return;
     }
 
     if (runtime.feedingModeFoodKey) {
       dropSelectedFoodAtPoint(point, Date.now());
-      return;
-    }
-
-    if (runtime.medicineModeKey) {
-      applySelectedMedicineAtPoint(point, Date.now());
       return;
     }
 
@@ -31928,6 +31934,7 @@ function bindEvents() {
       runtime.fishPointerClickId = event?.type === "pointerup" ? runtime.pendingFishDrag.fishId : null;
       runtime.pendingFishDrag = null;
     }
+    if (event?.type !== "pointerup") runtime.fishPointerClickId = null;
     if (runtime.fishDragState) {
       finalizeFishDrag();
     }
@@ -57494,7 +57501,7 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
   return { ok: false, message: "That medicine cannot be used on this fish." };
 }
 
-function applySelectedMedicineAtPoint(point, now = Date.now()) {
+function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = "") {
   const medicineKey = runtime.medicineModeKey;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine || !point) return false;
@@ -57541,7 +57548,9 @@ function applySelectedMedicineAtPoint(point, now = Date.now()) {
     return true;
   }
 
-  const fish = typeof findFishAtPoint === "function" ? findFishAtPoint(point.x, point.y, now) : null;
+  const fish = targetFishId
+    ? state.fish.find((entry) => entry.id === targetFishId)
+    : typeof findFishAtPoint === "function" ? findFishAtPoint(point.x, point.y, now) : null;
   if (!fish) {
     showToast("Click a fish to treat.");
     return true;
@@ -61919,16 +61928,22 @@ function selectMedicineMode(medicineKey) {
     return;
   }
 
+  const selectedMedicineKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
+  if (typeof clearPrimaryToolModes === "function") clearPrimaryToolModes();
+  if (runtime.utilityOverlayOpen && typeof closeUtilityOverlayState === "function") closeUtilityOverlayState();
   runtime.medicineTrayOpen = true;
   runtime.foodTrayOpen = false;
   runtime.cleaningMode = false;
   runtime.scoopMode = false;
   runtime.feedingModeFoodKey = "";
-  runtime.medicineModeKey = runtime.medicineModeKey === medicine.id ? "" : medicine.id;
+  runtime.medicineModeKey = selectedMedicineKey;
+  runtime.toolModeSource = "care-tray";
+  runtime.suppressNextTankClick = false;
+  runtime.suppressNextGlassTap = false;
   renderUi(Date.now());
   const usePrompt = medicine.id === "betaBlocker"
-    ? `${medicine.name} selected. Click inside the tank to calm the whole tank.`
-    : `${medicine.name} selected. Click the fish you want to treat.`;
+    ? `${medicine.name} selected. Click anywhere inside the tank with the eyedropper to give one drop to the whole tank.`
+    : `${medicine.name} selected. Click directly on the affected fish with the eyedropper to give one drop to that fish.`;
   showToast(runtime.medicineModeKey ? usePrompt : "Medicine mode cleared.");
 }
 
@@ -89794,7 +89809,7 @@ function renderMedicineTray() {
             type="button"
             data-select-medicine="${medicine.id}"
             title="${label}"
-            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }"
+            aria-label="${active ? `Selected ${medicine.name}` : `Select ${medicine.name}` }. ${getMedicineTreatmentInstructions(medicine.id)}"
             style="--tray-accent: ${medicine.color};"
           >
             ${renderFoodAndMedImage("medicine", medicine.id, medicine.name, "care-medicine-card-image")}
@@ -134532,9 +134547,9 @@ function getFishTreatmentDefinitions() {
 
 function getMedicineTreatmentInstructions(id) {
   const definition = getFishTreatmentDefinitions()[id];
-  if (definition) return `Give one drop to the affected fish every 24 hours for ${definition.doses} doses. Allow a final 24-hour healing interval. One missed day preserves progress: give the next drop when you return. Two consecutive missed days worsen symptoms and restart the full course. Never give extra drops to catch up. Keep the water compatible, the tank clean, and the fish comfortable.`;
-  if (id === "waterStress") return "Correct the fish's water type first. One drop boosts its recovery for six hours. Wait until that boost ends before using another drop. Correct water allows recovery without medication.";
-  if (id === "betaBlocker") return "One drop into the tank calms its living fish for ten minutes. Address the cause of panic or aggression. Wait until the effect ends before using another drop.";
+  if (definition) return `Select this medicine in Fish Care, then click directly on the affected fish with the eyedropper to give one drop. Each drop treats only the fish you click. Give one drop every 24 hours for ${definition.doses} doses. Allow a final 24-hour healing interval. One missed day preserves progress: give the next drop when you return. Two consecutive missed days worsen symptoms and restart the full course. Never give extra drops to catch up. Keep the water compatible, the tank clean, and the fish comfortable.`;
+  if (id === "waterStress") return "Correct the fish's water type first. Select this medicine in Fish Care, then click directly on the affected fish with the eyedropper. One drop boosts only that fish's recovery for six hours. Wait until that boost ends before using another drop. Correct water allows recovery without medication.";
+  if (id === "betaBlocker") return "Select Calming Serum in Fish Care, then click anywhere inside the tank with the eyedropper to give one drop. One drop into the tank calms all its living fish for ten minutes. Address the cause of panic or aggression. Wait until the effect ends before using another drop.";
   return "";
 }
 
@@ -134741,7 +134756,7 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
         ? `This fish has missing hearts. ${medicine?.name || "First Aid"} treats that damage; disease or incompatible water may still need separate care. ${dosing}`
         : `${condition === "parasites" ? "White specks indicate parasites. First Aid and Anti-Infection do not clear parasites." : "Red or cloudy patches indicate infection. First Aid treats missing hearts, but does not clear the infection."} Use ${medicine?.name || medicineId}. ${dosing}`;
     return `<p><strong>${escapeHtml(formatFishConditionLabel(condition))}:</strong> ${escapeHtml(advice)}</p>`;
-  }).join("")}<p>Buying a bottle stocks your medicine. Select it in Fish Care, then click the affected fish to give one drop. Improvement takes time; check the course below for the next dose.</p></article>` : "";
+  }).join("")}<p>Buying a bottle stocks your medicine. <strong>Select it in Fish Care, then click directly on the affected fish with the eyedropper to give one drop.</strong> Each drop treats only that fish. Improvement takes time; check the course below for the next dose.</p></article>` : "";
   const rows = Object.values(fish.treatmentCourses || {}).map((course) => {
     const definition = getFishTreatmentDefinitions()[course.medicineId];
     const medicine = getMedicineMeta(course.medicineId);

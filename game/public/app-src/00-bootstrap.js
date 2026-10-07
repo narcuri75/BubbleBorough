@@ -14389,7 +14389,7 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
       kicker: "Pharmacy",
       title: "Medicine Inventory",
       body: renderMedicineInventoryOverlay(),
-      footer: `<div class="mini-note">Select a medicine, then click the fish to give one drop. Calming Serum treats the whole tank. Hover a medicine for its treatment instructions.</div>`,
+      footer: `<div class="mini-note"><strong>Select a medicine, then click directly on the affected fish with the eyedropper to give one drop.</strong> Each drop treats only that fish. For Calming Serum, click anywhere inside the tank to treat all fish. Hover a medicine for its treatment instructions.</div>`,
       closable: true
     }),
     onBodyClick: handleMedicineUtilityOverlayBodyClick

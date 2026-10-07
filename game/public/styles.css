@@ -2802,9 +2802,7 @@ html[data-layout-ratio-lock="true"] body {
 
 
 .tank-stage.is-decor-edit-framed {
-  background:
-    radial-gradient(circle at 50% 34%, rgba(18, 58, 79, 0.72), transparent 48%),
-    linear-gradient(180deg, #061725 0%, #020912 100%);
+  background: #000;
 }
 
 .tank-stage.is-decor-edit-framed .tank-stage-background {
@@ -2833,6 +2831,13 @@ html[data-layout-ratio-lock="true"] body {
   .tank-stage.is-decor-edit-framed .tank-stage-background {
     transition: none;
   }
+}
+
+#editDecorTray,
+#editFishTray,
+#editEquipmentTray,
+#editTankTray {
+  opacity: var(--tank-edit-reveal, 1);
 }
 
 .edit-decor-tray {
@@ -28579,7 +28584,6 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
 .substrate-editor { display: flex; align-items: stretch; gap: 14px; height: 100%; min-height: 0; min-width: 0; overflow-x: auto; overflow-y: hidden; color: #c5f5ff; }
 .substrate-type-choices { display: flex; align-items: center; gap: 4px; flex: 0 0 230px; padding-right: 12px; border-right: 1px solid #2487a6; }
 .substrate-type-choices button { min-width: 64px; padding: 12px 8px; border: 1px solid #17607d; border-radius: 10px; background: #082c41; color: #bceaff; font: 700 11px var(--ui-font-stack); cursor: pointer; }
-.substrate-type-choices button:last-child { min-width: 54px; font-size: 9px; }
 .substrate-type-choices button.is-selected { color: #032638; background: #41d5f4; border-color: #76edff; }
 .substrate-type-choices button:disabled { opacity: .4; cursor: default; }
 .substrate-presets { flex: 1 0 280px; min-width: 0; display: grid; grid-template-rows: 18px minmax(0, 1fr); }
@@ -28602,6 +28606,18 @@ html[data-layout-ratio-lock="true"] .websurf-home-dashboard-main .websurf-status
 .substrate-current-preview { flex: 0 0 84px; display: grid; place-items: center; padding-left: 12px; border-left: 1px solid #2487a6; }
 .substrate-current-preview > svg { width: 76px; height: 76px; border: 2px solid #20b8de; border-radius: 9px; overflow: hidden; background: #031c29; }
 .substrate-sand-colors { display: flex; align-items: center; gap: 22px; padding: 0 15px; }
+.substrate-sand-control { display: grid; align-content: center; justify-items: start; gap: 9px; }
+.substrate-sand-control > strong { font: 700 12px var(--ui-font-stack); color: #73e8ff; }
+.substrate-sand-options { display: flex; align-items: center; gap: 10px; }
+.substrate-sand-options > button, .substrate-color-popover .substrate-original-button { display: flex; align-items: center; gap: 7px; width: auto; min-height: 40px; padding: 6px 10px; border: 1px solid #17607d; border-radius: 10px; background: #082c41; color: #bceaff; font: 700 11px var(--ui-font-stack); cursor: pointer; }
+.substrate-original-button > span { display: block; width: 25px; height: 25px; border-radius: 50%; border: 1px solid #e8ddbf; background: #e8ddbf url("../assets/gravel/alt/sand.webp") center / cover; }
+.substrate-sand-options .substrate-color-button > span { width: 25px; height: 25px; }
+.substrate-sand-options > button[aria-pressed="true"] { border-color: #76edff; background: #14516a; box-shadow: 0 0 0 1px #76edff; }
+.substrate-sand-control .substrate-colorize { gap: 5px; font-size: 11px; }
+.substrate-sand-control .substrate-colorize input { width: 14px; height: 14px; }
+.substrate-sand-control .substrate-colorize:has(input:disabled) { opacity: .5; }
+.substrate-sand-control button:focus-visible { outline: 2px solid white; outline-offset: 2px; }
+.substrate-color-popover .substrate-original-button { grid-column: 1 / -1; margin-bottom: 5px; box-shadow: none; }
 .substrate-sand-colors > span, .substrate-natural-note { align-self: center; font-size: 12px; color: #a5c7d6; }
 .substrate-color-popover { position: fixed; inset: auto; margin: 0; width: 256px; box-sizing: content-box; padding: 12px; border: 2px solid #1db9eb; border-radius: 14px; background: #032335; box-shadow: 0 4px 22px #00121ee0; }
 .substrate-color-popover:popover-open { display: grid; grid-template-columns: repeat(8, 1fr); gap: 5px; }

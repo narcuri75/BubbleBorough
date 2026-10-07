@@ -316,8 +316,10 @@ function markLightweightCausticFloor() {
   mask.context.globalAlpha = 1;
   mask.context.fillStyle = "#fff";
   // Use the same current hill profile as the gravel renderer, including randomization.
-  traceTankFloorMaskPath(mask.context, bounds);
-  mask.context.fill();
+  if (!(runtime.debugGravelImagesHidden && isDebugModeEnabled())) {
+    traceTankFloorMaskPath(mask.context, bounds);
+    mask.context.fill();
+  }
 
   // The loose/contour gravel is rendered on a separate transparent canvas and can
   // protrude above the main floor mask. Add its actual alpha to the receiver mask
@@ -402,17 +404,9 @@ function clearStageDisplaySurfaces() {
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (context === tankContext && editAmount > 0.001) {
-      const gradient = context.createRadialGradient(
-        canvas.width * 0.5,
-        canvas.height * 0.38,
-        Math.min(canvas.width, canvas.height) * 0.08,
-        canvas.width * 0.5,
-        canvas.height * 0.5,
-        Math.max(canvas.width, canvas.height) * 0.72
-      );
-      gradient.addColorStop(0, `rgba(6, 24, 39, ${(0.72 * editAmount).toFixed(3)})`);
-      gradient.addColorStop(1, `rgba(1, 7, 14, ${(0.94 * editAmount).toFixed(3)})`);
-      context.fillStyle = gradient;
+      // The canvas covers the stage CSS, so its edit surround must also be
+      // opaque black to match the viewport letterboxing.
+      context.fillStyle = "#000";
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.restore();
@@ -466,9 +460,6 @@ function drawDecorEditTankBoundary() {
     return;
   }
 
-  const target = getCurrentTank();
-  const shell = getTankShellBounds(target);
-  const frameWidthPx = getViewportPxAsTankVirtual(13.28125);
   const waterlineWidthPx = getViewportPxAsTankVirtual(1.4);
 
   glassContext.save();
@@ -477,25 +468,6 @@ function drawDecorEditTankBoundary() {
   glassContext.lineCap = "round";
   glassContext.shadowColor = `rgba(123, 223, 255, ${(0.5 * amount).toFixed(3)})`;
   glassContext.shadowBlur = getViewportPxAsTankVirtual(18);
-
-  if (shell.shape === "rectangular") {
-    const frame = getDecorEditTankFrameGeometry();
-    const frameGradient = glassContext.createLinearGradient(frame.left, frame.top, frame.left, frame.bottom);
-    frameGradient.addColorStop(0, `rgba(245, 252, 255, ${(0.88 + amount * 0.05).toFixed(3)})`);
-    frameGradient.addColorStop(0.15, `rgba(192, 240, 255, ${(0.8 + amount * 0.07).toFixed(3)})`);
-    frameGradient.addColorStop(0.5, `rgba(136, 214, 247, ${(0.74 + amount * 0.08).toFixed(3)})`);
-    frameGradient.addColorStop(0.85, `rgba(104, 186, 230, ${(0.76 + amount * 0.06).toFixed(3)})`);
-    frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
-    glassContext.strokeStyle = frameGradient;
-    glassContext.lineWidth = frameWidthPx;
-    traceDecorEditRoundedTankPath(glassContext);
-    glassContext.stroke();
-  } else {
-    glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;
-    glassContext.lineWidth = frameWidthPx;
-    traceTankShellPath(glassContext, { tank: target, variant: "outer" });
-    glassContext.stroke();
-  }
 
   glassContext.shadowBlur = getViewportPxAsTankVirtual(7);
   glassContext.strokeStyle = `rgba(226, 249, 255, ${(0.34 * amount).toFixed(3)})`;

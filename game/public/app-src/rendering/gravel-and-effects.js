@@ -185,6 +185,7 @@ function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
   const assets = getCustomGravelLoosePebbleAssets().map((asset) => asset.key).join("|");
   return [
     state.gravelSeed || 1,
+    getTankFloorMaskHillProfile().seed,
     "custom",
     colors,
     colorize,
@@ -201,6 +202,21 @@ function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
     bounds.bottom,
     bounds.baseTop
   ].join("|");
+}
+
+function getCustomGravelPebbleColorIndices(count, rand = Math.random) {
+  // Round cumulative quotas so every rock is assigned and the mix stays close
+  // to the authored bed: 10% back color, 45% middle, 45% front.
+  const backCount = Math.round(count * 0.1);
+  const middleEnd = Math.round(count * 0.55);
+  const indices = Array.from({ length: count }, (_, index) => (
+    index < backCount ? 0 : index < middleEnd ? 1 : 2
+  ));
+  for (let index = indices.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rand() * (index + 1));
+    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
+  }
+  return indices;
 }
 
 function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
@@ -224,12 +240,16 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
     return null;
   }
 
-  const rand = mulberry32((Math.abs(Math.floor(state.gravelSeed || 1)) || 1) ^ 0x51f2e34d);
+  const rand = mulberry32(getTankFloorMaskHillProfile().seed ^ 0x51f2e34d);
+  const colorIndices = getCustomGravelPebbleColorIndices(
+    CUSTOM_GRAVEL_TOP_PEBBLE_COUNT + CUSTOM_GRAVEL_CONTOUR_PEBBLE_COUNT,
+    rand
+  );
   const stamps = [];
 
   const pushPebbleStamp = (x, y, drawPriority = 0, options = {}) => {
     const asset = pebbleAssets[Math.floor(rand() * pebbleAssets.length)] || pebbleAssets[0];
-    const colorIndex = Math.floor(rand() * colors.length);
+    const colorIndex = colorIndices.pop();
     const color = colors[colorIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
     const sprite = getTintedCustomGravelPebble(asset, color, {
       colorize: colorizeSettings[colorIndex],
@@ -261,6 +281,7 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
       width: drawWidth,
       height: drawHeight,
       rotation: randomBetweenWith(rand, -Math.PI, Math.PI),
+      colorIndex,
       drawPriority,
       grounded: options.grounded === true
     });
@@ -295,6 +316,10 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
   }
 
   stamps.sort((left, right) => {
+    // Keep the scarce back-layer color behind the dominant loose rocks.
+    if ((left.colorIndex === 0) !== (right.colorIndex === 0)) {
+      return left.colorIndex === 0 ? -1 : 1;
+    }
     if (left.drawPriority !== right.drawPriority) {
       return left.drawPriority - right.drawPriority;
     }
@@ -329,6 +354,7 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
 }
 
 function getDepthTreatedCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
+  if (runtime.debugGeneratedGravelHidden && isDebugModeEnabled()) return null;
   const sourceCanvas = getCustomGravelTopLayerCanvas(bounds, now);
   if (!sourceCanvas || !areTankDepthEffectsEnabled()) {
     return sourceCanvas;
@@ -586,8 +612,8 @@ function drawNaturalSubstrateFloor() {
   const drawBounds = getNaturalSubstrateDrawBounds(image, getImageAlphaMask(path));
   if (!drawBounds) return false;
   tankContext.save();
-  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorize
-    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: true, cacheScope: "sand" })
+  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorEnabled
+    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: tank.sandColorize, cacheScope: "sand" })
     : null;
   tankContext.drawImage(coloredSand || image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
   tankContext.restore();
@@ -683,20 +709,22 @@ function drawTankFloor(now = Date.now()) {
     return;
   }
 
-  tankContext.save();
-  traceTankFloorMaskPath(tankContext, bounds);
-  tankContext.clip();
-  drawCustomGravelFloor(bounds, now);
-
-  tankContext.restore();
+  const hideGravelImages = runtime.debugGravelImagesHidden && isDebugModeEnabled();
+  if (!hideGravelImages) {
+    tankContext.save();
+    traceTankFloorMaskPath(tankContext, bounds);
+    tankContext.clip();
+    drawCustomGravelFloor(bounds, now);
+    tankContext.restore();
+    drawGravelDepthTreatment(bounds);
+  }
 
   // Treat the continuous gravel bed first, then draw the separately cached loose
   // pebble/contour layer with its own matching depth treatment. This prevents the
   // protruding pebbles above the gravel contour from escaping the depth haze while
   // also avoiding a double tint where they overlap the main bed.
-  drawGravelDepthTreatment(bounds);
   drawCustomGravelLoosePebbles(bounds, now);
-  drawSubstrateGroundShadow(bounds);
+  if (!hideGravelImages) drawSubstrateGroundShadow(bounds);
 }
 
 function getGravelGrimeIntensity(dirtiness = getTankDirtiness(Date.now())) {

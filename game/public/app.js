@@ -3074,6 +3074,7 @@ const TANK_STATE_ACCESSOR_KEYS = Object.freeze([
   "customGravelLayerColorize",
   "substrateStyle",
   "sandColor",
+  "sandColorEnabled",
   "sandColorize",
   "gravelPalette",
   "gravelSeed",
@@ -12797,6 +12798,8 @@ const dom = {
   debugDecorFreezeSwayButton: document.querySelector("#debugDecorFreezeSwayButton"),
   debugDecorCullingButton: document.querySelector("#debugDecorCullingButton"),
   debugDecorShadowCacheButton: document.querySelector("#debugDecorShadowCacheButton"),
+  debugHideGeneratedGravelButton: document.querySelector("#debugHideGeneratedGravelButton"),
+  debugHideGravelImagesButton: document.querySelector("#debugHideGravelImagesButton"),
   debugContinuousDepthGuidesButton: document.querySelector("#debugContinuousDepthGuidesButton"),
   debugTankDepthFrontOffsetSlider: document.querySelector("#debugTankDepthFrontOffsetSlider"),
   debugTankDepthRearOffsetSlider: document.querySelector("#debugTankDepthRearOffsetSlider"),
@@ -13656,6 +13659,8 @@ const runtime = {
   debugDecorFreezeSwayEnabled: false,
   debugDecorCullingDisabled: false,
   debugDecorShadowCacheDisabled: false,
+  debugGeneratedGravelHidden: false,
+  debugGravelImagesHidden: false,
   decorContactShadowMetricsCache: new WeakMap(),
   debugTankDepthGeometryLoaded: false,
   debugTankDepthGeometry: null,
@@ -18946,6 +18951,7 @@ function createTankState(options = {}) {
         ? String(options.substrateStyle)
         : "auto"),
     sandColor: normalizeHexColor(options.sandColor) || "#FFFFFF",
+    sandColorEnabled: typeof options.sandColorEnabled === "boolean" ? options.sandColorEnabled : options.sandColorize === true,
     sandColorize: options.sandColorize === true,
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
     gravelSeed,
@@ -28955,6 +28961,8 @@ function bindEvents() {
   dom.debugDecorFreezeSwayButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorFreezeSwayEnabled"));
   dom.debugDecorCullingButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorCullingDisabled"));
   dom.debugDecorShadowCacheButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorShadowCacheDisabled"));
+  dom.debugHideGeneratedGravelButton?.addEventListener("click", () => toggleDebugGravelVisibility("debugGeneratedGravelHidden"));
+  dom.debugHideGravelImagesButton?.addEventListener("click", () => toggleDebugGravelVisibility("debugGravelImagesHidden"));
   dom.debugContinuousDepthGuidesButton?.addEventListener("click", () => toggleDebugContinuousDepthGuides());
   dom.debugTankDepthFrontOffsetSlider?.addEventListener("input", (event) => {
     setDebugContinuousDepthGeometryFromInput("front", event.currentTarget);
@@ -30081,6 +30089,10 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    if (event.target.closest("[data-sand-original]")) {
+      resetSandColor();
+      return;
+    }
     const picker = event.target.closest("[data-substrate-picker]");
     if (picker) {
       openSubstrateColorPicker(picker.dataset.substratePicker, picker);
@@ -30990,6 +31002,17 @@ function bindEvents() {
         return;
       }
 
+      if (event.target.closest("[data-sand-original]")) {
+        event.stopPropagation();
+        resetSandColor();
+        return;
+      }
+      const picker = event.target.closest("[data-substrate-picker]");
+      if (picker) {
+        event.stopPropagation();
+        openSubstrateColorPicker(picker.dataset.substratePicker, picker);
+        return;
+      }
       const sandColorButton = event.target.closest("[data-sand-color]");
       if (sandColorButton) {
         setSandColor(sandColorButton.dataset.sandColor);
@@ -31986,6 +32009,7 @@ function resetStageRenderViewAfterToolClose() {
     if (normalTarget) {
       runtime.stageEditViewAmount = Number(normalTarget.editAmount) || 0;
       applyStageRenderViewTransform(normalTarget.scale, normalTarget.offsetX, normalTarget.offsetY);
+      window.BubbleBoroughTankFrame?.renderNow({ moving: false });
     }
     dom.tankStage?.classList.remove("is-decor-edit-framed");
   };
@@ -32082,20 +32106,23 @@ function getStageRenderViewTarget() {
   const trayTopCss = clamp((trayRect?.top ?? layout.height) - trayGapCss, layout.height * 0.42, layout.height - 120);
   const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
   const availableWidthCss = Math.max(320, layout.width - sidePaddingCss * 2);
+  const glassFrame = getDecorEditTankFrameGeometry();
+  const barHeight = (window.BubbleBoroughTankFrame?.FRAME_CONFIG.horizontalBarHeight ?? 79) * TANK_WIDTH / layout.width;
+  const framedHeight = glassFrame.height + barHeight * 2;
   const editScale = Math.min(
     coverScale,
     (availableWidthCss * dpr) / TANK_WIDTH,
-    (availableHeightCss * dpr) / TANK_HEIGHT
+    (availableHeightCss * dpr) / framedHeight
   );
   const renderedWidth = TANK_WIDTH * editScale;
-  const renderedHeight = TANK_HEIGHT * editScale;
+  const renderedHeight = framedHeight * editScale;
   const availableTopPx = topPaddingCss * dpr;
   const availableHeightPx = availableHeightCss * dpr;
 
   return {
     scale: editScale,
     offsetX: (displayWidth - renderedWidth) * 0.5,
-    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5),
+    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5) + (barHeight - glassFrame.top) * editScale,
     editAmount: 1
   };
 }
@@ -32199,22 +32226,53 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
   const currentOffsetX = Number(runtime.stageRenderOffsetX) || 0;
   const currentOffsetY = Number(runtime.stageRenderOffsetY) || 0;
   const currentEditAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
-  const nextScale = currentScale + (target.scale - currentScale) * smoothing;
-  const nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
-  const nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
-  const nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+  let nextScale = currentScale + (target.scale - currentScale) * smoothing;
+  let nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
+  let nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
+  let nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+  const opening = !immediate && target.editAmount > currentEditAmount;
+  if (opening) {
+    let transition = runtime.stageRenderOpeningTransition;
+    const targetChanged = !transition || ["scale", "offsetX", "offsetY", "editAmount"].some(
+      (key) => Math.abs(transition.target[key] - target[key]) > 0.0001
+    );
+    if (targetChanged) {
+      transition = runtime.stageRenderOpeningTransition = {
+        target, elapsed: 0,
+        scale: currentScale, offsetX: currentOffsetX, offsetY: currentOffsetY, editAmount: currentEditAmount
+      };
+    }
+    // Ease both ends of entry and finish exactly, without threshold snapping.
+    // A delayed frame must not consume most of the transition in one jump.
+    transition.elapsed += Math.min(elapsedMs, 40);
+    const progress = clamp(transition.elapsed / 420, 0, 1);
+    const eased = progress * progress * (3 - 2 * progress);
+    nextScale = transition.scale + (target.scale - transition.scale) * eased;
+    nextOffsetX = transition.offsetX + (target.offsetX - transition.offsetX) * eased;
+    nextOffsetY = transition.offsetY + (target.offsetY - transition.offsetY) * eased;
+    nextEditAmount = transition.editAmount + (target.editAmount - transition.editAmount) * eased;
+  } else {
+    runtime.stageRenderOpeningTransition = null;
+  }
 
-  runtime.stageEditViewAmount = Math.abs(nextEditAmount - target.editAmount) < 0.001
+  runtime.stageEditViewAmount = !opening && Math.abs(nextEditAmount - target.editAmount) < 0.001
     ? target.editAmount
     : nextEditAmount;
   applyStageRenderViewTransform(
-    Math.abs(nextScale - target.scale) < 0.01 ? target.scale : nextScale,
-    Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
-    Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
+    !opening && Math.abs(nextScale - target.scale) < 0.0001 ? target.scale : nextScale,
+    !opening && Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
+    !opening && Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
   );
   const editFrameActive = target.editAmount > 0.02
     && (runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode);
   dom.tankStage?.classList.toggle("is-decor-edit-framed", editFrameActive && runtime.stageEditViewAmount > 0.02);
+  // Reveal controls as space opens, without changing their measured layout.
+  dom.tankStage?.style.setProperty("--tank-edit-reveal", String(clamp((runtime.stageEditViewAmount - 0.4) / 0.6, 0, 1)));
+  const cameraMoving = Math.abs(runtime.stageRenderScale - target.scale) > 0.0001
+    || Math.abs(runtime.stageRenderOffsetX - target.offsetX) > 0.1
+    || Math.abs(runtime.stageRenderOffsetY - target.offsetY) > 0.1
+    || Math.abs(runtime.stageEditViewAmount - target.editAmount) > 0.001;
+  window.BubbleBoroughTankFrame?.renderNow({ moving: cameraMoving });
 }
 
 function resizeDisplayCanvases() {
@@ -43046,6 +43104,8 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     substrateStyle: normalizeSubstrateStyle(incomingTank.substrateStyle, "custom"),
     sandColor: normalizeHexColor(incomingTank.sandColor) || "#FFFFFF",
+    // Older saves used Colorize to enable the custom sand color.
+    sandColorEnabled: typeof incomingTank.sandColorEnabled === "boolean" ? incomingTank.sandColorEnabled : incomingTank.sandColorize === true,
     sandColorize: incomingTank.sandColorize === true,
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
@@ -43120,6 +43180,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     substrateStyle: incoming?.substrateStyle || "custom",
     sandColor: incoming?.sandColor,
+    sandColorEnabled: incoming?.sandColorEnabled,
     sandColorize: incoming?.sandColorize,
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,
@@ -70003,10 +70064,20 @@ function setTankSubstrateStyle(style) {
 function setSandColor(color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) return false;
-  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorize: true }, save: options.save, render: false });
+  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorEnabled: true }, save: options.save, render: false });
   if (changed) {
     invalidateCustomGravelVisualCaches();
     if (options.render !== false) renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function resetSandColor() {
+  const changed = updateTankAppearance({ changes: { sandColorEnabled: false }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
     renderTank(Date.now());
   }
   return changed;
@@ -70561,6 +70632,27 @@ function syncDebugDecorPerformanceControls(debugMode) {
     button.setAttribute("aria-pressed", String(Boolean(active)));
     const stateLabel = button.querySelector(".debug-decor-option-state");
     if (stateLabel) stateLabel.textContent = active ? "ON" : "OFF";
+  }
+}
+
+function toggleDebugGravelVisibility(key) {
+  if (!isDebugModeEnabled() || !["debugGeneratedGravelHidden", "debugGravelImagesHidden"].includes(key)) return false;
+  runtime[key] = !runtime[key];
+  invalidateCustomGravelVisualCaches();
+  resetDebugFrameProfiler();
+  renderControls(Date.now());
+  return runtime[key];
+}
+
+function syncDebugGravelVisibilityControls(debugMode) {
+  for (const [button, hidden] of [
+    [dom.debugHideGeneratedGravelButton, runtime.debugGeneratedGravelHidden],
+    [dom.debugHideGravelImagesButton, runtime.debugGravelImagesHidden]
+  ]) {
+    if (!button) continue;
+    button.disabled = !debugMode;
+    button.classList.toggle("is-active", Boolean(hidden));
+    button.setAttribute("aria-pressed", String(Boolean(hidden)));
   }
 }
 
@@ -89167,7 +89259,9 @@ function renderEditTankTray() {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
   const randomizeHillButton = dom.editTankTray.querySelector("[data-randomize-gravel-hill]");
-  if (randomizeHillButton) randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel";
+  if (randomizeHillButton) {
+    randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel" || getResolvedTankSubstrateStyle() !== "custom";
+  }
   if (runtime.editTankTrayTab === "water") renderEditTankWaterTypePanel();
 }
 
@@ -91738,8 +91832,11 @@ function renderGravelPalettePreview(colors, key) {
 }
 
 function renderSubstrateColorControl(index, color, colorize, sand = false) {
-  const label = sand ? "Sand Color" : `Color ${index + 1}`;
-  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${sand ? "sand" : index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" ${sand ? "data-sand-colorize" : `data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}"`} ${colorize ? "checked" : ""} />Colorize</label></div>`;
+  if (sand) {
+    return `<div class="substrate-sand-control"><strong>Sand Color</strong><div class="substrate-sand-options" role="group" aria-label="Sand color mode"><button type="button" class="substrate-original-button" data-sand-original aria-pressed="${!state.sandColorEnabled}" title="Restore the natural sand color"><span aria-hidden="true"></span>Original</button><button type="button" class="substrate-color-button" data-substrate-picker="sand" style="--swatch:${color}" aria-label="Choose custom sand color" aria-haspopup="dialog" aria-pressed="${state.sandColorEnabled === true}"><span></span>Custom <b aria-hidden="true">⌄</b></button></div><label class="substrate-colorize" title="Apply the chosen color evenly while keeping the sand shading"><input type="checkbox" data-sand-colorize ${colorize ? "checked" : ""} ${state.sandColorEnabled ? "" : "disabled"} />Colorize</label></div>`;
+  }
+  const label = `Color ${index + 1}`;
+  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}" ${colorize ? "checked" : ""} />Colorize</label></div>`;
 }
 
 function openSubstrateColorPicker(context, button) {
@@ -91751,6 +91848,11 @@ function openSubstrateColorPicker(context, button) {
     popup.setAttribute("popover", "auto");
     popup.setAttribute("role", "dialog");
     popup.addEventListener("click", (event) => {
+      if (event.target.closest("[data-sand-original]")) {
+        resetSandColor();
+        popup.hidePopover();
+        return;
+      }
       const swatch = event.target.closest("[data-substrate-swatch]");
       if (!swatch) return;
       if (popup.dataset.context === "sand") setSandColor(swatch.dataset.substrateSwatch);
@@ -91762,7 +91864,9 @@ function openSubstrateColorPicker(context, button) {
   const active = context === "sand" ? state.sandColor : getActiveCustomGravelLayerColors()[Number(context)];
   popup.dataset.context = context;
   popup.setAttribute("aria-label", context === "sand" ? "Sand colors" : `Gravel color ${Number(context) + 1}`);
-  popup.innerHTML = getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${choice.color === active}"></button>`).join("");
+  const originalSelected = context === "sand" && !state.sandColorEnabled;
+  const originalMarkup = context === "sand" ? `<button type="button" class="substrate-original-button" data-sand-original aria-pressed="${originalSelected}"><span aria-hidden="true"></span>Original sand</button>` : "";
+  popup.innerHTML = originalMarkup + getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${!originalSelected && choice.color === active}"></button>`).join("");
   const bounds = button.getBoundingClientRect();
   popup.style.left = `${Math.max(8, Math.min(window.innerWidth - 288, bounds.left - 110))}px`;
   popup.style.top = `${Math.max(8, bounds.top - 250)}px`;
@@ -91795,9 +91899,9 @@ function renderCustomGravelControls() {
   }
 
   const choices = getCustomGravelColorChoices();
-  const activeSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const savedSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const activeSubstrateStyle = savedSubstrateStyle === "auto" ? getResolvedTankSubstrateStyle() : savedSubstrateStyle;
   const substrateChoices = [
-    ["auto", "Match Water", "Freshwater uses river rock. Saltwater uses sand."],
     ["river-rock", "River Rock", "Natural rounded river-stone substrate."],
     ["sand", "Sand", "Pale fine-grain substrate."],
     ["custom", "Custom Gravel", "Use the three recolorable gravel layers below."]
@@ -91807,7 +91911,7 @@ function renderCustomGravelControls() {
       <div class="custom-gravel-layer-header"><div><strong>Substrate</strong></div></div>
       <div class="shop-button-row">
         ${substrateChoices.map(([value, label, description]) => {
-          const requiredStyle = value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value;
+          const requiredStyle = value;
           const owned = isSubstrateOwned(requiredStyle);
           return `<button type="button" class="small-button ${activeSubstrateStyle === value ? "is-selected" : "alt"}" data-substrate-style="${value}" title="${escapeHtml(owned ? description : `${description} Unlock in BubbleBodega first.`)}" aria-pressed="${activeSubstrateStyle === value}" ${owned ? "" : "disabled"}>${escapeHtml(label)}${owned ? "" : " (Locked)"}</button>`;
         }).join("")}
@@ -91816,7 +91920,7 @@ function renderCustomGravelControls() {
   `;
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
-  const sandMarkup = `<article class="custom-gravel-layer-card"><strong>Sand Color</strong><div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div><label class="cave-colorize-toggle"><input type="checkbox" data-sand-colorize ${state.sandColorize ? "checked" : ""} />Colorize</label></article>`;
+  const sandMarkup = `<article class="custom-gravel-layer-card">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColorEnabled && state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColorEnabled && state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div></article>`;
   const resolvedStyle = getResolvedTankSubstrateStyle();
 
   const layerMarkup = layerCatalog
@@ -91884,7 +91988,7 @@ function renderCustomGravelControls() {
       const selected = preset.colors.every((color, index) => color === activeColors[index]) && activeColorizeSettings.every(Boolean);
       return `<button type="button" class="substrate-preset ${selected ? "is-selected" : ""}" data-gravel-preset="${preset.id}" aria-pressed="${selected}" title="${preset.name}">${renderGravelPalettePreview(preset.colors, `preset-${preset.id}`)}<span>${preset.name}</span></button>`;
     }).join("");
-    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"], ["auto", "Match Water"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>Choose one color for your sand.</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
+    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>${state.sandColorEnabled ? "Custom color applied. Colorize is optional." : "Natural sand. Choose Custom to pick a color."}</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
@@ -91970,6 +92074,7 @@ function renderControls(now) {
     dom.debugFishActionIndicatorsButton.setAttribute("aria-label", dom.debugFishActionIndicatorsButton.title);
   }
   syncDebugDecorPerformanceControls(debugMode);
+  syncDebugGravelVisibilityControls(debugMode);
   if (dom.debugFrameProfilerButton) {
     dom.debugFrameProfilerButton.disabled = !debugMode;
     dom.debugFrameProfilerButton.classList.toggle("is-active", runtime.debugFrameProfilerEnabled);
@@ -101405,8 +101510,10 @@ function markLightweightCausticFloor() {
   mask.context.globalAlpha = 1;
   mask.context.fillStyle = "#fff";
   // Use the same current hill profile as the gravel renderer, including randomization.
-  traceTankFloorMaskPath(mask.context, bounds);
-  mask.context.fill();
+  if (!(runtime.debugGravelImagesHidden && isDebugModeEnabled())) {
+    traceTankFloorMaskPath(mask.context, bounds);
+    mask.context.fill();
+  }
 
   // The loose/contour gravel is rendered on a separate transparent canvas and can
   // protrude above the main floor mask. Add its actual alpha to the receiver mask
@@ -101491,17 +101598,9 @@ function clearStageDisplaySurfaces() {
     context.setTransform(1, 0, 0, 1, 0, 0);
     context.clearRect(0, 0, canvas.width, canvas.height);
     if (context === tankContext && editAmount > 0.001) {
-      const gradient = context.createRadialGradient(
-        canvas.width * 0.5,
-        canvas.height * 0.38,
-        Math.min(canvas.width, canvas.height) * 0.08,
-        canvas.width * 0.5,
-        canvas.height * 0.5,
-        Math.max(canvas.width, canvas.height) * 0.72
-      );
-      gradient.addColorStop(0, `rgba(6, 24, 39, ${(0.72 * editAmount).toFixed(3)})`);
-      gradient.addColorStop(1, `rgba(1, 7, 14, ${(0.94 * editAmount).toFixed(3)})`);
-      context.fillStyle = gradient;
+      // The canvas covers the stage CSS, so its edit surround must also be
+      // opaque black to match the viewport letterboxing.
+      context.fillStyle = "#000";
       context.fillRect(0, 0, canvas.width, canvas.height);
     }
     context.restore();
@@ -101555,9 +101654,6 @@ function drawDecorEditTankBoundary() {
     return;
   }
 
-  const target = getCurrentTank();
-  const shell = getTankShellBounds(target);
-  const frameWidthPx = getViewportPxAsTankVirtual(13.28125);
   const waterlineWidthPx = getViewportPxAsTankVirtual(1.4);
 
   glassContext.save();
@@ -101566,25 +101662,6 @@ function drawDecorEditTankBoundary() {
   glassContext.lineCap = "round";
   glassContext.shadowColor = `rgba(123, 223, 255, ${(0.5 * amount).toFixed(3)})`;
   glassContext.shadowBlur = getViewportPxAsTankVirtual(18);
-
-  if (shell.shape === "rectangular") {
-    const frame = getDecorEditTankFrameGeometry();
-    const frameGradient = glassContext.createLinearGradient(frame.left, frame.top, frame.left, frame.bottom);
-    frameGradient.addColorStop(0, `rgba(245, 252, 255, ${(0.88 + amount * 0.05).toFixed(3)})`);
-    frameGradient.addColorStop(0.15, `rgba(192, 240, 255, ${(0.8 + amount * 0.07).toFixed(3)})`);
-    frameGradient.addColorStop(0.5, `rgba(136, 214, 247, ${(0.74 + amount * 0.08).toFixed(3)})`);
-    frameGradient.addColorStop(0.85, `rgba(104, 186, 230, ${(0.76 + amount * 0.06).toFixed(3)})`);
-    frameGradient.addColorStop(1, `rgba(238, 250, 255, ${(0.86 + amount * 0.05).toFixed(3)})`);
-    glassContext.strokeStyle = frameGradient;
-    glassContext.lineWidth = frameWidthPx;
-    traceDecorEditRoundedTankPath(glassContext);
-    glassContext.stroke();
-  } else {
-    glassContext.strokeStyle = `rgba(214, 246, 255, ${(0.8 + amount * 0.08).toFixed(3)})`;
-    glassContext.lineWidth = frameWidthPx;
-    traceTankShellPath(glassContext, { tank: target, variant: "outer" });
-    glassContext.stroke();
-  }
 
   glassContext.shadowBlur = getViewportPxAsTankVirtual(7);
   glassContext.strokeStyle = `rgba(226, 249, 255, ${(0.34 * amount).toFixed(3)})`;
@@ -103439,6 +103516,7 @@ function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
   const assets = getCustomGravelLoosePebbleAssets().map((asset) => asset.key).join("|");
   return [
     state.gravelSeed || 1,
+    getTankFloorMaskHillProfile().seed,
     "custom",
     colors,
     colorize,
@@ -103455,6 +103533,21 @@ function getCustomGravelTopLayerCacheKey(bounds, now = Date.now()) {
     bounds.bottom,
     bounds.baseTop
   ].join("|");
+}
+
+function getCustomGravelPebbleColorIndices(count, rand = Math.random) {
+  // Round cumulative quotas so every rock is assigned and the mix stays close
+  // to the authored bed: 10% back color, 45% middle, 45% front.
+  const backCount = Math.round(count * 0.1);
+  const middleEnd = Math.round(count * 0.55);
+  const indices = Array.from({ length: count }, (_, index) => (
+    index < backCount ? 0 : index < middleEnd ? 1 : 2
+  ));
+  for (let index = indices.length - 1; index > 0; index -= 1) {
+    const swapIndex = Math.floor(rand() * (index + 1));
+    [indices[index], indices[swapIndex]] = [indices[swapIndex], indices[index]];
+  }
+  return indices;
 }
 
 function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
@@ -103478,12 +103571,16 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
     return null;
   }
 
-  const rand = mulberry32((Math.abs(Math.floor(state.gravelSeed || 1)) || 1) ^ 0x51f2e34d);
+  const rand = mulberry32(getTankFloorMaskHillProfile().seed ^ 0x51f2e34d);
+  const colorIndices = getCustomGravelPebbleColorIndices(
+    CUSTOM_GRAVEL_TOP_PEBBLE_COUNT + CUSTOM_GRAVEL_CONTOUR_PEBBLE_COUNT,
+    rand
+  );
   const stamps = [];
 
   const pushPebbleStamp = (x, y, drawPriority = 0, options = {}) => {
     const asset = pebbleAssets[Math.floor(rand() * pebbleAssets.length)] || pebbleAssets[0];
-    const colorIndex = Math.floor(rand() * colors.length);
+    const colorIndex = colorIndices.pop();
     const color = colors[colorIndex] || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
     const sprite = getTintedCustomGravelPebble(asset, color, {
       colorize: colorizeSettings[colorIndex],
@@ -103515,6 +103612,7 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
       width: drawWidth,
       height: drawHeight,
       rotation: randomBetweenWith(rand, -Math.PI, Math.PI),
+      colorIndex,
       drawPriority,
       grounded: options.grounded === true
     });
@@ -103549,6 +103647,10 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
   }
 
   stamps.sort((left, right) => {
+    // Keep the scarce back-layer color behind the dominant loose rocks.
+    if ((left.colorIndex === 0) !== (right.colorIndex === 0)) {
+      return left.colorIndex === 0 ? -1 : 1;
+    }
     if (left.drawPriority !== right.drawPriority) {
       return left.drawPriority - right.drawPriority;
     }
@@ -103583,6 +103685,7 @@ function getCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
 }
 
 function getDepthTreatedCustomGravelTopLayerCanvas(bounds, now = Date.now()) {
+  if (runtime.debugGeneratedGravelHidden && isDebugModeEnabled()) return null;
   const sourceCanvas = getCustomGravelTopLayerCanvas(bounds, now);
   if (!sourceCanvas || !areTankDepthEffectsEnabled()) {
     return sourceCanvas;
@@ -103840,8 +103943,8 @@ function drawNaturalSubstrateFloor() {
   const drawBounds = getNaturalSubstrateDrawBounds(image, getImageAlphaMask(path));
   if (!drawBounds) return false;
   tankContext.save();
-  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorize
-    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: true, cacheScope: "sand" })
+  const coloredSand = getResolvedTankSubstrateStyle(tank) === "sand" && tank.sandColorEnabled
+    ? getTintedCustomGravelAsset({ path }, tank.sandColor, { colorize: tank.sandColorize, cacheScope: "sand" })
     : null;
   tankContext.drawImage(coloredSand || image, drawBounds.left, drawBounds.top, drawBounds.width, drawBounds.height);
   tankContext.restore();
@@ -103937,20 +104040,22 @@ function drawTankFloor(now = Date.now()) {
     return;
   }
 
-  tankContext.save();
-  traceTankFloorMaskPath(tankContext, bounds);
-  tankContext.clip();
-  drawCustomGravelFloor(bounds, now);
-
-  tankContext.restore();
+  const hideGravelImages = runtime.debugGravelImagesHidden && isDebugModeEnabled();
+  if (!hideGravelImages) {
+    tankContext.save();
+    traceTankFloorMaskPath(tankContext, bounds);
+    tankContext.clip();
+    drawCustomGravelFloor(bounds, now);
+    tankContext.restore();
+    drawGravelDepthTreatment(bounds);
+  }
 
   // Treat the continuous gravel bed first, then draw the separately cached loose
   // pebble/contour layer with its own matching depth treatment. This prevents the
   // protruding pebbles above the gravel contour from escaping the depth haze while
   // also avoiding a double tint where they overlap the main bed.
-  drawGravelDepthTreatment(bounds);
   drawCustomGravelLoosePebbles(bounds, now);
-  drawSubstrateGroundShadow(bounds);
+  if (!hideGravelImages) drawSubstrateGroundShadow(bounds);
 }
 
 function getGravelGrimeIntensity(dirtiness = getTankDirtiness(Date.now())) {

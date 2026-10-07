@@ -1168,6 +1168,8 @@ function bindEvents() {
   dom.debugDecorFreezeSwayButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorFreezeSwayEnabled"));
   dom.debugDecorCullingButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorCullingDisabled"));
   dom.debugDecorShadowCacheButton?.addEventListener("click", () => toggleDebugDecorPerformanceOption("debugDecorShadowCacheDisabled"));
+  dom.debugHideGeneratedGravelButton?.addEventListener("click", () => toggleDebugGravelVisibility("debugGeneratedGravelHidden"));
+  dom.debugHideGravelImagesButton?.addEventListener("click", () => toggleDebugGravelVisibility("debugGravelImagesHidden"));
   dom.debugContinuousDepthGuidesButton?.addEventListener("click", () => toggleDebugContinuousDepthGuides());
   dom.debugTankDepthFrontOffsetSlider?.addEventListener("input", (event) => {
     setDebugContinuousDepthGeometryFromInput("front", event.currentTarget);
@@ -2294,6 +2296,10 @@ function bindEvents() {
   });
   dom.editTankTray?.addEventListener("click", (event) => {
     event.stopPropagation();
+    if (event.target.closest("[data-sand-original]")) {
+      resetSandColor();
+      return;
+    }
     const picker = event.target.closest("[data-substrate-picker]");
     if (picker) {
       openSubstrateColorPicker(picker.dataset.substratePicker, picker);
@@ -3203,6 +3209,17 @@ function bindEvents() {
         return;
       }
 
+      if (event.target.closest("[data-sand-original]")) {
+        event.stopPropagation();
+        resetSandColor();
+        return;
+      }
+      const picker = event.target.closest("[data-substrate-picker]");
+      if (picker) {
+        event.stopPropagation();
+        openSubstrateColorPicker(picker.dataset.substratePicker, picker);
+        return;
+      }
       const sandColorButton = event.target.closest("[data-sand-color]");
       if (sandColorButton) {
         setSandColor(sandColorButton.dataset.sandColor);
@@ -4199,6 +4216,7 @@ function resetStageRenderViewAfterToolClose() {
     if (normalTarget) {
       runtime.stageEditViewAmount = Number(normalTarget.editAmount) || 0;
       applyStageRenderViewTransform(normalTarget.scale, normalTarget.offsetX, normalTarget.offsetY);
+      window.BubbleBoroughTankFrame?.renderNow({ moving: false });
     }
     dom.tankStage?.classList.remove("is-decor-edit-framed");
   };
@@ -4295,20 +4313,23 @@ function getStageRenderViewTarget() {
   const trayTopCss = clamp((trayRect?.top ?? layout.height) - trayGapCss, layout.height * 0.42, layout.height - 120);
   const availableHeightCss = Math.max(220, trayTopCss - topPaddingCss);
   const availableWidthCss = Math.max(320, layout.width - sidePaddingCss * 2);
+  const glassFrame = getDecorEditTankFrameGeometry();
+  const barHeight = (window.BubbleBoroughTankFrame?.FRAME_CONFIG.horizontalBarHeight ?? 79) * TANK_WIDTH / layout.width;
+  const framedHeight = glassFrame.height + barHeight * 2;
   const editScale = Math.min(
     coverScale,
     (availableWidthCss * dpr) / TANK_WIDTH,
-    (availableHeightCss * dpr) / TANK_HEIGHT
+    (availableHeightCss * dpr) / framedHeight
   );
   const renderedWidth = TANK_WIDTH * editScale;
-  const renderedHeight = TANK_HEIGHT * editScale;
+  const renderedHeight = framedHeight * editScale;
   const availableTopPx = topPaddingCss * dpr;
   const availableHeightPx = availableHeightCss * dpr;
 
   return {
     scale: editScale,
     offsetX: (displayWidth - renderedWidth) * 0.5,
-    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5),
+    offsetY: availableTopPx + Math.max(0, (availableHeightPx - renderedHeight) * 0.5) + (barHeight - glassFrame.top) * editScale,
     editAmount: 1
   };
 }
@@ -4412,22 +4433,53 @@ function updateStageRenderView(frameTime = performance.now(), options = {}) {
   const currentOffsetX = Number(runtime.stageRenderOffsetX) || 0;
   const currentOffsetY = Number(runtime.stageRenderOffsetY) || 0;
   const currentEditAmount = clamp(Number(runtime.stageEditViewAmount) || 0, 0, 1);
-  const nextScale = currentScale + (target.scale - currentScale) * smoothing;
-  const nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
-  const nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
-  const nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+  let nextScale = currentScale + (target.scale - currentScale) * smoothing;
+  let nextOffsetX = currentOffsetX + (target.offsetX - currentOffsetX) * smoothing;
+  let nextOffsetY = currentOffsetY + (target.offsetY - currentOffsetY) * smoothing;
+  let nextEditAmount = currentEditAmount + (target.editAmount - currentEditAmount) * smoothing;
+  const opening = !immediate && target.editAmount > currentEditAmount;
+  if (opening) {
+    let transition = runtime.stageRenderOpeningTransition;
+    const targetChanged = !transition || ["scale", "offsetX", "offsetY", "editAmount"].some(
+      (key) => Math.abs(transition.target[key] - target[key]) > 0.0001
+    );
+    if (targetChanged) {
+      transition = runtime.stageRenderOpeningTransition = {
+        target, elapsed: 0,
+        scale: currentScale, offsetX: currentOffsetX, offsetY: currentOffsetY, editAmount: currentEditAmount
+      };
+    }
+    // Ease both ends of entry and finish exactly, without threshold snapping.
+    // A delayed frame must not consume most of the transition in one jump.
+    transition.elapsed += Math.min(elapsedMs, 40);
+    const progress = clamp(transition.elapsed / 420, 0, 1);
+    const eased = progress * progress * (3 - 2 * progress);
+    nextScale = transition.scale + (target.scale - transition.scale) * eased;
+    nextOffsetX = transition.offsetX + (target.offsetX - transition.offsetX) * eased;
+    nextOffsetY = transition.offsetY + (target.offsetY - transition.offsetY) * eased;
+    nextEditAmount = transition.editAmount + (target.editAmount - transition.editAmount) * eased;
+  } else {
+    runtime.stageRenderOpeningTransition = null;
+  }
 
-  runtime.stageEditViewAmount = Math.abs(nextEditAmount - target.editAmount) < 0.001
+  runtime.stageEditViewAmount = !opening && Math.abs(nextEditAmount - target.editAmount) < 0.001
     ? target.editAmount
     : nextEditAmount;
   applyStageRenderViewTransform(
-    Math.abs(nextScale - target.scale) < 0.01 ? target.scale : nextScale,
-    Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
-    Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
+    !opening && Math.abs(nextScale - target.scale) < 0.0001 ? target.scale : nextScale,
+    !opening && Math.abs(nextOffsetX - target.offsetX) < 0.1 ? target.offsetX : nextOffsetX,
+    !opening && Math.abs(nextOffsetY - target.offsetY) < 0.1 ? target.offsetY : nextOffsetY
   );
   const editFrameActive = target.editAmount > 0.02
     && (runtime.editTankMode || runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode);
   dom.tankStage?.classList.toggle("is-decor-edit-framed", editFrameActive && runtime.stageEditViewAmount > 0.02);
+  // Reveal controls as space opens, without changing their measured layout.
+  dom.tankStage?.style.setProperty("--tank-edit-reveal", String(clamp((runtime.stageEditViewAmount - 0.4) / 0.6, 0, 1)));
+  const cameraMoving = Math.abs(runtime.stageRenderScale - target.scale) > 0.0001
+    || Math.abs(runtime.stageRenderOffsetX - target.offsetX) > 0.1
+    || Math.abs(runtime.stageRenderOffsetY - target.offsetY) > 0.1
+    || Math.abs(runtime.stageEditViewAmount - target.editAmount) > 0.001;
+  window.BubbleBoroughTankFrame?.renderNow({ moving: cameraMoving });
 }
 
 function resizeDisplayCanvases() {

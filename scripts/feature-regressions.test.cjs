@@ -2455,6 +2455,83 @@ test("each tank seed gets a stable, subtly different gravel hill mask", () => {
   for (const y of [...first, ...second]) assert.ok(Math.abs(y - bounds.baseTop) < 18);
 });
 
+test("loose gravel uses the bed's color proportions and follows randomized hills through undo and redo", () => {
+  const history = loadDecorLayoutHarness();
+  history.tank.gravelSeed = 101;
+  history.state.gravelSeed = 101;
+  const hill = load("rendering/tank-and-water.js", ["getTankFloorMaskHillProfile", "getTankFloorMaskSurfaceYAtX"], {
+    runtime: history.runtime, getCurrentTank: () => history.tank, TANK_WIDTH: 1600
+  });
+  const utilities = load("core/utilities.js", ["mulberry32", "randomBetweenWith"]);
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const constants = Object.fromEntries([...bootstrap.matchAll(/const (CUSTOM_GRAVEL_(?:TOP|CONTOUR)_PEBBLE_\w+) = ([\d.]+);/g)]
+    .map(([, name, value]) => [name, Number(value)]));
+  let builds = 0;
+  const colors = ["back", "middle", "front"];
+  const colorize = [false, true, false];
+  const gravel = load("rendering/gravel-and-effects.js", [
+    "getCustomGravelTopLayerCacheKey", "getCustomGravelTopLayerCanvas", "getCustomGravelPebbleColorIndices"
+  ], {
+    ...constants, runtime: history.runtime, state: history.state,
+    TANK_WIDTH: 1600, TANK_HEIGHT: 1000,
+    getTankFloorMaskHillProfile: hill.getTankFloorMaskHillProfile,
+    getTankFloorMaskSurfaceYAtX: hill.getTankFloorMaskSurfaceYAtX,
+    mulberry32: utilities.mulberry32, randomBetweenWith: utilities.randomBetweenWith,
+    getCustomGravelLoosePebbleAssets: () => [{ key: "pebble" }],
+    getCustomGravelTopPebbleColors: () => colors,
+    getCustomGravelTopPebbleColorizeSettings: () => colorize,
+    getTintedCustomGravelPebble: (_asset, color, options) => ({ width: 10, height: 10, color, colorize: options.colorize }),
+    document: { createElement() {
+      builds++;
+      const canvas = { draws: [] };
+      let x, y, rotation;
+      canvas.getContext = () => ({
+        save() {}, restore() {}, beginPath() {}, ellipse() {}, fill() {},
+        translate(nextX, nextY) { x = nextX; y = nextY; },
+        rotate(value) { rotation = value; },
+        drawImage(sprite) { canvas.draws.push({ color: sprite.color, colorize: sprite.colorize, x, y, rotation }); }
+      });
+      return canvas;
+    } }
+  });
+  const bounds = { left: 40, right: 1560, drawWidth: 1520, baseTop: 760, bottom: 1000 };
+  const before = gravel.getCustomGravelTopLayerCanvas(bounds);
+  assert.equal(before.draws.length, 460);
+  assert.deepEqual(colors.map(color => before.draws.filter(draw => draw.color === color).length), [46, 207, 207]);
+  assert.ok(before.draws.slice(0, 46).every(draw => draw.color === "back"), "Color 1 stays behind the other rocks");
+  assert.ok(before.draws.every(draw => draw.colorize === colorize[colors.indexOf(draw.color)]));
+  assert.equal(gravel.getCustomGravelTopLayerCanvas(bounds), before, "unchanged frames reuse the border");
+  assert.equal(builds, 1);
+
+  const action = load("ui/customization-actions-and-inventory.js", ["randomizeCurrentTankGravelHill"], {
+    runtime: history.runtime, getCurrentTank: () => history.tank,
+    beginDecorEditHistory: history.beginDecorEditHistory, commitDecorEditHistory: history.commitDecorEditHistory,
+    saveState() {}, showToast() {}
+  });
+  assert.equal(action.randomizeCurrentTankGravelHill(), true);
+  const after = gravel.getCustomGravelTopLayerCanvas(bounds);
+  assert.notDeepEqual(after.draws, before.draws, "randomizing the hill also refreshes loose rock positions");
+  assert.deepEqual(colors.map(color => after.draws.filter(draw => draw.color === color).length), [46, 207, 207]);
+  assert.equal(history.replayDecorEdit("undo"), true);
+  assert.deepEqual(gravel.getCustomGravelTopLayerCanvas(bounds).draws, before.draws);
+  assert.equal(history.replayDecorEdit("redo"), true);
+  assert.deepEqual(gravel.getCustomGravelTopLayerCanvas(bounds).draws, after.draws);
+  colors[1] = "new-middle";
+  const recolored = gravel.getCustomGravelTopLayerCanvas(bounds);
+  assert.equal(recolored.draws.filter(draw => draw.color === "new-middle").length, 207);
+});
+
+test("loose gravel rounds color quotas to whole rocks at different densities", () => {
+  const c = load("rendering/gravel-and-effects.js", ["getCustomGravelPebbleColorIndices"]);
+  for (const count of [0, 1, 7, 20, 53, 200, 260, 460, 1000]) {
+    const indices = c.getCustomGravelPebbleColorIndices(count);
+    assert.equal(indices.length, count);
+    for (const [color, ratio] of [0.1, 0.45, 0.45].entries()) {
+      assert.ok(Math.abs(indices.filter(index => index === color).length - count * ratio) <= 1);
+    }
+  }
+});
+
 test("the gravel editor exposes a fixed-height persisted hill randomizer", () => {
   const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
   const css = fs.readFileSync(path.join(root, "../../public/styles.css"), "utf8");

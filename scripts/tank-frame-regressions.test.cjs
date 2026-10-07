@@ -350,12 +350,18 @@ assert.deepStrictEqual(
 );
 assert.strictEqual(frame.computeTankPresentation(stageRect, 1280, 720, { width: 1440, height: 810 }).editing, false, "Normal cover cropping must not activate the editor frame");
 assert.strictEqual(frame.computeTankPresentation(stageRect, 1280, 720, { width: NaN, height: NaN }, true).editing, false, "Startup without camera geometry must use the stage bounds");
+const insetPresentation = frame.computeTankPresentation(stageRect, 1280, 720, { ...editCamera, insetTop: 4, insetBottom: 6 }, true);
+assert.strictEqual(insetPresentation.aquarium.top, editPresentation.aquarium.top + 4, "Top bar must follow the visible glass edge");
+assert.strictEqual(insetPresentation.aquarium.bottom, editPresentation.aquarium.bottom - 6, "Bottom bar must follow the visible glass edge");
+assert.strictEqual(insetPresentation.scale, editPresentation.scale, "Glass clipping must not change frame thickness");
 
 for (const shellScale of [1, 0.5]) {
   const scale = editPresentation.scale * shellScale;
   const editFrame = frame.computeFrameGeometry(editPresentation.aquarium, sprites, frame.FRAME_CONFIG, "edit", scale);
-  assert.strictEqual(editFrame.top.y, editFrame.aquarium.top);
-  assert.strictEqual(editFrame.bottom.y + editFrame.bottom.height, editFrame.aquarium.bottom);
+  assert.strictEqual(editFrame.top.y + editFrame.top.height, editFrame.aquarium.top);
+  assert.strictEqual(editFrame.bottom.y, editFrame.aquarium.bottom);
+  assert.strictEqual(editFrame["top-left"].y + editFrame["top-left"].height, editFrame.aquarium.top);
+  assert.strictEqual(editFrame["top-right"].y + editFrame["top-right"].height, editFrame.aquarium.top);
   assert.strictEqual(editFrame.left.x, editFrame.aquarium.left);
   assert.strictEqual(editFrame.right.x + editFrame.right.width, editFrame.aquarium.right);
   assert.strictEqual(editFrame.left.height, editFrame.aquarium.height);
@@ -366,8 +372,14 @@ for (const shellScale of [1, 0.5]) {
   const editBadge = frame.computeBadgeGeometry(editFrame, badgeImage, frame.FRAME_CONFIG, scale);
   assert.strictEqual(editBadge.height, frame.FRAME_CONFIG.badgeHeight * scale);
   assert.strictEqual(editBadge.width / editBadge.height, 512 / 171);
-  assert.ok(editBadge.y + editBadge.height <= editFrame.aquarium.bottom, "The badge must stay above the tray along with the bottom frame");
+  assert.ok(editBadge.y + editBadge.height <= editFrame.bottom.y + editFrame.bottom.height, "The badge must stay within the bottom bar");
 }
+
+const movingGlass = { left: 100.123, top: 70.456, right: 1100.789, bottom: 630.654 };
+const movingFrame = frame.computeFrameGeometry(movingGlass, sprites, frame.FRAME_CONFIG, "edit", 0.73, true);
+assert.strictEqual(movingFrame.aquarium.top, movingGlass.top, "Moving frame must retain fractional glass coordinates");
+assert.strictEqual(movingFrame.top.y + movingFrame.top.height, movingGlass.top);
+assert.strictEqual(movingFrame.bottom.y, movingGlass.bottom);
 
 // Exact live-prototype reference size from the calibrated viewer.
 const referenceGeometry = frame.computeFrameGeometry(

@@ -73,18 +73,26 @@ test("wheel depth adjustment requires placement or dragging and ignores overlays
   wheel(event); assert.equal(changes, 2);
 });
 
-test("sand chooses a single color and turns on colorize; gravel presets apply three ordered colors", () => {
-  const state = { sandColor: "#FFFFFF", sandColorize: false };
+test("sand color selection preserves the optional colorize setting; gravel presets apply three ordered colors", () => {
+  const state = { sandColor: "#FFFFFF", sandColorEnabled: false, sandColorize: false };
   let saves = 0;
-  const api = load("tank/appearance-controls.js", ["setSandColor", "setSandColorize", "getGravelColorPresets", "setGravelColorPreset"], {
+  const api = load("tank/appearance-controls.js", ["setSandColor", "resetSandColor", "setSandColorize", "getGravelColorPresets", "setGravelColorPreset"], {
     state, normalizeHexColor: c => /^#[a-f\d]{6}$/i.test(c || "") ? c.toUpperCase() : null,
     updateTankAppearance: ({ changes }) => { Object.assign(state, changes); saves++; return true; },
     invalidateCustomGravelVisualCaches() {}, renderCustomGravelControls() {}, renderTank() {}
   });
   api.setSandColor("#ff4fbf");
-  assert.equal(state.sandColor, "#FF4FBF"); assert.equal(state.sandColorize, true);
+  assert.equal(state.sandColor, "#FF4FBF"); assert.equal(state.sandColorEnabled, true); assert.equal(state.sandColorize, false);
   api.setSandColor("#18D6FF"); assert.equal(state.sandColor, "#18D6FF");
+  api.setSandColorize(true); assert.equal(state.sandColorize, true);
+  api.setSandColor("#FF4FBF"); assert.equal(state.sandColorize, true);
   api.setSandColorize(false); assert.equal(state.sandColorize, false);
+  assert.equal(state.sandColorEnabled, true, "turning off Colorize keeps the custom color applied");
+  api.resetSandColor(); assert.equal(state.sandColorEnabled, false);
+  assert.equal(state.sandColor, "#FF4FBF", "Original remembers the last custom color");
+  api.setSandColor("#FFFFFF"); assert.equal(state.sandColorEnabled, true);
+  assert.equal(state.sandColorize, false);
+  assert.equal(api.setSandColor("invalid"), false);
   assert.equal(api.getGravelColorPresets().length, 11);
   api.setGravelColorPreset("tropical-punch");
   assert.deepEqual([...state.customGravelLayerColors], ["#2F80FF", "#FF4FBF", "#A8FF2A"]);
@@ -93,20 +101,117 @@ test("sand chooses a single color and turns on colorize; gravel presets apply th
   assert.deepEqual([...state.customGravelLayerColors], ["#18D6FF", "#57F000", "#E83DFF"]);
   assert.deepEqual([...state.customGravelLayerColorize], [true, true, true]);
   assert.equal(api.setGravelColorPreset("missing"), false);
-  assert.equal(saves, 5);
+  assert.equal(saves, 9);
 });
 
-test("natural substrate tint is applied only to sand with colorize enabled", () => {
+test("custom sand renders with either blend mode; Original and river rock use the source image", () => {
   const original = { width: 100, height: 100 }, tinted = {};
-  const tank = { sandColor: "#FF4FBF", sandColorize: true };
-  let style = "sand", output;
+  const tank = { sandColor: "#FF4FBF", sandColorEnabled: true, sandColorize: false };
+  let style = "sand", output, blendMode;
   const { drawNaturalSubstrateFloor: draw } = load("rendering/gravel-and-effects.js", ["drawNaturalSubstrateFloor"], {
     getCurrentTank: () => tank, getTankSubstrateAssetPath: () => "sand", runtime: { images: new Map([["sand", original]]) },
     isUsableRuntimeImage: () => true, getImageAlphaMask() {}, getNaturalSubstrateDrawBounds: () => ({ left: 0, top: 0, width: 100, height: 100 }),
-    getResolvedTankSubstrateStyle: () => style, getTintedCustomGravelAsset: () => tinted,
+    getResolvedTankSubstrateStyle: () => style, getTintedCustomGravelAsset: (asset, color, options) => { blendMode = options.colorize; return tinted; },
     tankContext: { save() {}, restore() {}, drawImage: image => { output = image; } }
   });
-  draw(); assert.equal(output, tinted);
-  tank.sandColorize = false; draw(); assert.equal(output, original);
-  tank.sandColorize = true; style = "river-rock"; draw(); assert.equal(output, original);
+  draw(); assert.equal(output, tinted); assert.equal(blendMode, false);
+  tank.sandColorize = true; draw(); assert.equal(output, tinted); assert.equal(blendMode, true);
+  tank.sandColorize = false; draw(); assert.equal(output, tinted); assert.equal(blendMode, false);
+  tank.sandColorEnabled = false; draw(); assert.equal(output, original);
+  tank.sandColorEnabled = true; style = "river-rock"; draw(); assert.equal(output, original);
+});
+
+
+test("sand custom color and Original save per tank independently from Colorize", () => {
+  const tanks = [{ sandColor: "#FFFFFF", sandColorEnabled: false, sandColorize: false }, { sandColor: "#FFFFFF", sandColorEnabled: false, sandColorize: false }];
+  let active = 0, saved, renders = 0;
+  const state = new Proxy({}, { get: (_, key) => tanks[active][key], set: (_, key, value) => { tanks[active][key] = value; return true; } });
+  const api = load("tank/appearance-controls.js", ["updateTankAppearance", "setSandColor", "resetSandColor", "setSandColorize"], {
+    state, normalizeHexColor: c => /^#[a-f\d]{6}$/i.test(c || "") ? c.toUpperCase() : null,
+    completeGameAction: () => { saved = JSON.parse(JSON.stringify(tanks)); },
+    invalidateCustomGravelVisualCaches() {}, renderCustomGravelControls() {}, renderTank() { renders++; }
+  });
+  api.setSandColor("#FF4FBF");
+  assert.equal(saved[0].sandColorEnabled, true); assert.equal(saved[0].sandColorize, false);
+  api.setSandColorize(true); api.resetSandColor();
+  assert.equal(saved[0].sandColorEnabled, false); assert.equal(saved[0].sandColorize, true);
+  assert.equal(api.resetSandColor(), false, "already Original does not resave or render");
+  active = 1; api.setSandColor("#18D6FF");
+  assert.equal(saved[0].sandColorEnabled, false); assert.equal(saved[1].sandColorEnabled, true);
+  assert.equal(saved[1].sandColorize, false); assert.equal(renders, 4);
+});
+
+test("sand saves retain explicit Original and both custom blend modes, with legacy appearance preserved", () => {
+  for (const [file, sourceName] of [["decor/customization.js", "options"], ["core/settings-and-persistence.js", "incomingTank"]]) {
+    const source = ts.createSourceFile(file, fs.readFileSync(path.join(root, file), "utf8"), ts.ScriptTarget.Latest, true);
+    let initializer;
+    function visit(node) {
+      if (ts.isPropertyAssignment(node) && node.name.getText(source) === "sandColorEnabled" && node.initializer.getText(source).startsWith("typeof")) initializer = node.initializer.getText(source);
+      ts.forEachChild(node, visit);
+    }
+    visit(source); assert.ok(initializer);
+    for (const [snapshot, expected] of [
+      [{}, false], [{ sandColorize: false }, false], [{ sandColorize: true }, true],
+      [{ sandColorEnabled: false, sandColorize: true }, false],
+      [{ sandColorEnabled: true, sandColorize: false }, true],
+      [{ sandColorEnabled: true, sandColorize: true }, true]
+    ]) assert.equal(vm.runInNewContext(initializer, { [sourceName]: JSON.parse(JSON.stringify(snapshot)) }), expected);
+  }
+});
+
+
+test("hill randomizer visibility follows gravel selection and the active edit tab", () => {
+  const tank = { substrateStyle: "custom", waterType: "freshwater" };
+  const runtime = { tankEditMode: true, editTankTrayTab: "gravel" };
+  const button = { hidden: true };
+  const tray = { querySelectorAll: () => [], querySelector: () => button };
+  const substrate = load("tank/catalog-and-equipment.js", ["normalizeSubstrateStyle", "getResolvedTankSubstrateStyle"], {
+    getCurrentTank: () => tank, normalizeWaterType: value => value
+  });
+  const { renderEditTankTray } = load("ui/customization-actions-and-inventory.js", ["renderEditTankTray"], {
+    runtime, dom: { editTankTray: tray }, syncTankTrayStageClass() {}, renderEditTankWaterTypePanel() {},
+    getResolvedTankSubstrateStyle: substrate.getResolvedTankSubstrateStyle
+  });
+  const { setTankSubstrateStyle } = load("tank/appearance-controls.js", ["setTankSubstrateStyle"], {
+    runtime, getCurrentTank: () => tank, normalizeSubstrateStyle: substrate.normalizeSubstrateStyle,
+    normalizeWaterType: value => value, isSubstrateOwned: () => true,
+    invalidateCustomGravelVisualCaches() {}, saveState() {}, renderCustomGravelControls() {}, renderUi: renderEditTankTray
+  });
+  renderEditTankTray(); assert.equal(button.hidden, false);
+  for (const style of ["sand", "river-rock", "auto"]) {
+    setTankSubstrateStyle(style); assert.equal(button.hidden, true, style);
+  }
+  setTankSubstrateStyle("custom"); assert.equal(button.hidden, false);
+  for (const tab of ["background", "water"]) {
+    runtime.editTankTrayTab = tab; renderEditTankTray(); assert.equal(button.hidden, true, tab);
+  }
+  runtime.editTankTrayTab = "gravel"; renderEditTankTray(); assert.equal(button.hidden, false);
+});
+
+
+test("the edit canvas surround is opaque black and glass stays transparent", () => {
+  const runtime = { stageEditViewAmount: 1 };
+  function context() {
+    return { fills: [], clears: 0, transform: null,
+      save() {}, restore() {}, setTransform(...matrix) { this.transform = matrix; },
+      clearRect() { this.clears++; },
+      fillRect(...bounds) { this.fills.push({ color: this.fillStyle, bounds, transform: this.transform }); }
+    };
+  }
+  const tankContext = context(), glassContext = context();
+  const dom = { tankCanvas: { width: 1920, height: 1080 }, glassCanvas: { width: 1920, height: 1080 } };
+  const { clearStageDisplaySurfaces } = load("rendering/tank-and-water.js", ["clearStageDisplaySurfaces"], {
+    runtime, tankContext, glassContext, dom, clamp: (v, a, b) => Math.max(a, Math.min(b, v))
+  });
+  for (const amount of [1, 0.5, 0.01]) {
+    runtime.stageEditViewAmount = amount; clearStageDisplaySurfaces();
+    const fill = tankContext.fills.at(-1);
+    assert.equal(fill.color, "#000", "every active edit frame paints solid black over the stage");
+    assert.deepEqual([...fill.bounds], [0, 0, 1920, 1080]);
+    assert.deepEqual([...fill.transform], [1, 0, 0, 1, 0, 0], "the surround covers the screen independently of tank zoom");
+    assert.equal(glassContext.fills.length, 0);
+  }
+  runtime.stageEditViewAmount = 0; clearStageDisplaySurfaces();
+  assert.equal(tankContext.fills.length, 3, "normal viewing retains its transparent surround");
+  assert.equal(tankContext.clears, 4); assert.equal(glassContext.clears, 4);
 });

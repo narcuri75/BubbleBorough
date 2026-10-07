@@ -2286,7 +2286,9 @@ function renderEditTankTray() {
     panel.hidden = panel.dataset.tankTrayPanel !== runtime.editTankTrayTab;
   }
   const randomizeHillButton = dom.editTankTray.querySelector("[data-randomize-gravel-hill]");
-  if (randomizeHillButton) randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel";
+  if (randomizeHillButton) {
+    randomizeHillButton.hidden = runtime.editTankTrayTab !== "gravel" || getResolvedTankSubstrateStyle() !== "custom";
+  }
   if (runtime.editTankTrayTab === "water") renderEditTankWaterTypePanel();
 }
 

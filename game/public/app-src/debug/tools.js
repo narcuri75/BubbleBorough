@@ -113,6 +113,27 @@ function syncDebugDecorPerformanceControls(debugMode) {
   }
 }
 
+function toggleDebugGravelVisibility(key) {
+  if (!isDebugModeEnabled() || !["debugGeneratedGravelHidden", "debugGravelImagesHidden"].includes(key)) return false;
+  runtime[key] = !runtime[key];
+  invalidateCustomGravelVisualCaches();
+  resetDebugFrameProfiler();
+  renderControls(Date.now());
+  return runtime[key];
+}
+
+function syncDebugGravelVisibilityControls(debugMode) {
+  for (const [button, hidden] of [
+    [dom.debugHideGeneratedGravelButton, runtime.debugGeneratedGravelHidden],
+    [dom.debugHideGravelImagesButton, runtime.debugGravelImagesHidden]
+  ]) {
+    if (!button) continue;
+    button.disabled = !debugMode;
+    button.classList.toggle("is-active", Boolean(hidden));
+    button.setAttribute("aria-pressed", String(Boolean(hidden)));
+  }
+}
+
 function syncDebugContinuousDepthGuideControls() {
   const geometry = getDebugTankDepthGeometry();
   if (dom.debugContinuousDepthGuidesButton) {

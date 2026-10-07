@@ -130,6 +130,7 @@ function createTankState(options = {}) {
         ? String(options.substrateStyle)
         : "auto"),
     sandColor: normalizeHexColor(options.sandColor) || "#FFFFFF",
+    sandColorEnabled: typeof options.sandColorEnabled === "boolean" ? options.sandColorEnabled : options.sandColorize === true,
     sandColorize: options.sandColorize === true,
     gravelPalette: Array.isArray(options.gravelPalette) ? options.gravelPalette : getDefaultGravelPalette(),
     gravelSeed,

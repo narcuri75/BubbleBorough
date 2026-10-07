@@ -1834,6 +1834,8 @@ function sanitizeTankStateSnapshot(rawTank, options = {}) {
     customGravelLayerColorize: sanitizeCustomGravelLayerColorizeSettings(incomingTank.customGravelLayerColorize),
     substrateStyle: normalizeSubstrateStyle(incomingTank.substrateStyle, "custom"),
     sandColor: normalizeHexColor(incomingTank.sandColor) || "#FFFFFF",
+    // Older saves used Colorize to enable the custom sand color.
+    sandColorEnabled: typeof incomingTank.sandColorEnabled === "boolean" ? incomingTank.sandColorEnabled : incomingTank.sandColorize === true,
     sandColorize: incomingTank.sandColorize === true,
     gravelPalette: sanitizeGravelPalette(incomingTank.gravelPalette),
     gravelSeed: Number.isFinite(incomingTank.gravelSeed) ? Math.abs(Math.floor(incomingTank.gravelSeed)) : undefined,
@@ -1908,6 +1910,7 @@ function buildLegacyTankFromIncoming(incoming, options = {}) {
     customGravelLayerColorize: incoming?.customGravelLayerColorize,
     substrateStyle: incoming?.substrateStyle || "custom",
     sandColor: incoming?.sandColor,
+    sandColorEnabled: incoming?.sandColorEnabled,
     sandColorize: incoming?.sandColorize,
     gravelPalette: incoming?.gravelPalette,
     gravelSeed: incoming?.gravelSeed,

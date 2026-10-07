@@ -680,8 +680,11 @@ function renderGravelPalettePreview(colors, key) {
 }
 
 function renderSubstrateColorControl(index, color, colorize, sand = false) {
-  const label = sand ? "Sand Color" : `Color ${index + 1}`;
-  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${sand ? "sand" : index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" ${sand ? "data-sand-colorize" : `data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}"`} ${colorize ? "checked" : ""} />Colorize</label></div>`;
+  if (sand) {
+    return `<div class="substrate-sand-control"><strong>Sand Color</strong><div class="substrate-sand-options" role="group" aria-label="Sand color mode"><button type="button" class="substrate-original-button" data-sand-original aria-pressed="${!state.sandColorEnabled}" title="Restore the natural sand color"><span aria-hidden="true"></span>Original</button><button type="button" class="substrate-color-button" data-substrate-picker="sand" style="--swatch:${color}" aria-label="Choose custom sand color" aria-haspopup="dialog" aria-pressed="${state.sandColorEnabled === true}"><span></span>Custom <b aria-hidden="true">⌄</b></button></div><label class="substrate-colorize" title="Apply the chosen color evenly while keeping the sand shading"><input type="checkbox" data-sand-colorize ${colorize ? "checked" : ""} ${state.sandColorEnabled ? "" : "disabled"} />Colorize</label></div>`;
+  }
+  const label = `Color ${index + 1}`;
+  return `<div class="substrate-custom-color"><span>${label}</span><button type="button" class="substrate-color-button" data-substrate-picker="${index}" style="--swatch:${color}" aria-label="Choose ${label}" aria-haspopup="dialog"><span></span><b aria-hidden="true">⌄</b></button><label class="substrate-colorize"><input type="checkbox" data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}" ${colorize ? "checked" : ""} />Colorize</label></div>`;
 }
 
 function openSubstrateColorPicker(context, button) {
@@ -693,6 +696,11 @@ function openSubstrateColorPicker(context, button) {
     popup.setAttribute("popover", "auto");
     popup.setAttribute("role", "dialog");
     popup.addEventListener("click", (event) => {
+      if (event.target.closest("[data-sand-original]")) {
+        resetSandColor();
+        popup.hidePopover();
+        return;
+      }
       const swatch = event.target.closest("[data-substrate-swatch]");
       if (!swatch) return;
       if (popup.dataset.context === "sand") setSandColor(swatch.dataset.substrateSwatch);
@@ -704,7 +712,9 @@ function openSubstrateColorPicker(context, button) {
   const active = context === "sand" ? state.sandColor : getActiveCustomGravelLayerColors()[Number(context)];
   popup.dataset.context = context;
   popup.setAttribute("aria-label", context === "sand" ? "Sand colors" : `Gravel color ${Number(context) + 1}`);
-  popup.innerHTML = getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${choice.color === active}"></button>`).join("");
+  const originalSelected = context === "sand" && !state.sandColorEnabled;
+  const originalMarkup = context === "sand" ? `<button type="button" class="substrate-original-button" data-sand-original aria-pressed="${originalSelected}"><span aria-hidden="true"></span>Original sand</button>` : "";
+  popup.innerHTML = originalMarkup + getCustomGravelColorChoices().map((choice) => `<button type="button" data-substrate-swatch="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)}" aria-pressed="${!originalSelected && choice.color === active}"></button>`).join("");
   const bounds = button.getBoundingClientRect();
   popup.style.left = `${Math.max(8, Math.min(window.innerWidth - 288, bounds.left - 110))}px`;
   popup.style.top = `${Math.max(8, bounds.top - 250)}px`;
@@ -737,9 +747,9 @@ function renderCustomGravelControls() {
   }
 
   const choices = getCustomGravelColorChoices();
-  const activeSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const savedSubstrateStyle = normalizeSubstrateStyle(getCurrentTank()?.substrateStyle, "custom");
+  const activeSubstrateStyle = savedSubstrateStyle === "auto" ? getResolvedTankSubstrateStyle() : savedSubstrateStyle;
   const substrateChoices = [
-    ["auto", "Match Water", "Freshwater uses river rock. Saltwater uses sand."],
     ["river-rock", "River Rock", "Natural rounded river-stone substrate."],
     ["sand", "Sand", "Pale fine-grain substrate."],
     ["custom", "Custom Gravel", "Use the three recolorable gravel layers below."]
@@ -749,7 +759,7 @@ function renderCustomGravelControls() {
       <div class="custom-gravel-layer-header"><div><strong>Substrate</strong></div></div>
       <div class="shop-button-row">
         ${substrateChoices.map(([value, label, description]) => {
-          const requiredStyle = value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value;
+          const requiredStyle = value;
           const owned = isSubstrateOwned(requiredStyle);
           return `<button type="button" class="small-button ${activeSubstrateStyle === value ? "is-selected" : "alt"}" data-substrate-style="${value}" title="${escapeHtml(owned ? description : `${description} Unlock in BubbleBodega first.`)}" aria-pressed="${activeSubstrateStyle === value}" ${owned ? "" : "disabled"}>${escapeHtml(label)}${owned ? "" : " (Locked)"}</button>`;
         }).join("")}
@@ -758,7 +768,7 @@ function renderCustomGravelControls() {
   `;
   const activeColors = getActiveCustomGravelLayerColors();
   const activeColorizeSettings = getActiveCustomGravelLayerColorizeSettings();
-  const sandMarkup = `<article class="custom-gravel-layer-card"><strong>Sand Color</strong><div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div><label class="cave-colorize-toggle"><input type="checkbox" data-sand-colorize ${state.sandColorize ? "checked" : ""} />Colorize</label></article>`;
+  const sandMarkup = `<article class="custom-gravel-layer-card">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<div class="custom-gravel-swatches" role="group" aria-label="Sand color choices">${choices.map((choice) => `<button type="button" class="custom-gravel-color-swatch ${state.sandColorEnabled && state.sandColor === choice.color ? "is-selected" : ""}" data-sand-color="${choice.color}" aria-pressed="${state.sandColorEnabled && state.sandColor === choice.color}" aria-label="${escapeHtml(choice.label)}" title="${escapeHtml(choice.label)}" style="--swatch:${choice.color}"></button>`).join("")}</div></article>`;
   const resolvedStyle = getResolvedTankSubstrateStyle();
 
   const layerMarkup = layerCatalog
@@ -826,7 +836,7 @@ function renderCustomGravelControls() {
       const selected = preset.colors.every((color, index) => color === activeColors[index]) && activeColorizeSettings.every(Boolean);
       return `<button type="button" class="substrate-preset ${selected ? "is-selected" : ""}" data-gravel-preset="${preset.id}" aria-pressed="${selected}" title="${preset.name}">${renderGravelPalettePreview(preset.colors, `preset-${preset.id}`)}<span>${preset.name}</span></button>`;
     }).join("");
-    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"], ["auto", "Match Water"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value === "auto" ? (normalizeWaterType(getCurrentTank()?.waterType, "freshwater") === "saltwater" ? "sand" : "river-rock") : value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>Choose one color for your sand.</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
+    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>${state.sandColorEnabled ? "Custom color applied. Colorize is optional." : "Natural sand. Choose Custom to pick a color."}</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
   }
 }
@@ -912,6 +922,7 @@ function renderControls(now) {
     dom.debugFishActionIndicatorsButton.setAttribute("aria-label", dom.debugFishActionIndicatorsButton.title);
   }
   syncDebugDecorPerformanceControls(debugMode);
+  syncDebugGravelVisibilityControls(debugMode);
   if (dom.debugFrameProfilerButton) {
     dom.debugFrameProfilerButton.disabled = !debugMode;
     dom.debugFrameProfilerButton.classList.toggle("is-active", runtime.debugFrameProfilerEnabled);

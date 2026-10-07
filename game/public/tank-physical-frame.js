@@ -16,6 +16,7 @@
 
   const FRAME_CONFIG = Object.freeze({
     epsilon: 1.5,
+    horizontalBarHeight: 79,
     leftRailOffset: 7,
     rightRailOffset: 8,
     sideTopSeam: 77,
@@ -66,6 +67,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     assetsReady: false,
     assetFailureLogged: false,
     rafId: 0,
+    cameraMoving: false,
+    renderedStageStyle: null,
+    renderedStageClass: null,
     layer: null,
     pieces: null,
     tankStage: null,
@@ -320,11 +324,12 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     });
   }
 
-  function snapAquariumRect(rect) {
-    const left = Math.round(finiteNumber(rect?.left, 0));
-    const top = Math.round(finiteNumber(rect?.top, 0));
-    const right = Math.round(finiteNumber(rect?.right, left));
-    const bottom = Math.round(finiteNumber(rect?.bottom, top));
+  function snapAquariumRect(rect, moving = false) {
+    const snap = moving ? (value) => value : Math.round;
+    const left = snap(finiteNumber(rect?.left, 0));
+    const top = snap(finiteNumber(rect?.top, 0));
+    const right = snap(finiteNumber(rect?.right, left));
+    const bottom = snap(finiteNumber(rect?.bottom, top));
 
     return Object.freeze({
       left,
@@ -336,10 +341,10 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     });
   }
 
-  function computeFrameGeometry(aquariumRect, sprites, config = FRAME_CONFIG, placement = "outside", presentationScale = 1) {
+  function computeFrameGeometry(aquariumRect, sprites, config = FRAME_CONFIG, placement = "outside", presentationScale = 1, moving = false) {
     if (!sprites) return null;
 
-    const tank = snapAquariumRect(aquariumRect);
+    const tank = snapAquariumRect(aquariumRect, moving);
     const ratioLockPresentation = placement === "ratio-lock";
     const editPresentation = placement === "edit";
     const continuousPerimeter = ratioLockPresentation || editPresentation;
@@ -418,18 +423,19 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     */
     const outerLeft = tank.left;
     const outerTop = tank.top;
-    const outerWidth = Math.max(0, Math.round(tank.width));
-    const outerHeight = Math.max(0, Math.round(tank.height));
+    const snapSize = moving ? (value) => value : Math.round;
+    const outerWidth = Math.max(0, snapSize(tank.width));
+    const outerHeight = Math.max(0, snapSize(tank.height));
     const outerRight = outerLeft + outerWidth;
     const outerBottom = outerTop + outerHeight;
 
     const horizontalWidth = Math.max(
       0,
-      Math.round(tank.width - scaled(config.barLeftInset) - scaled(config.barRightInset))
+      snapSize(tank.width - scaled(config.barLeftInset) - scaled(config.barRightInset))
     );
     const seamBoundVerticalHeight = Math.max(
       0,
-      Math.round(tank.height - scaled(config.sideTopSeam) - scaled(config.sideBottomSeam))
+      snapSize(tank.height - scaled(config.sideTopSeam) - scaled(config.sideBottomSeam))
     );
     const edgeReveal = Math.max(0, scaled(config.ratioLockEdgeReveal));
     const verticalHeight = continuousPerimeter ? outerHeight : seamBoundVerticalHeight;
@@ -437,13 +443,14 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     // A Ratio Lock composition can be flush with its browser viewport above
     // and below. Keep only a narrow physical lip visible there, while the side
     // rails stay fully visible and are centered precisely on the glass edge.
-    // Keep the editor frame inside the fitted 16:9 perimeter so its artwork
-    // neither clips at the viewport top nor extends over the tray below.
-    const topBarY = editPresentation ? outerTop : ratioLockPresentation
+    // Editing keeps the bars outside the glass, in their normal edge positions.
+    const topBarY = ratioLockPresentation
       ? outerTop - horizontalBarHeight + edgeReveal
+      : editPresentation ? outerTop - horizontalBarHeight * getSpriteOpaqueBottomRatio(topSprite)
       : outerTop - horizontalBarHeight;
-    const bottomBarY = editPresentation ? outerBottom - horizontalBarHeight : ratioLockPresentation
+    const bottomBarY = ratioLockPresentation
       ? outerBottom - edgeReveal
+      : editPresentation ? outerBottom - horizontalBarHeight * finiteNumber(getSpriteOpaqueBounds(bottomSprite)?.minY, 0) / bottomSprite.sourceHeight
       : outerBottom;
     // Keep the established bar-to-glass placement, then use its opaque-art
     // bottom as the shared zero baseline for both lower corners.
@@ -541,13 +548,13 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       }),
       "top-left": Object.freeze({
         x: topLeftX,
-        y: (editPresentation ? outerTop : ratioLockPresentation ? outerTop - topLeftHeight + edgeReveal : outerTop - topLeftHeight) + topSectionY,
+        y: (ratioLockPresentation ? outerTop - topLeftHeight + edgeReveal : editPresentation ? outerTop - topLeftHeight * getSpriteOpaqueBottomRatio(topLeftSprite) : outerTop - topLeftHeight) + topSectionY,
         width: topLeftWidth,
         height: topLeftHeight
       }),
       "top-right": Object.freeze({
         x: topRightX,
-        y: (editPresentation ? outerTop : ratioLockPresentation ? outerTop - topRightHeight + edgeReveal : outerTop - topRightHeight) + topSectionY,
+        y: (ratioLockPresentation ? outerTop - topRightHeight + edgeReveal : editPresentation ? outerTop - topRightHeight * getSpriteOpaqueBottomRatio(topRightSprite) : outerTop - topRightHeight) + topSectionY,
         width: topRightWidth,
         height: topRightHeight
       }),
@@ -803,12 +810,12 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     });
   }
 
-  function configurePieceCanvas(piece, destination) {
+  function configurePieceCanvas(piece, destination, moving = false) {
     const canvas = piece?.canvas;
     const context = piece?.context;
     if (!canvas || !context || !destination) return null;
 
-    const snapped = snapDestinationRect(destination);
+    const snapped = moving ? destination : snapDestinationRect(destination);
     if (!snapped || snapped.width <= 0 || snapped.height <= 0) {
       canvas.hidden = true;
       return null;
@@ -819,6 +826,16 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       1,
       Math.min(FRAME_CONFIG.maxDevicePixelRatio, finiteNumber(window.devicePixelRatio, 1))
     );
+    // During camera motion, let CSS scale the existing raster. Reallocate and
+    // repaint at the final size once, rather than every animation frame.
+    if (moving && piece.rasterReady && piece.rasterDpr === dpr) {
+      canvas.style.left = `${x}px`;
+      canvas.style.top = `${y}px`;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      canvas.hidden = false;
+      return { ...snapped, repaint: false };
+    }
     const backingWidth = Math.max(1, Math.round(width * dpr));
     const backingHeight = Math.max(1, Math.round(height * dpr));
 
@@ -837,19 +854,22 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     context.imageSmoothingEnabled = true;
     if ("imageSmoothingQuality" in context) context.imageSmoothingQuality = "high";
     context.clearRect(0, 0, width, height);
+    piece.rasterDpr = dpr;
     return snapped;
   }
 
-  function renderSpritePiece(piece, sprite, destination) {
+  function renderSpritePiece(piece, sprite, destination, moving = false) {
     if (!piece?.canvas || !piece?.context || !sprite || !destination) return false;
-    const display = configurePieceCanvas(piece, destination);
+    const display = configurePieceCanvas(piece, destination, moving);
     if (!display) return false;
+    if (display.repaint === false) return true;
 
-    return drawSprite(
+    piece.rasterReady = drawSprite(
       piece.context,
       sprite,
       { x: 0, y: 0, width: display.width, height: display.height }
     );
+    return piece.rasterReady;
   }
 
   function getRatioLockPresentationScale() {
@@ -879,15 +899,18 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     const scaleX = stageRect.width / layoutWidth;
     const scaleY = stageRect.height / layoutHeight;
     const left = stageRect.left + finiteNumber(renderRect.left, 0) * scaleX;
-    const top = stageRect.top + finiteNumber(renderRect.top, 0) * scaleY;
+    const insetTop = Math.max(0, finiteNumber(renderRect.insetTop, 0));
+    const insetBottom = Math.max(0, finiteNumber(renderRect.insetBottom, 0));
+    const glassHeight = Math.max(1, height - insetTop - insetBottom);
+    const top = stageRect.top + (finiteNumber(renderRect.top, 0) + insetTop) * scaleY;
     return {
       aquarium: {
         left,
         top,
         right: left + width * scaleX,
-        bottom: top + height * scaleY,
+        bottom: top + glassHeight * scaleY,
         width: width * scaleX,
-        height: height * scaleY
+        height: glassHeight * scaleY
       },
       editing: true,
       scale: Math.min(width / layoutWidth, height / layoutHeight)
@@ -909,7 +932,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
         left: Number.parseFloat(style.getPropertyValue("--tank-render-left")),
         top: Number.parseFloat(style.getPropertyValue("--tank-render-top")),
         width: Number.parseFloat(style.getPropertyValue("--tank-render-width")),
-        height: Number.parseFloat(style.getPropertyValue("--tank-render-height"))
+        height: Number.parseFloat(style.getPropertyValue("--tank-render-height")),
+        insetTop: Number.parseFloat(style.getPropertyValue("--tank-frame-inset-top")),
+        insetBottom: Number.parseFloat(style.getPropertyValue("--tank-frame-inset-bottom"))
       },
       state.tankStage.classList.contains("is-decor-edit-framed")
     );
@@ -978,7 +1003,8 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       state.sprites,
       FRAME_CONFIG,
       presentation.editing ? "edit" : ratioLockPresentation ? "ratio-lock" : "outside",
-      presentationScale
+      presentationScale,
+      state.cameraMoving
     );
     if (!geometry) {
       state.layer.hidden = true;
@@ -996,7 +1022,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       }
 
       const destination = geometry[role];
-      renderSpritePiece(piece, state.sprites[role], destination);
+      renderSpritePiece(piece, state.sprites[role], destination, state.cameraMoving);
     }
 
     const badge = state.pieces.badge;
@@ -1011,13 +1037,30 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
           presentationScale
         );
         if (destination) {
-          const display = configurePieceCanvas(badge, destination);
-          if (display) badge.context.drawImage(state.badgeImage, 0, 0, display.width, display.height);
+          const display = configurePieceCanvas(badge, destination, state.cameraMoving);
+          if (display && display.repaint !== false) {
+            badge.context.drawImage(state.badgeImage, 0, 0, display.width, display.height);
+            badge.rasterReady = true;
+          }
         } else {
           badge.canvas.hidden = true;
         }
       }
     }
+    state.renderedStageStyle = state.tankStage.getAttribute("style");
+    state.renderedStageClass = state.tankStage.className;
+  }
+
+  function renderNow(options = {}) {
+    if (!options.moving && !state.cameraMoving && !state.rafId && state.tankStage
+      && state.tankStage.getAttribute("style") === state.renderedStageStyle
+      && state.tankStage.className === state.renderedStageClass) return;
+    state.cameraMoving = options.moving === true;
+    if (state.rafId) {
+      cancelAnimationFrame(state.rafId);
+      state.rafId = 0;
+    }
+    render();
   }
 
   function scheduleRender() {
@@ -1148,7 +1191,10 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
       });
       state.observers.push(() => ratioMutationObserver.disconnect());
 
-      const stageMutationObserver = new MutationObserver(scheduleRender);
+      const stageMutationObserver = new MutationObserver(() => {
+        if (state.tankStage.getAttribute("style") !== state.renderedStageStyle
+          || state.tankStage.className !== state.renderedStageClass) scheduleRender();
+      });
       stageMutationObserver.observe(state.tankStage, {
         attributes: true,
         attributeFilter: ["class", "style", "hidden"]
@@ -1333,6 +1379,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     resetDebugCalibration,
     install,
     destroy,
+    renderNow,
     render: scheduleRender
   });
 });

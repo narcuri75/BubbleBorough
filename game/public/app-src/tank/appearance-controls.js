@@ -26,10 +26,20 @@ function setTankSubstrateStyle(style) {
 function setSandColor(color, options = {}) {
   const normalizedColor = normalizeHexColor(color);
   if (!normalizedColor) return false;
-  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorize: true }, save: options.save, render: false });
+  const changed = updateTankAppearance({ changes: { sandColor: normalizedColor, sandColorEnabled: true }, save: options.save, render: false });
   if (changed) {
     invalidateCustomGravelVisualCaches();
     if (options.render !== false) renderCustomGravelControls();
+    renderTank(Date.now());
+  }
+  return changed;
+}
+
+function resetSandColor() {
+  const changed = updateTankAppearance({ changes: { sandColorEnabled: false }, render: false });
+  if (changed) {
+    invalidateCustomGravelVisualCaches();
+    renderCustomGravelControls();
     renderTank(Date.now());
   }
   return changed;

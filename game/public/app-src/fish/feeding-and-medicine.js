@@ -1217,6 +1217,7 @@ function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs =
 function consumeSelectedMedicineDose(medicine) {
   const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
   if (quantity <= 0) return false;
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicine.id, 1);
   state.medicineInventory[medicine.id] = quantity - 1;
   if (state.medicineInventory[medicine.id] <= 0) runtime.medicineModeKey = "";
   return true;

@@ -14847,6 +14847,11 @@ function replayDecorEdit(direction) {
         Object.assign(item, copyDecorEditItem(to));
       }
     }
+    if (typeof recordPurchaseProductUse === "function") {
+      const used = new Map();
+      for (const { from, to } of changes) if (to && !from) used.set(to.decorKey, (used.get(to.decorKey) || 0) + 1);
+      for (const [key, count] of used) recordPurchaseProductUse("decor", key, count);
+    }
     state.decorInventory = Object.fromEntries(Object.entries(inventory).filter(([, count]) => count > 0));
     if (entry.gravelHillChange) {
       getCurrentTank().gravelHillSeed = hillTo;
@@ -14929,10 +14934,12 @@ function applySavedDecorLayout(layoutId, tankId) {
   if (plan.errors.length) return plan.errors.join(" ");
   const remaining = [...state.placedDecor];
   const groups = new Map();
+  const usedFromStorage = new Map();
   const placed = layout.items.map((saved) => {
     let index = remaining.findIndex((item) => item.id === saved.id && item.decorKey === saved.decorKey);
     if (index < 0) index = remaining.findIndex((item) => item.decorKey === saved.decorKey);
     const existing = index >= 0 ? remaining.splice(index, 1)[0] : null;
+    if (!existing) usedFromStorage.set(saved.decorKey, (usedFromStorage.get(saved.decorKey) || 0) + 1);
     const item = { ...existing };
     for (const key of Object.keys(copyDecorEditItem(item))) {
       if (key !== "transitTubeLinkedId") delete item[key];
@@ -14953,6 +14960,9 @@ function applySavedDecorLayout(layoutId, tankId) {
     clearDecorBoroughServiceReservations(item.id);
   }
   state.placedDecor = placed;
+  if (typeof recordPurchaseProductUse === "function") {
+    for (const [key, count] of usedFromStorage) recordPurchaseProductUse("decor", key, count);
+  }
   state.decorInventory = Object.fromEntries(Object.entries(plan.available)
     .map(([key, count]) => [key, count - (plan.required.get(key) || 0)]).filter(([, count]) => count > 0));
   commitDecorEditHistory();
@@ -41513,7 +41523,13 @@ function sanitizePurchaseHistory(rawHistory) {
         image,
         seller,
         cost: clamp(Math.floor(Math.max(0, Number(rawItem.cost) || 0)), 0, MAX_WALLET_COINS),
-        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999)
+        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999),
+        returnTracking: rawItem.returnTracking === true,
+        inventoryKey: typeof rawItem.inventoryKey === "string" ? rawItem.inventoryKey.slice(0, 180) : "",
+        unitsPerProduct: clamp(Math.floor(Number(rawItem.unitsPerProduct) || 1), 1, 999),
+        usedUnits: clamp(Math.floor(Number(rawItem.usedUnits) || 0), 0, 999 * 999),
+        returnedQuantity: clamp(Math.floor(Number(rawItem.returnedQuantity) || 0), 0, Math.floor(Number(rawItem.quantity) || 1)),
+        refundedCoins: clamp(Math.floor(Number(rawItem.refundedCoins) || 0), 0, MAX_WALLET_COINS)
       };
     }).filter(Boolean).slice(0, 100) : [];
     if (!items.length) return null;
@@ -53790,6 +53806,7 @@ function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(),
   );
   const transferred = Math.min(available, remainingCapacity);
   if (transferred <= 0) return 0;
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicineKey, transferred);
   state.medicineInventory[medicineKey] = available - transferred;
   submarine.inventory[normalizedType] += transferred;
   pushEvent(`Loaded ${transferred} ${normalizedType === "calming" ? "calming" : "health"} ${pluralize("drop", transferred)} into the Automated Care Submarine.`, Date.now());
@@ -57414,6 +57431,7 @@ function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs =
 function consumeSelectedMedicineDose(medicine) {
   const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
   if (quantity <= 0) return false;
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicine.id, 1);
   state.medicineInventory[medicine.id] = quantity - 1;
   if (state.medicineInventory[medicine.id] <= 0) runtime.medicineModeKey = "";
   return true;
@@ -61364,6 +61382,13 @@ function recordBubbleBodegaOrder(rawItems) {
   if (!state) return null;
   const items = sanitizePurchaseHistory([{ id: createId("order"), placedAt: Date.now(), items: rawItems }])[0]?.items || [];
   if (!items.length) return null;
+  for (const item of items) {
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    item.returnTracking = true;
+    item.inventoryKey = product.key;
+    item.unitsPerProduct = product.units;
+  }
   const order = {
     id: createId("order"),
     placedAt: Date.now(),
@@ -61402,7 +61427,7 @@ function recordBubbleBodegaOrder(rawItems) {
     remainingCosts.set(cost, remainingCosts.get(cost) - 1);
   }
   saveState();
-  return order;
+  return state.purchaseHistory.find((entry) => entry.id === order.id) || order;
 }
 
 function buyEngineeredAquaticSpecimen() {
@@ -61530,11 +61555,133 @@ function beginEngineeredAquaticSpecimenDesign(orderId = "") {
 }
 
 function getBubbleBodegaAccountData() {
+  ensurePurchaseReturnTracking();
   const session = runtime.cloudSession || getCloudSession();
   return {
     username: getAccountUsernameForUser(session?.user?.id || ""),
-    orders: sanitizePurchaseHistory(state?.purchaseHistory)
+    orders: sanitizePurchaseHistory(state?.purchaseHistory).map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({ ...item, returnStatus: getPurchaseItemReturnStatus(order, item) }))
+    }))
   };
+}
+
+function getPurchaseReturnProduct(item) {
+  const match = /^(buyMedicine|buyDecor):(.+)$/.exec(String(item?.key || ""));
+  if (!match) return null;
+  if (match[1] === "buyMedicine") {
+    const medicine = getMedicineMeta(match[2]);
+    return medicine ? { kind: "medicine", key: medicine.id, units: medicine.bottleDrops, inventory: state.medicineInventory } : null;
+  }
+  const [baseKey, variantKey = ""] = match[2].split(":variant:");
+  const key = item.inventoryKey || resolvePurchasedDecorKey(baseKey, variantKey);
+  return runtime.decorMap.has(key) ? { kind: "decor", key, units: 1, inventory: state.decorInventory } : null;
+}
+
+function ensurePurchaseReturnTracking() {
+  // Older saves pooled inventory without a bottle ledger. Allocate what is
+  // still owned to the newest receipts once, then persist all future usage.
+  const remaining = new Map();
+  let changed = false;
+  const orders = (state.purchaseHistory || []).slice().sort((a, b) => b.placedAt - a.placedAt);
+  for (const order of orders) for (const item of order.items || []) {
+    if (!item.returnTracking) continue;
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    const id = `${product.kind}:${product.key}`;
+    if (!remaining.has(id)) remaining.set(id, Math.max(0, Number(product.inventory?.[product.key]) || 0));
+    remaining.set(id, Math.max(0, remaining.get(id) - Math.max(0, (item.quantity - item.returnedQuantity) * item.unitsPerProduct - item.usedUnits)));
+  }
+  for (const order of orders) for (const item of order.items || []) {
+    if (item.returnTracking) continue;
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    const id = `${product.kind}:${product.key}`;
+    if (!remaining.has(id)) remaining.set(id, Math.max(0, Number(product.inventory?.[product.key]) || 0));
+    // Receipts without a packaging snapshot predate course-sized bottles.
+    // All five medicines were sold in three-drop bottles in those saves.
+    const unitsPerProduct = product.kind === "medicine" ? 3 : product.units;
+    const units = item.quantity * unitsPerProduct;
+    const owned = Math.min(units, remaining.get(id));
+    Object.assign(item, { returnTracking: true, inventoryKey: product.key, unitsPerProduct, usedUnits: units - owned, returnedQuantity: 0, refundedCoins: 0 });
+    remaining.set(id, remaining.get(id) - owned);
+    changed = true;
+  }
+  if (changed) saveState();
+}
+
+function recordPurchaseProductUse(kind, key, units = 1) {
+  ensurePurchaseReturnTracking();
+  let remaining = Math.max(0, Math.floor(Number(units) || 0));
+  const orders = (state.purchaseHistory || []).slice().sort((a, b) => a.placedAt - b.placedAt);
+  if (kind === "decor") {
+    // Reuse previously placed (or untracked) stock before touching a new,
+    // unused purchase of the same decoration. Storage pools identical items.
+    const unused = orders.flatMap((order) => order.items || []).reduce((total, item) => {
+      const product = getPurchaseReturnProduct(item);
+      return total + (product?.kind === kind && product.key === key ? Math.max(0, item.quantity - item.returnedQuantity - item.usedUnits) : 0);
+    }, 0);
+    remaining = Math.max(0, remaining - Math.max(0, (Number(state.decorInventory?.[key]) || 0) - unused));
+  }
+  if (!remaining) return;
+  for (const order of orders) for (const item of order.items || []) {
+    const product = getPurchaseReturnProduct(item);
+    if (!product || product.kind !== kind || product.key !== key) continue;
+    const available = Math.max(0, (item.quantity - item.returnedQuantity) * item.unitsPerProduct - item.usedUnits);
+    const used = Math.min(remaining, available);
+    item.usedUnits += used;
+    remaining -= used;
+    if (!remaining) return;
+  }
+}
+
+function getPurchaseItemReturnStatus(order, item, now = Date.now()) {
+  const returned = Number(item.returnedQuantity) || 0;
+  if (returned >= item.quantity) return { eligible: false, message: `Returned · ${item.refundedCoins} coins refunded` };
+  if (["fish", "cleanup", "food"].includes(item.category) || /^(buyFish|buyFood):/.test(item.key)) return { eligible: false, message: "Fish and food cannot be returned." };
+  const product = getPurchaseReturnProduct(item);
+  if (!product) return { eligible: false, message: "This product cannot be returned." };
+  if (product.kind === "decor" && (now < order.placedAt || new Date(now).toDateString() !== new Date(order.placedAt).toDateString())) return { eligible: false, message: "Decor returns close at midnight on the purchase day." };
+  const unopened = Math.max(0, item.quantity - returned - Math.ceil((Number(item.usedUnits) || 0) / item.unitsPerProduct));
+  const owned = Math.floor(Math.max(0, Number(product.inventory?.[product.key]) || 0) / item.unitsPerProduct);
+  if (!item.returnTracking || !unopened || !owned) return { eligible: false, message: product.kind === "medicine" ? "Only unopened medicine bottles can be returned." : "Only unused decor still in Storage can be returned." };
+  const quantity = Math.min(unopened, owned);
+  const label = product.kind === "medicine" ? `unopened ${quantity === 1 ? "bottle" : "bottles"}` : `unused ${quantity === 1 ? "item" : "items"}`;
+  return { eligible: true, quantity, refund: item.cost, message: `${quantity} ${label} eligible · ${item.cost} coins each` };
+}
+
+function returnBubbleBodegaPurchase(orderId, itemIndex, now = Date.now()) {
+  ensurePurchaseReturnTracking();
+  const order = (state.purchaseHistory || []).find((entry) => entry.id === orderId);
+  const index = Number(itemIndex);
+  const item = Number.isInteger(index) && index >= 0 ? order?.items?.[index] : null;
+  if (!item) return { ok: false, reason: "missing-purchase" };
+  const status = getPurchaseItemReturnStatus(order, item, now);
+  if (!status.eligible) { showToast(status.message); return { ok: false, reason: "ineligible", message: status.message }; }
+  if (state.coins + item.cost > MAX_WALLET_COINS) { showToast("Spend some coins before returning this product so you can receive the full refund."); return { ok: false, reason: "wallet-full" }; }
+  const product = getPurchaseReturnProduct(item);
+  const previous = { inventory: product.inventory[product.key], returned: item.returnedQuantity, refunded: item.refundedCoins, wallet: (state.walletTransactions || []).slice() };
+  try {
+    return performCoinTransaction({
+      amount: item.cost, direction: "credit", refund: true, now, place: "BubbleBodega",
+      receiptLabel: `Returned ${item.name}`, sound: false,
+      apply: () => {
+        product.inventory[product.key] -= item.unitsPerProduct;
+        item.returnedQuantity += 1;
+        item.refundedCoins += item.cost;
+        if (product.kind === "medicine" && !product.inventory[product.key] && runtime.medicineModeKey === product.key) runtime.medicineModeKey = "";
+        if (product.kind === "decor" && !product.inventory[product.key] && runtime.placementMode?.decorKey === product.key) { runtime.placementMode = null; runtime.placementPreview = null; }
+      },
+      toast: `${item.name} returned. ${item.cost} coins refunded.`
+    });
+  } catch (error) {
+    product.inventory[product.key] = previous.inventory;
+    item.returnedQuantity = previous.returned;
+    item.refundedCoins = previous.refunded;
+    state.walletTransactions = previous.wallet;
+    saveState();
+    throw error;
+  }
 }
 
 function recordDailyIncomeCategory(category, amount, now = Date.now()) {
@@ -61609,7 +61756,7 @@ function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
-  if (direction === "credit" && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+  if (direction === "credit" && options.refund !== true && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     const errorMessage = "Income is disabled while Peaceful Mode is enabled.";
     showToast(errorMessage, { force: true, tone: "neutral" });
     return { ok: false, reason: "peaceful-mode-income-disabled", amount, errorMessage };
@@ -61692,6 +61839,7 @@ function buyFood(foodKey, packageId = "") {
 }
 
 function buyMedicine(medicineKey) {
+  ensurePurchaseReturnTracking();
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
     return;
@@ -62463,6 +62611,7 @@ function getDecorPurchaseCost(decorKey) {
 }
 
 function buyDecor(decorKey, options = {}) {
+  ensurePurchaseReturnTracking();
   const resolvedDecorKey = typeof resolvePurchasedDecorKey === "function"
     ? resolvePurchasedDecorKey(decorKey, options.appearanceVariantKey)
     : (typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey);
@@ -62547,6 +62696,7 @@ function buyDecor(decorKey, options = {}) {
 }
 
 function buyAnotherDecor(decorKey) {
+  ensurePurchaseReturnTracking();
   const key = String(decorKey || "");
   const decor = runtime.decorMap.get(key);
   if (!decor) {
@@ -62570,7 +62720,7 @@ function buyAnotherDecor(decorKey) {
   }
 
   const cost = getDecorPurchaseCost(key);
-  return performCoinTransaction({
+  const result = performCoinTransaction({
     amount: cost,
     insufficientMessage: `You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`,
     apply: () => {
@@ -62584,6 +62734,13 @@ function buyAnotherDecor(decorKey) {
     },
     toast: `Another ${decor.name} is waiting in storage.`
   });
+  if (result?.ok && typeof recordBubbleBodegaOrder === "function") {
+    recordBubbleBodegaOrder([{
+      key: `buyDecor:${key}`, inventoryKey: key, name: decor.name, category: "decor", cost, quantity: 1,
+      image: typeof getDecorThumbnailPath === "function" ? getDecorThumbnailPath(decor) : ""
+    }]);
+  }
+  return result;
 }
 
 function getPendingDecorBuyAnotherDetails() {
@@ -63020,6 +63177,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     applyGravity: true
   });
 
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("decor", decorKey, 1);
   state.decorInventory[decorKey] -= 1;
   if (state.decorInventory[decorKey] <= 0) {
     delete state.decorInventory[decorKey];
@@ -65138,6 +65296,7 @@ function sellStoredDecor(decorKey) {
     direction: "credit",
     amount: resaleValue,
     apply: () => {
+      if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("decor", decorKey, 1);
       if (count <= 1) {
         delete state.decorInventory[decorKey];
       } else {
@@ -79689,6 +79848,7 @@ function renderUi(now, options = {}) {
     window.updateWebSurfRoute = updateWebSurfRoute;
     window.showProteusDesignerPage = () => openProteusDesignerPage();
     window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
+    window.returnBubbleBodegaPurchase = returnBubbleBodegaPurchase;
     window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
     window.getBubbleBodegaActiveTankFilter = () => ({
       id: String(getCurrentTank()?.id || ""),
@@ -92466,21 +92626,21 @@ function renderControls(now) {
 
   renderPlacementHint();
 
-  dom.tankStage.style.cursor = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey)
-    ? "none"
-    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
-      ? "grabbing"
-      : (runtime.editTankMode || runtime.fishEditMode)
-        ? "grab"
-        : (runtime.equipmentEditMode || runtime.tankEditMode)
-          ? "default"
-        : "default";
   syncToolbarFastTooltipExperiment();
   renderToolCursor();
 }
 
 function renderToolCursor() {
-  const visible = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey) && runtime.pointerStagePx;
+  const visible = Boolean((runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey) && runtime.pointerStagePx);
+  // Hover handlers hide the tool over UI panels. Restore the native pointer in
+  // the same update so panel padding and gaps never inherit an invisible cursor.
+  dom.tankStage.style.cursor = visible
+    ? "none"
+    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
+      ? "grabbing"
+      : (runtime.editTankMode || runtime.fishEditMode)
+        ? "grab"
+        : "default";
   dom.toolCursor.hidden = !visible;
 
   if (!visible) {
@@ -134432,12 +134592,7 @@ function getFishCareConcerns(fish, now = Date.now()) {
 function getFishCareConditionText(fish, now = Date.now()) {
   const concerns = getFishCareConcerns(fish, now);
   if (!concerns.length) return "No care concern observed";
-  return concerns.map((condition) => {
-    const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
-    const known = fish.careKnowledge?.[slot];
-    const legacyRecovery = slot === "disease" && fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease;
-    return legacyRecovery || known?.episode === getFishCareEpisode(fish, slot) ? formatFishConditionLabel(condition) : "Cause not identified";
-  }).filter((label, index, labels) => labels.indexOf(label) === index).join(" · ");
+  return concerns.map((condition) => formatFishConditionLabel(condition)).join(" · ");
 }
 
 function shiftFishTreatmentTimes(fish, pauseMs) {
@@ -134532,7 +134687,7 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
     return { ok: true, definition, course };
   }
   const matches = definition.slot === "injury" ? fish.healthUnits < getFishMaxHealthUnits(fish) : hasActiveFishDisease(fish) && normalizeFishDiseaseType(fish.diseaseType) === definition.family;
-  if (!matches) return { ok: false, message: "This treatment does not match these symptoms. Recheck the Pharmacy questionnaire." };
+  if (!matches) return { ok: false, message: `${getMedicineMeta(medicineId)?.name || "This medicine"} does not treat ${getFishCareConditionText(fish, now)}. Select the fish to see its care instructions.` };
   // Preserve existing one-dose recoveries from saves made before courses existed.
   if (definition.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING) return { ok: false, message: "The previous treatment is still working. Allow time to recover." };
   return { ok: true, definition, course: null };
@@ -134573,6 +134728,20 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
+  const concerns = getFishCareConcerns(fish, now);
+  const careSummary = concerns.length ? `<article class="fish-care-guide"><strong>What needs care</strong>${concerns.map((condition) => {
+    const medicineId = condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : condition === "injured" ? "firstAid" : "waterStress";
+    const medicine = getMedicineMeta(medicineId);
+    const waterType = typeof getFishStoreWaterType === "function" ? getFishStoreWaterType(getSpeciesForFish(fish)) : "compatible";
+    const definition = getFishTreatmentDefinitions()[medicineId];
+    const dosing = definition ? `Give one drop every 24 hours for ${definition.doses} doses, then allow a final 24-hour healing interval. Keep the tank clean and the fish comfortable.` : "";
+    const advice = condition === "osmotic-stress"
+      ? `Water-type stress can fade color and slow swimming. ${isFishWaterTypeMismatch(fish) ? `Move this fish to ${waterType === "compatible" ? "compatible water" : waterType} first.` : "The water type is now compatible; recovery is underway."} First Aid and Anti-Infection do not fix water-type stress. Osmotic Stress Treatment is an optional six-hour recovery boost after the water is corrected.`
+      : condition === "injured"
+        ? `This fish has missing hearts. ${medicine?.name || "First Aid"} treats that damage; disease or incompatible water may still need separate care. ${dosing}`
+        : `${condition === "parasites" ? "White specks indicate parasites. First Aid and Anti-Infection do not clear parasites." : "Red or cloudy patches indicate infection. First Aid treats missing hearts, but does not clear the infection."} Use ${medicine?.name || medicineId}. ${dosing}`;
+    return `<p><strong>${escapeHtml(formatFishConditionLabel(condition))}:</strong> ${escapeHtml(advice)}</p>`;
+  }).join("")}<p>Buying a bottle stocks your medicine. Select it in Fish Care, then click the affected fish to give one drop. Improvement takes time; check the course below for the next dose.</p></article>` : "";
   const rows = Object.values(fish.treatmentCourses || {}).map((course) => {
     const definition = getFishTreatmentDefinitions()[course.medicineId];
     const medicine = getMedicineMeta(course.medicineId);
@@ -134584,17 +134753,24 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
     return `<article class="fish-care-guide"><strong>${escapeHtml(medicine.name)} · ${course.dosesGiven}/${definition.doses} doses</strong><p>${escapeHtml(status)}</p><p>${escapeHtml(getMedicineTreatmentInstructions(medicine.id))}</p><small>${remaining} drops remaining · ${owned} owned · ${Math.max(0, remaining - owned)} more needed</small></article>`;
   }).join("");
   let support = "";
+  if (isFishCourseOngoing(fish, "disease") || isFishCourseOngoing(fish, "injury")) {
+    const blockers = [];
+    if (isFishWaterTypeMismatch(fish)) blockers.push("move this fish to compatible water");
+    if (getDiseaseTankCleanliness(now) < DISEASE_LOW_CLEANLINESS_THRESHOLD) blockers.push("clean the tank");
+    if (getFishComfort(fish, now).value <= DISEASE_LOW_COMFORT_THRESHOLD) blockers.push("meet this fish's comfort needs");
+    if (blockers.length) support += `<article class="fish-care-guide"><strong>Healing is paused</strong><p>${escapeHtml(`To resume recovery: ${blockers.join("; ")}. Extra drops will not fix these conditions.`)}</p></article>`;
+  }
   if (fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease) {
     const remaining = Math.max(0, DISEASE_RECOVERY_REQUIRED_MS - (Number(fish.diseaseRecoveryProgressMs) || 0));
     support += `<article class="fish-care-guide"><strong>Previous treatment is still working</strong><p>No extra drops are required for this older treatment. About ${Math.ceil(remaining / 3600000)} hours of recovery remain in good conditions.</p></article>`;
   }
-  if ((Number(fish.osmoticStressProgressMs) > 0 && fish.careKnowledge?.water?.episode === getFishCareEpisode(fish, "water")) || Number(fish.waterStressBoostUntil) > now) {
+  if (concerns.includes("osmotic-stress") || Number(fish.waterStressBoostUntil) > now) {
     const remaining = Math.max(0, WATER_STRESS_RECOVERY_REQUIRED_MS - (Number(fish.osmoticRecoveryProgressMs) || 0));
     const boost = Number(fish.waterStressBoostUntil) > now ? ` Recovery boost ends ${new Date(fish.waterStressBoostUntil).toLocaleString()}.` : "";
     support += `<article class="fish-care-guide"><strong>Water recovery</strong><p>${isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to start recovery." : `About ${Math.ceil(remaining / 3600000)} hours of normal recovery remain; an active boost increases recovery speed.`}${escapeHtml(boost)}</p><p>${escapeHtml(getMedicineTreatmentInstructions("waterStress"))}</p></article>`;
   }
   if (Number(fish.calmedUntil) > now) support += `<article class="fish-care-guide"><strong>Calming effect active</strong><p>Ends ${escapeHtml(new Date(fish.calmedUntil).toLocaleString())}.</p><p>${escapeHtml(getMedicineTreatmentInstructions("betaBlocker"))}</p></article>`;
-  return rows + support;
+  return careSummary + rows + support;
 }
 
 function getPharmacySymptomCatalog() {
@@ -134664,7 +134840,7 @@ function getBubbleBodegaMedicineCareProfile(id) {
 function renderPharmacySymptomChecker() {
   const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
   const result = getPharmacyQuizRecommendations(quiz.symptoms);
-  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see.</p></div></header>
+  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see. Select your fish in the aquarium to see its condition and care instructions before buying. Faded color can have several causes.</p></div></header>
     <div class="pharmacy-symptoms">${getPharmacySymptomCatalog().map((entry) => `<label class="pharmacy-symptom ${entry.image && !entry.restricted ? "" : "is-text-only"} ${quiz.symptoms.includes(entry.id) ? "is-selected" : ""}" title="${escapeHtml(entry.text)}"><input type="checkbox" aria-label="${escapeHtml(`${entry.name}: ${entry.text}`)}" data-care-symptom="${entry.id}" ${quiz.symptoms.includes(entry.id) ? "checked" : ""} />${entry.image && !entry.restricted ? `<img ${assetImageAttributes(entry.image)} alt="${escapeHtml(entry.name)} example from the game" />` : `<span class="pharmacy-symptom-text-art" aria-hidden="true">${entry.id === "specks" ? "Look for spots" : entry.id === "wounds" ? "Compare hearts" : entry.id === "lesions" ? "Check both sides" : entry.id === "color" ? "Duller color than usual" : entry.id === "behavior" ? "Hiding, slow swimming, refusing food" : "Fleeing or chasing fish"}</span>`}<strong>${escapeHtml(entry.name)}</strong></label>`).join("")}</div>
     <div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-clear>Clear symptoms</button><button type="button" class="small-button" data-care-find ${!quiz.symptoms.length ? "disabled" : ""}>Find treatments</button></div>
     ${quiz.submitted ? `<div class="pharmacy-results" role="status"><p>${escapeHtml(result.message)}</p><div class="pharmacy-result-cards">${result.medicineIds.map((id) => {

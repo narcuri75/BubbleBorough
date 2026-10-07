@@ -61,6 +61,13 @@ function recordBubbleBodegaOrder(rawItems) {
   if (!state) return null;
   const items = sanitizePurchaseHistory([{ id: createId("order"), placedAt: Date.now(), items: rawItems }])[0]?.items || [];
   if (!items.length) return null;
+  for (const item of items) {
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    item.returnTracking = true;
+    item.inventoryKey = product.key;
+    item.unitsPerProduct = product.units;
+  }
   const order = {
     id: createId("order"),
     placedAt: Date.now(),
@@ -99,7 +106,7 @@ function recordBubbleBodegaOrder(rawItems) {
     remainingCosts.set(cost, remainingCosts.get(cost) - 1);
   }
   saveState();
-  return order;
+  return state.purchaseHistory.find((entry) => entry.id === order.id) || order;
 }
 
 function buyEngineeredAquaticSpecimen() {
@@ -227,11 +234,133 @@ function beginEngineeredAquaticSpecimenDesign(orderId = "") {
 }
 
 function getBubbleBodegaAccountData() {
+  ensurePurchaseReturnTracking();
   const session = runtime.cloudSession || getCloudSession();
   return {
     username: getAccountUsernameForUser(session?.user?.id || ""),
-    orders: sanitizePurchaseHistory(state?.purchaseHistory)
+    orders: sanitizePurchaseHistory(state?.purchaseHistory).map((order) => ({
+      ...order,
+      items: order.items.map((item) => ({ ...item, returnStatus: getPurchaseItemReturnStatus(order, item) }))
+    }))
   };
+}
+
+function getPurchaseReturnProduct(item) {
+  const match = /^(buyMedicine|buyDecor):(.+)$/.exec(String(item?.key || ""));
+  if (!match) return null;
+  if (match[1] === "buyMedicine") {
+    const medicine = getMedicineMeta(match[2]);
+    return medicine ? { kind: "medicine", key: medicine.id, units: medicine.bottleDrops, inventory: state.medicineInventory } : null;
+  }
+  const [baseKey, variantKey = ""] = match[2].split(":variant:");
+  const key = item.inventoryKey || resolvePurchasedDecorKey(baseKey, variantKey);
+  return runtime.decorMap.has(key) ? { kind: "decor", key, units: 1, inventory: state.decorInventory } : null;
+}
+
+function ensurePurchaseReturnTracking() {
+  // Older saves pooled inventory without a bottle ledger. Allocate what is
+  // still owned to the newest receipts once, then persist all future usage.
+  const remaining = new Map();
+  let changed = false;
+  const orders = (state.purchaseHistory || []).slice().sort((a, b) => b.placedAt - a.placedAt);
+  for (const order of orders) for (const item of order.items || []) {
+    if (!item.returnTracking) continue;
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    const id = `${product.kind}:${product.key}`;
+    if (!remaining.has(id)) remaining.set(id, Math.max(0, Number(product.inventory?.[product.key]) || 0));
+    remaining.set(id, Math.max(0, remaining.get(id) - Math.max(0, (item.quantity - item.returnedQuantity) * item.unitsPerProduct - item.usedUnits)));
+  }
+  for (const order of orders) for (const item of order.items || []) {
+    if (item.returnTracking) continue;
+    const product = getPurchaseReturnProduct(item);
+    if (!product) continue;
+    const id = `${product.kind}:${product.key}`;
+    if (!remaining.has(id)) remaining.set(id, Math.max(0, Number(product.inventory?.[product.key]) || 0));
+    // Receipts without a packaging snapshot predate course-sized bottles.
+    // All five medicines were sold in three-drop bottles in those saves.
+    const unitsPerProduct = product.kind === "medicine" ? 3 : product.units;
+    const units = item.quantity * unitsPerProduct;
+    const owned = Math.min(units, remaining.get(id));
+    Object.assign(item, { returnTracking: true, inventoryKey: product.key, unitsPerProduct, usedUnits: units - owned, returnedQuantity: 0, refundedCoins: 0 });
+    remaining.set(id, remaining.get(id) - owned);
+    changed = true;
+  }
+  if (changed) saveState();
+}
+
+function recordPurchaseProductUse(kind, key, units = 1) {
+  ensurePurchaseReturnTracking();
+  let remaining = Math.max(0, Math.floor(Number(units) || 0));
+  const orders = (state.purchaseHistory || []).slice().sort((a, b) => a.placedAt - b.placedAt);
+  if (kind === "decor") {
+    // Reuse previously placed (or untracked) stock before touching a new,
+    // unused purchase of the same decoration. Storage pools identical items.
+    const unused = orders.flatMap((order) => order.items || []).reduce((total, item) => {
+      const product = getPurchaseReturnProduct(item);
+      return total + (product?.kind === kind && product.key === key ? Math.max(0, item.quantity - item.returnedQuantity - item.usedUnits) : 0);
+    }, 0);
+    remaining = Math.max(0, remaining - Math.max(0, (Number(state.decorInventory?.[key]) || 0) - unused));
+  }
+  if (!remaining) return;
+  for (const order of orders) for (const item of order.items || []) {
+    const product = getPurchaseReturnProduct(item);
+    if (!product || product.kind !== kind || product.key !== key) continue;
+    const available = Math.max(0, (item.quantity - item.returnedQuantity) * item.unitsPerProduct - item.usedUnits);
+    const used = Math.min(remaining, available);
+    item.usedUnits += used;
+    remaining -= used;
+    if (!remaining) return;
+  }
+}
+
+function getPurchaseItemReturnStatus(order, item, now = Date.now()) {
+  const returned = Number(item.returnedQuantity) || 0;
+  if (returned >= item.quantity) return { eligible: false, message: `Returned · ${item.refundedCoins} coins refunded` };
+  if (["fish", "cleanup", "food"].includes(item.category) || /^(buyFish|buyFood):/.test(item.key)) return { eligible: false, message: "Fish and food cannot be returned." };
+  const product = getPurchaseReturnProduct(item);
+  if (!product) return { eligible: false, message: "This product cannot be returned." };
+  if (product.kind === "decor" && (now < order.placedAt || new Date(now).toDateString() !== new Date(order.placedAt).toDateString())) return { eligible: false, message: "Decor returns close at midnight on the purchase day." };
+  const unopened = Math.max(0, item.quantity - returned - Math.ceil((Number(item.usedUnits) || 0) / item.unitsPerProduct));
+  const owned = Math.floor(Math.max(0, Number(product.inventory?.[product.key]) || 0) / item.unitsPerProduct);
+  if (!item.returnTracking || !unopened || !owned) return { eligible: false, message: product.kind === "medicine" ? "Only unopened medicine bottles can be returned." : "Only unused decor still in Storage can be returned." };
+  const quantity = Math.min(unopened, owned);
+  const label = product.kind === "medicine" ? `unopened ${quantity === 1 ? "bottle" : "bottles"}` : `unused ${quantity === 1 ? "item" : "items"}`;
+  return { eligible: true, quantity, refund: item.cost, message: `${quantity} ${label} eligible · ${item.cost} coins each` };
+}
+
+function returnBubbleBodegaPurchase(orderId, itemIndex, now = Date.now()) {
+  ensurePurchaseReturnTracking();
+  const order = (state.purchaseHistory || []).find((entry) => entry.id === orderId);
+  const index = Number(itemIndex);
+  const item = Number.isInteger(index) && index >= 0 ? order?.items?.[index] : null;
+  if (!item) return { ok: false, reason: "missing-purchase" };
+  const status = getPurchaseItemReturnStatus(order, item, now);
+  if (!status.eligible) { showToast(status.message); return { ok: false, reason: "ineligible", message: status.message }; }
+  if (state.coins + item.cost > MAX_WALLET_COINS) { showToast("Spend some coins before returning this product so you can receive the full refund."); return { ok: false, reason: "wallet-full" }; }
+  const product = getPurchaseReturnProduct(item);
+  const previous = { inventory: product.inventory[product.key], returned: item.returnedQuantity, refunded: item.refundedCoins, wallet: (state.walletTransactions || []).slice() };
+  try {
+    return performCoinTransaction({
+      amount: item.cost, direction: "credit", refund: true, now, place: "BubbleBodega",
+      receiptLabel: `Returned ${item.name}`, sound: false,
+      apply: () => {
+        product.inventory[product.key] -= item.unitsPerProduct;
+        item.returnedQuantity += 1;
+        item.refundedCoins += item.cost;
+        if (product.kind === "medicine" && !product.inventory[product.key] && runtime.medicineModeKey === product.key) runtime.medicineModeKey = "";
+        if (product.kind === "decor" && !product.inventory[product.key] && runtime.placementMode?.decorKey === product.key) { runtime.placementMode = null; runtime.placementPreview = null; }
+      },
+      toast: `${item.name} returned. ${item.cost} coins refunded.`
+    });
+  } catch (error) {
+    product.inventory[product.key] = previous.inventory;
+    item.returnedQuantity = previous.returned;
+    item.refundedCoins = previous.refunded;
+    state.walletTransactions = previous.wallet;
+    saveState();
+    throw error;
+  }
 }
 
 function recordDailyIncomeCategory(category, amount, now = Date.now()) {
@@ -306,7 +435,7 @@ function resolvePurchasedDecorKey(decorKey, appearanceVariantKey = "") {
 function performCoinTransaction(options = {}) {
   const amount = Math.max(0, Math.floor(Number(options.amount) || 0));
   const direction = options.direction === "credit" ? "credit" : "debit";
-  if (direction === "credit" && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
+  if (direction === "credit" && options.refund !== true && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) {
     const errorMessage = "Income is disabled while Peaceful Mode is enabled.";
     showToast(errorMessage, { force: true, tone: "neutral" });
     return { ok: false, reason: "peaceful-mode-income-disabled", amount, errorMessage };
@@ -389,6 +518,7 @@ function buyFood(foodKey, packageId = "") {
 }
 
 function buyMedicine(medicineKey) {
+  ensurePurchaseReturnTracking();
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
     return;
@@ -1160,6 +1290,7 @@ function getDecorPurchaseCost(decorKey) {
 }
 
 function buyDecor(decorKey, options = {}) {
+  ensurePurchaseReturnTracking();
   const resolvedDecorKey = typeof resolvePurchasedDecorKey === "function"
     ? resolvePurchasedDecorKey(decorKey, options.appearanceVariantKey)
     : (typeof normalizeDecorKey === "function" ? normalizeDecorKey(decorKey) : decorKey);
@@ -1244,6 +1375,7 @@ function buyDecor(decorKey, options = {}) {
 }
 
 function buyAnotherDecor(decorKey) {
+  ensurePurchaseReturnTracking();
   const key = String(decorKey || "");
   const decor = runtime.decorMap.get(key);
   if (!decor) {
@@ -1267,7 +1399,7 @@ function buyAnotherDecor(decorKey) {
   }
 
   const cost = getDecorPurchaseCost(key);
-  return performCoinTransaction({
+  const result = performCoinTransaction({
     amount: cost,
     insufficientMessage: `You need ${cost} ${pluralize("coin", cost)} for another ${decor.name}.`,
     apply: () => {
@@ -1281,6 +1413,13 @@ function buyAnotherDecor(decorKey) {
     },
     toast: `Another ${decor.name} is waiting in storage.`
   });
+  if (result?.ok && typeof recordBubbleBodegaOrder === "function") {
+    recordBubbleBodegaOrder([{
+      key: `buyDecor:${key}`, inventoryKey: key, name: decor.name, category: "decor", cost, quantity: 1,
+      image: typeof getDecorThumbnailPath === "function" ? getDecorThumbnailPath(decor) : ""
+    }]);
+  }
+  return result;
 }
 
 function getPendingDecorBuyAnotherDetails() {

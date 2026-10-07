@@ -47,11 +47,19 @@ const foodEffects = {
 
 const medicineEffects = {
   firstAid: [
-    'Effect: applies to every living fish in the tank, restoring half a heart every 10 seconds for 1 minute (five healing ticks before expiry).',
-    'Also slows active disease progression for 12 hours.',
+    'Treatment course: one drop per affected fish every 24 hours for 3 doses, followed by a final 24-hour healing interval. One bottle covers one full course.',
   ],
   betaBlocker: [
-    'Effect: sets every living fish in the tank to 100% comfort until the next local midnight.',
+    'Effect: one drop calms living fish in the tank for ten minutes. Each bottle contains 3 separate applications; wait until the effect ends before giving another drop.',
+  ],
+  antiParasite: [
+    'Treatment course: one drop per affected fish every 24 hours for 5 doses, followed by a final 24-hour healing interval. One bottle covers one full course.',
+  ],
+  infectionTreatment: [
+    'Treatment course: one drop per affected fish every 24 hours for 5 doses, followed by a final 24-hour healing interval. One bottle covers one full course.',
+  ],
+  waterStress: [
+    'Effect: one drop boosts one fish’s recovery for six hours after correcting its water type. Each bottle contains 3 separate applications; compatible water also allows recovery without medication.',
   ],
 };
 

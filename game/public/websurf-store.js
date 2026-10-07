@@ -393,10 +393,16 @@
             <div><small>TOTAL</small><strong><img src="assets/misc/coin_unicode.webp" alt="" aria-hidden="true" /> ${Number(order.total || 0).toLocaleString()} coins</strong></div>
             <div class="tankazon-order-number"><small>ORDER</small><strong>#${escapeTankazonOrderText(String(order.id || "").slice(-10).toUpperCase())}</strong></div>
           </header>
-          <div class="tankazon-order-products">${(order.items || []).map((item) => `
+          <div class="tankazon-order-products">${(order.items || []).map((item, itemIndex) => `
             <div class="tankazon-order-product">
               <img data-sprite-src="${escapeTankazonOrderText(item.image || "assets/icons/Store_Icon.png")}" alt="" />
-              <div><strong>${escapeTankazonOrderText(item.name || "Store item")}</strong><small>${escapeTankazonOrderText(categoryLabels[item.category] || item.category || "BubbleBodega")}${Number(item.quantity) > 1 ? ` · Quantity: ${Number(item.quantity)}` : ""}</small></div>
+              <div>
+                <strong>${escapeTankazonOrderText(item.name || "Store item")}</strong>
+                <small>${escapeTankazonOrderText(categoryLabels[item.category] || item.category || "BubbleBodega")}${Number(item.quantity) > 1 ? ` · Quantity: ${Number(item.quantity)}` : ""}</small>
+                ${item.returnedQuantity > 0 ? `<span class="tankazon-return-status">${item.returnedQuantity >= item.quantity ? "RETURNED" : "PARTIALLY RETURNED"}</span><small>${item.returnedQuantity < item.quantity ? `${Number(item.returnedQuantity)} of ${Number(item.quantity)} returned · ` : ""}${Number(item.refundedCoins)} coins refunded</small>` : ""}
+                ${item.returnedQuantity >= item.quantity ? "" : `<small>${escapeTankazonOrderText(item.returnStatus?.message || "")}</small>`}
+                ${item.returnStatus?.eligible ? `<button type="button" class="tankazon-return-button" data-return-order="${escapeTankazonOrderText(order.id)}" data-return-item="${itemIndex}">Return one · ${Number(item.cost)} coins refund</button>` : ""}
+              </div>
               <span><img src="assets/misc/coin_unicode.webp" alt="" aria-hidden="true" /> ${Number(item.cost || 0).toLocaleString()}</span>
             </div>`).join("")}</div>
         </article>`).join("") : `<div class="tankazon-orders-empty"><strong>${normalizedQuery ? "No matching purchases" : "No purchases yet"}</strong><span>${normalizedQuery ? "Try a product name, category, date, or order number." : "Your completed BubbleBodega orders will appear here."}</span><button type="button" data-account-shop-now>Continue shopping</button></div>`;
@@ -2615,6 +2621,19 @@
   });
 
   document.addEventListener("click", (event) => {
+    const returnButton = event.target.closest?.("[data-return-order]");
+    if (returnButton) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+      returnButton.disabled = true;
+      try {
+        window.returnBubbleBodegaPurchase?.(returnButton.dataset.returnOrder, Number(returnButton.dataset.returnItem));
+      } catch {
+        window.showToast?.("The return could not be completed. Please try again.");
+      }
+      renderTankazonOrders();
+      return;
+    }
     const cartToggle = event.target.closest?.("[data-toggle-tankazon-cart]");
     if (cartToggle) {
       const store = overlay();

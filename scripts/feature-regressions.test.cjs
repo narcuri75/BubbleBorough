@@ -516,6 +516,62 @@ test("BubbleBodega back restores the prior scroll and focus without resetting se
   assert.equal(c.query(), "danio");
 });
 
+test("tool cursor hands off to the native pointer over panels and keeps the selected tool", () => {
+  for (const [mode, value] of [["cleaningMode", true], ["scoopMode", true], ["feedingModeFoodKey", "basic"], ["medicineModeKey", "firstAid"]]) {
+    const runtime = { [mode]: value, pointerStagePx: null };
+    const toolCursor = {
+      hidden: true, dataset: {}, childElementCount: 0,
+      style: { setProperty() {}, removeProperty() {} },
+      classList: { add() {} },
+      replaceChildren() { this.childElementCount = 0; },
+      append() { this.childElementCount += 1; }
+    };
+    const tankStage = { style: {} };
+    const c = load("ui/scene-controls-and-animation.js", ["renderToolCursor"], {
+      runtime, dom: { tankStage, toolCursor },
+      getActiveToolCursorSpec: () => ({ type: "single", base: "cursor.webp", hotspotX: 50, hotspotY: 50 }),
+      document: { createElement: () => ({ setAttribute() {} }) },
+      setAssetImageSource() {}
+    });
+
+    c.renderToolCursor();
+    assert.equal(tankStage.style.cursor, "default", `${mode}: before entering the tank`);
+    assert.equal(toolCursor.hidden, true);
+    for (let pass = 0; pass < 2; pass++) {
+      runtime.pointerStagePx = { x: 200, y: 100 };
+      c.renderToolCursor();
+      assert.equal(tankStage.style.cursor, "none");
+      assert.equal(toolCursor.hidden, false);
+      assert.equal(toolCursor.childElementCount, 1, "tool art is rebuilt on returning to the tank");
+
+      runtime.pointerStagePx = null; // Existing panel-hover and stage-leave handlers.
+      c.renderToolCursor();
+      assert.equal(tankStage.style.cursor, "default", `${mode}: over panel padding or outside the tank`);
+      assert.equal(toolCursor.hidden, true);
+      assert.equal(runtime[mode], value, "hovering a panel keeps the selected tool active");
+    }
+    runtime[mode] = false;
+    runtime.editTankMode = true;
+    c.renderToolCursor();
+    assert.equal(tankStage.style.cursor, "grab");
+    runtime.dragState = {};
+    c.renderToolCursor();
+    assert.equal(tankStage.style.cursor, "grabbing");
+  }
+});
+
+test("every tank overlay has a native cursor fallback without overriding button cursors", () => {
+  const input = fs.readFileSync(path.join(root, "ui/tank-input.js"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  const overlaySelectors = input.match(/target\.closest\("([^"]+)"\)/)[1].split(",").map(selector => selector.trim());
+  const fallback = styles.match(/:where\(([^)]+)\)\s*\{\s*cursor: default;\s*\}/);
+  assert.ok(fallback, "low-specificity panel cursor fallback must exist");
+  const fallbackSelectors = fallback[1].split(",").map(selector => selector.trim());
+  for (const selector of overlaySelectors) {
+    assert.ok(fallbackSelectors.includes(selector), `${selector} must not inherit cursor: none`);
+  }
+});
+
 function clearFishTurnRendererSessionForTest(fish) {
   if (!fish) return;
   fish.turnRendererBackend = null;

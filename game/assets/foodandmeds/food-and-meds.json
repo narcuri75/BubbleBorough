@@ -310,7 +310,7 @@
       "name": "Anti-Parasite Treatment",
       "description": "For white specks. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.",
       "color": "#76C7A5",
-      "bottleDrops": 3,
+      "bottleDrops": 5,
       "cost": 12,
       "image": "anti-parasite-treatment.png",
       "seller": "Clearwell Laboratories"
@@ -320,7 +320,7 @@
       "name": "Infection Treatment",
       "description": "For red or cloudy lesions. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.",
       "color": "#E58B9B",
-      "bottleDrops": 3,
+      "bottleDrops": 5,
       "cost": 14,
       "image": "infection-treatment.png",
       "seller": "Clearwell Laboratories"

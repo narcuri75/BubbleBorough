@@ -100,6 +100,11 @@ function replayDecorEdit(direction) {
         Object.assign(item, copyDecorEditItem(to));
       }
     }
+    if (typeof recordPurchaseProductUse === "function") {
+      const used = new Map();
+      for (const { from, to } of changes) if (to && !from) used.set(to.decorKey, (used.get(to.decorKey) || 0) + 1);
+      for (const [key, count] of used) recordPurchaseProductUse("decor", key, count);
+    }
     state.decorInventory = Object.fromEntries(Object.entries(inventory).filter(([, count]) => count > 0));
     if (entry.gravelHillChange) {
       getCurrentTank().gravelHillSeed = hillTo;
@@ -182,10 +187,12 @@ function applySavedDecorLayout(layoutId, tankId) {
   if (plan.errors.length) return plan.errors.join(" ");
   const remaining = [...state.placedDecor];
   const groups = new Map();
+  const usedFromStorage = new Map();
   const placed = layout.items.map((saved) => {
     let index = remaining.findIndex((item) => item.id === saved.id && item.decorKey === saved.decorKey);
     if (index < 0) index = remaining.findIndex((item) => item.decorKey === saved.decorKey);
     const existing = index >= 0 ? remaining.splice(index, 1)[0] : null;
+    if (!existing) usedFromStorage.set(saved.decorKey, (usedFromStorage.get(saved.decorKey) || 0) + 1);
     const item = { ...existing };
     for (const key of Object.keys(copyDecorEditItem(item))) {
       if (key !== "transitTubeLinkedId") delete item[key];
@@ -206,6 +213,9 @@ function applySavedDecorLayout(layoutId, tankId) {
     clearDecorBoroughServiceReservations(item.id);
   }
   state.placedDecor = placed;
+  if (typeof recordPurchaseProductUse === "function") {
+    for (const [key, count] of usedFromStorage) recordPurchaseProductUse("decor", key, count);
+  }
   state.decorInventory = Object.fromEntries(Object.entries(plan.available)
     .map(([key, count]) => [key, count - (plan.required.get(key) || 0)]).filter(([, count]) => count > 0));
   commitDecorEditHistory();

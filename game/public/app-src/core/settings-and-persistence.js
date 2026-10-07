@@ -163,7 +163,13 @@ function sanitizePurchaseHistory(rawHistory) {
         image,
         seller,
         cost: clamp(Math.floor(Math.max(0, Number(rawItem.cost) || 0)), 0, MAX_WALLET_COINS),
-        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999)
+        quantity: clamp(Math.floor(Math.max(1, Number(rawItem.quantity) || 1)), 1, 999),
+        returnTracking: rawItem.returnTracking === true,
+        inventoryKey: typeof rawItem.inventoryKey === "string" ? rawItem.inventoryKey.slice(0, 180) : "",
+        unitsPerProduct: clamp(Math.floor(Number(rawItem.unitsPerProduct) || 1), 1, 999),
+        usedUnits: clamp(Math.floor(Number(rawItem.usedUnits) || 0), 0, 999 * 999),
+        returnedQuantity: clamp(Math.floor(Number(rawItem.returnedQuantity) || 0), 0, Math.floor(Number(rawItem.quantity) || 1)),
+        refundedCoins: clamp(Math.floor(Number(rawItem.refundedCoins) || 0), 0, MAX_WALLET_COINS)
       };
     }).filter(Boolean).slice(0, 100) : [];
     if (!items.length) return null;

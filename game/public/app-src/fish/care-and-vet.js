@@ -71,12 +71,7 @@ function getFishCareConcerns(fish, now = Date.now()) {
 function getFishCareConditionText(fish, now = Date.now()) {
   const concerns = getFishCareConcerns(fish, now);
   if (!concerns.length) return "No care concern observed";
-  return concerns.map((condition) => {
-    const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
-    const known = fish.careKnowledge?.[slot];
-    const legacyRecovery = slot === "disease" && fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease;
-    return legacyRecovery || known?.episode === getFishCareEpisode(fish, slot) ? formatFishConditionLabel(condition) : "Cause not identified";
-  }).filter((label, index, labels) => labels.indexOf(label) === index).join(" · ");
+  return concerns.map((condition) => formatFishConditionLabel(condition)).join(" · ");
 }
 
 function shiftFishTreatmentTimes(fish, pauseMs) {
@@ -171,7 +166,7 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
     return { ok: true, definition, course };
   }
   const matches = definition.slot === "injury" ? fish.healthUnits < getFishMaxHealthUnits(fish) : hasActiveFishDisease(fish) && normalizeFishDiseaseType(fish.diseaseType) === definition.family;
-  if (!matches) return { ok: false, message: "This treatment does not match these symptoms. Recheck the Pharmacy questionnaire." };
+  if (!matches) return { ok: false, message: `${getMedicineMeta(medicineId)?.name || "This medicine"} does not treat ${getFishCareConditionText(fish, now)}. Select the fish to see its care instructions.` };
   // Preserve existing one-dose recoveries from saves made before courses existed.
   if (definition.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING) return { ok: false, message: "The previous treatment is still working. Allow time to recover." };
   return { ok: true, definition, course: null };
@@ -212,6 +207,20 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
+  const concerns = getFishCareConcerns(fish, now);
+  const careSummary = concerns.length ? `<article class="fish-care-guide"><strong>What needs care</strong>${concerns.map((condition) => {
+    const medicineId = condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : condition === "injured" ? "firstAid" : "waterStress";
+    const medicine = getMedicineMeta(medicineId);
+    const waterType = typeof getFishStoreWaterType === "function" ? getFishStoreWaterType(getSpeciesForFish(fish)) : "compatible";
+    const definition = getFishTreatmentDefinitions()[medicineId];
+    const dosing = definition ? `Give one drop every 24 hours for ${definition.doses} doses, then allow a final 24-hour healing interval. Keep the tank clean and the fish comfortable.` : "";
+    const advice = condition === "osmotic-stress"
+      ? `Water-type stress can fade color and slow swimming. ${isFishWaterTypeMismatch(fish) ? `Move this fish to ${waterType === "compatible" ? "compatible water" : waterType} first.` : "The water type is now compatible; recovery is underway."} First Aid and Anti-Infection do not fix water-type stress. Osmotic Stress Treatment is an optional six-hour recovery boost after the water is corrected.`
+      : condition === "injured"
+        ? `This fish has missing hearts. ${medicine?.name || "First Aid"} treats that damage; disease or incompatible water may still need separate care. ${dosing}`
+        : `${condition === "parasites" ? "White specks indicate parasites. First Aid and Anti-Infection do not clear parasites." : "Red or cloudy patches indicate infection. First Aid treats missing hearts, but does not clear the infection."} Use ${medicine?.name || medicineId}. ${dosing}`;
+    return `<p><strong>${escapeHtml(formatFishConditionLabel(condition))}:</strong> ${escapeHtml(advice)}</p>`;
+  }).join("")}<p>Buying a bottle stocks your medicine. Select it in Fish Care, then click the affected fish to give one drop. Improvement takes time; check the course below for the next dose.</p></article>` : "";
   const rows = Object.values(fish.treatmentCourses || {}).map((course) => {
     const definition = getFishTreatmentDefinitions()[course.medicineId];
     const medicine = getMedicineMeta(course.medicineId);
@@ -223,17 +232,24 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
     return `<article class="fish-care-guide"><strong>${escapeHtml(medicine.name)} · ${course.dosesGiven}/${definition.doses} doses</strong><p>${escapeHtml(status)}</p><p>${escapeHtml(getMedicineTreatmentInstructions(medicine.id))}</p><small>${remaining} drops remaining · ${owned} owned · ${Math.max(0, remaining - owned)} more needed</small></article>`;
   }).join("");
   let support = "";
+  if (isFishCourseOngoing(fish, "disease") || isFishCourseOngoing(fish, "injury")) {
+    const blockers = [];
+    if (isFishWaterTypeMismatch(fish)) blockers.push("move this fish to compatible water");
+    if (getDiseaseTankCleanliness(now) < DISEASE_LOW_CLEANLINESS_THRESHOLD) blockers.push("clean the tank");
+    if (getFishComfort(fish, now).value <= DISEASE_LOW_COMFORT_THRESHOLD) blockers.push("meet this fish's comfort needs");
+    if (blockers.length) support += `<article class="fish-care-guide"><strong>Healing is paused</strong><p>${escapeHtml(`To resume recovery: ${blockers.join("; ")}. Extra drops will not fix these conditions.`)}</p></article>`;
+  }
   if (fish.diseaseState === DISEASE_STATE_RECOVERING && !fish.treatmentCourses?.disease) {
     const remaining = Math.max(0, DISEASE_RECOVERY_REQUIRED_MS - (Number(fish.diseaseRecoveryProgressMs) || 0));
     support += `<article class="fish-care-guide"><strong>Previous treatment is still working</strong><p>No extra drops are required for this older treatment. About ${Math.ceil(remaining / 3600000)} hours of recovery remain in good conditions.</p></article>`;
   }
-  if ((Number(fish.osmoticStressProgressMs) > 0 && fish.careKnowledge?.water?.episode === getFishCareEpisode(fish, "water")) || Number(fish.waterStressBoostUntil) > now) {
+  if (concerns.includes("osmotic-stress") || Number(fish.waterStressBoostUntil) > now) {
     const remaining = Math.max(0, WATER_STRESS_RECOVERY_REQUIRED_MS - (Number(fish.osmoticRecoveryProgressMs) || 0));
     const boost = Number(fish.waterStressBoostUntil) > now ? ` Recovery boost ends ${new Date(fish.waterStressBoostUntil).toLocaleString()}.` : "";
     support += `<article class="fish-care-guide"><strong>Water recovery</strong><p>${isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to start recovery." : `About ${Math.ceil(remaining / 3600000)} hours of normal recovery remain; an active boost increases recovery speed.`}${escapeHtml(boost)}</p><p>${escapeHtml(getMedicineTreatmentInstructions("waterStress"))}</p></article>`;
   }
   if (Number(fish.calmedUntil) > now) support += `<article class="fish-care-guide"><strong>Calming effect active</strong><p>Ends ${escapeHtml(new Date(fish.calmedUntil).toLocaleString())}.</p><p>${escapeHtml(getMedicineTreatmentInstructions("betaBlocker"))}</p></article>`;
-  return rows + support;
+  return careSummary + rows + support;
 }
 
 function getPharmacySymptomCatalog() {
@@ -303,7 +319,7 @@ function getBubbleBodegaMedicineCareProfile(id) {
 function renderPharmacySymptomChecker() {
   const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
   const result = getPharmacyQuizRecommendations(quiz.symptoms);
-  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see.</p></div></header>
+  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see. Select your fish in the aquarium to see its condition and care instructions before buying. Faded color can have several causes.</p></div></header>
     <div class="pharmacy-symptoms">${getPharmacySymptomCatalog().map((entry) => `<label class="pharmacy-symptom ${entry.image && !entry.restricted ? "" : "is-text-only"} ${quiz.symptoms.includes(entry.id) ? "is-selected" : ""}" title="${escapeHtml(entry.text)}"><input type="checkbox" aria-label="${escapeHtml(`${entry.name}: ${entry.text}`)}" data-care-symptom="${entry.id}" ${quiz.symptoms.includes(entry.id) ? "checked" : ""} />${entry.image && !entry.restricted ? `<img ${assetImageAttributes(entry.image)} alt="${escapeHtml(entry.name)} example from the game" />` : `<span class="pharmacy-symptom-text-art" aria-hidden="true">${entry.id === "specks" ? "Look for spots" : entry.id === "wounds" ? "Compare hearts" : entry.id === "lesions" ? "Check both sides" : entry.id === "color" ? "Duller color than usual" : entry.id === "behavior" ? "Hiding, slow swimming, refusing food" : "Fleeing or chasing fish"}</span>`}<strong>${escapeHtml(entry.name)}</strong></label>`).join("")}</div>
     <div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-clear>Clear symptoms</button><button type="button" class="small-button" data-care-find ${!quiz.symptoms.length ? "disabled" : ""}>Find treatments</button></div>
     ${quiz.submitted ? `<div class="pharmacy-results" role="status"><p>${escapeHtml(result.message)}</p><div class="pharmacy-result-cards">${result.medicineIds.map((id) => {

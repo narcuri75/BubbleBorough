@@ -404,7 +404,7 @@ test("decor purchases enforce calendar availability for ordinary and Buy Another
     isCustomDecorShopKey: () => false, isCustomHideShopKey: () => false,
     showToast() {}, recordWalletTransaction() {}, completeGameAction() {}, pluralize: () => "coins" });
   addFunctions(c, "tank/catalog-and-equipment.js", ["normalizeStringList", "isHalloweenDecor", "isChristmasDecor", "isNewYearDecor", "isSeasonalDecorAvailable"]);
-  addFunctions(c, "store/purchases.js", ["buyDecor", "buyAnotherDecor", "getDecorPurchaseCost", "performCoinTransaction"]);
+  addFunctions(c, "store/purchases.js", ["buyDecor", "buyAnotherDecor", "getDecorPurchaseCost", "performCoinTransaction", "ensurePurchaseReturnTracking", "getPurchaseReturnProduct"]);
   for (const buy of [c.buyDecor, c.buyAnotherDecor]) {
     month = 8;
     for (const item of [halloween, christmas, newYear]) assert.equal(buy(item.key).reason, "out-of-season");

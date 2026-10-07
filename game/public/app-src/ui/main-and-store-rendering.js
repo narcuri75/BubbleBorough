@@ -32,6 +32,7 @@ function renderUi(now, options = {}) {
     window.updateWebSurfRoute = updateWebSurfRoute;
     window.showProteusDesignerPage = () => openProteusDesignerPage();
     window.getBubbleBodegaAccountData = getBubbleBodegaAccountData;
+    window.returnBubbleBodegaPurchase = returnBubbleBodegaPurchase;
     window.activateBubbleBodegaRescueOffer = activateBubbleBodegaRescueOffer;
     window.getBubbleBodegaActiveTankFilter = () => ({
       id: String(getCurrentTank()?.id || ""),

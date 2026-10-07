@@ -650,6 +650,7 @@ function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(),
   );
   const transferred = Math.min(available, remainingCapacity);
   if (transferred <= 0) return 0;
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicineKey, transferred);
   state.medicineInventory[medicineKey] = available - transferred;
   submarine.inventory[normalizedType] += transferred;
   pushEvent(`Loaded ${transferred} ${normalizedType === "calming" ? "calming" : "health"} ${pluralize("drop", transferred)} into the Automated Care Submarine.`, Date.now());

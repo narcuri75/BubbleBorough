@@ -1175,21 +1175,21 @@ function renderControls(now) {
 
   renderPlacementHint();
 
-  dom.tankStage.style.cursor = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey)
-    ? "none"
-    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
-      ? "grabbing"
-      : (runtime.editTankMode || runtime.fishEditMode)
-        ? "grab"
-        : (runtime.equipmentEditMode || runtime.tankEditMode)
-          ? "default"
-        : "default";
   syncToolbarFastTooltipExperiment();
   renderToolCursor();
 }
 
 function renderToolCursor() {
-  const visible = (runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey) && runtime.pointerStagePx;
+  const visible = Boolean((runtime.cleaningMode || runtime.scoopMode || runtime.feedingModeFoodKey || runtime.medicineModeKey) && runtime.pointerStagePx);
+  // Hover handlers hide the tool over UI panels. Restore the native pointer in
+  // the same update so panel padding and gaps never inherit an invisible cursor.
+  dom.tankStage.style.cursor = visible
+    ? "none"
+    : (runtime.dragState || runtime.decorResizeState || runtime.fishDragState || runtime.eggDragState)
+      ? "grabbing"
+      : (runtime.editTankMode || runtime.fishEditMode)
+        ? "grab"
+        : "default";
   dom.toolCursor.hidden = !visible;
 
   if (!visible) {

@@ -92,59 +92,61 @@ Candy made for fish. We’re not entirely sure why they can eat it, but they lov
 
 **About this item**
 
-Fast-acting blue drops for fish that have seen better days. Helps injured fish recover and gives sick fish a little extra strength while they fight off whatever’s bothering them.
+For cuts, wounds and lost hearts. Give one drop per affected fish every 24 hours for 3 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.
 
 **Catalog facts**
 
 - Price: 8 coins
 - Quantity per purchase: 3 drops
-- Effect: applies to every living fish in the tank, restoring half a heart every 10 seconds for 1 minute (five healing ticks before expiry).
-- Also slows active disease progression for 12 hours.
+- Treatment course: one drop per affected fish every 24 hours for 3 doses, followed by a final 24-hour healing interval. One bottle covers one full course.
 
 ### Calming Serum
 
 **About this item**
 
-Gentle yellow drops for fish that could use a little peace and quiet. Helps calm the entire tank and keeps its residents feeling comfortable and content for the rest of the day.
+One drop calms the living fish in the tank for ten minutes. Address the cause of panic or aggression, and wait until the effect ends before giving another drop.
 
 **Catalog facts**
 
 - Price: 10 coins
 - Quantity per purchase: 3 drops
-- Effect: sets every living fish in the tank to 100% comfort until the next local midnight.
+- Effect: one drop calms living fish in the tank for ten minutes. Each bottle contains 3 separate applications; wait until the effect ends before giving another drop.
 
 ### Anti-Parasite Treatment
 
 **About this item**
 
-Targeted Clearwell treatment for external parasites. Clears the active parasite condition, then the fish recovers over the next 24 hours.
+For white specks. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.
 
 **Catalog facts**
 
 - Price: 12 coins
-- Quantity per purchase: 3 drops
+- Quantity per purchase: 5 drops
+- Treatment course: one drop per affected fish every 24 hours for 5 doses, followed by a final 24-hour healing interval. One bottle covers one full course.
 
 ### Infection Treatment
 
 **About this item**
 
-Targeted Clearwell treatment for active infections. Clears the infection, then the fish recovers over the next 24 hours.
+For red or cloudy lesions. Give one drop per affected fish every 24 hours for 5 doses, followed by a final healing day. One missed day delays healing; two consecutive missed days worsen symptoms and restart the course.
 
 **Catalog facts**
 
 - Price: 14 coins
-- Quantity per purchase: 3 drops
+- Quantity per purchase: 5 drops
+- Treatment course: one drop per affected fish every 24 hours for 5 doses, followed by a final 24-hour healing interval. One bottle covers one full course.
 
 ### Osmotic Stress Treatment
 
 **About this item**
 
-Helps a fish recover after a water mismatch has been corrected. It cannot make incompatible water safe.
+Correct the water type first. One drop boosts a fish's recovery for six hours. Wait until the boost ends before giving another drop. Compatible water allows recovery without medication.
 
 **Catalog facts**
 
 - Price: 11 coins
 - Quantity per purchase: 3 drops
+- Effect: one drop boosts one fish’s recovery for six hours after correcting its water type. Each bottle contains 3 separate applications; compatible water also allows recovery without medication.
 
 ## Fish
 

@@ -3855,6 +3855,23 @@ html[data-layout-ratio-lock="true"] body {
   padding: 16px 8px;
 }
 
+/* Panels must not inherit the tank's hidden tool cursor. Zero specificity lets
+   buttons, text fields, and drag handles keep their own cursor styles. */
+:where(
+  #tankSidebar, #debugSidebar, #boroughOverview, .tank-display,
+  .tank-nav-button, .tank-bottom-dock,
+  #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray,
+  #foodTray, #medicineTray, #careTaskPane, #tankContextMenu,
+  .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay,
+  .fish-inspector, .submarine-manager, .fish-action-flyout,
+  .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock,
+  .selected-fish-needs-panel, .decor-settings-badge-button,
+  .decor-action-top-bar, .decor-action-float-button,
+  .decor-side-control-panel, .decor-side-control-button, .tab-buttons
+) {
+  cursor: default;
+}
+
 .tool-cursor {
   position: absolute;
   left: 0;
@@ -18991,6 +19008,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .tankazon-order-product > div { display: grid; gap: 6px; min-width: 0; }
 .tankazon-order-product > div strong { color: #007185; font-size: .92rem; }
 .tankazon-order-product > div small { color: #565959; font-size: .76rem; }
+.tankazon-order-product .tankazon-return-status { color: #007185; font-size: 1.15rem; font-weight: 800; line-height: 1.25; letter-spacing: .04em; }
+.tankazon-store[data-websurf-theme="dark"] .tankazon-return-status { color: var(--bodega-dark-link, #80d9e9); }
+.tankazon-return-button { justify-self: start; border: 1px solid #888c8c; border-radius: 8px; padding: 7px 12px; background: #fff; color: #0f1111; font-size: .8rem; cursor: pointer; }
+.tankazon-return-button:hover { background: #f0f2f2; }
+.tankazon-return-button:focus-visible { outline: 3px solid #007185; outline-offset: 2px; }
+.tankazon-return-button:disabled { opacity: .6; cursor: wait; }
 .tankazon-order-product > span { display: flex; align-items: center; gap: 5px; color: #0f1111; font-size: .82rem; font-weight: 800; }
 .tankazon-orders-empty { display: grid; justify-items: center; gap: 9px; padding: 64px 20px; border: 1px solid #d5d9d9; border-radius: 10px; background: #fff; text-align: center; }
 .tankazon-orders-empty strong { font-size: 1.15rem; }
@@ -27584,15 +27607,19 @@ html[data-layout-ratio-lock="true"] #settingsOverlay.websurf-settings-page .clou
   background: #74797d !important;
 }
 
-/* Purchase History is a third shell row: browser tabs, store chrome, then the
-   scrollable account content.  A later general shell rule previously reduced
-   the panel to two rows while this page still targeted row 2, which pushed the
-   store header below the order list. */
+/* Purchase History needs four rows: browser tabs, browser navigation,
+   BubbleBodega navigation, then the scrollable order history. Explicitly
+   place the store header so grid auto-placement cannot move it below orders. */
 .tankazon-store.tankazon-account-open .tankazon-panel {
-  grid-template-rows: 40px auto minmax(0, 1fr) !important;
+  grid-template-rows: 40px auto auto minmax(0, 1fr) !important;
+}
+.tankazon-store.tankazon-account-open .tankazon-panel > .tankazon-header {
+  grid-row: 3 !important;
+  grid-column: 1 / -1;
 }
 .tankazon-store.tankazon-account-open .tankazon-account-page {
-  grid-row: 3;
+  grid-row: 4 !important;
+  grid-column: 1 / -1;
 }
 
 /* Settings layout refresh 2026-09-24

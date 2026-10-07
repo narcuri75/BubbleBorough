@@ -150,6 +150,7 @@ function createPlacedDecor(decorKey, xNorm, yNorm, tankLayer = runtime.placement
     applyGravity: true
   });
 
+  if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("decor", decorKey, 1);
   state.decorInventory[decorKey] -= 1;
   if (state.decorInventory[decorKey] <= 0) {
     delete state.decorInventory[decorKey];
@@ -2268,6 +2269,7 @@ function sellStoredDecor(decorKey) {
     direction: "credit",
     amount: resaleValue,
     apply: () => {
+      if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("decor", decorKey, 1);
       if (count <= 1) {
         delete state.decorInventory[decorKey];
       } else {

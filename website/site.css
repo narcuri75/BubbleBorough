@@ -38,6 +38,9 @@ h3{margin:0 0 .55rem}
 .content-section{padding-block:clamp(2.3rem,5vw,4rem);border-top:1px solid var(--line)}
 .content-section>p{max-width:66ch}
 .content-section .update-space{height:1rem}
+.websurf-copy{max-width:66ch;margin:0 0 1.75rem}
+.websurf-screenshot{width:100%;max-width:100%;margin:0}
+.final-cta-section{padding-bottom:0}
 .feedback-callout{width:min(100%,42rem);margin:clamp(2.3rem,5vw,4rem) auto 0;padding:1.1rem 1.25rem;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:.9rem 1.1rem;text-align:center;border:1px solid color-mix(in srgb,var(--accent) 58%,var(--line));border-radius:20px;background:color-mix(in srgb,var(--surface) 88%,var(--raised));box-shadow:0 16px 36px rgba(0,0,0,.18)}
 .feedback-callout>img{width:3.3rem;height:3.3rem;object-fit:contain;filter:drop-shadow(0 0 9px color-mix(in srgb,var(--accent) 65%,transparent))}
 .feedback-callout>div{display:grid;gap:.22rem;text-align:left}

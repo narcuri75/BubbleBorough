@@ -30,7 +30,9 @@ jobs:
           }
           EOF_JSON
 
-      - name: Build GitHub Pages documents
+      # Current version/build time are fetched from JSON, so this only rewrites
+      # documents when page content changes, not when build metadata changes.
+      - name: Build GitHub Pages content
         run: npm run build:website
 
       - name: Commit updated build info and static pages

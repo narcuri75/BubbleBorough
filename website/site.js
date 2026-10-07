@@ -55,11 +55,36 @@
       update();
     }));
   };
+  async function refreshProjectInfo(root = document) {
+    const sources = [
+      { field: "version", url: "/game/public/version.json", key: "version" },
+      { field: "lastPushed", url: "/game/public/build-info.json", key: "lastPushed" }
+    ];
+    await Promise.all(sources.map(async ({ field, url, key }) => {
+      const elements = [...root.querySelectorAll(`[data-project-info="${field}"]`)];
+      if (!elements.length) return;
+      try {
+        const response = await fetch(url, { cache: "no-store" });
+        if (!response.ok) throw new Error("Project information is unavailable");
+        const data = await response.json();
+        const value = data?.[key];
+        if (typeof value !== "string" || !value.trim()) throw new Error("Project information is missing");
+        elements.forEach(element => { element.textContent = value; });
+      } catch {
+        // Server-rendered values remain useful if a request fails. Static
+        // pages have no saved metadata, so show a clear fallback instead.
+        elements.forEach(element => {
+          if (element.textContent === "Loading…") element.textContent = "Unavailable";
+        });
+      }
+    }));
+  }
   const initializeCatalogs = () => {
     setupFilters("[data-fish-catalog]");
     setupFilters("[data-decor-catalog]");
   };
   initializeCatalogs();
+  void refreshProjectInfo();
   document.addEventListener("click", event => {
     const button = event.target.closest("[data-variant-src]");
     if (!button) return;
@@ -122,6 +147,7 @@
     });
     if (pushState) history.pushState({}, "", url.href);
     initializeCatalogs();
+    void refreshProjectInfo();
     if (url.hash) document.getElementById(url.hash.slice(1))?.scrollIntoView();
     else scrollTo(0, 0);
   };

@@ -4,6 +4,7 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const path = require("node:path");
+const os = require("node:os");
 const { build, buildOutputs } = require("./build-website.cjs");
 const { resolveRequestPath } = require("./start-web.cjs");
 const root = path.resolve(__dirname, "..");
@@ -29,22 +30,26 @@ test("build-info workflow ignores commits made by its own bot", () => {
   assert.match(workflow, /if:\s*github\.actor\s*!=\s*'github-actions\[bot\]'\s*&&\s*github\.ref_name\s*==\s*github\.event\.repository\.default_branch/);
 });
 
-test("GitHub Pages build creates the root entry and every static public route", () => {
-  build();
+test("GitHub Pages build creates the root entry and every static public route", t => {
+  const outputRoot = fs.mkdtempSync(path.join(os.tmpdir(), "bubble-borough-website-"));
+  t.after(() => fs.rmSync(outputRoot, { recursive: true, force: true }));
+  build({ outputRoot });
   const expected = ["index.html", "404.html", "robots.txt", "sitemap.xml", "website/fish/fish.html", "website/decor/decor.html", "website/news/news.html", "website/faqs/faqs.html", "website/about/about.html"];
   assert.deepEqual([...buildOutputs().keys()].sort(), expected.sort());
-  for (const relative of expected) assert.equal(fs.existsSync(path.join(root, relative)), true, `${relative} must be present for GitHub Pages`);
-  const home = fs.readFileSync(path.join(root, "index.html"), "utf8");
+  for (const relative of expected) assert.equal(fs.existsSync(path.join(outputRoot, relative)), true, `${relative} must be present for GitHub Pages`);
+  const home = fs.readFileSync(path.join(outputRoot, "index.html"), "utf8");
   assert.match(home, /<h1 id="page-title">Make a little world underwater\.<\/h1>/);
   assert.match(home, /href="\/website\/site\.css"/);
   assert.match(home, /href="\/website\/fish\/fish\.html"/);
   assert.doesNotMatch(home, /\{\{\w+\}\}/);
-  assert.match(home, /Game screenshot placeholder/);
+  assert.match(home, /aria-label="Bubble Borough aquarium gameplay"/);
+  assert.match(home, /\/website\/web_assets\/bb_video_1\.webm/);
 });
 
 test("static catalog output uses public source data without secret fish", () => {
-  const fish = fs.readFileSync(path.join(root, "website/fish/fish.html"), "utf8");
-  const decor = fs.readFileSync(path.join(root, "website/decor/decor.html"), "utf8");
+  const outputs = buildOutputs();
+  const fish = outputs.get("website/fish/fish.html");
+  const decor = outputs.get("website/decor/decor.html");
   assert.equal((fish.match(/class="fish-card"/g) || []).length, 39);
   assert.match(fish, /id="betta"/);
   assert.match(fish, /\/game\/assets\/generated\/sprites\/fish\//);
@@ -66,7 +71,7 @@ test("GitHub Pages assets and game entry remain root-addressable", () => {
   const play = fs.readFileSync(path.join(root, "game/index.html"), "utf8");
   assert.match(play, /<base href="\/game\/">/);
   assert.match(play, /noindex,follow/);
-  const sitemap = fs.readFileSync(path.join(root, "sitemap.xml"), "utf8");
+  const sitemap = buildOutputs().get("sitemap.xml");
   for (const route of ["/index.html", "/website/fish/fish.html", "/website/decor/decor.html", "/website/news/news.html", "/website/faqs/faqs.html", "/website/about/about.html"]) assert.match(sitemap, new RegExp(`<loc>https://bubbleborough\\.com${route.replaceAll("/", "\\/")}<\\/loc>`));
   assert.doesNotMatch(sitemap, /\/game\/index\.html/);
 });

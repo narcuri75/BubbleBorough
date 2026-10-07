@@ -16,6 +16,9 @@ function staticHtml(route) {
     ["/play", "/game/index.html"]
   ]);
   let html = website.render(route)
+    // Live metadata is loaded from the shared JSON documents in the browser.
+    // Keep these slots stable so a build-time update does not rewrite pages.
+    .replace(/(<span data-project-info="(?:version|lastPushed)">)[\s\S]*?(<\/span>)/g, "$1Loading…$2")
     .replaceAll('"/site/', '"/website/')
     .replaceAll('"/assets/', '"/game/assets/')
     .replaceAll('"/public/', '"/game/public/')

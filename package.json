@@ -8,7 +8,7 @@
     "check:website-static": "node scripts/build-website.cjs --check",
     "start": "node scripts/start-web.cjs",
     "start:web": "node scripts/start-web.cjs",
-    "check:website": "node --test scripts/website-routing.test.cjs",
+    "check:website": "node --test scripts/website-routing.test.cjs scripts/website-project-info.test.cjs",
     "build:app": "node scripts/build-app-bundle.cjs",
     "check:app": "node scripts/build-app-bundle.cjs --check",
     "check:mobile": "node scripts/check-mobile-patch.cjs",

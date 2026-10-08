@@ -1542,155 +1542,6 @@ function syncTankTrayStageClass() {
   }
 }
 
-function getResidenceAssignmentTarget() {
-  return getPlacedDecorById(runtime.residenceSettingsDecorId) || getSelectedPlacedDecor();
-}
-
-function openDecorResidenceAssignment(placedId) {
-  const item = setSelectedDecor(placedId);
-  if (!item || !isDecorResidenceEligible(item)) {
-    showToast("That structure cannot be used as a residence.");
-    return false;
-  }
-  runtime.residenceSettingsDecorId = item.id;
-  openUtilityOverlay("decor-residence", { clearPrimaryToolModes: false });
-  return true;
-}
-
-function renderResidenceFishCard(fish, item, options = {}) {
-  const species = getSpeciesForFish(fish);
-  if (!fish || !species) {
-    return "";
-  }
-  const now = Date.now();
-  const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
-  const tank = getTankContainingFish(fish.id);
-  const resident = options.resident === true;
-  return `
-    <article class="residence-fish-card ${resident ? "is-resident" : "is-nomadic"}">
-      <img class="residence-fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
-      <div class="residence-fish-copy">
-        <strong>${escapeHtml(fish.name)}</strong>
-        <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
-        <small>${escapeHtml(getTankLabel(tank))}</small>
-      </div>
-      <button class="small-button ${resident ? "alt" : ""}" type="button"
-        ${resident ? `data-unassign-residence-fish="${escapeHtml(fish.id)}"` : `data-assign-residence-fish="${escapeHtml(fish.id)}"`}
-        data-residence-decor="${escapeHtml(item.id)}">
-        ${resident ? "Unassign" : "Assign"}
-      </button>
-    </article>
-  `;
-}
-
-function renderDecorResidenceAssignmentOverlay(item = getResidenceAssignmentTarget()) {
-  if (!item || !isDecorResidenceEligible(item)) {
-    return `<div class="empty-state">This residence is no longer available.</div>`;
-  }
-  const residents = getDecorResidents(item.id);
-  const capacity = getDecorResidenceCapacity(item);
-  const availableFish = getAllTankFish()
-    .filter((fish) => fish && !isFishDead(fish) && !getFishResidenceDecorId(fish))
-    .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
-  const openSlots = Math.max(0, capacity - residents.length);
-  const residentMarkup = residents.length
-    ? residents.map((fish) => renderResidenceFishCard(fish, item, { resident: true })).join("")
-    : `<div class="empty-state compact">No fish live here yet.</div>`;
-  const availableMarkup = openSlots <= 0
-    ? `<div class="empty-state compact">This residence is full. Unassign a resident to make room.</div>`
-    : availableFish.length
-      ? availableFish.map((fish) => renderResidenceFishCard(fish, item)).join("")
-      : `<div class="empty-state compact">Every living fish already has a residence. Unassigned fish remain nomadic.</div>`;
-  return `
-    <div class="residence-assignment-panel">
-      <div class="residence-assignment-summary">
-        <strong>${residents.length}/${capacity} resident ${pluralize("slot", capacity)}</strong>
-        <span>Residents return here to sleep and rest. They still roam the borough for food, care, and friends.</span>
-      </div>
-      <section class="residence-assignment-section">
-        <h3>Current Residents</h3>
-        <div class="residence-fish-grid">${residentMarkup}</div>
-      </section>
-      <section class="residence-assignment-section">
-        <h3>Nomadic Fish</h3>
-        <p class="mini-note">Only fish without another residence appear here. Nomadic fish may temporarily use any unreserved shelter.</p>
-        <div class="residence-fish-grid">${availableMarkup}</div>
-      </section>
-    </div>
-  `;
-}
-
-function assignFishResidence(fishId, decorId) {
-  const fish = getAllTankFish().find((entry) => entry?.id === fishId);
-  const tank = getTankContainingDecor(decorId);
-  const item = tank?.placedDecor?.find((entry) => entry.id === decorId) || null;
-  if (!fish || !item || isFishDead(fish) || !isDecorResidenceEligible(item)) {
-    showToast("That fish or residence is no longer available.");
-    return false;
-  }
-  if (getFishResidenceDecorId(fish)) {
-    showToast(`${fish.name} already has a residence.`);
-    return false;
-  }
-  if (getDecorResidents(decorId).length >= getDecorResidenceCapacity(item)) {
-    showToast("That residence is full.");
-    return false;
-  }
-  fish.residenceDecorId = decorId;
-  fish.favoriteSpot = {
-    xNorm: clamp(Number(item.xNorm) || 0.5, 0.08, 0.92),
-    yNorm: clamp((Number(item.yNorm) || 0.72) - 0.12, 0.14, 0.8),
-    decorId,
-    zoneType: isCaveDecorKey(item.decorKey) ? "hide" : "home",
-    assignedAt: Date.now()
-  };
-  fish.coarseActivity = null;
-  fish.behaviorNextThinkAt = 0;
-  fish.lastNeighborhoodMoveAt = 0;
-  const decorName = runtime.decorMap.get(item.decorKey)?.name || titleFromFile(item.decorKey);
-  pushEvent(`${fish.name} moved into ${decorName}.`, Date.now(), tank, {
-    type: "behavior",
-    fishId: fish.id,
-    decorKey: item.decorKey,
-    placedDecorId: item.id
-  });
-  saveState();
-  renderUi(Date.now());
-  showToast(`${fish.name} now lives at ${decorName}.`);
-  return true;
-}
-
-function unassignFishResidence(fishId, decorId = "") {
-  const fish = getAllTankFish().find((entry) => entry?.id === fishId);
-  const residenceDecorId = getFishResidenceDecorId(fish);
-  if (!fish || !residenceDecorId || (decorId && residenceDecorId !== decorId)) {
-    return false;
-  }
-  fish.residenceDecorId = null;
-  if (fish.favoriteSpot?.decorId === residenceDecorId) {
-    fish.favoriteSpot = null;
-  }
-  fish.behaviorNextThinkAt = 0;
-  saveState();
-  renderUi(Date.now());
-  showToast(`${fish.name} is nomadic again.`);
-  return true;
-}
-
-function handleDecorResidenceUtilityOverlayBodyClick(ctx, target) {
-  const assignButton = target.closest("[data-assign-residence-fish]");
-  if (assignButton) {
-    assignFishResidence(assignButton.dataset.assignResidenceFish, assignButton.dataset.residenceDecor);
-    return true;
-  }
-  const unassignButton = target.closest("[data-unassign-residence-fish]");
-  if (unassignButton) {
-    unassignFishResidence(unassignButton.dataset.unassignResidenceFish, unassignButton.dataset.residenceDecor);
-    return true;
-  }
-  return false;
-}
-
 function getDecorFreePlacementSelectionState() {
   const selectedItems = getSelectedPlacedDecorItems();
   if (selectedItems.length) {
@@ -3748,7 +3599,7 @@ function renderFishInspector(now) {
   const careGuide = document.getElementById("inspectorTreatmentGuide");
   if (careGuide) {
     const guideNow = inStorage ? getFishStorageSimulationNow(fish, now) : getPeacefulModeSimulationNow(now);
-    const guideMarkup = dead ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
+    const guideMarkup = dead || runtime.fishInspectorSettingsOpen ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
     careGuide.hidden = !guideMarkup;
     setMarkupIfChanged("inspector-treatment-guide", careGuide, guideMarkup);
   }
@@ -3869,7 +3720,7 @@ function renderFishInspector(now) {
   }
   if (dom.inspectorFishSettingsButton) {
     dom.inspectorFishSettingsButton.hidden = dead || runtime.fishInspectorSettingsOpen;
-    dom.inspectorFishSettingsButton.textContent = "SETTINGS";
+    dom.inspectorFishSettingsButton.textContent = "INSPECT";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }
   renderFishInspectorBehaviorOptions(fish, baseSpecies);

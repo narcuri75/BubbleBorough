@@ -20,10 +20,30 @@ function isSpookyDecorItem(itemOrKey) {
   ) || /(effigy|spooky|gorebag|swamp-moss|fish-head)/.test(decorKey);
 }
 
-function getFishResidenceDecorId(fish) {
-  return typeof fish?.residenceDecorId === "string" && fish.residenceDecorId
-    ? fish.residenceDecorId
+function getFishDecorClaimId(fish, now = Date.now()) {
+  return typeof fish?.decorClaimId === "string" && fish.decorClaimId && Number(fish.decorClaimUntil) > now
+    ? fish.decorClaimId
     : null;
+}
+
+function releaseFishDecorClaim(fish) {
+  if (!fish) return;
+  fish.decorClaimId = null;
+  fish.decorClaimUntil = 0;
+  fish.decorClaimSpot = null;
+}
+
+function tryClaimFishDecor(fish, decorId, now = Date.now()) {
+  const tank = getTankContainingFish(fish?.id);
+  const item = tank?.placedDecor?.find((entry) => entry.id === decorId);
+  if (!fish || isFishDead(fish) || !item || !isDecorClaimEligible(item)) return false;
+  if (getFishDecorClaimId(fish, now) === decorId) return true;
+  const claims = (tank.fish || []).filter((other) => other.id !== fish.id && !isFishDead(other) && getFishDecorClaimId(other, now) === decorId);
+  if (claims.length >= getDecorShelterCapacity(item)) return false;
+  fish.decorClaimId = decorId;
+  fish.decorClaimUntil = now + 90000;
+  fish.decorClaimSpot = { xNorm: Number(item.xNorm) || 0.5, yNorm: Number(item.yNorm) || 0.5 };
+  return true;
 }
 
 function getTankContainingFish(fishId, targetState = state) {
@@ -38,23 +58,23 @@ function getTankContainingDecor(decorId, targetState = state) {
   )) || null;
 }
 
-function getDecorResidents(decorId, targetState = state) {
+function getDecorClaimants(decorId, targetState = state, now = Date.now()) {
   if (!decorId) {
     return [];
   }
   return getAllTankFish(targetState).filter((fish) => (
-    fish && !isFishDead(fish) && getFishResidenceDecorId(fish) === decorId
+    fish && !isFishDead(fish) && getFishDecorClaimId(fish, now) === decorId
   ));
 }
 
-function getDecorResidenceCapacity(itemOrKey) {
+function getDecorShelterCapacity(itemOrKey) {
   const meta = getDecorFishBehaviorMeta(itemOrKey);
   return Number.isFinite(Number(meta?.occupancyLimit))
     ? Math.max(1, Math.floor(Number(meta.occupancyLimit)))
     : 1;
 }
 
-function isDecorResidenceEligible(itemOrKey) {
+function isDecorClaimEligible(itemOrKey) {
   const decorKey = String(typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || "").toLowerCase();
   if (!decorKey) {
     return false;
@@ -64,24 +84,24 @@ function isDecorResidenceEligible(itemOrKey) {
   const services = Array.isArray(meta?.serviceTypes) ? meta.serviceTypes : [];
   return isCaveDecorKey(decorKey)
     || services.includes("home")
-    || hangoutTypes.some((type) => type === "hide" || type === "plant")
-    || /(grass|seaweed|moss|plant|anubias|coral|hide)/.test(decorKey);
+    || hangoutTypes.some((type) => ["hide", "plant", "hardscape"].includes(type))
+    || /(grass|seaweed|moss|plant|anubias|coral|hide|rock|root|driftwood|shell)/.test(decorKey);
 }
 
-function getResidenceReservationCount(decorId, requestingFish = null) {
-  return getDecorResidents(decorId).filter((fish) => fish.id !== requestingFish?.id).length;
+function getDecorClaimCount(decorId, requestingFish = null, now = Date.now()) {
+  return getDecorClaimants(decorId, state, now).filter((fish) => fish.id !== requestingFish?.id).length;
 }
 
-function clearDecorResidenceAssignments(decorId, options = {}) {
+function clearDecorClaims(decorId, options = {}) {
   if (!decorId) {
     return 0;
   }
   let cleared = 0;
   for (const fish of getAllTankFish()) {
-    if (getFishResidenceDecorId(fish) !== decorId) {
+    if (fish.decorClaimId !== decorId) {
       continue;
     }
-    fish.residenceDecorId = null;
+    releaseFishDecorClaim(fish);
     if (fish.favoriteSpot?.decorId === decorId) {
       fish.favoriteSpot = null;
     }
@@ -91,56 +111,6 @@ function clearDecorResidenceAssignments(decorId, options = {}) {
     saveState();
   }
   return cleared;
-}
-
-function getAssignedResidenceTarget(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  const residenceDecorId = getFishResidenceDecorId(fish);
-  if (!residenceDecorId || !state.placedDecor.some((item) => item.id === residenceDecorId)) {
-    return null;
-  }
-  const zone = getCachedDecorHangoutZones().find((entry) => (
-    entry.decorId === residenceDecorId && ["hide", "plant", "hardscape"].includes(entry.type)
-  ));
-  if (zone) {
-    const targetLayer = clampTankLayer(zone.targetLayerMax);
-    return {
-      xNorm: clamp(randomBetween(zone.xMin, zone.xMax), 0.08, 0.92),
-      yNorm: clampFishYNormToLayer(randomBetween(zone.yMin, zone.yMax), fish, species, targetLayer, {
-        minYNorm: 0.16,
-        maxYNorm: 0.8
-      }),
-      targetLayer,
-      targetAt: now + randomBetween(12000, 24000),
-      decorId: residenceDecorId,
-      zoneType: zone.type,
-      intentType: "night sleep",
-      intentCause: "assigned residence",
-      signalType: "night_sleep",
-      debugText: "night sleep | assigned residence",
-      slow: true
-    };
-  }
-
-  const item = state.placedDecor.find((entry) => entry.id === residenceDecorId);
-  if (!item) {
-    return null;
-  }
-  if (isCaveDecorKey(item.decorKey)) {
-    return null;
-  }
-  return {
-    xNorm: clamp(Number(item.xNorm) || 0.5, 0.08, 0.92),
-    yNorm: clamp((Number(item.yNorm) || 0.72) - 0.12, 0.16, 0.78),
-    targetLayer: clampTankLayer(Math.min(TANK_DEPTH_LAYERS, getDecorTankLayer(item) + 1)),
-    targetAt: now + randomBetween(12000, 24000),
-    decorId: residenceDecorId,
-    zoneType: "home",
-    intentType: "night sleep",
-    intentCause: "assigned residence",
-    signalType: "night_sleep",
-    debugText: "night sleep | assigned residence",
-    slow: true
-  };
 }
 
 function getDecorHangoutOccupancyGroup(fish, species = getSpeciesForFish(fish)) {
@@ -223,11 +193,14 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     }
 
     const residenceItem = state.placedDecor.find((item) => item.id === zone.decorId);
+    if (options.excludeCaves && residenceItem && isCaveDecorKey(residenceItem.decorKey)) return false;
+    if (options.requireBehindSpace && residenceItem
+      && getPlacedDecorDepthZ(residenceItem) - getFishTankDepthRadius(fish) - 0.035 <= TANK_DEPTH_REAR_USABLE_Z) return false;
     if (
       residenceItem
-      && isDecorResidenceEligible(residenceItem)
-      && getFishResidenceDecorId(fish) !== zone.decorId
-      && getResidenceReservationCount(zone.decorId, fish) >= getDecorResidenceCapacity(residenceItem)
+      && isDecorClaimEligible(residenceItem)
+      && getFishDecorClaimId(fish, now) !== zone.decorId
+      && getDecorClaimCount(zone.decorId, fish, now) >= getDecorShelterCapacity(residenceItem)
     ) {
       return false;
     }
@@ -497,7 +470,7 @@ function getBoroughSectionServiceCandidates(tank, serviceType) {
 
 function getDecorBoroughServiceSeats(itemOrKey) {
   const meta = getDecorFishBehaviorMeta(itemOrKey);
-  const capacity = getDecorResidenceCapacity(itemOrKey);
+  const capacity = getDecorShelterCapacity(itemOrKey);
   if (Array.isArray(meta?.serviceSeats) && meta.serviceSeats.length) {
     return meta.serviceSeats.slice(0, capacity);
   }
@@ -812,8 +785,11 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
     fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
   } else if (getFishNeedValue(fish, "energy", now) <= 48) {
     type = "rest";
-    const residence = targetTank?.placedDecor?.find((item) => item.id === getFishResidenceDecorId(fish));
+    const shelters = (targetTank?.placedDecor || []).filter((item) => isDecorClaimEligible(item)
+      && (getFishDecorClaimId(fish, now) === item.id || getDecorClaimCount(item.id, fish, now) < getDecorShelterCapacity(item)));
+    const residence = shelters.find((item) => item.id === getFishDecorClaimId(fish, now)) || shelters[0];
     if (residence) {
+      tryClaimFishDecor(fish, residence.id, now);
       const residenceName = runtime.decorMap.get(residence.decorKey)?.name || "home";
       label = `Sleeping at ${residenceName}`;
       targetDecorId = residence.id;

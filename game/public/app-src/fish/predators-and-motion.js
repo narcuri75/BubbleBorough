@@ -4414,7 +4414,9 @@ function updateFishMotion(now, deltaSeconds) {
       }
 
       const gravelPebbleOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole
+        && (!queuedFishActionActive || (activeQueuedFishAction?.action === "sleep" && fish.sleepShelter?.cave))
+        && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
       const fishActionOwnsMovement = !panicOwnsMovement
         && !pufferInflatedOwnsMovement
         && !breedingRole

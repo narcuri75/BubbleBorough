@@ -2998,8 +2998,8 @@ function getDebugSpeciesSignatureAvailability(fish, species = getSpeciesForFish(
   }
   if (species?.id === "angelfish") {
     if (!isFishAdult(fish, now)) return { enabled: false, reason: "Angelfish territorial behavior begins at adulthood" };
-    if (!getFishResidenceDecorId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
-      return { enabled: false, reason: "assign a home or add a cave/hardscape" };
+    if (!getFishDecorClaimId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
+      return { enabled: false, reason: "add a cave or hardscape" };
     }
   }
   if (species?.id === "blue-ram" && !isFishAdult(fish, now)) {
@@ -3047,9 +3047,9 @@ function triggerDebugSpeciesSignatureBehavior(now = Date.now()) {
       target = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, { force: true });
     }
   } else if (species.id === "angelfish") {
-    if (!getFishResidenceDecorId(fish)) {
+    if (!getFishDecorClaimId(fish)) {
       const zone = getCachedDecorHangoutZones().find((entry) => ["hide", "hardscape"].includes(entry.type)) || null;
-      if (zone) fish.residenceDecorId = zone.decorId;
+      if (zone) tryClaimFishDecor(fish, zone.decorId, now);
     }
     target = pickAngelfishTerritoryBehaviorTarget(fish, species, now, { force: true });
   } else if (species.id === "blue-ram") {

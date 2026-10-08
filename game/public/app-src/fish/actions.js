@@ -350,6 +350,7 @@ function prepareFishForUserAction(fish, species, now = Date.now(), options = {})
   if (!fish || !species) {
     return false;
   }
+  fish.sleepShelter = null;
   clearFishActionSteering(fish);
   clearDebugBehaviorSteering(fish);
   clearFishSchoolFollowState(fish);
@@ -1049,6 +1050,9 @@ function updateQueuedFishPebbleAction(fish, species, item, now = Date.now()) {
 
 function updateQueuedFishActionControl(fish, species, now = Date.now()) {
   const active = getActiveFishActionQueueItem(fish, now);
+  if (active?.action === "sleep" && fish?.sleepShelter && !active.cancelling) {
+    return updateFishSleepShelter(fish, species, active, now);
+  }
   if (!active || !fish || !species || isFishDead(fish) || fish.caveState) {
     return false;
   }
@@ -1216,29 +1220,72 @@ function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   return true;
 }
 
+function pickFishSleepCavePlan(fish, species, now = Date.now()) {
+  if (species?.behavior === "sucker" || species?.caveEnabled === false || Number(fish.caveTriggerCooldownUntil) > now) return null;
+  return collectCaveBehaviorPlansForFish(fish, now).find((plan) => {
+    const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
+    return item && !isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)
+      && (getFishDecorClaimId(fish, now) === plan.decorId || getDecorClaimCount(plan.decorId, fish, now) < getDecorShelterCapacity(item));
+  }) || null;
+}
+
+function updateFishSleepShelter(fish, species, item, now = Date.now()) {
+  const sleep = fish.sleepShelter;
+  if (!sleep) return false;
+  if (fish.activity === "feeding" || Number(fish.panicUntil) > now) {
+    item.endsAt = now;
+    return false;
+  }
+  if (sleep.cave) {
+    if (!fish.caveState) { item.endsAt = now; return false; }
+    item.endsAt = sleep.sleepingUntil || sleep.approachDeadline;
+    return true; // The cave executor owns the entrance, interior hold and exit.
+  }
+  if (sleep.decorId && !getTankContainingFish(fish.id)?.placedDecor?.some((decor) => decor.id === sleep.decorId)) {
+    item.endsAt = now;
+    return false;
+  }
+  const spot = sleep.target;
+  const arrived = Math.hypot(fish.xNorm - spot.xNorm, fish.yNorm - spot.yNorm) <= 0.035
+    && (!Number.isFinite(spot.targetZ) || Math.abs(getFishTankDepthZ(fish) - spot.targetZ) <= 0.025);
+  if (!sleep.sleepingUntil && arrived) {
+    sleep.sleepingUntil = now + sleep.durationMs;
+    // Idle at arrival instead of repeatedly choosing another nearby target.
+    sleep.target = { ...spot, xNorm: fish.xNorm, yNorm: fish.yNorm };
+  }
+  item.endsAt = sleep.sleepingUntil || sleep.approachDeadline;
+  applyBehaviorTarget(fish, species, {
+    ...sleep.target, targetAt: item.endsAt, slow: true,
+    intentType: sleep.sleepingUntil ? "sleep" : "seek shelter",
+    intentCause: sleep.decorId ? "behind decor" : "quiet spot"
+  }, now);
+  return true;
+}
+
 function triggerFishActionSleep(fish, species, now = Date.now()) {
   prepareFishForUserAction(fish, species, now);
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 2.5,
-    preferBackLayer: true
-  }) || {
-    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.05, 0.05), 0.08, 0.92),
-    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.04, 0.04), 0.18, 0.78),
-    targetLayer: getFishTankLayer(fish),
-    targetAt: now + FISH_ACTION_SLEEP_DURATION_MS
-  };
-  applyBehaviorTarget(fish, species, {
-    ...cover,
-    targetAt: now + FISH_ACTION_SLEEP_DURATION_MS,
-    intentType: "sleep",
-    intentCause: cover.zoneType || "quiet spot",
-    signalType: cover.zoneType ? "night_sleep" : "",
-    debugText: `sleep | ${cover.zoneType || "quiet spot"}`,
-    slow: true
-  }, now);
+  const durationMs = FISH_ACTION_SLEEP_DURATION_MS;
+  const cave = pickFishSleepCavePlan(fish, species, now);
+  if (cave && beginFishCaveBehavior(fish, { ...cave, sleepShelter: true, lingerMs: durationMs }, now)) {
+    fish.sleepShelter = { cave: true, decorId: cave.decorId, durationMs, approachDeadline: now + 45000, sleepingUntil: 0 };
+    setFishBehaviorIntent(fish, "seek shelter", "cave entrance", now, { durationMs: 45000 });
+  } else {
+    const cover = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
+      force: true, allowSameDecor: true, excludeCaves: true, requireBehindSpace: true,
+      lingerMultiplier: 2.5, preferBackLayer: true
+    });
+    const decor = cover ? state.placedDecor.find((entry) => entry.id === cover.decorId) : null;
+    const target = cover ? {
+      ...cover,
+      targetZ: sanitizeTankDepthZ(getPlacedDecorDepthZ(decor) - getFishTankDepthRadius(fish) - 0.035)
+    } : {
+      xNorm: clamp(fish.xNorm || 0.5, 0.08, 0.92), yNorm: clamp(fish.yNorm || 0.5, 0.18, 0.78), targetLayer: getFishTankLayer(fish)
+    };
+    if (decor) tryClaimFishDecor(fish, decor.id, now);
+    fish.sleepShelter = { cave: false, decorId: decor?.id || null, target, durationMs, approachDeadline: now + 45000, sleepingUntil: 0 };
+    applyBehaviorTarget(fish, species, { ...target, targetAt: now + 45000, intentType: "seek shelter", intentCause: decor ? "behind decor" : "quiet spot", slow: true }, now);
+  }
   markFishActionStateDirty(now);
   showFishRoutineToast(fish, `${fish.name} is settling down.`);
   return true;
@@ -1569,6 +1616,13 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (!fish || !item) {
     return;
   }
+  if (item.action === "sleep") {
+    if (fish.sleepShelter?.cave && fish.caveState) {
+      // Let the cave controller take the normal exit route.
+      fish.caveInsideUntil = now;
+    }
+    fish.sleepShelter = null;
+  }
   // Completing a routine does not fill meters or change the feeding clock.
   if (item.action === "breed" && isFishInActiveUserBreedingSequence(fish)) {
     clearFishBreedingSequence();
@@ -1583,7 +1637,7 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (item.action === "dig") {
     clearForcedGravelDigPrompt(fish);
   }
-  if (item.action !== "eat" && !isFishInActiveUserBreedingSequence(fish)) {
+  if (item.action !== "eat" && !fish.caveState && !isFishInActiveUserBreedingSequence(fish)) {
     clearFishActionSteering(fish);
     fish.hangoutDecorId = null;
     fish.hangoutZoneType = null;
@@ -1614,6 +1668,8 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
     runtime.fishActionQueuesByFishId.delete(fishId);
     return false;
   }
+  // A sleeping cave occupant must finish its exit before the next queued action.
+  if (fish.caveState) return false;
   if (Number.isFinite(fish.panicUntil) && now < fish.panicUntil) {
     // Immediate reactions such as a glass tap temporarily outrank queued
     // autonomous/user actions. Leave the item queued and start it once the
@@ -1673,11 +1729,18 @@ function processFishActionQueues(now = Date.now()) {
   for (const [fishId, queue] of runtime.fishActionQueuesByFishId) {
     const fish = getFishByIdFast(fishId);
     if (!fish || isFishDead(fish)) {
+      if (!fish && queue.active?.action === "sleep") {
+        const offscreenFish = getAllTankFish().find((entry) => entry.id === fishId);
+        if (offscreenFish?.sleepShelter) finishFishActionQueueItem(offscreenFish, queue.active, now, { silent: true });
+      }
       runtime.fishActionQueuesByFishId.delete(fishId);
       runtime.fishActionQueueCollapsedFishIds.delete(fishId);
       continue;
     }
     pruneFishActionQueueItemsInPlace(queue, now);
+    if (queue.active?.action === "sleep" && fish.sleepShelter && !queue.active.cancelling) {
+      updateFishSleepShelter(fish, getSpeciesForFish(fish), queue.active, now);
+    }
     if (queue.active?.cancelling && now >= Number(queue.active.cancelEndsAt || 0)) {
       queue.active = null;
       queue.restUntil = 0;

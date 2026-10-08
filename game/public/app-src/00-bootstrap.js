@@ -3126,7 +3126,7 @@ const FISH_ACTION_STEER_REFRESH_MS = 260;
 const FISH_ACTION_EAT_DURATION_MS = 45 * 1000;
 const FISH_ACTION_WAIT_FOOD_DURATION_MS = 25 * 1000;
 const FISH_ACTION_REST_DURATION_MS = 35 * 1000;
-const FISH_ACTION_SLEEP_DURATION_MS = 90 * 1000;
+const FISH_ACTION_SLEEP_DURATION_MS = 12 * 1000;
 const FISH_ACTION_HIDE_DURATION_MS = 40 * 1000;
 const FISH_ACTION_GREET_DURATION_MS = 12 * 1000;
 const FISH_ACTION_FOLLOW_DURATION_MS = 45 * 1000;
@@ -3249,10 +3249,8 @@ const FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR = [
 ].join(",");
 const FISH_INSPECTOR_SLIDER_SOUND_SELECTOR = 'input[type="range"][data-inspector-fish-setting="size"]';
 const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorBuyAnotherButton",
-  "#selectedDecorSellButton",
-  "#selectedDecorStoreButton",
-  "#selectedDecorSettingsButton",
+  "#selectedDecorMenuButton",
+  "[data-tank-context-action]",
   "[data-edit-decor-settings]",
   "[data-sell-decor-placed]",
   "[data-store-decor]",
@@ -3263,14 +3261,10 @@ const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-tray-sell-placed-decor]"
 ].join(",");
 const SELECTED_DECOR_INCREASE_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorScaleUpButton",
-  "#selectedDecorLayerUpButton",
   '[data-size-decor][data-size-direction="1"]',
   '[data-resize-placed][data-size-direction="1"]'
 ].join(",");
 const SELECTED_DECOR_DECREASE_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorScaleDownButton",
-  "#selectedDecorLayerDownButton",
   '[data-size-decor][data-size-direction="-1"]',
   '[data-resize-placed][data-size-direction="-1"]'
 ].join(",");
@@ -13039,28 +13033,10 @@ const dom = {
   fishActionTargetMenu: document.querySelector("#fishActionTargetMenu"),
   selectedFishNeedsPanel: document.querySelector("#selectedFishNeedsPanel"),
   closeInspector: document.querySelector("#closeInspector"),
-  selectedDecorActionBar: document.querySelector("#selectedDecorActionBar"),
-  selectedDecorScaleControls: document.querySelector("#selectedDecorScaleControls"),
+  selectedDecorMenuButton: document.querySelector("#selectedDecorMenuButton"),
   selectedDecorResizeHandles: document.querySelector("#selectedDecorResizeHandles"),
   selectedDecorResizeIndicator: document.querySelector("#selectedDecorResizeIndicator"),
   selectedDecorResizeCornerHandles: [...document.querySelectorAll("[data-selected-decor-resize-corner]")],
-  selectedDecorLayerControls: document.querySelector("#selectedDecorLayerControls"),
-  selectedDecorTransformControls: document.querySelector("#selectedDecorTransformControls"),
-  selectedDecorFlipHorizontalButton: document.querySelector("#selectedDecorFlipHorizontalButton"),
-  selectedDecorFlipVerticalButton: document.querySelector("#selectedDecorFlipVerticalButton"),
-  selectedDecorSettingsButton: document.querySelector("#selectedDecorSettingsButton"),
-  selectedDecorAssignButton: document.querySelector("#selectedDecorAssignButton"),
-  selectedDecorSellButton: document.querySelector("#selectedDecorSellButton"),
-  selectedDecorStoreButton: document.querySelector("#selectedDecorStoreButton"),
-  selectedDecorBuyAnotherButton: document.querySelector("#selectedDecorBuyAnotherButton"),
-  selectedDecorScaleUpButton: document.querySelector("#selectedDecorScaleUpButton"),
-  selectedDecorScaleDownButton: document.querySelector("#selectedDecorScaleDownButton"),
-  selectedDecorSizeValue: document.querySelector("#selectedDecorSizeValue"),
-  selectedDecorLayerUpButton: document.querySelector("#selectedDecorLayerUpButton"),
-  selectedDecorLayerDownButton: document.querySelector("#selectedDecorLayerDownButton"),
-  selectedDecorBringToFrontButton: document.querySelector("#selectedDecorBringToFrontButton"),
-  selectedDecorSendToBackButton: document.querySelector("#selectedDecorSendToBackButton"),
-  selectedDecorLayerValue: document.querySelector("#selectedDecorLayerValue"),
   inspectorBuyAnotherFish: document.querySelector("#inspectorBuyAnotherFish"),
   inspectorSellFish: document.querySelector("#inspectorSellFish"),
   inspectorStoreFish: document.querySelector("#inspectorStoreFish"),
@@ -13208,6 +13184,8 @@ const runtime = {
   editTankBackgroundMode: "",
   pendingWaterConversionTarget: "",
   editTankGravelLayer: 0,
+  editTankGravelPresetPage: 0,
+  gravelCurrentPreview: null,
   tankColorPickerDrag: null,
   foodTrayOpen: false,
   medicineTrayOpen: false,
@@ -13237,7 +13215,6 @@ const runtime = {
   selectedDecorIds: [],
   bubblerSettingsDecorId: null,
   customDecorSettingsDecorId: null,
-  residenceSettingsDecorId: null,
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
   decorSettingsCaveTab: "entries",
@@ -14450,35 +14427,39 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
     renderBody: (item) => renderDecorSettingsOverlay(item),
-    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
     renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
     hideFooter: true,
     handlers: {
       onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
     }
   }),
+  "fish-inspect": {
+    id: "fish-inspect",
+    exclusive: true,
+    onOpen: (_ctx, options) => {
+      runtime.fishInspectFishId = options.fishId;
+      runtime.fishInspectNameDraft = getManagedFishById(options.fishId)?.fish?.name || "";
+      runtime.fishInspectPreviewStartedAt = Date.now();
+      runtime.fishInspectView = "animated";
+      runtime.fishInspectPausedAt = 0;
+    },
+    onClose: closeFishInspectPreview,
+    render: renderFishInspectUtilityOverlay,
+    onBodyClick: handleFishInspectClick,
+    onBodyInput: handleFishInspectInput,
+    onBodyChange: handleFishInspectChange,
+    onBodyKeyDown: handleFishInspectKeyDown
+  },
   "custom-decor-settings": createPlacedDecorUtilityMode({
     id: "custom-decor-settings",
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
     renderBody: (item) => renderDecorSettingsOverlay(item),
-    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
     renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
     hideFooter: true,
     handlers: {
       onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
-    }
-  }),
-  "decor-residence": createPlacedDecorUtilityMode({
-    id: "decor-residence",
-    runtimeKey: "residenceSettingsDecorId",
-    kicker: "Residence",
-    fallbackTitle: "Assign Residence",
-    getItem: () => getPlacedDecorById(runtime.residenceSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorResidenceAssignmentOverlay(item),
-    handlers: {
-      onBodyClick: handleDecorResidenceUtilityOverlayBodyClick
     }
   }),
   "fish-buy-confirm": createPendingStateUtilityMode({

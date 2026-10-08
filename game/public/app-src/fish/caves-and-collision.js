@@ -11,7 +11,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     return null;
   }
 
-  const assignedCaveId = null;
+  const assignedCaveId = getFishDecorClaimId(fish, now);
   const assignedCave = assignedCaveId
     ? state.placedDecor.find((item) => item.id === assignedCaveId && isCaveDecorKey(item.decorKey))
     : null;
@@ -23,8 +23,8 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)) return false;
     const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
     return !item
-      || getFishResidenceDecorId(fish) === plan.decorId
-      || getResidenceReservationCount(plan.decorId, fish) < getDecorResidenceCapacity(item);
+      || getFishDecorClaimId(fish, now) === plan.decorId
+      || getDecorClaimCount(plan.decorId, fish, now) < getDecorShelterCapacity(item);
   });
   if (!candidates.length) {
     return null;
@@ -440,6 +440,13 @@ function completeFishCaveEntryArrival(fish, species, decorItem, plan, now = Date
   clearNormalCavePathState(plan);
   fish.caveSeatId = shouldHoldEntrySeat ? (plan.seatId || null) : null;
   fish.caveInsideUntil = Math.max(Number(fish.caveInsideUntil) || 0, now + CAVE_TRIGGER_COOLDOWN_MS);
+  if (plan.sleepShelter && fish.sleepShelter) {
+    fish.sleepShelter.sleepingUntil = now + fish.sleepShelter.durationMs;
+    fish.caveInsideUntil = fish.sleepShelter.sleepingUntil;
+    // Hold at the legal interior arrival point, including caves without seats.
+    plan.normalSeatPoint = { xNorm: fish.xNorm, yNorm: fish.yNorm };
+    setFishBehaviorIntent(fish, "sleep", "inside shelter", now, { durationMs: fish.sleepShelter.durationMs });
+  }
   fish.caveIdleTargetXNorm = null;
   fish.caveIdleTargetYNorm = null;
   fish.caveIdleTargetAt = null;
@@ -1293,6 +1300,13 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   if (Number.isFinite(fish.caveInsideUntil) && now >= fish.caveInsideUntil) {
     return beginFishNormalCaveExit(fish, plan, mouthNode, now);
   }
+  if (plan.sleepShelter) {
+    const spot = plan.normalSeatPoint || plan.inside;
+    fish.targetXNorm = spot.xNorm;
+    fish.targetYNorm = spot.yNorm;
+    fish.targetAt = fish.caveInsideUntil;
+    return true;
+  }
 
   const currentPoint = {
     xNorm: clamp(fish.xNorm, 0.08, 0.92),
@@ -1637,6 +1651,8 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     return false;
   }
   if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, getSpeciesForFish(fish), now)) return false;
+  if (typeof tryClaimFishDecor === "function" && !tryClaimFishDecor(fish, plan.decorId, now)) return false;
+  fish.decorClaimSpot = { ...plan.inside };
 
   const debugTestLoop = isDebugCaveTestFish(fish);
   const debugForced = debugTestLoop || plan.debugForced === true;
@@ -1658,6 +1674,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
       : null,
     configuredPoints: plan.configuredPoints === true,
     swimmable,
+    sleepShelter: plan.sleepShelter === true,
     lingerMs: Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000),
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),

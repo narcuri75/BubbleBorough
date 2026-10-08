@@ -346,7 +346,7 @@ function processBoroughFishTravel(now = Date.now()) {
   for (const source of getAllTanks()) {
     const neighbors = getAdjacentAquariumSections(source);
     for (const fish of source.fish) {
-      if (!fish || isFishDead(fish) || fish.caveState || runtime.pendingNeighborhoodTravel.has(fish.id)) {
+      if (!fish || isFishDead(fish) || fish.caveState || fish.sleepShelter || runtime.pendingNeighborhoodTravel.has(fish.id)) {
         continue;
       }
       const neededService = getFishNeededBoroughServiceType(fish, source, now);
@@ -360,22 +360,14 @@ function processBoroughFishTravel(now = Date.now()) {
       const serviceRoute = neededService && !getBoroughSectionServiceTypes(source).includes(neededService)
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
-      const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
       const timeSinceLastMove = now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0);
-      const needsUrgentHomecoming = getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_CRITICAL_THRESHOLD;
-      const shouldReturnHome = residenceTank
-        && residenceTank.id !== source.id
-        && getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_LOW_THRESHOLD
-        && (needsUrgentHomecoming || timeSinceLastMove >= 5 * MINUTE_MS);
-      const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
-      const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
-      const directedRoute = foodRoute || serviceRoute || residenceRoute;
+      const directedRoute = foodRoute || serviceRoute;
       const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
       const tubeJourney = tubeJourneyTarget
         ? getTransitTubeJourney(source, tubeJourneyTarget)
         : foodDestination
           ? getTransitTubeJourney(source, foodDestination)
-          : residenceTubeJourney;
+          : null;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (timeSinceLastMove < minimumMoveDelay) {
         continue;
@@ -412,7 +404,7 @@ function processBoroughFishTravel(now = Date.now()) {
         destination,
         neededService: foodDestination ? "food" : neededService,
         serviceDestination: foodDestination || serviceRoute?.destination || null,
-        residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
+        residenceDestination: null,
         tubeJourney: selectedTubeJourney
       });
       break;
@@ -508,20 +500,21 @@ function pruneTankState(now, targetTank = getCurrentTank(), targetState = state)
     return;
   }
 
-  // Save reconciliation can run against a freshly-sanitized state before it has
-  // become the global state. Validate residences against that state so a browser
-  // refresh never mistakes a perfectly valid home for an orphan.
-  const validResidenceIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
+  // Claims are local, short-lived simulation state. Retire legacy manual homes
+  // and release claims when their decor disappears or the fish leaves the tank.
+  const validDecorIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
   for (const fish of targetTank.fish || []) {
-    if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
-      fish.residenceDecorId = null;
-      if (fish.favoriteSpot?.decorId && !validResidenceIds.has(fish.favoriteSpot.decorId)) {
+    if (fish.residenceDecorId && fish.favoriteSpot?.decorId === fish.residenceDecorId) fish.favoriteSpot = null;
+    delete fish.residenceDecorId;
+    if (fish.decorClaimId && (!getFishDecorClaimId(fish, now) || !(targetTank.placedDecor || []).some((item) => item.id === fish.decorClaimId))) {
+      releaseFishDecorClaim(fish);
+      if (fish.favoriteSpot?.decorId && !validDecorIds.has(fish.favoriteSpot.decorId)) {
         fish.favoriteSpot = null;
       }
     }
-    if (fish.boroughServiceTargetDecorId && !validResidenceIds.has(fish.boroughServiceTargetDecorId)) {
+    if (fish.boroughServiceTargetDecorId && !validDecorIds.has(fish.boroughServiceTargetDecorId)) {
       clearFishBoroughServiceReservation(fish);
-      if (fish.coarseActivity?.targetDecorId && !validResidenceIds.has(fish.coarseActivity.targetDecorId)) {
+      if (fish.coarseActivity?.targetDecorId && !validDecorIds.has(fish.coarseActivity.targetDecorId)) {
         fish.coarseActivity = null;
       }
     }

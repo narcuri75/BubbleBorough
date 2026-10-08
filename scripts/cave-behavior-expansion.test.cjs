@@ -76,7 +76,7 @@ test("mask-authored entrances retain their measured mouth instead of generic pro
 test("busy entrances do not suppress a second available cave", () => {
   const pick = cave("pickCaveEntryBehavior", {
     Number, Math: { ...Math, random: () => 0 },
-    state: { placedDecor: [] }, getCaveBehaviorChance: () => 1,
+    state: { placedDecor: [] }, getCaveBehaviorChance: () => 1, getFishDecorClaimId: () => null,
     collectCaveBehaviorPlansForFish: () => [{ decorId: "busy", mouth: {} }, { decorId: "open", mouth: {} }],
     isFishCaveEntranceBusy: (fish, id) => id === "busy"
   });

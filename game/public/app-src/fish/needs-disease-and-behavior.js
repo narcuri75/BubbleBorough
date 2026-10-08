@@ -3155,7 +3155,11 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
       placedDecorId: target.hangoutDecorId || target.decorId || ""
     });
   }
-  if ((fish.personality === "homebody" || fish.personality === "territorial") && (target.hangoutDecorId || target.decorId)) {
+  const shelterId = target.hangoutDecorId || target.decorId;
+  if (shelterId && typeof tryClaimFishDecor === "function" && tryClaimFishDecor(fish, shelterId, now)) {
+    fish.decorClaimSpot = { xNorm: fish.targetXNorm, yNorm: fish.targetYNorm };
+  }
+  if ((fish.personality === "homebody" || fish.personality === "territorial") && shelterId) {
     fish.favoriteSpot = {
       xNorm: fish.targetXNorm,
       yNorm: fish.targetYNorm,
@@ -4149,46 +4153,45 @@ function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), optio
   };
 }
 
-function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
-  if (species?.id !== "angelfish" || !isFishAdult(fish, now)) return null;
-  const homeId = getFishResidenceDecorId(fish);
-  const home = homeId ? (state.placedDecor || []).find((item) => item.id === homeId) : null;
-  if (!home) return null;
-  const homeX = Number(home.xNorm) || 0.5;
-  const homeY = Number(home.yNorm) || 0.55;
-  const intruder = state.fish
-    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
-    .map((entry) => ({ fish: entry, distance: Math.hypot((entry.xNorm || 0.5) - homeX, (entry.yNorm || 0.5) - homeY) }))
-    .filter((entry) => entry.distance <= 0.22)
-    .sort((a,b) => a.distance-b.distance)[0]?.fish || null;
-  if (intruder) {
-    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.16 });
-    fish.territoryTargetFishId = intruder.id;
-    fish.territoryTargetUntil = now + 4200;
-    return {
-      xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
-      yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
-      targetLayer: getFishTankLayer(intruder),
-      targetZ: getFishTankDepthZ(intruder),
-      targetAt: now + randomBetween(650, 1200),
-      intentType: "territorial warning",
-      intentCause: "adult home territory",
-      intentTargetId: intruder.id,
-      intentTargetName: intruder.name || "intruder"
-    };
-  }
-  if (options.force !== true && Math.random() > getFishMoodAdjustedBehaviorChance(fish, "home-territory", 0.42, now)) return null;
-  return {
-    xNorm: clamp(homeX + randomBetween(-0.06, 0.06), 0.08, 0.92),
-    yNorm: clamp(homeY + randomBetween(-0.045, 0.045), 0.16, 0.82),
-    targetLayer: getDecorTankLayer(home),
-    targetAt: now + randomBetween(2200, 4800),
-    hangoutDecorId: home.id,
-    zoneType: "territory",
-    intentType: "guard home",
-    intentCause: "adult angelfish territory",
-    slow: true
+function pickClaimedDecorTerritoryTarget(fish, species, now = Date.now(), options = {}) {
+  const territorial = getFishPersonality(fish) === "territorial" || (species?.id === "angelfish" && isFishAdult(fish, now));
+  if (!territorial || fish.sleepShelter
+    || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return null;
+  const claimId = getFishDecorClaimId(fish, now);
+  const shelter = claimId ? (state.placedDecor || []).find((item) => item.id === claimId) : null;
+  if (!shelter) return null;
+  if (Number(fish.territoryTargetUntil) > now && fish.territoryWarningTarget) return fish.territoryWarningTarget;
+  if (Number(fish.territoryWarningCooldownUntil) > now) return null;
+  const centerX = Number(fish.decorClaimSpot?.xNorm ?? shelter.xNorm) || 0.5;
+  const centerY = Number(fish.decorClaimSpot?.yNorm ?? shelter.yNorm) || 0.55;
+  if (Math.hypot(fish.xNorm - centerX, fish.yNorm - centerY) > 0.24) return null;
+  const intruder = (state.fish || []).filter((other) => {
+    if (!other || other.id === fish.id || isFishDead(other) || other.caveState || other.id === fish.pairBondPartnerId) return false;
+    const relation = fish.relationships?.[other.id]?.kind || getRelationshipKindForFish(fish, other);
+    return !["friend", "fear"].includes(relation)
+      && getFishDecorClaimId(other, now) !== claimId
+      && Math.abs(getFishTankDepthZ(fish) - getFishTankDepthZ(other)) <= 0.18
+      && Math.hypot(other.xNorm - centerX, other.yNorm - centerY) <= 0.14;
+  }).sort((a,b) => Math.hypot(a.xNorm-centerX,a.yNorm-centerY)-Math.hypot(b.xNorm-centerX,b.yNorm-centerY))[0];
+  if (!intruder) return null;
+  // Roll once per encounter window, rather than once per animation frame.
+  fish.territoryWarningCooldownUntil = now + randomBetween(12000, 25000);
+  if (options.force !== true && Math.random() > getFishMoodAdjustedBehaviorChance(fish, "territory", 0.22, now)) return null;
+  fish.territoryTargetFishId = intruder.id;
+  fish.territoryTargetUntil = now + 3200;
+  reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.12 });
+  fish.territoryWarningTarget = {
+    xNorm: clamp(intruder.xNorm + (centerX-intruder.xNorm)*0.28, 0.08, 0.92),
+    yNorm: clamp(intruder.yNorm + (centerY-intruder.yNorm)*0.28, 0.14, 0.82),
+    targetZ: getFishTankDepthZ(intruder), targetAt: now + 3200,
+    intentType: "territorial warning", intentCause: "intruder near claimed shelter",
+    intentTargetId: intruder.id, intentTargetName: intruder.name || "intruder", signalType: "guard_territory"
   };
+  return fish.territoryWarningTarget;
+}
+
+function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  return species?.id === "angelfish" ? pickClaimedDecorTerritoryTarget(fish, species, now, options) : null;
 }
 
 function getBlueRamGuardedEgg(fish) {
@@ -4392,6 +4395,8 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
     fish.behaviorIntent = null;
     return false;
   }
+  const territoryTarget = pickClaimedDecorTerritoryTarget(fish, species, now);
+  if (territoryTarget && applyBehaviorTarget(fish, species, territoryTarget, now)) return true;
   // The central scheduler owns ordinary intentions. Existing specialist
   // behaviors below remain available as fallbacks and as emergency executors.
   if (applyScheduledFishBehaviorTarget(fish, species, now)) {

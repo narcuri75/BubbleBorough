@@ -4,7 +4,7 @@
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, #tankContextMenu, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, #tankContextMenu, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-context-menu-button, .tab-buttons"))
   );
 }
 
@@ -130,6 +130,7 @@ function canTriggerGlassTap(event) {
 
 function closeTankContextMenu() {
   runtime.tankContextMenu = { kind: "", id: "", anchorX: 0, anchorY: 0 };
+  dom.selectedDecorMenuButton?.setAttribute("aria-expanded", "false");
   if (dom.tankContextMenu) {
     dom.tankContextMenu.hidden = true;
     dom.tankContextMenu.replaceChildren();
@@ -145,18 +146,54 @@ function positionTankContextMenu(menu, point) {
   const stage = dom.tankStage;
   if (!menu || !stage || !point) return;
   const padding = 12;
-  const x = Number(point.x) / TANK_WIDTH * stage.clientWidth;
-  const y = Number(point.y) / TANK_HEIGHT * stage.clientHeight;
+  const { x, y } = tankVirtualPointToStagePx(point.x, point.y);
+  const { width, height } = getTankStageLayoutSize();
   const horizontalGap = 14;
   const verticalGap = 12;
-  const roomBelow = stage.clientHeight - y - padding;
+  const roomBelow = height - y - padding;
   // Prefer a familiar down-right menu, but deliberately flip above a low target
   // so every action remains visible instead of being clipped by the tank edge.
   const preferredTop = roomBelow >= menu.offsetHeight + verticalGap
     ? y + verticalGap
     : y - menu.offsetHeight - verticalGap;
-  menu.style.left = `${Math.max(padding, Math.min(x + horizontalGap, stage.clientWidth - menu.offsetWidth - padding))}px`;
-  menu.style.top = `${Math.max(padding, Math.min(preferredTop, stage.clientHeight - menu.offsetHeight - padding))}px`;
+  menu.style.left = `${Math.max(padding, Math.min(x + horizontalGap, width - menu.offsetWidth - padding))}px`;
+  menu.style.top = `${Math.max(padding, Math.min(preferredTop, height - menu.offsetHeight - padding))}px`;
+}
+
+function getTankContextDecorControlsMarkup() {
+  return `<div class="tank-context-decor-controls">
+    <div class="tank-context-control-row" role="group" aria-label="Flip decor"><span>Flip</span><button type="button" data-tank-context-action="flip-horizontal" aria-label="Flip horizontally" aria-pressed="false">↔</button><button type="button" data-tank-context-action="flip-vertical" aria-label="Flip vertically" aria-pressed="false">↕</button></div>
+    <div class="tank-context-control-row" role="group" aria-label="Decor depth"><span>Depth <output data-tank-context-depth></output></span><button type="button" data-tank-context-action="layer-up" title="Move backward" aria-label="Move decor backward">↑</button><button type="button" data-tank-context-action="layer-down" title="Move forward" aria-label="Move decor forward">↓</button></div>
+    <div class="tank-context-depth-jumps"><button type="button" data-tank-context-action="bring-to-front">Bring to front</button><button type="button" data-tank-context-action="send-to-back">Send to back</button></div>
+  </div>`;
+}
+
+function updateTankContextDecorControls() {
+  const menu = dom.tankContextMenu;
+  const target = runtime.tankContextMenu;
+  if (!menu || menu.hidden || target?.kind !== "decor") return;
+  if (runtime.utilityOverlayOpen || runtime.storeOverlayOpen || runtime.settingsOverlayOpen || runtime.equipmentOverlayOpen) {
+    closeTankContextMenu();
+    return;
+  }
+  const item = getPlacedDecorById(target.id);
+  if (!item) {
+    closeTankContextMenu();
+    return;
+  }
+  const depth = menu.querySelector("[data-tank-context-depth]");
+  if (!depth) return;
+  const label = getDecorDepthPlacementLabel(item);
+  if (depth.textContent !== label) depth.textContent = label;
+  const z = getPlacedDecorDepthZ(item);
+  for (const [action, disabled] of [["layer-up", z <= TANK_DEPTH_REAR_USABLE_Z], ["send-to-back", z <= TANK_DEPTH_REAR_USABLE_Z], ["layer-down", z >= TANK_DEPTH_FRONT_USABLE_Z], ["bring-to-front", z >= TANK_DEPTH_FRONT_USABLE_Z]]) {
+    const button = menu.querySelector(`[data-tank-context-action="${action}"]`);
+    if (button) button.disabled = disabled;
+  }
+  for (const [axis, flipped] of [["horizontal", isDecorHorizontallyFlipped(item)], ["vertical", isDecorVerticallyFlipped(item)]]) {
+    const button = menu.querySelector(`[data-tank-context-action="flip-${axis}"]`);
+    button?.setAttribute("aria-pressed", String(flipped));
+  }
 }
 
 function openTankContextMenu(kind, item, point) {
@@ -171,18 +208,24 @@ function openTankContextMenu(kind, item, point) {
   let subtitle = "";
   let headerImage = "";
   let actions = [];
+  let decorControls = "";
+  let disabledActions = [];
   if (isFish) {
     const species = getSpeciesForFish(item);
     title = item.name || "Fish";
     subtitle = getFishDisplaySpeciesName(item, species);
     headerImage = getFishDisplayAssetPath(item, species) || species?.asset || "assets/icons/fish_box.png";
-    actions = [["feed", "assets/icons/feed_fish.png", "Feed"], ["care", "assets/icons/fish_care.png", "Fish Care"], ["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/scoop.png", "Scoop Out", "is-danger"], ["settings", "assets/icons/settings.png", "Settings"]];
+    actions = [["feed", "assets/icons/feed_fish.png", "Feed"], ["care", "assets/icons/fish_care.png", "Fish Care"], ["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/scoop.png", runtime.fishEditMode ? "Put Away" : "Scoop Out", "is-danger"], ["settings", "assets/icons/settings.png", "Inspect"]];
   } else if (isDecor) {
     const decor = runtime.decorMap.get(item.decorKey);
     title = getPlacedDecorDisplayName(item, decor);
     subtitle = decor?.category || decor?.behavior || "Decoration";
     headerImage = getDecorThumbnailPath(decor) || "assets/icons/decor_box.png";
-    actions = [["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/store.png", "Put Away", "is-danger"], ["settings", "assets/icons/settings.png", "Settings"]];
+    const living = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor);
+    actions = [["settings", "assets/icons/settings.png", "Settings"], ["buy-another", "assets/icons/store.png", "Buy Another"], ["store", "assets/icons/store.png", "Put Away"], ["sell", "assets/icons/store.png", living ? "Rehome" : "Sell", "is-danger is-separated"]];
+    if (!canOpenDecorSettings(item)) actions = actions.filter(([action]) => action !== "settings");
+    if (isPlacedDecorGrouped(item)) disabledActions = ["store", "sell"];
+    if (runtime.editTankMode) decorControls = getTankContextDecorControlsMarkup();
   } else {
     title = getMachineryContextName(item);
     subtitle = item.type === MACHINERY_TYPE_BOAT ? "Machinery · Chum delivery" : "Machinery · Automated care";
@@ -191,8 +234,10 @@ function openTankContextMenu(kind, item, point) {
   }
 
   runtime.tankContextMenu = { kind, id: item.id, anchorX: point.x, anchorY: point.y };
-  menu.innerHTML = `<div class="tank-context-menu-header"><span class="tank-context-menu-icon"><img ${assetImageAttributes(headerImage)} alt="" aria-hidden="true" /></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div></div><div class="tank-context-menu-actions">${actions.map(([action, actionIcon, label, className = ""]) => `<button class="tank-context-menu-action ${className}" type="button" data-tank-context-action="${action}"><img class="tank-context-menu-action-icon" ${assetImageAttributes(actionIcon)} alt="" aria-hidden="true" /><span>${label}</span></button>`).join("")}</div>`;
+  menu.innerHTML = `<div class="tank-context-menu-header"><span class="tank-context-menu-icon"><img ${assetImageAttributes(headerImage)} alt="" aria-hidden="true" /></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div></div>${decorControls}<div class="tank-context-menu-actions">${actions.map(([action, actionIcon, label, className = ""]) => `<button class="tank-context-menu-action ${className}" type="button" data-tank-context-action="${action}"${disabledActions.includes(action) ? ' disabled title="Ungroup before removing this decor"' : ""}><img class="tank-context-menu-action-icon" ${assetImageAttributes(actionIcon)} alt="" aria-hidden="true" /><span>${label}</span></button>`).join("")}</div>`;
   menu.hidden = false;
+  dom.selectedDecorMenuButton?.setAttribute("aria-expanded", String(isDecor && runtime.selectedDecorId === item.id));
+  updateTankContextDecorControls();
   positionTankContextMenu(menu, point);
   return true;
 }
@@ -209,10 +254,10 @@ function getTankContextTargetName(kind, id) {
 function beginTankContextMenuRename() {
   const { kind, id, anchorX, anchorY } = runtime.tankContextMenu || {};
   const menu = dom.tankContextMenu;
-  if (!menu || !kind || !id) return false;
+  if (!menu || !["fish", "machinery"].includes(kind) || !id) return false;
   const currentName = getTankContextTargetName(kind, id);
-  const label = kind === "fish" ? "Fish name" : kind === "decor" ? "Decoration name" : "Machinery name";
-  const maxLength = kind === "fish" ? 20 : kind === "machinery" ? 30 : 36;
+  const label = kind === "fish" ? "Fish name" : "Machinery name";
+  const maxLength = kind === "fish" ? 20 : 30;
   const actions = menu.querySelector(".tank-context-menu-actions");
   if (!actions) return false;
   actions.innerHTML = `<form class="tank-context-menu-rename" data-tank-context-rename-form><label>${label}<input type="text" maxlength="${maxLength}" value="${escapeHtml(currentName)}" data-tank-context-name-input /></label><div><button type="submit" class="tank-context-menu-save">Save</button><button type="button" class="tank-context-menu-cancel" data-tank-context-rename-cancel>Cancel</button></div></form>`;
@@ -240,12 +285,7 @@ function renameTankContextTarget(kind, id, nextName) {
     showToast(`${name} has been renamed.`);
     return true;
   }
-  if (kind === "decor") {
-    const item = setSelectedDecor(id);
-    if (!item) return false;
-    setSelectedDecorCustomName(nextName);
-    return true;
-  }
+  if (kind !== "machinery") return false;
   const machinery = getMachineryById(id);
   if (!machinery) return false;
   const name = String(nextName).trim().slice(0, 30);
@@ -266,8 +306,28 @@ function handleTankContextMenuAction(action) {
   if (action === "rename") {
     return beginTankContextMenuRename();
   }
+  if (kind === "decor" && ["flip-horizontal", "flip-vertical", "layer-up", "layer-down", "bring-to-front", "send-to-back"].includes(action)) {
+    const item = getPlacedDecorById(id);
+    if (!item || !runtime.editTankMode || runtime.placementMode || runtime.dragState) return false;
+    setSelectedDecor(id);
+    if (action.startsWith("flip-")) toggleActiveDecorFlip(action.slice(5));
+    else performDecorEditShortcutAction(action);
+    updateTankContextDecorControls();
+    // Repeated transforms keep the same menu and focused button in place.
+    return true;
+  }
   let succeeded = false;
-  if (action === "store") {
+  if (kind === "decor" && action === "buy-another") {
+    const item = getPlacedDecorById(id);
+    if (!item) return false;
+    closeTankContextMenu();
+    return openDecorBuyAnotherConfirmation(item.decorKey);
+  } else if (kind === "decor" && action === "sell") {
+    const item = getPlacedDecorById(id);
+    if (!item || isPlacedDecorGrouped(item)) return false;
+    closeTankContextMenu();
+    return openDecorSellConfirmation(id);
+  } else if (action === "store") {
     if (kind === "fish") succeeded = storeFish(id, { allowDead: true, source: "context" });
     if (kind === "decor") {
       const existed = Boolean(getPlacedDecorById(id));

@@ -6,6 +6,25 @@ The fragments intentionally assemble into one JavaScript module scope. This pres
 
 `module-manifest.json` records bundle order and module dependencies. `function-inventory.json` records every top-level function, its original line, assigned module, source hash, and calls to other game functions. Run `npm run check:app` to verify the generated bundle.
 
+In the editor, right-click placed decor or use its selection's ellipsis button
+to open the shared tank context menu. Flip and depth controls update in place
+without dismissing it. Clicking outside, opening another menu or dialog, or
+pressing Escape dismisses it. Resize handles remain on the selected decor.
+Run `node --test scripts/edit-workspace.test.cjs` for interaction coverage.
+
+Fish choose shelter without player assignment. Decor claims reserve an available
+slot for up to 90 seconds, stay within the fish's current aquarium, and clear on
+reload, removal, or travel. Old saved residences are retired. Territorial fish
+and adult angelfish may briefly warn nearby intruders at a claimed shelter;
+friends, distant fish, and fish at other depths do not trigger those warnings.
+Each encounter gets one chance roll followed by a cooldown.
+
+Sleep uses a valid cave entrance and holds at the interior arrival point, or
+approaches a spot behind non-cave decor. Its 12-second idle period begins after
+arrival, with a 45-second limit on seeking shelter. Feeding and panic interrupt
+sleep, and cave occupants leave using the normal exit route. Run
+`node --test scripts/decor-claims-and-sleep.test.cjs` for focused coverage.
+
 The Debug sidebar's Decor Performance section has session-only comparison
 controls. Reduced Sway Detail uses 12–48 bands based on screen height; leave it
 off for the original 28–180 bands. Freeze Decor Sway keeps bobbing while skipping

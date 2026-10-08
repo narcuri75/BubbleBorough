@@ -741,7 +741,7 @@ function loadDecorLayoutHarness() {
   const c = load(file, names, { state, runtime, dom: {}, getCurrentTank: () => tank,
     createId: prefix => `${prefix}-${++sequence}`, canUseDecorWithCurrentContentSettings: () => true,
     canDecorLiveInCurrentTank: () => true, titleFromFile: key => key, showToast() {}, renderUi() {},
-    clearSelectedDecor() {}, clearDecorResidenceAssignments() {}, clearDecorBoroughServiceReservations() {},
+    clearSelectedDecor() {}, clearDecorClaims() {}, clearDecorBoroughServiceReservations() {},
     updatePlacedDecorResizeAnchor() {}, sanitizePlacedDecor: item => item?.decorKey ? structuredClone(item) : null,
     saveState() {} });
   c.saveState = () => c.commitDecorEditHistory();
@@ -2611,17 +2611,16 @@ test("transit tubes participate in both layers of cave-style collision", () => {
   assert.match(collision, /Only the committed traveler gets[\s\S]*tube remains solid for every other fish/);
 });
 
-test("linked tubes support homecoming and occasional ordinary travel", () => {
+test("linked tubes support services and occasional ordinary travel without permanent homes", () => {
   const simulation = fs.readFileSync(path.join(root, "tank/simulation.js"), "utf8");
-  assert.match(simulation, /residenceTubeJourney = shouldReturnHome \? getTransitTubeJourney\(source, residenceTank\)/);
+  assert.doesNotMatch(simulation, /residenceTubeJourney|shouldReturnHome/);
   assert.match(simulation, /ambientTubeJourneys[\s\S]*getTransitTubeJourney\(source, target\)/);
   assert.match(simulation, /tubeJourney: selectedTubeJourney/);
 });
 
 test("neighborhood visits last long enough and linked tubes get their own travel roll", () => {
   const simulation = fs.readFileSync(path.join(root, "tank", "simulation.js"), "utf8");
-  assert.match(simulation, /getFishNeedValue\(fish, "energy", now\) <= FISH_ENERGY_LOW_THRESHOLD/);
-  assert.match(simulation, /timeSinceLastMove >= 5 \* MINUTE_MS/);
+  assert.match(simulation, /const minimumMoveDelay = directedRoute \? 25 \* 1000 : 2 \* MINUTE_MS/);
   assert.match(simulation, /ambientTubeTravelRequested = ambientTubeJourneys\.length > 0 && Math\.random\(\) < 0\.08/);
   assert.match(simulation, /ambientEdgeTravelRequested = !ambientTubeTravelRequested && neighbors\.length > 0 && Math\.random\(\) < 0\.02/);
 });
@@ -9925,7 +9924,7 @@ test("Expansion Phase 5 water conversion stays in Edit Tank and consumes exactly
     normalizeDecorKey: value => String(value || ""),
     isDecorCompatibleWithWaterType: () => true,
     syncTankLivingDecorActivity: () => { synced++; return { deactivated: [], activated: [] }; },
-    clearDecorResidenceAssignments() {},
+    clearDecorClaims() {},
     pushEvent() {},
     saveState: () => { saved++; },
     renderUi() {},

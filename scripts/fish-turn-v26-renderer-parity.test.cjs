@@ -1415,6 +1415,7 @@ test("phase 17 uploads upright body/fin textures once per renderer cache", () =>
     texParameteri() {},
     pixelStorei(pname, value) { pixelStoreCalls.push([pname, value]); },
     texImage2D() { uploadCount += 1; },
+    texSubImage2D() { uploadCount += 1; },
     deleteTexture() {}
   };
   const context = {
@@ -1446,6 +1447,12 @@ test("phase 17 uploads upright body/fin textures once per renderer cache", () =>
     [[gl.UNPACK_FLIP_Y_WEBGL, false], [gl.UNPACK_FLIP_Y_WEBGL, false]],
     "v26 UV v=0 is the source-image top, so body and fin uploads must not flip Y"
   );
+  const animatedCanvas = { width: 512, height: 512, fishTurnV26DynamicTexture: true };
+  const animated1 = context.getFishTurnV26GpuTexture(renderer, animatedCanvas);
+  const animated2 = context.getFishTurnV26GpuTexture(renderer, animatedCanvas);
+  assert.equal(animated1, animated2, "animated inspection textures reuse their GPU allocation");
+  assert.equal(createCount, 3);
+  assert.equal(uploadCount, 4, "each animated frame is uploaded instead of freezing the first swim pose");
 });
 test("phase 17 source never vertically flips v26 DOM textures", () => {
   assert.match(v26Source, /pixelStorei\(gl\.UNPACK_FLIP_Y_WEBGL, false\)/);

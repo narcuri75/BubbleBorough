@@ -248,16 +248,86 @@ test("quiz suggests every matching treatment without inspecting fish or suppress
     assert.ok(physical || atlas, `Missing symptom artwork: ${clue.image}`);
   }
 });
-test("the inspector identifies care concerns before treatment or a paid assessment", () => {
+test("the inspector reveals diagnoses only for a discovered current episode", () => {
   const c = fixture(), f = fish();
-  assert.equal(c.getFishCareConditionText(f), "Parasites");
+  assert.equal(c.getFishCareConditionText(f), "Needs assessment");
+  assert.doesNotMatch(c.getFishTreatmentGuideMarkup(f, START), /Parasites|Anti-Parasite|white specks/i);
   c.discoverFishCareCondition(f, "parasites"); assert.equal(c.getFishCareConditionText(f), "Parasites");
-  f.diseaseInfectedAt += DAY; assert.equal(c.getFishCareConditionText(f), "Parasites");
+  f.diseaseInfectedAt += DAY; assert.equal(c.getFishCareConditionText(f), "Needs assessment");
+  assert.doesNotMatch(c.getFishTreatmentGuideMarkup(f, START), /Parasites|Anti-Parasite|white specks/i);
+});
+
+test("unassessed fish never reveal a diagnosis or matching medicine in their care guide", () => {
+  const c = fixture();
+  for (const overrides of [
+    {}, { diseaseType: "infection" },
+    { diseaseState: "none", healthUnits: 6 },
+    { diseaseState: "none", wrongWater: true, osmoticStressStartedAt: START }
+  ]) {
+    const f = fish(overrides);
+    assert.equal(c.getFishCareConditionText(f, START), "Needs assessment");
+    const guide = c.getFishTreatmentGuideMarkup(f, START);
+    assert.match(guide, /Pharmacy Symptom Checker|vet consultation/);
+    assert.doesNotMatch(guide, /Parasites|Infection|Injured|Osmotic|First Aid|Anti-Parasite|water-type stress/i);
+    assert.equal(Object.keys(f.careKnowledge).length, 0);
+  }
+});
+
+test("the quiz asks the player for observed symptoms and never directs them to a free diagnosis", () => {
+  const c = fixture();
+  c.assetImageAttributes = () => "";
+  c.tank.fish = [fish()];
+  c.runtime.pharmacyQuiz = { symptoms: [], submitted: false };
+  const markup = c.renderPharmacySymptomChecker();
+  assert.match(markup, /Observe your fish and select the symptoms you can see/);
+  assert.doesNotMatch(markup, /see its condition and care instructions|pharmacy-results/);
+  assert.equal(c.getFishCareConditionText(c.tank.fish[0], START), "Needs assessment");
+});
+
+test("vet assessment reveals only its current episodes and treatment tracks the medicine already chosen", () => {
+  const c = fixture(), f = fish({ healthUnits: 6 }); c.tank.fish = [f];
+  c.purchaseStillwaterConsultation(c.tank.id, [f.id], "assessment", START);
+  assert.equal(c.getFishCareConditionText(f, START), "Parasites · Injured");
+  assert.match(c.getFishTreatmentGuideMarkup(f, START), /First Aid/);
+  f.diseaseInfectedAt += DAY;
+  assert.equal(c.getFishCareConditionText(f, START), "Injured · Needs assessment");
+  assert.doesNotMatch(c.getFishTreatmentGuideMarkup(f, START), /parasites|Anti-Parasite/i);
+  const untreated = fish();
+  c.applyFishCourseDose({ id: "antiParasite" }, untreated, START);
+  assert.equal(c.getFishCareConditionText(untreated, START), "Parasites");
+  assert.match(c.getFishTreatmentGuideMarkup(untreated, START), /1\/5 doses/);
+});
+
+test("Fish Settings clears the treatment guide even after a diagnosed fish was selected", () => {
+  const file = "public/app-src/ui/customization-actions-and-inventory.js";
+  const source = ts.createSourceFile(file, read(file), ts.ScriptTarget.Latest, true);
+  const renderer = source.statements.find(node => ts.isFunctionDeclaration(node) && node.name?.text === "renderFishInspector");
+  const guideBlock = renderer.body.statements.find(node => ts.isIfStatement(node) && node.expression.getText(source) === "careGuide");
+  assert.ok(guideBlock);
+  const careGuide = { hidden: false, innerHTML: "Previously displayed treatment" };
+  let guideCalls = 0;
+  const c = vm.createContext({
+    runtime: { fishInspectorSettingsOpen: true }, careGuide, fish: fish(), dead: false, inStorage: false, now: START,
+    getPeacefulModeSimulationNow: value => value,
+    getFishTreatmentGuideMarkup: () => { guideCalls++; return "Diagnosis and treatment instructions"; },
+    setMarkupIfChanged: (_key, element, markup) => { element.innerHTML = markup; }
+  });
+  vm.runInContext(guideBlock.getText(source), c);
+  assert.equal(careGuide.hidden, true);
+  assert.equal(careGuide.innerHTML, "");
+  assert.equal(guideCalls, 0);
+  c.runtime.fishInspectorSettingsOpen = false;
+  vm.runInContext(guideBlock.getText(source), c);
+  assert.equal(careGuide.hidden, false);
+  assert.equal(guideCalls, 1);
 });
 
 test("care explains water stress, ineffective medicines, and the needed first step", () => {
   const c = fixture(), f = fish({ diseaseState: "none", wrongWater: true, osmoticStressProgressMs: 1 });
   c.getFishStoreWaterType = () => "saltwater";
+  assert.equal(c.getFishCareConditionText(f), "Needs assessment");
+  assert.doesNotMatch(c.getFishTreatmentGuideMarkup(f, START), /Osmotic|saltwater|Water recovery/);
+  c.discoverFishCareCondition(f, "osmotic-stress");
   assert.equal(c.getFishCareConditionText(f), "Osmotic Stress");
   const guide = c.getFishTreatmentGuideMarkup(f, START);
   assert.match(guide, /Move this fish to saltwater first/);
@@ -265,13 +335,15 @@ test("care explains water stress, ineffective medicines, and the needed first st
   assert.match(guide, /Buying a bottle stocks your medicine/);
 });
 
-test("a mismatched treatment reports the fish's actual concern without consuming a course", () => {
+test("a mismatched treatment gives no diagnosis or correct medicine and consumes no course", () => {
   const c = fixture(), f = fish();
   const result = c.getFishMedicationEligibility("infectionTreatment", f, START);
   assert.equal(result.ok, false);
-  assert.match(result.message, /does not treat Parasites/);
+  assert.match(result.message, /Symptom Checker|vet consultation/);
+  assert.doesNotMatch(result.message, /Parasites|Anti-Parasite/i);
   assert.equal(Object.keys(f.treatmentCourses).length, 0);
-  assert.match(c.getFishTreatmentGuideMarkup(f, START), /Anti-Infection do not clear parasites/);
+  assert.equal(Object.keys(f.careKnowledge).length, 0);
+  assert.doesNotMatch(c.getFishTreatmentGuideMarkup(f, START), /Anti-Infection|parasites/i);
 });
 
 test("an active care guide explains the conditions preventing medicine from working", () => {
@@ -390,7 +462,7 @@ test("malformed saved courses and report entries are discarded safely", () => {
 });
 test("live guides preserve legacy recovery and support effect expiry", () => {
   const c = fixture(), f = fish({ diseaseState: "recovering", diseaseRecoveryProgressMs: DAY / 2, calmedUntil: START + 600000 });
-  assert.match(c.getFishCareConditionText(f), /Parasites/);
+  assert.equal(c.getFishCareConditionText(f), "Needs assessment");
   let html = c.getFishTreatmentGuideMarkup(f, START);
   assert.match(html, /12 hours of recovery remain/);
   assert.match(html, /Calming effect active/);

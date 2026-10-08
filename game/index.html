@@ -367,39 +367,8 @@
               <span class="decor-depth-indicator-track" aria-hidden="true"><i></i></span>
               <span>FRONT</span>
             </div>
-            <div id="selectedDecorLayerControls" class="decor-side-control-panel decor-layer-controls" hidden
-              aria-label="Selected decor depth">
-              <span class="decor-side-control-title">Depth</span>
-              <button id="selectedDecorLayerUpButton" class="decor-side-control-button" type="button"
-                title="Move decor backward" aria-label="Move decor backward">&uarr;</button>
-              <span id="selectedDecorLayerValue" class="decor-side-control-value">Center</span>
-              <button id="selectedDecorLayerDownButton" class="decor-side-control-button" type="button"
-                title="Move decor forward" aria-label="Move decor forward">&darr;</button>
-              <button id="selectedDecorBringToFrontButton" class="decor-side-control-button decor-depth-jump-button" type="button"
-                title="Bring decor to front" aria-label="Bring decor to front">FRONT</button>
-              <button id="selectedDecorSendToBackButton" class="decor-side-control-button decor-depth-jump-button" type="button"
-                title="Send decor to back" aria-label="Send decor to back">BACK</button>
-            </div>
-            <div id="selectedDecorTransformControls" class="decor-side-control-panel decor-transform-controls" hidden
-              aria-label="Selected decor flip controls">
-              <span class="decor-side-control-title">Flip</span>
-              <button id="selectedDecorFlipHorizontalButton" class="decor-side-control-button" type="button"
-                title="Flip Horizontally" aria-label="Flip Decor Horizontally" aria-pressed="false">&harr;</button>
-              <button id="selectedDecorFlipVerticalButton" class="decor-side-control-button" type="button"
-                title="Flip Vertically" aria-label="Flip Decor Vertically" aria-pressed="false">&varr;</button>
-            </div>
-            <div id="selectedDecorActionBar" class="decor-action-top-bar" hidden aria-label="Selected decor actions">
-              <button id="selectedDecorSellButton" class="decor-action-float-button sell-decor-float-button"
-                type="button" title="Sell" aria-label="Sell">SELL</button>
-              <button id="selectedDecorBuyAnotherButton" class="decor-action-float-button buy-another-float-button"
-                type="button" title="Buy Another" aria-label="Buy Another">BUY</button>
-              <button id="selectedDecorStoreButton" class="decor-action-float-button store-decor-float-button"
-                type="button" title="Move to Storage" aria-label="Move to Storage">PUT AWAY</button>
-              <button id="selectedDecorAssignButton" class="decor-action-float-button assign-decor-float-button"
-                type="button" title="Assign Residence" aria-label="Assign Residence">ASSIGN</button>
-              <button id="selectedDecorSettingsButton" class="decor-action-float-button settings-decor-float-button"
-                type="button" title="Decor Settings" aria-label="Decor Settings">(S)ETTINGS</button>
-            </div>
+            <button id="selectedDecorMenuButton" class="decor-context-menu-button" type="button" hidden
+              title="Decor actions" aria-label="Open decor actions" aria-haspopup="true" aria-controls="tankContextMenu" aria-expanded="false">⋯</button>
             <div id="selectedDecorResizeHandles" class="decor-resize-handles" hidden aria-hidden="true">
               <button class="decor-resize-corner-handle" type="button" data-selected-decor-resize-corner="nw"
                 title="Resize from top left" aria-label="Resize decor from top left"></button>
@@ -2160,7 +2129,7 @@
                     type="button" hidden aria-label="Move to Storage" title="Move to Storage">PUT AWAY</button>
                   <button id="inspectorFishSettingsButton"
                     class="fish-inspector-action-button fish-action-settings"
-                    type="button" aria-label="Fish Settings" title="Fish Settings">SETTINGS</button>
+                    type="button" aria-label="Inspect fish" title="Inspect fish">INSPECT</button>
                   <button id="inspectorDisposeFish" class="small-button warn icon" type="button" hidden
                     aria-label="Dispose of fish" title="Dispose of fish">&#128701;</button>
                 </div>

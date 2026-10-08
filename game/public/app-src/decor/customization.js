@@ -991,7 +991,7 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
   fish.feedingPelletId = null;
   fish.comfortDamageProgressMs = 0;
   fish.hangoutDecorId = null;
-  fish.residenceDecorId = null;
+  fish.decorClaimId = null;
   fish.favoriteSpot = null;
   fish.entryStartedAt = null;
   fish.entryDurationMs = 0;
@@ -1084,7 +1084,7 @@ function returnSoldTankDecorToStorage(tank) {
   for (const item of decorList) {
     const decorKey = String(item?.decorKey || "");
     if (!decorKey) continue;
-    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorClaims(item.id, { save: false });
     clearDecorBoroughServiceReservations(item.id);
     state.decorInventory[decorKey] = Math.max(0, Math.floor(Number(state.decorInventory[decorKey]) || 0)) + 1;
     if (runtime.dragState?.placedId === item.id) runtime.dragState = null;

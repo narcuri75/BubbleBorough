@@ -2350,43 +2350,6 @@ function drawActiveDecorLayerCue() {
     }
     return;
   }
-
-  if (selectedDecor) {
-    if (!dom.selectedDecorSettingsButton && canOpenDecorSettings(selectedDecor)) {
-      drawDecorSettingsBadge(selectedDecor);
-    }
-  }
-}
-
-function drawDecorSettingsBadge(item) {
-  const bounds = getPlacedDecorOpaqueBounds(item);
-  if (!bounds) {
-    return;
-  }
-
-  const text = "[S] Settings";
-  const x = (bounds.left + bounds.right) / 2;
-  const y = Math.min(TANK_HEIGHT - 18, Math.max(WATER_SURFACE_Y + 18, bounds.bottom + 18));
-
-  tankContext.save();
-  tankContext.font = "800 11px Trebuchet MS";
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
-  const width = Math.ceil(tankContext.measureText(text).width) + 18;
-  const height = 22;
-  tankContext.fillStyle = "rgba(6, 16, 24, 0.82)";
-  tankContext.strokeStyle = "rgba(156, 241, 255, 0.74)";
-  tankContext.lineWidth = 1.2;
-  tankContext.shadowColor = "rgba(104, 232, 255, 0.32)";
-  tankContext.shadowBlur = 12;
-  tankContext.beginPath();
-  tankContext.roundRect(x - width / 2, y - height / 2, width, height, 8);
-  tankContext.fill();
-  tankContext.stroke();
-  tankContext.shadowBlur = 0;
-  tankContext.fillStyle = "rgba(234, 248, 255, 0.96)";
-  tankContext.fillText(text, x, y + 0.5);
-  tankContext.restore();
 }
 
 function drawSelectedDecorHighlight(item) {

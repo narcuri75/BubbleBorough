@@ -1667,7 +1667,7 @@ function confirmWaterTypeConversion(targetWaterType = runtime.pendingWaterConver
   if (typeof processFishConditionFramework === "function") processFishConditionFramework(conversionNow);
   const decorSync = typeof syncTankLivingDecorActivity === "function" ? syncTankLivingDecorActivity(tank) : { deactivated: [], activated: [] };
   for (const item of decorSync.deactivated || []) {
-    if (typeof clearDecorResidenceAssignments === "function") clearDecorResidenceAssignments(item.id, { save: false });
+    if (typeof clearDecorClaims === "function") clearDecorClaims(item.id, { save: false });
   }
   runtime.decorHangoutZonesKey = "";
   runtime.pendingWaterConversionTarget = "";

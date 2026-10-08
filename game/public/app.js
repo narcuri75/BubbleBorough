@@ -3129,7 +3129,7 @@ const FISH_ACTION_STEER_REFRESH_MS = 260;
 const FISH_ACTION_EAT_DURATION_MS = 45 * 1000;
 const FISH_ACTION_WAIT_FOOD_DURATION_MS = 25 * 1000;
 const FISH_ACTION_REST_DURATION_MS = 35 * 1000;
-const FISH_ACTION_SLEEP_DURATION_MS = 90 * 1000;
+const FISH_ACTION_SLEEP_DURATION_MS = 12 * 1000;
 const FISH_ACTION_HIDE_DURATION_MS = 40 * 1000;
 const FISH_ACTION_GREET_DURATION_MS = 12 * 1000;
 const FISH_ACTION_FOLLOW_DURATION_MS = 45 * 1000;
@@ -3252,10 +3252,8 @@ const FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR = [
 ].join(",");
 const FISH_INSPECTOR_SLIDER_SOUND_SELECTOR = 'input[type="range"][data-inspector-fish-setting="size"]';
 const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorBuyAnotherButton",
-  "#selectedDecorSellButton",
-  "#selectedDecorStoreButton",
-  "#selectedDecorSettingsButton",
+  "#selectedDecorMenuButton",
+  "[data-tank-context-action]",
   "[data-edit-decor-settings]",
   "[data-sell-decor-placed]",
   "[data-store-decor]",
@@ -3266,14 +3264,10 @@ const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
   "[data-tray-sell-placed-decor]"
 ].join(",");
 const SELECTED_DECOR_INCREASE_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorScaleUpButton",
-  "#selectedDecorLayerUpButton",
   '[data-size-decor][data-size-direction="1"]',
   '[data-resize-placed][data-size-direction="1"]'
 ].join(",");
 const SELECTED_DECOR_DECREASE_BUTTON_SOUND_SELECTOR = [
-  "#selectedDecorScaleDownButton",
-  "#selectedDecorLayerDownButton",
   '[data-size-decor][data-size-direction="-1"]',
   '[data-resize-placed][data-size-direction="-1"]'
 ].join(",");
@@ -13042,28 +13036,10 @@ const dom = {
   fishActionTargetMenu: document.querySelector("#fishActionTargetMenu"),
   selectedFishNeedsPanel: document.querySelector("#selectedFishNeedsPanel"),
   closeInspector: document.querySelector("#closeInspector"),
-  selectedDecorActionBar: document.querySelector("#selectedDecorActionBar"),
-  selectedDecorScaleControls: document.querySelector("#selectedDecorScaleControls"),
+  selectedDecorMenuButton: document.querySelector("#selectedDecorMenuButton"),
   selectedDecorResizeHandles: document.querySelector("#selectedDecorResizeHandles"),
   selectedDecorResizeIndicator: document.querySelector("#selectedDecorResizeIndicator"),
   selectedDecorResizeCornerHandles: [...document.querySelectorAll("[data-selected-decor-resize-corner]")],
-  selectedDecorLayerControls: document.querySelector("#selectedDecorLayerControls"),
-  selectedDecorTransformControls: document.querySelector("#selectedDecorTransformControls"),
-  selectedDecorFlipHorizontalButton: document.querySelector("#selectedDecorFlipHorizontalButton"),
-  selectedDecorFlipVerticalButton: document.querySelector("#selectedDecorFlipVerticalButton"),
-  selectedDecorSettingsButton: document.querySelector("#selectedDecorSettingsButton"),
-  selectedDecorAssignButton: document.querySelector("#selectedDecorAssignButton"),
-  selectedDecorSellButton: document.querySelector("#selectedDecorSellButton"),
-  selectedDecorStoreButton: document.querySelector("#selectedDecorStoreButton"),
-  selectedDecorBuyAnotherButton: document.querySelector("#selectedDecorBuyAnotherButton"),
-  selectedDecorScaleUpButton: document.querySelector("#selectedDecorScaleUpButton"),
-  selectedDecorScaleDownButton: document.querySelector("#selectedDecorScaleDownButton"),
-  selectedDecorSizeValue: document.querySelector("#selectedDecorSizeValue"),
-  selectedDecorLayerUpButton: document.querySelector("#selectedDecorLayerUpButton"),
-  selectedDecorLayerDownButton: document.querySelector("#selectedDecorLayerDownButton"),
-  selectedDecorBringToFrontButton: document.querySelector("#selectedDecorBringToFrontButton"),
-  selectedDecorSendToBackButton: document.querySelector("#selectedDecorSendToBackButton"),
-  selectedDecorLayerValue: document.querySelector("#selectedDecorLayerValue"),
   inspectorBuyAnotherFish: document.querySelector("#inspectorBuyAnotherFish"),
   inspectorSellFish: document.querySelector("#inspectorSellFish"),
   inspectorStoreFish: document.querySelector("#inspectorStoreFish"),
@@ -13211,6 +13187,8 @@ const runtime = {
   editTankBackgroundMode: "",
   pendingWaterConversionTarget: "",
   editTankGravelLayer: 0,
+  editTankGravelPresetPage: 0,
+  gravelCurrentPreview: null,
   tankColorPickerDrag: null,
   foodTrayOpen: false,
   medicineTrayOpen: false,
@@ -13240,7 +13218,6 @@ const runtime = {
   selectedDecorIds: [],
   bubblerSettingsDecorId: null,
   customDecorSettingsDecorId: null,
-  residenceSettingsDecorId: null,
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
   decorSettingsCaveTab: "entries",
@@ -14453,35 +14430,39 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
     renderBody: (item) => renderDecorSettingsOverlay(item),
-    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
     renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
     hideFooter: true,
     handlers: {
       onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
     }
   }),
+  "fish-inspect": {
+    id: "fish-inspect",
+    exclusive: true,
+    onOpen: (_ctx, options) => {
+      runtime.fishInspectFishId = options.fishId;
+      runtime.fishInspectNameDraft = getManagedFishById(options.fishId)?.fish?.name || "";
+      runtime.fishInspectPreviewStartedAt = Date.now();
+      runtime.fishInspectView = "animated";
+      runtime.fishInspectPausedAt = 0;
+    },
+    onClose: closeFishInspectPreview,
+    render: renderFishInspectUtilityOverlay,
+    onBodyClick: handleFishInspectClick,
+    onBodyInput: handleFishInspectInput,
+    onBodyChange: handleFishInspectChange,
+    onBodyKeyDown: handleFishInspectKeyDown
+  },
   "custom-decor-settings": createPlacedDecorUtilityMode({
     id: "custom-decor-settings",
     runtimeKey: "customDecorSettingsDecorId",
     fallbackTitle: "Decor Settings",
     getItem: () => getPlacedDecorById(runtime.customDecorSettingsDecorId) || getSelectedPlacedDecor(),
     renderBody: (item) => renderDecorSettingsOverlay(item),
-    renderTitleActions: (item, decor) => renderDecorSettingsTitleActions(item, decor),
     renderHeaderActions: (item, decor) => renderDecorSettingsHeaderActions(item, decor),
     hideFooter: true,
     handlers: {
       onHeaderClick: handleDecorSettingsUtilityOverlayHeaderClick
-    }
-  }),
-  "decor-residence": createPlacedDecorUtilityMode({
-    id: "decor-residence",
-    runtimeKey: "residenceSettingsDecorId",
-    kicker: "Residence",
-    fallbackTitle: "Assign Residence",
-    getItem: () => getPlacedDecorById(runtime.residenceSettingsDecorId) || getSelectedPlacedDecor(),
-    renderBody: (item) => renderDecorResidenceAssignmentOverlay(item),
-    handlers: {
-      onBodyClick: handleDecorResidenceUtilityOverlayBodyClick
     }
   }),
   "fish-buy-confirm": createPendingStateUtilityMode({
@@ -14836,7 +14817,7 @@ function replayDecorEdit(direction) {
     for (const { from, to } of changes) {
       const index = state.placedDecor.findIndex((item) => item.id === (from || to).id);
       if (!to) {
-        clearDecorResidenceAssignments(from.id, { save: false });
+        clearDecorClaims(from.id, { save: false });
         clearDecorBoroughServiceReservations(from.id);
         state.placedDecor.splice(index, 1);
       } else if (index < 0) {
@@ -14956,7 +14937,7 @@ function applySavedDecorLayout(layoutId, tankId) {
   });
   beginDecorEditHistory(`Apply ${layout.name}`);
   for (const item of remaining) {
-    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorClaims(item.id, { save: false });
     clearDecorBoroughServiceReservations(item.id);
   }
   state.placedDecor = placed;
@@ -15356,8 +15337,8 @@ function processFishAgeMilestones(now = Date.now()) {
   return changed;
 }
 
-function getFishResidenceNameForHistory(fish) {
-  const decorId = getFishResidenceDecorId(fish);
+function getFishClaimNameForHistory(fish) {
+  const decorId = getFishDecorClaimId(fish);
   const item = decorId ? getAllPlacedDecor(state).find((entry) => entry.id === decorId) : null;
   return item ? (runtime.decorMap.get(item.decorKey)?.name || titleFromFile(item.decorKey)) : "";
 }
@@ -15382,7 +15363,7 @@ function recordFishMemorial(fish, tank = getCurrentTank(), cause = "Unknown", no
     acquiredAt: fish.acquiredAt,
     deathAt: Number(fish.deadAt) || now,
     cause: String(cause || "Unknown").replace(/^.*?died\s*/i, "").trim() || "Unknown",
-    residenceName: getFishResidenceNameForHistory(fish),
+    residenceName: getFishClaimNameForHistory(fish),
     neighborhoodName: getTankLabel(tank),
     parentNames: fish.parentNames,
     milestones: fish.celebratedAgeMilestones
@@ -15541,7 +15522,7 @@ function calculateNeighborhoodIdentity(tank = getCurrentTank()) {
       if (service === "nursery") scores.nursery += 3;
     }
   }
-  scores.residential += Math.min(4, (tank.fish || []).filter((fish) => getFishResidenceDecorId(fish)).length);
+  scores.residential += Math.min(4, (tank.fish || []).filter((fish) => getFishDecorClaimId(fish)).length);
   scores.explorer += Math.min(4, (tank.events || []).filter((event) => event.type === "travel" && Date.now() - event.time < 7 * DAY_MS).length / 2);
   const ranking = Object.entries(scores).sort((left, right) => right[1] - left[1]);
   const best = ranking[0];
@@ -15564,8 +15545,8 @@ function calculateNeighborhoodIdentity(tank = getCurrentTank()) {
 function getNeighborhoodServiceSummary(tank = getCurrentTank()) {
   const services = new Set(getBoroughSectionServiceTypes(tank));
   const residenceItems = getBoroughSectionServiceCandidates(tank, "home");
-  const capacity = residenceItems.reduce((total, item) => total + getDecorResidenceCapacity(item), 0);
-  const occupied = (tank?.fish || []).filter((fish) => getFishResidenceDecorId(fish)).length;
+  const capacity = residenceItems.reduce((total, item) => total + getDecorShelterCapacity(item), 0);
+  const occupied = (tank?.fish || []).filter((fish) => getFishDecorClaimId(fish)).length;
   return {
     homes: { occupied, capacity, available: capacity > occupied },
     food: services.has("food"),
@@ -15605,6 +15586,7 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  releaseFishDecorClaim(fish);
   cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "borough-travel");
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
   fish.activity = "roam";
@@ -15708,6 +15690,7 @@ function beginBoroughTubeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  releaseFishDecorClaim(fish);
   cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "tube-travel");
   const sourcePoints = getTransitTubeTravelPoints(sourceTube);
   fish.activity = "roam";
@@ -15970,7 +15953,7 @@ function getBoroughStructureOccupants(item, tank = getCurrentTank()) {
   return (tank.fish || []).filter((fish) => (
     fish && !isFishDead(fish) && (
       fish.boroughServiceTargetDecorId === item.id
-      || (getFishResidenceDecorId(fish) === item.id && ["rest", "sleep", "hide"].includes(String(fish.activity || fish.behaviorIntent?.action || "").toLowerCase()))
+      || (getFishDecorClaimId(fish) === item.id && ["rest", "sleep", "hide"].includes(String(fish.activity || fish.behaviorIntent?.action || "").toLowerCase()))
     )
   ));
 }
@@ -15986,7 +15969,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
       continue;
     }
     const occupants = getBoroughStructureOccupants(item, tank);
-    const residentsHome = services.includes("home") && getDecorResidents(item.id).some((fish) => {
+    const residentsHome = services.includes("home") && getDecorClaimants(item.id).some((fish) => {
       const dx = Number(fish.xNorm) - Number(item.xNorm);
       const dy = Number(fish.yNorm) - Number(item.yNorm);
       return Math.hypot(dx, dy) < 0.2;
@@ -16055,10 +16038,10 @@ function buildFishIndividualityMarkup(fish, now = Date.now(), options = {}) {
       rows.push(["Observed Traits", species.davyTraits.slice(0, 3).join(", ")]);
     }
   }
-  const residenceId = getFishResidenceDecorId(fish);
+  const residenceId = getFishDecorClaimId(fish);
   const residence = residenceId ? getAllPlacedDecor(state).find((item) => item.id === residenceId) : null;
   if (residence) {
-    rows.push(["Lives at", runtime.decorMap.get(residence.decorKey)?.name || titleFromFile(residence.decorKey)]);
+    rows.push(["Claiming", runtime.decorMap.get(residence.decorKey)?.name || titleFromFile(residence.decorKey)]);
   } else if (!options.dead) {
     rows.push(["Home", "Nomadic"]);
   }
@@ -16329,7 +16312,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
   const tank = getTankContainingFish(fish.id);
   const queue = getFishActionQueueState(fish.id);
   const pending = runtime.pendingNeighborhoodTravel.get(fish.id);
-  const residence = getTankContainingDecor(getFishResidenceDecorId(fish));
+  const residence = getTankContainingDecor(getFishDecorClaimId(fish));
   const favorite = fish.favoriteSpot?.decorId ? getAllPlacedDecor(state).find((item) => item.id === fish.favoriteSpot.decorId) : null;
   const needs = sanitizeFishNeeds(fish.needs, fish, now);
   const facts = [
@@ -16339,7 +16322,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
     ["Action target", queue?.active?.targetId || fish.behaviorIntent?.target || fish.actionTargetFishId || "none"],
     ["Queue", `${queue?.items?.length || 0} waiting · priority ${queue?.active?.priority || 0}${runtime.debugAutonomyPausedFishIds.has(fish.id) ? " · autonomy paused" : ""}`],
     ["Travel", pending ? `${pending.direction} → ${getTankLabel(getTankById(pending.destinationTankId))}` : `${fish.travelReason || "none"} · directed cooldown ${Math.max(0, Math.ceil(((Number(fish.lastNeighborhoodMoveAt) || 0) + 25 * 1000 - now) / 1000))}s`],
-    ["Residence", residence ? getTankLabel(residence) : "unassigned"],
+    ["Claim", residence ? getTankLabel(residence) : "none"],
     ["Service", fish.boroughServiceType || fish.neededBoroughService || "none"],
     ["Relationships", `${Object.keys(sanitizeFishRelationships(fish.relationships)).length} tracked`],
     ["Favorite", favorite ? runtime.decorMap.get(favorite.decorKey)?.name || titleFromFile(favorite.decorKey) : "not tracked"],
@@ -16383,7 +16366,7 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
     + buildLivingBoroughDebugSection("Social", [["relationship", "Force Like", "friend"], ["relationship", "Force Dislike", "fear"], ["relationship", "Force Neutral", "neutral"], ["behavior", "Greet", "follow"], ["behavior", "Avoid", "avoid"], ["behavior", "Hide", "hide"], ["behavior", "Inspect", "inspect-lure"], ["behavior", "Dig", "dig"]])
     + buildLivingBoroughDebugSection("Special flows", [["whale-breath", "Force Whale Breath"], ["proteus", "Set Donations to 99", "donations-99"], ["proteus", "Unlock Z-01 Offer", "unlock"], ["proteus", "Authenticate Z-01", "authenticate"], ["proteus", "Claim Z-01", "claim"], ["proteus", "Force Z-01 Attack", "attack"], ["proteus", "End Z-01 Attack", "attack-end"], ["mail", "Queue Davy Email", "davy"], ["mail", "Queue Proteus Email", "proteus"]])
     + buildLivingBoroughDebugSection("Happenings & Recap", [["happening-recent", "From Recent Event"], ["happening-ten", "Generate 10 Valid"], ["happening-clear", "Clear Happenings"], ["notification-test", "Test Cooldown"], ["recap-preview", "Preview Recap"], ["recap-generate", "Generate Recap Now"], ["simulate-days", "Simulate 7 Days", "7"], ["simulate-days", "Simulate 30 Days", "30"]])
-    + buildLivingBoroughDebugSection("Structures & Residence", [["structure-info", "Selected Structure Info"], ["structure-fill", "Fill With Fish"], ["structure-empty", "Empty Structure"], ["residence-assign", "Assign Fish Here"], ["residence-unassign", "Unassign Fish"], ["residence-clear-orphans", "Clear Orphans"], ["identity", "Recalculate Identity"], ["identity-scores", "Show Identity Scores"]])
+    + buildLivingBoroughDebugSection("Structures & Claims", [["structure-info", "Selected Structure Info"], ["structure-fill", "Fill With Fish"], ["structure-empty", "Empty Structure"], ["identity", "Recalculate Identity"], ["identity-scores", "Show Identity Scores"]])
     + buildLivingBoroughDebugSection("Overview", [["overview-open", "Open Overview"], ["snapshot-rebuild", "Rebuild Snapshots"], ["snapshot-freeze", runtime.debugSnapshotCacheFrozen ? "Unfreeze Cache" : "Freeze Cache"], ["overview-layout", "Auto Layout", "auto"], ["overview-layout", "Force Normal", "normal"], ["overview-layout", "Force Compact", "compact"], ["overview-layout", "Force Micro", "micro"], ["overview-synthetic", "Real Layout", "0"], ["overview-synthetic", "Preview 1", "1"], ["overview-synthetic", "Preview 5", "5"], ["overview-synthetic", "Preview 10", "10"], ["overview-synthetic", "Preview 25", "25"], ["overview-synthetic", "Preview 50", "50"], ["overview-fps", "Fish 5 FPS", "5"], ["overview-fps", "Fish 12 FPS", "12"], ["overview-fps", "Fish 30 FPS", "30"], ["overview-interpolation", runtime.debugOverviewInterpolationDisabled ? "Enable Interpolation" : "Disable Interpolation"], ["overview-sample", "Force Position Sample"]]);
   setMarkupIfChanged("debug-living-borough", dom.debugLivingBoroughPanel, markup);
 }
@@ -16541,20 +16524,15 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "structure-info") {
     const item = getSelectedPlacedDecor();
     runtime.debugLivingBoroughOutput = item
-      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
+      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorClaimants(item.id).length}/${getDecorShelterCapacity(item)} temporary claims; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
       : "Select a structure first.";
   } else if (action === "structure-fill") {
     const item = getSelectedPlacedDecor();
-    if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorResidenceCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });
+    if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorShelterCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });
   } else if (action === "structure-empty") {
     const item = getSelectedPlacedDecor();
     if (item) getAllTankFish(state).forEach((entry) => { if (entry.boroughServiceTargetDecorId === item.id) entry.boroughServiceTargetDecorId = null; });
-  } else if (action === "residence-assign" && fish) {
-    const item = getSelectedPlacedDecor();
-    if (item && isDecorResidenceEligible(item)) fish.residenceDecorId = item.id;
-  } else if (action === "residence-unassign" && fish) fish.residenceDecorId = null;
-  else if (action === "residence-clear-orphans") pruneState(now);
-  else if (action === "identity" || action === "identity-scores") runtime.debugLivingBoroughOutput = JSON.stringify(calculateNeighborhoodIdentity(tank));
+  } else if (action === "identity" || action === "identity-scores") runtime.debugLivingBoroughOutput = JSON.stringify(calculateNeighborhoodIdentity(tank));
   else if (action === "overview-open") openAquariumOverview();
   else if (action === "snapshot-rebuild") { runtime.boroughOverviewSnapshotCache.clear(); renderAquariumOverview(); }
   else if (action === "snapshot-freeze") runtime.debugSnapshotCacheFrozen = !runtime.debugSnapshotCacheFrozen;
@@ -19822,7 +19800,7 @@ function prepareFishForTankStorageTransfer(fish, now = Date.now()) {
   fish.feedingPelletId = null;
   fish.comfortDamageProgressMs = 0;
   fish.hangoutDecorId = null;
-  fish.residenceDecorId = null;
+  fish.decorClaimId = null;
   fish.favoriteSpot = null;
   fish.entryStartedAt = null;
   fish.entryDurationMs = 0;
@@ -19915,7 +19893,7 @@ function returnSoldTankDecorToStorage(tank) {
   for (const item of decorList) {
     const decorKey = String(item?.decorKey || "");
     if (!decorKey) continue;
-    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorClaims(item.id, { save: false });
     clearDecorBoroughServiceReservations(item.id);
     state.decorInventory[decorKey] = Math.max(0, Math.floor(Number(state.decorInventory[decorKey]) || 0)) + 1;
     if (runtime.dragState?.placedId === item.id) runtime.dragState = null;
@@ -26827,6 +26805,7 @@ async function init() {
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
+    "assets/gravel/gravel-preset-tile.webp",
     getTankSubstrateAssetPath(activeTank),
     AUTO_DISPENSER_IMAGE_PATH,
     ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,
@@ -28160,6 +28139,11 @@ function handleToolbarEscapeKeyDown(event) {
   if (event.key !== "Escape") {
     return;
   }
+  if (runtime.tankContextMenu?.kind) {
+    event.preventDefault();
+    closeTankContextMenu();
+    return;
+  }
   if (runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode) {
     event.preventDefault();
     closeActiveEditOverlay();
@@ -28388,6 +28372,7 @@ function bindEvents() {
   window.addEventListener("resize", refreshViewportLayout);
   window.visualViewport?.addEventListener("resize", refreshViewportLayout);
   window.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) return;
     const tagName = event.target instanceof Element ? event.target.tagName : "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tagName) || event.target?.isContentEditable) {
       return;
@@ -30168,9 +30153,15 @@ function bindEvents() {
       setGravelColorPreset(preset.dataset.gravelPreset);
       return;
     }
-    const presetScroll = event.target.closest("[data-gravel-preset-scroll]");
-    if (presetScroll) {
-      dom.editTankCustomGravelPanel.querySelector(".substrate-preset-list")?.scrollBy({ left: Number(presetScroll.dataset.gravelPresetScroll) * 280, behavior: "smooth" });
+    const gravelColor = event.target.closest("[data-gravel-color-choice]");
+    if (gravelColor) {
+      setCustomGravelLayerColor(runtime.editTankGravelLayer, gravelColor.dataset.gravelColorChoice);
+      return;
+    }
+    const presetPage = event.target.closest("[data-gravel-preset-page]");
+    if (presetPage) {
+      runtime.editTankGravelPresetPage = Number(presetPage.dataset.gravelPresetPage);
+      renderCustomGravelControls();
       return;
     }
     if (event.target.closest("[data-randomize-gravel-hill]")) {
@@ -31182,6 +31173,8 @@ function bindEvents() {
 
   dom.tankStage.addEventListener("pointerdown", (event) => {
     clearGlassTapGesture();
+    // Secondary clicks are handled by contextmenu, never by drag/placement.
+    if (event.button !== undefined && event.button !== 0) return;
     if (shouldCaptureTankDesktopInput(event.target)) {
       event.preventDefault();
     }
@@ -31222,9 +31215,21 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.editTankMode) {
+    // All workspace panes remain available. A fish press must switch back
+    // from decor editing before that tool consumes the press and its click.
+    if (isEditWorkspaceSidebarLayout() && !runtime.placementMode && !isAdditiveDecorSelectionEvent(event)) {
+      const hitFish = findFishAtPoint(point.x, point.y, Date.now());
+      if (hitFish && !isFishDead(hitFish)) {
+        activateEditWorkspaceTool("fish");
+        beginFishDrag(hitFish, point, event.pointerId);
+        return;
+      }
+    }
+
+    if (runtime.editTankMode || ((runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode) && isEditWorkspaceSidebarLayout())) {
       const hitDecor = findPlacedDecorAtPoint(point.x, point.y);
       if (hitDecor) {
+        activateEditWorkspaceTool("decor");
         playToolbarButtonReleaseSoundEffect();
         if (isAdditiveDecorSelectionEvent(event)) {
           event.preventDefault();
@@ -31245,7 +31250,7 @@ function bindEvents() {
         return;
       }
 
-      if (clearSelectedDecor()) {
+      if (runtime.editTankMode && clearSelectedDecor()) {
         renderUi(Date.now(), { full: false });
       }
 
@@ -31259,7 +31264,7 @@ function bindEvents() {
       //    const pluckedPebble = createLoosePebbleFromBed(point.x, point.y);
       //    beginGravelPebbleDrag(pluckedPebble, point, event.pointerId, { existing: false });
       //  }
-      return;
+      if (runtime.editTankMode) return;
     }
 
     if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && pointInSimpleBounds(point.x, point.y, getAutoDispenserHitBounds())) {
@@ -31409,6 +31414,37 @@ function bindEvents() {
       return;
     }
 
+    if (runtime.fishEditMode || isEditWorkspaceSidebarLayout()) {
+      const fish = findFishAtPoint(point.x, point.y, Date.now());
+      if (fish && !isFishDead(fish)) {
+        activateEditWorkspaceTool("fish");
+        renderUi(Date.now(), { full: false });
+        if (openTankContextMenu("fish", fish, point)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+    }
+
+    if (runtime.editTankMode || ((runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode) && isEditWorkspaceSidebarLayout())) {
+      const decor = findPlacedDecorAtPoint(point.x, point.y);
+      if (decor) {
+        activateEditWorkspaceTool("decor");
+        setSelectedDecor(decor.id);
+        renderUi(Date.now(), { full: false });
+        if (openTankContextMenu("decor", decor, point)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+      if (runtime.editTankMode) {
+        closeTankContextMenu();
+        return;
+      }
+    }
+
     if (!runtime.equipmentEditMode && !runtime.fishEditMode && !runtime.editTankMode) {
       const now = Date.now();
       const machinery = findMachineryAtPoint(point.x, point.y, now);
@@ -31449,27 +31485,10 @@ function bindEvents() {
     }
 
     if (runtime.fishEditMode) {
-      const hitFish = findFishAtPoint(point.x, point.y, Date.now());
-      if (!hitFish || isFishDead(hitFish)) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      storeFish(hitFish.id);
-      return;
+      closeTankContextMenu();
     }
 
-    if (runtime.editTankMode) {
-      const hitDecor = findPlacedDecorAtPoint(point.x, point.y);
-      if (!hitDecor) {
-        return;
-      }
 
-      event.preventDefault();
-      event.stopPropagation();
-      storeDecor(hitDecor.id);
-    }
   });
 
   dom.tankStage.addEventListener("pointermove", (event) => {
@@ -31596,6 +31615,11 @@ function bindEvents() {
   dom.tankContextMenu?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
+  dom.tankContextMenu?.addEventListener("click", playSelectedDecorActionSound, true);
+  dom.tankContextMenu?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
   dom.tankContextMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-tank-context-action]")?.dataset.tankContextAction;
     if (!action) return;
@@ -31663,10 +31687,7 @@ function bindEvents() {
     }
   });
   for (const container of [
-    dom.selectedDecorActionBar,
-    dom.selectedDecorScaleControls,
-    dom.selectedDecorLayerControls,
-    dom.selectedDecorTransformControls,
+    dom.selectedDecorMenuButton,
     dom.selectedDecorResizeHandles
   ]) {
     container?.addEventListener("click", playSelectedDecorActionSound, true);
@@ -31685,113 +31706,13 @@ function bindEvents() {
       }
     });
   }
-  dom.selectedDecorScaleUpButton?.addEventListener("click", (event) => {
+  dom.selectedDecorMenuButton?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    const placedId = dom.selectedDecorScaleUpButton?.dataset.resizeDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("scale-up");
-  });
-  dom.selectedDecorScaleDownButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorScaleDownButton?.dataset.resizeDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("scale-down");
-  });
-  dom.selectedDecorFlipHorizontalButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorFlipHorizontalButton?.dataset.flipDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    toggleActiveDecorFlip("horizontal");
-  });
-  dom.selectedDecorFlipVerticalButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorFlipVerticalButton?.dataset.flipDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    toggleActiveDecorFlip("vertical");
-  });
-  dom.selectedDecorLayerUpButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorLayerUpButton?.dataset.layerDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("layer-up");
-  });
-  dom.selectedDecorLayerDownButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorLayerDownButton?.dataset.layerDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("layer-down");
-  });
-  dom.selectedDecorBringToFrontButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorBringToFrontButton?.dataset.depthDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
-    performDecorEditShortcutAction("bring-to-front");
-  });
-  dom.selectedDecorSendToBackButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSendToBackButton?.dataset.depthDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
-    performDecorEditShortcutAction("send-to-back");
-  });
-  dom.selectedDecorBuyAnotherButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const decorKey = dom.selectedDecorBuyAnotherButton?.dataset.buyAnotherDecor;
-    if (decorKey) {
-      openDecorBuyAnotherConfirmation(decorKey);
-    }
-  });
-  dom.selectedDecorSellButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSellButton?.dataset.sellDecor;
-    if (placedId) {
-      openDecorSellConfirmation(placedId);
-    }
-  });
-  dom.selectedDecorStoreButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorStoreButton?.dataset.storeDecor;
-    if (placedId) {
-      storeDecor(placedId);
-    }
-  });
-  dom.selectedDecorAssignButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorAssignButton?.dataset.assignResidenceDecor;
-    if (placedId) {
-      openDecorResidenceAssignment(placedId);
-    }
-  });
-  dom.selectedDecorSettingsButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSettingsButton?.dataset.editDecorSettings;
-    if (placedId) {
-      openDecorSettings(placedId);
-    }
+    const item = getPlacedDecorById(dom.selectedDecorMenuButton.dataset.decorContextId);
+    const bounds = item ? getPlacedDecorOpaqueBounds(item) : null;
+    if (!item || !bounds) return;
+    openTankContextMenu("decor", item, { x: bounds.right, y: bounds.top });
   });
   dom.inspectorBuyAnotherFish?.addEventListener("click", () => buyInspectorFish());
   dom.inspectorSellFish?.addEventListener("click", () => {
@@ -38467,7 +38388,11 @@ function applyBehaviorTarget(fish, species, target, now = Date.now()) {
       placedDecorId: target.hangoutDecorId || target.decorId || ""
     });
   }
-  if ((fish.personality === "homebody" || fish.personality === "territorial") && (target.hangoutDecorId || target.decorId)) {
+  const shelterId = target.hangoutDecorId || target.decorId;
+  if (shelterId && typeof tryClaimFishDecor === "function" && tryClaimFishDecor(fish, shelterId, now)) {
+    fish.decorClaimSpot = { xNorm: fish.targetXNorm, yNorm: fish.targetYNorm };
+  }
+  if ((fish.personality === "homebody" || fish.personality === "territorial") && shelterId) {
     fish.favoriteSpot = {
       xNorm: fish.targetXNorm,
       yNorm: fish.targetYNorm,
@@ -39461,46 +39386,45 @@ function pickPencilfishSparBehaviorTarget(fish, species, now = Date.now(), optio
   };
 }
 
-function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
-  if (species?.id !== "angelfish" || !isFishAdult(fish, now)) return null;
-  const homeId = getFishResidenceDecorId(fish);
-  const home = homeId ? (state.placedDecor || []).find((item) => item.id === homeId) : null;
-  if (!home) return null;
-  const homeX = Number(home.xNorm) || 0.5;
-  const homeY = Number(home.yNorm) || 0.55;
-  const intruder = state.fish
-    .filter((entry) => entry && entry.id !== fish.id && !isFishDead(entry))
-    .map((entry) => ({ fish: entry, distance: Math.hypot((entry.xNorm || 0.5) - homeX, (entry.yNorm || 0.5) - homeY) }))
-    .filter((entry) => entry.distance <= 0.22)
-    .sort((a,b) => a.distance-b.distance)[0]?.fish || null;
-  if (intruder) {
-    reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.16 });
-    fish.territoryTargetFishId = intruder.id;
-    fish.territoryTargetUntil = now + 4200;
-    return {
-      xNorm: clamp((intruder.xNorm || 0.5) + (homeX - (intruder.xNorm || 0.5)) * 0.28, 0.08, 0.92),
-      yNorm: clamp((intruder.yNorm || 0.5) + (homeY - (intruder.yNorm || 0.5)) * 0.28, 0.14, 0.82),
-      targetLayer: getFishTankLayer(intruder),
-      targetZ: getFishTankDepthZ(intruder),
-      targetAt: now + randomBetween(650, 1200),
-      intentType: "territorial warning",
-      intentCause: "adult home territory",
-      intentTargetId: intruder.id,
-      intentTargetName: intruder.name || "intruder"
-    };
-  }
-  if (options.force !== true && Math.random() > getFishMoodAdjustedBehaviorChance(fish, "home-territory", 0.42, now)) return null;
-  return {
-    xNorm: clamp(homeX + randomBetween(-0.06, 0.06), 0.08, 0.92),
-    yNorm: clamp(homeY + randomBetween(-0.045, 0.045), 0.16, 0.82),
-    targetLayer: getDecorTankLayer(home),
-    targetAt: now + randomBetween(2200, 4800),
-    hangoutDecorId: home.id,
-    zoneType: "territory",
-    intentType: "guard home",
-    intentCause: "adult angelfish territory",
-    slow: true
+function pickClaimedDecorTerritoryTarget(fish, species, now = Date.now(), options = {}) {
+  const territorial = getFishPersonality(fish) === "territorial" || (species?.id === "angelfish" && isFishAdult(fish, now));
+  if (!territorial || fish.sleepShelter
+    || (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return null;
+  const claimId = getFishDecorClaimId(fish, now);
+  const shelter = claimId ? (state.placedDecor || []).find((item) => item.id === claimId) : null;
+  if (!shelter) return null;
+  if (Number(fish.territoryTargetUntil) > now && fish.territoryWarningTarget) return fish.territoryWarningTarget;
+  if (Number(fish.territoryWarningCooldownUntil) > now) return null;
+  const centerX = Number(fish.decorClaimSpot?.xNorm ?? shelter.xNorm) || 0.5;
+  const centerY = Number(fish.decorClaimSpot?.yNorm ?? shelter.yNorm) || 0.55;
+  if (Math.hypot(fish.xNorm - centerX, fish.yNorm - centerY) > 0.24) return null;
+  const intruder = (state.fish || []).filter((other) => {
+    if (!other || other.id === fish.id || isFishDead(other) || other.caveState || other.id === fish.pairBondPartnerId) return false;
+    const relation = fish.relationships?.[other.id]?.kind || getRelationshipKindForFish(fish, other);
+    return !["friend", "fear"].includes(relation)
+      && getFishDecorClaimId(other, now) !== claimId
+      && Math.abs(getFishTankDepthZ(fish) - getFishTankDepthZ(other)) <= 0.18
+      && Math.hypot(other.xNorm - centerX, other.yNorm - centerY) <= 0.14;
+  }).sort((a,b) => Math.hypot(a.xNorm-centerX,a.yNorm-centerY)-Math.hypot(b.xNorm-centerX,b.yNorm-centerY))[0];
+  if (!intruder) return null;
+  // Roll once per encounter window, rather than once per animation frame.
+  fish.territoryWarningCooldownUntil = now + randomBetween(12000, 25000);
+  if (options.force !== true && Math.random() > getFishMoodAdjustedBehaviorChance(fish, "territory", 0.22, now)) return null;
+  fish.territoryTargetFishId = intruder.id;
+  fish.territoryTargetUntil = now + 3200;
+  reinforceFishAvoidanceRelationship(intruder, fish, now, { severity: 0.12 });
+  fish.territoryWarningTarget = {
+    xNorm: clamp(intruder.xNorm + (centerX-intruder.xNorm)*0.28, 0.08, 0.92),
+    yNorm: clamp(intruder.yNorm + (centerY-intruder.yNorm)*0.28, 0.14, 0.82),
+    targetZ: getFishTankDepthZ(intruder), targetAt: now + 3200,
+    intentType: "territorial warning", intentCause: "intruder near claimed shelter",
+    intentTargetId: intruder.id, intentTargetName: intruder.name || "intruder", signalType: "guard_territory"
   };
+  return fish.territoryWarningTarget;
+}
+
+function pickAngelfishTerritoryBehaviorTarget(fish, species, now = Date.now(), options = {}) {
+  return species?.id === "angelfish" ? pickClaimedDecorTerritoryTarget(fish, species, now, options) : null;
 }
 
 function getBlueRamGuardedEgg(fish) {
@@ -39704,6 +39628,8 @@ function applyFishBehaviorIntentLayer(fish, species, now = Date.now()) {
     fish.behaviorIntent = null;
     return false;
   }
+  const territoryTarget = pickClaimedDecorTerritoryTarget(fish, species, now);
+  if (territoryTarget && applyBehaviorTarget(fish, species, territoryTarget, now)) return true;
   // The central scheduler owns ordinary intentions. Existing specialist
   // behaviors below remain available as fallbacks and as emergency executors.
   if (applyScheduledFishBehaviorTarget(fish, species, now)) {
@@ -40169,7 +40095,15 @@ function selectFishBehaviorTarget(fish, species, intention, nearby, now = Date.n
   }
   const zones = getFishBehaviorEnvironmentCache(now);
   if (intention === "explore") return pickPersonalityDecorBehaviorTarget(fish, species, now) || zones.open[0] || null;
-  if (intention === "rest") return zones.rest[0] || pickDecorHangoutTarget(species, fish, now, { allowedZoneTypes: ["hide", "plant", "hardscape"], chanceMultiplier: 1.25, lingerMultiplier: 1.8 });
+  if (intention === "rest") {
+    const available = zones.rest.filter((zone) => {
+      const decor = state.placedDecor.find((item) => item.id === zone.decorId);
+      return decor && (getFishDecorClaimId(fish, now) === decor.id || getDecorClaimCount(decor.id, fish, now) < getDecorShelterCapacity(decor));
+    });
+    return available.find((zone) => zone.decorId === getFishDecorClaimId(fish, now)) || pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hide", "plant", "hardscape"], preferBackLayer: true, chanceMultiplier: 1.25, lingerMultiplier: 1.8
+    });
+  }
   return null;
 }
 
@@ -44999,8 +44933,12 @@ function sanitizeFish(fish, options = {}) {
     pairBondLostAt: Number.isFinite(Number(fish.pairBondLostAt)) ? Math.max(0, Number(fish.pairBondLostAt)) : 0,
     pairBondMourningUntil: Number.isFinite(Number(fish.pairBondMourningUntil)) ? Math.max(0, Number(fish.pairBondMourningUntil)) : 0,
     feedingMemory: sanitizeFeedingMemory(fish.feedingMemory, now),
-    favoriteSpot: sanitizeFavoriteSpot(fish.favoriteSpot),
-    residenceDecorId: typeof fish.residenceDecorId === "string" && fish.residenceDecorId ? fish.residenceDecorId : null,
+    favoriteSpot: fish.residenceDecorId ? null : sanitizeFavoriteSpot(fish.favoriteSpot),
+    // Claims belong to the current simulation session; old manual homes are retired.
+    decorClaimId: null,
+    decorClaimUntil: 0,
+    decorClaimSpot: null,
+    sleepShelter: null,
     parentNames: Array.isArray(fish.parentNames) ? fish.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
     parentIds: Array.isArray(fish.parentIds) ? fish.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: Array.isArray(fish.celebratedAgeMilestones)
@@ -46064,55 +46002,14 @@ function tankVirtualPointToStagePx(x, y) {
 }
 
 function hideSelectedDecorActionButtons() {
-  for (const container of [
-    dom.selectedDecorActionBar,
-    dom.selectedDecorScaleControls,
-    dom.selectedDecorLayerControls,
-    dom.selectedDecorTransformControls,
-    dom.selectedDecorResizeHandles,
-    dom.selectedDecorResizeIndicator
-  ]) {
-    if (!container) {
-      continue;
-    }
-
+  for (const container of [dom.selectedDecorMenuButton, dom.selectedDecorResizeHandles, dom.selectedDecorResizeIndicator]) {
+    if (!container) continue;
     container.hidden = true;
-    if (container === dom.selectedDecorResizeHandles) {
-      container.setAttribute("aria-hidden", "true");
-    }
+    if (container === dom.selectedDecorResizeHandles) container.setAttribute("aria-hidden", "true");
     container.style.left = "";
     container.style.top = "";
   }
-
-  for (const button of [
-    dom.selectedDecorBuyAnotherButton,
-    dom.selectedDecorSellButton,
-    dom.selectedDecorStoreButton,
-    dom.selectedDecorAssignButton,
-    dom.selectedDecorSettingsButton,
-    dom.selectedDecorScaleUpButton,
-    dom.selectedDecorScaleDownButton,
-    dom.selectedDecorLayerUpButton,
-    dom.selectedDecorLayerDownButton,
-    dom.selectedDecorFlipHorizontalButton,
-    dom.selectedDecorFlipVerticalButton
-  ]) {
-    if (!button) {
-      continue;
-    }
-
-    button.hidden = true;
-    button.style.left = "";
-    button.style.top = "";
-    delete button.dataset.buyAnotherDecor;
-    delete button.dataset.sellDecor;
-    delete button.dataset.storeDecor;
-    delete button.dataset.assignResidenceDecor;
-    delete button.dataset.editDecorSettings;
-    delete button.dataset.resizeDecor;
-    delete button.dataset.layerDecor;
-    delete button.dataset.flipDecor;
-  }
+  if (dom.selectedDecorMenuButton) delete dom.selectedDecorMenuButton.dataset.decorContextId;
 }
 
 function positionSelectedDecorResizeHandles(item, bounds, stageRect, options = {}) {
@@ -46176,29 +46073,7 @@ function positionSelectedDecorResizeHandles(item, bounds, stageRect, options = {
 }
 
 function updateSelectedDecorActionButtons() {
-  const actionBar = dom.selectedDecorActionBar;
-  const scaleControls = dom.selectedDecorScaleControls;
-  const layerControls = dom.selectedDecorLayerControls;
-  const transformControls = dom.selectedDecorTransformControls;
-  const buyButton = dom.selectedDecorBuyAnotherButton;
-  const sellButton = dom.selectedDecorSellButton;
-  const storeButton = dom.selectedDecorStoreButton;
-  const assignButton = dom.selectedDecorAssignButton;
-  const settingsButton = dom.selectedDecorSettingsButton;
-  const scaleUpButton = dom.selectedDecorScaleUpButton;
-  const scaleDownButton = dom.selectedDecorScaleDownButton;
-  const layerUpButton = dom.selectedDecorLayerUpButton;
-  const layerDownButton = dom.selectedDecorLayerDownButton;
-  const bringToFrontButton = dom.selectedDecorBringToFrontButton;
-  const sendToBackButton = dom.selectedDecorSendToBackButton;
-  const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
-  const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
-  const resizeHandles = dom.selectedDecorResizeHandles;
-  const resizeIndicator = dom.selectedDecorResizeIndicator;
-  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !flipHorizontalButton && !flipVerticalButton && !resizeHandles && !resizeIndicator) {
-    return;
-  }
-
+  updateTankContextDecorControls();
   const selectedItems = runtime.editTankMode
     && !runtime.dragState
     && !runtime.placementMode
@@ -46209,245 +46084,27 @@ function updateSelectedDecorActionButtons() {
     ? getSelectedPlacedDecorItems()
     : [];
   const item = selectedItems.length === 1 ? selectedItems[0] : null;
-  const decorKey = item?.decorKey || "";
-  const decor = decorKey ? runtime.decorMap.get(decorKey) : null;
-  if (!item || !decor) {
-    hideSelectedDecorActionButtons();
-    return;
-  }
-
-  const bounds = getPlacedDecorOpaqueBounds(item);
+  const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+  const bounds = item ? getPlacedDecorOpaqueBounds(item) : null;
   const stageSize = getTankStageLayoutSize();
-  const stageRect = { width: stageSize.width, height: stageSize.height };
-  if (!bounds || !stageRect.width || !stageRect.height) {
+  if (!item || !decor || !bounds || !stageSize.width || !stageSize.height) {
     hideSelectedDecorActionButtons();
     return;
   }
-
-  const topPadding = 12;
-  const stagePadding = 10;
-  const cost = getDecorPurchaseCost(decorKey);
-  const resaleValue = getResaleValue(decor.cost || 0);
-  const canSell = !isPlacedDecorGrouped(item);
-  const canStore = !isPlacedDecorGrouped(item);
-  const currentScale = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const depthValue = getDecorDepthPlacementLabel(item);
-  const currentDepth = sanitizeTankDepthZ(
-    item.z,
-    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
-  );
-  const canMoveForward = currentDepth < TANK_DEPTH_FRONT_USABLE_Z;
-  const canMoveBackward = currentDepth > TANK_DEPTH_REAR_USABLE_Z;
-  const sizeLabel = formatDecorScale(currentScale);
-  const resizingDecor = runtime.decorResizeState?.placedId === item.id;
-
-  if (dom.selectedDecorSizeValue) {
-    dom.selectedDecorSizeValue.textContent = sizeLabel;
+  const resizing = runtime.decorResizeState?.placedId === item.id;
+  const menuButton = dom.selectedDecorMenuButton;
+  if (menuButton) {
+    menuButton.hidden = resizing;
+    menuButton.dataset.decorContextId = item.id;
+    menuButton.setAttribute("aria-expanded", String(runtime.tankContextMenu?.kind === "decor" && runtime.tankContextMenu.id === item.id));
+    const point = tankVirtualPointToStagePx(bounds.right + 26, bounds.top + 24);
+    menuButton.style.left = `${clamp(Math.round(point.x), 26, Math.max(26, stageSize.width - 26))}px`;
+    menuButton.style.top = `${clamp(Math.round(point.y), 26, Math.max(26, stageSize.height - 26))}px`;
   }
-
-  if (dom.selectedDecorLayerValue) {
-    dom.selectedDecorLayerValue.textContent = depthValue;
-  }
-
-  if (scaleControls) {
-    scaleControls.hidden = true;
-  }
-
-  if (resizingDecor) {
-    if (actionBar) {
-      actionBar.hidden = true;
-    }
-    if (layerControls) {
-      layerControls.hidden = true;
-    }
-    if (transformControls) {
-      transformControls.hidden = true;
-    }
-    positionSelectedDecorResizeHandles(item, bounds, stageRect, {
-      showHandles: false,
-      showIndicator: true,
-      label: sizeLabel
-    });
-    return;
-  }
-
-  if (buyButton) {
-    buyButton.hidden = false;
-    buyButton.dataset.buyAnotherDecor = decorKey;
-    buyButton.disabled = false;
-    buyButton.textContent = "BUY";
-    buyButton.title = `Buy another for ${cost} ${pluralize("coin", cost)}`;
-    buyButton.setAttribute("aria-label", state.coins < cost
-      ? `Need ${cost} coins to buy another ${decor.name}`
-      : `Buy another ${decor.name} for ${cost} coins`);
-  }
-
-  if (sellButton) {
-    const livingCommerce = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor);
-    const commerceVerb = livingCommerce ? "Rehome" : "Sell";
-    sellButton.hidden = false;
-    sellButton.dataset.sellDecor = item.id;
-    sellButton.disabled = !canSell;
-    sellButton.textContent = commerceVerb.toUpperCase();
-    sellButton.title = canSell ? `${commerceVerb} for ${resaleValue} ${pluralize("coin", resaleValue)}` : `Ungroup before ${livingCommerce ? "rehoming" : "selling"}`;
-    sellButton.setAttribute("aria-label", canSell ? `${commerceVerb} ${decor.name} for ${resaleValue} coins` : `Ungroup ${decor.name} before ${livingCommerce ? "rehoming" : "selling"}`);
-  }
-
-  if (storeButton) {
-    storeButton.hidden = false;
-    storeButton.dataset.storeDecor = item.id;
-    storeButton.disabled = !canStore;
-    storeButton.textContent = "PUT AWAY";
-    storeButton.title = canStore ? `Store ${decor.name}` : "Ungroup before storing";
-    storeButton.setAttribute("aria-label", canStore ? `Store ${decor.name}` : `Ungroup ${decor.name} before storing`);
-  }
-
-  if (assignButton) {
-    const canAssignResidence = isDecorResidenceEligible(item);
-    const residentCount = getDecorResidents(item.id).length;
-    const residenceCapacity = getDecorResidenceCapacity(item);
-    assignButton.hidden = !canAssignResidence;
-    assignButton.dataset.assignResidenceDecor = item.id;
-    assignButton.disabled = !canAssignResidence;
-    assignButton.textContent = residentCount ? `HOME ${residentCount}/${residenceCapacity}` : "ASSIGN";
-    assignButton.title = residentCount
-      ? `Manage ${decor.name} residents (${residentCount}/${residenceCapacity})`
-      : `Assign a fish to live at ${decor.name}`;
-    assignButton.setAttribute("aria-label", assignButton.title);
-  }
-
-  if (settingsButton) {
-    const canOpenSettings = canOpenDecorSettings(item);
-    settingsButton.hidden = !canOpenSettings;
-    settingsButton.dataset.editDecorSettings = item.id;
-    settingsButton.disabled = !canOpenSettings;
-    settingsButton.textContent = "(S)ETTINGS";
-    settingsButton.title = `Open ${decor.name} settings`;
-    settingsButton.setAttribute("aria-label", `Open ${decor.name} settings`);
-  }
-
-  if (scaleUpButton) {
-    scaleUpButton.hidden = true;
-    delete scaleUpButton.dataset.resizeDecor;
-  }
-
-  if (scaleDownButton) {
-    scaleDownButton.hidden = true;
-    delete scaleDownButton.dataset.resizeDecor;
-  }
-
-  if (layerUpButton) {
-    layerUpButton.hidden = false;
-    layerUpButton.dataset.layerDecor = item.id;
-    // The up arrow is screen-space up: farther back into the aquarium.
-    // Its action uses a negative Z delta, so it must be governed by the
-    // rear boundary rather than the front boundary.
-    layerUpButton.disabled = !canMoveBackward;
-    layerUpButton.title = canMoveBackward
-      ? `Move backward from ${depthValue}`
-      : `${decor.name} is already at the back of the tank`;
-    layerUpButton.setAttribute("aria-label", canMoveBackward
-      ? `Move ${decor.name} backward from ${depthValue}`
-      : `${decor.name} is already at the back of the tank`);
-  }
-
-  if (layerDownButton) {
-    layerDownButton.hidden = false;
-    layerDownButton.dataset.layerDecor = item.id;
-    // The down arrow is screen-space down: toward the viewer/front glass.
-    layerDownButton.disabled = !canMoveForward;
-    layerDownButton.title = canMoveForward
-      ? `Move forward from ${depthValue}`
-      : `${decor.name} is already at the front of the tank`;
-    layerDownButton.setAttribute("aria-label", canMoveForward
-      ? `Move ${decor.name} forward from ${depthValue}`
-      : `${decor.name} is already at the front of the tank`);
-  }
-
-  if (bringToFrontButton) {
-    bringToFrontButton.hidden = false;
-    bringToFrontButton.dataset.depthDecor = item.id;
-    bringToFrontButton.disabled = !canMoveForward;
-  }
-
-  if (sendToBackButton) {
-    sendToBackButton.hidden = false;
-    sendToBackButton.dataset.depthDecor = item.id;
-    sendToBackButton.disabled = !canMoveBackward;
-  }
-
-  if (flipHorizontalButton) {
-    flipHorizontalButton.hidden = false;
-    flipHorizontalButton.dataset.flipDecor = item.id;
-    flipHorizontalButton.setAttribute("aria-pressed", String(isDecorHorizontallyFlipped(item)));
-    flipHorizontalButton.title = isDecorHorizontallyFlipped(item) ? "Clear horizontal flip" : "Flip horizontally";
-  }
-
-  if (flipVerticalButton) {
-    flipVerticalButton.hidden = false;
-    flipVerticalButton.dataset.flipDecor = item.id;
-    flipVerticalButton.setAttribute("aria-pressed", String(isDecorVerticallyFlipped(item)));
-    flipVerticalButton.title = isDecorVerticallyFlipped(item) ? "Clear vertical flip" : "Flip vertically";
-  }
-
-  if (actionBar) {
-    actionBar.hidden = false;
-    const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
-    const actionRect = getElementRectInTankStageLayout(actionBar) || { width: 0, height: 0 };
-    const actionHalfWidth = Math.ceil((Number(actionRect.width) || 320) / 2);
-    const actionHalfHeight = Math.ceil((Number(actionRect.height) || 44) / 2);
-    actionBar.style.left = `${clamp(
-      Math.round(actionPoint.x),
-      stagePadding + actionHalfWidth,
-      Math.max(stagePadding + actionHalfWidth, Math.round(stageRect.width - stagePadding - actionHalfWidth))
-    )}px`;
-    actionBar.style.top = `${clamp(
-      Math.round(actionPoint.y),
-      topPadding + actionHalfHeight,
-      Math.max(topPadding + actionHalfHeight, Math.round(stageRect.height - topPadding - actionHalfHeight))
-    )}px`;
-  }
-
-  if (layerControls) {
-    layerControls.hidden = false;
-    const layerPoint = tankVirtualPointToStagePx(bounds.right + 34, (bounds.top + bounds.bottom) / 2);
-    const layerRect = getElementRectInTankStageLayout(layerControls) || { width: 0, height: 0 };
-    const layerHalfWidth = Math.ceil((Number(layerRect.width) || 58) / 2);
-    const layerHalfHeight = Math.ceil((Number(layerRect.height) || 124) / 2);
-    layerControls.style.left = `${clamp(
-      Math.round(layerPoint.x),
-      stagePadding + layerHalfWidth,
-      Math.max(stagePadding + layerHalfWidth, Math.round(stageRect.width - stagePadding - layerHalfWidth))
-    )}px`;
-    layerControls.style.top = `${clamp(
-      Math.round(layerPoint.y),
-      topPadding + layerHalfHeight,
-      Math.max(topPadding + layerHalfHeight, Math.round(stageRect.height - topPadding - layerHalfHeight))
-    )}px`;
-  }
-
-  if (transformControls) {
-    transformControls.hidden = false;
-    const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
-    const transformRect = getElementRectInTankStageLayout(transformControls) || { width: 0, height: 0 };
-    const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
-    const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
-    transformControls.style.left = `${clamp(
-      Math.round(transformPoint.x),
-      stagePadding + transformHalfWidth,
-      Math.max(stagePadding + transformHalfWidth, Math.round(stageRect.width - stagePadding - transformHalfWidth))
-    )}px`;
-    transformControls.style.top = `${clamp(
-      Math.round(transformPoint.y),
-      topPadding + transformHalfHeight,
-      Math.max(topPadding + transformHalfHeight, Math.round(stageRect.height - topPadding - transformHalfHeight))
-    )}px`;
-  }
-
-  positionSelectedDecorResizeHandles(item, bounds, stageRect, {
-    showHandles: true,
-    showIndicator: false,
-    label: sizeLabel
+  positionSelectedDecorResizeHandles(item, bounds, stageSize, {
+    showHandles: !resizing,
+    showIndicator: resizing,
+    label: formatDecorScale(item.scale)
   });
 }
 
@@ -52703,7 +52360,7 @@ function processBoroughFishTravel(now = Date.now()) {
   for (const source of getAllTanks()) {
     const neighbors = getAdjacentAquariumSections(source);
     for (const fish of source.fish) {
-      if (!fish || isFishDead(fish) || fish.caveState || runtime.pendingNeighborhoodTravel.has(fish.id)) {
+      if (!fish || isFishDead(fish) || fish.caveState || fish.sleepShelter || runtime.pendingNeighborhoodTravel.has(fish.id)) {
         continue;
       }
       const neededService = getFishNeededBoroughServiceType(fish, source, now);
@@ -52717,22 +52374,14 @@ function processBoroughFishTravel(now = Date.now()) {
       const serviceRoute = neededService && !getBoroughSectionServiceTypes(source).includes(neededService)
         ? findNearestBoroughServiceRoute(source, neededService)
         : null;
-      const residenceTank = getTankContainingDecor(getFishResidenceDecorId(fish));
       const timeSinceLastMove = now - (Number(fish.lastNeighborhoodMoveAt) || fish.acquiredAt || 0);
-      const needsUrgentHomecoming = getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_CRITICAL_THRESHOLD;
-      const shouldReturnHome = residenceTank
-        && residenceTank.id !== source.id
-        && getFishNeedValue(fish, "energy", now) <= FISH_ENERGY_LOW_THRESHOLD
-        && (needsUrgentHomecoming || timeSinceLastMove >= 5 * MINUTE_MS);
-      const residenceRoute = shouldReturnHome ? findAquariumSectionRoute(source, residenceTank) : null;
-      const residenceTubeJourney = shouldReturnHome ? getTransitTubeJourney(source, residenceTank) : null;
-      const directedRoute = foodRoute || serviceRoute || residenceRoute;
+      const directedRoute = foodRoute || serviceRoute;
       const tubeJourneyTarget = directedRoute?.tubeDestination || directedRoute?.destination;
       const tubeJourney = tubeJourneyTarget
         ? getTransitTubeJourney(source, tubeJourneyTarget)
         : foodDestination
           ? getTransitTubeJourney(source, foodDestination)
-          : residenceTubeJourney;
+          : null;
       const minimumMoveDelay = directedRoute ? 25 * 1000 : 2 * MINUTE_MS;
       if (timeSinceLastMove < minimumMoveDelay) {
         continue;
@@ -52769,7 +52418,7 @@ function processBoroughFishTravel(now = Date.now()) {
         destination,
         neededService: foodDestination ? "food" : neededService,
         serviceDestination: foodDestination || serviceRoute?.destination || null,
-        residenceDestination: !serviceRoute ? residenceRoute?.destination || null : null,
+        residenceDestination: null,
         tubeJourney: selectedTubeJourney
       });
       break;
@@ -52865,20 +52514,21 @@ function pruneTankState(now, targetTank = getCurrentTank(), targetState = state)
     return;
   }
 
-  // Save reconciliation can run against a freshly-sanitized state before it has
-  // become the global state. Validate residences against that state so a browser
-  // refresh never mistakes a perfectly valid home for an orphan.
-  const validResidenceIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
+  // Claims are local, short-lived simulation state. Retire legacy manual homes
+  // and release claims when their decor disappears or the fish leaves the tank.
+  const validDecorIds = new Set(getAllPlacedDecor(targetState).map((item) => item.id));
   for (const fish of targetTank.fish || []) {
-    if (getFishResidenceDecorId(fish) && !validResidenceIds.has(fish.residenceDecorId)) {
-      fish.residenceDecorId = null;
-      if (fish.favoriteSpot?.decorId && !validResidenceIds.has(fish.favoriteSpot.decorId)) {
+    if (fish.residenceDecorId && fish.favoriteSpot?.decorId === fish.residenceDecorId) fish.favoriteSpot = null;
+    delete fish.residenceDecorId;
+    if (fish.decorClaimId && (!getFishDecorClaimId(fish, now) || !(targetTank.placedDecor || []).some((item) => item.id === fish.decorClaimId))) {
+      releaseFishDecorClaim(fish);
+      if (fish.favoriteSpot?.decorId && !validDecorIds.has(fish.favoriteSpot.decorId)) {
         fish.favoriteSpot = null;
       }
     }
-    if (fish.boroughServiceTargetDecorId && !validResidenceIds.has(fish.boroughServiceTargetDecorId)) {
+    if (fish.boroughServiceTargetDecorId && !validDecorIds.has(fish.boroughServiceTargetDecorId)) {
       clearFishBoroughServiceReservation(fish);
-      if (fish.coarseActivity?.targetDecorId && !validResidenceIds.has(fish.coarseActivity.targetDecorId)) {
+      if (fish.coarseActivity?.targetDecorId && !validDecorIds.has(fish.coarseActivity.targetDecorId)) {
         fish.coarseActivity = null;
       }
     }
@@ -57835,7 +57485,10 @@ function createFishRecord(speciesId, options = {}) {
     relationships: sanitizeFishRelationships(options.relationships),
     feedingMemory: sanitizeFeedingMemory(options.feedingMemory, now),
     favoriteSpot: sanitizeFavoriteSpot(options.favoriteSpot),
-    residenceDecorId: typeof options.residenceDecorId === "string" && options.residenceDecorId ? options.residenceDecorId : null,
+    decorClaimId: null,
+    decorClaimUntil: 0,
+    decorClaimSpot: null,
+    sleepShelter: null,
     parentNames: Array.isArray(options.parentNames) ? options.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
     parentIds,
     celebratedAgeMilestones: [],
@@ -59570,6 +59223,7 @@ function prepareFishForUserAction(fish, species, now = Date.now(), options = {})
   if (!fish || !species) {
     return false;
   }
+  fish.sleepShelter = null;
   clearFishActionSteering(fish);
   clearDebugBehaviorSteering(fish);
   clearFishSchoolFollowState(fish);
@@ -60269,6 +59923,9 @@ function updateQueuedFishPebbleAction(fish, species, item, now = Date.now()) {
 
 function updateQueuedFishActionControl(fish, species, now = Date.now()) {
   const active = getActiveFishActionQueueItem(fish, now);
+  if (active?.action === "sleep" && fish?.sleepShelter && !active.cancelling) {
+    return updateFishSleepShelter(fish, species, active, now);
+  }
   if (!active || !fish || !species || isFishDead(fish) || fish.caveState) {
     return false;
   }
@@ -60436,29 +60093,72 @@ function triggerFishActionWaitFood(fish, species, now = Date.now()) {
   return true;
 }
 
+function pickFishSleepCavePlan(fish, species, now = Date.now()) {
+  if (species?.behavior === "sucker" || species?.caveEnabled === false || Number(fish.caveTriggerCooldownUntil) > now) return null;
+  return collectCaveBehaviorPlansForFish(fish, now).find((plan) => {
+    const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
+    return item && !isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)
+      && (getFishDecorClaimId(fish, now) === plan.decorId || getDecorClaimCount(plan.decorId, fish, now) < getDecorShelterCapacity(item));
+  }) || null;
+}
+
+function updateFishSleepShelter(fish, species, item, now = Date.now()) {
+  const sleep = fish.sleepShelter;
+  if (!sleep) return false;
+  if (fish.activity === "feeding" || Number(fish.panicUntil) > now) {
+    item.endsAt = now;
+    return false;
+  }
+  if (sleep.cave) {
+    if (!fish.caveState) { item.endsAt = now; return false; }
+    item.endsAt = sleep.sleepingUntil || sleep.approachDeadline;
+    return true; // The cave executor owns the entrance, interior hold and exit.
+  }
+  if (sleep.decorId && !getTankContainingFish(fish.id)?.placedDecor?.some((decor) => decor.id === sleep.decorId)) {
+    item.endsAt = now;
+    return false;
+  }
+  const spot = sleep.target;
+  const arrived = Math.hypot(fish.xNorm - spot.xNorm, fish.yNorm - spot.yNorm) <= 0.035
+    && (!Number.isFinite(spot.targetZ) || Math.abs(getFishTankDepthZ(fish) - spot.targetZ) <= 0.025);
+  if (!sleep.sleepingUntil && arrived) {
+    sleep.sleepingUntil = now + sleep.durationMs;
+    // Idle at arrival instead of repeatedly choosing another nearby target.
+    sleep.target = { ...spot, xNorm: fish.xNorm, yNorm: fish.yNorm };
+  }
+  item.endsAt = sleep.sleepingUntil || sleep.approachDeadline;
+  applyBehaviorTarget(fish, species, {
+    ...sleep.target, targetAt: item.endsAt, slow: true,
+    intentType: sleep.sleepingUntil ? "sleep" : "seek shelter",
+    intentCause: sleep.decorId ? "behind decor" : "quiet spot"
+  }, now);
+  return true;
+}
+
 function triggerFishActionSleep(fish, species, now = Date.now()) {
   prepareFishForUserAction(fish, species, now);
-  const cover = pickDecorHangoutTarget(species, fish, now, {
-    allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
-    force: true,
-    ignoreOccupancy: true,
-    lingerMultiplier: 2.5,
-    preferBackLayer: true
-  }) || {
-    xNorm: clamp((fish.xNorm || 0.5) + randomBetween(-0.05, 0.05), 0.08, 0.92),
-    yNorm: clamp((fish.yNorm || 0.5) + randomBetween(-0.04, 0.04), 0.18, 0.78),
-    targetLayer: getFishTankLayer(fish),
-    targetAt: now + FISH_ACTION_SLEEP_DURATION_MS
-  };
-  applyBehaviorTarget(fish, species, {
-    ...cover,
-    targetAt: now + FISH_ACTION_SLEEP_DURATION_MS,
-    intentType: "sleep",
-    intentCause: cover.zoneType || "quiet spot",
-    signalType: cover.zoneType ? "night_sleep" : "",
-    debugText: `sleep | ${cover.zoneType || "quiet spot"}`,
-    slow: true
-  }, now);
+  const durationMs = FISH_ACTION_SLEEP_DURATION_MS;
+  const cave = pickFishSleepCavePlan(fish, species, now);
+  if (cave && beginFishCaveBehavior(fish, { ...cave, sleepShelter: true, lingerMs: durationMs }, now)) {
+    fish.sleepShelter = { cave: true, decorId: cave.decorId, durationMs, approachDeadline: now + 45000, sleepingUntil: 0 };
+    setFishBehaviorIntent(fish, "seek shelter", "cave entrance", now, { durationMs: 45000 });
+  } else {
+    const cover = pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["plant", "hide", "hardscape", "spooky"],
+      force: true, allowSameDecor: true, excludeCaves: true, requireBehindSpace: true,
+      lingerMultiplier: 2.5, preferBackLayer: true
+    });
+    const decor = cover ? state.placedDecor.find((entry) => entry.id === cover.decorId) : null;
+    const target = cover ? {
+      ...cover,
+      targetZ: sanitizeTankDepthZ(getPlacedDecorDepthZ(decor) - getFishTankDepthRadius(fish) - 0.035)
+    } : {
+      xNorm: clamp(fish.xNorm || 0.5, 0.08, 0.92), yNorm: clamp(fish.yNorm || 0.5, 0.18, 0.78), targetLayer: getFishTankLayer(fish)
+    };
+    if (decor) tryClaimFishDecor(fish, decor.id, now);
+    fish.sleepShelter = { cave: false, decorId: decor?.id || null, target, durationMs, approachDeadline: now + 45000, sleepingUntil: 0 };
+    applyBehaviorTarget(fish, species, { ...target, targetAt: now + 45000, intentType: "seek shelter", intentCause: decor ? "behind decor" : "quiet spot", slow: true }, now);
+  }
   markFishActionStateDirty(now);
   showFishRoutineToast(fish, `${fish.name} is settling down.`);
   return true;
@@ -60789,6 +60489,13 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (!fish || !item) {
     return;
   }
+  if (item.action === "sleep") {
+    if (fish.sleepShelter?.cave && fish.caveState) {
+      // Let the cave controller take the normal exit route.
+      fish.caveInsideUntil = now;
+    }
+    fish.sleepShelter = null;
+  }
   // Completing a routine does not fill meters or change the feeding clock.
   if (item.action === "breed" && isFishInActiveUserBreedingSequence(fish)) {
     clearFishBreedingSequence();
@@ -60803,7 +60510,7 @@ function finishFishActionQueueItem(fish, item, now = Date.now(), options = {}) {
   if (item.action === "dig") {
     clearForcedGravelDigPrompt(fish);
   }
-  if (item.action !== "eat" && !isFishInActiveUserBreedingSequence(fish)) {
+  if (item.action !== "eat" && !fish.caveState && !isFishInActiveUserBreedingSequence(fish)) {
     clearFishActionSteering(fish);
     fish.hangoutDecorId = null;
     fish.hangoutZoneType = null;
@@ -60834,6 +60541,8 @@ function promoteNextFishActionQueueItem(fishId, now = Date.now()) {
     runtime.fishActionQueuesByFishId.delete(fishId);
     return false;
   }
+  // A sleeping cave occupant must finish its exit before the next queued action.
+  if (fish.caveState) return false;
   if (Number.isFinite(fish.panicUntil) && now < fish.panicUntil) {
     // Immediate reactions such as a glass tap temporarily outrank queued
     // autonomous/user actions. Leave the item queued and start it once the
@@ -60893,11 +60602,18 @@ function processFishActionQueues(now = Date.now()) {
   for (const [fishId, queue] of runtime.fishActionQueuesByFishId) {
     const fish = getFishByIdFast(fishId);
     if (!fish || isFishDead(fish)) {
+      if (!fish && queue.active?.action === "sleep") {
+        const offscreenFish = getAllTankFish().find((entry) => entry.id === fishId);
+        if (offscreenFish?.sleepShelter) finishFishActionQueueItem(offscreenFish, queue.active, now, { silent: true });
+      }
       runtime.fishActionQueuesByFishId.delete(fishId);
       runtime.fishActionQueueCollapsedFishIds.delete(fishId);
       continue;
     }
     pruneFishActionQueueItemsInPlace(queue, now);
+    if (queue.active?.action === "sleep" && fish.sleepShelter && !queue.active.cancelling) {
+      updateFishSleepShelter(fish, getSpeciesForFish(fish), queue.active, now);
+    }
     if (queue.active?.cancelling && now >= Number(queue.active.cancelEndsAt || 0)) {
       queue.active = null;
       queue.restUntil = 0;
@@ -62997,7 +62713,7 @@ function confirmWaterTypeConversion(targetWaterType = runtime.pendingWaterConver
   if (typeof processFishConditionFramework === "function") processFishConditionFramework(conversionNow);
   const decorSync = typeof syncTankLivingDecorActivity === "function" ? syncTankLivingDecorActivity(tank) : { deactivated: [], activated: [] };
   for (const item of decorSync.deactivated || []) {
-    if (typeof clearDecorResidenceAssignments === "function") clearDecorResidenceAssignments(item.id, { save: false });
+    if (typeof clearDecorClaims === "function") clearDecorClaims(item.id, { save: false });
   }
   runtime.decorHangoutZonesKey = "";
   runtime.pendingWaterConversionTarget = "";
@@ -65045,7 +64761,7 @@ function storeDecor(placedId) {
   }
 
   const [removed] = state.placedDecor.splice(index, 1);
-  clearDecorResidenceAssignments(removed.id, { save: false });
+  clearDecorClaims(removed.id, { save: false });
   clearDecorBoroughServiceReservations(removed.id);
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
@@ -65179,7 +64895,7 @@ function storeFish(fishId, options = {}) {
       );
     }
     fish.hangoutDecorId = null;
-    fish.residenceDecorId = null;
+    fish.decorClaimId = null;
     fish.favoriteSpot = null;
     fish.entryStartedAt = null;
     fish.entryDurationMs = 0;
@@ -65350,7 +65066,7 @@ function sellPlacedDecor(placedId) {
     amount: resaleValue,
     apply: () => {
       const [removed] = state.placedDecor.splice(index, 1);
-      clearDecorResidenceAssignments(removed.id, { save: false });
+      clearDecorClaims(removed.id, { save: false });
       clearDecorBoroughServiceReservations(removed.id);
       if (runtime.dragState?.placedId === removed.id) {
         runtime.dragState = null;
@@ -66400,7 +66116,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
   clearFishCaveBehavior(fish);
   setFishTankLayers(fish, species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish), species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
   fish.hangoutDecorId = null;
-  fish.residenceDecorId = null;
+  fish.decorClaimId = null;
   fish.entryStartedAt = null;
   fish.entryDurationMs = 0;
   fish.entryFromYNorm = null;
@@ -69760,6 +69476,278 @@ function unlockFishSpecies(speciesId, now = Date.now(), reasonText = "") {
 // Source fragment: ui/fish-inspector.js
 // Assembled into ../app.js by scripts/build-app-bundle.cjs.
 
+function getFishInspectorManagedTarget() {
+  return getManagedFishById(runtime.utilityOverlayMode === "fish-inspect" ? runtime.fishInspectFishId : runtime.selectedFishId);
+}
+
+function closeFishInspectPreview() {
+  const id = runtime.fishInspectFishId;
+  runtime.fishSwimAnimationStates?.delete(`inspect:${id}`);
+  for (const canvas of runtime.fishInspectWarpCanvases?.values() || []) {
+    releaseFishTurnV26ImageResources(canvas);
+    canvas.width = canvas.height = 0;
+  }
+  runtime.fishInspectWarpCanvases = null;
+  runtime.fishInspectPreviewFish = null;
+  runtime.fishInspectFishId = null;
+  runtime.fishInspectNameDraft = "";
+  runtime.fishInspectPreviewStartedAt = 0;
+  runtime.fishInspectView = "animated";
+  runtime.fishInspectPausedAt = 0;
+}
+
+function renderFishInspectUtilityOverlay() {
+  const managed = getFishInspectorManagedTarget();
+  if (!managed) return { kicker: "Fish", title: "Inspect", body: '<div class="empty-state">This fish is no longer available.</div>', footer: "" };
+  const { fish, inStorage } = managed;
+  const species = getSpeciesForFish(fish);
+  const baseSpecies = getBaseSpeciesForFish(fish);
+  const now = inStorage ? getFishStorageSimulationNow(fish, Date.now()) : getPeacefulModeSimulationNow(Date.now());
+  const dead = isFishDead(fish);
+  const color = getFishColorSetting(fish);
+  const scale = Math.round((Number(fish.scale) || DEFAULT_FISH_SCALE) * 100);
+  const behaviorOptions = `<option value="">Original (${escapeHtml(baseSpecies?.name || "Fish")})</option>`
+    + getFishInspectorBehaviorProfiles().map(profile => `<option value="${escapeHtml(profile.id)}"${profile.id === fish.behaviorSpeciesId ? " selected" : ""}>${escapeHtml(profile.name)}</option>`).join("");
+  const condition = dead ? "Deceased" : getFishCareConditionText(fish, now);
+  const health = isPeacefulModeEnabled() && !dead ? getFishMaxHealthUnits(fish) : fish.healthUnits;
+  const view = runtime.fishInspectView || "animated";
+  return {
+    kicker: "Inspect",
+    title: fish.name || "Fish",
+    body: `<div class="fish-inspect-layout">
+      <section class="fish-inspect-preview-column" aria-label="Fish preview">
+        <div class="fish-inspect-preview-stage"><canvas data-fish-inspect-preview aria-label="${view === "animated" ? "Animated" : view === "left" ? "Left" : "Right"} side view of ${escapeHtml(fish.name || "this fish")}"></canvas><span data-fish-inspect-preview-loading>Loading fish…</span></div>
+        <div class="fish-inspect-views" role="group" aria-label="Fish inspection views">
+          ${["left", "right"].map(side => `<button type="button" data-fish-inspect-view="${side}" aria-pressed="${view === side}"><canvas data-fish-inspect-thumbnail="${side}" aria-hidden="true"></canvas><span>${side === "left" ? "Left side" : "Right side"}</span></button>`).join("")}
+          <button class="small-button alt" type="button" data-fish-inspect-view="animated" aria-pressed="${view === "animated"}">Animate</button>
+        </div>
+      </section>
+      <div class="fish-inspect-controls">
+        <div class="fish-inspect-details"><strong>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</strong><div class="hearts">${renderHearts(health, getFishMaxHealthUnits(fish))}</div><span>${escapeHtml(condition)}</span><span>Age: ${escapeHtml(formatFishBiologicalAge(fish, now))}</span></div>
+        <div class="fish-inspect-name-row"><label>Name<input type="text" maxlength="20" value="${escapeHtml(runtime.fishInspectNameDraft ?? fish.name)}" data-fish-inspect-name /></label><button class="small-button alt" type="button" data-fish-inspect-action="random-name" aria-label="Randomize fish name">?</button><button class="small-button" type="button" data-fish-inspect-action="save-name">Save</button></div>
+        <label class="inspector-setting-row"><span>Size</span><input type="range" min="50" max="300" step="5" value="${scale}" data-fish-inspect-setting="size" /><strong data-fish-inspect-size>${scale}%</strong></label>
+        <label class="inspector-setting-row inspector-setting-row-select"><span>Behavior</span><select data-fish-inspect-setting="behavior">${behaviorOptions}</select></label>
+        <section class="fish-inspector-color-card"><div class="bubbler-color-row"><span>Color</span><strong data-fish-inspect-color-label>${escapeHtml(formatCaveColorChoiceLabel(color))}</strong></div>
+          <div class="bubbler-color-swatches fish-inspect-colors"><button class="small-button alt ${!color ? "is-selected" : ""}" type="button" data-fish-inspect-color="" aria-pressed="${!color}">Original</button><button class="small-button cave-color-rgb-tile ${isDecorRgbColorSetting(color) ? "is-selected" : ""}" type="button" data-fish-inspect-color="${DECOR_RGB_COLOR_SETTING}" aria-pressed="${isDecorRgbColorSetting(color)}">RGB</button><input type="color" value="${escapeHtml(normalizeHexColor(color) || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR)}" data-fish-inspect-setting="color" aria-label="Custom fish color" /></div>
+          <label class="cave-colorize-toggle"><input type="checkbox" data-fish-inspect-setting="colorize" ${getFishColorizeSetting(fish) ? "checked" : ""} /><span>Colorize</span></label>
+        </section>
+        <div class="fish-inspect-actions">
+          ${!dead && baseSpecies && isFishSpeciesShopUnlocked(baseSpecies) ? '<button class="small-button alt" type="button" data-fish-inspect-action="buy">Buy Another</button><button class="small-button warn" type="button" data-fish-inspect-action="sell">Rehome</button>' : ""}
+          ${!dead ? `<button class="small-button" type="button" data-fish-inspect-action="store">${inStorage ? "Place in Tank" : "Put Away"}</button>` : '<button class="small-button warn" type="button" data-fish-inspect-action="dispose">Dispose</button>'}
+        </div>
+      </div>
+    </div>`,
+    footer: "",
+    closable: true
+  };
+}
+
+function handleFishInspectClick(_ctx, target) {
+  const managed = getFishInspectorManagedTarget();
+  if (!managed) return false;
+  const viewButton = target.closest("button[data-fish-inspect-view]");
+  if (viewButton) {
+    const view = viewButton.dataset.fishInspectView;
+    if (!["left", "right", "animated"].includes(view)) return false;
+    const now = Date.now();
+    if (view !== "animated" && !runtime.fishInspectPausedAt) runtime.fishInspectPausedAt = now;
+    if (view === "animated" && runtime.fishInspectPausedAt) {
+      runtime.fishInspectPreviewStartedAt += now - runtime.fishInspectPausedAt;
+      runtime.fishInspectPausedAt = 0;
+    }
+    runtime.fishInspectView = view;
+    renderUtilityOverlay();
+    return true;
+  }
+  const colorButton = target.closest("button[data-fish-inspect-color]");
+  if (colorButton) {
+    updateInspectorFishSetting("color", colorButton.dataset.fishInspectColor);
+    return true;
+  }
+  const button = target.closest("[data-fish-inspect-action]");
+  if (!button) return false;
+  const id = managed.fish.id;
+  switch (button.dataset.fishInspectAction) {
+    case "save-name": {
+      if (renameTankContextTarget("fish", id, runtime.fishInspectNameDraft)) renderUtilityOverlay();
+      break;
+    }
+    case "random-name": randomizeInspectorName(); break;
+    case "buy": openFishBuyAnotherConfirmation(id); break;
+    case "sell": openFishSellConfirmation(id); break;
+    case "store":
+      closeUtilityOverlay();
+      if (managed.inStorage) restoreFishToTank(id);
+      else storeFish(id);
+      break;
+    case "dispose": closeUtilityOverlay(); disposeFish(id); break;
+    default: return false;
+  }
+  return true;
+}
+
+function handleFishInspectInput(_ctx, target) {
+  if (target.matches("[data-fish-inspect-name]")) {
+    runtime.fishInspectNameDraft = target.value;
+    return true;
+  }
+  const setting = target.dataset.fishInspectSetting;
+  if (!["size", "color"].includes(setting)) return false;
+  updateInspectorFishSetting(setting, target.value, { persist: false, refreshControls: false });
+  const fish = getFishInspectorManagedTarget()?.fish;
+  if (fish) {
+    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-size]"), `${Math.round(fish.scale * 100)}%`);
+    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-color-label]"), formatCaveColorChoiceLabel(getFishColorSetting(fish)));
+  }
+  return true;
+}
+
+function handleFishInspectChange(_ctx, target) {
+  const setting = target.dataset.fishInspectSetting;
+  if (!setting) return false;
+  updateInspectorFishSetting(setting, setting === "colorize" ? target.checked : target.value, { forcePersist: true });
+  return true;
+}
+
+function handleFishInspectKeyDown(ctx, target, event) {
+  if (!target.matches("[data-fish-inspect-name]") || event.key !== "Enter") return false;
+  event.preventDefault();
+  return handleFishInspectClick(ctx, { closest: () => ({ dataset: { fishInspectAction: "save-name" } }) });
+}
+
+function getFishInspectLoopPose(fish, now, startedAt) {
+  const swimMs = 1000;
+  const turnMs = 700;
+  const halfCycle = swimMs + turnMs;
+  const elapsed = Math.max(0, now - startedAt);
+  const halfIndex = Math.floor(elapsed / halfCycle);
+  const phase = elapsed % halfCycle;
+  const direction = isFishDead(fish) || halfIndex % 2 === 0 ? 1 : -1;
+  const turning = !isFishDead(fish) && phase >= swimMs;
+  const turnStartedAt = turning ? startedAt + halfIndex * halfCycle + swimMs : null;
+  return {
+    ...fish, id: `inspect:${fish.id}`,
+    injuryDisplaySide: getFishInjuryDisplaySide({ ...fish }),
+    direction: turning ? -direction : direction, displayDirection: direction,
+    displayAngle: direction < 0 ? Math.PI : 0,
+    turnFromDirection: direction, turnToDirection: -direction,
+    turnFromAngle: direction < 0 ? Math.PI : 0, turnToAngle: direction < 0 ? 0 : Math.PI,
+    turnStartedAt,
+    turnDurationMs: turning ? turnMs : 0,
+    // Keep the inspection loop independent of territorial or travel turns.
+    turnV26StyleActive: "tail-loaded-c-turn", turnV26StyleStartedAt: turnStartedAt,
+    turnV26ActiveDepthSign: direction, turnV26MotionTiming: null,
+    turnV26EntryTilt: 0,
+    turnRendererBackend: "simple", turnFinalFrameRenderedAt: 0,
+    activity: "roam", caveDecorId: null, pendingTravel: null
+  };
+}
+
+function getFishInspectSwimTexture(texture, layer, imagePath, pose, species, now) {
+  if (!texture || isFishDead(pose)) return texture;
+  if (!(runtime.fishInspectWarpCanvases instanceof Map)) runtime.fishInspectWarpCanvases = new Map();
+  let canvas = runtime.fishInspectWarpCanvases.get(layer);
+  if (!canvas) {
+    canvas = document.createElement("canvas");
+    canvas.fishTurnV26DynamicTexture = true;
+    runtime.fishInspectWarpCanvases.set(layer, canvas);
+  }
+  const scale = Math.min(1, 512 / Math.max(texture.width, texture.height));
+  const width = Math.max(1, Math.round(texture.width * scale));
+  const height = Math.max(1, Math.round(texture.height * scale));
+  if (canvas.width !== width || canvas.height !== height) {
+    canvas.width = width; canvas.height = height;
+  }
+  const context = canvas.getContext("2d");
+  if (!context) return texture;
+  context.clearRect(0, 0, width, height);
+  // One continuous swim phase feeds both the side view and the turn mesh.
+  // Switching renderers therefore never resets the tail or body deformation.
+  if (!drawFishSwimDepthWarpImage(context, texture, 0, 0, width, height, pose, species, now, {
+    imagePath, suckerFreeSwimming: true, presetId: "regular", movementFactor: 1
+  })) context.drawImage(texture, 0, 0, width, height);
+  return canvas;
+}
+
+function renderFishInspectPreview(now = Date.now()) {
+  if (!runtime.utilityOverlayOpen || runtime.utilityOverlayMode !== "fish-inspect") return;
+  const managed = getFishInspectorManagedTarget();
+  const canvas = dom.utilityOverlayBody?.querySelector("[data-fish-inspect-preview]");
+  if (!managed || !canvas) return;
+  const { fish, inStorage } = managed;
+  const species = getSpeciesForFish(fish);
+  if (!species) return;
+  const displaySpecies = getFishDisplaySourceSpecies(fish, species) || species;
+  // Suckers use their side-swimming art so inspection can show both flanks.
+  const imagePath = species.behavior === "sucker"
+    ? getSuckerFishViewAssetPath(displaySpecies, fish, "swim") || getFishDisplayAssetPath(fish, species, now)
+    : getFishDisplayAssetPath(fish, species, now);
+  const image = runtime.images.get(imagePath);
+  const loading = dom.utilityOverlayBody.querySelector("[data-fish-inspect-preview-loading]");
+  if (!isUsableRuntimeImage(image)) {
+    if (loading) loading.hidden = false;
+    requestRuntimeImageRecovery(imagePath, { kind: "fish", id: fish.id, speciesId: fish.speciesId });
+    return;
+  }
+  if (loading) loading.hidden = true;
+  const drawPreview = (canvas, view, thumbnail = false) => {
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (width <= 0 || height <= 0) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    if (canvas.width !== Math.round(width * dpr) || canvas.height !== Math.round(height * dpr)) {
+      canvas.width = Math.round(width * dpr); canvas.height = Math.round(height * dpr);
+    }
+    const context = canvas.getContext("2d");
+    if (!context) return;
+    context.setTransform(dpr, 0, 0, dpr, 0, 0);
+    context.clearRect(0, 0, width, height);
+    const maxSide = Math.min(512, width * 0.88, height * 0.88);
+    const scale = maxSide / Math.max(image.width, image.height);
+    const drawWidth = image.width * scale, drawHeight = image.height * scale;
+    const still = view !== "animated";
+    const direction = view === "left" ? -1 : 1;
+    const nextPose = getFishInspectLoopPose(fish, still ? runtime.fishInspectPreviewStartedAt : now, runtime.fishInspectPreviewStartedAt || now);
+    if (still) Object.assign(nextPose, {
+      direction, displayDirection: direction, displayAngle: direction < 0 ? Math.PI : 0,
+      turnStartedAt: null, turnDurationMs: 0
+    });
+    // Thumbnail poses must never replace the animated preview's persistent owner.
+    if (!thumbnail && runtime.fishInspectPreviewFish?.id !== nextPose.id) runtime.fishInspectPreviewFish = {};
+    const pose = thumbnail ? nextPose : Object.assign(runtime.fishInspectPreviewFish, nextPose);
+    const conditionNow = inStorage ? getFishStorageSimulationNow(fish, now) : getPeacefulModeSimulationNow(now);
+    const healthRatio = clamp(fish.healthUnits / Math.max(1, getFishMaxHealthUnits(fish)), 0, 1);
+    const turn = Boolean(pose.turnStartedAt);
+    const complexTurn = turn && !areSimpleTurnAnimationsForced();
+    context.save();
+    context.translate(width / 2, height / 2);
+    const drawLayer = (texture, layer, filter = "none", alpha = 1) => {
+      if (!texture || alpha <= 0) return;
+      const swimTexture = still ? texture : getFishInspectSwimTexture(texture, layer, imagePath, pose, species, now);
+      context.save(); context.filter = filter; context.globalAlpha = alpha;
+      let turned = false;
+      if (complexTurn) turned = drawFishTurnV26VolumeMesh(context, swimTexture, image, -drawWidth / 2, drawWidth, drawHeight, pose, now, { species, baseAssetPath: imagePath });
+      if (!turned && turn) drawFishLightweightTurnFallbackFrame(context, swimTexture, -drawWidth / 2, drawWidth, drawHeight, pose, now);
+      else if (!turned) {
+        context.scale(pose.displayDirection, 1);
+        context.drawImage(swimTexture, -drawWidth / 2, -drawHeight / 2, drawWidth, drawHeight);
+      }
+      context.restore();
+    };
+    drawLayer(getFishTintedImage(imagePath, image, fish), "body", getFishCanvasFilter(fish, healthRatio, conditionNow));
+    if (!isFishDead(fish)) {
+      drawLayer(getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, conditionNow, { mode: "global" }), "global");
+      const sideAlpha = getFishSymptomSideVisibility(pose, { facingScaleX: pose.displayDirection }, now, complexTurn);
+      drawLayer(getFishSymptomOverlayCanvas(fish, species, imagePath, image, healthRatio, conditionNow, { mode: "side" }), "side", "none", sideAlpha);
+    }
+    context.restore();
+  };
+  drawPreview(canvas, runtime.fishInspectView || "animated");
+  for (const thumbnail of dom.utilityOverlayBody.querySelectorAll?.("[data-fish-inspect-thumbnail]") || []) {
+    drawPreview(thumbnail, thumbnail.dataset.fishInspectThumbnail, true);
+  }
+}
+
 function adjustFishSize(fishId, direction) {
   const managed = getManagedFishById(fishId);
   if (!managed) {
@@ -69798,6 +69786,11 @@ function saveFishSizeAsDefault(fishId) {
 
 function openFishInspector(fishId, options = {}) {
   if (!getManagedFishById(fishId)) {
+    return;
+  }
+
+  if (options.settingsOpen !== false) {
+    openUtilityOverlay("fish-inspect", { fishId, clearPrimaryToolModes: false });
     return;
   }
 
@@ -69860,7 +69853,7 @@ function saveInspectorName() {
 }
 
 function randomizeInspectorName() {
-  const managed = getManagedFishById(runtime.selectedFishId);
+  const managed = getFishInspectorManagedTarget();
   if (!managed) {
     return;
   }
@@ -69889,6 +69882,7 @@ function randomizeInspectorName() {
     : pool[Math.floor(Math.random() * pool.length)];
 
   fish.name = nextName.slice(0, 20);
+  if (runtime.utilityOverlayMode === "fish-inspect") runtime.fishInspectNameDraft = fish.name;
   clearFishNameDraft();
   saveState();
   renderUi(Date.now());
@@ -70038,11 +70032,7 @@ function syncWallpaperUtilityNameKeyboards() {
 }
 
 function toggleFishInspectorSettings() {
-  if (!getManagedFishById(runtime.selectedFishId)) {
-    return;
-  }
-  runtime.fishInspectorSettingsOpen = !runtime.fishInspectorSettingsOpen;
-  renderUi(Date.now());
+  openFishInspector(runtime.selectedFishId);
 }
 
 function buyInspectorFish() {
@@ -70165,7 +70155,7 @@ function updateInspectorFishReadouts(fish) {
 }
 
 function updateInspectorFishSetting(setting, rawValue, options = {}) {
-  const managed = getManagedFishById(runtime.selectedFishId);
+  const managed = getFishInspectorManagedTarget();
   if (!managed) {
     return;
   }
@@ -70251,12 +70241,17 @@ function updateInspectorFishSetting(setting, rawValue, options = {}) {
       saveState();
     }
     if (refreshControls) {
-      updateInspectorFishReadouts(fish);
+      if (runtime.utilityOverlayMode === "fish-inspect") renderUtilityOverlay();
+      else updateInspectorFishReadouts(fish);
     }
     return;
   }
   if (persist) {
     saveState();
+  }
+  if (runtime.utilityOverlayMode === "fish-inspect") {
+    if (refreshControls) renderUtilityOverlay();
+    return;
   }
   if (setting === "color" || setting === "colorize") {
     if (!refreshControls) {
@@ -73776,8 +73771,8 @@ function getDebugSpeciesSignatureAvailability(fish, species = getSpeciesForFish(
   }
   if (species?.id === "angelfish") {
     if (!isFishAdult(fish, now)) return { enabled: false, reason: "Angelfish territorial behavior begins at adulthood" };
-    if (!getFishResidenceDecorId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
-      return { enabled: false, reason: "assign a home or add a cave/hardscape" };
+    if (!getFishDecorClaimId(fish) && !hasDebugDecorHangoutZone(["hide", "hardscape"])) {
+      return { enabled: false, reason: "add a cave or hardscape" };
     }
   }
   if (species?.id === "blue-ram" && !isFishAdult(fish, now)) {
@@ -73825,9 +73820,9 @@ function triggerDebugSpeciesSignatureBehavior(now = Date.now()) {
       target = pickBettaRivalBehaviorTarget(fish, species, relationships, nearbyAll, now, { force: true });
     }
   } else if (species.id === "angelfish") {
-    if (!getFishResidenceDecorId(fish)) {
+    if (!getFishDecorClaimId(fish)) {
       const zone = getCachedDecorHangoutZones().find((entry) => ["hide", "hardscape"].includes(entry.type)) || null;
-      if (zone) fish.residenceDecorId = zone.decorId;
+      if (zone) tryClaimFishDecor(fish, zone.decorId, now);
     }
     target = pickAngelfishTerritoryBehaviorTarget(fish, species, now, { force: true });
   } else if (species.id === "blue-ram") {
@@ -83875,14 +83870,6 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
-function renderDecorSettingsTitleActions(item, decor) {
-  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
-    return "";
-  }
-
-  return `<button class="utility-header-icon-button" type="button" data-decor-settings-rename title="Rename this placed decor" aria-label="Rename this placed decor">✎</button>`;
-}
-
 function renderDecorSettingsHeaderActions(item, decor) {
   if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
     return "";
@@ -83904,16 +83891,6 @@ function handleDecorSettingsUtilityOverlayHeaderClick(ctx, target) {
 
   if (target?.closest?.("[data-decor-settings-reset]")) {
     resetSelectedDecorSettings();
-    return true;
-  }
-
-  if (target?.closest?.("[data-decor-settings-rename]")) {
-    const decor = runtime.decorMap.get(item.decorKey);
-    const currentName = getPlacedDecorDisplayName(item, decor);
-    const nextName = window.prompt("Name this placed decor:", currentName);
-    if (nextName !== null) {
-      setSelectedDecorCustomName(nextName);
-    }
     return true;
   }
 
@@ -84451,21 +84428,30 @@ function syncUtilityOverlayEditTraySafeArea() {
   }
 
   const isDecorSettings = runtime.utilityOverlayOpen
-    && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings");
+    && ["decor-settings", "custom-decor-settings", "fish-inspect"].includes(runtime.utilityOverlayMode);
   if (!isDecorSettings) {
     dom.utilityOverlay.style.removeProperty("--utility-edit-tray-reserve");
     return;
   }
 
-  const visibleTray = [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray]
+  // The persistent workspace has tall sidebars as well as a bottom tray.
+  // Reserving space below a sidebar's top consumes the entire dialog height.
+  const bottomTrays = isEditWorkspaceSidebarLayout()
+    ? [dom.editTankTray]
+    : [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray];
+  const visibleTray = bottomTrays
     .find((tray) => tray instanceof HTMLElement && !tray.hidden && tray.getClientRects().length);
   if (!visibleTray) {
     dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
     return;
   }
 
-  const overlayRect = dom.utilityOverlay.getBoundingClientRect();
-  const trayRect = visibleTray.getBoundingClientRect();
+  const overlayRect = getElementRectInTankStageLayout(dom.utilityOverlay);
+  const trayRect = getElementRectInTankStageLayout(visibleTray);
+  if (!overlayRect || !trayRect) {
+    dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
+    return;
+  }
   const reserve = Math.max(0, Math.ceil(overlayRect.bottom - trayRect.top + 12));
   dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", `${reserve}px`);
 }
@@ -88772,155 +88758,6 @@ function syncTankTrayStageClass() {
   }
 }
 
-function getResidenceAssignmentTarget() {
-  return getPlacedDecorById(runtime.residenceSettingsDecorId) || getSelectedPlacedDecor();
-}
-
-function openDecorResidenceAssignment(placedId) {
-  const item = setSelectedDecor(placedId);
-  if (!item || !isDecorResidenceEligible(item)) {
-    showToast("That structure cannot be used as a residence.");
-    return false;
-  }
-  runtime.residenceSettingsDecorId = item.id;
-  openUtilityOverlay("decor-residence", { clearPrimaryToolModes: false });
-  return true;
-}
-
-function renderResidenceFishCard(fish, item, options = {}) {
-  const species = getSpeciesForFish(fish);
-  if (!fish || !species) {
-    return "";
-  }
-  const now = Date.now();
-  const fishAsset = getFishDisplayAssetPath(fish, species, now) || species.fallbackAsset || species.asset;
-  const tank = getTankContainingFish(fish.id);
-  const resident = options.resident === true;
-  return `
-    <article class="residence-fish-card ${resident ? "is-resident" : "is-nomadic"}">
-      <img class="residence-fish-thumb" ${assetImageAttributes(fishAsset)} alt="${escapeHtml(fish.name)}" />
-      <div class="residence-fish-copy">
-        <strong>${escapeHtml(fish.name)}</strong>
-        <span>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</span>
-        <small>${escapeHtml(getTankLabel(tank))}</small>
-      </div>
-      <button class="small-button ${resident ? "alt" : ""}" type="button"
-        ${resident ? `data-unassign-residence-fish="${escapeHtml(fish.id)}"` : `data-assign-residence-fish="${escapeHtml(fish.id)}"`}
-        data-residence-decor="${escapeHtml(item.id)}">
-        ${resident ? "Unassign" : "Assign"}
-      </button>
-    </article>
-  `;
-}
-
-function renderDecorResidenceAssignmentOverlay(item = getResidenceAssignmentTarget()) {
-  if (!item || !isDecorResidenceEligible(item)) {
-    return `<div class="empty-state">This residence is no longer available.</div>`;
-  }
-  const residents = getDecorResidents(item.id);
-  const capacity = getDecorResidenceCapacity(item);
-  const availableFish = getAllTankFish()
-    .filter((fish) => fish && !isFishDead(fish) && !getFishResidenceDecorId(fish))
-    .sort((left, right) => String(left.name || "").localeCompare(String(right.name || "")));
-  const openSlots = Math.max(0, capacity - residents.length);
-  const residentMarkup = residents.length
-    ? residents.map((fish) => renderResidenceFishCard(fish, item, { resident: true })).join("")
-    : `<div class="empty-state compact">No fish live here yet.</div>`;
-  const availableMarkup = openSlots <= 0
-    ? `<div class="empty-state compact">This residence is full. Unassign a resident to make room.</div>`
-    : availableFish.length
-      ? availableFish.map((fish) => renderResidenceFishCard(fish, item)).join("")
-      : `<div class="empty-state compact">Every living fish already has a residence. Unassigned fish remain nomadic.</div>`;
-  return `
-    <div class="residence-assignment-panel">
-      <div class="residence-assignment-summary">
-        <strong>${residents.length}/${capacity} resident ${pluralize("slot", capacity)}</strong>
-        <span>Residents return here to sleep and rest. They still roam the borough for food, care, and friends.</span>
-      </div>
-      <section class="residence-assignment-section">
-        <h3>Current Residents</h3>
-        <div class="residence-fish-grid">${residentMarkup}</div>
-      </section>
-      <section class="residence-assignment-section">
-        <h3>Nomadic Fish</h3>
-        <p class="mini-note">Only fish without another residence appear here. Nomadic fish may temporarily use any unreserved shelter.</p>
-        <div class="residence-fish-grid">${availableMarkup}</div>
-      </section>
-    </div>
-  `;
-}
-
-function assignFishResidence(fishId, decorId) {
-  const fish = getAllTankFish().find((entry) => entry?.id === fishId);
-  const tank = getTankContainingDecor(decorId);
-  const item = tank?.placedDecor?.find((entry) => entry.id === decorId) || null;
-  if (!fish || !item || isFishDead(fish) || !isDecorResidenceEligible(item)) {
-    showToast("That fish or residence is no longer available.");
-    return false;
-  }
-  if (getFishResidenceDecorId(fish)) {
-    showToast(`${fish.name} already has a residence.`);
-    return false;
-  }
-  if (getDecorResidents(decorId).length >= getDecorResidenceCapacity(item)) {
-    showToast("That residence is full.");
-    return false;
-  }
-  fish.residenceDecorId = decorId;
-  fish.favoriteSpot = {
-    xNorm: clamp(Number(item.xNorm) || 0.5, 0.08, 0.92),
-    yNorm: clamp((Number(item.yNorm) || 0.72) - 0.12, 0.14, 0.8),
-    decorId,
-    zoneType: isCaveDecorKey(item.decorKey) ? "hide" : "home",
-    assignedAt: Date.now()
-  };
-  fish.coarseActivity = null;
-  fish.behaviorNextThinkAt = 0;
-  fish.lastNeighborhoodMoveAt = 0;
-  const decorName = runtime.decorMap.get(item.decorKey)?.name || titleFromFile(item.decorKey);
-  pushEvent(`${fish.name} moved into ${decorName}.`, Date.now(), tank, {
-    type: "behavior",
-    fishId: fish.id,
-    decorKey: item.decorKey,
-    placedDecorId: item.id
-  });
-  saveState();
-  renderUi(Date.now());
-  showToast(`${fish.name} now lives at ${decorName}.`);
-  return true;
-}
-
-function unassignFishResidence(fishId, decorId = "") {
-  const fish = getAllTankFish().find((entry) => entry?.id === fishId);
-  const residenceDecorId = getFishResidenceDecorId(fish);
-  if (!fish || !residenceDecorId || (decorId && residenceDecorId !== decorId)) {
-    return false;
-  }
-  fish.residenceDecorId = null;
-  if (fish.favoriteSpot?.decorId === residenceDecorId) {
-    fish.favoriteSpot = null;
-  }
-  fish.behaviorNextThinkAt = 0;
-  saveState();
-  renderUi(Date.now());
-  showToast(`${fish.name} is nomadic again.`);
-  return true;
-}
-
-function handleDecorResidenceUtilityOverlayBodyClick(ctx, target) {
-  const assignButton = target.closest("[data-assign-residence-fish]");
-  if (assignButton) {
-    assignFishResidence(assignButton.dataset.assignResidenceFish, assignButton.dataset.residenceDecor);
-    return true;
-  }
-  const unassignButton = target.closest("[data-unassign-residence-fish]");
-  if (unassignButton) {
-    unassignFishResidence(unassignButton.dataset.unassignResidenceFish, unassignButton.dataset.residenceDecor);
-    return true;
-  }
-  return false;
-}
-
 function getDecorFreePlacementSelectionState() {
   const selectedItems = getSelectedPlacedDecorItems();
   if (selectedItems.length) {
@@ -90978,7 +90815,7 @@ function renderFishInspector(now) {
   const careGuide = document.getElementById("inspectorTreatmentGuide");
   if (careGuide) {
     const guideNow = inStorage ? getFishStorageSimulationNow(fish, now) : getPeacefulModeSimulationNow(now);
-    const guideMarkup = dead ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
+    const guideMarkup = dead || runtime.fishInspectorSettingsOpen ? "" : getFishTreatmentGuideMarkup(fish, guideNow);
     careGuide.hidden = !guideMarkup;
     setMarkupIfChanged("inspector-treatment-guide", careGuide, guideMarkup);
   }
@@ -91099,7 +90936,7 @@ function renderFishInspector(now) {
   }
   if (dom.inspectorFishSettingsButton) {
     dom.inspectorFishSettingsButton.hidden = dead || runtime.fishInspectorSettingsOpen;
-    dom.inspectorFishSettingsButton.textContent = "SETTINGS";
+    dom.inspectorFishSettingsButton.textContent = "INSPECT";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }
   renderFishInspectorBehaviorOptions(fish, baseSpecies);
@@ -92145,6 +91982,30 @@ function renderGravelPalettePreview(colors, key) {
   return `<svg class="substrate-palette-preview" viewBox="0 0 100 100" aria-hidden="true"><defs>${filters}</defs>${colors.map((color, index) => `<svg x="0" y="0" width="100" height="100" viewBox="${index * 100} 0 100 100"><image href="assets/gravel/gravel-preset-tile.webp" width="300" height="100" filter="url(#${key}-${index})" /></svg>`).join("")}</svg>`;
 }
 
+function renderCurrentGravelPalettePreview(colors, colorizeSettings) {
+  const signature = JSON.stringify([colors, colorizeSettings]);
+  if (runtime.gravelCurrentPreview?.signature === signature) return runtime.gravelCurrentPreview.markup;
+  const path = "assets/gravel/gravel-preset-tile.webp";
+  const layers = colors.map((color, index) => getTintedCustomGravelAsset({ path }, color, {
+    colorize: colorizeSettings[index], cacheScope: "palette-preview", maxDimension: 300
+  }));
+  if (layers.some((layer) => !layer)) return renderGravelPalettePreview(colors, "current-gravel");
+  const markup = `<svg class="substrate-palette-preview" viewBox="0 0 100 100" aria-hidden="true">${layers.map((layer, index) => `<svg x="0" y="0" width="100" height="100" viewBox="${index * 100} 0 100 100"><image href="${layer.toDataURL()}" width="300" height="100" /></svg>`).join("")}</svg>`;
+  runtime.gravelCurrentPreview = { signature, markup };
+  return markup;
+}
+
+function renderInlineGravelColors(colors, colorizeSettings, choices) {
+  const selectedLayer = clamp(Math.floor(Number(runtime.editTankGravelLayer) || 0), 0, CUSTOM_GRAVEL_LAYER_COUNT - 1);
+  const selectedColor = colors[selectedLayer];
+  const cards = colors.map((color, index) => `<div class="substrate-color-card ${index === selectedLayer ? "is-selected" : ""}" style="--swatch:${color}">
+    <button type="button" class="substrate-color-slot" data-edit-gravel-layer="${index}" aria-label="Edit gravel Color ${index + 1}" aria-pressed="${index === selectedLayer}"><span class="substrate-color-sample" aria-hidden="true"></span><strong>Color ${index + 1}</strong></button>
+    <label class="substrate-colorize"><input type="checkbox" data-custom-gravel-colorize="true" data-custom-gravel-layer="${index}" ${colorizeSettings[index] ? "checked" : ""} />Colorize</label>
+  </div>`).join("");
+  const palette = choices.map((choice) => `<button type="button" class="substrate-inline-swatch" data-gravel-color-choice="${choice.color}" style="--swatch:${choice.color}" title="${escapeHtml(choice.label)}" aria-label="${escapeHtml(choice.label)} for Color ${selectedLayer + 1}" aria-pressed="${choice.color === selectedColor}"></button>`).join("");
+  return `<section class="substrate-custom-colors"><strong>Custom Colors</strong><div class="substrate-custom-body"><div class="substrate-color-cards" role="group" aria-label="Gravel color slots">${cards}</div><div class="substrate-inline-palette" role="group" aria-label="Palette for Color ${selectedLayer + 1}">${palette}</div><div class="substrate-current-preview" aria-label="Current gravel preview">${renderCurrentGravelPalettePreview(colors, colorizeSettings)}</div></div></section>`;
+}
+
 function renderSubstrateColorControl(index, color, colorize, sand = false) {
   if (sand) {
     return `<div class="substrate-sand-control"><strong>Sand Color</strong><div class="substrate-sand-options" role="group" aria-label="Sand color mode"><button type="button" class="substrate-original-button" data-sand-original aria-pressed="${!state.sandColorEnabled}" title="Restore the natural sand color"><span aria-hidden="true"></span>Original</button><button type="button" class="substrate-color-button" data-substrate-picker="sand" style="--swatch:${color}" aria-label="Choose custom sand color" aria-haspopup="dialog" aria-pressed="${state.sandColorEnabled === true}"><span></span>Custom <b aria-hidden="true">⌄</b></button></div><label class="substrate-colorize" title="Apply the chosen color evenly while keeping the sand shading"><input type="checkbox" data-sand-colorize ${colorize ? "checked" : ""} ${state.sandColorEnabled ? "" : "disabled"} />Colorize</label></div>`;
@@ -92298,12 +92159,25 @@ function renderCustomGravelControls() {
   }
 
   if (editContainer) {
-    const presetMarkup = getGravelColorPresets().map((preset) => {
+    const presets = getGravelColorPresets();
+    const pageSize = clamp(Math.floor((getTankStageLayoutSize().width - 720) / 64), 2, presets.length);
+    const pageCount = Math.ceil(presets.length / pageSize);
+    const page = clamp(Math.floor(Number(runtime.editTankGravelPresetPage) || 0), 0, pageCount - 1);
+    runtime.editTankGravelPresetPage = page;
+    const presetMarkup = presets.slice(page * pageSize, (page + 1) * pageSize).map((preset) => {
       const selected = preset.colors.every((color, index) => color === activeColors[index]) && activeColorizeSettings.every(Boolean);
       return `<button type="button" class="substrate-preset ${selected ? "is-selected" : ""}" data-gravel-preset="${preset.id}" aria-pressed="${selected}" title="${preset.name}">${renderGravelPalettePreview(preset.colors, `preset-${preset.id}`)}<span>${preset.name}</span></button>`;
     }).join("");
-    const editMarkup = `<div class="substrate-editor"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-scroll="-1" aria-label="Previous color presets">‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-scroll="1" aria-label="Next color presets">›</button></div></section><section class="substrate-custom-colors"><strong>Custom Colors</strong><div>${activeColors.map((color, index) => renderSubstrateColorControl(index, color, activeColorizeSettings[index])).join("")}</div></section><div class="substrate-current-preview">${renderGravelPalettePreview(activeColors, "current-gravel")}</div>` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>${state.sandColorEnabled ? "Custom color applied. Colorize is optional." : "Natural sand. Choose Custom to pick a color."}</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
+    const editMarkup = `<div class="substrate-editor" style="--preset-page-size:${pageSize}"><div class="substrate-type-choices" role="group" aria-label="Substrate type">${[["custom", "Gravel"], ["sand", "Sand"], ["river-rock", "River Rock"]].map(([value, label]) => `<button type="button" data-substrate-style="${value}" aria-pressed="${activeSubstrateStyle === value}" class="${activeSubstrateStyle === value ? "is-selected" : ""}" ${isSubstrateOwned(value) ? "" : "disabled"}>${label}</button>`).join("")}</div>${resolvedStyle === "custom" ? `<section class="substrate-presets"><strong>Color Presets</strong><div class="substrate-preset-carousel"><button type="button" data-gravel-preset-page="${page - 1}" aria-label="Previous color presets" ${page === 0 ? "disabled" : ""}>‹</button><div class="substrate-preset-list">${presetMarkup}</div><button type="button" data-gravel-preset-page="${page + 1}" aria-label="Next color presets" ${page === pageCount - 1 ? "disabled" : ""}>›</button></div></section>${renderInlineGravelColors(activeColors, activeColorizeSettings, choices)}` : resolvedStyle === "sand" ? `<section class="substrate-sand-colors">${renderSubstrateColorControl(0, state.sandColor, state.sandColorize, true)}<span>${state.sandColorEnabled ? "Custom color applied. Colorize is optional." : "Natural sand. Choose Custom to pick a color."}</span></section>` : `<p class="substrate-natural-note">Natural rounded river stones.</p>`}</div>`;
+    const focused = document.activeElement;
+    const focusSelector = editContainer.contains(focused)
+      ? focused?.matches("[data-gravel-color-choice]") ? `[data-gravel-color-choice="${focused.dataset.gravelColorChoice}"]`
+        : focused?.matches("[data-edit-gravel-layer]") ? `[data-edit-gravel-layer="${focused.dataset.editGravelLayer}"]`
+          : focused?.matches("[data-custom-gravel-colorize]") ? `[data-custom-gravel-colorize][data-custom-gravel-layer="${focused.dataset.customGravelLayer}"]`
+            : ""
+      : "";
     setMarkupIfChanged("edit-tank-custom-gravel-panel", editContainer, editMarkup);
+    if (focusSelector) editContainer.querySelector(focusSelector)?.focus({ preventScroll: true });
   }
 }
 
@@ -92923,6 +92797,7 @@ function animationLoop(frameTime) {
   renderCustomDecorMotionPreview(now);
   renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
+  renderFishInspectPreview(Date.now());
   finishDebugFrameProfile();
 }
 // </bundle-source>
@@ -98276,7 +98151,9 @@ function updateFishMotion(now, deltaSeconds) {
       }
 
       const gravelPebbleOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && (!queuedFishActionActive || queuedPebbleActionActive) && updateFishGravelPebbleAction(fish, species, now);
-      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole && !queuedFishActionActive && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
+      const caveBehaviorOwnsMovement = !panicOwnsMovement && !pufferInflatedOwnsMovement && !breedingRole
+        && (!queuedFishActionActive || (activeQueuedFishAction?.action === "sleep" && fish.sleepShelter?.cave))
+        && !gravelPebbleOwnsMovement && fish.activity === "roam" && updateFishCaveBehavior(fish, species, now);
       const fishActionOwnsMovement = !panicOwnsMovement
         && !pufferInflatedOwnsMovement
         && !breedingRole
@@ -99975,10 +99852,30 @@ function isSpookyDecorItem(itemOrKey) {
   ) || /(effigy|spooky|gorebag|swamp-moss|fish-head)/.test(decorKey);
 }
 
-function getFishResidenceDecorId(fish) {
-  return typeof fish?.residenceDecorId === "string" && fish.residenceDecorId
-    ? fish.residenceDecorId
+function getFishDecorClaimId(fish, now = Date.now()) {
+  return typeof fish?.decorClaimId === "string" && fish.decorClaimId && Number(fish.decorClaimUntil) > now
+    ? fish.decorClaimId
     : null;
+}
+
+function releaseFishDecorClaim(fish) {
+  if (!fish) return;
+  fish.decorClaimId = null;
+  fish.decorClaimUntil = 0;
+  fish.decorClaimSpot = null;
+}
+
+function tryClaimFishDecor(fish, decorId, now = Date.now()) {
+  const tank = getTankContainingFish(fish?.id);
+  const item = tank?.placedDecor?.find((entry) => entry.id === decorId);
+  if (!fish || isFishDead(fish) || !item || !isDecorClaimEligible(item)) return false;
+  if (getFishDecorClaimId(fish, now) === decorId) return true;
+  const claims = (tank.fish || []).filter((other) => other.id !== fish.id && !isFishDead(other) && getFishDecorClaimId(other, now) === decorId);
+  if (claims.length >= getDecorShelterCapacity(item)) return false;
+  fish.decorClaimId = decorId;
+  fish.decorClaimUntil = now + 90000;
+  fish.decorClaimSpot = { xNorm: Number(item.xNorm) || 0.5, yNorm: Number(item.yNorm) || 0.5 };
+  return true;
 }
 
 function getTankContainingFish(fishId, targetState = state) {
@@ -99993,23 +99890,23 @@ function getTankContainingDecor(decorId, targetState = state) {
   )) || null;
 }
 
-function getDecorResidents(decorId, targetState = state) {
+function getDecorClaimants(decorId, targetState = state, now = Date.now()) {
   if (!decorId) {
     return [];
   }
   return getAllTankFish(targetState).filter((fish) => (
-    fish && !isFishDead(fish) && getFishResidenceDecorId(fish) === decorId
+    fish && !isFishDead(fish) && getFishDecorClaimId(fish, now) === decorId
   ));
 }
 
-function getDecorResidenceCapacity(itemOrKey) {
+function getDecorShelterCapacity(itemOrKey) {
   const meta = getDecorFishBehaviorMeta(itemOrKey);
   return Number.isFinite(Number(meta?.occupancyLimit))
     ? Math.max(1, Math.floor(Number(meta.occupancyLimit)))
     : 1;
 }
 
-function isDecorResidenceEligible(itemOrKey) {
+function isDecorClaimEligible(itemOrKey) {
   const decorKey = String(typeof itemOrKey === "string" ? itemOrKey : itemOrKey?.decorKey || "").toLowerCase();
   if (!decorKey) {
     return false;
@@ -100019,24 +99916,24 @@ function isDecorResidenceEligible(itemOrKey) {
   const services = Array.isArray(meta?.serviceTypes) ? meta.serviceTypes : [];
   return isCaveDecorKey(decorKey)
     || services.includes("home")
-    || hangoutTypes.some((type) => type === "hide" || type === "plant")
-    || /(grass|seaweed|moss|plant|anubias|coral|hide)/.test(decorKey);
+    || hangoutTypes.some((type) => ["hide", "plant", "hardscape"].includes(type))
+    || /(grass|seaweed|moss|plant|anubias|coral|hide|rock|root|driftwood|shell)/.test(decorKey);
 }
 
-function getResidenceReservationCount(decorId, requestingFish = null) {
-  return getDecorResidents(decorId).filter((fish) => fish.id !== requestingFish?.id).length;
+function getDecorClaimCount(decorId, requestingFish = null, now = Date.now()) {
+  return getDecorClaimants(decorId, state, now).filter((fish) => fish.id !== requestingFish?.id).length;
 }
 
-function clearDecorResidenceAssignments(decorId, options = {}) {
+function clearDecorClaims(decorId, options = {}) {
   if (!decorId) {
     return 0;
   }
   let cleared = 0;
   for (const fish of getAllTankFish()) {
-    if (getFishResidenceDecorId(fish) !== decorId) {
+    if (fish.decorClaimId !== decorId) {
       continue;
     }
-    fish.residenceDecorId = null;
+    releaseFishDecorClaim(fish);
     if (fish.favoriteSpot?.decorId === decorId) {
       fish.favoriteSpot = null;
     }
@@ -100046,56 +99943,6 @@ function clearDecorResidenceAssignments(decorId, options = {}) {
     saveState();
   }
   return cleared;
-}
-
-function getAssignedResidenceTarget(fish, species = getSpeciesForFish(fish), now = Date.now()) {
-  const residenceDecorId = getFishResidenceDecorId(fish);
-  if (!residenceDecorId || !state.placedDecor.some((item) => item.id === residenceDecorId)) {
-    return null;
-  }
-  const zone = getCachedDecorHangoutZones().find((entry) => (
-    entry.decorId === residenceDecorId && ["hide", "plant", "hardscape"].includes(entry.type)
-  ));
-  if (zone) {
-    const targetLayer = clampTankLayer(zone.targetLayerMax);
-    return {
-      xNorm: clamp(randomBetween(zone.xMin, zone.xMax), 0.08, 0.92),
-      yNorm: clampFishYNormToLayer(randomBetween(zone.yMin, zone.yMax), fish, species, targetLayer, {
-        minYNorm: 0.16,
-        maxYNorm: 0.8
-      }),
-      targetLayer,
-      targetAt: now + randomBetween(12000, 24000),
-      decorId: residenceDecorId,
-      zoneType: zone.type,
-      intentType: "night sleep",
-      intentCause: "assigned residence",
-      signalType: "night_sleep",
-      debugText: "night sleep | assigned residence",
-      slow: true
-    };
-  }
-
-  const item = state.placedDecor.find((entry) => entry.id === residenceDecorId);
-  if (!item) {
-    return null;
-  }
-  if (isCaveDecorKey(item.decorKey)) {
-    return null;
-  }
-  return {
-    xNorm: clamp(Number(item.xNorm) || 0.5, 0.08, 0.92),
-    yNorm: clamp((Number(item.yNorm) || 0.72) - 0.12, 0.16, 0.78),
-    targetLayer: clampTankLayer(Math.min(TANK_DEPTH_LAYERS, getDecorTankLayer(item) + 1)),
-    targetAt: now + randomBetween(12000, 24000),
-    decorId: residenceDecorId,
-    zoneType: "home",
-    intentType: "night sleep",
-    intentCause: "assigned residence",
-    signalType: "night_sleep",
-    debugText: "night sleep | assigned residence",
-    slow: true
-  };
 }
 
 function getDecorHangoutOccupancyGroup(fish, species = getSpeciesForFish(fish)) {
@@ -100178,11 +100025,14 @@ function pickDecorHangoutTarget(species, fish = null, now = Date.now(), options 
     }
 
     const residenceItem = state.placedDecor.find((item) => item.id === zone.decorId);
+    if (options.excludeCaves && residenceItem && isCaveDecorKey(residenceItem.decorKey)) return false;
+    if (options.requireBehindSpace && residenceItem
+      && getPlacedDecorDepthZ(residenceItem) - getFishTankDepthRadius(fish) - 0.035 <= TANK_DEPTH_REAR_USABLE_Z) return false;
     if (
       residenceItem
-      && isDecorResidenceEligible(residenceItem)
-      && getFishResidenceDecorId(fish) !== zone.decorId
-      && getResidenceReservationCount(zone.decorId, fish) >= getDecorResidenceCapacity(residenceItem)
+      && isDecorClaimEligible(residenceItem)
+      && getFishDecorClaimId(fish, now) !== zone.decorId
+      && getDecorClaimCount(zone.decorId, fish, now) >= getDecorShelterCapacity(residenceItem)
     ) {
       return false;
     }
@@ -100452,7 +100302,7 @@ function getBoroughSectionServiceCandidates(tank, serviceType) {
 
 function getDecorBoroughServiceSeats(itemOrKey) {
   const meta = getDecorFishBehaviorMeta(itemOrKey);
-  const capacity = getDecorResidenceCapacity(itemOrKey);
+  const capacity = getDecorShelterCapacity(itemOrKey);
   if (Array.isArray(meta?.serviceSeats) && meta.serviceSeats.length) {
     return meta.serviceSeats.slice(0, capacity);
   }
@@ -100767,8 +100617,11 @@ function createCoarseFishActivity(fish, targetTank, now = Date.now()) {
     fish.boroughServiceSeatUntil = now + 6500 + Math.random() * 4500;
   } else if (getFishNeedValue(fish, "energy", now) <= 48) {
     type = "rest";
-    const residence = targetTank?.placedDecor?.find((item) => item.id === getFishResidenceDecorId(fish));
+    const shelters = (targetTank?.placedDecor || []).filter((item) => isDecorClaimEligible(item)
+      && (getFishDecorClaimId(fish, now) === item.id || getDecorClaimCount(item.id, fish, now) < getDecorShelterCapacity(item)));
+    const residence = shelters.find((item) => item.id === getFishDecorClaimId(fish, now)) || shelters[0];
     if (residence) {
+      tryClaimFishDecor(fish, residence.id, now);
       const residenceName = runtime.decorMap.get(residence.decorKey)?.name || "home";
       label = `Sleeping at ${residenceName}`;
       targetDecorId = residence.id;
@@ -107618,43 +107471,6 @@ function drawActiveDecorLayerCue() {
     }
     return;
   }
-
-  if (selectedDecor) {
-    if (!dom.selectedDecorSettingsButton && canOpenDecorSettings(selectedDecor)) {
-      drawDecorSettingsBadge(selectedDecor);
-    }
-  }
-}
-
-function drawDecorSettingsBadge(item) {
-  const bounds = getPlacedDecorOpaqueBounds(item);
-  if (!bounds) {
-    return;
-  }
-
-  const text = "[S] Settings";
-  const x = (bounds.left + bounds.right) / 2;
-  const y = Math.min(TANK_HEIGHT - 18, Math.max(WATER_SURFACE_Y + 18, bounds.bottom + 18));
-
-  tankContext.save();
-  tankContext.font = "800 11px Trebuchet MS";
-  tankContext.textAlign = "center";
-  tankContext.textBaseline = "middle";
-  const width = Math.ceil(tankContext.measureText(text).width) + 18;
-  const height = 22;
-  tankContext.fillStyle = "rgba(6, 16, 24, 0.82)";
-  tankContext.strokeStyle = "rgba(156, 241, 255, 0.74)";
-  tankContext.lineWidth = 1.2;
-  tankContext.shadowColor = "rgba(104, 232, 255, 0.32)";
-  tankContext.shadowBlur = 12;
-  tankContext.beginPath();
-  tankContext.roundRect(x - width / 2, y - height / 2, width, height, 8);
-  tankContext.fill();
-  tankContext.stroke();
-  tankContext.shadowBlur = 0;
-  tankContext.fillStyle = "rgba(234, 248, 255, 0.96)";
-  tankContext.fillText(text, x, y + 0.5);
-  tankContext.restore();
 }
 
 function drawSelectedDecorHighlight(item) {
@@ -109961,12 +109777,13 @@ function getFishTurnV26GpuTexture(renderer, image, kind = "body") {
   const width = Math.max(1, Math.round(Number(image.naturalWidth || image.width) || 1));
   const height = Math.max(1, Math.round(Number(image.naturalHeight || image.height) || 1));
   const cacheKey = `${getFishTurnV26ImageCacheIdentity(image)}|${width}x${height}`;
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
+  const cached = cache.get(cacheKey);
+  // Inspection supplies a live swim-warp canvas during the whole reversal.
+  // Keep its allocation, but upload the current frame instead of the first one.
+  if (cached && !image.fishTurnV26DynamicTexture) return cached;
 
   const gl = renderer.gl;
-  const texture = gl.createTexture();
+  const texture = cached || gl.createTexture();
   if (!texture) return null;
   try {
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -109979,11 +109796,12 @@ function getFishTurnV26GpuTexture(renderer, image, kind = "body") {
     // so flipping during upload turns the entire fish upside down the instant v26 takes over.
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    if (cached) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     cache.set(cacheKey, texture);
     return texture;
   } catch (error) {
-    gl.deleteTexture?.(texture);
+    if (!cached) gl.deleteTexture?.(texture);
     return null;
   }
 }
@@ -116517,7 +116335,7 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     return null;
   }
 
-  const assignedCaveId = null;
+  const assignedCaveId = getFishDecorClaimId(fish, now);
   const assignedCave = assignedCaveId
     ? state.placedDecor.find((item) => item.id === assignedCaveId && isCaveDecorKey(item.decorKey))
     : null;
@@ -116529,8 +116347,8 @@ function pickCaveEntryBehavior(species, fish, now = Date.now()) {
     if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, species, now)) return false;
     const item = state.placedDecor.find((entry) => entry.id === plan.decorId);
     return !item
-      || getFishResidenceDecorId(fish) === plan.decorId
-      || getResidenceReservationCount(plan.decorId, fish) < getDecorResidenceCapacity(item);
+      || getFishDecorClaimId(fish, now) === plan.decorId
+      || getDecorClaimCount(plan.decorId, fish, now) < getDecorShelterCapacity(item);
   });
   if (!candidates.length) {
     return null;
@@ -116946,6 +116764,13 @@ function completeFishCaveEntryArrival(fish, species, decorItem, plan, now = Date
   clearNormalCavePathState(plan);
   fish.caveSeatId = shouldHoldEntrySeat ? (plan.seatId || null) : null;
   fish.caveInsideUntil = Math.max(Number(fish.caveInsideUntil) || 0, now + CAVE_TRIGGER_COOLDOWN_MS);
+  if (plan.sleepShelter && fish.sleepShelter) {
+    fish.sleepShelter.sleepingUntil = now + fish.sleepShelter.durationMs;
+    fish.caveInsideUntil = fish.sleepShelter.sleepingUntil;
+    // Hold at the legal interior arrival point, including caves without seats.
+    plan.normalSeatPoint = { xNorm: fish.xNorm, yNorm: fish.yNorm };
+    setFishBehaviorIntent(fish, "sleep", "inside shelter", now, { durationMs: fish.sleepShelter.durationMs });
+  }
   fish.caveIdleTargetXNorm = null;
   fish.caveIdleTargetYNorm = null;
   fish.caveIdleTargetAt = null;
@@ -117799,6 +117624,13 @@ function updateNormalFishCaveInsideBehavior(fish, species, decorItem, plan, mout
   if (Number.isFinite(fish.caveInsideUntil) && now >= fish.caveInsideUntil) {
     return beginFishNormalCaveExit(fish, plan, mouthNode, now);
   }
+  if (plan.sleepShelter) {
+    const spot = plan.normalSeatPoint || plan.inside;
+    fish.targetXNorm = spot.xNorm;
+    fish.targetYNorm = spot.yNorm;
+    fish.targetAt = fish.caveInsideUntil;
+    return true;
+  }
 
   const currentPoint = {
     xNorm: clamp(fish.xNorm, 0.08, 0.92),
@@ -118143,6 +117975,8 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
     return false;
   }
   if (isFishCaveEntranceBusy(fish, plan.decorId, plan.mouth, getSpeciesForFish(fish), now)) return false;
+  if (typeof tryClaimFishDecor === "function" && !tryClaimFishDecor(fish, plan.decorId, now)) return false;
+  fish.decorClaimSpot = { ...plan.inside };
 
   const debugTestLoop = isDebugCaveTestFish(fish);
   const debugForced = debugTestLoop || plan.debugForced === true;
@@ -118164,6 +117998,7 @@ function beginFishCaveBehavior(fish, plan, now = Date.now()) {
       : null,
     configuredPoints: plan.configuredPoints === true,
     swimmable,
+    sleepShelter: plan.sleepShelter === true,
     lingerMs: Math.max(CAVE_TRIGGER_COOLDOWN_MS, Number(plan.lingerMs) || 12000),
     debugForced,
     frontLayer: clampTankLayer(plan.frontLayer),
@@ -121933,7 +121768,7 @@ function boundsIntersect(leftBounds, rightBounds) {
 function isTankOverlayTarget(target) {
   return (
     target instanceof Element &&
-    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, #tankContextMenu, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-action-top-bar, .decor-action-float-button, .decor-side-control-panel, .decor-side-control-button, .tab-buttons"))
+    Boolean(target.closest("#tankSidebar, #debugSidebar, #boroughOverview, .tank-display, .tank-nav-button, .tank-bottom-dock, #editDecorTray, #editFishTray, #editEquipmentTray, #editTankTray, #foodTray, #medicineTray, #careTaskPane, #tankContextMenu, .tank-overlay-hints, .tutorial-overlay, .store-overlay, .settings-overlay, .fish-inspector, .submarine-manager, .fish-action-flyout, .fish-action-submenu, .fish-action-target-menu, .fish-action-queue-dock, .selected-fish-needs-panel, .decor-settings-badge-button, .decor-context-menu-button, .tab-buttons"))
   );
 }
 
@@ -122059,6 +121894,7 @@ function canTriggerGlassTap(event) {
 
 function closeTankContextMenu() {
   runtime.tankContextMenu = { kind: "", id: "", anchorX: 0, anchorY: 0 };
+  dom.selectedDecorMenuButton?.setAttribute("aria-expanded", "false");
   if (dom.tankContextMenu) {
     dom.tankContextMenu.hidden = true;
     dom.tankContextMenu.replaceChildren();
@@ -122074,18 +121910,54 @@ function positionTankContextMenu(menu, point) {
   const stage = dom.tankStage;
   if (!menu || !stage || !point) return;
   const padding = 12;
-  const x = Number(point.x) / TANK_WIDTH * stage.clientWidth;
-  const y = Number(point.y) / TANK_HEIGHT * stage.clientHeight;
+  const { x, y } = tankVirtualPointToStagePx(point.x, point.y);
+  const { width, height } = getTankStageLayoutSize();
   const horizontalGap = 14;
   const verticalGap = 12;
-  const roomBelow = stage.clientHeight - y - padding;
+  const roomBelow = height - y - padding;
   // Prefer a familiar down-right menu, but deliberately flip above a low target
   // so every action remains visible instead of being clipped by the tank edge.
   const preferredTop = roomBelow >= menu.offsetHeight + verticalGap
     ? y + verticalGap
     : y - menu.offsetHeight - verticalGap;
-  menu.style.left = `${Math.max(padding, Math.min(x + horizontalGap, stage.clientWidth - menu.offsetWidth - padding))}px`;
-  menu.style.top = `${Math.max(padding, Math.min(preferredTop, stage.clientHeight - menu.offsetHeight - padding))}px`;
+  menu.style.left = `${Math.max(padding, Math.min(x + horizontalGap, width - menu.offsetWidth - padding))}px`;
+  menu.style.top = `${Math.max(padding, Math.min(preferredTop, height - menu.offsetHeight - padding))}px`;
+}
+
+function getTankContextDecorControlsMarkup() {
+  return `<div class="tank-context-decor-controls">
+    <div class="tank-context-control-row" role="group" aria-label="Flip decor"><span>Flip</span><button type="button" data-tank-context-action="flip-horizontal" aria-label="Flip horizontally" aria-pressed="false">↔</button><button type="button" data-tank-context-action="flip-vertical" aria-label="Flip vertically" aria-pressed="false">↕</button></div>
+    <div class="tank-context-control-row" role="group" aria-label="Decor depth"><span>Depth <output data-tank-context-depth></output></span><button type="button" data-tank-context-action="layer-up" title="Move backward" aria-label="Move decor backward">↑</button><button type="button" data-tank-context-action="layer-down" title="Move forward" aria-label="Move decor forward">↓</button></div>
+    <div class="tank-context-depth-jumps"><button type="button" data-tank-context-action="bring-to-front">Bring to front</button><button type="button" data-tank-context-action="send-to-back">Send to back</button></div>
+  </div>`;
+}
+
+function updateTankContextDecorControls() {
+  const menu = dom.tankContextMenu;
+  const target = runtime.tankContextMenu;
+  if (!menu || menu.hidden || target?.kind !== "decor") return;
+  if (runtime.utilityOverlayOpen || runtime.storeOverlayOpen || runtime.settingsOverlayOpen || runtime.equipmentOverlayOpen) {
+    closeTankContextMenu();
+    return;
+  }
+  const item = getPlacedDecorById(target.id);
+  if (!item) {
+    closeTankContextMenu();
+    return;
+  }
+  const depth = menu.querySelector("[data-tank-context-depth]");
+  if (!depth) return;
+  const label = getDecorDepthPlacementLabel(item);
+  if (depth.textContent !== label) depth.textContent = label;
+  const z = getPlacedDecorDepthZ(item);
+  for (const [action, disabled] of [["layer-up", z <= TANK_DEPTH_REAR_USABLE_Z], ["send-to-back", z <= TANK_DEPTH_REAR_USABLE_Z], ["layer-down", z >= TANK_DEPTH_FRONT_USABLE_Z], ["bring-to-front", z >= TANK_DEPTH_FRONT_USABLE_Z]]) {
+    const button = menu.querySelector(`[data-tank-context-action="${action}"]`);
+    if (button) button.disabled = disabled;
+  }
+  for (const [axis, flipped] of [["horizontal", isDecorHorizontallyFlipped(item)], ["vertical", isDecorVerticallyFlipped(item)]]) {
+    const button = menu.querySelector(`[data-tank-context-action="flip-${axis}"]`);
+    button?.setAttribute("aria-pressed", String(flipped));
+  }
 }
 
 function openTankContextMenu(kind, item, point) {
@@ -122100,18 +121972,24 @@ function openTankContextMenu(kind, item, point) {
   let subtitle = "";
   let headerImage = "";
   let actions = [];
+  let decorControls = "";
+  let disabledActions = [];
   if (isFish) {
     const species = getSpeciesForFish(item);
     title = item.name || "Fish";
     subtitle = getFishDisplaySpeciesName(item, species);
     headerImage = getFishDisplayAssetPath(item, species) || species?.asset || "assets/icons/fish_box.png";
-    actions = [["feed", "assets/icons/feed_fish.png", "Feed"], ["care", "assets/icons/fish_care.png", "Fish Care"], ["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/scoop.png", "Scoop Out", "is-danger"], ["settings", "assets/icons/settings.png", "Settings"]];
+    actions = [["feed", "assets/icons/feed_fish.png", "Feed"], ["care", "assets/icons/fish_care.png", "Fish Care"], ["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/scoop.png", runtime.fishEditMode ? "Put Away" : "Scoop Out", "is-danger"], ["settings", "assets/icons/settings.png", "Inspect"]];
   } else if (isDecor) {
     const decor = runtime.decorMap.get(item.decorKey);
     title = getPlacedDecorDisplayName(item, decor);
     subtitle = decor?.category || decor?.behavior || "Decoration";
     headerImage = getDecorThumbnailPath(decor) || "assets/icons/decor_box.png";
-    actions = [["rename", "assets/icons/edit_tank.png", "Rename"], ["store", "assets/icons/store.png", "Put Away", "is-danger"], ["settings", "assets/icons/settings.png", "Settings"]];
+    const living = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor);
+    actions = [["settings", "assets/icons/settings.png", "Settings"], ["buy-another", "assets/icons/store.png", "Buy Another"], ["store", "assets/icons/store.png", "Put Away"], ["sell", "assets/icons/store.png", living ? "Rehome" : "Sell", "is-danger is-separated"]];
+    if (!canOpenDecorSettings(item)) actions = actions.filter(([action]) => action !== "settings");
+    if (isPlacedDecorGrouped(item)) disabledActions = ["store", "sell"];
+    if (runtime.editTankMode) decorControls = getTankContextDecorControlsMarkup();
   } else {
     title = getMachineryContextName(item);
     subtitle = item.type === MACHINERY_TYPE_BOAT ? "Machinery · Chum delivery" : "Machinery · Automated care";
@@ -122120,8 +121998,10 @@ function openTankContextMenu(kind, item, point) {
   }
 
   runtime.tankContextMenu = { kind, id: item.id, anchorX: point.x, anchorY: point.y };
-  menu.innerHTML = `<div class="tank-context-menu-header"><span class="tank-context-menu-icon"><img ${assetImageAttributes(headerImage)} alt="" aria-hidden="true" /></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div></div><div class="tank-context-menu-actions">${actions.map(([action, actionIcon, label, className = ""]) => `<button class="tank-context-menu-action ${className}" type="button" data-tank-context-action="${action}"><img class="tank-context-menu-action-icon" ${assetImageAttributes(actionIcon)} alt="" aria-hidden="true" /><span>${label}</span></button>`).join("")}</div>`;
+  menu.innerHTML = `<div class="tank-context-menu-header"><span class="tank-context-menu-icon"><img ${assetImageAttributes(headerImage)} alt="" aria-hidden="true" /></span><div><strong>${escapeHtml(title)}</strong><span>${escapeHtml(subtitle)}</span></div></div>${decorControls}<div class="tank-context-menu-actions">${actions.map(([action, actionIcon, label, className = ""]) => `<button class="tank-context-menu-action ${className}" type="button" data-tank-context-action="${action}"${disabledActions.includes(action) ? ' disabled title="Ungroup before removing this decor"' : ""}><img class="tank-context-menu-action-icon" ${assetImageAttributes(actionIcon)} alt="" aria-hidden="true" /><span>${label}</span></button>`).join("")}</div>`;
   menu.hidden = false;
+  dom.selectedDecorMenuButton?.setAttribute("aria-expanded", String(isDecor && runtime.selectedDecorId === item.id));
+  updateTankContextDecorControls();
   positionTankContextMenu(menu, point);
   return true;
 }
@@ -122138,10 +122018,10 @@ function getTankContextTargetName(kind, id) {
 function beginTankContextMenuRename() {
   const { kind, id, anchorX, anchorY } = runtime.tankContextMenu || {};
   const menu = dom.tankContextMenu;
-  if (!menu || !kind || !id) return false;
+  if (!menu || !["fish", "machinery"].includes(kind) || !id) return false;
   const currentName = getTankContextTargetName(kind, id);
-  const label = kind === "fish" ? "Fish name" : kind === "decor" ? "Decoration name" : "Machinery name";
-  const maxLength = kind === "fish" ? 20 : kind === "machinery" ? 30 : 36;
+  const label = kind === "fish" ? "Fish name" : "Machinery name";
+  const maxLength = kind === "fish" ? 20 : 30;
   const actions = menu.querySelector(".tank-context-menu-actions");
   if (!actions) return false;
   actions.innerHTML = `<form class="tank-context-menu-rename" data-tank-context-rename-form><label>${label}<input type="text" maxlength="${maxLength}" value="${escapeHtml(currentName)}" data-tank-context-name-input /></label><div><button type="submit" class="tank-context-menu-save">Save</button><button type="button" class="tank-context-menu-cancel" data-tank-context-rename-cancel>Cancel</button></div></form>`;
@@ -122169,12 +122049,7 @@ function renameTankContextTarget(kind, id, nextName) {
     showToast(`${name} has been renamed.`);
     return true;
   }
-  if (kind === "decor") {
-    const item = setSelectedDecor(id);
-    if (!item) return false;
-    setSelectedDecorCustomName(nextName);
-    return true;
-  }
+  if (kind !== "machinery") return false;
   const machinery = getMachineryById(id);
   if (!machinery) return false;
   const name = String(nextName).trim().slice(0, 30);
@@ -122195,8 +122070,28 @@ function handleTankContextMenuAction(action) {
   if (action === "rename") {
     return beginTankContextMenuRename();
   }
+  if (kind === "decor" && ["flip-horizontal", "flip-vertical", "layer-up", "layer-down", "bring-to-front", "send-to-back"].includes(action)) {
+    const item = getPlacedDecorById(id);
+    if (!item || !runtime.editTankMode || runtime.placementMode || runtime.dragState) return false;
+    setSelectedDecor(id);
+    if (action.startsWith("flip-")) toggleActiveDecorFlip(action.slice(5));
+    else performDecorEditShortcutAction(action);
+    updateTankContextDecorControls();
+    // Repeated transforms keep the same menu and focused button in place.
+    return true;
+  }
   let succeeded = false;
-  if (action === "store") {
+  if (kind === "decor" && action === "buy-another") {
+    const item = getPlacedDecorById(id);
+    if (!item) return false;
+    closeTankContextMenu();
+    return openDecorBuyAnotherConfirmation(item.decorKey);
+  } else if (kind === "decor" && action === "sell") {
+    const item = getPlacedDecorById(id);
+    if (!item || isPlacedDecorGrouped(item)) return false;
+    closeTankContextMenu();
+    return openDecorSellConfirmation(id);
+  } else if (action === "store") {
     if (kind === "fish") succeeded = storeFish(id, { allowDead: true, source: "context" });
     if (kind === "decor") {
       const existed = Boolean(getPlacedDecorById(id));
@@ -134607,7 +134502,18 @@ function getFishCareConcerns(fish, now = Date.now()) {
 function getFishCareConditionText(fish, now = Date.now()) {
   const concerns = getFishCareConcerns(fish, now);
   if (!concerns.length) return "No care concern observed";
-  return concerns.map((condition) => formatFishConditionLabel(condition)).join(" · ");
+  const known = getDiscoveredFishCareConcerns(fish, now);
+  const labels = known.map((condition) => formatFishConditionLabel(condition));
+  if (known.length < concerns.length) labels.push("Needs assessment");
+  return labels.join(" · ");
+}
+
+function getDiscoveredFishCareConcerns(fish, now = Date.now()) {
+  return getFishCareConcerns(fish, now).filter((condition) => {
+    const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
+    const knowledge = fish.careKnowledge?.[slot];
+    return knowledge?.condition === condition && knowledge.episode === getFishCareEpisode(fish, slot);
+  });
 }
 
 function shiftFishTreatmentTimes(fish, pauseMs) {
@@ -134702,7 +134608,7 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
     return { ok: true, definition, course };
   }
   const matches = definition.slot === "injury" ? fish.healthUnits < getFishMaxHealthUnits(fish) : hasActiveFishDisease(fish) && normalizeFishDiseaseType(fish.diseaseType) === definition.family;
-  if (!matches) return { ok: false, message: `${getMedicineMeta(medicineId)?.name || "This medicine"} does not treat ${getFishCareConditionText(fish, now)}. Select the fish to see its care instructions.` };
+  if (!matches) return { ok: false, message: "This medicine is not suitable for this fish right now. Check the visible symptoms with the Pharmacy Symptom Checker or request a vet consultation." };
   // Preserve existing one-dose recoveries from saves made before courses existed.
   if (definition.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING) return { ok: false, message: "The previous treatment is still working. Allow time to recover." };
   return { ok: true, definition, course: null };
@@ -134743,7 +134649,10 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
-  const concerns = getFishCareConcerns(fish, now);
+  const concerns = getDiscoveredFishCareConcerns(fish, now);
+  const assessment = concerns.length < getFishCareConcerns(fish, now).length
+    ? `<article class="fish-care-guide"><strong>Needs assessment</strong><p>Check the visible symptoms with the Pharmacy Symptom Checker, or request a vet consultation.</p></article>`
+    : "";
   const careSummary = concerns.length ? `<article class="fish-care-guide"><strong>What needs care</strong>${concerns.map((condition) => {
     const medicineId = condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : condition === "injured" ? "firstAid" : "waterStress";
     const medicine = getMedicineMeta(medicineId);
@@ -134785,7 +134694,7 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
     support += `<article class="fish-care-guide"><strong>Water recovery</strong><p>${isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to start recovery." : `About ${Math.ceil(remaining / 3600000)} hours of normal recovery remain; an active boost increases recovery speed.`}${escapeHtml(boost)}</p><p>${escapeHtml(getMedicineTreatmentInstructions("waterStress"))}</p></article>`;
   }
   if (Number(fish.calmedUntil) > now) support += `<article class="fish-care-guide"><strong>Calming effect active</strong><p>Ends ${escapeHtml(new Date(fish.calmedUntil).toLocaleString())}.</p><p>${escapeHtml(getMedicineTreatmentInstructions("betaBlocker"))}</p></article>`;
-  return careSummary + rows + support;
+  return assessment + careSummary + rows + support;
 }
 
 function getPharmacySymptomCatalog() {
@@ -134855,7 +134764,7 @@ function getBubbleBodegaMedicineCareProfile(id) {
 function renderPharmacySymptomChecker() {
   const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
   const result = getPharmacyQuizRecommendations(quiz.symptoms);
-  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see. Select your fish in the aquarium to see its condition and care instructions before buying. Faded color can have several causes.</p></div></header>
+  return `<header><div><h2>Symptom Checker</h2><p>Observe your fish and select the symptoms you can see. Compare possible treatments below, or request a vet consultation if unsure. Faded color can have several causes.</p></div></header>
     <div class="pharmacy-symptoms">${getPharmacySymptomCatalog().map((entry) => `<label class="pharmacy-symptom ${entry.image && !entry.restricted ? "" : "is-text-only"} ${quiz.symptoms.includes(entry.id) ? "is-selected" : ""}" title="${escapeHtml(entry.text)}"><input type="checkbox" aria-label="${escapeHtml(`${entry.name}: ${entry.text}`)}" data-care-symptom="${entry.id}" ${quiz.symptoms.includes(entry.id) ? "checked" : ""} />${entry.image && !entry.restricted ? `<img ${assetImageAttributes(entry.image)} alt="${escapeHtml(entry.name)} example from the game" />` : `<span class="pharmacy-symptom-text-art" aria-hidden="true">${entry.id === "specks" ? "Look for spots" : entry.id === "wounds" ? "Compare hearts" : entry.id === "lesions" ? "Check both sides" : entry.id === "color" ? "Duller color than usual" : entry.id === "behavior" ? "Hiding, slow swimming, refusing food" : "Fleeing or chasing fish"}</span>`}<strong>${escapeHtml(entry.name)}</strong></label>`).join("")}</div>
     <div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-clear>Clear symptoms</button><button type="button" class="small-button" data-care-find ${!quiz.symptoms.length ? "disabled" : ""}>Find treatments</button></div>
     ${quiz.submitted ? `<div class="pharmacy-results" role="status"><p>${escapeHtml(result.message)}</p><div class="pharmacy-result-cards">${result.medicineIds.map((id) => {

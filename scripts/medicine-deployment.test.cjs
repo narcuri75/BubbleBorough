@@ -56,7 +56,7 @@ function fixture() {
   vm.runInContext(read("fish/care-and-vet.js"), c);
   vm.runInContext(read("fish/feeding-and-medicine.js"), c);
   loadFunctions(c, "store/purchases.js", ["selectMedicineMode"]);
-  loadFunctions(c, "ui/tool-modes-and-debug-panels.js", ["clearPrimaryToolModes"]);
+  loadFunctions(c, "ui/tool-modes-and-debug-panels.js", ["clearPrimaryToolModes", "isEditWorkspaceActive", "isEditWorkspaceSidebarLayout"]);
   const parsed = ts.createSourceFile("input.js", read("assets/custom-content.js"), ts.ScriptTarget.Latest, true);
   const handlers = {};
   const visit = node => {
@@ -112,7 +112,8 @@ test("a mistargeted or wrong medicine dose stays in inventory and explains why",
   c.selectMedicineMode("infectionTreatment");
   handlers.pointerdown(event()); handlers.click(event());
   assert.equal(c.state.medicineInventory.infectionTreatment, 5);
-  assert.match(c.toasts.at(-1), /does not treat Injured/);
+  assert.match(c.toasts.at(-1), /not suitable.*Symptom Checker|vet consultation/);
+  assert.doesNotMatch(c.toasts.at(-1), /Injured|First Aid/);
   c.selectMedicineMode("firstAid");
   c.findFishAtPoint = () => null;
   handlers.pointerdown(event()); handlers.click(event());

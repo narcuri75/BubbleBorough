@@ -89,7 +89,7 @@ function replayDecorEdit(direction) {
     for (const { from, to } of changes) {
       const index = state.placedDecor.findIndex((item) => item.id === (from || to).id);
       if (!to) {
-        clearDecorResidenceAssignments(from.id, { save: false });
+        clearDecorClaims(from.id, { save: false });
         clearDecorBoroughServiceReservations(from.id);
         state.placedDecor.splice(index, 1);
       } else if (index < 0) {
@@ -209,7 +209,7 @@ function applySavedDecorLayout(layoutId, tankId) {
   });
   beginDecorEditHistory(`Apply ${layout.name}`);
   for (const item of remaining) {
-    clearDecorResidenceAssignments(item.id, { save: false });
+    clearDecorClaims(item.id, { save: false });
     clearDecorBoroughServiceReservations(item.id);
   }
   state.placedDecor = placed;

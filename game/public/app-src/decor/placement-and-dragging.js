@@ -2003,7 +2003,7 @@ function storeDecor(placedId) {
   }
 
   const [removed] = state.placedDecor.splice(index, 1);
-  clearDecorResidenceAssignments(removed.id, { save: false });
+  clearDecorClaims(removed.id, { save: false });
   clearDecorBoroughServiceReservations(removed.id);
   if (runtime.dragState?.placedId === removed.id) {
     runtime.dragState = null;
@@ -2137,7 +2137,7 @@ function storeFish(fishId, options = {}) {
       );
     }
     fish.hangoutDecorId = null;
-    fish.residenceDecorId = null;
+    fish.decorClaimId = null;
     fish.favoriteSpot = null;
     fish.entryStartedAt = null;
     fish.entryDurationMs = 0;
@@ -2308,7 +2308,7 @@ function sellPlacedDecor(placedId) {
     amount: resaleValue,
     apply: () => {
       const [removed] = state.placedDecor.splice(index, 1);
-      clearDecorResidenceAssignments(removed.id, { save: false });
+      clearDecorClaims(removed.id, { save: false });
       clearDecorBoroughServiceReservations(removed.id);
       if (runtime.dragState?.placedId === removed.id) {
         runtime.dragState = null;

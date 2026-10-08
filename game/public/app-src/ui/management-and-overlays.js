@@ -2127,14 +2127,6 @@ function handleTankManagementUtilityOverlayBodyClick(ctx, target) {
   return false;
 }
 
-function renderDecorSettingsTitleActions(item, decor) {
-  if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
-    return "";
-  }
-
-  return `<button class="utility-header-icon-button" type="button" data-decor-settings-rename title="Rename this placed decor" aria-label="Rename this placed decor">✎</button>`;
-}
-
 function renderDecorSettingsHeaderActions(item, decor) {
   if (!item || !decor || isTransitTubeDecorKey(item.decorKey)) {
     return "";
@@ -2156,16 +2148,6 @@ function handleDecorSettingsUtilityOverlayHeaderClick(ctx, target) {
 
   if (target?.closest?.("[data-decor-settings-reset]")) {
     resetSelectedDecorSettings();
-    return true;
-  }
-
-  if (target?.closest?.("[data-decor-settings-rename]")) {
-    const decor = runtime.decorMap.get(item.decorKey);
-    const currentName = getPlacedDecorDisplayName(item, decor);
-    const nextName = window.prompt("Name this placed decor:", currentName);
-    if (nextName !== null) {
-      setSelectedDecorCustomName(nextName);
-    }
     return true;
   }
 
@@ -2703,21 +2685,30 @@ function syncUtilityOverlayEditTraySafeArea() {
   }
 
   const isDecorSettings = runtime.utilityOverlayOpen
-    && (runtime.utilityOverlayMode === "decor-settings" || runtime.utilityOverlayMode === "custom-decor-settings");
+    && ["decor-settings", "custom-decor-settings", "fish-inspect"].includes(runtime.utilityOverlayMode);
   if (!isDecorSettings) {
     dom.utilityOverlay.style.removeProperty("--utility-edit-tray-reserve");
     return;
   }
 
-  const visibleTray = [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray]
+  // The persistent workspace has tall sidebars as well as a bottom tray.
+  // Reserving space below a sidebar's top consumes the entire dialog height.
+  const bottomTrays = isEditWorkspaceSidebarLayout()
+    ? [dom.editTankTray]
+    : [dom.editDecorTray, dom.editFishTray, dom.editEquipmentTray, dom.editTankTray];
+  const visibleTray = bottomTrays
     .find((tray) => tray instanceof HTMLElement && !tray.hidden && tray.getClientRects().length);
   if (!visibleTray) {
     dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
     return;
   }
 
-  const overlayRect = dom.utilityOverlay.getBoundingClientRect();
-  const trayRect = visibleTray.getBoundingClientRect();
+  const overlayRect = getElementRectInTankStageLayout(dom.utilityOverlay);
+  const trayRect = getElementRectInTankStageLayout(visibleTray);
+  if (!overlayRect || !trayRect) {
+    dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", "0px");
+    return;
+  }
   const reserve = Math.max(0, Math.ceil(overlayRect.bottom - trayRect.top + 12));
   dom.utilityOverlay.style.setProperty("--utility-edit-tray-reserve", `${reserve}px`);
 }

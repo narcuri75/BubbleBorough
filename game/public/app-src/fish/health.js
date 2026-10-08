@@ -779,7 +779,7 @@ function markFishAsDead(fish, now = Date.now(), reasonText = null, options = {})
   clearFishCaveBehavior(fish);
   setFishTankLayers(fish, species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish), species?.behavior === "sucker" ? getSuckerFishGlassLayer(fish) : getFishTankLayer(fish));
   fish.hangoutDecorId = null;
-  fish.residenceDecorId = null;
+  fish.decorClaimId = null;
   fish.entryStartedAt = null;
   fish.entryDurationMs = 0;
   fish.entryFromYNorm = null;

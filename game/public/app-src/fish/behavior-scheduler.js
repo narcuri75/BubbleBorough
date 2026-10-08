@@ -256,7 +256,15 @@ function selectFishBehaviorTarget(fish, species, intention, nearby, now = Date.n
   }
   const zones = getFishBehaviorEnvironmentCache(now);
   if (intention === "explore") return pickPersonalityDecorBehaviorTarget(fish, species, now) || zones.open[0] || null;
-  if (intention === "rest") return zones.rest[0] || pickDecorHangoutTarget(species, fish, now, { allowedZoneTypes: ["hide", "plant", "hardscape"], chanceMultiplier: 1.25, lingerMultiplier: 1.8 });
+  if (intention === "rest") {
+    const available = zones.rest.filter((zone) => {
+      const decor = state.placedDecor.find((item) => item.id === zone.decorId);
+      return decor && (getFishDecorClaimId(fish, now) === decor.id || getDecorClaimCount(decor.id, fish, now) < getDecorShelterCapacity(decor));
+    });
+    return available.find((zone) => zone.decorId === getFishDecorClaimId(fish, now)) || pickDecorHangoutTarget(species, fish, now, {
+      allowedZoneTypes: ["hide", "plant", "hardscape"], preferBackLayer: true, chanceMultiplier: 1.25, lingerMultiplier: 1.8
+    });
+  }
   return null;
 }
 

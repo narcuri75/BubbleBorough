@@ -1135,6 +1135,7 @@ async function init() {
     ...runtime.gravelCatalog.map((item) => item.path),
     ...runtime.customGravelLayerCatalog.map((item) => item.path),
     ...runtime.customGravelPebbleCatalog.map((item) => item.path),
+    "assets/gravel/gravel-preset-tile.webp",
     getTankSubstrateAssetPath(activeTank),
     AUTO_DISPENSER_IMAGE_PATH,
     ...AUTO_DISPENSER_VARIANT_IMAGE_PATHS,

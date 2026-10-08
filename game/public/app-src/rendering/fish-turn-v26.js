@@ -2239,12 +2239,13 @@ function getFishTurnV26GpuTexture(renderer, image, kind = "body") {
   const width = Math.max(1, Math.round(Number(image.naturalWidth || image.width) || 1));
   const height = Math.max(1, Math.round(Number(image.naturalHeight || image.height) || 1));
   const cacheKey = `${getFishTurnV26ImageCacheIdentity(image)}|${width}x${height}`;
-  if (cache.has(cacheKey)) {
-    return cache.get(cacheKey);
-  }
+  const cached = cache.get(cacheKey);
+  // Inspection supplies a live swim-warp canvas during the whole reversal.
+  // Keep its allocation, but upload the current frame instead of the first one.
+  if (cached && !image.fishTurnV26DynamicTexture) return cached;
 
   const gl = renderer.gl;
-  const texture = gl.createTexture();
+  const texture = cached || gl.createTexture();
   if (!texture) return null;
   try {
     gl.bindTexture(gl.TEXTURE_2D, texture);
@@ -2257,11 +2258,12 @@ function getFishTurnV26GpuTexture(renderer, image, kind = "body") {
     // so flipping during upload turns the entire fish upside down the instant v26 takes over.
     gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
     gl.pixelStorei(gl.UNPACK_PREMULTIPLY_ALPHA_WEBGL, false);
-    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    if (cached) gl.texSubImage2D(gl.TEXTURE_2D, 0, 0, 0, gl.RGBA, gl.UNSIGNED_BYTE, image);
+    else gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, image);
     cache.set(cacheKey, texture);
     return texture;
   } catch (error) {
-    gl.deleteTexture?.(texture);
+    if (!cached) gl.deleteTexture?.(texture);
     return null;
   }
 }

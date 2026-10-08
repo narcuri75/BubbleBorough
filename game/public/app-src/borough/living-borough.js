@@ -266,8 +266,8 @@ function processFishAgeMilestones(now = Date.now()) {
   return changed;
 }
 
-function getFishResidenceNameForHistory(fish) {
-  const decorId = getFishResidenceDecorId(fish);
+function getFishClaimNameForHistory(fish) {
+  const decorId = getFishDecorClaimId(fish);
   const item = decorId ? getAllPlacedDecor(state).find((entry) => entry.id === decorId) : null;
   return item ? (runtime.decorMap.get(item.decorKey)?.name || titleFromFile(item.decorKey)) : "";
 }
@@ -292,7 +292,7 @@ function recordFishMemorial(fish, tank = getCurrentTank(), cause = "Unknown", no
     acquiredAt: fish.acquiredAt,
     deathAt: Number(fish.deadAt) || now,
     cause: String(cause || "Unknown").replace(/^.*?died\s*/i, "").trim() || "Unknown",
-    residenceName: getFishResidenceNameForHistory(fish),
+    residenceName: getFishClaimNameForHistory(fish),
     neighborhoodName: getTankLabel(tank),
     parentNames: fish.parentNames,
     milestones: fish.celebratedAgeMilestones
@@ -451,7 +451,7 @@ function calculateNeighborhoodIdentity(tank = getCurrentTank()) {
       if (service === "nursery") scores.nursery += 3;
     }
   }
-  scores.residential += Math.min(4, (tank.fish || []).filter((fish) => getFishResidenceDecorId(fish)).length);
+  scores.residential += Math.min(4, (tank.fish || []).filter((fish) => getFishDecorClaimId(fish)).length);
   scores.explorer += Math.min(4, (tank.events || []).filter((event) => event.type === "travel" && Date.now() - event.time < 7 * DAY_MS).length / 2);
   const ranking = Object.entries(scores).sort((left, right) => right[1] - left[1]);
   const best = ranking[0];
@@ -474,8 +474,8 @@ function calculateNeighborhoodIdentity(tank = getCurrentTank()) {
 function getNeighborhoodServiceSummary(tank = getCurrentTank()) {
   const services = new Set(getBoroughSectionServiceTypes(tank));
   const residenceItems = getBoroughSectionServiceCandidates(tank, "home");
-  const capacity = residenceItems.reduce((total, item) => total + getDecorResidenceCapacity(item), 0);
-  const occupied = (tank?.fish || []).filter((fish) => getFishResidenceDecorId(fish)).length;
+  const capacity = residenceItems.reduce((total, item) => total + getDecorShelterCapacity(item), 0);
+  const occupied = (tank?.fish || []).filter((fish) => getFishDecorClaimId(fish)).length;
   return {
     homes: { occupied, capacity, available: capacity > occupied },
     food: services.has("food"),
@@ -515,6 +515,7 @@ function beginBoroughEdgeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  releaseFishDecorClaim(fish);
   cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "borough-travel");
   const direction = getBoroughTravelEdgeDirection(move.source, move.destination);
   fish.activity = "roam";
@@ -618,6 +619,7 @@ function beginBoroughTubeTravel(move, now = Date.now()) {
     return false;
   }
   if (!canTankAcceptFish(fish, move.destination)) return false;
+  releaseFishDecorClaim(fish);
   cancelFishV26TurnForSpecialMovementOwner(fish, getSpeciesForFish(fish), now, "tube-travel");
   const sourcePoints = getTransitTubeTravelPoints(sourceTube);
   fish.activity = "roam";
@@ -880,7 +882,7 @@ function getBoroughStructureOccupants(item, tank = getCurrentTank()) {
   return (tank.fish || []).filter((fish) => (
     fish && !isFishDead(fish) && (
       fish.boroughServiceTargetDecorId === item.id
-      || (getFishResidenceDecorId(fish) === item.id && ["rest", "sleep", "hide"].includes(String(fish.activity || fish.behaviorIntent?.action || "").toLowerCase()))
+      || (getFishDecorClaimId(fish) === item.id && ["rest", "sleep", "hide"].includes(String(fish.activity || fish.behaviorIntent?.action || "").toLowerCase()))
     )
   ));
 }
@@ -896,7 +898,7 @@ function drawBoroughStructureActivityEffects(now = Date.now()) {
       continue;
     }
     const occupants = getBoroughStructureOccupants(item, tank);
-    const residentsHome = services.includes("home") && getDecorResidents(item.id).some((fish) => {
+    const residentsHome = services.includes("home") && getDecorClaimants(item.id).some((fish) => {
       const dx = Number(fish.xNorm) - Number(item.xNorm);
       const dy = Number(fish.yNorm) - Number(item.yNorm);
       return Math.hypot(dx, dy) < 0.2;
@@ -965,10 +967,10 @@ function buildFishIndividualityMarkup(fish, now = Date.now(), options = {}) {
       rows.push(["Observed Traits", species.davyTraits.slice(0, 3).join(", ")]);
     }
   }
-  const residenceId = getFishResidenceDecorId(fish);
+  const residenceId = getFishDecorClaimId(fish);
   const residence = residenceId ? getAllPlacedDecor(state).find((item) => item.id === residenceId) : null;
   if (residence) {
-    rows.push(["Lives at", runtime.decorMap.get(residence.decorKey)?.name || titleFromFile(residence.decorKey)]);
+    rows.push(["Claiming", runtime.decorMap.get(residence.decorKey)?.name || titleFromFile(residence.decorKey)]);
   } else if (!options.dead) {
     rows.push(["Home", "Nomadic"]);
   }
@@ -1239,7 +1241,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
   const tank = getTankContainingFish(fish.id);
   const queue = getFishActionQueueState(fish.id);
   const pending = runtime.pendingNeighborhoodTravel.get(fish.id);
-  const residence = getTankContainingDecor(getFishResidenceDecorId(fish));
+  const residence = getTankContainingDecor(getFishDecorClaimId(fish));
   const favorite = fish.favoriteSpot?.decorId ? getAllPlacedDecor(state).find((item) => item.id === fish.favoriteSpot.decorId) : null;
   const needs = sanitizeFishNeeds(fish.needs, fish, now);
   const facts = [
@@ -1249,7 +1251,7 @@ function buildLivingBoroughDebugFishStateMarkup(fish, now = Date.now()) {
     ["Action target", queue?.active?.targetId || fish.behaviorIntent?.target || fish.actionTargetFishId || "none"],
     ["Queue", `${queue?.items?.length || 0} waiting · priority ${queue?.active?.priority || 0}${runtime.debugAutonomyPausedFishIds.has(fish.id) ? " · autonomy paused" : ""}`],
     ["Travel", pending ? `${pending.direction} → ${getTankLabel(getTankById(pending.destinationTankId))}` : `${fish.travelReason || "none"} · directed cooldown ${Math.max(0, Math.ceil(((Number(fish.lastNeighborhoodMoveAt) || 0) + 25 * 1000 - now) / 1000))}s`],
-    ["Residence", residence ? getTankLabel(residence) : "unassigned"],
+    ["Claim", residence ? getTankLabel(residence) : "none"],
     ["Service", fish.boroughServiceType || fish.neededBoroughService || "none"],
     ["Relationships", `${Object.keys(sanitizeFishRelationships(fish.relationships)).length} tracked`],
     ["Favorite", favorite ? runtime.decorMap.get(favorite.decorKey)?.name || titleFromFile(favorite.decorKey) : "not tracked"],
@@ -1293,7 +1295,7 @@ function renderLivingBoroughDebugPanel(now = Date.now()) {
     + buildLivingBoroughDebugSection("Social", [["relationship", "Force Like", "friend"], ["relationship", "Force Dislike", "fear"], ["relationship", "Force Neutral", "neutral"], ["behavior", "Greet", "follow"], ["behavior", "Avoid", "avoid"], ["behavior", "Hide", "hide"], ["behavior", "Inspect", "inspect-lure"], ["behavior", "Dig", "dig"]])
     + buildLivingBoroughDebugSection("Special flows", [["whale-breath", "Force Whale Breath"], ["proteus", "Set Donations to 99", "donations-99"], ["proteus", "Unlock Z-01 Offer", "unlock"], ["proteus", "Authenticate Z-01", "authenticate"], ["proteus", "Claim Z-01", "claim"], ["proteus", "Force Z-01 Attack", "attack"], ["proteus", "End Z-01 Attack", "attack-end"], ["mail", "Queue Davy Email", "davy"], ["mail", "Queue Proteus Email", "proteus"]])
     + buildLivingBoroughDebugSection("Happenings & Recap", [["happening-recent", "From Recent Event"], ["happening-ten", "Generate 10 Valid"], ["happening-clear", "Clear Happenings"], ["notification-test", "Test Cooldown"], ["recap-preview", "Preview Recap"], ["recap-generate", "Generate Recap Now"], ["simulate-days", "Simulate 7 Days", "7"], ["simulate-days", "Simulate 30 Days", "30"]])
-    + buildLivingBoroughDebugSection("Structures & Residence", [["structure-info", "Selected Structure Info"], ["structure-fill", "Fill With Fish"], ["structure-empty", "Empty Structure"], ["residence-assign", "Assign Fish Here"], ["residence-unassign", "Unassign Fish"], ["residence-clear-orphans", "Clear Orphans"], ["identity", "Recalculate Identity"], ["identity-scores", "Show Identity Scores"]])
+    + buildLivingBoroughDebugSection("Structures & Claims", [["structure-info", "Selected Structure Info"], ["structure-fill", "Fill With Fish"], ["structure-empty", "Empty Structure"], ["identity", "Recalculate Identity"], ["identity-scores", "Show Identity Scores"]])
     + buildLivingBoroughDebugSection("Overview", [["overview-open", "Open Overview"], ["snapshot-rebuild", "Rebuild Snapshots"], ["snapshot-freeze", runtime.debugSnapshotCacheFrozen ? "Unfreeze Cache" : "Freeze Cache"], ["overview-layout", "Auto Layout", "auto"], ["overview-layout", "Force Normal", "normal"], ["overview-layout", "Force Compact", "compact"], ["overview-layout", "Force Micro", "micro"], ["overview-synthetic", "Real Layout", "0"], ["overview-synthetic", "Preview 1", "1"], ["overview-synthetic", "Preview 5", "5"], ["overview-synthetic", "Preview 10", "10"], ["overview-synthetic", "Preview 25", "25"], ["overview-synthetic", "Preview 50", "50"], ["overview-fps", "Fish 5 FPS", "5"], ["overview-fps", "Fish 12 FPS", "12"], ["overview-fps", "Fish 30 FPS", "30"], ["overview-interpolation", runtime.debugOverviewInterpolationDisabled ? "Enable Interpolation" : "Disable Interpolation"], ["overview-sample", "Force Position Sample"]]);
   setMarkupIfChanged("debug-living-borough", dom.debugLivingBoroughPanel, markup);
 }
@@ -1451,20 +1453,15 @@ function handleLivingBoroughDebugAction(event) {
   else if (action === "structure-info") {
     const item = getSelectedPlacedDecor();
     runtime.debugLivingBoroughOutput = item
-      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorResidents(item.id).length}/${getDecorResidenceCapacity(item)} residents; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
+      ? `${runtime.decorMap.get(item.decorKey)?.name}: ${getDecorClaimants(item.id).length}/${getDecorShelterCapacity(item)} temporary claims; seats ${getDecorBoroughServiceSeatUsage(item)}/${getDecorBoroughServiceSeats(item).length}; services ${getDecorBoroughServiceTypes(item).join(", ") || "none"}.`
       : "Select a structure first.";
   } else if (action === "structure-fill") {
     const item = getSelectedPlacedDecor();
-    if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorResidenceCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });
+    if (item) getAllTankFish(state).filter((entry) => !isFishDead(entry)).slice(0, getDecorShelterCapacity(item)).forEach((entry) => { entry.boroughServiceTargetDecorId = item.id; });
   } else if (action === "structure-empty") {
     const item = getSelectedPlacedDecor();
     if (item) getAllTankFish(state).forEach((entry) => { if (entry.boroughServiceTargetDecorId === item.id) entry.boroughServiceTargetDecorId = null; });
-  } else if (action === "residence-assign" && fish) {
-    const item = getSelectedPlacedDecor();
-    if (item && isDecorResidenceEligible(item)) fish.residenceDecorId = item.id;
-  } else if (action === "residence-unassign" && fish) fish.residenceDecorId = null;
-  else if (action === "residence-clear-orphans") pruneState(now);
-  else if (action === "identity" || action === "identity-scores") runtime.debugLivingBoroughOutput = JSON.stringify(calculateNeighborhoodIdentity(tank));
+  } else if (action === "identity" || action === "identity-scores") runtime.debugLivingBoroughOutput = JSON.stringify(calculateNeighborhoodIdentity(tank));
   else if (action === "overview-open") openAquariumOverview();
   else if (action === "snapshot-rebuild") { runtime.boroughOverviewSnapshotCache.clear(); renderAquariumOverview(); }
   else if (action === "snapshot-freeze") runtime.debugSnapshotCacheFrozen = !runtime.debugSnapshotCacheFrozen;

@@ -310,6 +310,11 @@ function handleToolbarEscapeKeyDown(event) {
   if (event.key !== "Escape") {
     return;
   }
+  if (runtime.tankContextMenu?.kind) {
+    event.preventDefault();
+    closeTankContextMenu();
+    return;
+  }
   if (runtime.fishEditMode || runtime.editTankMode || runtime.equipmentEditMode || runtime.tankEditMode) {
     event.preventDefault();
     closeActiveEditOverlay();
@@ -538,6 +543,7 @@ function bindEvents() {
   window.addEventListener("resize", refreshViewportLayout);
   window.visualViewport?.addEventListener("resize", refreshViewportLayout);
   window.addEventListener("keydown", (event) => {
+    if (event.defaultPrevented) return;
     const tagName = event.target instanceof Element ? event.target.tagName : "";
     if (/^(INPUT|TEXTAREA|SELECT)$/.test(tagName) || event.target?.isContentEditable) {
       return;
@@ -2318,9 +2324,15 @@ function bindEvents() {
       setGravelColorPreset(preset.dataset.gravelPreset);
       return;
     }
-    const presetScroll = event.target.closest("[data-gravel-preset-scroll]");
-    if (presetScroll) {
-      dom.editTankCustomGravelPanel.querySelector(".substrate-preset-list")?.scrollBy({ left: Number(presetScroll.dataset.gravelPresetScroll) * 280, behavior: "smooth" });
+    const gravelColor = event.target.closest("[data-gravel-color-choice]");
+    if (gravelColor) {
+      setCustomGravelLayerColor(runtime.editTankGravelLayer, gravelColor.dataset.gravelColorChoice);
+      return;
+    }
+    const presetPage = event.target.closest("[data-gravel-preset-page]");
+    if (presetPage) {
+      runtime.editTankGravelPresetPage = Number(presetPage.dataset.gravelPresetPage);
+      renderCustomGravelControls();
       return;
     }
     if (event.target.closest("[data-randomize-gravel-hill]")) {
@@ -3332,6 +3344,8 @@ function bindEvents() {
 
   dom.tankStage.addEventListener("pointerdown", (event) => {
     clearGlassTapGesture();
+    // Secondary clicks are handled by contextmenu, never by drag/placement.
+    if (event.button !== undefined && event.button !== 0) return;
     if (shouldCaptureTankDesktopInput(event.target)) {
       event.preventDefault();
     }
@@ -3372,9 +3386,21 @@ function bindEvents() {
       return;
     }
 
-    if (runtime.editTankMode) {
+    // All workspace panes remain available. A fish press must switch back
+    // from decor editing before that tool consumes the press and its click.
+    if (isEditWorkspaceSidebarLayout() && !runtime.placementMode && !isAdditiveDecorSelectionEvent(event)) {
+      const hitFish = findFishAtPoint(point.x, point.y, Date.now());
+      if (hitFish && !isFishDead(hitFish)) {
+        activateEditWorkspaceTool("fish");
+        beginFishDrag(hitFish, point, event.pointerId);
+        return;
+      }
+    }
+
+    if (runtime.editTankMode || ((runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode) && isEditWorkspaceSidebarLayout())) {
       const hitDecor = findPlacedDecorAtPoint(point.x, point.y);
       if (hitDecor) {
+        activateEditWorkspaceTool("decor");
         playToolbarButtonReleaseSoundEffect();
         if (isAdditiveDecorSelectionEvent(event)) {
           event.preventDefault();
@@ -3395,7 +3421,7 @@ function bindEvents() {
         return;
       }
 
-      if (clearSelectedDecor()) {
+      if (runtime.editTankMode && clearSelectedDecor()) {
         renderUi(Date.now(), { full: false });
       }
 
@@ -3409,7 +3435,7 @@ function bindEvents() {
       //    const pluckedPebble = createLoosePebbleFromBed(point.x, point.y);
       //    beginGravelPebbleDrag(pluckedPebble, point, event.pointerId, { existing: false });
       //  }
-      return;
+      if (runtime.editTankMode) return;
     }
 
     if (runtime.equipmentEditMode && hasAutoDispenserInstalled() && pointInSimpleBounds(point.x, point.y, getAutoDispenserHitBounds())) {
@@ -3559,6 +3585,37 @@ function bindEvents() {
       return;
     }
 
+    if (runtime.fishEditMode || isEditWorkspaceSidebarLayout()) {
+      const fish = findFishAtPoint(point.x, point.y, Date.now());
+      if (fish && !isFishDead(fish)) {
+        activateEditWorkspaceTool("fish");
+        renderUi(Date.now(), { full: false });
+        if (openTankContextMenu("fish", fish, point)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+    }
+
+    if (runtime.editTankMode || ((runtime.fishEditMode || runtime.equipmentEditMode || runtime.tankEditMode) && isEditWorkspaceSidebarLayout())) {
+      const decor = findPlacedDecorAtPoint(point.x, point.y);
+      if (decor) {
+        activateEditWorkspaceTool("decor");
+        setSelectedDecor(decor.id);
+        renderUi(Date.now(), { full: false });
+        if (openTankContextMenu("decor", decor, point)) {
+          event.preventDefault();
+          event.stopPropagation();
+        }
+        return;
+      }
+      if (runtime.editTankMode) {
+        closeTankContextMenu();
+        return;
+      }
+    }
+
     if (!runtime.equipmentEditMode && !runtime.fishEditMode && !runtime.editTankMode) {
       const now = Date.now();
       const machinery = findMachineryAtPoint(point.x, point.y, now);
@@ -3599,27 +3656,10 @@ function bindEvents() {
     }
 
     if (runtime.fishEditMode) {
-      const hitFish = findFishAtPoint(point.x, point.y, Date.now());
-      if (!hitFish || isFishDead(hitFish)) {
-        return;
-      }
-
-      event.preventDefault();
-      event.stopPropagation();
-      storeFish(hitFish.id);
-      return;
+      closeTankContextMenu();
     }
 
-    if (runtime.editTankMode) {
-      const hitDecor = findPlacedDecorAtPoint(point.x, point.y);
-      if (!hitDecor) {
-        return;
-      }
 
-      event.preventDefault();
-      event.stopPropagation();
-      storeDecor(hitDecor.id);
-    }
   });
 
   dom.tankStage.addEventListener("pointermove", (event) => {
@@ -3746,6 +3786,11 @@ function bindEvents() {
   dom.tankContextMenu?.addEventListener("pointerdown", (event) => {
     event.stopPropagation();
   });
+  dom.tankContextMenu?.addEventListener("click", playSelectedDecorActionSound, true);
+  dom.tankContextMenu?.addEventListener("contextmenu", (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+  });
   dom.tankContextMenu?.addEventListener("click", (event) => {
     const action = event.target.closest("[data-tank-context-action]")?.dataset.tankContextAction;
     if (!action) return;
@@ -3813,10 +3858,7 @@ function bindEvents() {
     }
   });
   for (const container of [
-    dom.selectedDecorActionBar,
-    dom.selectedDecorScaleControls,
-    dom.selectedDecorLayerControls,
-    dom.selectedDecorTransformControls,
+    dom.selectedDecorMenuButton,
     dom.selectedDecorResizeHandles
   ]) {
     container?.addEventListener("click", playSelectedDecorActionSound, true);
@@ -3835,113 +3877,13 @@ function bindEvents() {
       }
     });
   }
-  dom.selectedDecorScaleUpButton?.addEventListener("click", (event) => {
+  dom.selectedDecorMenuButton?.addEventListener("click", (event) => {
     event.preventDefault();
     event.stopPropagation();
-    const placedId = dom.selectedDecorScaleUpButton?.dataset.resizeDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("scale-up");
-  });
-  dom.selectedDecorScaleDownButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorScaleDownButton?.dataset.resizeDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("scale-down");
-  });
-  dom.selectedDecorFlipHorizontalButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorFlipHorizontalButton?.dataset.flipDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    toggleActiveDecorFlip("horizontal");
-  });
-  dom.selectedDecorFlipVerticalButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorFlipVerticalButton?.dataset.flipDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    toggleActiveDecorFlip("vertical");
-  });
-  dom.selectedDecorLayerUpButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorLayerUpButton?.dataset.layerDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("layer-up");
-  });
-  dom.selectedDecorLayerDownButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorLayerDownButton?.dataset.layerDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) {
-      setSelectedDecor(placedId);
-    }
-    performDecorEditShortcutAction("layer-down");
-  });
-  dom.selectedDecorBringToFrontButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorBringToFrontButton?.dataset.depthDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
-    performDecorEditShortcutAction("bring-to-front");
-  });
-  dom.selectedDecorSendToBackButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSendToBackButton?.dataset.depthDecor;
-    if (placedId && placedId !== runtime.selectedDecorId) setSelectedDecor(placedId);
-    performDecorEditShortcutAction("send-to-back");
-  });
-  dom.selectedDecorBuyAnotherButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const decorKey = dom.selectedDecorBuyAnotherButton?.dataset.buyAnotherDecor;
-    if (decorKey) {
-      openDecorBuyAnotherConfirmation(decorKey);
-    }
-  });
-  dom.selectedDecorSellButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSellButton?.dataset.sellDecor;
-    if (placedId) {
-      openDecorSellConfirmation(placedId);
-    }
-  });
-  dom.selectedDecorStoreButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorStoreButton?.dataset.storeDecor;
-    if (placedId) {
-      storeDecor(placedId);
-    }
-  });
-  dom.selectedDecorAssignButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorAssignButton?.dataset.assignResidenceDecor;
-    if (placedId) {
-      openDecorResidenceAssignment(placedId);
-    }
-  });
-  dom.selectedDecorSettingsButton?.addEventListener("click", (event) => {
-    event.preventDefault();
-    event.stopPropagation();
-    const placedId = dom.selectedDecorSettingsButton?.dataset.editDecorSettings;
-    if (placedId) {
-      openDecorSettings(placedId);
-    }
+    const item = getPlacedDecorById(dom.selectedDecorMenuButton.dataset.decorContextId);
+    const bounds = item ? getPlacedDecorOpaqueBounds(item) : null;
+    if (!item || !bounds) return;
+    openTankContextMenu("decor", item, { x: bounds.right, y: bounds.top });
   });
   dom.inspectorBuyAnotherFish?.addEventListener("click", () => buyInspectorFish());
   dom.inspectorSellFish?.addEventListener("click", () => {

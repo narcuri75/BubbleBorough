@@ -771,10 +771,6 @@ body.mobile-page .fish-inspector {
   z-index: 18;
 }
 
-body.mobile-page .decor-action-top-bar {
-  transform: translate(-50%, calc(-50% - 12px)) !important;
-}
-
 body.mobile-page .edit-decor-tray {
   position: fixed !important;
   left: calc(var(--mobile-safe-left) + var(--mobile-tray-side-inset)) !important;
@@ -3306,18 +3302,8 @@ body.mobile-page #utilityOverlay:is(
    ========================================================================== */
 
 @media (max-width: 370px) {
-  body.mobile-page .residence-fish-grid {
-    grid-template-columns: 1fr;
-  }
 
-  body.mobile-page .residence-fish-card {
-    grid-template-columns: 48px minmax(0, 1fr) auto;
-  }
 
-  body.mobile-page .residence-fish-thumb {
-    width: 48px;
-    height: 40px;
-  }
 
   body.mobile-page .mobile-top-chrome {
     display: none;
@@ -3467,8 +3453,7 @@ body.mobile-page :is(
   .fish-inspector,
   .fish-inspector-card,
   .fish-inspector-color-panel,
-  .decor-action-top-bar,
-  .decor-side-control-panel,
+  .decor-context-menu-button,
   .decor-layer-controls,
   .decor-layer-control,
   .tutorial-panel,
@@ -3726,7 +3711,7 @@ body.mobile-page :is(
   .tank-bottom-dock,
   .mobile-popout-menu,
   .edit-decor-tray,
-  .decor-action-top-bar,
+  .decor-context-menu-button,
   .decor-layer-control,
   .toast,
   .tutorial-panel,

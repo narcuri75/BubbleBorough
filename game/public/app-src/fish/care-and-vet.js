@@ -71,7 +71,18 @@ function getFishCareConcerns(fish, now = Date.now()) {
 function getFishCareConditionText(fish, now = Date.now()) {
   const concerns = getFishCareConcerns(fish, now);
   if (!concerns.length) return "No care concern observed";
-  return concerns.map((condition) => formatFishConditionLabel(condition)).join(" · ");
+  const known = getDiscoveredFishCareConcerns(fish, now);
+  const labels = known.map((condition) => formatFishConditionLabel(condition));
+  if (known.length < concerns.length) labels.push("Needs assessment");
+  return labels.join(" · ");
+}
+
+function getDiscoveredFishCareConcerns(fish, now = Date.now()) {
+  return getFishCareConcerns(fish, now).filter((condition) => {
+    const slot = condition === "injured" ? "injury" : condition === "osmotic-stress" ? "water" : "disease";
+    const knowledge = fish.careKnowledge?.[slot];
+    return knowledge?.condition === condition && knowledge.episode === getFishCareEpisode(fish, slot);
+  });
 }
 
 function shiftFishTreatmentTimes(fish, pauseMs) {
@@ -166,7 +177,7 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
     return { ok: true, definition, course };
   }
   const matches = definition.slot === "injury" ? fish.healthUnits < getFishMaxHealthUnits(fish) : hasActiveFishDisease(fish) && normalizeFishDiseaseType(fish.diseaseType) === definition.family;
-  if (!matches) return { ok: false, message: `${getMedicineMeta(medicineId)?.name || "This medicine"} does not treat ${getFishCareConditionText(fish, now)}. Select the fish to see its care instructions.` };
+  if (!matches) return { ok: false, message: "This medicine is not suitable for this fish right now. Check the visible symptoms with the Pharmacy Symptom Checker or request a vet consultation." };
   // Preserve existing one-dose recoveries from saves made before courses existed.
   if (definition.slot === "disease" && !course && fish.diseaseState === DISEASE_STATE_RECOVERING) return { ok: false, message: "The previous treatment is still working. Allow time to recover." };
   return { ok: true, definition, course: null };
@@ -207,7 +218,10 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
-  const concerns = getFishCareConcerns(fish, now);
+  const concerns = getDiscoveredFishCareConcerns(fish, now);
+  const assessment = concerns.length < getFishCareConcerns(fish, now).length
+    ? `<article class="fish-care-guide"><strong>Needs assessment</strong><p>Check the visible symptoms with the Pharmacy Symptom Checker, or request a vet consultation.</p></article>`
+    : "";
   const careSummary = concerns.length ? `<article class="fish-care-guide"><strong>What needs care</strong>${concerns.map((condition) => {
     const medicineId = condition === "parasites" ? "antiParasite" : condition === "infection" ? "infectionTreatment" : condition === "injured" ? "firstAid" : "waterStress";
     const medicine = getMedicineMeta(medicineId);
@@ -249,7 +263,7 @@ function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
     support += `<article class="fish-care-guide"><strong>Water recovery</strong><p>${isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to start recovery." : `About ${Math.ceil(remaining / 3600000)} hours of normal recovery remain; an active boost increases recovery speed.`}${escapeHtml(boost)}</p><p>${escapeHtml(getMedicineTreatmentInstructions("waterStress"))}</p></article>`;
   }
   if (Number(fish.calmedUntil) > now) support += `<article class="fish-care-guide"><strong>Calming effect active</strong><p>Ends ${escapeHtml(new Date(fish.calmedUntil).toLocaleString())}.</p><p>${escapeHtml(getMedicineTreatmentInstructions("betaBlocker"))}</p></article>`;
-  return careSummary + rows + support;
+  return assessment + careSummary + rows + support;
 }
 
 function getPharmacySymptomCatalog() {
@@ -319,7 +333,7 @@ function getBubbleBodegaMedicineCareProfile(id) {
 function renderPharmacySymptomChecker() {
   const quiz = runtime.pharmacyQuiz ||= { symptoms: [], submitted: false };
   const result = getPharmacyQuizRecommendations(quiz.symptoms);
-  return `<header><div><h2>Symptom Checker</h2><p>Select the symptoms you can see. Select your fish in the aquarium to see its condition and care instructions before buying. Faded color can have several causes.</p></div></header>
+  return `<header><div><h2>Symptom Checker</h2><p>Observe your fish and select the symptoms you can see. Compare possible treatments below, or request a vet consultation if unsure. Faded color can have several causes.</p></div></header>
     <div class="pharmacy-symptoms">${getPharmacySymptomCatalog().map((entry) => `<label class="pharmacy-symptom ${entry.image && !entry.restricted ? "" : "is-text-only"} ${quiz.symptoms.includes(entry.id) ? "is-selected" : ""}" title="${escapeHtml(entry.text)}"><input type="checkbox" aria-label="${escapeHtml(`${entry.name}: ${entry.text}`)}" data-care-symptom="${entry.id}" ${quiz.symptoms.includes(entry.id) ? "checked" : ""} />${entry.image && !entry.restricted ? `<img ${assetImageAttributes(entry.image)} alt="${escapeHtml(entry.name)} example from the game" />` : `<span class="pharmacy-symptom-text-art" aria-hidden="true">${entry.id === "specks" ? "Look for spots" : entry.id === "wounds" ? "Compare hearts" : entry.id === "lesions" ? "Check both sides" : entry.id === "color" ? "Duller color than usual" : entry.id === "behavior" ? "Hiding, slow swimming, refusing food" : "Fleeing or chasing fish"}</span>`}<strong>${escapeHtml(entry.name)}</strong></label>`).join("")}</div>
     <div class="pharmacy-quiz-actions"><button type="button" class="small-button alt" data-care-clear>Clear symptoms</button><button type="button" class="small-button" data-care-find ${!quiz.symptoms.length ? "disabled" : ""}>Find treatments</button></div>
     ${quiz.submitted ? `<div class="pharmacy-results" role="status"><p>${escapeHtml(result.message)}</p><div class="pharmacy-result-cards">${result.medicineIds.map((id) => {

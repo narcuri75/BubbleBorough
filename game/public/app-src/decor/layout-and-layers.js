@@ -557,8 +557,12 @@ function sanitizeFish(fish, options = {}) {
     pairBondLostAt: Number.isFinite(Number(fish.pairBondLostAt)) ? Math.max(0, Number(fish.pairBondLostAt)) : 0,
     pairBondMourningUntil: Number.isFinite(Number(fish.pairBondMourningUntil)) ? Math.max(0, Number(fish.pairBondMourningUntil)) : 0,
     feedingMemory: sanitizeFeedingMemory(fish.feedingMemory, now),
-    favoriteSpot: sanitizeFavoriteSpot(fish.favoriteSpot),
-    residenceDecorId: typeof fish.residenceDecorId === "string" && fish.residenceDecorId ? fish.residenceDecorId : null,
+    favoriteSpot: fish.residenceDecorId ? null : sanitizeFavoriteSpot(fish.favoriteSpot),
+    // Claims belong to the current simulation session; old manual homes are retired.
+    decorClaimId: null,
+    decorClaimUntil: 0,
+    decorClaimSpot: null,
+    sleepShelter: null,
     parentNames: Array.isArray(fish.parentNames) ? fish.parentNames.map((name) => String(name).slice(0, 40)).slice(0, 2) : [],
     parentIds: Array.isArray(fish.parentIds) ? fish.parentIds.map((id) => String(id).trim()).filter(Boolean).slice(0, 2) : [],
     celebratedAgeMilestones: Array.isArray(fish.celebratedAgeMilestones)
@@ -1622,55 +1626,14 @@ function tankVirtualPointToStagePx(x, y) {
 }
 
 function hideSelectedDecorActionButtons() {
-  for (const container of [
-    dom.selectedDecorActionBar,
-    dom.selectedDecorScaleControls,
-    dom.selectedDecorLayerControls,
-    dom.selectedDecorTransformControls,
-    dom.selectedDecorResizeHandles,
-    dom.selectedDecorResizeIndicator
-  ]) {
-    if (!container) {
-      continue;
-    }
-
+  for (const container of [dom.selectedDecorMenuButton, dom.selectedDecorResizeHandles, dom.selectedDecorResizeIndicator]) {
+    if (!container) continue;
     container.hidden = true;
-    if (container === dom.selectedDecorResizeHandles) {
-      container.setAttribute("aria-hidden", "true");
-    }
+    if (container === dom.selectedDecorResizeHandles) container.setAttribute("aria-hidden", "true");
     container.style.left = "";
     container.style.top = "";
   }
-
-  for (const button of [
-    dom.selectedDecorBuyAnotherButton,
-    dom.selectedDecorSellButton,
-    dom.selectedDecorStoreButton,
-    dom.selectedDecorAssignButton,
-    dom.selectedDecorSettingsButton,
-    dom.selectedDecorScaleUpButton,
-    dom.selectedDecorScaleDownButton,
-    dom.selectedDecorLayerUpButton,
-    dom.selectedDecorLayerDownButton,
-    dom.selectedDecorFlipHorizontalButton,
-    dom.selectedDecorFlipVerticalButton
-  ]) {
-    if (!button) {
-      continue;
-    }
-
-    button.hidden = true;
-    button.style.left = "";
-    button.style.top = "";
-    delete button.dataset.buyAnotherDecor;
-    delete button.dataset.sellDecor;
-    delete button.dataset.storeDecor;
-    delete button.dataset.assignResidenceDecor;
-    delete button.dataset.editDecorSettings;
-    delete button.dataset.resizeDecor;
-    delete button.dataset.layerDecor;
-    delete button.dataset.flipDecor;
-  }
+  if (dom.selectedDecorMenuButton) delete dom.selectedDecorMenuButton.dataset.decorContextId;
 }
 
 function positionSelectedDecorResizeHandles(item, bounds, stageRect, options = {}) {
@@ -1734,29 +1697,7 @@ function positionSelectedDecorResizeHandles(item, bounds, stageRect, options = {
 }
 
 function updateSelectedDecorActionButtons() {
-  const actionBar = dom.selectedDecorActionBar;
-  const scaleControls = dom.selectedDecorScaleControls;
-  const layerControls = dom.selectedDecorLayerControls;
-  const transformControls = dom.selectedDecorTransformControls;
-  const buyButton = dom.selectedDecorBuyAnotherButton;
-  const sellButton = dom.selectedDecorSellButton;
-  const storeButton = dom.selectedDecorStoreButton;
-  const assignButton = dom.selectedDecorAssignButton;
-  const settingsButton = dom.selectedDecorSettingsButton;
-  const scaleUpButton = dom.selectedDecorScaleUpButton;
-  const scaleDownButton = dom.selectedDecorScaleDownButton;
-  const layerUpButton = dom.selectedDecorLayerUpButton;
-  const layerDownButton = dom.selectedDecorLayerDownButton;
-  const bringToFrontButton = dom.selectedDecorBringToFrontButton;
-  const sendToBackButton = dom.selectedDecorSendToBackButton;
-  const flipHorizontalButton = dom.selectedDecorFlipHorizontalButton;
-  const flipVerticalButton = dom.selectedDecorFlipVerticalButton;
-  const resizeHandles = dom.selectedDecorResizeHandles;
-  const resizeIndicator = dom.selectedDecorResizeIndicator;
-  if (!buyButton && !sellButton && !storeButton && !assignButton && !settingsButton && !scaleUpButton && !scaleDownButton && !layerUpButton && !layerDownButton && !flipHorizontalButton && !flipVerticalButton && !resizeHandles && !resizeIndicator) {
-    return;
-  }
-
+  updateTankContextDecorControls();
   const selectedItems = runtime.editTankMode
     && !runtime.dragState
     && !runtime.placementMode
@@ -1767,245 +1708,27 @@ function updateSelectedDecorActionButtons() {
     ? getSelectedPlacedDecorItems()
     : [];
   const item = selectedItems.length === 1 ? selectedItems[0] : null;
-  const decorKey = item?.decorKey || "";
-  const decor = decorKey ? runtime.decorMap.get(decorKey) : null;
-  if (!item || !decor) {
-    hideSelectedDecorActionButtons();
-    return;
-  }
-
-  const bounds = getPlacedDecorOpaqueBounds(item);
+  const decor = item ? runtime.decorMap.get(item.decorKey) : null;
+  const bounds = item ? getPlacedDecorOpaqueBounds(item) : null;
   const stageSize = getTankStageLayoutSize();
-  const stageRect = { width: stageSize.width, height: stageSize.height };
-  if (!bounds || !stageRect.width || !stageRect.height) {
+  if (!item || !decor || !bounds || !stageSize.width || !stageSize.height) {
     hideSelectedDecorActionButtons();
     return;
   }
-
-  const topPadding = 12;
-  const stagePadding = 10;
-  const cost = getDecorPurchaseCost(decorKey);
-  const resaleValue = getResaleValue(decor.cost || 0);
-  const canSell = !isPlacedDecorGrouped(item);
-  const canStore = !isPlacedDecorGrouped(item);
-  const currentScale = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
-  const depthValue = getDecorDepthPlacementLabel(item);
-  const currentDepth = sanitizeTankDepthZ(
-    item.z,
-    getTankDepthZFromLegacyPosition(getDecorTankLayer(item), DEFAULT_TANK_SUBLAYER)
-  );
-  const canMoveForward = currentDepth < TANK_DEPTH_FRONT_USABLE_Z;
-  const canMoveBackward = currentDepth > TANK_DEPTH_REAR_USABLE_Z;
-  const sizeLabel = formatDecorScale(currentScale);
-  const resizingDecor = runtime.decorResizeState?.placedId === item.id;
-
-  if (dom.selectedDecorSizeValue) {
-    dom.selectedDecorSizeValue.textContent = sizeLabel;
+  const resizing = runtime.decorResizeState?.placedId === item.id;
+  const menuButton = dom.selectedDecorMenuButton;
+  if (menuButton) {
+    menuButton.hidden = resizing;
+    menuButton.dataset.decorContextId = item.id;
+    menuButton.setAttribute("aria-expanded", String(runtime.tankContextMenu?.kind === "decor" && runtime.tankContextMenu.id === item.id));
+    const point = tankVirtualPointToStagePx(bounds.right + 26, bounds.top + 24);
+    menuButton.style.left = `${clamp(Math.round(point.x), 26, Math.max(26, stageSize.width - 26))}px`;
+    menuButton.style.top = `${clamp(Math.round(point.y), 26, Math.max(26, stageSize.height - 26))}px`;
   }
-
-  if (dom.selectedDecorLayerValue) {
-    dom.selectedDecorLayerValue.textContent = depthValue;
-  }
-
-  if (scaleControls) {
-    scaleControls.hidden = true;
-  }
-
-  if (resizingDecor) {
-    if (actionBar) {
-      actionBar.hidden = true;
-    }
-    if (layerControls) {
-      layerControls.hidden = true;
-    }
-    if (transformControls) {
-      transformControls.hidden = true;
-    }
-    positionSelectedDecorResizeHandles(item, bounds, stageRect, {
-      showHandles: false,
-      showIndicator: true,
-      label: sizeLabel
-    });
-    return;
-  }
-
-  if (buyButton) {
-    buyButton.hidden = false;
-    buyButton.dataset.buyAnotherDecor = decorKey;
-    buyButton.disabled = false;
-    buyButton.textContent = "BUY";
-    buyButton.title = `Buy another for ${cost} ${pluralize("coin", cost)}`;
-    buyButton.setAttribute("aria-label", state.coins < cost
-      ? `Need ${cost} coins to buy another ${decor.name}`
-      : `Buy another ${decor.name} for ${cost} coins`);
-  }
-
-  if (sellButton) {
-    const livingCommerce = typeof isLivingDecorEntry === "function" && isLivingDecorEntry(decor);
-    const commerceVerb = livingCommerce ? "Rehome" : "Sell";
-    sellButton.hidden = false;
-    sellButton.dataset.sellDecor = item.id;
-    sellButton.disabled = !canSell;
-    sellButton.textContent = commerceVerb.toUpperCase();
-    sellButton.title = canSell ? `${commerceVerb} for ${resaleValue} ${pluralize("coin", resaleValue)}` : `Ungroup before ${livingCommerce ? "rehoming" : "selling"}`;
-    sellButton.setAttribute("aria-label", canSell ? `${commerceVerb} ${decor.name} for ${resaleValue} coins` : `Ungroup ${decor.name} before ${livingCommerce ? "rehoming" : "selling"}`);
-  }
-
-  if (storeButton) {
-    storeButton.hidden = false;
-    storeButton.dataset.storeDecor = item.id;
-    storeButton.disabled = !canStore;
-    storeButton.textContent = "PUT AWAY";
-    storeButton.title = canStore ? `Store ${decor.name}` : "Ungroup before storing";
-    storeButton.setAttribute("aria-label", canStore ? `Store ${decor.name}` : `Ungroup ${decor.name} before storing`);
-  }
-
-  if (assignButton) {
-    const canAssignResidence = isDecorResidenceEligible(item);
-    const residentCount = getDecorResidents(item.id).length;
-    const residenceCapacity = getDecorResidenceCapacity(item);
-    assignButton.hidden = !canAssignResidence;
-    assignButton.dataset.assignResidenceDecor = item.id;
-    assignButton.disabled = !canAssignResidence;
-    assignButton.textContent = residentCount ? `HOME ${residentCount}/${residenceCapacity}` : "ASSIGN";
-    assignButton.title = residentCount
-      ? `Manage ${decor.name} residents (${residentCount}/${residenceCapacity})`
-      : `Assign a fish to live at ${decor.name}`;
-    assignButton.setAttribute("aria-label", assignButton.title);
-  }
-
-  if (settingsButton) {
-    const canOpenSettings = canOpenDecorSettings(item);
-    settingsButton.hidden = !canOpenSettings;
-    settingsButton.dataset.editDecorSettings = item.id;
-    settingsButton.disabled = !canOpenSettings;
-    settingsButton.textContent = "(S)ETTINGS";
-    settingsButton.title = `Open ${decor.name} settings`;
-    settingsButton.setAttribute("aria-label", `Open ${decor.name} settings`);
-  }
-
-  if (scaleUpButton) {
-    scaleUpButton.hidden = true;
-    delete scaleUpButton.dataset.resizeDecor;
-  }
-
-  if (scaleDownButton) {
-    scaleDownButton.hidden = true;
-    delete scaleDownButton.dataset.resizeDecor;
-  }
-
-  if (layerUpButton) {
-    layerUpButton.hidden = false;
-    layerUpButton.dataset.layerDecor = item.id;
-    // The up arrow is screen-space up: farther back into the aquarium.
-    // Its action uses a negative Z delta, so it must be governed by the
-    // rear boundary rather than the front boundary.
-    layerUpButton.disabled = !canMoveBackward;
-    layerUpButton.title = canMoveBackward
-      ? `Move backward from ${depthValue}`
-      : `${decor.name} is already at the back of the tank`;
-    layerUpButton.setAttribute("aria-label", canMoveBackward
-      ? `Move ${decor.name} backward from ${depthValue}`
-      : `${decor.name} is already at the back of the tank`);
-  }
-
-  if (layerDownButton) {
-    layerDownButton.hidden = false;
-    layerDownButton.dataset.layerDecor = item.id;
-    // The down arrow is screen-space down: toward the viewer/front glass.
-    layerDownButton.disabled = !canMoveForward;
-    layerDownButton.title = canMoveForward
-      ? `Move forward from ${depthValue}`
-      : `${decor.name} is already at the front of the tank`;
-    layerDownButton.setAttribute("aria-label", canMoveForward
-      ? `Move ${decor.name} forward from ${depthValue}`
-      : `${decor.name} is already at the front of the tank`);
-  }
-
-  if (bringToFrontButton) {
-    bringToFrontButton.hidden = false;
-    bringToFrontButton.dataset.depthDecor = item.id;
-    bringToFrontButton.disabled = !canMoveForward;
-  }
-
-  if (sendToBackButton) {
-    sendToBackButton.hidden = false;
-    sendToBackButton.dataset.depthDecor = item.id;
-    sendToBackButton.disabled = !canMoveBackward;
-  }
-
-  if (flipHorizontalButton) {
-    flipHorizontalButton.hidden = false;
-    flipHorizontalButton.dataset.flipDecor = item.id;
-    flipHorizontalButton.setAttribute("aria-pressed", String(isDecorHorizontallyFlipped(item)));
-    flipHorizontalButton.title = isDecorHorizontallyFlipped(item) ? "Clear horizontal flip" : "Flip horizontally";
-  }
-
-  if (flipVerticalButton) {
-    flipVerticalButton.hidden = false;
-    flipVerticalButton.dataset.flipDecor = item.id;
-    flipVerticalButton.setAttribute("aria-pressed", String(isDecorVerticallyFlipped(item)));
-    flipVerticalButton.title = isDecorVerticallyFlipped(item) ? "Clear vertical flip" : "Flip vertically";
-  }
-
-  if (actionBar) {
-    actionBar.hidden = false;
-    const actionPoint = tankVirtualPointToStagePx((bounds.left + bounds.right) / 2, bounds.top - 24);
-    const actionRect = getElementRectInTankStageLayout(actionBar) || { width: 0, height: 0 };
-    const actionHalfWidth = Math.ceil((Number(actionRect.width) || 320) / 2);
-    const actionHalfHeight = Math.ceil((Number(actionRect.height) || 44) / 2);
-    actionBar.style.left = `${clamp(
-      Math.round(actionPoint.x),
-      stagePadding + actionHalfWidth,
-      Math.max(stagePadding + actionHalfWidth, Math.round(stageRect.width - stagePadding - actionHalfWidth))
-    )}px`;
-    actionBar.style.top = `${clamp(
-      Math.round(actionPoint.y),
-      topPadding + actionHalfHeight,
-      Math.max(topPadding + actionHalfHeight, Math.round(stageRect.height - topPadding - actionHalfHeight))
-    )}px`;
-  }
-
-  if (layerControls) {
-    layerControls.hidden = false;
-    const layerPoint = tankVirtualPointToStagePx(bounds.right + 34, (bounds.top + bounds.bottom) / 2);
-    const layerRect = getElementRectInTankStageLayout(layerControls) || { width: 0, height: 0 };
-    const layerHalfWidth = Math.ceil((Number(layerRect.width) || 58) / 2);
-    const layerHalfHeight = Math.ceil((Number(layerRect.height) || 124) / 2);
-    layerControls.style.left = `${clamp(
-      Math.round(layerPoint.x),
-      stagePadding + layerHalfWidth,
-      Math.max(stagePadding + layerHalfWidth, Math.round(stageRect.width - stagePadding - layerHalfWidth))
-    )}px`;
-    layerControls.style.top = `${clamp(
-      Math.round(layerPoint.y),
-      topPadding + layerHalfHeight,
-      Math.max(topPadding + layerHalfHeight, Math.round(stageRect.height - topPadding - layerHalfHeight))
-    )}px`;
-  }
-
-  if (transformControls) {
-    transformControls.hidden = false;
-    const transformPoint = tankVirtualPointToStagePx(bounds.left - 34, (bounds.top + bounds.bottom) / 2);
-    const transformRect = getElementRectInTankStageLayout(transformControls) || { width: 0, height: 0 };
-    const transformHalfWidth = Math.ceil((Number(transformRect.width) || 58) / 2);
-    const transformHalfHeight = Math.ceil((Number(transformRect.height) || 96) / 2);
-    transformControls.style.left = `${clamp(
-      Math.round(transformPoint.x),
-      stagePadding + transformHalfWidth,
-      Math.max(stagePadding + transformHalfWidth, Math.round(stageRect.width - stagePadding - transformHalfWidth))
-    )}px`;
-    transformControls.style.top = `${clamp(
-      Math.round(transformPoint.y),
-      topPadding + transformHalfHeight,
-      Math.max(topPadding + transformHalfHeight, Math.round(stageRect.height - topPadding - transformHalfHeight))
-    )}px`;
-  }
-
-  positionSelectedDecorResizeHandles(item, bounds, stageRect, {
-    showHandles: true,
-    showIndicator: false,
-    label: sizeLabel
+  positionSelectedDecorResizeHandles(item, bounds, stageSize, {
+    showHandles: !resizing,
+    showIndicator: resizing,
+    label: formatDecorScale(item.scale)
   });
 }
 

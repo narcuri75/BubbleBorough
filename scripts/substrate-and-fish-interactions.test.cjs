@@ -12,6 +12,126 @@ function load(file, names, context) {
   return vm.runInNewContext(`${functions.map(n => n.getText(source)).join("\n")}\n({${names.join(",")}})`, context);
 }
 
+function getTrayClickHandler() {
+  const file = "assets/custom-content.js";
+  const source = ts.createSourceFile(file, fs.readFileSync(path.join(root, file), "utf8"), ts.ScriptTarget.Latest, true);
+  let handler;
+  function visit(node) {
+    if (ts.isCallExpression(node) && node.expression.getText(source) === "dom.editTankTray?.addEventListener" && node.arguments[0]?.text === "click") handler = node.arguments[1].getText(source);
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  assert.ok(handler);
+  return handler;
+}
+
+test("the inline gravel palette defaults to Color 1 and remains visible for each selected slot", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const choices = vm.runInNewContext(bootstrap.match(/const CUSTOM_GRAVEL_COLOR_OPTIONS = Object.freeze\((\[[\s\S]*?\])\);/)[1]);
+  const runtime = { editTankGravelLayer: 0 };
+  const colors = ["#18D6FF", "#57F000", "#E83DFF"];
+  const { renderInlineGravelColors: render } = load("ui/scene-controls-and-animation.js", ["renderInlineGravelColors"], {
+    runtime, CUSTOM_GRAVEL_LAYER_COUNT: 3, clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    escapeHtml: value => value, renderCurrentGravelPalettePreview: () => "<svg></svg>"
+  });
+  for (let slot = 0; slot < 3; slot++) {
+    runtime.editTankGravelLayer = slot;
+    const html = render(colors, [true, false, true], choices);
+    assert.equal((html.match(/data-gravel-color-choice=/g) || []).length, choices.length);
+    assert.equal(choices.length, 50);
+    assert.match(html, new RegExp(`data-edit-gravel-layer="${slot}"[^>]+aria-pressed="true"`));
+    assert.match(html, new RegExp(`data-gravel-color-choice="${colors[slot]}"[^>]+aria-pressed="true"`));
+    assert.equal((html.match(/checked/g) || []).length, 2, "each slot retains its own Colorize flag");
+    assert.doesNotMatch(html, /popover|data-substrate-picker|\shidden(?:\s|>)/);
+  }
+});
+
+test("repeated inline swatch clicks change only the selected layer without resetting the camera or Colorize", () => {
+  const state = { customGravelLayerColors: ["#18D6FF", "#57F000", "#E83DFF"], customGravelLayerColorize: [true, false, true] };
+  const runtime = { editTankGravelLayer: 0, stageEditViewAmount: .45, stageViewScale: .8 };
+  const camera = [runtime.stageEditViewAmount, runtime.stageViewScale];
+  let renders = 0, saves = 0;
+  const context = {
+    runtime, CUSTOM_GRAVEL_LAYER_COUNT: 3, clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    normalizeHexColor: c => /^#[a-f\d]{6}$/i.test(c || "") ? c.toUpperCase() : null,
+    normalizeDecorColorizeSetting: Boolean,
+    getActiveCustomGravelLayerColors: () => [...state.customGravelLayerColors],
+    getActiveCustomGravelLayerColorizeSettings: () => [...state.customGravelLayerColorize],
+    updateTankAppearance: options => { assert.equal(options.render, false); Object.assign(state, options.changes); saves++; return true; },
+    invalidateCustomGravelVisualCaches() {}, renderCustomGravelControls() {}, renderTank() { renders++; },
+    playToolbarButtonSoundEffect() {}
+  };
+  Object.assign(context, load("tank/appearance-controls.js", ["setCustomGravelLayerColor", "setCustomGravelLayerColorize"], context));
+  const click = vm.runInNewContext(`(${getTrayClickHandler()})`, context);
+  const press = (selector, dataset) => click({ stopPropagation() {}, target: { closest: value => value === selector ? { dataset } : null } });
+  press("[data-gravel-color-choice]", { gravelColorChoice: "#FFFFFF" });
+  press("[data-edit-gravel-layer]", { editGravelLayer: "2" });
+  press("[data-gravel-color-choice]", { gravelColorChoice: "#FFD700" });
+  press("[data-gravel-color-choice]", { gravelColorChoice: "#FF3355" });
+  assert.deepEqual([...state.customGravelLayerColors], ["#FFFFFF", "#57F000", "#FF3355"]);
+  assert.deepEqual([...state.customGravelLayerColorize], [true, false, true]);
+  context.setCustomGravelLayerColorize(2, false);
+  assert.deepEqual([...state.customGravelLayerColorize], [true, false, false]);
+  assert.deepEqual([runtime.stageEditViewAmount, runtime.stageViewScale], camera);
+  assert.equal(runtime.editTankGravelLayer, 2);
+  assert.equal(renders, 4); assert.equal(saves, 4);
+});
+
+test("the live gravel preview uses all three blend modes and caches only the current appearance", () => {
+  const runtime = {};
+  const calls = [];
+  let ready = false;
+  const { renderCurrentGravelPalettePreview: render } = load("ui/scene-controls-and-animation.js", ["renderCurrentGravelPalettePreview"], {
+    runtime, renderGravelPalettePreview: () => "fallback",
+    getTintedCustomGravelAsset: (asset, color, options) => { calls.push({ color, colorize: options.colorize }); return ready ? { toDataURL: () => `data:${color}:${options.colorize}` } : null; }
+  });
+  const colors = ["#18D6FF", "#57F000", "#E83DFF"];
+  assert.equal(render(colors, [true, false, true]), "fallback");
+  ready = true;
+  const html = render(colors, [true, false, true]);
+  assert.notEqual(html, "fallback", "loading the asset after the first render replaces the fallback");
+  assert.deepEqual(calls.slice(-3).map(call => call.colorize), [true, false, true]);
+  assert.match(html, /viewBox="200 0 100 100"/);
+  const count = calls.length;
+  assert.equal(render(colors, [true, false, true]), html);
+  assert.equal(calls.length, count, "unchanged frame does not serialize three canvases again");
+  assert.notEqual(render(colors, [true, true, true]), html);
+  assert.equal(calls.length, count + 3);
+});
+
+test("preset pages expose every preset without scrolling and clamp after a wider layout", () => {
+  const runtime = { editTankGravelLayer: 0, editTankGravelPresetPage: 0 };
+  const presets = load("tank/appearance-controls.js", ["getGravelColorPresets"], {}).getGravelColorPresets();
+  let width = 900, markup;
+  const container = { contains: () => false };
+  const { renderCustomGravelControls: render } = load("ui/scene-controls-and-animation.js", ["renderCustomGravelControls"], {
+    runtime, dom: { editTankCustomGravelPanel: container }, state: {}, document: { activeElement: null },
+    hasReadyCustomGravelLayers: () => true, getCustomGravelColorChoices: () => [],
+    normalizeSubstrateStyle: value => value, getCurrentTank: () => ({ substrateStyle: "custom" }),
+    getResolvedTankSubstrateStyle: () => "custom", isSubstrateOwned: () => true,
+    escapeHtml: value => value, getActiveCustomGravelLayerColors: () => [...presets[0].colors],
+    getActiveCustomGravelLayerColorizeSettings: () => [true, true, true],
+    renderSubstrateColorControl: () => "", getGravelColorPresets: () => presets,
+    getTankStageLayoutSize: () => ({ width }), clamp: (v, a, b) => Math.max(a, Math.min(b, v)),
+    renderGravelPalettePreview: () => "<svg></svg>", renderInlineGravelColors: () => "palette",
+    setMarkupIfChanged: (_, __, value) => { markup = value; }
+  });
+  const reachable = [];
+  for (let page = 0; page < 6; page++) {
+    runtime.editTankGravelPresetPage = page; render();
+    reachable.push(...[...markup.matchAll(/data-gravel-preset="([^"]+)"/g)].map(match => match[1]));
+    assert.doesNotMatch(markup, /data-gravel-preset-scroll/);
+  }
+  assert.deepEqual(reachable, [...presets].map(preset => preset.id));
+  assert.match(markup, /aria-label="Next color presets" disabled/);
+  width = 1024; render();
+  assert.equal(runtime.editTankGravelPresetPage, 2);
+  assert.equal((markup.match(/data-gravel-preset=/g) || []).length, 3);
+  width = 1920; render();
+  assert.equal(runtime.editTankGravelPresetPage, 0);
+  assert.equal((markup.match(/data-gravel-preset=/g) || []).length, 11);
+});
+
 test("cave shadow eases state handoffs, including clearing cave membership", () => {
   const runtime = {};
   const { getFishCaveShadowStrength: shade } = load("rendering/fish-and-effects.js", ["getFishCaveShadowStrength", "getFishCaveShadowTargetStrength"], {

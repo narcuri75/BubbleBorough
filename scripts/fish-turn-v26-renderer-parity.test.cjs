@@ -74,6 +74,7 @@ const mathContext = {
   FISH_TURN_V26_RENDER_PADDING_Y: 3.5,
   FISH_TURN_V26_CONTINUITY_ENTRY_PROGRESS: 0.14,
   FISH_TURN_V26_CONTINUITY_EXIT_PROGRESS: 0.82,
+  FISH_TURN_V26_DEPTH_BLEND_PROGRESS: .14,
   FISH_TURN_V26_Z_AXIS_BODY_FLEX: 92,
   FISH_TURN_V26_TAIL_FOLLOW_THROUGH: 48,
   FISH_TURN_V26_SPINE_EPSILON: 0.010,
@@ -167,6 +168,10 @@ mathContext.getFishTurnV26VisualProgress = vm.runInNewContext(
 );
 mathContext.getFishTurnV26ApparentThicknessScale = vm.runInNewContext(
   `(${extractFunction(v26Source, "getFishTurnV26ApparentThicknessScale")})`,
+  mathContext
+);
+mathContext.getFishTurnV26DepthBlend = vm.runInNewContext(
+  `(${extractFunction(v26Source, "getFishTurnV26DepthBlend")})`,
   mathContext
 );
 mathContext.getFishHorizontalTurnState = (fish, now) => ({
@@ -379,8 +384,8 @@ test("volume shader uses exact v26 edge, cross-section, end-thinning, and thickn
 
 test("phase 2 keeps edge-on v26 turns visibly thick without changing endpoint scale", () => {
   assert.match(bootstrapSource, /const FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST = 1\.52;/);
-  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(0), 1);
-  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(1), 1);
+  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(0), 0);
+  assert.equal(mathContext.getFishTurnV26ApparentThicknessScale(1), 0);
   assert.ok(
     mathContext.getFishTurnV26ApparentThicknessScale(0.5) >= 1.5,
     "mid-turn thickness should receive a meaningful edge-on boost"
@@ -389,6 +394,68 @@ test("phase 2 keeps edge-on v26 turns visibly thick without changing endpoint sc
     extractFunction(v26Source, "projectFishTurnV26UvPoint"),
     /getFishTurnV26ApparentThicknessScale\(turnProgress\)/
   );
+});
+
+test("shared turn depth eases in and out while retaining full mid-turn volume", () => {
+  const blend = mathContext.getFishTurnV26DepthBlend;
+  assert.equal(blend(0), 0);
+  assert.equal(blend(1), 0);
+  assert.equal(blend(-1), 0);
+  assert.equal(blend(2), 0);
+  assert.equal(blend(.14), 1);
+  assert.equal(blend(.5), 1);
+  assert.equal(blend(.86), 1);
+  assert.ok(blend(.07) > .49 && blend(.07) < .51);
+  assert.ok(blend(.93) > .49 && blend(.93) < .51);
+  assert.ok(blend(.00001) / .00001 < .002, "depth starts with zero slope");
+  assert.ok(blend(.99999) / .00001 < .002, "depth finishes with zero slope");
+  assert.ok((1 - blend(.13999)) / .00001 < .002, "entry settles into full depth smoothly");
+  assert.ok((1 - blend(.86001)) / .00001 < .002, "exit leaves full depth smoothly");
+  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_depthBlend, depthBlend\);/);
+  assert.match(v26Source, /edgeFeather = mix\(1\.0, edgeFeather, u_depthBlend\);/);
+});
+
+test("every turn style matches flat sprite coordinates at both handoffs, including long fish", () => {
+  for (const styleValue of ["head-led", "banked-flex", "tail-loaded-c-turn", "wide-fluid-u-turn", "portal-tight"]) {
+    for (const fishAspect of [.7, 1, 2, 5.333]) {
+      for (const facingDirection of [-1, 1]) {
+        for (const turnDepthSign of [-1, 1]) {
+          for (const turnProgress of [0, 1]) {
+            for (const u of [.1, .35, .75, .9]) {
+              for (const v of [.2, .5, .8]) {
+                const drawWidth = 512, drawHeight = drawWidth / fishAspect;
+                const expectedX = (u - .5) * drawWidth * facingDirection * (turnProgress === 0 ? 1 : -1);
+                const expectedY = (v - .5) * drawHeight;
+                for (const layer of [-1, 1]) {
+                  const point = mathContext.projectFishTurnV26UvPoint({
+                    styleValue, fishAspect, facingDirection, turnDepthSign, turnProgress,
+                    u, v, drawWidth, drawHeight, layer, thicknessShape: 1.2
+                  });
+                  assert.ok(Math.abs(point.x - expectedX) < 1e-8, `${styleValue}: no surface or width snap at progress ${turnProgress}`);
+                  assert.ok(Math.abs(point.y - expectedY) < 1e-8, `${styleValue}: no height snap at progress ${turnProgress}`);
+                  assert.equal(Math.abs(point.depth), 0);
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+});
+
+test("depth handoffs keep the near surface opaque and smoothly withdraw extra volume layers", () => {
+  for (const yaw of [0, Math.PI]) {
+    for (const blend of [0, .25, .5, 1]) {
+      const passes = mathContext.getFishTurnV26BodyRenderPasses(yaw, 5, blend);
+      assert.equal(passes.at(-1).alpha, 1, "the fish never dissolves during a handoff");
+      assert.equal(passes.at(-1).layer, Math.cos(yaw) >= 0 ? 1 : -1, "the opaque surface must face the view camera");
+      assert.equal(passes[0].depthWrite, blend === 1, "a translucent far shell cannot occlude the opaque surface while flattening");
+      assert.equal(passes[0].alpha, blend);
+      assert.ok(passes.slice(1, -1).every(pass => pass.alpha === .16 * blend));
+      if (blend === 0) assert.equal(passes.filter(pass => pass.alpha > 0).length, 1, "flat endpoints draw a single surface");
+    }
+  }
 });
 
 test("phase 2 latches subtle per-turn acceleration, deceleration, and midpoint variation", () => {
@@ -461,7 +528,7 @@ test("fragment shader applies approved edge feathering and preserves outer sourc
   assert.match(v26Source, /float edgeFeather = smoothstep\(0\.02, 0\.22, c\.a\);/);
   assert.match(v26Source, /if \(edgeFeather < 0\.01\) discard;/);
   assert.match(v26Source, /float finalAlpha = c\.a \* u_layerAlpha \* edgeFeather;/);
-  assert.match(v26Source, /\{ layer: farSide, alpha: 1, shade: 1, depthWrite: true, outer: true \}/);
+  assert.match(v26Source, /\{ layer: farSide, alpha: volumeAlpha, shade: 1, depthWrite: volumeAlpha >= 1, outer: true \}/);
   assert.match(v26Source, /\{ layer: nearSide, alpha: 1, shade: 1, depthWrite: true, outer: true \}/);
 });
 
@@ -1358,7 +1425,7 @@ test("fin near and far sides swap with yaw and render around the body", () => {
   const bodyIndex = v26Source.indexOf("for (const pass of getFishTurnV26BodyRenderPasses");
   const nearIndex = v26Source.indexOf("drawFinPass(finSides.nearSide)");
   assert.ok(farIndex >= 0 && bodyIndex > farIndex && nearIndex > bodyIndex);
-  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_layerAlpha, 1\);/);
+  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_layerAlpha, depthBlend\);/);
   assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_rgbMultiplier, 1\);/);
 });
 
@@ -1518,7 +1585,7 @@ test("fin controls keep approved defaults while permitting explicit per-fish or 
   assert.match(v26Source, /function getFishTurnV26FinSettings\(fish, species = getSpeciesForFish\(fish\)\)/);
   assert.match(v26Source, /fish\?\.finDistance \?\? species\?\.finDistance/);
   assert.match(v26Source, /fish\?\.finTapering \?\? fish\?\.finTaper/);
-  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_finGap, finSettings\.distance \/ 450\);/);
+  assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_finGap, \(finSettings\.distance \/ 450\) \* depthBlend\);/);
   assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_finAttach, finSettings\.frontAttachmentDistance \/ 100\);/);
   assert.match(v26Source, /gl\.uniform1f\(uniforms\.u_finTaper, finSettings\.taper \/ 100\);/);
 });

@@ -215,10 +215,20 @@ function getFishTurnV26VisualProgress(fish, value) {
   return easeFishTurnV26Continuity(getFishTurnV26TimedProgress(fish, value));
 }
 
+function getFishTurnV26DepthBlend(turnProgress) {
+  const t = clamp(Number(turnProgress) || 0, 0, 1);
+  // Morph the surface itself while the mesh remains opaque. Its first and
+  // last poses have zero depth, matching the ordinary swimming texture.
+  const entry = t / FISH_TURN_V26_DEPTH_BLEND_PROGRESS;
+  const exit = (1 - t) / FISH_TURN_V26_DEPTH_BLEND_PROGRESS;
+  return easeFishTurnV26Continuity(Math.min(entry, exit));
+}
+
 function getFishTurnV26ApparentThicknessScale(turnProgress) {
   const t = clamp(Number(turnProgress) || 0, 0, 1);
   const edgeOnEnvelope = Math.pow(Math.max(0, Math.sin(Math.PI * t)), 1.35);
-  return 1 + (FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST - 1) * edgeOnEnvelope;
+  return getFishTurnV26DepthBlend(t)
+    * (1 + (FISH_TURN_V26_EDGE_ON_THICKNESS_BOOST - 1) * edgeOnEnvelope);
 }
 
 function getFishTurnV26VisualContinuity(fish, currentTilt = 0, now = Date.now()) {
@@ -2107,10 +2117,12 @@ function createFishTurnV26RendererState() {
     uniform sampler2D u_texture;
     uniform float u_layerAlpha;
     uniform float u_rgbMultiplier;
+    uniform float u_depthBlend;
     varying vec2 v_uv;
     void main() {
       vec4 c = texture2D(u_texture, v_uv);
       float edgeFeather = smoothstep(0.02, 0.22, c.a);
+      edgeFeather = mix(1.0, edgeFeather, u_depthBlend);
       if (edgeFeather < 0.01) discard;
       float finalAlpha = c.a * u_layerAlpha * edgeFeather;
       gl_FragColor = vec4(c.rgb * u_rgbMultiplier, finalAlpha);
@@ -2143,7 +2155,7 @@ function createFishTurnV26RendererState() {
   gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, mesh.indices, gl.STATIC_DRAW);
 
   const uniformNames = [
-    "u_texture", "u_layer", "u_thickness", "u_edgeReach", "u_edgeClosure",
+    "u_texture", "u_layer", "u_thickness", "u_depthBlend", "u_edgeReach", "u_edgeClosure",
     "u_edgeRoundness", "u_endThinning", "u_midBodyFullness", "u_crossSection", "u_faceThickness",
     "u_finMode", "u_finGap", "u_finAttach", "u_finTaper", "u_finSideSign",
     "u_fishAspect", "u_turnProgress", "u_sourceDirection", "u_turnDepthSign", "u_bodyFlex",
@@ -2361,7 +2373,8 @@ function getFishTurnV26LayerCoordinates(layerCount = FISH_TURN_V26_VOLUME_LAYERS
   ));
 }
 
-function getFishTurnV26BodyRenderPasses(turnYaw, layerCount = FISH_TURN_V26_VOLUME_LAYERS) {
+function getFishTurnV26BodyRenderPasses(turnYaw, layerCount = FISH_TURN_V26_VOLUME_LAYERS, depthBlend = 1) {
+  const volumeAlpha = clamp(Number(depthBlend) || 0, 0, 1);
   const layers = getFishTurnV26LayerCoordinates(layerCount);
   if (layers.length === 1) {
     return [{ layer: 0, alpha: 1, shade: 1, depthWrite: true, outer: true }];
@@ -2373,13 +2386,15 @@ function getFishTurnV26BodyRenderPasses(turnYaw, layerCount = FISH_TURN_V26_VOLU
     .sort((a, b) => (a * nearSide) - (b * nearSide))
     .map((layer) => ({
       layer,
-      alpha: FISH_TURN_V26_INTERIOR_ALPHA,
+      alpha: FISH_TURN_V26_INTERIOR_ALPHA * volumeAlpha,
       shade: 0.74 + (0.90 - 0.74) * (1 - Math.abs(layer)),
       depthWrite: false,
       outer: false
     }));
   return [
-    { layer: farSide, alpha: 1, shade: 1, depthWrite: true, outer: true },
+    // During flattening the shells become nearly coplanar. A translucent far
+    // shell must not write depth and punch holes in the opaque near surface.
+    { layer: farSide, alpha: volumeAlpha, shade: 1, depthWrite: volumeAlpha >= 1, outer: true },
     ...interiors,
     { layer: nearSide, alpha: 1, shade: 1, depthWrite: true, outer: true }
   ];
@@ -2452,6 +2467,7 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
       clamp(Number(turnState.progress) || 0, 0, 1)
     );
     const sourceDirection = getFishTurnV26SourceDirection();
+    const depthBlend = getFishTurnV26DepthBlend(turnProgress);
     const turnStyle = getFishTurnV26Style(fish);
     const turnDepthSign = getFishTurnV26DepthSign(fish);
     const styleTransform = computeFishTurnV26StyleTransform(turnStyle, turnProgress, sourceDirection, turnDepthSign);
@@ -2496,6 +2512,7 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
       (FISH_TURN_V26_THICKNESS / 450) * getFishTurnV26ApparentThicknessScale(turnProgress)
     );
     gl.uniform1f(uniforms.u_edgeReach, FISH_TURN_V26_EDGE_REACH);
+    gl.uniform1f(uniforms.u_depthBlend, depthBlend);
     gl.uniform1f(uniforms.u_edgeClosure, FISH_TURN_V26_EDGE_CLOSURE / 100);
     gl.uniform1f(uniforms.u_edgeRoundness, FISH_TURN_V26_EDGE_ROUNDNESS / 100);
     gl.uniform1f(uniforms.u_endThinning, FISH_TURN_V26_END_THINNING / 100);
@@ -2503,7 +2520,7 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
     gl.uniform1f(uniforms.u_crossSection, FISH_TURN_V26_CROSS_SECTION / 100);
     gl.uniform1f(uniforms.u_faceThickness, FISH_TURN_V26_FACE_HEAD_THICKNESS / 100);
     const finSettings = getFishTurnV26FinSettings(fish, options?.species);
-    gl.uniform1f(uniforms.u_finGap, finSettings.distance / 450);
+    gl.uniform1f(uniforms.u_finGap, (finSettings.distance / 450) * depthBlend);
     gl.uniform1f(uniforms.u_finAttach, finSettings.frontAttachmentDistance / 100);
     gl.uniform1f(uniforms.u_finTaper, finSettings.taper / 100);
     gl.uniform1f(uniforms.u_fishAspect, fishAspect);
@@ -2538,11 +2555,11 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
       gl.bindBuffer(gl.ARRAY_BUFFER, finGpuBuffer);
       gl.enableVertexAttribArray(renderer.finLocalLocation);
       gl.vertexAttribPointer(renderer.finLocalLocation, 1, gl.FLOAT, false, 0, 0);
-      gl.depthMask(true);
+      gl.depthMask(sideSign === finSides.nearSide || depthBlend >= 1);
       gl.uniform1f(uniforms.u_finMode, 1);
       gl.uniform1f(uniforms.u_finSideSign, sideSign);
       gl.uniform1f(uniforms.u_layer, sideSign);
-      gl.uniform1f(uniforms.u_layerAlpha, 1);
+      gl.uniform1f(uniforms.u_layerAlpha, depthBlend);
       gl.uniform1f(uniforms.u_rgbMultiplier, 1);
       gl.drawElements(gl.TRIANGLES, mesh.indexCount, gl.UNSIGNED_SHORT, 0);
     };
@@ -2556,7 +2573,8 @@ function renderFishTurnV26VolumeCanvas(textureImage, shapeImage, fish, now = Dat
     const volumeLayerCount = getFishTurnV26VolumeLayerCountForActiveTurns(
       getFishTurnV26ActiveTurnCount(now)
     );
-    for (const pass of getFishTurnV26BodyRenderPasses(styleTransform.rotationY, volumeLayerCount)) {
+    for (const pass of getFishTurnV26BodyRenderPasses(styleTransform.rotationY, volumeLayerCount, depthBlend)) {
+      if (pass.alpha <= 0) continue;
       gl.depthMask(pass.depthWrite);
       gl.uniform1f(uniforms.u_layer, pass.layer);
       gl.uniform1f(uniforms.u_layerAlpha, pass.alpha);

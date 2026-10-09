@@ -1,6 +1,6 @@
 {
   "generatedFrom": "public/app-src",
-  "functionCount": 4186,
+  "functionCount": 4187,
   "functions": [
     {
       "name": "getBrowserViewportSize",
@@ -38598,20 +38598,33 @@
       ]
     },
     {
-      "name": "getFishTurnV26ApparentThicknessScale",
+      "name": "getFishTurnV26DepthBlend",
       "module": "rendering/fish-turn-v26.js",
       "sourceLine": 218,
       "originalLine": null,
-      "characters": 267,
-      "sourceHash": "16f6f54b8b8ebde2f671f4d6a3e9066367fe8decd1deae525f1de7f99f5ff251",
+      "characters": 427,
+      "sourceHash": "6cb6d39751173d6f8c48ad9da3c463e66f0b3bb579e5ecab27106726da66043c",
       "calls": [
-        "clamp"
+        "clamp",
+        "easeFishTurnV26Continuity"
+      ]
+    },
+    {
+      "name": "getFishTurnV26ApparentThicknessScale",
+      "module": "rendering/fish-turn-v26.js",
+      "sourceLine": 227,
+      "originalLine": null,
+      "characters": 303,
+      "sourceHash": "ab062d65fbb63bbe93a2fb98d9bde07651ba1e46eb9f6c14eac58a920d30ff13",
+      "calls": [
+        "clamp",
+        "getFishTurnV26DepthBlend"
       ]
     },
     {
       "name": "getFishTurnV26VisualContinuity",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 224,
+      "sourceLine": 234,
       "originalLine": null,
       "characters": 1586,
       "sourceHash": "4eda69036e2149ff3e550e2e8731d7676b9921bccb90e011c9bbf9c2f052e990",
@@ -38625,7 +38638,7 @@
     {
       "name": "markFishTurnRendererFallback",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 253,
+      "sourceLine": 263,
       "originalLine": null,
       "characters": 411,
       "sourceHash": "17c9bb06479168c607fc781b1e887ccb858171e005f2c74538dce6054824ac2f",
@@ -38637,7 +38650,7 @@
     {
       "name": "ensureFishTurnRendererSession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 262,
+      "sourceLine": 272,
       "originalLine": null,
       "characters": 455,
       "sourceHash": "b5c3bdcb0e7c42820793c26649e519130d1ffcca32dfc801759dbb05cf491ae1",
@@ -38652,7 +38665,7 @@
     {
       "name": "isFishComplexTurnRendererEligible",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 273,
+      "sourceLine": 283,
       "originalLine": null,
       "characters": 890,
       "sourceHash": "c899bce80c9ceba8b033357842f9199ac68f0dc474956518c5a83fb315eadfb3",
@@ -38665,7 +38678,7 @@
     {
       "name": "getFishV26SpecialMovementOwner",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 308,
+      "sourceLine": 318,
       "originalLine": null,
       "characters": 1955,
       "sourceHash": "45796a22f6a96e220005e590d5deadea093eb557295021e0dadb56c8529e4660",
@@ -38682,7 +38695,7 @@
     {
       "name": "canUseFishV26TurnRenderer",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 368,
+      "sourceLine": 378,
       "originalLine": null,
       "characters": 200,
       "sourceHash": "05b688909441f69ca834e925283bc36786deba1624bc789670f0e7e936f594d2",
@@ -38694,7 +38707,7 @@
     {
       "name": "shouldUseFishTurnV26RendererForSprite",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 377,
+      "sourceLine": 387,
       "originalLine": null,
       "characters": 605,
       "sourceHash": "134bf542b60842c45cbfb885f3faa4c4468555face3739928dba4d34645bf873",
@@ -38707,7 +38720,7 @@
     {
       "name": "clearFishTurnV26FinOverlaySession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 407,
+      "sourceLine": 417,
       "originalLine": null,
       "characters": 231,
       "sourceHash": "56d68fd0e17e95852861a328afee3685ccf1c6ac99a22dfbf1ca1ac89e5e8ad2",
@@ -38716,7 +38729,7 @@
     {
       "name": "stripFishTurnV26AssetQuery",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 415,
+      "sourceLine": 425,
       "originalLine": null,
       "characters": 101,
       "sourceHash": "d5bc1026c837822c6f260370f0d4e3a7d1dd6dae8991219fcb26ace0678abd14",
@@ -38725,7 +38738,7 @@
     {
       "name": "normalizeFishTurnV26AssetLookupPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 419,
+      "sourceLine": 429,
       "originalLine": null,
       "characters": 117,
       "sourceHash": "3419fb4506d60200d4072230435d9cd98e9b0af85a009fc95864e3a400134a70",
@@ -38736,7 +38749,7 @@
     {
       "name": "getFishTurnV26CompanionFinAssetPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 423,
+      "sourceLine": 433,
       "originalLine": null,
       "characters": 324,
       "sourceHash": "68f622fda082bee81079c343a84dbadfb2521ad0b65e06b6af38cd516730fea4",
@@ -38745,7 +38758,7 @@
     {
       "name": "getFishTurnV26ExplicitFinAssetPath",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 431,
+      "sourceLine": 441,
       "originalLine": null,
       "characters": 311,
       "sourceHash": "a8569ab54d6016aa05df219f71817612ef9b39ef88632b07d28be912b6458584",
@@ -38756,7 +38769,7 @@
     {
       "name": "getFishTurnV26SpriteFrameSpec",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 441,
+      "sourceLine": 451,
       "originalLine": null,
       "characters": 540,
       "sourceHash": "c0238941f0b05603d3c321c6e8fdc9a6dcb1d243cacd119d204bc8d985e48c47",
@@ -38767,7 +38780,7 @@
     {
       "name": "getFishTurnV26FinCandidateCacheKey",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 454,
+      "sourceLine": 464,
       "originalLine": null,
       "characters": 335,
       "sourceHash": "cce57a14d423075bec25c87291c46eb3dc730b7189672766cf6ffeaa56e0967c",
@@ -38776,7 +38789,7 @@
     {
       "name": "cropFishTurnV26FinSpriteFrame",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 463,
+      "sourceLine": 473,
       "originalLine": null,
       "characters": 1055,
       "sourceHash": "eb0711414c83d5c12f1c77f8550c0be227730e13e99deee880c2f40fbe5d616b",
@@ -38785,7 +38798,7 @@
     {
       "name": "resolveFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 485,
+      "sourceLine": 495,
       "originalLine": null,
       "characters": 926,
       "sourceHash": "29f14fabf71f9fba7b719e243cb1e04ffe970b7d67c12ee2ed246d6731b005e1",
@@ -38800,7 +38813,7 @@
     {
       "name": "getFishTurnV26FinDiscoveryCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 507,
+      "sourceLine": 517,
       "originalLine": null,
       "characters": 215,
       "sourceHash": "5e172c23c3f0dd9f0a024e95668d757da05d233c2b322bd5e18de78b6b2dbced",
@@ -38809,7 +38822,7 @@
     {
       "name": "releaseInactiveFishTurnV26FinResources",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 514,
+      "sourceLine": 524,
       "originalLine": null,
       "characters": 1159,
       "sourceHash": "27b601b21d1f027d3e4cc7b8744fd3ff25b0f78e7d48d21f7f7bbca034cd3f3c",
@@ -38823,7 +38836,7 @@
     {
       "name": "getFishTurnV26FinDimensionWarningSet",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 540,
+      "sourceLine": 550,
       "originalLine": null,
       "characters": 235,
       "sourceHash": "b8fb00528c49f43156765f44e73ac7645300b928ea00f8eba63524cd9ef0c092",
@@ -38832,7 +38845,7 @@
     {
       "name": "fishTurnV26ManifestContainsFinAsset",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 547,
+      "sourceLine": 557,
       "originalLine": null,
       "characters": 675,
       "sourceHash": "2ee7e6225e2fb14fc9ab19cd0049bfca3468ed2d6a097e2931f50a9af6b376d3",
@@ -38844,7 +38857,7 @@
     {
       "name": "loadFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 565,
+      "sourceLine": 575,
       "originalLine": null,
       "characters": 1949,
       "sourceHash": "1abe378d98b9939766d0f9ef1deccc0e8ce26034968beaa4c1ab5739964fa7f8",
@@ -38860,7 +38873,7 @@
     {
       "name": "requestFishTurnV26FinAssetCandidate",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 622,
+      "sourceLine": 632,
       "originalLine": null,
       "characters": 1085,
       "sourceHash": "0efe8576c61bc4486774b8ac811c384092cc233587bd031447c17d66621b988e",
@@ -38875,7 +38888,7 @@
     {
       "name": "validateFishTurnV26FinImageDimensions",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 651,
+      "sourceLine": 661,
       "originalLine": null,
       "characters": 1177,
       "sourceHash": "7d2caab9bc47a2030386887a421fdf38479af97acb765c8f2cb434128147aa9b",
@@ -38886,7 +38899,7 @@
     {
       "name": "getReadyFishTurnV26FinOverlay",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 672,
+      "sourceLine": 682,
       "originalLine": null,
       "characters": 962,
       "sourceHash": "a45b1b61790163c3ad68c08eb2ef4babfe28982169929be753e01c809d72fe9a",
@@ -38903,7 +38916,7 @@
     {
       "name": "beginFishTurnV26FinOverlaySession",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 702,
+      "sourceLine": 712,
       "originalLine": null,
       "characters": 799,
       "sourceHash": "49fd7cc3278c41bac9ba8ced3ef78180bfc98654d322b880431d8a9badb2493d",
@@ -38917,7 +38930,7 @@
     {
       "name": "getFishTurnV26LatchedFinOverlay",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 723,
+      "sourceLine": 733,
       "originalLine": null,
       "characters": 852,
       "sourceHash": "c8450ee0ca651d6248cc66b42b4f676a74a3857d980448f0be42bdd582fd72fb",
@@ -38931,7 +38944,7 @@
     {
       "name": "buildFishTurnV26MeshData",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 737,
+      "sourceLine": 747,
       "originalLine": null,
       "characters": 1522,
       "sourceHash": "44c4f7822d3420bd250c6dbd4567fdd5e1378a848b363f287fb639c672049bc1",
@@ -38940,7 +38953,7 @@
     {
       "name": "buildFishTurnV26BinaryMask",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 787,
+      "sourceLine": 797,
       "originalLine": null,
       "characters": 542,
       "sourceHash": "6b48bebf893620a07bbdbba1cab6bfa4aa4ea7511a7ed1c2e5fd483d0e3bb7e7",
@@ -38949,7 +38962,7 @@
     {
       "name": "buildFishTurnV26DistanceField",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 798,
+      "sourceLine": 808,
       "originalLine": null,
       "characters": 2367,
       "sourceHash": "bb27f2f8e948617c0d7001b5dcf6156fdfc4b012170b41ea0821be14cb62c729",
@@ -38958,7 +38971,7 @@
     {
       "name": "buildFishTurnV26ColumnMax",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 858,
+      "sourceLine": 868,
       "originalLine": null,
       "characters": 517,
       "sourceHash": "2e1f68474a0a26a40ca098fa4260fedf231194d7e9d8f214cdf37327b0df44ad",
@@ -38967,7 +38980,7 @@
     {
       "name": "sampleFishTurnV26ScalarFieldBilinear",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 872,
+      "sourceLine": 882,
       "originalLine": null,
       "characters": 825,
       "sourceHash": "e6311f37c57938ba9de338cf880363410bb5dfd007c8917de5519cab0ab7bd48",
@@ -38978,7 +38991,7 @@
     {
       "name": "sampleFishTurnV26ColumnMax",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 890,
+      "sourceLine": 900,
       "originalLine": null,
       "characters": 422,
       "sourceHash": "72f3e3364f36f394691f7c9c65ea0f97bf6ff5296a19e4790022c2c07da18f0a",
@@ -38989,7 +39002,7 @@
     {
       "name": "buildFishTurnV26VertexShapeData",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 903,
+      "sourceLine": 913,
       "originalLine": null,
       "characters": 664,
       "sourceHash": "934fde3e6e78e29867ba8973463afeb18dcd55455326fd4c03977aaaaa344010",
@@ -39002,7 +39015,7 @@
     {
       "name": "getFishTurnV26ImageCacheIdentity",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 917,
+      "sourceLine": 927,
       "originalLine": null,
       "characters": 511,
       "sourceHash": "caf754f07f352ea4af66f4336c47cd0ea65075afa5ceaffbcbee6c72bfdd60e4",
@@ -39011,7 +39024,7 @@
     {
       "name": "getFishTurnV26BodyShapeCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 930,
+      "sourceLine": 940,
       "originalLine": null,
       "characters": 203,
       "sourceHash": "6b91c7561ec04337ab1f2b598cd5ea7a482922fc043ea1b606a6856f97aeb65b",
@@ -39020,7 +39033,7 @@
     {
       "name": "releaseFishTurnV26ImageResources",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 937,
+      "sourceLine": 947,
       "originalLine": null,
       "characters": 1650,
       "sourceHash": "0eae686e6221b018877721287383f8f64ba2da4d82f4e761b437874128cd9bd2",
@@ -39031,7 +39044,7 @@
     {
       "name": "preprocessFishTurnV26BodyShape",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 977,
+      "sourceLine": 987,
       "originalLine": null,
       "characters": 2351,
       "sourceHash": "046bfb5c87c704759e17b64f99e26fa161fd130056acd5c3c4f87b841eacc64e",
@@ -39048,7 +39061,7 @@
     {
       "name": "getFishTurnV26FinShapeCache",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1039,
+      "sourceLine": 1049,
       "originalLine": null,
       "characters": 199,
       "sourceHash": "3bf71286dce3c00f5307b0bddb53175ba00c38e132fa94b63c7bd9e88475f761",
@@ -39057,7 +39070,7 @@
     {
       "name": "preprocessFishTurnV26FinShape",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1046,
+      "sourceLine": 1056,
       "originalLine": null,
       "characters": 2284,
       "sourceHash": "33cf820486f269dd6d2a7f314e343414cadbc9deb918511c9abfeba18e96b317",
@@ -39074,7 +39087,7 @@
     {
       "name": "getFishTurnV26FinSettings",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1105,
+      "sourceLine": 1115,
       "originalLine": null,
       "characters": 821,
       "sourceHash": "b9bb4b5df0e998d6a584552e97e0fb7b4ac8f6ba04af174775398ce8b260a845",
@@ -39086,7 +39099,7 @@
     {
       "name": "computeFishTurnV26FinGap",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1130,
+      "sourceLine": 1140,
       "originalLine": null,
       "characters": 1020,
       "sourceHash": "229bee3449cc9ff1affb724a6459d750a36818eb719eda6f964ffcb3b981ceba",
@@ -39097,7 +39110,7 @@
     {
       "name": "getFishTurnV26SourceDirection",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1156,
+      "sourceLine": 1166,
       "originalLine": null,
       "characters": 176,
       "sourceHash": "fa5b8cce4f096b2de940e1695e78d1d249ddf982d15d5c103d2c917350e43203",
@@ -39106,7 +39119,7 @@
     {
       "name": "normalizeFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1162,
+      "sourceLine": 1172,
       "originalLine": null,
       "characters": 1343,
       "sourceHash": "104ab97a9d94aac1b0327cab97c851b572faf2d5cc7787fd0d2d13fa60c661b6",
@@ -39115,7 +39128,7 @@
     {
       "name": "getFishTurnV26StyleOverride",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1198,
+      "sourceLine": 1208,
       "originalLine": null,
       "characters": 117,
       "sourceHash": "3c0eb92753e93fce4bb0be8bb975dbb50de4450a67be829d8e8112840d62846b",
@@ -39126,7 +39139,7 @@
     {
       "name": "setFishTurnV26StyleOverride",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1202,
+      "sourceLine": 1212,
       "originalLine": null,
       "characters": 396,
       "sourceHash": "7ab208a08bd743a4a010bb48a97bf6b834cc46816dff6f8116d7747a9a7d9b1a",
@@ -39138,7 +39151,7 @@
     {
       "name": "getFishTurnV26BehaviorContext",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1216,
+      "sourceLine": 1226,
       "originalLine": null,
       "characters": 4554,
       "sourceHash": "df4edfe97b252d5b6be2e32fa78faa053be704a7e39181cd956bdee48e926ac9",
@@ -39154,7 +39167,7 @@
     {
       "name": "selectFishTurnV26StyleForContext",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1322,
+      "sourceLine": 1332,
       "originalLine": null,
       "characters": 2206,
       "sourceHash": "55f39ce29f8a15225377c433fc2f55355f2972ef7c263b57d37e8bcd3c474ec7",
@@ -39167,7 +39180,7 @@
     {
       "name": "resolveFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1378,
+      "sourceLine": 1388,
       "originalLine": null,
       "characters": 598,
       "sourceHash": "88541be05930cc1288e38e591ad70d7344b56d6383855463bb3af3b106d445bf",
@@ -39180,7 +39193,7 @@
     {
       "name": "getFishTurnV26Style",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1393,
+      "sourceLine": 1403,
       "originalLine": null,
       "characters": 480,
       "sourceHash": "c019902cab81dae03cd7ca66c58e020401075f097ae3a94c09ccc11badc12a2e",
@@ -39193,7 +39206,7 @@
     {
       "name": "easeFishTurnV26CubicInOut",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1408,
+      "sourceLine": 1418,
       "originalLine": null,
       "characters": 194,
       "sourceHash": "0db8a2fbd85191b454ae2fb894d3d18d7ecf6df9c2ed0fe5bfdc2161171279bc",
@@ -39204,7 +39217,7 @@
     {
       "name": "easeFishTurnV26Sine",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1415,
+      "sourceLine": 1425,
       "originalLine": null,
       "characters": 130,
       "sourceHash": "74c068619e16df1f931ccec7c1814ff6e7552501d7ea102b535418a727e4105d",
@@ -39215,7 +39228,7 @@
     {
       "name": "getFishTurnV26StyleDefinition",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1420,
+      "sourceLine": 1430,
       "originalLine": null,
       "characters": 1407,
       "sourceHash": "a50a4c2ca690673a36714012039635d1bd9b8f11027d2ff9bf19b0b71232ba30",
@@ -39226,7 +39239,7 @@
     {
       "name": "computeFishTurnV26StyleTransform",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1482,
+      "sourceLine": 1492,
       "originalLine": null,
       "characters": 2855,
       "sourceHash": "3a72e4a213c6d626afd4f096733840dbf41db818ece948c98bd9e9112591293d",
@@ -39241,7 +39254,7 @@
     {
       "name": "computeFishTurnV26SpinePoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1574,
+      "sourceLine": 1584,
       "originalLine": null,
       "characters": 1640,
       "sourceHash": "bbd30edea558d31b6b3608a90cacd28c39900d4b4d42adf0acde38fad37c146e",
@@ -39253,7 +39266,7 @@
     {
       "name": "computeFishTurnV26SpineFrame",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1631,
+      "sourceLine": 1641,
       "originalLine": null,
       "characters": 1107,
       "sourceHash": "1c5071107b2481ef4b266f288beec3f27edfb73f96320ce90d3bd68b55a48584",
@@ -39266,7 +39279,7 @@
     {
       "name": "getFishTurnV26ModelScale",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1680,
+      "sourceLine": 1690,
       "originalLine": null,
       "characters": 548,
       "sourceHash": "c34ccf2c39038706c127493bd9965990636e5ddcf3e029379b581ff73ac6c8c9",
@@ -39277,7 +39290,7 @@
     {
       "name": "getFishTurnV26ThicknessShapeAtUv",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1698,
+      "sourceLine": 1708,
       "originalLine": null,
       "characters": 1939,
       "sourceHash": "6fff47e5f76b3c1b4d20ffb94313b5a8bdcc9dd444dfa7f04585a0f9b8a755f7",
@@ -39291,7 +39304,7 @@
     {
       "name": "projectFishTurnV26UvPoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1748,
+      "sourceLine": 1758,
       "originalLine": null,
       "characters": 3825,
       "sourceHash": "847e205bda2f2467286c99285f7f4eb16f2ef5468cc6058b4ba50b00104c6efa",
@@ -39306,7 +39319,7 @@
     {
       "name": "getFishTurnV26VisualAnchorLocalPoint",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1836,
+      "sourceLine": 1846,
       "originalLine": null,
       "characters": 1995,
       "sourceHash": "a2b2c270345b411203d728792eb91cd560835ec41cb781eb42afafed986cbc62",
@@ -39330,7 +39343,7 @@
     {
       "name": "compileFishTurnV26Shader",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1903,
+      "sourceLine": 1913,
       "originalLine": null,
       "characters": 467,
       "sourceHash": "d6f620b63203d4c99e9a481810aac1a9dd196e3fc47f6fe8ff1f1ab82135d7df",
@@ -39339,10 +39352,10 @@
     {
       "name": "createFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 1917,
+      "sourceLine": 1927,
       "originalLine": null,
-      "characters": 10252,
-      "sourceHash": "a66f64f0e135638a544cc8148358683830dc8b9d72a4ab2489ad18b683cdc1af",
+      "characters": 10357,
+      "sourceHash": "ab9587c5ddb49e7f85be2873bd59d5448fd0c885b6f80f031c3594e5ee1d1b19",
       "calls": [
         "buildFishTurnV26MeshData",
         "compileFishTurnV26Shader",
@@ -39352,7 +39365,7 @@
     {
       "name": "getFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2194,
+      "sourceLine": 2206,
       "originalLine": null,
       "characters": 369,
       "sourceHash": "a603cada813303c4bd9bf93bff3404de11405b4a96b27a1f3b32ab58944ffb17",
@@ -39363,7 +39376,7 @@
     {
       "name": "disposeFishTurnV26RendererState",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2205,
+      "sourceLine": 2217,
       "originalLine": null,
       "characters": 1131,
       "sourceHash": "44d752db5addbce30ccda9811762d7a7ee2832cd7b096855f037224ec0dc0284",
@@ -39372,7 +39385,7 @@
     {
       "name": "getFishTurnV26GpuTexture",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2235,
+      "sourceLine": 2247,
       "originalLine": null,
       "characters": 1899,
       "sourceHash": "b797d1f2b5b0999edae7bb6f8f12e3f8927fc1e141dec821d9331ab28f87a218",
@@ -39383,7 +39396,7 @@
     {
       "name": "getFishTurnV26ActiveTurnCount",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2271,
+      "sourceLine": 2283,
       "originalLine": null,
       "characters": 810,
       "sourceHash": "4521efa6cb85d882d843010a5dbdbafd15d374ce4e8fee57e8766bf8f6d78f9a",
@@ -39396,7 +39409,7 @@
     {
       "name": "getFishTurnV26VolumeLayerCountForActiveTurns",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2290,
+      "sourceLine": 2302,
       "originalLine": null,
       "characters": 411,
       "sourceHash": "f472f5f51069bc5cad799aaac87d5f65f315ccadaee2ada0cc4c4a2531501a9c",
@@ -39405,7 +39418,7 @@
     {
       "name": "getFishTurnV26StressBudget",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2301,
+      "sourceLine": 2313,
       "originalLine": null,
       "characters": 579,
       "sourceHash": "6691d70a648a346917aea44d10e7e2578311164e64dc368453544631dd578123",
@@ -39416,7 +39429,7 @@
     {
       "name": "getFishTurnV26BodyGpuBuffers",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2314,
+      "sourceLine": 2326,
       "originalLine": null,
       "characters": 880,
       "sourceHash": "ca2c28650e812c66f8c7f293fb0f1d56609f4dba5bd028c27c182cd8808cb785",
@@ -39425,7 +39438,7 @@
     {
       "name": "getFishTurnV26FinGpuBuffer",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2336,
+      "sourceLine": 2348,
       "originalLine": null,
       "characters": 520,
       "sourceHash": "39bed5fc38dd565c2223bd3e83685352dd965313314a6dcdf54ee4119fc8afd3",
@@ -39434,7 +39447,7 @@
     {
       "name": "getFishTurnV26FinRenderSides",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2351,
+      "sourceLine": 2363,
       "originalLine": null,
       "characters": 158,
       "sourceHash": "9eb1a1aaf9b16aae33e5a49231c71dce9894c727668cd47594aeb6fccce039fe",
@@ -39443,7 +39456,7 @@
     {
       "name": "getFishTurnV26LayerCoordinates",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2356,
+      "sourceLine": 2368,
       "originalLine": null,
       "characters": 295,
       "sourceHash": "54ddab0b1c30175deb4051cc6f4343f06be5cf8eedd9257f8c91e2c0e62e8802",
@@ -39452,21 +39465,22 @@
     {
       "name": "getFishTurnV26BodyRenderPasses",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2364,
+      "sourceLine": 2376,
       "originalLine": null,
-      "characters": 850,
-      "sourceHash": "81f71376dbfc1629a9892b5952e1b5cfc9060f8e3b3b096e553dc76e96731a4e",
+      "characters": 1118,
+      "sourceHash": "c4917e22b0d527873b2c78c98b4f597cba58e3c152d8a4d99cdd2fcdc9a3ef08",
       "calls": [
+        "clamp",
         "getFishTurnV26LayerCoordinates"
       ]
     },
     {
       "name": "renderFishTurnV26VolumeCanvas",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2388,
+      "sourceLine": 2403,
       "originalLine": null,
-      "characters": 9362,
-      "sourceHash": "5ededc64b64ff8650c5d69bf8db396da5e2700a4265e189f990045a433434ba8",
+      "characters": 9596,
+      "sourceHash": "5da717eb292b5ced2f22d09ce770cd400645335c87befcbde5c52a8af745d34f",
       "calls": [
         "clamp",
         "computeFishTurnV26StyleTransform",
@@ -39476,6 +39490,7 @@
         "getFishTurnV26ApparentThicknessScale",
         "getFishTurnV26BodyGpuBuffers",
         "getFishTurnV26BodyRenderPasses",
+        "getFishTurnV26DepthBlend",
         "getFishTurnV26DepthSign",
         "getFishTurnV26FinGpuBuffer",
         "getFishTurnV26FinRenderSides",
@@ -39495,7 +39510,7 @@
     {
       "name": "drawFishTurnV26VolumeMesh",
       "module": "rendering/fish-turn-v26.js",
-      "sourceLine": 2581,
+      "sourceLine": 2599,
       "originalLine": null,
       "characters": 1746,
       "sourceHash": "95c5003799b8e81784affd323b8f76a44bcfca1d28d67632a2f0b4279fc207fb",

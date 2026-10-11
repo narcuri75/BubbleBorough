@@ -20859,13 +20859,19 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .utility-overlay[data-utility-mode="decor-settings"],
 .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) {
   box-sizing: border-box;
+  /* Query the logical app area, which stays fixed while Ratio Lock scales it. */
+  container: decor-settings / inline-size;
+  display: grid;
   place-items: stretch center;
   padding: 18px 22px calc(18px + var(--utility-edit-tray-reserve, 0px));
+  padding-inline: clamp(14px, 1.2%, 22px);
+  overflow: auto;
 }
 
 .utility-overlay[data-utility-mode="decor-settings"] .utility-panel,
 .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) .utility-panel {
-  width: calc(100vw - 44px);
+  width: 100%;
+  min-width: 0;
   height: auto;
   max-height: none;
   min-height: 0;
@@ -20907,7 +20913,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .utility-overlay[data-utility-mode="decor-settings"] #utilityOverlayTitle,
 .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) #utilityOverlayTitle {
   margin: 0;
-  font-size: clamp(1.45rem, 2.25vw, 2rem);
+  font-size: clamp(1.45rem, calc(var(--app-viewport-width) * 0.0225), 2rem);
   line-height: 1.05;
 }
 
@@ -20918,8 +20924,8 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   font-size: 1.8rem;
 }
 
-.utility-overlay[data-utility-mode="decor-settings"] .utility-overlay-body,
-.utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) .utility-overlay-body {
+.utility-overlay[data-utility-mode="decor-settings"] .utility-panel .utility-overlay-body,
+.utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) .utility-panel .utility-overlay-body {
   overflow: hidden;
   padding: 0;
 }
@@ -20932,6 +20938,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
 .decor-settings-compact-panel,
 .decor-settings-compact-layout {
   height: 100%;
+  min-width: 0;
   min-height: 0;
 }
 
@@ -21000,7 +21007,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   accent-color: #27c9ed;
 }
 
-.decor-settings-controls-column {
+.decor-settings-compact-layout .decor-settings-controls-column {
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -21561,15 +21568,9 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   gap: 9px;
 }
 
-@media (max-width: 1180px) and (min-height: 621px) {
-  .utility-overlay[data-utility-mode="decor-settings"],
-  .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) {
-    padding-inline: 14px;
-  }
-
+@container decor-settings (max-width: 1180px) {
   .utility-overlay[data-utility-mode="decor-settings"] .utility-panel,
   .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) .utility-panel {
-    width: min(100%, calc(100vw - 28px));
     padding-inline: 14px;
   }
 
@@ -21595,18 +21596,12 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   }
 }
 
-@media (max-width: 980px) {
-  .utility-overlay[data-utility-mode="decor-settings"],
-  .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) {
-    place-items: start center;
-    overflow: auto;
-    padding-bottom: calc(18px + var(--utility-edit-tray-reserve, 0px));
-  }
-
+@container decor-settings (max-width: 980px) {
   .utility-overlay[data-utility-mode="decor-settings"] .utility-panel,
   .utility-overlay:is([data-utility-mode="custom-decor-settings"], [data-utility-mode="fish-inspect"]) .utility-panel {
+    align-self: start;
     height: auto;
-    min-height: min(700px, calc(100dvh - var(--utility-edit-tray-reserve, 0px) - 36px));
+    min-height: min(700px, calc(var(--app-viewport-height) - var(--utility-edit-tray-reserve, 0px) - 36px));
   }
 
   .decor-settings-compact-layout {
@@ -21618,7 +21613,7 @@ body.fixed-16-9-aspect-ratio .tank-stage {
     min-height: 390px;
   }
 
-  .decor-settings-controls-column {
+  .decor-settings-compact-layout .decor-settings-controls-column {
     overflow: visible;
   }
 }

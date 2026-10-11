@@ -10,6 +10,25 @@ const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
 function getWebSurfStoreSource() {
   return fs.readFileSync(path.join(__dirname, "../game/public/websurf-store.js"), "utf8");
 }
+
+test("all audio channels retire old cache entries using the same stable media URL", () => {
+  class Audio {
+    constructor(src) { this.src = src; }
+    addEventListener() {}
+  }
+  const c = vm.createContext({ Audio, runtime: {}, resolveAppUrl: value => value,
+    AMBIENCE_AUDIO_PATH: "assets/sounds/ambience.mp3", SUBMARINE_SONAR_SOUND_PATH: "assets/sounds/sonar_sound.mp3" });
+  vm.runInContext(fs.readFileSync(path.join(root, "audio/system.js"), "utf8"), c);
+  const sound = "assets/sounds/splash3.mp3";
+  assert.equal(c.resolveAudioAssetUrl(sound), `${sound}?bb-audio=2`);
+  assert.equal(c.resolveAudioAssetUrl(`${sound}?v=one#clip`), `${sound}?v=one&bb-audio=2#clip`);
+  const first = c.createPooledSoundEffectAudio(sound);
+  assert.equal(first.src, c.createPooledSoundEffectAudio(sound).src);
+  assert.equal(first.src, `${sound}?bb-audio=2`);
+  assert.equal(c.createAmbienceAudioChannel().src, "assets/sounds/ambience.mp3?bb-audio=2");
+  assert.equal(c.getSubmarineSonarAudio().src, "assets/sounds/sonar_sound.mp3?bb-audio=2");
+});
+
 function loadTankazonFunctions(names, bindings) {
   const script = getWebSurfStoreSource();
   const parsed = ts.createSourceFile("websurf-store.js", script, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
@@ -582,6 +601,9 @@ function clearFishTurnRendererSessionForTest(fish) {
 }
 
 function load(file, names, bindings = {}) {
+  if (file === "tank/catalog-and-equipment.js" && names.includes("getFishSocialProfile")) {
+    names = [...names, "isFishSocialProfileSourceCurrent", "snapshotFishSocialProfileSource", "buildFishSocialProfile"];
+  }
   const source = fs.readFileSync(path.join(root, file), "utf8");
   const parsed = ts.createSourceFile(file, source, ts.ScriptTarget.Latest, true, ts.ScriptKind.JS);
   const context = vm.createContext({
@@ -1034,7 +1056,8 @@ test("fish discovers numbered artwork through _5 with gaps, and ignores absent v
 test("a saved fish keeps its chosen artwork when new variants change numeric indices", () => {
   const helpers = load("fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishAppearanceVariantKey"]);
   const species = { asset: "guppy.png", assetVariants: ["guppy.png", "guppy_1.png", "guppy_3.png"] };
-  const c = load("fish/appearance.js", ["getFishAssetPath", "normalizeFishAppearanceVariantIndex"], {
+  const c = load("fish/appearance.js", ["getFishArtworkCatalog", "resolveFishArtworkPath", "getFishAssetPath", "normalizeFishAppearanceVariantIndex"], {
+    runtime: {},
     getFishAssetVariants: helpers.getFishAssetVariants, getFishAppearanceVariantKey: helpers.getFishAppearanceVariantKey,
     getFishAppearanceVariantSeed: () => 0
   });
@@ -2091,19 +2114,15 @@ test("BubbleBodega issues a single-use recovery email for every empty-and-broke 
   assert.equal(nextOffer.activated, false);
 });
 
-test("fish color previews keep the settings inspector mounted", () => {
-  const source = fs.readFileSync(path.join(root, "ui/fish-inspector.js"), "utf8");
-  const start = source.indexOf("function updateInspectorFishSetting");
-  const end = source.indexOf("\n}", source.indexOf("renderUi(now);", start)) + 2;
-  const fn = source.slice(start, end);
-  assert.match(fn, /setting === "color" \|\| setting === "colorize"/);
-  assert.match(fn, /updateInspectorFishReadouts\(fish\);\s*return;/);
-
-  const bindings = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
-  const swatchStart = bindings.indexOf('const swatch = target?.closest("[data-inspector-fish-color]")');
-  const swatchBlock = bindings.slice(swatchStart, swatchStart + 500);
-  assert.match(swatchBlock, /event\.stopPropagation\(\);/);
-  assert.match(swatchBlock, /updateInspectorFishSetting\("color"/);
+test("owned fish customization is unavailable in Inspect, legacy status and management", () => {
+  const files = ["ui/fish-inspector.js", "ui/customization-actions-and-inventory.js", "assets/custom-content.js", "00-bootstrap.js"];
+  for (const file of files) {
+    const source = fs.readFileSync(path.join(root, file), "utf8");
+    assert.doesNotMatch(source, /data-(?:fish-inspect-setting|fish-inspect-color|inspector-fish-setting|inspector-fish-color|size-fish|copy-fish-size)/, file);
+    assert.doesNotMatch(source, /\b(?:adjustFishSize|saveFishSizeAsDefault|updateInspectorFishSetting|queueInspectorFishColorPreview)\b/, file);
+  }
+  const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
+  assert.doesNotMatch(html, /id="fishInspectorSettings"|data-inspector-fish-setting/);
 });
 
 

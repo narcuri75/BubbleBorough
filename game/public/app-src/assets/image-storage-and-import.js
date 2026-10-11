@@ -1723,7 +1723,7 @@ function getDerivedCaveInteriorMask(decor) {
     return null;
   }
 
-  const cacheKey = [decor.path || "", decor.bgPath || "", decor.maskPath || ""].join("|");
+  const cacheKey = [decor.path || "", decor.bgPath || "", decor.maskPath || "", decor.caveEntranceCalibration || 0].join("|");
   const cached = runtime.caveInteriorMaskCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -1744,8 +1744,37 @@ function getDerivedCaveInteriorMask(decor) {
     return null;
   }
 
-  runtime.caveInteriorMaskCache.set(cacheKey, fallbackMask);
-  return fallbackMask;
+  const interiorMask = getCalibratedCaveInteriorMask(decor, fallbackMask, frontMask);
+  runtime.caveInteriorMaskCache.set(cacheKey, interiorMask);
+  return interiorMask;
+}
+
+function getCalibratedCaveInteriorMask(decor, baseMask, frontMask) {
+  if (!decor.caveEntranceCalibration || !baseMask || !frontMask) return baseMask;
+  const entries = decor.caveSettings?.entries || decor.caveBehavior?.portals?.map((portal) => ({
+    x: portal.mouthX, y: portal.mouthY, width: portal.entranceWidth, height: portal.entranceHeight
+  })) || [];
+  const frontHeight = baseMask.width * frontMask.height / frontMask.width;
+  let alpha = null;
+  for (const entry of entries) {
+    if (!(entry.width > 0 && entry.height > 0)) continue;
+    const cx = entry.x * baseMask.width;
+    const cy = baseMask.height - frontHeight + entry.y * frontHeight;
+    const rx = entry.width * baseMask.width / 2;
+    const ry = entry.height * frontHeight / 2;
+    for (let y = Math.max(0, Math.floor(cy - ry)); y <= Math.min(baseMask.height - 1, Math.ceil(cy + ry)); y++) {
+      for (let x = Math.max(0, Math.floor(cx - rx)); x <= Math.min(baseMask.width - 1, Math.ceil(cx + rx)); x++) {
+        if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+        const index = (y * baseMask.width + x) * 4 + 3;
+        if (baseMask.alpha[index] >= ALPHA_HIT_THRESHOLD) continue;
+        // Some artwork has a true cutout rather than a painted back wall.
+        // Only calibrated openings join the interior; the front wall mask is unchanged.
+        if (!alpha) alpha = new Uint8ClampedArray(baseMask.alpha);
+        alpha[index] = 255;
+      }
+    }
+  }
+  return alpha ? buildAlphaMaskFromBuffer(baseMask.width, baseMask.height, alpha) || baseMask : baseMask;
 }
 
 function getDerivedCaveShellMask(decor) {

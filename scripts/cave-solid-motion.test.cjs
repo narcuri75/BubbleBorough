@@ -69,6 +69,7 @@ test("interior validation uses allowed space, not opaque cave background", () =>
   const check = load("fishShapeLeavesActiveCaveInterior", {
     getActiveFishCavePlan: () => ({ decorId: "pot" }), getCaveBehaviorDecorById: () => ({}),
     getFishCollisionPose: () => ({}), getFishShapeDescriptor: () => ({}),
+    getCaveBehaviorProfileForItem: () => ({ portals: [] }), doesFishShapeFitCaveEntrance: () => true,
     getCaveInteriorContainmentDescriptor: () => ({}), shapeContainedByMaskStrict: () => true,
     CAVE_STRICT_SAMPLE_STEP_PX: 2
   });
@@ -137,6 +138,7 @@ test("a real opening admits fish, while solid rim and transparent space above ro
   const fn = nav.statements.find(n => ts.isFunctionDeclaration(n) && n.name.text === "portalOpeningFitsFish");
   let contained = true, blocked = false;
   const fits = vm.runInNewContext(`(${fn.getText(nav)})`, {
+    getCaveBehaviorProfileForItem: () => ({ portals: [] }), doesFishShapeFitCaveEntrance: () => true,
     getFishCollisionPose: () => ({}), getFishShapeDescriptor: () => ({}),
     getCaveInteriorContainmentDescriptor: () => ({}), getCaveFrontDescriptor: () => ({}),
     shapeContainedByMaskStrict: () => contained, shapesOverlapByMaskStrict: () => blocked,

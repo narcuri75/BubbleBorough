@@ -1522,7 +1522,8 @@
         "Pond",
         "Lucky"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1640,7 +1641,8 @@
         "Brawler",
         "Jaws"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1689,7 +1691,8 @@
         "Pearl",
         "Moby"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1744,7 +1747,8 @@
         "Sail",
         "Echo"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1793,7 +1797,8 @@
         "Cedar",
         "Orion"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1838,7 +1843,8 @@
         "Mochi",
         "Luma"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {
@@ -1928,7 +1934,8 @@
         "Buddy",
         "Dash"
       ],
-      "caveEnabled": false,
+      "caveEnabled": true,
+      "caveMinSize": "large",
       "needs": {
         "decor": [],
         "friends": {

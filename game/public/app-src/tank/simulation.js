@@ -195,8 +195,7 @@ function syncCurrentTankState(now, options = {}) {
         fishId: poop.fishId,
         createdAt: poop.dueAt,
         xNorm: clamp((fish?.xNorm ?? randomSwimX()) + (Math.random() - 0.5) * 0.06, 0.08, 0.92),
-        startYNorm: fish ? clamp(fish.yNorm + 0.04, 0.14, 0.8) : randomSwimY(),
-        tankLayer: fish ? getFishTankLayer(fish) : 1
+        startYNorm: fish ? clamp(fish.yNorm + 0.04, 0.14, 0.8) : randomSwimY()
       }));
       if (fish) {
         fish.nextWasteAt = 0;

@@ -21,6 +21,270 @@ function context(stubs) {
     getFishRenderedHorizontalTurnState: stubs.getFishHorizontalTurnState, ...stubs });
 }
 
+function needsContext() {
+  const tank = { id: "a", dirty: 0, spacePoints: 14, needsMet: true, conflict: false };
+  const c = context({ state: { lastCleanedAt: 1 }, tank, peaceful: false, builds: 0,
+    FISH_NEED_KEYS: ["hunger", "energy", "social", "comfort", "hygiene", "environment", "stimulation"],
+    FISH_NEED_DEFAULTS: { hunger: 68, energy: 80, social: 80, comfort: 94, hygiene: 100, environment: 100, stimulation: 80 },
+    HOUR_MS: 3600000, CRITICAL_TANK_DIRTINESS: .95, COMFORT_MEAL_WINDOW_MS: 1000, COMFORT_MEALTIME_BOOST_MS: 100,
+    COMFORT_COMPONENTS: { cleanliness: 30, meal: 20, mealBoost: 5, needs: 20, health: 15, maxConflictPenalty: 20, conflictPenalty: 10 },
+    isFishDead: fish => Boolean(fish?.dead), hasActiveCandyBoost: (fish, now) => Number(fish?.candyUntil) > now,
+    isProteusZombieFish: () => false, hasActiveTankMedicineEffect: () => false, hasExposedDeadTankFish: () => false,
+    isMealFreeFish: () => false, getFishHealthRatio: () => 1,
+    getFishGlassTapStressPenalty: () => 0, getFishDiseaseComfortPenalty: () => 0 });
+  vm.runInContext(`
+    function isPeacefulModeEnabled(){return peaceful}
+    function getCurrentTank(){return tank}
+    function getFishSimulationTank(){return tank}
+    function getTankDirtiness(){return tank.dirty}
+    function getTankComfortFacts(t, now){builds++;return {now,spacePoints:t.spacePoints,met:t.needsMet,conflict:t.conflict}}
+    function getFishNeedsStatus(f,t,now,facts){if(!facts)facts=getTankComfortFacts(t,now);return [{met:facts.met}]}
+    function getFishConflictStatus(f,t,now,facts){if(!facts)facts=getTankComfortFacts(t,now);return [{active:facts.conflict}]}
+  `, c);
+  load(c, "fish/meals-and-needs.js", ["getFishComfort", "getFishNeedValue", "setFishNeedValue", "adjustFishNeed"]);
+  load(c, "fish/needs-disease-and-behavior.js", ["getDerivedFishNeedDefaults", "sanitizeFishNeeds"]);
+  return c;
+}
+
+const beforeBatch2 = fs.readFileSync(path.join(__dirname, "fixtures/runtime-before-batch2.js"), "utf8");
+
+function artworkContext(reference = false) {
+  const c = context({ runtime: { debugFrameProfilerEnabled: true }, resolutions: 0,
+    incrementDebugFrameProfilerCounter() { c.resolutions++; } });
+  load(c, "fish/needs-disease-and-behavior.js", ["getFishAssetVariants", "getFishAppearanceVariantKey"]);
+  load(c, "fish/appearance.js", ["hashStringToUint32", "getFishAppearanceVariantSeed", "normalizeFishAppearanceVariantIndex",
+    "getFishArtworkCatalog", "resolveFishArtworkPath", "getFishAssetPath"]);
+  if (reference) vm.runInContext(beforeBatch2, c);
+  return c;
+}
+
+test("artwork cache matches the saved resolver across legacy and malformed appearance selections", () => {
+  const old = artworkContext(true), current = artworkContext();
+  const catalogs = [null, {}, { asset: "base.png" }, { fallbackAsset: "fallback.png" },
+    { id: "s", asset: "base.png", assetVariants: ["a/red.png?x=1", "b/red.png", "blue.png#frame", "", 3, null] },
+    { id: "s", assetVariants: [null, " ", 2], fallbackAsset: "fallback.png" },
+    { id: "s", assetVariants: ["a.png", "b.png", "c.png"] }];
+  for (const species of catalogs) for (const index of [undefined, null, NaN, Infinity, "bad", -10, -1.5, 0, 1, "2", 102]) {
+    for (const selection of [{}, { appearanceAssetPath: "elsewhere/red.png#saved" }, { appearanceVariantKey: "blue.png" },
+      { appearanceVariantKey: "a/red.png" }, { appearanceAssetPath: "missing.png", appearanceVariantKey: "c.png" }]) {
+      const fish = { id: "fish", name: "Finn", appearanceVariant: index, ...selection };
+      assert.equal(current.getFishAssetPath(fish, species), old.getFishAssetPath(fish, species));
+      assert.equal(current.getFishAssetPath(fish, species), old.getFishAssetPath(fish, species));
+    }
+    assert.equal(current.getFishAssetPath(null, species), old.getFishAssetPath(null, species));
+  }
+});
+
+test("artwork cache observes in-place catalog edits, appearance changes and replaced fish immediately", () => {
+  const old = artworkContext(true), c = artworkContext();
+  let species = { id: "s", asset: "base.png", fallbackAsset: "fallback.png", assetVariants: ["a.png", "b.png", "c.png"] };
+  let fish = { id: "f", name: "Finn", appearanceVariant: 1 };
+  const check = () => assert.equal(c.getFishAssetPath(fish, species), old.getFishAssetPath(fish, species));
+  check();
+  for (let i = 0; i < 100; i++) check();
+  assert.equal(c.resolutions, 1, "unchanged fish resolve only once");
+  for (const mutate of [
+    () => species.assetVariants.reverse(), () => species.assetVariants.splice(1, 1, "new.png"),
+    () => species.assetVariants.unshift("inserted.png"), () => species.assetVariants = [...species.assetVariants],
+    () => fish.appearanceAssetPath = "elsewhere/c.png", () => fish.appearanceAssetPath = null,
+    () => fish.appearanceVariantKey = "new.png", () => fish.appearanceVariantKey = null,
+    () => fish.appearanceVariant = "invalid", () => fish.id = "changed", () => fish.name = "Renamed",
+    () => species.id = "other", () => species = { ...species }, () => fish = { ...fish, appearanceVariant: 0 },
+    () => species.assetVariants = [], () => species.asset = "changed.png", () => species.asset = null,
+    () => species.fallbackAsset = "changed-fallback.png"
+  ]) { mutate(); check(); }
+  assert.ok(c.runtime.fishResolvedArtworkCache instanceof WeakMap);
+  assert.ok(c.runtime.fishArtworkCatalogCache instanceof WeakMap);
+});
+
+function needsUpdateContext(reference = false) {
+  const c = needsContext();
+  Object.assign(c, { events: [], normalizations: 0, FISH_NEEDS_MAX_OFFLINE_MS: 48 * c.HOUR_MS,
+    FISH_HUNGER_CRITICAL_THRESHOLD: 15, getSpeciesForFish: () => ({ id: "s" }),
+    getLivingTankFish: () => c.fishList.filter(f => !f.dead),
+    isMealFreeFish: f => Boolean(f.mealFree), hasActiveCandyBoost: (f, now) => Number(f?.candyBoostUntil) > now,
+    getPersonalityNeedModifier: () => 1.15,
+    markFishAsDead: (f, now, message) => { f.dead = true; c.events.push([now, message]); },
+    pushEvent: (message, now) => c.events.push([now, message]) });
+  load(c, "fish/needs-disease-and-behavior.js", ["sanitizeFishNeedEventMap"]);
+  load(c, "fish/meals-and-needs.js", ["calculateFishNeedDeltas", "updateFishLoneliness", "maybeRecordFishNeedEvent", "updateFishNeeds"]);
+  if (reference) vm.runInContext(beforeBatch2, c);
+  const normalize = c.sanitizeFishNeeds;
+  c.sanitizeFishNeeds = (...args) => { c.normalizations++; return normalize(...args); };
+  return c;
+}
+
+test("needs update preserves saved-version state, starvation, boosts and change results", () => {
+  const now = 100 * 3600000;
+  for (const hunger of [null, 0, 14, 45.00001, 68, 100]) for (const elapsed of [0, 1, 3600000, 80 * 3600000]) {
+    for (const mode of ["normal", "boost", "expired", "meal-free", "dead", "peaceful"]) for (const healthUnits of [1, 3]) {
+      const old = needsUpdateContext(true), c = needsUpdateContext();
+      const fish = { id: "f", name: "Finn", needs: hunger === null ? null : { hunger }, needsUpdatedAt: now - elapsed,
+        healthUnits, dead: mode === "dead", mealFree: mode === "meal-free",
+        candyBoostUntil: mode === "boost" ? now + 1 : mode === "expired" ? now - 1800000 : 0 };
+      old.fishList = [structuredClone(fish)]; c.fishList = [structuredClone(fish)];
+      old.peaceful = c.peaceful = mode === "peaceful";
+      assert.equal(c.updateFishNeeds(now), old.updateFishNeeds(now), `${hunger}/${elapsed}/${mode}/${healthUnits}`);
+      assert.equal(JSON.stringify(c.fishList), JSON.stringify(old.fishList), "saved state including habitat comfort remains identical");
+      assert.equal(JSON.stringify(c.events), JSON.stringify(old.events));
+      assert.ok(c.normalizations <= 2, "at most two normalizations per living fish");
+      if (mode === "normal" && elapsed > 0) assert.equal(old.normalizations, 8);
+    }
+  }
+});
+
+test("habitat dirtiness is shared within normalization but refreshed on every evaluation", () => {
+  const c = needsContext(), fish = { id: "f", needs: { ...c.FISH_NEED_DEFAULTS } };
+  let dirtinessReads = 0;
+  c.getTankDirtiness = (now, tank = c.tank) => { dirtinessReads++; return tank.dirty; };
+  const clean = c.sanitizeFishNeeds(fish.needs, fish, 1000);
+  assert.equal(dirtinessReads, 1);
+  c.tank.dirty = .8;
+  const dirty = c.sanitizeFishNeeds(fish.needs, fish, 1000);
+  assert.equal(dirtinessReads, 2);
+  assert.ok(dirty.comfort < clean.comfort);
+  assert.ok(dirty.hygiene < clean.hygiene);
+  c.state.lastCleanedAt = "invalid";
+  const legacy = c.sanitizeFishNeeds(fish.needs, fish, 1000);
+  assert.equal(legacy.hygiene, 100);
+  assert.equal(legacy.comfort, dirty.comfort, "invalid cleaning timestamps retain live comfort dirtiness");
+  c.getFishSimulationTank = () => ({ dirty: .1, spacePoints: 14, needsMet: true, conflict: false });
+  assert.ok(c.sanitizeFishNeeds(fish.needs, fish, 1000).comfort > dirty.comfort, "off-screen fish use their own tank");
+});
+
+test("motion layout snapshot is scoped, nested and released before subsequent resizing", () => {
+  class Element {}
+  const stage = new Element(); let width = 1000, reads = 0;
+  Object.defineProperties(stage, { clientWidth: { get() { reads++; return width; } }, clientHeight: { get() { reads++; return 700; } } });
+  const c = context({ runtime: {}, dom: { tankStage: stage }, HTMLElement: Element, TANK_WIDTH: 1600, TANK_HEIGHT: 900 });
+  load(c, "assets/custom-content.js", ["getTankStageLayoutSize", "withTankStageLayoutSnapshot"]);
+  assert.equal(c.withTankStageLayoutSnapshot(() => {
+    for (let i = 0; i < 100; i++) assert.equal(c.getTankStageLayoutSize().width, 1000);
+    return c.withTankStageLayoutSnapshot(() => c.getTankStageLayoutSize().height);
+  }), 700);
+  assert.equal(reads, 2);
+  assert.equal(c.runtime.tankStageEvaluationLayout, undefined);
+  assert.throws(() => c.withTankStageLayoutSnapshot(() => { throw Error("motion failure"); }), /motion failure/);
+  assert.equal(c.runtime.tankStageEvaluationLayout, undefined);
+  width = 800;
+  assert.equal(c.getTankStageLayoutSize().width, 800);
+  assert.equal(reads, 6);
+});
+
+test("animation releases its motion layout before the stage-view update and drawing", () => {
+  class Element {}
+  const stage = new Element(); stage.clientWidth = 1000; stage.clientHeight = 700;
+  const c = context({ runtime: { wallpaperEngineFpsCarrySeconds: 0 }, document: { hidden: false },
+    window: { requestAnimationFrame() {} }, dom: { tankStage: stage }, HTMLElement: Element, TANK_WIDTH: 1600, TANK_HEIGHT: 900,
+    getEffectiveAnimationFpsLimit: () => 0, advanceDebugSimulationClock: x => x });
+  const source = ts.createSourceFile("animation.js", readFunction("ui/scene-controls-and-animation.js", "animationLoop"), ts.ScriptTarget.Latest, true);
+  function visit(node) {
+    if (ts.isCallExpression(node) && ts.isIdentifier(node.expression) && !(node.expression.text in c)) c[node.expression.text] = () => {};
+    ts.forEachChild(node, visit);
+  }
+  visit(source);
+  load(c, "assets/custom-content.js", ["getTankStageLayoutSize", "withTankStageLayoutSnapshot"]);
+  load(c, "ui/scene-controls-and-animation.js", ["animationLoop"]);
+  c.updateFishMotion = () => { assert.equal(c.getTankStageLayoutSize().width, 1000); stage.clientWidth = 900; assert.equal(c.getTankStageLayoutSize().width, 1000); };
+  c.updateStageRenderView = () => { assert.equal(c.runtime.tankStageEvaluationLayout, undefined); stage.clientWidth = 800; };
+  c.renderTank = () => assert.equal(c.getTankStageLayoutSize().width, 800);
+  c.animationLoop(1000);
+});
+
+test("narrow needs reads match normalization across values, boosts, expiry, death and legacy saves", () => {
+  const c = needsContext();
+  for (const source of [null, [], {}, { hunger: "bad" }, ...[-30, 0, 41, "72", null, 150].map(hunger => ({ ...c.FISH_NEED_DEFAULTS, hunger }))]) {
+    for (const mode of ["normal", "candy", "expired", "peaceful", "dead"]) {
+      c.peaceful = mode === "peaceful";
+      for (const key of [...c.FISH_NEED_KEYS, "unknown"]) {
+        const fish = { id: "f", needs: structuredClone(source), lastAteAt: 100, candyUntil: mode === "candy" ? 2000 : mode === "expired" ? 500 : 0, dead: mode === "dead" };
+        const expected = c.sanitizeFishNeeds(fish.needs, fish, 1000);
+        assert.equal(c.getFishNeedValue(fish, key, 1000), Number(expected[key]) || 0, `${mode}/${key}/${JSON.stringify(source)}`);
+      }
+    }
+  }
+});
+
+test("hunger reads avoid habitat rebuilds while edits, feeding and live habitat reads remain immediate", () => {
+  const c = needsContext(), fish = { id: "f", needs: { ...c.FISH_NEED_DEFAULTS } };
+  for (let i = 0; i < 30; i++) assert.equal(c.getFishNeedValue(fish, "hunger", 1000), 68);
+  assert.equal(c.builds, 0);
+  assert.equal(c.adjustFishNeed(fish, "hunger", -10, 1000), true);
+  assert.equal(c.getFishNeedValue(fish, "hunger", 1000), 58);
+  fish.needs.hunger = 12;
+  assert.equal(c.getFishNeedValue(fish, "hunger", 1000), 12);
+  const comfort = c.getFishNeedValue(fish, "comfort", 1000);
+  c.tank.needsMet = false; c.tank.conflict = true; c.tank.spacePoints = 0;
+  assert.ok(c.getFishNeedValue(fish, "comfort", 1000) < comfort, "same-time decor/population edits are never cached across reads");
+  assert.equal(c.getFishNeedValue(fish, "environment", 1000), 33);
+  c.tank = { id: "b", dirty: .7, spacePoints: 14, needsMet: true, conflict: false };
+  assert.ok(Math.abs(c.getFishNeedValue(fish, "hygiene", 1000) - 30) < .0001, "tank changes are immediate");
+  fish.candyUntil = 1500;
+  assert.equal(c.getFishNeedValue(fish, "hunger", 1000), 100);
+  assert.equal(c.getFishNeedValue(fish, "energy", 1501), 80);
+});
+
+test("full needs normalization shares exactly one set of tank facts without retaining it", () => {
+  const c = needsContext(), fish = { id: "f", needs: { ...c.FISH_NEED_DEFAULTS } };
+  c.sanitizeFishNeeds(fish.needs, fish, 1000);
+  assert.equal(c.builds, 1);
+  c.sanitizeFishNeeds(fish.needs, fish, 1000);
+  assert.equal(c.builds, 2, "new calls see same-time mutations");
+  c.getFishComfort(fish, 1000);
+  assert.equal(c.builds, 3);
+});
+
+function diagnosticsContext() {
+  const fish = { id: "f" }, species = { id: "s" };
+  const c = context({ fish, species, state: { activeTankId: "a", fish: [fish] }, snapshots: 0,
+    runtime: { debugFishBehaviorSignatures: new Map(), debugFishBehaviorSnapshots: new Map(), debugFishBehaviorTextCache: new Map(), debugFishBehaviorLastSyncAt: 0 },
+    isDebugModeEnabled: () => true, getSpeciesForFish: () => species, renderFishBehaviorSchedulerReadout() {}, pushDebugFishBehaviorLog() {} });
+  vm.runInContext('function getDebugFishBehaviorSnapshot(){snapshots++;return {signature:String(snapshots),labelLines:["Fish"]}}', c);
+  load(c, "ui/tool-modes-and-debug-panels.js", ["resetDebugFishBehaviorBroadcastState", "getCachedDebugFishBehaviorSnapshot", "syncDebugFishBehaviorBroadcast"]);
+  return c;
+}
+
+test("diagnostics do no snapshot work by default and share bounded-rate snapshots when enabled", () => {
+  const c = diagnosticsContext();
+  for (let now = 1000; now < 2000; now += 16) c.syncDebugFishBehaviorBroadcast(now);
+  assert.equal(c.snapshots, 0);
+  c.runtime.debugFishBehaviorBroadcastEnabled = true;
+  c.resetDebugFishBehaviorBroadcastState();
+  c.syncDebugFishBehaviorBroadcast(2000);
+  const first = c.getCachedDebugFishBehaviorSnapshot(c.fish, c.species, 2100);
+  assert.equal(c.snapshots, 1);
+  assert.equal(c.getCachedDebugFishBehaviorSnapshot(c.fish, c.species, 2249), first);
+  c.syncDebugFishBehaviorBroadcast(2250);
+  assert.equal(c.snapshots, 2);
+  c.state.activeTankId = "b";
+  c.getCachedDebugFishBehaviorSnapshot(c.fish, c.species, 2250);
+  assert.equal(c.snapshots, 3);
+  c.getCachedDebugFishBehaviorSnapshot({ id: "f" }, c.species, 2250);
+  assert.equal(c.snapshots, 4, "replacement with the same ID is not stale");
+  c.state.fish = [];
+  c.syncDebugFishBehaviorBroadcast(2500);
+  assert.equal(c.runtime.debugFishBehaviorSnapshots.size, 0);
+});
+
+test("diagnostic text fits using its drawing font, reuses measurements, and has a bounded cache", () => {
+  let measurements = 0;
+  const drawing = { font: "20px test", measureText: text => { measurements++; return { width: text.length * 10 }; } };
+  const c = diagnosticsContext();
+  c.tankContext = { measureText: () => assert.fail("must use the actual drawing context") };
+  load(c, "rendering/fish-and-effects.js", ["fitDebugFishBehaviorLine", "getDebugFishBehaviorTextLayout"]);
+  const snapshot = { labelLines: ["abcdefghijk".repeat(20)] };
+  const first = c.getDebugFishBehaviorTextLayout(snapshot, 100, drawing);
+  assert.ok(first.width <= 100);
+  assert.ok(measurements < 20, "bounded search rather than per-character measurements");
+  const before = measurements;
+  assert.equal(c.getDebugFishBehaviorTextLayout(snapshot, 100, drawing), first);
+  assert.equal(measurements, before);
+  drawing.font = "10px test";
+  assert.notEqual(c.getDebugFishBehaviorTextLayout(snapshot, 100, drawing), first);
+  for (let i = 0; i < 300; i++) c.getDebugFishBehaviorTextLayout({ labelLines: [String(i)] }, 100, drawing);
+  assert.equal(c.runtime.debugFishBehaviorTextCache.size, 256);
+});
+
 function swimContext() {
   const c = context({ runtime: { fishSwimAnimationStates: new Map() },
     getFishSwimAnimationDebugPresetOverride: () => "",

@@ -322,6 +322,39 @@ function getFishSocialCategoryLabel(category) {
   return normalized.split("_").map((part) => part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
 }
 
+function isFishSocialProfileSourceCurrent(source, snapshot) {
+  for (const key in snapshot) {
+    const value = source?.[key];
+    const previous = snapshot[key];
+    if (Array.isArray(value)) {
+      if (!Array.isArray(previous) || value.length !== previous.length) return false;
+      for (let index = 0; index < value.length; index += 1) {
+        const entry = value[index];
+        if (entry !== previous[index] || (entry && typeof entry === "object") || typeof entry === "function") return false;
+      }
+    } else if (value !== previous || (value && typeof value === "object") || typeof value === "function") {
+      // Exotic mutable values are normalized afresh rather than cached by identity.
+      return false;
+    }
+  }
+  return true;
+}
+
+function snapshotFishSocialProfileSource(source, nested = false) {
+  const keys = nested
+    ? ["category", "socialMode", "socialGroupId", "socialMinimum", "socialIdeal", "ownKindMinimum",
+      "hostSpeciesIds", "compatibleFriendRequired", "affinityGroups", "affinityGroup", "sizeClass"]
+    : ["socialCategory", "socialMode", "socialGroupId", "socialMinimum", "socialIdeal", "socialOwnKindMinimum",
+      "socialHostSpeciesIds", "compatibleFriendRequired", "affinityGroups", "socialAffinityGroups", "socialAffinityGroup",
+      "socialSizeClass", "customAsset", "socialAffinity"];
+  const snapshot = {};
+  for (const key of keys) {
+    const value = source?.[key];
+    snapshot[key] = Array.isArray(value) ? value.slice() : value;
+  }
+  return snapshot;
+}
+
 function getFishSocialProfile(speciesOrFish) {
   const fish = speciesOrFish && typeof speciesOrFish === "object" && speciesOrFish.speciesId
     ? speciesOrFish
@@ -332,15 +365,45 @@ function getFishSocialProfile(speciesOrFish) {
       ? (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(speciesOrFish) : null)
       : speciesOrFish;
   const speciesId = String(species?.id || fish?.speciesId || (typeof speciesOrFish === "string" ? speciesOrFish : "") || "");
+  const configuredSpeciesProfile = speciesId && typeof FISH_SOCIAL_PROFILES !== "undefined"
+    ? FISH_SOCIAL_PROFILES[speciesId]
+    : null;
+  const cacheKey = fish || species;
+  if (typeof runtime === "undefined" || !cacheKey || typeof cacheKey !== "object") {
+    return buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile);
+  }
+  const cache = runtime.fishSocialProfileCache ||= new WeakMap();
+  const cached = cache.get(cacheKey);
+  const legacyNeeds = typeof FISH_COMFORT_PROFILES !== "undefined" ? FISH_COMFORT_PROFILES[speciesId]?.needs : null;
+  const legacyOwnKindRequired = Array.isArray(legacyNeeds) && legacyNeeds.includes("school_2_plus");
+  // Enum/label/rank tables are frozen constants. Mutable catalog/override values
+  // are checked without allocating new dependency arrays on the hot path.
+  if (cached && cached.species === species && cached.speciesId === speciesId
+    && cached.legacyOwnKindRequired === legacyOwnKindRequired
+    && isFishSocialProfileSourceCurrent(fish, cached.fish)
+    && isFishSocialProfileSourceCurrent(species, cached.speciesValues)
+    && isFishSocialProfileSourceCurrent(species?.socialProfile, cached.nested)
+    && isFishSocialProfileSourceCurrent(configuredSpeciesProfile, cached.configured)) return cached.profile;
+  const profile = buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile);
+  Object.freeze(profile.hostSpeciesIds);
+  Object.freeze(profile.affinityGroups);
+  Object.freeze(profile);
+  cache.set(cacheKey, { species, speciesId, legacyOwnKindRequired, profile,
+    fish: snapshotFishSocialProfileSource(fish), speciesValues: snapshotFishSocialProfileSource(species),
+    nested: snapshotFishSocialProfileSource(species?.socialProfile, true),
+    configured: snapshotFishSocialProfileSource(configuredSpeciesProfile, true) });
+  if (runtime.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishSocialProfileBuilds");
+  }
+  return profile;
+}
+
+function buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile) {
   const explicitCategory = normalizeFishSocialCategory(
     fish?.socialCategory
     || species?.socialCategory
     || species?.socialProfile?.category
   );
-  const configuredSpeciesProfile = speciesId && typeof FISH_SOCIAL_PROFILES !== "undefined"
-    ? FISH_SOCIAL_PROFILES[speciesId]
-    : null;
-
   let category = explicitCategory;
   let source = explicitCategory ? "explicit" : "default";
 
@@ -1021,6 +1084,7 @@ function startWhaleBreathCycle(fish, species, now = Date.now()) {
   clearForcedGravelDigPrompt(fish);
   if (fish.caveState) {
     abortFishCaveBehavior(fish, now, false);
+    if (fish.caveState) return false;
   }
   if (fish.feedingPelletId) {
     releasePelletsTargetingFishIds(fish.id);
@@ -1334,9 +1398,9 @@ function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankCo
   }
 }
 
-function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now(), facts = null) {
   const species = getSpeciesForFish(fish);
-  const facts = getTankComfortFacts(tank, now);
+  facts ||= getTankComfortFacts(tank, now);
   const statuses = getSpeciesNeedTags(species).map((tag) => ({
     tag,
     label: getComfortTagLabel(tag),
@@ -1404,9 +1468,9 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
   }
 }
 
-function getFishConflictStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+function getFishConflictStatus(fish, tank = getCurrentTank(), now = Date.now(), facts = null) {
   const species = getSpeciesForFish(fish);
-  const facts = getTankComfortFacts(tank, now);
+  facts ||= getTankComfortFacts(tank, now);
   return getSpeciesConflictTags(species).map((tag) => ({
     tag,
     label: getComfortTagLabel(tag),
@@ -1440,6 +1504,11 @@ function renderNeutralComfortTagChips(tags) {
 function normalizeDecorKey(decorKey = "") {
   const key = String(decorKey || "").trim();
   if (!key) {
+    return "";
+  }
+
+  // Retired artwork must also disappear from old inventories and placements.
+  if (/^(?:cave_coral_shelf_6\.png|coral-shelf-6__cave-coral__theme-reef__front\.png)$/i.test(key)) {
     return "";
   }
 

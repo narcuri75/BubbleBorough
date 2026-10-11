@@ -1898,10 +1898,44 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
 
 function resetDebugFishBehaviorBroadcastState() {
   runtime.debugFishBehaviorSignatures.clear();
+  runtime.debugFishBehaviorSnapshots.clear();
+  runtime.debugFishBehaviorTextCache.clear();
+  runtime.debugFishBehaviorLastSyncAt = 0;
+}
+
+function getCachedDebugFishBehaviorSnapshot(fish, species, now) {
+  const cached = runtime.debugFishBehaviorSnapshots.get(fish.id);
+  const tankId = state.activeTankId;
+  if (cached && cached.fish === fish && cached.species === species && cached.tankId === tankId
+    && now >= cached.now && now - cached.now < 250) return cached.snapshot;
+  const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+  runtime.debugFishBehaviorSnapshots.set(fish.id, { fish, species, tankId, now, snapshot });
+  return snapshot;
+}
+
+function toggleDebugFishBehaviorDiagnostics(kind) {
+  if (!isDebugModeEnabled()) return;
+  const key = kind === "logging" ? "debugFishBehaviorLoggingEnabled" : "debugFishBehaviorBroadcastEnabled";
+  runtime[key] = !runtime[key];
+  resetDebugFishBehaviorBroadcastState();
+  syncDebugFishBehaviorDiagnosticControls();
+}
+
+function syncDebugFishBehaviorDiagnosticControls() {
+  for (const [id, key] of [["debugFishBehaviorLabelsToggle", "debugFishBehaviorBroadcastEnabled"],
+    ["debugFishBehaviorRecordingToggle", "debugFishBehaviorLoggingEnabled"]]) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    const enabled = runtime[key] === true;
+    button.setAttribute("aria-pressed", String(enabled));
+    button.classList.toggle("is-active", enabled);
+    const label = button.querySelector("[data-diagnostic-state]");
+    if (label) label.textContent = enabled ? "On" : "Off";
+  }
 }
 
 function pushDebugFishBehaviorLog(fish, snapshot, now = Date.now()) {
-  if (!isDebugModeEnabled() || !fish || !snapshot) {
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorLoggingEnabled !== true || !fish || !snapshot) {
     return;
   }
 
@@ -1929,6 +1963,15 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
     return;
   }
 
+  if (now >= runtime.debugFishBehaviorLastSyncAt && now - runtime.debugFishBehaviorLastSyncAt < 250) return;
+  runtime.debugFishBehaviorLastSyncAt = now;
+  if (runtime.debugSidebarOpen) renderFishBehaviorSchedulerReadout(now);
+  if (runtime.debugFishBehaviorBroadcastEnabled !== true && runtime.debugFishBehaviorLoggingEnabled !== true) {
+    runtime.debugFishBehaviorSignatures.clear();
+    runtime.debugFishBehaviorSnapshots.clear();
+    return;
+  }
+
   const seenFishIds = new Set();
   for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
@@ -1937,7 +1980,7 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
     }
 
     seenFishIds.add(fish.id);
-    const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+    const snapshot = getCachedDebugFishBehaviorSnapshot(fish, species, now);
     if (!snapshot) {
       continue;
     }
@@ -1954,7 +1997,9 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
       runtime.debugFishBehaviorSignatures.delete(fishId);
     }
   }
-  renderFishBehaviorSchedulerReadout(now);
+  for (const fishId of runtime.debugFishBehaviorSnapshots.keys()) {
+    if (!seenFishIds.has(fishId)) runtime.debugFishBehaviorSnapshots.delete(fishId);
+  }
 }
 
 function renderFishBehaviorSchedulerReadout(now = Date.now()) {

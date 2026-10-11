@@ -1132,9 +1132,7 @@ function getPoopPose(poop, now = Date.now()) {
   const x = poop.xNorm * TANK_WIDTH + Math.sin(now / 520 + poop.xNorm * 11) * (1 - sinkProgress) * 6;
   const width = POOP_DRAW_WIDTH_PX;
   const height = width * (poopSprite.height / Math.max(1, poopSprite.width));
-  const targetYNorm = Number.isFinite(Number(poop.tankLayer))
-    ? getPoopLayerTargetYNorm(poop, poopSprite, width)
-    : (Number.isFinite(Number(poop.yNorm)) ? Number(poop.yNorm) : getPoopFloorYNormAtXNorm(poop.xNorm));
+  const targetYNorm = getPoopLayerTargetYNorm(poop, poopSprite, width);
   const startYNorm = Math.min(
     clamp(Number(poop.startYNorm) || 0.54, 0.14, 0.82),
     Math.max(0.14, targetYNorm - 0.012)
@@ -1525,7 +1523,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
   return changed;
 }
 
-function getFishComfort(fish, now, targetTank = null) {
+function getFishComfort(fish, now, targetTank = null, habitat = null) {
   targetTank = targetTank || (typeof getFishSimulationTank === "function" ? getFishSimulationTank(fish) : (typeof getCurrentTank === "function" ? getCurrentTank() : null));
   if (!isFishDead(fish) && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return { value: 1, label: "Peaceful" };
   if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
@@ -1540,7 +1538,7 @@ function getFishComfort(fish, now, targetTank = null) {
     return { value: 1, label: "Calm" };
   }
 
-  const dirtiness = getTankDirtiness(now, targetTank);
+  const dirtiness = Number.isFinite(habitat?.dirtiness) ? habitat.dirtiness : getTankDirtiness(now, targetTank);
   if (hasExposedDeadTankFish(now, targetTank) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
     return { value: 0, label: "Critical" };
   }
@@ -1557,11 +1555,12 @@ function getFishComfort(fish, now, targetTank = null) {
   const mealBoost = lastAteAt > 0 && now - lastAteAt <= COMFORT_MEALTIME_BOOST_MS
     ? COMFORT_COMPONENTS.mealBoost
     : 0;
-  const needsStatus = getFishNeedsStatus(fish, targetTank, now);
+  const facts = habitat?.facts || getTankComfortFacts(targetTank, now);
+  const needsStatus = habitat?.needsStatus || getFishNeedsStatus(fish, targetTank, now, facts);
   const needsPoints = needsStatus.reduce((total, need) => total + (need.met ? COMFORT_COMPONENTS.needs / Math.max(1, needsStatus.length) : 0), 0);
   const healthPoints = getFishHealthRatio(fish) * COMFORT_COMPONENTS.health;
-  const spacePoints = getTankSpaceComfortPoints(targetTank);
-  const activeConflicts = getFishConflictStatus(fish, targetTank, now).filter((conflict) => conflict.active);
+  const spacePoints = facts.spacePoints;
+  const activeConflicts = (habitat?.conflicts || getFishConflictStatus(fish, targetTank, now, facts)).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
@@ -1595,6 +1594,23 @@ function getFishComfort(fish, now, targetTank = null) {
 }
 
 function getFishNeedValue(fish, needKey, now = Date.now()) {
+  // Loaded/created fish already have normalized needs. Reading hunger or a
+  // retired meter must not rebuild live habitat values. Full normalization
+  // remains at load/update boundaries and for habitat reads below.
+  const needs = fish?.needs;
+  if (needs && typeof needs === "object" && !Array.isArray(needs)
+    && FISH_NEED_KEYS.every((key) => Object.prototype.hasOwnProperty.call(needs, key))
+    && !((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && !isFishDead(fish))
+    && !hasActiveCandyBoost(fish, now)) {
+    if (["energy", "social", "stimulation"].includes(needKey)) {
+      needs[needKey] = 80;
+      return 80;
+    }
+    if (needKey === "hunger" && Number.isFinite(Number(needs.hunger))) {
+      needs.hunger = clamp(Number(needs.hunger), 0, 100);
+      return needs.hunger;
+    }
+  }
   fish.needs = sanitizeFishNeeds(fish?.needs, fish, now);
   return clamp(Number(fish.needs[needKey]) || 0, 0, 100);
 }
@@ -1720,13 +1736,18 @@ function getFishDisposition(fish, now = Date.now()) {
   const currentTank = typeof getFishSimulationTank === "function"
     ? getFishSimulationTank(fish)
     : (typeof getCurrentTank === "function" ? getCurrentTank() : null);
-  const comfort = typeof getFishComfort === "function" ? getFishComfort(fish, now, currentTank).value : 1;
+  // Share only within this synchronous evaluation. Edits and time changes
+  // remain visible on the very next call without an invalidation protocol.
+  const facts = typeof getTankComfortFacts === "function" ? getTankComfortFacts(currentTank, now) : null;
+  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, currentTank, now, facts) : [];
+  const conflicts = typeof getFishConflictStatus === "function" ? getFishConflictStatus(fish, currentTank, now, facts) : [];
+  const dirtiness = typeof getTankDirtiness === "function" ? clamp(Number(getTankDirtiness(now, currentTank)) || 0, 0, 1) : 0;
+  const comfort = typeof getFishComfort === "function"
+    ? getFishComfort(fish, now, currentTank, facts ? { facts, needsStatus, conflicts, dirtiness } : null).value : 1;
   const healthRatio = typeof getFishHealthRatio === "function" ? clamp(Number(getFishHealthRatio(fish)) || 0, 0, 1) : 1;
   const personality = typeof getFishPersonality === "function" ? getFishPersonality(fish) : "";
   const mealFree = typeof isMealFreeFish === "function" ? isMealFreeFish(fish) : false;
   const hunger = mealFree || typeof getFishNeedValue !== "function" ? 100 : getFishNeedValue(fish, "hunger", now);
-  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, currentTank, now) : [];
-  const conflicts = typeof getFishConflictStatus === "function" ? getFishConflictStatus(fish, currentTank, now) : [];
   const activeConflicts = conflicts.filter((conflict) => conflict?.active);
   const missingNeeds = needsStatus.filter((need) => need && !need.met);
   const biologicalSocialStatus = typeof getFishBiologicalSocialStatus === "function"
@@ -1743,7 +1764,6 @@ function getFishDisposition(fish, now = Date.now()) {
   const hungerLowThreshold = typeof FISH_HUNGER_LOW_THRESHOLD !== "undefined" ? FISH_HUNGER_LOW_THRESHOLD : 55;
   const hungerCriticalThreshold = typeof FISH_HUNGER_CRITICAL_THRESHOLD !== "undefined" ? FISH_HUNGER_CRITICAL_THRESHOLD : 14;
   const gravelPebbleActivity = typeof FISH_GRAVEL_PEBBLE_ACTIVITY !== "undefined" ? FISH_GRAVEL_PEBBLE_ACTIVITY : "gravel_pebble";
-  const dirtiness = typeof getTankDirtiness === "function" ? clamp(Number(getTankDirtiness(now, currentTank)) || 0, 0, 1) : 0;
   const behaviorSignals = fish?.behaviorSignals && typeof fish.behaviorSignals === "object" ? fish.behaviorSignals : {};
   const avoidSignal = behaviorSignals.avoid_specific_fish;
   const recentAvoidance = Boolean(avoidSignal && (!Number(avoidSignal.expiresAt) || Number(avoidSignal.expiresAt) > now));
@@ -1770,24 +1790,24 @@ function getFishDisposition(fish, now = Date.now()) {
     const relationships = typeof sanitizeFishRelationships === "function"
       ? sanitizeFishRelationships(fish.relationships)
       : (fish.relationships && typeof fish.relationships === "object" ? fish.relationships : {});
-    nearbyFriend = nearbyTankFish
-      .filter((otherFish) => otherFish && otherFish.id !== fish.id)
-      .map((otherFish) => ({
-        fish: otherFish,
-        relation: relationships[otherFish.id],
-        distance: Math.hypot(
-          (Number(fish.xNorm) || 0.5) - (Number(otherFish.xNorm) || 0.5),
-          (Number(fish.yNorm) || 0.5) - (Number(otherFish.yNorm) || 0.5)
-        )
-      }))
-      .filter((entry) => (
-        (typeof areFishEstablishedFriends === "function"
-          ? areFishEstablishedFriends(fish, entry.fish)
-          : entry.relation?.kind === "friend")
-        && entry.distance <= 0.24
-        && (typeof canFishBuildFriendship !== "function" || canFishBuildFriendship(fish, entry.fish, now, { passive: false }))
-      ))
-      .sort((left, right) => left.distance - right.distance)[0] || null;
+    let nearestDistance = Infinity;
+    for (const otherFish of nearbyTankFish) {
+      if (!otherFish || otherFish.id === fish.id) continue;
+      const relation = relationships[otherFish.id];
+      const distance = Math.hypot(
+        (Number(fish.xNorm) || 0.5) - (Number(otherFish.xNorm) || 0.5),
+        (Number(fish.yNorm) || 0.5) - (Number(otherFish.yNorm) || 0.5)
+      );
+      const established = typeof areFishEstablishedFriends === "function"
+        ? areFishEstablishedFriends(fish, otherFish) : relation?.kind === "friend";
+      if (!established || !(distance <= 0.24)) continue;
+      if (typeof canFishBuildFriendship === "function" && !canFishBuildFriendship(fish, otherFish, now, { passive: false })) continue;
+      // Strict comparison preserves the first candidate when distances tie.
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearbyFriend = { fish: otherFish, relation, distance };
+      }
+    }
   }
 
   const calmed = typeof isFishCalmed === "function" && isFishCalmed(fish, now);
@@ -2103,8 +2123,17 @@ function updateFishNeeds(now = Date.now()) {
     if (!deltas) {
       continue;
     }
-    for (const key of FISH_NEED_KEYS) {
-      changed = setFishNeedValue(fish, key, fish.needs[key] + (Number(deltas[key]) || 0), now) || changed;
+    // Only hunger accepts action deltas. The other six setter calls used to
+    // rebuild the same needs object before returning false.
+    if (!hasActiveCandyBoost(fish, now)) {
+      const previousHunger = fish.needs.hunger;
+      fish.needs.hunger = clamp(Number(previousHunger + (Number(deltas.hunger) || 0)) || 0, 0, 100);
+      changed = Math.abs(previousHunger - fish.needs.hunger) > 0.001 || changed;
+      if (fish.needs.hunger !== previousHunger) {
+        // Hunger can change the meal component of comfort. Preserve the final
+        // habitat values that the old post-hunger normalization produced.
+        fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+      }
     }
     fish.needsUpdatedAt = now;
     if (!isMealFreeFish(fish) && fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {

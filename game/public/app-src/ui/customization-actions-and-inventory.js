@@ -642,6 +642,9 @@ function renderSettingsOverlay() {
   if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
     dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
   }
+  if (dom.tankFrameColorInput instanceof HTMLInputElement) {
+    dom.tankFrameColorInput.value = uiSettings.tankFrameColor;
+  }
   if (dom.ambientBubbleLevelInput instanceof HTMLInputElement) {
     const ambientBubbleLevel = normalizeAmbientBubbleLevel(uiSettings.ambientBubbleLevel);
     const ambientBubbleProfile = getAmbientBubbleLevelProfile(ambientBubbleLevel);
@@ -2737,8 +2740,6 @@ function renderManagedFishCard(fish, now, options = {}) {
   const juvenile = !dead && isFishJuvenile(fish, now);
   const comfort = getFishComfort(fish, now);
   const age = formatFishBiologicalAge(fish, now);
-  const defaultScale = getFishScaleDefault(fish.speciesId);
-  const usesDefaultScale = Math.abs(defaultScale - fish.scale) < 0.001;
   const inStorage = Boolean(options.inStorage);
   const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
   const detritusFish = isDetritusFish(fish);
@@ -2845,16 +2846,9 @@ function renderManagedFishCard(fish, now, options = {}) {
         <div class="mini-note fish-health-note">${healthNote}</div>
       </div>
       <div class="fish-actions fish-card-actions">
-        <div class="size-controls">
-          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="-1" aria-label="Make ${escapeHtml(fish.name)} smaller">-</button>
-          <span class="size-badge">${formatFishScale(fish.scale)}</span>
-          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="1" aria-label="Make ${escapeHtml(fish.name)} larger">+</button>
-        </div>
+        <span class="size-badge">${formatFishScale(fish.scale)}</span>
         <div class="fish-card-button-row">
           <span class="price-tag">${rewardLabel}</span>
-          <button class="small-button" data-copy-fish-size="${escapeHtml(fish.id)}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${escapeHtml(displaySpeciesName.toLowerCase())}s">
-            ${usesDefaultScale ? "Default Set" : "Set Default"}
-          </button>
           <button class="small-button alt" data-open-fish="${escapeHtml(fish.id)}">Details</button>
           ${dead ? "" : `
             <button class="small-button alt" data-sell-fish="${fish.id}">
@@ -3711,9 +3705,6 @@ function renderFishInspector(now) {
     dom.fishNameInput.value = nextInputName;
     dom.fishNameInput.dataset.fishId = fish.id;
   }
-  if (dom.fishInspectorSettings) {
-    dom.fishInspectorSettings.hidden = !runtime.fishInspectorSettingsOpen || dead;
-  }
   dom.fishInspector?.classList.toggle("is-settings-window", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   if (dom.closeInspector) {
     dom.closeInspector.hidden = !runtime.fishInspectorSettingsOpen || dead;
@@ -3723,8 +3714,6 @@ function renderFishInspector(now) {
     dom.inspectorFishSettingsButton.textContent = "INSPECT";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }
-  renderFishInspectorBehaviorOptions(fish, baseSpecies);
-  updateInspectorFishReadouts(fish);
   updateWallpaperFishNameKeyboard();
   updateFishInspectorDisplayDocking();
 }

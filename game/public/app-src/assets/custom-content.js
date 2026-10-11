@@ -27,6 +27,7 @@ function isLayoutRatioLockActive() {
 
 function getTankStageLayoutSize() {
   if (runtime.tankStageRenderLayout) return runtime.tankStageRenderLayout;
+  if (runtime.tankStageEvaluationLayout) return runtime.tankStageEvaluationLayout;
   const stage = dom?.tankStage;
   if (!(stage instanceof HTMLElement)) {
     return { width: TANK_WIDTH, height: TANK_HEIGHT };
@@ -43,6 +44,17 @@ function getTankStageLayoutSize() {
     width: Math.max(1, layoutWidth || Number(fallback?.width) || TANK_WIDTH),
     height: Math.max(1, layoutHeight || Number(fallback?.height) || TANK_HEIGHT)
   };
+}
+
+function withTankStageLayoutSnapshot(callback) {
+  const previous = runtime.tankStageEvaluationLayout;
+  runtime.tankStageEvaluationLayout = getTankStageLayoutSize();
+  try {
+    return callback();
+  } finally {
+    // Rendering and UI layout changes after this evaluation must read again.
+    runtime.tankStageEvaluationLayout = previous;
+  }
 }
 
 function getTankStageVisualMetrics() {
@@ -1275,6 +1287,8 @@ function bindEvents() {
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
   dom.debugFishBehaviorLogButton?.addEventListener("click", () => downloadDebugFishBehaviorLog());
+  document.getElementById("debugFishBehaviorLabelsToggle")?.addEventListener("click", () => toggleDebugFishBehaviorDiagnostics("labels"));
+  document.getElementById("debugFishBehaviorRecordingToggle")?.addEventListener("click", () => toggleDebugFishBehaviorDiagnostics("logging"));
   for (const config of DEBUG_BEHAVIOR_BUTTON_CONFIGS) {
     dom[config.domKey]?.addEventListener("click", () => triggerDebugBehaviorScenario(config.action));
   }
@@ -1733,6 +1747,12 @@ function bindEvents() {
   });
   dom.toolbarTileColorInput?.addEventListener("change", (event) => {
     setToolbarTileColor(event.currentTarget?.value);
+  });
+  dom.tankFrameColorInput?.addEventListener("input", (event) => {
+    window.BubbleBoroughTankFrame?.setFrameColor?.(normalizeTankFrameColor(event.currentTarget?.value));
+  });
+  dom.tankFrameColorInput?.addEventListener("change", (event) => {
+    setTankFrameColor(event.currentTarget?.value);
   });
   dom.ambientBubbleLevelInput?.addEventListener("input", (event) => {
     setAmbientBubbleLevel(event.currentTarget?.value);
@@ -3132,18 +3152,6 @@ function bindEvents() {
       return;
     }
 
-    const sizeButton = event.target.closest("[data-size-fish]");
-    if (sizeButton) {
-      adjustFishSize(sizeButton.dataset.sizeFish, Number(sizeButton.dataset.sizeDirection) || 0);
-      return;
-    }
-
-    const defaultButton = event.target.closest("[data-copy-fish-size]");
-    if (defaultButton) {
-      saveFishSizeAsDefault(defaultButton.dataset.copyFishSize);
-      return;
-    }
-
     const button = event.target.closest("[data-open-fish]");
     if (button) {
       openFishInspector(button.dataset.openFish);
@@ -3914,7 +3922,6 @@ function bindEvents() {
   dom.randomizeFishName?.addEventListener("click", () => randomizeInspectorName());
   dom.inspectorFishSettingsButton?.addEventListener("click", () => toggleFishInspectorSettings());
   dom.fishInspector?.addEventListener("click", playFishInspectorActionSound, true);
-  dom.fishInspector?.addEventListener("pointerdown", beginFishInspectorSliderSound, true);
   dom.fishInspector?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const actionButton = target?.closest("[data-fish-action]");
@@ -3922,43 +3929,6 @@ function bindEvents() {
       event.preventDefault();
       handleFishActionButtonClick(actionButton.dataset.fishAction || "");
       return;
-    }
-    const swatch = target?.closest("[data-inspector-fish-color]");
-    if (swatch instanceof HTMLButtonElement) {
-      event.preventDefault();
-      event.stopPropagation();
-      updateInspectorFishSetting("color", swatch.dataset.inspectorFishColor || "");
-    }
-  });
-  dom.fishInspector?.addEventListener("input", playFishInspectorSliderInputSound, true);
-  dom.fishInspector?.addEventListener("input", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
-    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
-      queueInspectorFishColorPreview(colorPicker.value);
-      return;
-    }
-    const control = target?.closest("[data-inspector-fish-setting]");
-    if (control instanceof HTMLInputElement) {
-      updateInspectorFishSetting(
-        control.dataset.inspectorFishSetting,
-        control.type === "checkbox" ? control.checked : control.value
-      );
-    }
-  });
-  dom.fishInspector?.addEventListener("change", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
-    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
-      updateInspectorFishSetting("color", colorPicker.value, { forcePersist: true });
-      return;
-    }
-    const control = target?.closest("[data-inspector-fish-setting]");
-    if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
-      updateInspectorFishSetting(
-        control.dataset.inspectorFishSetting,
-        control instanceof HTMLInputElement && control.type === "checkbox" ? control.checked : control.value
-      );
     }
   });
   window.addEventListener("pointerdown", (event) => {
@@ -4870,6 +4840,7 @@ function normalizeDecorMeta(payload) {
       fishBehavior: normalizeDecorFishBehaviorMeta(entry, key),
       moodDelta: clamp(Number(entry.moodDelta) || 0, -0.2, 0.2),
       caveBehavior: normalizeCaveBehaviorMeta(entry.caveBehavior),
+      caveEntranceCalibration: Number(entry.caveEntranceCalibration) || 0,
       swimmable: typeof entry.swimmable === "boolean"
         ? entry.swimmable
         : (typeof entry?.caveBehavior?.swimmable === "boolean" ? entry.caveBehavior.swimmable : true),
@@ -5270,6 +5241,10 @@ function normalizeCavePortalMeta(entry) {
     approachY: clamp(approachY, 0.02, 0.98),
     mouthX: clamp(mouthX, 0.02, 0.98),
     mouthY: clamp(mouthY, 0.02, 0.98),
+    ...(Number(entry.entranceWidth) > 0 && Number(entry.entranceHeight) > 0 ? {
+      entranceWidth: sanitizeCaveEntranceSize(entry.entranceWidth),
+      entranceHeight: sanitizeCaveEntranceSize(entry.entranceHeight)
+    } : {}),
     outsideLayer: CAVE_ALLOWED_OUTSIDE_LAYERS.includes(requestedOutsideLayer) ? requestedOutsideLayer : 2,
     insideLayer: clampTankLayer(CAVE_SEAT_LOCKED_LAYER),
     path
@@ -6111,6 +6086,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
         caveBehavior: meta.caveBehavior || null,
+        caveEntranceCalibration: meta.caveEntranceCalibration || 0,
         swimmable: meta.swimmable !== false,
         caveSettings: meta.caveSettings || null,
         bubbler: meta.bubbler || normalizeBubblerMeta(null, group.base.key)
@@ -7071,6 +7047,7 @@ function buildCustomFishCatalogEntry(asset) {
     },
     dislikedTypes: [],
     caveEnabled: profile?.caveEnabled !== false,
+    caveMinSize: profile?.caveMinSize === "large" ? "large" : "",
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
     behaviorProfileId: profile?.id || "",
@@ -7373,6 +7350,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    caveMinSize: entry.caveMinSize === "large" ? "large" : "",
     customAsset: entry.customAsset === true,
     customUploadProduct: entry.customUploadProduct === true,
     davyMutation: entry.davyMutation === true,

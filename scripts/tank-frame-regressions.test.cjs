@@ -488,7 +488,7 @@ assert.deepStrictEqual(unexpectedPngs, [], "Sprite sheets must not be split back
 
 const indexText = fs.readFileSync(path.join(projectRoot, "index.html"), "utf8");
 assert(
-  indexText.includes('public/tank-physical-frame.js?v=20261006-edit-frame'),
+  /public\/tank-physical-frame\.js\?v=[^"\s]+/.test(indexText),
   "The physical frame sprite loader must be included by the game entry page"
 );
 assert.strictEqual(

@@ -32,14 +32,27 @@ function fixture() {
     formatCaveColorChoiceLabel: value => value || "Original", escapeHtml: value => String(value),
     isFishSpeciesShopUnlocked: () => true,
     getFishCareConditionText: () => "Needs assessment", getFishInjuryDisplaySide: entry => entry.injuryDisplaySide || "left",
+    getFishCareConcerns: () => ["infection"],
+    getFishNeedsSnapshot: () => ({ mood: { label: "Lonely" }, activity: "Looking for tankmates" }),
+    getFishMoodPresentation: () => ({ tone: "warn" }),
+    getFishManagementProgressionPresentation: () => ({ careLevel: 2, levelLabel: "Lv. 2", levelXp: 128, levelXpSpan: 250, xpLabel: "128 / 250 Care XP", xpProgress: 128 / 250, isMaxLevel: false }),
+    getFishAppearanceVariantKey: value => value,
+    getFishAcceptedFoodKeys: () => ["basic", "brineShrimp"],
+    getFoodMeta: key => ({ name: key === "brineShrimp" ? "Brine Shrimp" : key }),
+    isDetritusFish: () => false, isMealFreeFish: () => false,
+    formatFishShopBehavior: species => species.id === "custom-fish" ? "Choose behavior" : "Schooling",
+    getFishSocialProfile: () => ({ socialMode: "flexible" }),
+    getFishVariantWaterType: () => "freshwater", formatFishShopGenetics: () => "Natural",
+    getDailyMealIndicatorSlots: now => [{ label: "AM", start: new Date(now).setHours(0, 0, 0, 0) }, { label: "PM", start: new Date(now).setHours(12, 0, 0, 0) }],
+    getFishDailyMealIndicatorState: () => ({ am: true, pm: false }), getFishSimulationTank: () => ({ id: "tank" }),
     normalizeDecorColorSetting: value => value, normalizeDecorColorizeSetting: value => Boolean(value),
     preserveTankDirtinessThroughChange: (_now, action) => action(), saveState: () => calls.push("save"),
-    renderUtilityOverlay: () => calls.push("render"), updateInspectorFishReadouts: () => assert.fail("legacy controls should not render"),
+    renderUtilityOverlay: () => calls.push("render"),
     openUtilityOverlay: (mode, options) => calls.push([mode, options]),
     renameTankContextTarget: (_kind, _id, name) => { fish.name = name; return true; },
     dom: { utilityOverlayBody: { querySelector: () => ({}) } }, setTextIfChanged() {}
   });
-  load("ui/fish-inspector.js", ["getFishInspectorManagedTarget", "openFishInspector", "closeFishInspectPreview", "renderFishInspectUtilityOverlay", "handleFishInspectClick", "handleFishInspectInput", "handleFishInspectChange", "handleFishInspectKeyDown", "getFishInspectLoopPose", "getFishInspectSwimTexture", "renderFishInspectPreview", "updateInspectorFishSetting"], c);
+  load("ui/fish-inspector.js", ["getFishInspectorManagedTarget", "openFishInspector", "closeFishInspectPreview", "renderFishInspectIcon", "getFishInspectPresentation", "getFishInspectReadoutMarkup", "refreshFishInspectReadouts", "renderFishInspectUtilityOverlay", "handleFishInspectClick", "handleFishInspectInput", "handleFishInspectKeyDown", "getFishInspectLoopPose", "getFishInspectSwimTexture", "renderFishInspectPreview"], c);
   return c;
 }
 
@@ -90,7 +103,7 @@ test("the registered Inspect mode survives exclusive-overlay selection cleanup a
   const registered = c.getUtilityOverlayModeDef("fish-inspect");
   assert.equal(registered.render().title, c.fish.name);
   assert.equal(registered.onBodyInput, c.handleFishInspectInput);
-  assert.equal(registered.onBodyChange, c.handleFishInspectChange);
+  assert.equal(registered.onBodyChange, undefined, "Inspect has no mutable fish-setting change handler");
   assert.equal(registered.onBodyClick, c.handleFishInspectClick);
   c.runtime.fishSwimAnimationStates.set("inspect:nova", {});
   c.openExclusiveOverlay("settings", { clearPrimaryToolModes: false });
@@ -104,14 +117,56 @@ test("Inspect shows the individual fish and concise details without diagnosing i
   assert.equal(config.kicker, "Inspect"); assert.equal(config.title, "Nova");
   assert.match(config.body, /data-fish-inspect-preview/);
   assert.match(config.body, /Needs assessment/);
-  assert.match(config.body, /#123456/);
+  assert.match(config.body, /data-fish-inspect-fact-size>100%/);
+  assert.doesNotMatch(config.body, /Customize|data-fish-inspect-setting|data-fish-inspect-color|type="(?:range|color)"|<select/);
   assert.match(config.body, /data-fish-inspect-thumbnail="left"/);
   assert.match(config.body, /data-fish-inspect-thumbnail="right"/);
   assert.doesNotMatch(config.body, /Swims and turns to show both sides/);
   assert.doesNotMatch(config.body, /Infection|Anti-Infection|What needs care|Buying a bottle/i);
   assert.equal(config.footer, "");
   c.fish.behaviorSpeciesId = "barb";
-  assert.match(c.renderFishInspectUtilityOverlay().body, /value="barb" selected/);
+  assert.match(c.renderFishInspectUtilityOverlay().body, /Schooling \(Barb\)/);
+});
+
+test("loneliness is a social care concern even at full health, without hiding medical concerns", () => {
+  const c = fixture();
+  c.fish.healthUnits = 8;
+  c.fish.diseaseType = "";
+  c.fish.diseaseState = "none";
+  c.getFishCareConcerns = () => [];
+  c.getFishCareConditionText = () => "No care concern observed";
+  const managed = { fish: c.fish, inStorage: false };
+  const before = JSON.stringify(c.fish);
+  let presentation = c.getFishInspectPresentation(managed);
+  assert.equal(presentation.condition, "Needs companions");
+  assert.equal(presentation.conditionTone, "warn");
+  let summary = c.getFishInspectReadoutMarkup(managed).summary;
+  assert.match(summary, /4\/4/);
+  assert.match(summary, /data-tone="warn".*Needs companions/);
+  assert.match(summary, /Looking for tankmates/);
+  assert.doesNotMatch(summary, /No care concern observed/);
+  for (const medicalText of ["Needs assessment", "Injured"]) {
+    c.getFishCareConcerns = () => ["injured"];
+    c.getFishCareConditionText = () => medicalText;
+    presentation = c.getFishInspectPresentation(managed);
+    assert.equal(presentation.condition, `${medicalText} · Needs companions`);
+    assert.equal(presentation.conditionTone, "warn");
+  }
+  c.getFishCareConcerns = () => [];
+  c.getFishCareConditionText = () => "No care concern observed";
+  for (const mood of ["Happy", "Neutral", "Sleepy"]) {
+    c.getFishNeedsSnapshot = () => ({ mood: { label: mood }, activity: "Swimming" });
+    presentation = c.getFishInspectPresentation(managed);
+    assert.equal(presentation.condition, "No care concern observed");
+    assert.equal(presentation.conditionTone, "good");
+  }
+  c.getFishNeedsSnapshot = () => ({ mood: { label: "Lonely" }, activity: "Looking for tankmates" });
+  assert.doesNotMatch(c.getFishInspectPresentation({ fish: c.fish, inStorage: true }).condition, /companions/);
+  assert.equal(JSON.stringify(c.fish), before, "presenting the concern does not mutate care or health");
+  c.fish.dead = true;
+  presentation = c.getFishInspectPresentation(managed);
+  assert.equal(presentation.condition, "Deceased");
+  assert.equal(presentation.conditionTone, "neutral");
 });
 
 test("the preview swims for one second on each side, with two turns, without changing the fish", () => {
@@ -242,22 +297,21 @@ test("side selection pauses Inspect independently and Animate resumes the loop's
   assert.equal(clickView("invalid"), false);
 });
 
-test("Inspect edits target only that fish and preserves drafts while committing live color and size changes", () => {
+test("Inspect saves names but ignores obsolete size, color and behavior controls", () => {
   const c = fixture();
   c.handleFishInspectInput({}, { matches: () => true, value: "New name" });
   assert.equal(c.fish.name, "Nova"); assert.equal(c.runtime.fishInspectNameDraft, "New name");
   c.handleFishInspectClick({}, { closest: selector => selector.includes("action") ? { dataset: { fishInspectAction: "save-name" } } : null });
   assert.equal(c.fish.name, "New name");
-  c.handleFishInspectInput({}, { matches: () => false, dataset: { fishInspectSetting: "size" }, value: "150" });
-  assert.equal(c.fish.scale, 1.5);
+  c.fish.behaviorSpeciesId = "barb";
+  const before = JSON.stringify(c.fish);
+  for (const [setting, value] of [["size", "150"], ["color", "#abcdef"], ["behavior", "goldfish"], ["colorize", true]]) {
+    assert.equal(c.handleFishInspectInput({}, { matches: () => false, dataset: { fishInspectSetting: setting }, value, checked: value }), false);
+  }
+  assert.equal(c.handleFishInspectClick({}, { closest: selector => selector === "button[data-fish-inspect-color]" ? { dataset: { fishInspectColor: "rgb" } } : null }), false);
+  c.renderFishInspectUtilityOverlay();
+  assert.equal(JSON.stringify(c.fish), before, "opening and using Inspect preserves the fish's configured values");
   assert.ok(!c.calls.includes("save"));
-  c.handleFishInspectChange({}, { dataset: { fishInspectSetting: "size" }, value: "150" });
-  assert.ok(c.calls.includes("save"));
-  c.handleFishInspectInput({}, { matches: () => false, dataset: { fishInspectSetting: "color" }, value: "#abcdef" });
-  assert.equal(c.fish.fishColor, "#abcdef");
-  assert.equal(c.fish.fishColorize, false);
-  c.handleFishInspectChange({}, { dataset: { fishInspectSetting: "colorize" }, checked: true });
-  assert.equal(c.fish.fishColorize, true);
 });
 
 test("closing Inspect releases its target and animation cache", () => {
@@ -273,4 +327,167 @@ test("closing Inspect releases its target and animation cache", () => {
   assert.equal(c.runtime.fishSwimAnimationStates.has("nova"), true);
   assert.equal(canvas.width, 0);
   assert.equal(c.runtime.fishInspectWarpCanvases, null);
+});
+
+test("Enter saves the name draft through the action handler", () => {
+  const c = fixture();
+  c.runtime.fishInspectNameDraft = "Renamed fish";
+  let prevented = false;
+  assert.equal(c.handleFishInspectKeyDown({}, { matches: () => true }, { key: "Enter", preventDefault() { prevented = true; } }), true);
+  assert.equal(c.fish.name, "Renamed fish");
+  assert.equal(prevented, true);
+  assert.equal(c.handleFishInspectKeyDown({}, { matches: () => true }, { key: "Escape" }), false);
+});
+
+test("inspection presents half-heart health and within-level XP with matching accessibility values", () => {
+  const c = fixture();
+  c.fish.healthUnits = 7;
+  c.fish.careXp = 228;
+  c.fish.careLevel = 2;
+  Object.assign(c, {
+    isFishCareProgressionEligible: () => true, FISH_CARE_LEVEL_MIN: 1, FISH_CARE_LEVEL_MAX: 5,
+    getFishCareLevelThresholds: () => ({ 1: 0, 2: 100, 3: 350, 4: 700, 5: 1200 })
+  });
+  load("ui/customization-actions-and-inventory.js", ["getFishManagementProgressionPresentation"], c);
+  const markup = c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false });
+  assert.match(markup.summary, /3\.5\/4/);
+  assert.match(markup.summary, /aria-label="3.5 of 4 hearts"/);
+  assert.match(markup.summary, /Lonely/);
+  assert.match(markup.summary, /Needs assessment/);
+  assert.match(markup.summary, /data-tone="warn"/);
+  assert.match(markup.progression, /128 \/ 250 Care XP/);
+  assert.match(markup.progression, /aria-valuemax="250" aria-valuenow="128"/);
+  assert.match(markup.progression, /width:51%/);
+  assert.doesNotMatch(markup.summary, /infection/i);
+  c.fish.careLevel = 5;
+  assert.match(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).progression, /Maximum Care Level/);
+  assert.doesNotMatch(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).progression, /progressbar/);
+  c.isFishCareProgressionEligible = () => false;
+  assert.equal(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).progression, "");
+  c.isPeacefulModeEnabled = () => true;
+  assert.match(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).summary, />4\/4</);
+});
+
+test("Details resolve the selected fish's variant, effective diet and behavior without shop placeholders", () => {
+  const c = fixture();
+  c.fish.appearanceVariantKey = "marine-neon";
+  c.fish.behaviorSpeciesId = "barb";
+  c.fish.scale = 1.5;
+  const base = { id: "custom-fish", name: "My Fish", customAsset: true };
+  c.getBaseSpeciesForFish = () => base;
+  c.getSpeciesForFish = () => ({ ...base, behavior: "school", behaviorProfileSpeciesId: "barb" });
+  c.getFishVariantWaterType = fish => { assert.equal(fish, c.fish); return "saltwater"; };
+  c.formatFishShopGenetics = (species, variant) => {
+    assert.equal(species, base);
+    assert.equal(variant, "marine-neon");
+    return "Enhanced";
+  };
+  c.getFishAcceptedFoodKeys = fish => { assert.equal(fish, c.fish); return ["brineShrimp"]; };
+  c.formatFishShopBehavior = species => {
+    assert.notEqual(species.id, "custom-fish");
+    return "Schooling";
+  };
+  const markup = c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false });
+  for (const value of ["Saltwater", "Enhanced", "Brine Shrimp", "Schooling (Barb)", "150%", "2 days"]) assert.ok(markup.facts.includes(value), value);
+  assert.doesNotMatch(markup.facts, /Configured in designer|Choose behavior|Basic Food/);
+  c.getFishSocialProfile = () => ({ socialMode: "school" });
+  assert.match(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).facts, /Schooling \(Barb\)/);
+  c.getFishSocialProfile = () => ({ socialMode: "solitary" });
+  assert.match(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).facts, /Solitary \(Barb\)/);
+  c.isDetritusFish = () => true;
+  assert.match(c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false }).facts, /Grime \+ waste/);
+});
+
+test("Daily Care reads individual consumption and changes at local noon and midnight", () => {
+  const c = fixture();
+  const history = {};
+  c.getLocalDayKey = now => {
+    const d = new Date(now);
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+  };
+  c.getLocalDayStartTimestamp = key => new Date(`${key}T00:00:00`).getTime();
+  c.getMealHistoryEntry = key => history[key];
+  load("fish/feeding-and-medicine.js", ["getDailyMealIndicatorSlotsForDayKey", "getDailyMealIndicatorSlots", "getFishDailyMealIndicatorState", "hasFishEatenInSlot"], c);
+  const morning = new Date(2026, 9, 10, 11, 59).getTime();
+  const [am, pm] = c.getDailyMealIndicatorSlots(morning);
+  history[am.key] = { fishIds: ["other-fish"], offeredFishIds: [c.fish.id] };
+  let p = c.getFishInspectPresentation({ fish: c.fish, inStorage: false }, morning);
+  assert.equal(p.mealSummary, "0/2 meals recorded");
+  assert.equal(p.mealSlots[0].label, "Not yet eaten");
+  assert.equal(p.mealSlots[1].label, "Upcoming");
+  history[am.key].fishIds.push(c.fish.id);
+  p = c.getFishInspectPresentation({ fish: c.fish, inStorage: false }, pm.start);
+  assert.equal(p.mealSummary, "1/2 meals recorded");
+  assert.equal(p.mealSlots[0].label, "Eaten");
+  assert.equal(p.mealSlots[1].label, "Not yet eaten");
+  history[pm.key] = { fishIds: [c.fish.id] };
+  assert.equal(c.getFishInspectPresentation({ fish: c.fish, inStorage: false }, pm.start).mealSummary, "2/2 meals recorded");
+  p = c.getFishInspectPresentation({ fish: c.fish, inStorage: false }, new Date(2026, 9, 11, 0, 0).getTime());
+  assert.equal(p.mealSummary, "0/2 meals recorded");
+  assert.equal(p.mealSlots[1].label, "Upcoming");
+});
+
+test("stored, deceased, peaceful and meal-free fish do not claim fictional meals or live storage moods", () => {
+  const c = fixture();
+  c.getFishDailyMealIndicatorState = () => assert.fail("inapplicable care must not read or imply successful meals");
+  c.getFishStorageSimulationNow = (_fish, now) => now - 1000;
+  let p = c.getFishInspectPresentation({ fish: c.fish, inStorage: true }, 5000);
+  assert.equal(p.now, 4000);
+  assert.equal(p.mood, "Stored");
+  assert.equal(p.mealSummary, "Stored");
+  assert.ok(p.mealSlots.every(slot => !slot.eaten));
+  c.fish.dead = true;
+  const dead = c.getFishInspectReadoutMarkup({ fish: c.fish, inStorage: false });
+  assert.match(dead.daily, /Not applicable/);
+  assert.match(dead.summary, /Deceased/);
+  assert.match(dead.actions, /dispose/);
+  assert.doesNotMatch(dead.actions, /buy|sell|store/);
+  c.fish.dead = false;
+  c.isPeacefulModeEnabled = () => true;
+  assert.equal(c.getFishInspectPresentation({ fish: c.fish, inStorage: false }).mealSummary, "Peaceful mode");
+  c.isPeacefulModeEnabled = () => false;
+  c.isMealFreeFish = () => true;
+  assert.equal(c.getFishInspectPresentation({ fish: c.fish, inStorage: false }).mealSummary, "No routine meals");
+});
+
+test("readout refresh preserves the name editor, scroll and canvases while throttling work", () => {
+  const c = fixture();
+  const sections = Object.fromEntries(["summary", "progression", "facts", "daily", "actions"].map(key => [key, { innerHTML: "", hidden: false }]));
+  const nameInput = { value: "Unfinished name", selectionStart: 5, selectionEnd: 8 };
+  const canvas = { setAttribute() {}, marker: "original canvas" };
+  const scroll = { scrollTop: 240 };
+  const root = {
+    dataset: { fishInspectKey: "nova:0" },
+    querySelector(selector) {
+      const section = selector.match(/data-fish-inspect-section="(.*?)"/);
+      if (section) return sections[section[1]];
+      return { "[data-fish-inspect-name]": nameInput, "[data-fish-inspect-preview]": canvas, ".fish-inspect-card-scroll": scroll }[selector] || null;
+    },
+    querySelectorAll: () => []
+  };
+  c.runtime.fishInspectNameDraft = nameInput.value;
+  c.dom.utilityOverlayBody.querySelector = () => root;
+  c.refreshFishInspectReadouts(1000);
+  assert.match(sections.summary.innerHTML, /3\/4/);
+  c.fish.healthUnits = 4;
+  c.refreshFishInspectReadouts(1200);
+  assert.match(sections.summary.innerHTML, /3\/4/, "less than 500ms does not recompute readouts");
+  c.refreshFishInspectReadouts(1500);
+  assert.match(sections.summary.innerHTML, /2\/4/);
+  assert.equal(nameInput.value, "Unfinished name");
+  assert.equal(nameInput.selectionStart, 5);
+  assert.equal(nameInput.selectionEnd, 8);
+  assert.equal(scroll.scrollTop, 240);
+  assert.equal(root.querySelector("[data-fish-inspect-preview]"), canvas);
+  // Exercise the shared renderer too: identical fish/session retains the body.
+  c.dom.utilityOverlay = { classList: { toggle() {} } };
+  c.getUtilityOverlayModeDef = () => ({ render: c.renderFishInspectUtilityOverlay });
+  c.getUtilityOverlayContext = () => ({});
+  c.setMarkupIfChanged = () => assert.fail("the inspection body must not be replaced");
+  c.syncWallpaperUtilityNameKeyboards = c.syncWallpaperScrollControls = c.syncUtilityOverlayEditTraySafeArea = () => {};
+  load("ui/management-and-overlays.js", ["renderUtilityOverlay"], c);
+  c.renderUtilityOverlay();
+  assert.equal(scroll.scrollTop, 240);
+  c.runtime.fishInspectBodyVersion = 1;
+  assert.equal(c.refreshFishInspectReadouts(2000), false, "a new inspection session creates a fresh body");
 });

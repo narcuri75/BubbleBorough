@@ -351,18 +351,6 @@
     "sourceHash": "5f3bece0620409e6df22467d9c89cff5370a1f0866e69770e4f8c6286e3a4c9c",
     "outputHash": "5479a352f0e7804f890c8dbe35ff72ac4ffcdca030614e34a2577e79fcca08f6"
   },
-  "cave_layered/coral-shelf-6__cave-coral__theme-reef__bg.webp": {
-    "sourceHash": "974ce1369684b4a6d5a06b235b0bd120859532c0b9d783039bf021460c1c6b3d",
-    "outputHash": "c79d0ad2e153d42d7c58ebdeba513454dd52b239a3f98a093fcf03baf0cc319b"
-  },
-  "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp": {
-    "sourceHash": "7ec49d5358f6d37f768c3761095d11e8626297b1b6d4d36aef678b84eb7f550f",
-    "outputHash": "996171a117d642cfce0bd7aad94ddbf9dc9d8950ed71802d2d21d1ab7982dec6"
-  },
-  "cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp": {
-    "sourceHash": "485330dee66cfa3d10ec1853bf8c91fe0765a238bbdac85c0a4995161e08f139",
-    "outputHash": "514d46394bc2c0622247b7372eb5be434a5aebb22a05e64c243e4bf616d440cf"
-  },
   "cave_layered/coral-shelf-7__cave-coral__theme-reef__bg.webp": {
     "sourceHash": "a9688ce5d205debc6a3b0b3982d3bfe2810b6ed4a57d38165baaa54e1dfd0eff",
     "outputHash": "ad84cb62ace170fb6934444e6c98783c4f0101b1d0d2ead8ed8a016f230e325a"
@@ -403,13 +391,25 @@
     "sourceHash": "bdae3358b761932c4679576c126f4d6f6f92bd8232baad4cc3c35ecb30d45f14",
     "outputHash": "d4d1aa2146e3a7d447ce1e31e19d62e5f94463652ac856cba0b432a5b5e43ad4"
   },
-  "cave_layered/frozen-cave__cave__theme-frozen__front.webp": {
+  "cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__shadow-footprint.webp": {
+    "sourceHash": "255385d937e1f2165b9cc581ad5a4d5a8eca07461f7eb97a6cce40bcebb4d75f",
+    "outputHash": "76a7165f59fc37ca9803e4d2f246daf7a3859151c515d156de7a803883a912f2"
+  },
+  "cave_layered/frozen-cave__cave__theme-frozen__bg.webp": {
     "sourceHash": "48ea25257f13d3675b9e2c2c8576cda56494027e71934214a0401dc20d064b46",
     "outputHash": "a529cdcc0cfc7ab5ad8075c523f8ee20d530fa897d845a4f2ebee896b6c2f498"
   },
-  "cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp": {
+  "cave_layered/frozen-cave__cave__theme-frozen__front.webp": {
+    "sourceHash": "8150bb850b9be9dec833a286e61405c48d385bc70eb3dead2bf6ea6866dba54f",
+    "outputHash": "30e829121e83ff6f8a9c63551ee3b4cd21b9ff885a42b31931852398f4bcfe94"
+  },
+  "cave_layered/frozen-cave__cave__theme-frozen__v2__bg.webp": {
     "sourceHash": "a78e5872b649015cc040ea314ebb75ee9de37cd65aaf6891d401dfcde33ff0d3",
     "outputHash": "66ae907fa5df130a987007a4c15961803b282d6101d09088b9019fdda08b3adb"
+  },
+  "cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp": {
+    "sourceHash": "dbab084ca79c4fae520afaa5386ab801e2eb73bb97cfd527cc50942f3ec8d7c7",
+    "outputHash": "830f3d750bb2d74bb6f39b3f6492a8d73ed15c591d2ac4185e2db80669fe2dd1"
   },
   "cave_layered/halloween-crypt__cave__theme-halloween__bg.webp": {
     "sourceHash": "7e444f4c477429c6482743b2a32a34a057190668d8b5a8242b0423a7266758be",
@@ -539,6 +539,10 @@
     "sourceHash": "8a3cafada4164fe4a0fbd2f4fcb8a8521f25e6c69048d0f78b9a8486aeb94a22",
     "outputHash": "087ad113c240a0ba7759fbf3538a76c87279a16b09d8a05db04cefe30be7654d"
   },
+  "cave_layered/seashell-cluster__cave-coral__theme-reef__shadow-footprint.webp": {
+    "sourceHash": "e8331dddae3eda6e54ca0bce9b379cae71d30c6ba29fbd5966c59174d5390420",
+    "outputHash": "49678638dfdb2b3d7f68f711ad6c5e79e51e19feabd8844d9d89388b05f4ed92"
+  },
   "cave_layered/slate-stack__cave-rock__theme-natural__bg.webp": {
     "sourceHash": "2aade67f867e79592f83f5ed7ce75203a9a79a87f3aaa9e157fbc4ae39668da8",
     "outputHash": "d5d8e373ebfcb60a592dc9873b8bc3d3e5cdd93314f1353347af96537d35f9eb"
@@ -586,6 +590,10 @@
   "cave_layered/terracotta-tunnel__cave__theme-artificial__front.webp": {
     "sourceHash": "25e44747f22c001bed6877a86596b031e5967ac9a955c74e66e4b55fa4a7becc",
     "outputHash": "91c11b5ccba21ba380eb0e82353a1ce5c4d57bcee40a6efc89d8838d6599f35d"
+  },
+  "cave_layered/terracotta-tunnel__cave__theme-artificial__shadow-footprint.webp": {
+    "sourceHash": "4c4d60442c23909626ac99795621b64634f90989e15a0dc69c3e32daa42889a2",
+    "outputHash": "1782210100e9b72e21540a4af1292a9413421ce5f2548fb3a3dfa62b5bb20fa8"
   },
   "cave_layered/wizard-castle__cave__theme-fantasy__bg.webp": {
     "sourceHash": "024199783d95c693b9e0edbddfa6863ddcf0d96f28255499bebf2fa76efed749",
@@ -1022,10 +1030,6 @@
   "cave_layered/coral-shelf-1__cave-coral__theme-reef__front.webp::trypophobia": {
     "sourceHash": "996ebaace1bdc16401992636cca67c69a6673d5565be3f78b6bfc694f4f4a503",
     "outputHash": "f88e22382f63aa3aee7a6a3ddfd514015d91aaa79170641c1f1e50cd1cc10c21"
-  },
-  "cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp::trypophobia": {
-    "sourceHash": "74df5e48bbf8691b9edfc2492157ddf887d66fbb19eaf5f2140cba7841933ee6",
-    "outputHash": "cc17ae11a13f1139538393bab3642c9c963205d7a2c20cad7179f3f2c6f6d6c3"
   },
   "cave_layered/coral-shelf-9__cave-coral__theme-reef__front.webp::trypophobia": {
     "sourceHash": "e6956d71a353ebb4b7ee810b3e46820882b237ae584cb6aa2c8b08e394fa2c3a",

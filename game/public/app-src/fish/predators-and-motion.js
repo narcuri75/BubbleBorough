@@ -286,6 +286,11 @@ function startPufferInflation(fish, species, now = Date.now()) {
     return false;
   }
 
+  if (fish.caveState) {
+    abortFishCaveBehavior(fish, now, false);
+    if (fish.caveState) return false;
+  }
+
   const durationMs = randomBetween(getPufferInflationMinDurationMs(), getPufferInflationMaxDurationMs());
   fish.pufferInflatedAt = now;
   fish.pufferInflatedUntil = now + durationMs;
@@ -609,6 +614,18 @@ function setToolbarTileColor(value) {
     return;
   }
 
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+}
+
+function setTankFrameColor(value) {
+  if (!state) return;
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({ ...currentSettings, tankFrameColor: value });
+  // Also restore the committed color if a live preview returned to the saved value.
+  window.BubbleBoroughTankFrame?.setFrameColor?.(nextSettings.tankFrameColor);
+  if (currentSettings.tankFrameColor === nextSettings.tankFrameColor) return;
   state.uiSettings = nextSettings;
   saveState();
   renderUi(Date.now(), { full: false });

@@ -1758,6 +1758,7 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
+  tankFrameColor: "#202124",
   webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
   webSurfFullscreen: false,
   webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT,
@@ -2281,6 +2282,8 @@ let WATER_SURFACE_Y = 112;
 const WATER_SURFACE_VIEWPORT_TOP_PX = 112;
 const FLOOR_Y = TANK_HEIGHT * 0.83;
 const CAVE_CENTER_TARGET_SIZE_PX = 50;
+const CAVE_ENTRANCE_MEDIUM_MIN_PX = 72;
+const CAVE_ENTRANCE_LARGE_MIN_PX = 144;
 const CAVE_NAV_MAX_SIZE = 220;
 const CAVE_PATH_NODE_STEP = 10;
 const CAVE_STRICT_SAMPLE_STEP_PX = 2;
@@ -2548,7 +2551,6 @@ const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
 
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.webp",
-  "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp",
   "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.webp",
   "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.webp"
 ].map((path) => path.toLowerCase()));
@@ -3244,11 +3246,8 @@ const FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR = [
   "#inspectorSellFish",
   "#inspectorBuyAnotherFish",
   "#inspectorStoreFish",
-  "#inspectorFishSettingsButton",
-  "[data-inspector-fish-color]",
-  'input[type="checkbox"][data-inspector-fish-setting="colorize"]'
+  "#inspectorFishSettingsButton"
 ].join(",");
-const FISH_INSPECTOR_SLIDER_SOUND_SELECTOR = 'input[type="range"][data-inspector-fish-setting="size"]';
 const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
   "#selectedDecorMenuButton",
   "[data-tank-context-action]",
@@ -5336,7 +5335,8 @@ const FISH_TYPES = [
       "Pond",
       "Lucky"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5528,7 +5528,8 @@ const FISH_TYPES = [
       "Brawler",
       "Jaws"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5606,7 +5607,8 @@ const FISH_TYPES = [
       "Pearl",
       "Moby"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5699,7 +5701,8 @@ const FISH_TYPES = [
       "Sail",
       "Echo"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5778,7 +5781,8 @@ const FISH_TYPES = [
       "Cedar",
       "Orion"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5859,7 +5863,8 @@ const FISH_TYPES = [
       "Mochi",
       "Luma"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -6030,7 +6035,8 @@ const FISH_TYPES = [
       "Buddy",
       "Dash"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -7255,7 +7261,8 @@ const FISH_TYPES = [
       "Gleam",
       "Mercury"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -9373,7 +9380,7 @@ const DECOR_META = {
     "name": "Broken Pot Fragment",
     "cost": 8,
     "width": 420,
-    "defaultScale": 2.4,
+    "defaultScale": 1.1,
     "description": "A broken pot fragment decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9387,7 +9394,76 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.825,
+          "approachY": 0.38,
+          "mouthX": 0.59,
+          "mouthY": 0.38,
+          "entranceWidth": 0.4,
+          "entranceHeight": 0.28,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.44,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.4,
+        "height": 0.28,
+        "x": 0.59,
+        "y": 0.38
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.4,
+          "height": 0.28,
+          "x": 0.59,
+          "y": 0.38
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.44,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "broken-terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Broken Terracotta Pot",
@@ -9407,13 +9483,120 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.86,
+          "approachY": 0.41,
+          "mouthX": 0.66,
+          "mouthY": 0.41,
+          "entranceWidth": 0.27,
+          "entranceHeight": 0.51,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.61,
+          "y": 0.3,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.64,
+          "y": 0.6,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.51,
+          "y": 0.47,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.27,
+        "height": 0.51,
+        "x": 0.66,
+        "y": 0.41
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.27,
+          "height": 0.51,
+          "x": 0.66,
+          "y": 0.41
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.61,
+          "y": 0.3,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.64,
+          "y": 0.6,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.51,
+          "y": 0.47,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "ceramic-tube-cluster__cave__theme-artificial__front.png": {
     "name": "Ceramic Tube Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.45,
+    "defaultScale": 1.55,
     "description": "A ceramic tube cluster decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9431,95 +9614,231 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "top-left",
-          "approachX": 0.245,
-          "approachY": 0.325,
-          "mouthX": 0.307,
-          "mouthY": 0.357
+          "id": "top-left-front",
+          "approachX": 0.258,
+          "approachY": 0.328,
+          "mouthX": 0.32,
+          "mouthY": 0.36,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.15,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "top-right",
-          "approachX": 0.805,
+          "id": "top-right-front",
+          "approachX": 0.797,
           "approachY": 0.402,
-          "mouthX": 0.738,
-          "mouthY": 0.43
+          "mouthX": 0.73,
+          "mouthY": 0.43,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-left",
-          "approachX": 0.095,
+          "id": "lower-left-front",
+          "approachX": 0.097,
           "approachY": 0.655,
-          "mouthX": 0.178,
-          "mouthY": 0.63
+          "mouthX": 0.18,
+          "mouthY": 0.63,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.2,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-center",
-          "approachX": 0.496,
-          "approachY": 0.715,
-          "mouthX": 0.496,
-          "mouthY": 0.602
+          "id": "lower-center-front",
+          "approachX": 0.5,
+          "approachY": 0.713,
+          "mouthX": 0.5,
+          "mouthY": 0.6,
+          "entranceWidth": 0.24,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-right",
-          "approachX": 0.955,
+          "id": "lower-right-front",
+          "approachX": 0.94,
           "approachY": 0.66,
-          "mouthX": 0.875,
-          "mouthY": 0.64
+          "mouthX": 0.86,
+          "mouthY": 0.64,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "top-left-seat",
-          "x": 0.326,
+          "x": 0.33,
           "y": 0.37,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "top-left-front"
+          ]
+        },
+        {
+          "id": "top-right-seat",
+          "x": 0.73,
+          "y": 0.43,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "top-right-front"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.16,
+          "y": 0.65,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "lower-left-front"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.5,
+          "y": 0.58,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center-front"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.84,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 8500,
+      "lingerMaxMs": 15000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "top-left",
+        "side": "front",
+        "width": 0.12,
+        "height": 0.15,
+        "x": 0.32,
+        "y": 0.36
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "top-left",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.15,
+          "x": 0.32,
+          "y": 0.36
+        },
+        {
+          "id": "top-right",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.12,
+          "x": 0.73,
+          "y": 0.43
+        },
+        {
+          "id": "lower-left",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.2,
+          "x": 0.18,
+          "y": 0.63
+        },
+        {
+          "id": "lower-center",
+          "side": "front",
+          "width": 0.24,
+          "height": 0.24,
+          "x": 0.5,
+          "y": 0.6
+        },
+        {
+          "id": "lower-right",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.17,
+          "x": 0.86,
+          "y": 0.64
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "top-left-seat",
+          "x": 0.33,
+          "y": 0.37,
+          "facing": -1,
+          "entryIds": [
             "top-left"
           ]
         },
         {
           "id": "top-right-seat",
-          "x": 0.716,
-          "y": 0.439,
-          "layer": 4,
+          "x": 0.73,
+          "y": 0.43,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "top-right"
           ]
         },
         {
           "id": "lower-left-seat",
-          "x": 0.202,
-          "y": 0.624,
-          "layer": 4,
+          "x": 0.16,
+          "y": 0.65,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "lower-left"
           ]
         },
         {
           "id": "lower-center-seat",
-          "x": 0.496,
+          "x": 0.5,
           "y": 0.58,
-          "layer": 4,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-center"
           ]
         },
         {
           "id": "lower-right-seat",
-          "x": 0.85,
-          "y": 0.634,
-          "layer": 4,
+          "x": 0.84,
+          "y": 0.66,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-right"
           ]
         }
-      ],
-      "lingerMinMs": 8500,
-      "lingerMaxMs": 15000
+      ]
     }
   },
   "clay-multi__cave__theme-artificial__front.png": {
@@ -9544,85 +9863,217 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "upper",
-          "approachX": 0.27,
-          "approachY": 0.23,
-          "mouthX": 0.315,
-          "mouthY": 0.306
+          "id": "upper-front",
+          "approachX": 0.29500000000000004,
+          "approachY": 0.234,
+          "mouthX": 0.34,
+          "mouthY": 0.31,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.13,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "left",
-          "approachX": 0.075,
-          "approachY": 0.64,
-          "mouthX": 0.168,
-          "mouthY": 0.622
+          "id": "left-front",
+          "approachX": 0.08699999999999998,
+          "approachY": 0.638,
+          "mouthX": 0.18,
+          "mouthY": 0.62,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "center",
-          "approachX": 0.616,
-          "approachY": 0.755,
-          "mouthX": 0.616,
-          "mouthY": 0.589
+          "id": "center-front",
+          "approachX": 0.62,
+          "approachY": 0.756,
+          "mouthX": 0.62,
+          "mouthY": 0.59,
+          "entranceWidth": 0.23,
+          "entranceHeight": 0.32,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "right",
-          "approachX": 0.975,
-          "approachY": 0.645,
-          "mouthX": 0.893,
-          "mouthY": 0.633
+          "id": "right-front",
+          "approachX": 0.962,
+          "approachY": 0.642,
+          "mouthX": 0.88,
+          "mouthY": 0.63,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "upper-seat",
-          "x": 0.337,
+          "x": 0.34,
           "y": 0.33,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "upper-front"
+          ]
+        },
+        {
+          "id": "left-seat",
+          "x": 0.2,
+          "y": 0.62,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "left-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.59,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "center-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.87,
+          "y": 0.63,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.6,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "center-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16500,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "upper",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.13,
+        "x": 0.34,
+        "y": 0.31
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "upper",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.13,
+          "x": 0.34,
+          "y": 0.31
+        },
+        {
+          "id": "left",
+          "side": "front",
+          "width": 0.2,
+          "height": 0.24,
+          "x": 0.18,
+          "y": 0.62
+        },
+        {
+          "id": "center",
+          "side": "front",
+          "width": 0.23,
+          "height": 0.32,
+          "x": 0.62,
+          "y": 0.59
+        },
+        {
+          "id": "right",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.17,
+          "x": 0.88,
+          "y": 0.63
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "upper-seat",
+          "x": 0.34,
+          "y": 0.33,
+          "facing": -1,
+          "entryIds": [
             "upper"
           ]
         },
         {
           "id": "left-seat",
-          "x": 0.198,
-          "y": 0.618,
-          "layer": 4,
+          "x": 0.2,
+          "y": 0.62,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "left"
           ]
         },
         {
           "id": "center-seat",
-          "x": 0.616,
-          "y": 0.56,
-          "layer": 4,
+          "x": 0.59,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "center"
           ]
         },
         {
           "id": "right-seat",
-          "x": 0.866,
-          "y": 0.628,
-          "layer": 4,
+          "x": 0.87,
+          "y": 0.63,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "right"
           ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.6,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "center"
+          ]
         }
-      ],
-      "lingerMinMs": 9000,
-      "lingerMaxMs": 16500
+      ]
     }
   },
   "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
     "name": "Extra Narrow Pleco Tubes",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.45,
+    "defaultScale": 1.75,
     "description": "A extra narrow pleco tubes decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9640,95 +10091,231 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "upper-left",
-          "approachX": 0.465,
+          "id": "upper-left-front",
+          "approachX": 0.458,
           "approachY": 0.392,
-          "mouthX": 0.497,
-          "mouthY": 0.48
+          "mouthX": 0.49,
+          "mouthY": 0.48,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "upper-right",
-          "approachX": 0.76,
-          "approachY": 0.395,
-          "mouthX": 0.734,
-          "mouthY": 0.487
+          "id": "upper-right-front",
+          "approachX": 0.746,
+          "approachY": 0.398,
+          "mouthX": 0.72,
+          "mouthY": 0.49,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-left",
-          "approachX": 0.33,
-          "approachY": 0.77,
-          "mouthX": 0.391,
-          "mouthY": 0.675
+          "id": "lower-left-front",
+          "approachX": 0.319,
+          "approachY": 0.775,
+          "mouthX": 0.38,
+          "mouthY": 0.68,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-center",
-          "approachX": 0.627,
-          "approachY": 0.785,
-          "mouthX": 0.627,
-          "mouthY": 0.675
+          "id": "lower-center-front",
+          "approachX": 0.61,
+          "approachY": 0.79,
+          "mouthX": 0.61,
+          "mouthY": 0.68,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-right",
-          "approachX": 0.95,
-          "approachY": 0.755,
-          "mouthX": 0.877,
-          "mouthY": 0.669
+          "id": "lower-right-front",
+          "approachX": 0.9329999999999999,
+          "approachY": 0.756,
+          "mouthX": 0.86,
+          "mouthY": 0.67,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "upper-left-seat",
-          "x": 0.505,
-          "y": 0.5,
+          "x": 0.49,
+          "y": 0.48,
           "layer": 4,
-          "facing": -1,
+          "facing": 1,
           "portalIds": [
+            "upper-left-front"
+          ]
+        },
+        {
+          "id": "upper-right-seat",
+          "x": 0.72,
+          "y": 0.49,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "upper-right-front"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.38,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-left-front"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.61,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center-front"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.87,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9500,
+      "lingerMaxMs": 17000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "upper-left",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.14,
+        "x": 0.49,
+        "y": 0.48
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "upper-left",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.14,
+          "x": 0.49,
+          "y": 0.48
+        },
+        {
+          "id": "upper-right",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.14,
+          "x": 0.72,
+          "y": 0.49
+        },
+        {
+          "id": "lower-left",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.14,
+          "x": 0.38,
+          "y": 0.68
+        },
+        {
+          "id": "lower-center",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.14,
+          "x": 0.61,
+          "y": 0.68
+        },
+        {
+          "id": "lower-right",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.14,
+          "x": 0.86,
+          "y": 0.67
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "upper-left-seat",
+          "x": 0.49,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
             "upper-left"
           ]
         },
         {
           "id": "upper-right-seat",
-          "x": 0.724,
-          "y": 0.507,
-          "layer": 4,
+          "x": 0.72,
+          "y": 0.49,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "upper-right"
           ]
         },
         {
           "id": "lower-left-seat",
-          "x": 0.408,
-          "y": 0.653,
-          "layer": 4,
-          "facing": -1,
-          "portalIds": [
+          "x": 0.38,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
             "lower-left"
           ]
         },
         {
           "id": "lower-center-seat",
-          "x": 0.627,
-          "y": 0.65,
-          "layer": 4,
+          "x": 0.61,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-center"
           ]
         },
         {
           "id": "lower-right-seat",
-          "x": 0.858,
-          "y": 0.655,
-          "layer": 4,
+          "x": 0.87,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-right"
           ]
         }
-      ],
-      "lingerMinMs": 9500,
-      "lingerMaxMs": 17000
+      ]
     }
   },
   "pvc-pipe__cave__theme-artificial__front.png": {
@@ -9749,7 +10336,65 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.97,
+          "approachY": 0.51,
+          "mouthX": 0.76,
+          "mouthY": 0.51,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.46,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.75,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-2",
+          "x": 0.76,
+          "y": 0.42,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-3",
+          "x": 0.66,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-4",
+          "x": 0.81,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Terracotta Pot",
@@ -9769,13 +10414,120 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.9349999999999999,
+          "approachY": 0.49,
+          "mouthX": 0.75,
+          "mouthY": 0.49,
+          "entranceWidth": 0.28,
+          "entranceHeight": 0.53,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.72,
+          "y": 0.32,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.74,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.65,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.28,
+        "height": 0.53,
+        "x": 0.75,
+        "y": 0.49
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.28,
+          "height": 0.53,
+          "x": 0.75,
+          "y": 0.49
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.72,
+          "y": 0.32,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.74,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.65,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "terracotta-tunnel__cave__theme-artificial__front.png": {
     "name": "Terracotta Tunnel",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.6,
+    "defaultScale": 1.25,
     "description": "A terracotta tunnel decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9789,51 +10541,148 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.04999999999999999,
+          "approachY": 0.57,
+          "mouthX": 0.26,
+          "mouthY": 0.57,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.27,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.25,
+          "y": 0.58,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.3,
+        "height": 0.27,
+        "x": 0.26,
+        "y": 0.57
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.3,
+          "height": 0.27,
+          "x": 0.26,
+          "y": 0.57
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.25,
+          "y": 0.58,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "blue-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 1",
     "cost": 16,
     "width": 595,
-    "defaultScale": 1.1,
+    "defaultScale": 1.2,
     "caveSettings": {
+      "entry": {
+        "id": "left-front",
+        "side": "front",
+        "width": 0.18,
+        "height": 0.16,
+        "x": 0.22,
+        "y": 0.83
+      },
       "entryCount": 3,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "left-front",
-          "x": 0.24,
-          "y": 0.82,
-          "side": "front"
+          "side": "front",
+          "width": 0.18,
+          "height": 0.16,
+          "x": 0.22,
+          "y": 0.83
         },
         {
           "id": "center-front",
-          "x": 0.44,
-          "y": 0.65,
-          "side": "front"
-        },
-        {
-          "id": "right-front",
-          "x": 0.62,
-          "y": 0.84,
-          "side": "front"
-        }
-      ],
-      "seatCount": 3,
-      "seats": [
-        {
-          "id": "left-seat",
-          "x": 0.24,
-          "y": 0.82
-        },
-        {
-          "id": "center-seat",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.12,
           "x": 0.44,
           "y": 0.65
         },
         {
+          "id": "right-front",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.16,
+          "x": 0.63,
+          "y": 0.86
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.23,
+          "y": 0.85,
+          "facing": 1,
+          "entryIds": [
+            "left-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "center-front"
+          ]
+        },
+        {
           "id": "right-seat",
           "x": 0.62,
-          "y": 0.84
+          "y": 0.86,
+          "facing": -1,
+          "entryIds": [
+            "right-front"
+          ]
         }
       ]
     },
@@ -9850,110 +10699,255 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "left-front-front",
+          "approachX": 0.22,
+          "approachY": 0.95,
+          "mouthX": 0.22,
+          "mouthY": 0.83,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "center-front-front",
+          "approachX": 0.44,
+          "approachY": 0.77,
+          "mouthX": 0.44,
+          "mouthY": 0.65,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "right-front-front",
+          "approachX": 0.63,
+          "approachY": 0.98,
+          "mouthX": 0.63,
+          "mouthY": 0.86,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "left-seat",
+          "x": 0.23,
+          "y": 0.85,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "left-front-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "center-front-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.62,
+          "y": 0.86,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "right-front-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    }
   },
   "wizard-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 2",
     "cost": 16,
     "width": 600,
-    "defaultScale": 1.1,
+    "defaultScale": 1.15,
     "caveSettings": {
+      "entry": {
+        "id": "main-both",
+        "side": "both",
+        "width": 0.13,
+        "height": 0.11,
+        "x": 0.51,
+        "y": 0.72
+      },
       "entryCount": 3,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-both",
-          "x": 0.49,
-          "y": 0.69,
-          "side": "both"
+          "side": "both",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.51,
+          "y": 0.72
         },
         {
           "id": "right-front",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.08,
           "x": 0.76,
-          "y": 0.84,
-          "side": "front"
+          "y": 0.84
         },
         {
           "id": "far-right-front",
-          "x": 0.92,
-          "y": 0.89,
-          "side": "front"
+          "side": "front",
+          "width": 0.04,
+          "height": 0.08,
+          "x": 0.91,
+          "y": 0.88
         }
       ],
       "seatCount": 3,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "main-upper",
-          "x": 0.5,
-          "y": 0.74,
-          "facing": "right"
+          "x": 0.51,
+          "y": 0.7,
+          "facing": 1,
+          "entryIds": [
+            "main-both"
+          ]
         },
         {
           "id": "right-seat",
           "x": 0.76,
           "y": 0.84,
-          "facing": "left"
+          "facing": -1,
+          "entryIds": [
+            "right-front"
+          ]
         },
         {
           "id": "main-lower",
           "x": 0.51,
-          "y": 0.78,
-          "facing": "left"
+          "y": 0.73,
+          "facing": -1,
+          "entryIds": [
+            "main-both"
+          ]
         }
       ]
     },
     "caveBehavior": {
       "portals": [
         {
-          "id": "main_front",
-          "approachX": 0.49,
-          "approachY": 0.76,
-          "mouthX": 0.5,
-          "mouthY": 0.67,
+          "id": "main-both-front",
+          "approachX": 0.5,
+          "approachY": 0.8099999999999999,
+          "mouthX": 0.51,
+          "mouthY": 0.72,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
           "outsideLayer": 2,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.5,
-              "y": 0.6
-            },
-            {
-              "x": 0.49,
-              "y": 0.55
-            }
-          ]
+          "side": "front",
+          "path": []
         },
         {
-          "id": "side_layer4",
-          "approachX": 0.74,
-          "approachY": 0.62,
-          "mouthX": 0.69,
-          "mouthY": 0.6,
-          "outsideLayer": 4,
+          "id": "main-both-back",
+          "approachX": 0.5,
+          "approachY": 0.8099999999999999,
+          "mouthX": 0.51,
+          "mouthY": 0.72,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 5,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.63,
-              "y": 0.57
-            },
-            {
-              "x": 0.56,
-              "y": 0.54
-            }
-          ]
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "right-front-front",
+          "approachX": 0.81,
+          "approachY": 0.86,
+          "mouthX": 0.76,
+          "mouthY": 0.84,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "far-right-front-front",
+          "approachX": 0.9600000000000001,
+          "approachY": 0.9,
+          "mouthX": 0.91,
+          "mouthY": 0.88,
+          "entranceWidth": 0.04,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
-          "id": "main_chamber",
-          "x": 0.52,
-          "y": 0.52,
+          "id": "main-upper",
+          "x": 0.51,
+          "y": 0.7,
           "layer": 4,
+          "facing": 1,
           "portalIds": [
-            "main_front",
-            "side_layer4"
+            "main-both-front",
+            "main-both-back"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.76,
+          "y": 0.84,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "right-front-front"
+          ]
+        },
+        {
+          "id": "main-lower",
+          "x": 0.51,
+          "y": 0.73,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "main-both-front",
+            "main-both-back"
           ]
         }
-      ]
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
     },
     "theme": "fantasy",
     "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed.",
@@ -9968,13 +10962,14 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "frozen-cave__cave__theme-frozen__front.png": {
     "name": "Frozen Cave",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 1.55,
     "description": "A frozen cave decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9988,7 +10983,135 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-back",
+          "approachX": 0.45,
+          "approachY": 0.77,
+          "mouthX": 0.45,
+          "mouthY": 0.64,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.18,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.55,
+          "approachY": 0.78,
+          "mouthX": 0.55,
+          "mouthY": 0.65,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.4,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.45,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-back"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.59,
+          "y": 0.73,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "back",
+        "width": 0.16,
+        "height": 0.18,
+        "x": 0.45,
+        "y": 0.64
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "back",
+          "width": 0.16,
+          "height": 0.18,
+          "x": 0.45,
+          "y": 0.64
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.4,
+          "x": 0.55,
+          "y": 0.65
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.45,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.59,
+          "y": 0.73,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "frozen-cave__cave__theme-frozen__v2__front.png": {
     "name": "Frozen Cave 2",
@@ -10008,7 +11131,135 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-back",
+          "approachX": 0.52,
+          "approachY": 0.69,
+          "mouthX": 0.52,
+          "mouthY": 0.59,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.12,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.57,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.57,
+          "mouthY": 0.58,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.37,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.59,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-back"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.58,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "back",
+        "width": 0.11,
+        "height": 0.12,
+        "x": 0.52,
+        "y": 0.59
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "back",
+          "width": 0.11,
+          "height": 0.12,
+          "x": 0.52,
+          "y": 0.59
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.3,
+          "height": 0.37,
+          "x": 0.57,
+          "y": 0.58
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.59,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.58,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "halloween-crypt__cave__theme-halloween__front.png": {
     "name": "Crypt Cave",
@@ -10028,7 +11279,74 @@ const DECOR_META = {
       "shelter",
       "spooky"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.211,
+          "approachY": 0.917,
+          "mouthX": 0.211,
+          "mouthY": 0.797,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        },
+        {
+          "id": "opening-2",
+          "approachX": 0.516,
+          "approachY": 0.673,
+          "mouthX": 0.516,
+          "mouthY": 0.523,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        },
+        {
+          "id": "opening-3",
+          "approachX": 0.82,
+          "approachY": 0.905,
+          "mouthX": 0.82,
+          "mouthY": 0.785,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.211,
+          "y": 0.797,
+          "layer": 4,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.516,
+          "y": 0.523,
+          "layer": 4,
+          "portalIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.82,
+          "y": 0.785,
+          "layer": 4,
+          "portalIds": [
+            "opening-3"
+          ]
+        }
+      ]
+    }
   },
   "halloween-haunted-house__cave__theme-halloween__front.png": {
     "name": "Haunted House Cave",
@@ -10039,29 +11357,35 @@ const DECOR_META = {
       "entries": [
         {
           "id": "left-cellar",
-          "x": 0.18,
-          "y": 0.86,
-          "side": "front"
+          "x": 0.227,
+          "y": 0.859,
+          "side": "front",
+          "width": 0.11,
+          "height": 0.08
         },
         {
           "id": "front-door",
-          "x": 0.5,
-          "y": 0.69,
-          "side": "front"
+          "x": 0.52,
+          "y": 0.672,
+          "side": "front",
+          "width": 0.115,
+          "height": 0.145
         },
         {
           "id": "right-cellar",
-          "x": 0.84,
-          "y": 0.86,
-          "side": "front"
+          "x": 0.781,
+          "y": 0.859,
+          "side": "front",
+          "width": 0.105,
+          "height": 0.08
         }
       ],
       "seatCount": 3,
       "seats": [
         {
           "id": "left-cellar-seat",
-          "x": 0.18,
-          "y": 0.84,
+          "x": 0.227,
+          "y": 0.859,
           "facing": "right",
           "entryIds": [
             "left-cellar"
@@ -10069,8 +11393,8 @@ const DECOR_META = {
         },
         {
           "id": "front-door-seat",
-          "x": 0.5,
-          "y": 0.67,
+          "x": 0.52,
+          "y": 0.672,
           "facing": "right",
           "entryIds": [
             "front-door"
@@ -10078,8 +11402,8 @@ const DECOR_META = {
         },
         {
           "id": "right-cellar-seat",
-          "x": 0.84,
-          "y": 0.84,
+          "x": 0.781,
+          "y": 0.859,
           "facing": "left",
           "entryIds": [
             "right-cellar"
@@ -10101,7 +11425,8 @@ const DECOR_META = {
       "shelter",
       "spooky"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "coconut-shell-hideaway__cave__theme-natural__front.png": {
     "name": "Coconut Shell Hideaway",
@@ -10121,7 +11446,95 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.67,
+          "approachY": 0.84,
+          "mouthX": 0.67,
+          "mouthY": 0.63,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.38,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.78,
+          "y": 0.59,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.35,
+        "height": 0.38,
+        "x": 0.67,
+        "y": 0.63
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.38,
+          "x": 0.67,
+          "y": 0.63
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.66,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.78,
+          "y": 0.59,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
     "name": "Hollow Mossy Driftwood",
@@ -10144,13 +11557,103 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.05000000000000002,
+          "approachY": 0.57,
+          "mouthX": 0.2,
+          "mouthY": 0.57,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.25,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-2-back",
+          "approachX": 0.64,
+          "approachY": 0.57,
+          "mouthX": 0.79,
+          "mouthY": 0.57,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.24,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.2,
+          "y": 0.57,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.22,
+        "height": 0.25,
+        "x": 0.2,
+        "y": 0.57
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.25,
+          "x": 0.2,
+          "y": 0.57
+        },
+        {
+          "id": "entry-2",
+          "side": "back",
+          "width": 0.2,
+          "height": 0.24,
+          "x": 0.79,
+          "y": 0.57
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.2,
+          "y": 0.57,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "live-root-overhang__cave-wood__theme-natural__front.png": {
     "name": "Live Root Overhang",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 2.25,
     "description": "A live root overhang decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10167,13 +11670,51 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.515,
+          "approachY": 0.76,
+          "mouthX": 0.52,
+          "mouthY": 0.65,
+          "entranceWidth": 0.32,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.41,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-2",
+          "x": 0.63,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "mangrove-roots__cave-wood__theme-natural__front.png": {
     "name": "Mangrove Roots",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 1.95,
     "description": "A mangrove roots decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10190,72 +11731,246 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.51,
+          "approachY": 0.815,
+          "mouthX": 0.51,
+          "mouthY": 0.71,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.56,
+          "approachY": 0.545,
+          "mouthX": 0.56,
+          "mouthY": 0.44,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.56,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.8,
+          "y": 0.44,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.62,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.14,
+        "height": 0.22,
+        "x": 0.51,
+        "y": 0.71
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.22,
+          "x": 0.51,
+          "y": 0.71
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.19,
+          "x": 0.56,
+          "y": 0.44
+        }
+      ],
+      "seatCount": 4,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.56,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.8,
+          "y": 0.44,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.62,
+          "y": 0.72,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "slate__cave-rock__theme-natural__front.png": {
     "name": "Slate Cave",
     "cost": 12,
     "width": 620,
-    "defaultScale": 1.1,
+    "defaultScale": 1.2,
     "caveSettings": {
+      "entry": {
+        "id": "main-front",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.5,
+        "x": 0.51,
+        "y": 0.65
+      },
       "entryCount": 1,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-front",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.5,
           "x": 0.51,
-          "y": 0.67,
-          "side": "front"
+          "y": 0.65
         }
       ],
       "seatCount": 2,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "left-seat",
           "x": 0.42,
           "y": 0.64,
-          "facing": "right"
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         },
         {
           "id": "right-seat",
           "x": 0.6,
           "y": 0.64,
-          "facing": "left"
+          "facing": -1,
+          "entryIds": [
+            "main-front"
+          ]
         }
       ]
     },
     "caveBehavior": {
       "portals": [
         {
-          "id": "main_front",
-          "approachX": 0.5,
-          "approachY": 0.77,
-          "mouthX": 0.5,
-          "mouthY": 0.67,
+          "id": "main-front-front",
+          "approachX": 0.51,
+          "approachY": 0.75,
+          "mouthX": 0.51,
+          "mouthY": 0.65,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.5,
           "outsideLayer": 2,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.5,
-              "y": 0.61
-            },
-            {
-              "x": 0.5,
-              "y": 0.56
-            }
-          ]
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
-          "id": "center",
-          "x": 0.5,
-          "y": 0.53,
+          "id": "left-seat",
+          "x": 0.42,
+          "y": 0.64,
           "layer": 4,
+          "facing": 1,
           "portalIds": [
-            "main_front"
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.6,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "main-front-front"
           ]
         }
-      ]
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
     },
     "theme": "natural",
     "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy.",
@@ -10272,7 +11987,8 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "slate-stack__cave-rock__theme-natural__front.png": {
     "name": "Slate Stack",
@@ -10301,29 +12017,35 @@ const DECOR_META = {
           "id": "left-den",
           "approachX": 0.275,
           "approachY": 0.65,
-          "mouthX": 0.378,
-          "mouthY": 0.617
+          "mouthX": 0.38,
+          "mouthY": 0.6,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.12
         },
         {
           "id": "upper-right-den",
           "approachX": 0.9,
           "approachY": 0.5,
-          "mouthX": 0.808,
-          "mouthY": 0.512
+          "mouthX": 0.75,
+          "mouthY": 0.51,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.08
         },
         {
           "id": "lower-right-den",
           "approachX": 0.9,
           "approachY": 0.68,
           "mouthX": 0.78,
-          "mouthY": 0.657
+          "mouthY": 0.64,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.08
         }
       ],
       "insideSlots": [
         {
           "id": "left-den-seat",
           "x": 0.41,
-          "y": 0.61,
+          "y": 0.57,
           "layer": 4,
           "facing": -1,
           "portalIds": [
@@ -10332,8 +12054,8 @@ const DECOR_META = {
         },
         {
           "id": "upper-right-den-seat",
-          "x": 0.78,
-          "y": 0.518,
+          "x": 0.74,
+          "y": 0.51,
           "layer": 4,
           "facing": 1,
           "portalIds": [
@@ -10342,8 +12064,8 @@ const DECOR_META = {
         },
         {
           "id": "lower-right-den-seat",
-          "x": 0.8,
-          "y": 0.66,
+          "x": 0.78,
+          "y": 0.64,
           "layer": 4,
           "facing": 1,
           "portalIds": [
@@ -10353,13 +12075,14 @@ const DECOR_META = {
       ],
       "lingerMinMs": 10000,
       "lingerMaxMs": 18000
-    }
+    },
+    "caveEntranceCalibration": 1
   },
   "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
     "name": "Tangled Driftwood Rootscape",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 2.25,
     "description": "A tangled driftwood rootscape decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10376,13 +12099,221 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.69,
+          "approachY": 0.705,
+          "mouthX": 0.69,
+          "mouthY": 0.64,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.39,
+          "approachY": 0.6825,
+          "mouthX": 0.39,
+          "mouthY": 0.62,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.46,
+          "approachY": 0.49,
+          "mouthX": 0.46,
+          "mouthY": 0.43,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.34,
+          "approachY": 0.5725,
+          "mouthX": 0.34,
+          "mouthY": 0.51,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.67,
+          "y": 0.65,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.32,
+          "y": 0.57,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.55,
+          "y": 0.5,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.39,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.1,
+        "height": 0.06,
+        "x": 0.69,
+        "y": 0.64
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.06,
+          "x": 0.69,
+          "y": 0.64
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.39,
+          "y": 0.62
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.06,
+          "x": 0.46,
+          "y": 0.43
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.06,
+          "x": 0.34,
+          "y": 0.51
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.67,
+          "y": 0.65,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.32,
+          "y": 0.57,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.55,
+          "y": 0.5,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.39,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-1__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 1",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10399,13 +12330,261 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.61,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.61,
+          "mouthY": 0.58,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.25,
+          "approachY": 0.5599999999999999,
+          "mouthX": 0.25,
+          "mouthY": 0.47,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.34,
+          "approachY": 0.39,
+          "mouthX": 0.34,
+          "mouthY": 0.32,
+          "entranceWidth": 0.05,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.36,
+          "approachY": 0.7899999999999999,
+          "mouthX": 0.36,
+          "mouthY": 0.7,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.5,
+          "approachY": 0.63,
+          "mouthX": 0.5,
+          "mouthY": 0.53,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.54,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.34,
+          "y": 0.32,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.63,
+          "y": 0.6,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.21,
+          "y": 0.45,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.4,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.11,
+        "x": 0.61,
+        "y": 0.58
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.61,
+          "y": 0.58
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.25,
+          "y": 0.47
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.05,
+          "height": 0.06,
+          "x": 0.34,
+          "y": 0.32
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.11,
+          "x": 0.36,
+          "y": 0.7
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.08,
+          "x": 0.5,
+          "y": 0.53
+        }
+      ],
+      "seatCount": 6,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.54,
+          "facing": 1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.34,
+          "y": 0.32,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.63,
+          "y": 0.6,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.21,
+          "y": 0.45,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.4,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-10__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 10",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10422,13 +12601,299 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.49,
+          "approachY": 0.675,
+          "mouthX": 0.49,
+          "mouthY": 0.52,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.24,
+          "approachY": 0.535,
+          "mouthX": 0.24,
+          "mouthY": 0.44,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.63,
+          "approachY": 0.7925,
+          "mouthX": 0.63,
+          "mouthY": 0.73,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.14,
+          "approachY": 0.7150000000000001,
+          "mouthX": 0.14,
+          "mouthY": 0.62,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.87,
+          "approachY": 0.7825,
+          "mouthX": 0.87,
+          "mouthY": 0.72,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.48,
+          "y": 0.55,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.24,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.63,
+          "y": 0.74,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.55,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.65,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.74,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.36,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.84,
+          "y": 0.72,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.22,
+        "height": 0.19,
+        "x": 0.49,
+        "y": 0.52
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.19,
+          "x": 0.49,
+          "y": 0.52
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.12,
+          "x": 0.24,
+          "y": 0.44
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.07,
+          "x": 0.63,
+          "y": 0.73
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.1,
+          "x": 0.14,
+          "y": 0.62
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.87,
+          "y": 0.72
+        }
+      ],
+      "seatCount": 8,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.48,
+          "y": 0.55,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.24,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.63,
+          "y": 0.74,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.55,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.65,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.74,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.36,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.84,
+          "y": 0.72,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-2__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 2",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 2.2,
     "categories": [
       "cave",
       "coral"
@@ -10445,13 +12910,202 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.58,
+          "approachY": 0.6699999999999999,
+          "mouthX": 0.58,
+          "mouthY": 0.57,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.26,
+          "approachY": 0.5925,
+          "mouthX": 0.26,
+          "mouthY": 0.52,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.84,
+          "approachY": 0.7675,
+          "mouthX": 0.84,
+          "mouthY": 0.7,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.81,
+          "approachY": 0.6725,
+          "mouthX": 0.81,
+          "mouthY": 0.61,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.05,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.58,
+          "y": 0.57,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.26,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.86,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.81,
+          "y": 0.61,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.12,
+        "x": 0.58,
+        "y": 0.57
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.12,
+          "x": 0.58,
+          "y": 0.57
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.07,
+          "x": 0.26,
+          "y": 0.52
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.06,
+          "x": 0.84,
+          "y": 0.7
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.05,
+          "x": 0.81,
+          "y": 0.61
+        }
+      ],
+      "seatCount": 4,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.58,
+          "y": 0.57,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.26,
+          "y": 0.52,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.86,
+          "y": 0.72,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.81,
+          "y": 0.61,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-3__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 3",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 2.05,
     "categories": [
       "cave",
       "coral"
@@ -10468,13 +13122,301 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.55,
+          "approachY": 0.8300000000000001,
+          "mouthX": 0.55,
+          "mouthY": 0.65,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.34,
+          "approachY": 0.58,
+          "mouthX": 0.34,
+          "mouthY": 0.48,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.26,
+          "approachY": 0.74,
+          "mouthX": 0.26,
+          "mouthY": 0.66,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.84,
+          "approachY": 0.64,
+          "mouthX": 0.84,
+          "mouthY": 0.56,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.17,
+          "approachY": 0.53,
+          "mouthX": 0.17,
+          "mouthY": 0.43,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.08,
+          "approachY": 0.7899999999999999,
+          "mouthX": 0.08,
+          "mouthY": 0.71,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.55,
+          "y": 0.65,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.34,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.25,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.84,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.69,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.2,
+          "y": 0.43,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.11,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-6-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.22,
+        "x": 0.55,
+        "y": 0.65
+      },
+      "entryCount": 6,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.22,
+          "x": 0.55,
+          "y": 0.65
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.12,
+          "x": 0.34,
+          "y": 0.48
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.08,
+          "x": 0.26,
+          "y": 0.66
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.84,
+          "y": 0.56
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.08,
+          "x": 0.17,
+          "y": 0.43
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.08,
+          "x": 0.08,
+          "y": 0.71
+        }
+      ],
+      "seatCount": 7,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.55,
+          "y": 0.65,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.34,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.25,
+          "y": 0.67,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.84,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.69,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.2,
+          "y": 0.43,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.11,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "entry-6"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-4__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 4",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.3,
     "categories": [
       "cave",
       "coral"
@@ -10491,13 +13433,381 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.44,
+          "approachY": 0.45499999999999996,
+          "mouthX": 0.44,
+          "mouthY": 0.37,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.43,
+          "approachY": 0.77,
+          "mouthX": 0.43,
+          "mouthY": 0.66,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.32,
+          "approachY": 0.94,
+          "mouthX": 0.32,
+          "mouthY": 0.83,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.79,
+          "approachY": 0.7625,
+          "mouthX": 0.79,
+          "mouthY": 0.7,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.63,
+          "approachY": 0.5125000000000001,
+          "mouthX": 0.63,
+          "mouthY": 0.45,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.05,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.07,
+          "approachY": 0.96,
+          "mouthX": 0.07,
+          "mouthY": 0.85,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-7-front",
+          "approachX": 0.86,
+          "approachY": 0.98,
+          "mouthX": 0.86,
+          "mouthY": 0.88,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-8-front",
+          "approachX": 0.23,
+          "approachY": 0.38499999999999995,
+          "mouthX": 0.23,
+          "mouthY": 0.3,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.44,
+          "y": 0.37,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.43,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.28,
+          "y": 0.83,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.63,
+          "y": 0.45,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.29,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-8-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.73,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.09,
+          "y": 0.86,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-6-front"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.83,
+          "y": 0.88,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-7-front"
+          ]
+        },
+        {
+          "id": "seat-9",
+          "x": 0.81,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.1,
+        "height": 0.1,
+        "x": 0.44,
+        "y": 0.37
+      },
+      "entryCount": 8,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.1,
+          "x": 0.44,
+          "y": 0.37
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.14,
+          "x": 0.43,
+          "y": 0.66
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.1,
+          "x": 0.32,
+          "y": 0.83
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.2,
+          "height": 0.17,
+          "x": 0.79,
+          "y": 0.7
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.05,
+          "x": 0.63,
+          "y": 0.45
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.09,
+          "x": 0.07,
+          "y": 0.85
+        },
+        {
+          "id": "entry-7",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.06,
+          "x": 0.86,
+          "y": 0.88
+        },
+        {
+          "id": "entry-8",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.12,
+          "x": 0.23,
+          "y": 0.3
+        }
+      ],
+      "seatCount": 9,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.44,
+          "y": 0.37,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.43,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.28,
+          "y": 0.83,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.63,
+          "y": 0.45,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.29,
+          "facing": -1,
+          "entryIds": [
+            "entry-8"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.73,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.09,
+          "y": 0.86,
+          "facing": -1,
+          "entryIds": [
+            "entry-6"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.83,
+          "y": 0.88,
+          "facing": -1,
+          "entryIds": [
+            "entry-7"
+          ]
+        },
+        {
+          "id": "seat-9",
+          "x": 0.81,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-5__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 5",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.85,
     "categories": [
       "cave",
       "coral"
@@ -10514,36 +13824,141 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
-  },
-  "coral-shelf-6__cave-coral__theme-reef__front.png": {
-    "name": "Coral Shelf Cave 6",
-    "cost": 16,
-    "width": 520,
-    "defaultScale": 1.1,
-    "categories": [
-      "cave",
-      "coral"
-    ],
-    "theme": "reef",
-    "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
-    "behavior": "cave_layered",
-    "swimmable": true,
-    "tags": [
-      "cave",
-      "coral",
-      "reef",
-      "hardscape",
-      "shelter",
-      "perchable"
-    ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.5,
+          "approachY": 0.71,
+          "mouthX": 0.5,
+          "mouthY": 0.61,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.8,
+          "approachY": 0.7,
+          "mouthX": 0.8,
+          "mouthY": 0.6,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.73,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.85,
+          "y": 0.57,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.15,
+        "height": 0.12,
+        "x": 0.5,
+        "y": 0.61
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.12,
+          "x": 0.5,
+          "y": 0.61
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.12,
+          "x": 0.8,
+          "y": 0.6
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.73,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.85,
+          "y": 0.57,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-7__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 7",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10560,13 +13975,282 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.39,
+          "approachY": 0.445,
+          "mouthX": 0.39,
+          "mouthY": 0.37,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.28,
+          "approachY": 0.62,
+          "mouthX": 0.28,
+          "mouthY": 0.52,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.89,
+          "approachY": 0.83,
+          "mouthX": 0.89,
+          "mouthY": 0.77,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.29,
+          "approachY": 0.755,
+          "mouthX": 0.29,
+          "mouthY": 0.67,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-5-front",
+          "approachX": 0.76,
+          "approachY": 0.665,
+          "mouthX": 0.76,
+          "mouthY": 0.59,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-6-front",
+          "approachX": 0.76,
+          "approachY": 0.7599999999999999,
+          "mouthX": 0.76,
+          "mouthY": 0.7,
+          "entranceWidth": 0.05,
+          "entranceHeight": 0.04,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.34,
+          "y": 0.37,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.89,
+          "y": 0.77,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.29,
+          "y": 0.67,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "opening-5-seat",
+          "x": 0.76,
+          "y": 0.59,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-5-front"
+          ]
+        },
+        {
+          "id": "opening-6-seat",
+          "x": 0.76,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-6-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.18,
+        "height": 0.08,
+        "x": 0.39,
+        "y": 0.37
+      },
+      "entryCount": 6,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.08,
+          "x": 0.39,
+          "y": 0.37
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.1,
+          "x": 0.28,
+          "y": 0.52
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.89,
+          "y": 0.77
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.09,
+          "x": 0.29,
+          "y": 0.67
+        },
+        {
+          "id": "opening-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.76,
+          "y": 0.59
+        },
+        {
+          "id": "opening-6",
+          "side": "front",
+          "width": 0.05,
+          "height": 0.04,
+          "x": 0.76,
+          "y": 0.7
+        }
+      ],
+      "seatCount": 6,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.34,
+          "y": 0.37,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.89,
+          "y": 0.77,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.29,
+          "y": 0.67,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "opening-5-seat",
+          "x": 0.76,
+          "y": 0.59,
+          "facing": -1,
+          "entryIds": [
+            "opening-5"
+          ]
+        },
+        {
+          "id": "opening-6-seat",
+          "x": 0.76,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-6"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-9__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 9",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.8,
     "categories": [
       "cave",
       "coral"
@@ -10583,13 +14267,343 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.56,
+          "approachY": 0.705,
+          "mouthX": 0.56,
+          "mouthY": 0.61,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.33,
+          "approachY": 0.66,
+          "mouthX": 0.33,
+          "mouthY": 0.56,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.36,
+          "approachY": 0.43499999999999994,
+          "mouthX": 0.36,
+          "mouthY": 0.35,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.24,
+          "approachY": 0.7799999999999999,
+          "mouthX": 0.24,
+          "mouthY": 0.71,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.64,
+          "approachY": 0.885,
+          "mouthX": 0.64,
+          "mouthY": 0.79,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.87,
+          "approachY": 0.835,
+          "mouthX": 0.87,
+          "mouthY": 0.74,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-7-front",
+          "approachX": 0.79,
+          "approachY": 0.8049999999999999,
+          "mouthX": 0.79,
+          "mouthY": 0.71,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-8-front",
+          "approachX": 0.38,
+          "approachY": 0.83,
+          "mouthX": 0.38,
+          "mouthY": 0.76,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.56,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.36,
+          "y": 0.35,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.24,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.78,
+          "y": 0.71,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-7-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.65,
+          "y": 0.8,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.35,
+          "y": 0.76,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-8-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.16,
+        "height": 0.11,
+        "x": 0.56,
+        "y": 0.61
+      },
+      "entryCount": 8,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.11,
+          "x": 0.56,
+          "y": 0.61
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.33,
+          "y": 0.56
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.09,
+          "x": 0.36,
+          "y": 0.35
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.06,
+          "x": 0.24,
+          "y": 0.71
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.1,
+          "x": 0.64,
+          "y": 0.79
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.1,
+          "x": 0.87,
+          "y": 0.74
+        },
+        {
+          "id": "entry-7",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.79,
+          "y": 0.71
+        },
+        {
+          "id": "entry-8",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.08,
+          "x": 0.38,
+          "y": 0.76
+        }
+      ],
+      "seatCount": 7,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.56,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.36,
+          "y": 0.35,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.24,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.78,
+          "y": 0.71,
+          "facing": 1,
+          "entryIds": [
+            "entry-7"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.65,
+          "y": 0.8,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.35,
+          "y": 0.76,
+          "facing": 1,
+          "entryIds": [
+            "entry-8"
+          ]
+        }
+      ]
+    }
   },
   "coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
     "name": "Coralline Live Rock",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 2.15,
     "description": "A coralline live rock decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10608,13 +14622,196 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.62,
+          "approachY": 0.75,
+          "mouthX": 0.62,
+          "mouthY": 0.63,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.26,
+          "approachY": 0.7949999999999999,
+          "mouthX": 0.26,
+          "mouthY": 0.72,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-3-front",
+          "approachX": 0.46,
+          "approachY": 0.67,
+          "mouthX": 0.46,
+          "mouthY": 0.55,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.56,
+          "approachY": 0.71,
+          "mouthX": 0.56,
+          "mouthY": 0.59,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-back",
+          "approachX": 0.56,
+          "approachY": 0.71,
+          "mouthX": 0.56,
+          "mouthY": 0.59,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.12,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.73,
+          "y": 0.63,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.5,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-3-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.17,
+        "height": 0.16,
+        "x": 0.62,
+        "y": 0.63
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.16,
+          "x": 0.62,
+          "y": 0.63
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.12,
+          "x": 0.26,
+          "y": 0.72
+        },
+        {
+          "id": "entry-3",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.11,
+          "x": 0.46,
+          "y": 0.55
+        },
+        {
+          "id": "entry-4",
+          "side": "both",
+          "width": 0.12,
+          "height": 0.12,
+          "x": 0.56,
+          "y": 0.59
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.73,
+          "y": 0.63,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.5,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "entry-3"
+          ]
+        }
+      ]
+    }
   },
   "live-rock-cluster__cave-rock__theme-reef__front.png": {
     "name": "Live Rock Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 2.25,
     "description": "A live rock cluster decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10630,7 +14827,215 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.53,
+          "approachY": 0.775,
+          "mouthX": 0.53,
+          "mouthY": 0.63,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.23,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.8,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.8,
+          "mouthY": 0.6,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-3-front",
+          "approachX": 0.34,
+          "approachY": 0.835,
+          "mouthX": 0.34,
+          "mouthY": 0.69,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.39,
+          "approachY": 0.615,
+          "mouthX": 0.39,
+          "mouthY": 0.47,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.56,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.78,
+          "y": 0.6,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.38,
+          "y": 0.47,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-3-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.64,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.23,
+        "x": 0.53,
+        "y": 0.63
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.23,
+          "x": 0.53,
+          "y": 0.63
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.12,
+          "x": 0.8,
+          "y": 0.6
+        },
+        {
+          "id": "entry-3",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.12,
+          "x": 0.34,
+          "y": 0.69
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.11,
+          "x": 0.39,
+          "y": 0.47
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.56,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.78,
+          "y": 0.6,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.38,
+          "y": 0.47,
+          "facing": 1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
+            "entry-3"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.64,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-1__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 1",
@@ -10659,7 +15064,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.52,
+          "approachY": 0.33499999999999996,
+          "mouthX": 0.52,
+          "mouthY": 0.43,
+          "entranceWidth": 0.37,
+          "entranceHeight": 0.21,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.43,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.63,
+          "y": 0.46,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.37,
+        "height": 0.21,
+        "x": 0.52,
+        "y": 0.43
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.37,
+          "height": 0.21,
+          "x": 0.52,
+          "y": 0.43
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.43,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.63,
+          "y": 0.46,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-3__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 3",
@@ -10688,7 +15181,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.54,
+          "approachY": 0.37,
+          "mouthX": 0.54,
+          "mouthY": 0.47,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.42,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.6,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.35,
+        "height": 0.19,
+        "x": 0.54,
+        "y": 0.47
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.19,
+          "x": 0.54,
+          "y": 0.47
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.42,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.6,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-4__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 4",
@@ -10717,7 +15298,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.45,
+          "approachY": 0.4075,
+          "mouthX": 0.45,
+          "mouthY": 0.49,
+          "entranceWidth": 0.32,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.4,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.58,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.32,
+        "height": 0.17,
+        "x": 0.45,
+        "y": 0.49
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.32,
+          "height": 0.17,
+          "x": 0.45,
+          "y": 0.49
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.4,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.58,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "seashell-cluster__cave-coral__theme-reef__front.png": {
     "name": "Seashell Cluster",
@@ -10744,61 +15413,151 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "left-shell",
-          "approachX": 0.105,
-          "approachY": 0.565,
-          "mouthX": 0.216,
-          "mouthY": 0.524
+          "id": "left-shell-front",
+          "approachX": 0.109,
+          "approachY": 0.581,
+          "mouthX": 0.22,
+          "mouthY": 0.54,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "upper-shell",
-          "approachX": 0.5,
-          "approachY": 0.5,
-          "mouthX": 0.585,
-          "mouthY": 0.406
+          "id": "upper-shell-front",
+          "approachX": 0.505,
+          "approachY": 0.504,
+          "mouthX": 0.59,
+          "mouthY": 0.41,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.13,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "right-shell",
-          "approachX": 0.955,
-          "approachY": 0.665,
-          "mouthX": 0.855,
-          "mouthY": 0.64
+          "id": "right-shell-front",
+          "approachX": 0.94,
+          "approachY": 0.675,
+          "mouthX": 0.84,
+          "mouthY": 0.65,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.15,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "left-shell-seat",
-          "x": 0.245,
-          "y": 0.522,
+          "x": 0.25,
+          "y": 0.52,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "left-shell-front"
+          ]
+        },
+        {
+          "id": "upper-shell-seat",
+          "x": 0.58,
+          "y": 0.4,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "upper-shell-front"
+          ]
+        },
+        {
+          "id": "right-shell-seat",
+          "x": 0.84,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right-shell-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "left-shell",
+        "side": "front",
+        "width": 0.15,
+        "height": 0.14,
+        "x": 0.22,
+        "y": 0.54
+      },
+      "entryCount": 3,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "left-shell",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.14,
+          "x": 0.22,
+          "y": 0.54
+        },
+        {
+          "id": "upper-shell",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.13,
+          "x": 0.59,
+          "y": 0.41
+        },
+        {
+          "id": "right-shell",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.15,
+          "x": 0.84,
+          "y": 0.65
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "left-shell-seat",
+          "x": 0.25,
+          "y": 0.52,
+          "facing": -1,
+          "entryIds": [
             "left-shell"
           ]
         },
         {
           "id": "upper-shell-seat",
-          "x": 0.61,
-          "y": 0.42,
-          "layer": 4,
+          "x": 0.58,
+          "y": 0.4,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "upper-shell"
           ]
         },
         {
           "id": "right-shell-seat",
-          "x": 0.825,
-          "y": 0.63,
-          "layer": 4,
+          "x": 0.84,
+          "y": 0.64,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "right-shell"
           ]
         }
-      ],
-      "lingerMinMs": 9000,
-      "lingerMaxMs": 16000
+      ]
     }
   },
   "meteor__cave-rock__theme-space__front.png": {
@@ -10807,28 +15566,55 @@ const DECOR_META = {
     "width": 585,
     "defaultScale": 1.1,
     "caveSettings": {
+      "entry": {
+        "id": "main-front",
+        "side": "front",
+        "width": 0.29,
+        "height": 0.35,
+        "x": 0.57,
+        "y": 0.63
+      },
       "entryCount": 1,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-front",
-          "x": 0.56,
-          "y": 0.67,
-          "side": "front"
+          "side": "front",
+          "width": 0.29,
+          "height": 0.35,
+          "x": 0.57,
+          "y": 0.63
         }
       ],
-      "seatCount": 2,
+      "seatCount": 3,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "upper-seat",
-          "x": 0.5,
-          "y": 0.55,
-          "facing": "right"
+          "x": 0.52,
+          "y": 0.53,
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         },
         {
           "id": "lower-seat",
-          "x": 0.49,
+          "x": 0.5,
           "y": 0.72,
-          "facing": "right"
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.63,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         }
       ]
     },
@@ -10847,7 +15633,61 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main-front-front",
+          "approachX": 0.57,
+          "approachY": 0.75,
+          "mouthX": 0.57,
+          "mouthY": 0.63,
+          "entranceWidth": 0.29,
+          "entranceHeight": 0.35,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "upper-seat",
+          "x": 0.52,
+          "y": 0.53,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "lower-seat",
+          "x": 0.5,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.63,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    }
   },
   "fishing-lure__lure__theme-artificial.png": {
     "name": "Fishing Lure",
@@ -12647,7 +17487,6 @@ const DECOR_KEY_ALIASES = Object.freeze({
   "cave_coral_shelf_3.png": "coral-shelf-3__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_4.png": "coral-shelf-4__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_5.png": "coral-shelf-5__cave-coral__theme-reef__front.png",
-  "cave_coral_shelf_6.png": "coral-shelf-6__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_7.png": "coral-shelf-7__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_9.png": "coral-shelf-9__cave-coral__theme-reef__front.png",
   "cave_sea_anemone_1.png": "sea-anemone-1__cave-coral__theme-reef__front.png",
@@ -12984,6 +17823,7 @@ const dom = {
   openEquipmentButton: document.querySelector("#openEquipmentButton"),
   openSettingsButton: document.querySelector("#openSettingsButton"),
   toolbarTileColorInput: document.querySelector("#toolbarTileColorInput"),
+  tankFrameColorInput: document.querySelector("#tankFrameColorInput"),
   openSettingsSidebarButton: document.querySelector("#openSettingsSidebarButton"),
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
@@ -13059,15 +17899,6 @@ const dom = {
   inspectorBreeding: document.querySelector("#inspectorBreeding"),
   inspectorMeal: document.querySelector("#inspectorMeal"),
   inspectorFishSettingsButton: document.querySelector("#inspectorFishSettingsButton"),
-  fishInspectorSettings: document.querySelector("#fishInspectorSettings"),
-  inspectorFishSizeInput: document.querySelector("#inspectorFishSizeInput"),
-  inspectorFishSizeValue: document.querySelector("#inspectorFishSizeValue"),
-  inspectorFishBehaviorSelect: document.querySelector("#inspectorFishBehaviorSelect"),
-  inspectorFishTurnAnimationInput: document.querySelector("#inspectorFishTurnAnimationInput"),
-  inspectorFishTurnAnimationValue: document.querySelector("#inspectorFishTurnAnimationValue"),
-  inspectorFishColorSwatches: document.querySelector("#inspectorFishColorSwatches"),
-  inspectorFishColorValue: document.querySelector("#inspectorFishColorValue"),
-  inspectorFishColorizeInput: document.querySelector("#inspectorFishColorizeInput"),
   toast: document.querySelector("#toast"),
   tabButtons: [...document.querySelectorAll(".tab-button")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
@@ -13219,6 +18050,7 @@ const runtime = {
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
   decorSettingsCaveTab: "entries",
+  decorSettingsShowCaveBackground: true,
   pendingDecorAction: null,
   pendingFishAction: null,
   pendingCustomDecorUpload: null,
@@ -13573,6 +18405,11 @@ const runtime = {
   debugBreedingSequence: null,
   debugFishBehaviorLog: [],
   debugFishBehaviorSignatures: new Map(),
+  debugFishBehaviorBroadcastEnabled: false,
+  debugFishBehaviorLoggingEnabled: false,
+  debugFishBehaviorSnapshots: new Map(),
+  debugFishBehaviorTextCache: new Map(),
+  debugFishBehaviorLastSyncAt: 0,
   lastTankPoint: null,
   viewportMetrics: {
     orientation: "",
@@ -14439,6 +19276,8 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     exclusive: true,
     onOpen: (_ctx, options) => {
       runtime.fishInspectFishId = options.fishId;
+      runtime.fishInspectBodyVersion = (runtime.fishInspectBodyVersion || 0) + 1;
+      runtime.fishInspectLastReadoutAt = 0;
       runtime.fishInspectNameDraft = getManagedFishById(options.fishId)?.fish?.name || "";
       runtime.fishInspectPreviewStartedAt = Date.now();
       runtime.fishInspectView = "animated";
@@ -14448,7 +19287,6 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     render: renderFishInspectUtilityOverlay,
     onBodyClick: handleFishInspectClick,
     onBodyInput: handleFishInspectInput,
-    onBodyChange: handleFishInspectChange,
     onBodyKeyDown: handleFishInspectKeyDown
   },
   "custom-decor-settings": createPlacedDecorUtilityMode({

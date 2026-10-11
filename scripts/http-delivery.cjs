@@ -37,6 +37,21 @@ function matchesEtag(header, etag) {
     || value.trim().replace(/^W\//, "") === etag.replace(/^W\//, ""));
 }
 
+function getMediaByteRange(header, length) {
+  // Ignore malformed and multipart requests; a full 200 response is valid.
+  const match = /^bytes=(\d*)-(\d*)$/.exec(String(header || "").trim());
+  if (!match || (!match[1] && !match[2])) return null;
+  const first = match[1] ? Number(match[1]) : null;
+  const last = match[2] ? Number(match[2]) : null;
+  if ((first !== null && !Number.isSafeInteger(first))
+    || (last !== null && !Number.isSafeInteger(last))) return null;
+  if (first !== null && last !== null && last < first) return null;
+  if (!length || first >= length || (first === null && last === 0)) return { unsatisfiable: true };
+  return first === null
+    ? { start: Math.max(0, length - last), end: length - 1 }
+    : { start: first, end: Math.min(last ?? length - 1, length - 1) };
+}
+
 function createHttpDelivery({ production = false, maxCacheBytes = 64 * 1024 * 1024, maxCacheEntries = 128 } = {}) {
   const cache = new Map();
   const pending = new Map();
@@ -101,12 +116,17 @@ function createHttpDelivery({ production = false, maxCacheBytes = 64 * 1024 * 10
   async function send(request, response, status, body, contentType, { entry = null, cacheable = false } = {}) {
     entry ||= { body: Buffer.isBuffer(body) ? body : Buffer.from(body), encodings: new Map() };
     const compressible = production && /^(?:text\/|application\/(?:javascript|json|manifest\+json|xml)|image\/svg\+xml)/i.test(contentType);
+    const media = cacheable && status === 200 && /^(?:audio|video)\//i.test(contentType);
+    // Media is served byte-for-byte without content encoding. Strong validators
+    // let browsers safely cache and combine its partial responses.
+    const etag = media ? entry.etag?.replace(/^W\//, "") : entry.etag;
+    if (media) response.setHeader("Accept-Ranges", "bytes");
     if (compressible) response.setHeader("Vary", "Accept-Encoding");
     if (production && cacheable) {
       // Existing ?v= tokens are not content hashes. Revalidate every reuse so
       // deploying a changed file at the same URL cannot strand an old client.
       response.setHeader("Cache-Control", "public, max-age=0, must-revalidate");
-      response.setHeader("ETag", entry.etag);
+      response.setHeader("ETag", etag);
     }
     const encoding = chooseEncoding(request.headers["accept-encoding"], compressible);
     if (!encoding) {
@@ -115,8 +135,21 @@ function createHttpDelivery({ production = false, maxCacheBytes = 64 * 1024 * 10
       response.end(request.method === "HEAD" ? undefined : "No acceptable content encoding");
       return;
     }
-    if (production && cacheable && matchesEtag(request.headers["if-none-match"], entry.etag)) {
+    if (production && cacheable && matchesEtag(request.headers["if-none-match"], etag)) {
       response.writeHead(304); response.end(); return;
+    }
+    const ifRange = request.headers["if-range"];
+    const range = media && request.method === "GET" && (!ifRange || (etag && ifRange === etag))
+      ? getMediaByteRange(request.headers.range, entry.body.length) : null;
+    if (range?.unsatisfiable) {
+      response.writeHead(416, { "Cache-Control": "no-store", "Content-Range": `bytes */${entry.body.length}`, "Content-Length": 0 });
+      response.end(); return;
+    }
+    if (range) {
+      const payload = entry.body.subarray(range.start, range.end + 1);
+      response.writeHead(206, { "Content-Type": contentType, "Content-Length": payload.length,
+        "Content-Range": `bytes ${range.start}-${range.end}/${entry.body.length}` });
+      response.end(payload); return;
     }
     const payload = await representation(entry, encoding);
     if (response.destroyed) return;

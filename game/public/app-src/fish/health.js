@@ -574,10 +574,9 @@ function getPoopFloorYNormAtXNorm(xNorm) {
   return clamp((getTankFloorSurfaceYAtX(clamp(xNorm, 0.08, 0.92) * TANK_WIDTH) + 4) / TANK_HEIGHT, 0.8, 0.96);
 }
 
-function getPoopTankLayer(poop) {
-  return Number.isFinite(Number(poop?.tankLayer))
-    ? clampTankLayer(poop.tankLayer)
-    : 1;
+function getPoopTankLayer() {
+  // One of five depth layers: waste stays in the rear 20% of the tank.
+  return TANK_DEPTH_LAYERS;
 }
 
 function getPoopLayerTargetAnchorY(poop, sprite = null, width = POOP_DRAW_WIDTH_PX) {
@@ -596,9 +595,9 @@ function getPoopLayerTargetYNorm(poop, sprite = null, width = POOP_DRAW_WIDTH_PX
   return getPoopLayerTargetAnchorY(poop, sprite, width) / TANK_HEIGHT;
 }
 
-function createPoopRecord({ fishId = "", createdAt = Date.now(), xNorm = 0.5, startYNorm = 0.54, tankLayer = 1 } = {}) {
+function createPoopRecord({ fishId = "", createdAt = Date.now(), xNorm = 0.5, startYNorm = 0.54 } = {}) {
   const clampedXNorm = clamp(xNorm, 0.08, 0.92);
-  const clampedLayer = clampTankLayer(tankLayer);
+  const clampedLayer = getPoopTankLayer();
   const targetYNorm = getPoopLayerTargetYNorm({ tankLayer: clampedLayer, xNorm: clampedXNorm });
   return {
     id: createId("poop"),

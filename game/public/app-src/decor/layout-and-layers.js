@@ -813,19 +813,8 @@ function sanitizePoop(poop) {
   }
 
   const xNorm = clamp(Number(poop.xNorm) || 0.5, 0.06, 0.94);
-  const tankLayer = Number.isFinite(Number(poop.tankLayer))
-    ? clampTankLayer(poop.tankLayer)
-    : undefined;
-  const fallbackYNorm = tankLayer
-    ? getTankLayerBottomBoundaryNorm(tankLayer)
-    : getPoopFloorYNormAtXNorm(xNorm);
-  const yNorm = clamp(
-    Number.isFinite(Number(poop.yNorm))
-      ? Number(poop.yNorm)
-      : fallbackYNorm,
-    0.14,
-    0.98
-  );
+  const tankLayer = getPoopTankLayer();
+  const yNorm = getPoopLayerTargetYNorm({ tankLayer, xNorm });
 
   return {
     id: String(poop.id || createId("poop")),
@@ -833,7 +822,7 @@ function sanitizePoop(poop) {
     dueAt: Number.isFinite(poop.dueAt) ? poop.dueAt : undefined,
     createdAt: Number.isFinite(poop.createdAt) ? poop.createdAt : undefined,
     xNorm,
-    ...(tankLayer ? { tankLayer } : {}),
+    tankLayer,
     yNorm,
     startYNorm: clamp(Number(poop.startYNorm) || 0.54, 0.18, 0.82),
     asset: resolveAppUrl(typeof poop.asset === "string" && poop.asset.trim() ? poop.asset : POOP_ASSET_PATH)

@@ -435,22 +435,6 @@
       "path": "assets/decor/cave_layered/coral-shelf-5__cave-coral__theme-reef__surface.webp?v=24daa32c4c4d"
     },
     {
-      "key": "coral-shelf-6__cave-coral__theme-reef__bg.webp",
-      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__bg.webp?v=b23495521e7c"
-    },
-    {
-      "key": "coral-shelf-6__cave-coral__theme-reef__front.webp",
-      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__front.webp?v=af84a509dc0e"
-    },
-    {
-      "key": "coral-shelf-6__cave-coral__theme-reef__surface.webp",
-      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__surface.webp?v=00c346dba503"
-    },
-    {
-      "key": "coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp",
-      "path": "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp?v=0e9d16f5f302"
-    },
-    {
       "key": "coral-shelf-7__cave-coral__theme-reef__bg.webp",
       "path": "assets/decor/cave_layered/coral-shelf-7__cave-coral__theme-reef__bg.webp?v=cc351c3e012b"
     },
@@ -503,12 +487,28 @@
       "path": "assets/decor/cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__front.webp?v=14ad7389aa97"
     },
     {
+      "key": "extra-narrow-pleco-tubes__cave__theme-artificial__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/extra-narrow-pleco-tubes__cave__theme-artificial__shadow-footprint.webp?v=d4f1782e970d"
+    },
+    {
+      "key": "frozen-cave__cave__theme-frozen__bg.webp",
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__bg.webp?v=c69ac37e5a14"
+    },
+    {
       "key": "frozen-cave__cave__theme-frozen__front.webp",
-      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__front.webp?v=c69ac37e5a14"
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__front.webp?v=abc74ee4b733"
+    },
+    {
+      "key": "frozen-cave__cave__theme-frozen__v2__bg.webp",
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__v2__bg.webp?v=c051a2ff5f06"
+    },
+    {
+      "key": "frozen-cave__cave__theme-frozen__v2__front.png",
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__v2__front.png?v=29f2c2333143"
     },
     {
       "key": "frozen-cave__cave__theme-frozen__v2__front.webp",
-      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp?v=c051a2ff5f06"
+      "path": "assets/decor/cave_layered/frozen-cave__cave__theme-frozen__v2__front.webp?v=e344cca41eda"
     },
     {
       "key": "halloween-crypt__cave__theme-halloween__bg.webp",
@@ -639,6 +639,10 @@
       "path": "assets/decor/cave_layered/seashell-cluster__cave-coral__theme-reef__front.webp?v=7c51f555885a"
     },
     {
+      "key": "seashell-cluster__cave-coral__theme-reef__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/seashell-cluster__cave-coral__theme-reef__shadow-footprint.webp?v=ff030362932b"
+    },
+    {
       "key": "slate__cave-rock__theme-natural__bg.webp",
       "path": "assets/decor/cave_layered/slate__cave-rock__theme-natural__bg.webp?v=b93b69919916"
     },
@@ -685,6 +689,10 @@
     {
       "key": "terracotta-tunnel__cave__theme-artificial__front.webp",
       "path": "assets/decor/cave_layered/terracotta-tunnel__cave__theme-artificial__front.webp?v=9a8c758e6ed9"
+    },
+    {
+      "key": "terracotta-tunnel__cave__theme-artificial__shadow-footprint.webp",
+      "path": "assets/decor/cave_layered/terracotta-tunnel__cave__theme-artificial__shadow-footprint.webp?v=7267a2c650e2"
     },
     {
       "key": "wizard-castle__cave__theme-fantasy__bg.webp",

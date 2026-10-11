@@ -351,6 +351,15 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeTankFrameColor(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized;
+  if (/^#[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized.slice(1).split("").map((character) => character.repeat(2)).join("")}`;
+  }
+  return DEFAULT_UI_SETTINGS.tankFrameColor;
+}
+
 function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
   if (typeof value === "boolean") {
     return value ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
@@ -511,6 +520,7 @@ function sanitizeUiSettings(rawSettings) {
   return {
     toolbarPosition: DEFAULT_UI_SETTINGS.toolbarPosition,
     toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
+    tankFrameColor: normalizeTankFrameColor(source.tankFrameColor),
     webSurfThemeMode: normalizeWebSurfThemeMode(
       source.webSurfThemeMode,
       typeof source.webSurfDarkModeEnabled === "boolean"

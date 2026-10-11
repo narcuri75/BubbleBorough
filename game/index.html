@@ -1190,6 +1190,14 @@
                         <input id="toolbarTileColorInput" class="settings-color-input" type="color" value="#00438a" />
                       </label>
 
+                      <label class="settings-toolbar-color-row" for="tankFrameColorInput">
+                        <div class="settings-toggle-copy">
+                          <span class="settings-toggle-label">Tank Frame Color</span>
+                          <span class="settings-toggle-note">Changes the tank edges and corners, including the smaller editing frame. Keeps the Bubble Borough badge unchanged.</span>
+                        </div>
+                        <input id="tankFrameColorInput" class="settings-color-input" type="color" value="#202124" />
+                      </label>
+
                       <div id="mouseLockSettingsRow" class="settings-inline-action" hidden>
                         <div class="settings-toggle-copy">
                           <span class="settings-toggle-label">Tank Mouse Input</span>
@@ -1641,6 +1649,14 @@
                 <div class="debug-menu-section">
                   <h3>Game State:</h3>
                   <div id="debugMenuGameState" class="debug-menu-grid is-paired">
+                    <button id="debugFishBehaviorLabelsToggle" class="debug-menu-button" type="button" aria-pressed="false">
+                      <span class="debug-menu-icon">&#128172;</span>
+                      <span>Fish Labels: <span data-diagnostic-state>Off</span></span>
+                    </button>
+                    <button id="debugFishBehaviorRecordingToggle" class="debug-menu-button" type="button" aria-pressed="false" title="Record fish behavior">
+                      <span class="debug-menu-icon">&#128200;</span>
+                      <span>Record Log: <span data-diagnostic-state>Off</span></span>
+                    </button>
                     <button id="addHundredCoinsButton" class="debug-menu-button" type="button"
                       title="Debug: Add 100 coins" aria-label="Debug: Add 100 coins">
                       <span class="debug-menu-icon">&#128176;</span>
@@ -2084,39 +2100,6 @@
                 <div id="inspectorTreatmentGuide" aria-label="Treatment guide" hidden></div>
                 <div id="inspectorLifeStory" class="fish-life-story" aria-label="Fish life and activity"></div>
 
-                <div id="fishInspectorSettings" class="fish-inspector-settings" hidden>
-                  <label class="inspector-setting-row">
-                    <span>Size</span>
-                    <input id="inspectorFishSizeInput" type="range" min="50" max="300" step="5"
-                      data-inspector-fish-setting="size" />
-                    <strong id="inspectorFishSizeValue">100%</strong>
-                  </label>
-                  <label class="inspector-setting-row inspector-setting-row-select">
-                    <span>Behavior</span>
-                    <select id="inspectorFishBehaviorSelect" data-inspector-fish-setting="behavior"></select>
-                  </label>
-                  <label class="inspector-setting-row" hidden>
-                    <span>Turn Style</span>
-                    <input id="inspectorFishTurnAnimationInput" class="settings-checkbox" type="checkbox"
-                      data-inspector-fish-setting="turnAnimation" aria-label="Turn animation is controlled globally" checked disabled />
-                    <strong id="inspectorFishTurnAnimationValue">Complex</strong>
-                  </label>
-                  <div class="fish-inspector-color-card">
-                    <div class="bubbler-color-row cave-color-layer-header">
-                      <span>Color</span>
-                      <strong id="inspectorFishColorValue">Original</strong>
-                    </div>
-                    <div id="inspectorFishColorSwatches"
-                      class="bubbler-color-swatches cave-color-swatches fish-inspector-color-swatches"
-                      role="group" aria-label="Fish color choices"></div>
-                    <label class="cave-colorize-toggle fish-inspector-colorize-toggle">
-                      <input id="inspectorFishColorizeInput" type="checkbox"
-                        data-inspector-fish-setting="colorize" />
-                      <span>Colorize</span>
-                    </label>
-                  </div>
-                </div>
-
                 <div class="fish-inspector-actions">
                   <button id="inspectorSellFish"
                     class="fish-inspector-action-button fish-action-sell"
@@ -2149,7 +2132,7 @@
   <input id="localFishInput" type="file" accept="image/*" hidden />
 
   <script src="public/websurf-store.js?v=20261003-proteus-home-link"></script>
-  <script src="public/tank-physical-frame.js?v=20261006-edit-frame"></script>
+  <script src="public/tank-physical-frame.js?v=20261009-frame-color"></script>
 
   <script>
     (() => {

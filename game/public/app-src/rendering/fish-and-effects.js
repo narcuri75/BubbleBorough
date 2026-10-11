@@ -592,26 +592,41 @@ function drawFishPebbleTosses(now, layer = null) {
   }
 }
 
-function fitDebugFishBehaviorLine(text, maxWidth) {
+function fitDebugFishBehaviorLine(text, maxWidth, context = tankContext) {
   const value = String(text || "");
-  if (tankContext.measureText(value).width <= maxWidth) {
+  if (context.measureText(value).width <= maxWidth) {
     return value;
   }
 
   const suffix = "...";
-  let end = value.length;
-  while (end > 3 && tankContext.measureText(`${value.slice(0, end)}${suffix}`).width > maxWidth) {
-    end -= 1;
+  let low = 3;
+  let high = value.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (context.measureText(`${value.slice(0, middle)}${suffix}`).width <= maxWidth) low = middle;
+    else high = middle - 1;
   }
-  return `${value.slice(0, Math.max(1, end))}${suffix}`;
+  return `${value.slice(0, Math.max(1, low))}${suffix}`;
+}
+
+function getDebugFishBehaviorTextLayout(snapshot, maxWidth, context) {
+  const key = JSON.stringify([context.font, maxWidth, snapshot.labelLines]);
+  const cache = runtime.debugFishBehaviorTextCache;
+  if (cache.has(key)) return cache.get(key);
+  const lines = snapshot.labelLines.filter((line) => String(line || "").trim()).slice(0, 5)
+    .map((line) => fitDebugFishBehaviorLine(line, maxWidth, context));
+  const layout = { lines, width: Math.max(...lines.map((line) => context.measureText(line).width), 1) };
+  if (cache.size >= 256) cache.delete(cache.keys().next().value);
+  cache.set(key, layout);
+  return layout;
 }
 
 function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now(), context = tankContext) {
-  if (!isDebugModeEnabled()) {
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorBroadcastEnabled !== true) {
     return;
   }
 
-  const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+  const snapshot = getCachedDebugFishBehaviorSnapshot(fish, species, now);
   if (!snapshot?.labelLines?.length) {
     return;
   }
@@ -627,11 +642,9 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   context.textAlign = "center";
   context.textBaseline = "middle";
 
-  const lines = snapshot.labelLines
-    .filter((line) => String(line || "").trim())
-    .slice(0, 5)
-    .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
-  const textWidth = Math.max(...lines.map((line) => context.measureText(line).width), 1);
+  const layout = getDebugFishBehaviorTextLayout(snapshot, maxTextWidth, context);
+  const lines = layout.lines;
+  const textWidth = layout.width;
   const labelWidth = Math.ceil(textWidth + paddingX * 2);
   const labelHeight = Math.ceil(lines.length * lineHeight + paddingY * 2);
   const centerX = clamp(
@@ -687,7 +700,7 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
 }
 
 function queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
-  if (!isDebugModeEnabled() || !fish?.id) return;
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorBroadcastEnabled !== true || !fish?.id) return;
   runtime.fishStatsOverlayQueue ||= new Map();
   runtime.fishStatsOverlayQueue.set(fish.id, { fish, species, pose, width, height, topFrameBottomY, stableScale, now });
 }

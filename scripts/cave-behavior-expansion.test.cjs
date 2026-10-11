@@ -15,13 +15,17 @@ function load(file, name, stubs) {
 }
 const cave = (name, stubs) => load("fish/caves-and-collision.js", name, stubs);
 
-test("43 species can visit caves, with pelagic animals and attached crawlers excluded", () => {
+test("51 species can visit caves, with large swimmers requiring large entrances and attached crawlers excluded", () => {
   const catalog = JSON.parse(read("assets/fish/fish-types.json")).fish;
-  assert.equal(catalog.filter(fish => fish.caveEnabled).length, 43);
+  assert.equal(catalog.filter(fish => fish.caveEnabled).length, 51);
   for (const id of ["betta", "molly", "swordtail", "tang", "goldfish", "angelfish", "pufferfish", "rainbowfish", "discus", "moor-goldfish", "piranha", "freshwater-shrimp", "marine-shrimp"]) {
     assert.equal(catalog.find(fish => fish.id === id)?.caveEnabled, true, id);
   }
-  for (const id of ["otocinclus", "nerite-snail", "turbo-snail", "koi", "sunfish", "pilot-fish", "lookdown", "bull-shark", "great-white-shark", "hammerhead-shark", "orca"]) {
+  for (const id of ["koi", "sunfish", "pilot-fish", "lookdown", "bull-shark", "great-white-shark", "hammerhead-shark", "orca"]) {
+    assert.equal(catalog.find(fish => fish.id === id)?.caveEnabled, true, id);
+    assert.equal(catalog.find(fish => fish.id === id)?.caveMinSize, "large", id);
+  }
+  for (const id of ["otocinclus", "nerite-snail", "turbo-snail"]) {
     assert.equal(catalog.find(fish => fish.id === id)?.caveEnabled, false, id);
   }
   const small = JSON.parse(read("assets/fish/small_fish/fish-types.json")).fish;
@@ -29,6 +33,7 @@ test("43 species can visit caves, with pelagic animals and attached crawlers exc
   for (const fish of small) {
     const normal = catalog.find(entry => entry.id === fish.id);
     if (normal) assert.equal(fish.caveEnabled, normal.caveEnabled, fish.id);
+    if (normal) assert.equal(fish.caveMinSize, normal.caveMinSize, fish.id);
   }
 });
 

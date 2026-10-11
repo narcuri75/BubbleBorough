@@ -1467,16 +1467,18 @@ function animationLoop(frameTime) {
   updateSplashBursts(now);
   updateGlassTapEffects(now);
   const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-  updateFishMotion(now, deltaSeconds);
-  if (typeof updateMoodBubbles === "function") {
-    updateMoodBubbles(now);
-  }
-  updateMachineryMotion(now, deltaSeconds);
-  if (runtime.debugFrameProfilerEnabled) {
-    endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
-  }
-  syncDebugFishBehaviorBroadcast(now);
-  updateWaterLifeEffects(now, deltaSeconds);
+  withTankStageLayoutSnapshot(() => {
+    updateFishMotion(now, deltaSeconds);
+    if (typeof updateMoodBubbles === "function") {
+      updateMoodBubbles(now);
+    }
+    updateMachineryMotion(now, deltaSeconds);
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
+    }
+    syncDebugFishBehaviorBroadcast(now);
+    updateWaterLifeEffects(now, deltaSeconds);
+  });
   const stageViewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateStageRenderView(frameTime);
   if (runtime.debugFrameProfilerEnabled) {
@@ -1495,5 +1497,6 @@ function animationLoop(frameTime) {
   renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
   renderFishInspectPreview(Date.now());
+  refreshFishInspectReadouts(Date.now());
   finishDebugFrameProfile();
 }

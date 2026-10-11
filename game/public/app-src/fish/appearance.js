@@ -24,6 +24,7 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     poopCleanupChance: profileSpecies.poopCleanupChance,
     shadowScale: profileSpecies.shadowScale,
     caveEnabled: profileSpecies.caveEnabled,
+    caveMinSize: profileSpecies.caveMinSize,
     behaviorProfileSpeciesId: profileSpecies.id,
     behaviorProfileName: profileSpecies.name
   };
@@ -311,20 +312,59 @@ function normalizeFishAppearanceVariantIndex(value, species, fallbackFish = null
   return ((rawIndex % variants.length) + variants.length) % variants.length;
 }
 
-function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
+function getFishArtworkCatalog(species) {
+  if (!species || typeof species !== "object") return null;
+  const cache = runtime.fishArtworkCatalogCache ||= new WeakMap();
+  const source = Array.isArray(species.assetVariants) ? species.assetVariants : null;
+  const cached = cache.get(species);
+  if (cached && cached.source === source && cached.asset === species.asset
+    && (!source || (cached.sourceValues.length === source.length
+      && cached.sourceValues.every((value, index) => value === source[index])))) return cached;
   const variants = getFishAssetVariants(species);
-  if (!variants.length) {
-    return species?.asset || species?.fallbackAsset || null;
+  const byKey = new Map();
+  for (const path of variants) {
+    const key = getFishAppearanceVariantKey(path);
+    if (!byKey.has(key)) byKey.set(key, path);
   }
+  const catalog = { source, sourceValues: source?.slice() || [], asset: species.asset, variants, byKey };
+  cache.set(species, catalog);
+  return catalog;
+}
 
-  const purchasedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
-  const purchasedAsset = variants.find((path) => getFishAppearanceVariantKey(path) === purchasedAssetKey);
-  if (purchasedAsset) return purchasedAsset;
-
-  const chosen = variants.find((path) => getFishAppearanceVariantKey(path) === fish?.appearanceVariantKey);
+function resolveFishArtworkPath(fish, species, catalog) {
+  const variants = catalog?.variants || [];
+  if (!variants.length) return species?.asset || species?.fallbackAsset || null;
+  const purchased = catalog.byKey.get(getFishAppearanceVariantKey(fish?.appearanceAssetPath));
+  if (purchased) return purchased;
+  const chosen = catalog.byKey.get(fish?.appearanceVariantKey);
   if (chosen) return chosen;
+  let index = 0;
+  if (variants.length > 1) {
+    const value = Number(fish?.appearanceVariant);
+    const rawIndex = Number.isFinite(value) ? Math.floor(value)
+      : fish ? getFishAppearanceVariantSeed(fish, species) % variants.length : 0;
+    index = ((rawIndex % variants.length) + variants.length) % variants.length;
+  }
+  return variants[index] || variants[0] || species?.fallbackAsset || species?.asset || null;
+}
 
-  return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
+function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
+  const catalog = getFishArtworkCatalog(species);
+  if (!fish || typeof fish !== "object") return resolveFishArtworkPath(fish, species, catalog);
+  const cache = runtime.fishResolvedArtworkCache ||= new WeakMap();
+  const cached = cache.get(fish);
+  if (cached && cached.catalog === catalog && cached.speciesId === species?.id
+    && cached.fallbackAsset === species?.fallbackAsset
+    && cached.assetPath === fish.appearanceAssetPath && cached.variantKey === fish.appearanceVariantKey
+    && Object.is(cached.variant, fish.appearanceVariant) && cached.id === fish.id && cached.name === fish.name) return cached.path;
+  const path = resolveFishArtworkPath(fish, species, catalog);
+  cache.set(fish, { catalog, speciesId: species?.id, fallbackAsset: species?.fallbackAsset,
+    assetPath: fish.appearanceAssetPath, variantKey: fish.appearanceVariantKey,
+    variant: fish.appearanceVariant, id: fish.id, name: fish.name, path });
+  if (runtime.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishArtworkResolutions");
+  }
+  return path;
 }
 
 function getPufferInflatedAssetPathForBaseAsset(baseAsset) {

@@ -63,6 +63,41 @@ function getPseudoRegionAtPoint(item, localX, localY, id, radiusPx = 26) {
   };
 }
 
+function getCaveEntranceRegion(item, portal, radiusPx = 36) {
+  const region = getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id, radiusPx);
+  if (!region || !(portal.entranceWidth > 0 && portal.entranceHeight > 0)) return region;
+  const bounds = getPlacedDecorBounds(item);
+  if (!bounds) return null;
+  const widthPx = (bounds.right - bounds.left) * sanitizeCaveEntranceSize(portal.entranceWidth);
+  const heightPx = (bounds.bottom - bounds.top) * sanitizeCaveEntranceSize(portal.entranceHeight);
+  return { ...region, widthPx, heightPx, areaPx: Math.PI * widthPx * heightPx / 4,
+    left: region.x - widthPx / 2, right: region.x + widthPx / 2,
+    top: region.y - heightPx / 2, bottom: region.y + heightPx / 2,
+    sizedEntrance: true };
+}
+
+function getCaveEntranceSizeCategory(item, portal) {
+  const region = getCaveEntranceRegion(item, portal);
+  if (!region) return "Small";
+  const diameter = Math.min(region.widthPx, region.heightPx) / Math.max(0.0001, getViewportStableObjectScale("decor"));
+  return diameter >= CAVE_ENTRANCE_LARGE_MIN_PX ? "Large" : diameter >= CAVE_ENTRANCE_MEDIUM_MIN_PX ? "Medium" : "Small";
+}
+
+function doesFishShapeFitCaveEntrance(region, descriptor) {
+  if (!region?.sizedEntrance) return true;
+  if (!descriptor) return false;
+  let sampled = false;
+  for (let y = descriptor.bounds.top; y <= descriptor.bounds.bottom; y += CAVE_STRICT_SAMPLE_STEP_PX) {
+    for (let x = descriptor.bounds.left; x <= descriptor.bounds.right; x += CAVE_STRICT_SAMPLE_STEP_PX) {
+      const uv = descriptor.worldToUv(x, y);
+      if (!uv || !sampleAlphaMask(descriptor.mask, uv.u, uv.v, ALPHA_COLLISION_THRESHOLD)) continue;
+      sampled = true;
+      if (((x - region.x) / (region.widthPx / 2)) ** 2 + ((y - region.y) / (region.heightPx / 2)) ** 2 > 1) return false;
+    }
+  }
+  return sampled;
+}
+
 function getDerivedCaveTriggerRegions(item, decor) {
   if (!item || !decor?.path || !decor?.bgPath) {
     return [];
@@ -141,14 +176,14 @@ function getCaveTriggerRegions(item) {
   const placedProfile = buildCaveBehaviorProfileFromPlacedSettings(item);
   if (placedProfile?.portals?.length) {
     return placedProfile.portals
-      .map((portal, index) => getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id || `trigger-${index + 1}`, 36))
+      .map((portal) => getCaveEntranceRegion(item, portal))
       .filter(Boolean);
   }
 
   const authoredProfile = decor.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior || null;
   if (Array.isArray(authoredProfile?.portals) && authoredProfile.portals.length) {
     return authoredProfile.portals
-      .map((portal, index) => getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id || `trigger-${index + 1}`, 36))
+      .map((portal) => getCaveEntranceRegion(item, portal))
       .filter(Boolean);
   }
 
@@ -189,6 +224,7 @@ function getCaveSeatRegions(item) {
         return region
           ? {
             ...region,
+            useBodyFit: placedProfile.portals?.some((portal) => portal.entranceWidth > 0 && portal.entranceHeight > 0),
             facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction),
             portalIds: getCaveSeatPortalIds(slot)
           }
@@ -205,6 +241,7 @@ function getCaveSeatRegions(item) {
         return region
           ? {
             ...region,
+            useBodyFit: authoredProfile.portals?.some((portal) => portal.entranceWidth > 0 && portal.entranceHeight > 0),
             portalIds: getCaveSeatPortalIds(slot),
             ...(slot.facing !== undefined || slot.direction !== undefined || slot.seatFacing !== undefined
               ? { facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction ?? slot.seatFacing) }
@@ -296,6 +333,10 @@ function doesFishFitCaveRegionSize(region, fish, species, multiplier = 1) {
   if (species.caveEnabled === false) {
     return false;
   }
+
+  // Sized entrances and their seats use the full current fish silhouette.
+  // The legacy marker/adult-size shortcut must not reject a valid route.
+  if (region.sizedEntrance || region.useBodyFit) return true;
 
   const bodySize = getFishBodySizePx(fish, species);
   if (!bodySize) {
@@ -816,7 +857,7 @@ function tick() {
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const now = advanceDebugSimulationClock(Date.now());
   const tutorialChanged = syncTutorialFlow(now);
-  const changed = syncState(now) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
+  const changed = withTankStageLayoutSnapshot(() => syncState(now)) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
   const simulationFinishedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   renderTickUi(now, { stateChanged: false });
   if (changed) {

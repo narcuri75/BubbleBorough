@@ -351,6 +351,22 @@ function portalOpeningFitsFish(item, fish, species, now, mouth, direction = null
   // Absence of foreground pixels is not sufficient: a point above the roof
   // is also transparent. The whole body must occupy the cave's allowed space
   // before it can cross between interior and exterior depth.
+  const portals = getCaveBehaviorProfileForItem(item)?.portals || [];
+  let entrance = null;
+  let entranceDistance = Number.POSITIVE_INFINITY;
+  let entrancePortal = null;
+  for (const portal of portals) {
+    const region = getCaveEntranceRegion(item, portal);
+    if (!region) continue;
+    const distance = Math.hypot(region.xNorm - mouth.xNorm, region.yNorm - mouth.yNorm);
+    if (distance < entranceDistance) {
+      entranceDistance = distance;
+      entrance = region;
+      entrancePortal = portal;
+    }
+  }
+  if (species.caveMinSize === "large" && (!entrance?.sizedEntrance || getCaveEntranceSizeCategory(item, entrancePortal) !== "Large")) return false;
+  if (!doesFishShapeFitCaveEntrance(entrance, fishDescriptor)) return false;
   const interiorDescriptor = getCaveInteriorContainmentDescriptor(item);
   if (!interiorDescriptor || !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
     return false;
@@ -405,7 +421,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
   const candidates = [];
 
   for (const trigger of triggerRegions) {
-    if (!doesFishFitCaveRegionSize(trigger, fish, species, 0.42)) {
+    if (!trigger.sizedEntrance && !doesFishFitCaveRegionSize(trigger, fish, species, 0.42)) {
       continue;
     }
 
@@ -442,7 +458,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
 
     const availableSeats = seatPool
       .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
-      .filter((seat) => doesFishFitCaveRegionSize(seat, fish, species, 0.45))
+      .filter((seat) => trigger.sizedEntrance || doesFishFitCaveRegionSize(seat, fish, species, 0.45))
       .sort((left, right) => {
         const leftScore = Math.hypot(left.xNorm - trigger.xNorm, left.yNorm - trigger.yNorm) - left.areaPx / 12000;
         const rightScore = Math.hypot(right.xNorm - trigger.xNorm, right.yNorm - trigger.yNorm) - right.areaPx / 12000;
@@ -660,6 +676,7 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
   const ignoreBlockedDecor = options.ignoreBlockedDecor === true;
   const plans = state.placedDecor
     .filter((item) => isCaveDecorKey(item.decorKey))
+    .filter((item) => runtime.utilityOverlayMode !== "decor-settings" || item.id !== runtime.customDecorSettingsDecorId)
     .filter((item) => !(
       !ignoreBlockedDecor &&
       fish.blockedDecorId &&

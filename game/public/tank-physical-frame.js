@@ -31,6 +31,7 @@
   });
 
 const BADGE_IMAGE = "bubble-borough_badge.webp";
+  const DEFAULT_FRAME_COLOR = "#202124";
   const spriteOpaqueBoundsCache = new WeakMap();
 
   const SHEETS = Object.freeze({
@@ -79,7 +80,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     listeners: [],
     assetBaseUrl: null,
     assetLoadPromise: null,
-    ratioLockFrameEnabled: true
+    ratioLockFrameEnabled: true,
+    frameColor: DEFAULT_FRAME_COLOR,
+    tintedSheets: new WeakMap()
   };
 
   const FRAME_CALIBRATION_DEFAULTS = Object.freeze({
@@ -127,6 +130,48 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     state.ratioLockFrameEnabled = Boolean(value);
     scheduleRender();
     return state.ratioLockFrameEnabled;
+  }
+
+  function setFrameColor(value) {
+    const color = /^#[0-9a-f]{6}$/i.test(String(value)) ? String(value).toLowerCase() : DEFAULT_FRAME_COLOR;
+    if (color === state.frameColor) return color;
+    state.frameColor = color;
+    state.tintedSheets = new WeakMap();
+    // Camera motion normally reuses the last raster. Invalidate only the eight
+    // frame pieces so a color change also paints during a zoom or pan.
+    for (const role of EXPECTED_ROLES) {
+      if (state.pieces?.[role]) state.pieces[role].rasterReady = false;
+    }
+    scheduleRender();
+    return color;
+  }
+
+  function getTintedFrameSheet(image) {
+    if (state.frameColor === DEFAULT_FRAME_COLOR) return image;
+    const cached = state.tintedSheets.get(image);
+    if (cached) return cached;
+    const canvas = document.createElement("canvas");
+    canvas.width = image.naturalWidth || image.width;
+    canvas.height = image.naturalHeight || image.height;
+    const context = canvas.getContext("2d");
+    context.drawImage(image, 0, 0);
+    const pixels = context.getImageData(0, 0, canvas.width, canvas.height);
+    const rgb = [1, 3, 5].map((offset) => Number.parseInt(state.frameColor.slice(offset, offset + 2), 16));
+    // Map the original dark metal midtone to the chosen color, retaining dark
+    // seams and bright bevels. Alpha stays intact, including corner cutouts.
+    const midtone = 33;
+    for (let index = 0; index < pixels.data.length; index += 4) {
+      if (!pixels.data[index + 3]) continue;
+      const light = pixels.data[index] * 0.2126 + pixels.data[index + 1] * 0.7152 + pixels.data[index + 2] * 0.0722;
+      for (let channel = 0; channel < 3; channel++) {
+        pixels.data[index + channel] = light <= midtone
+          ? rgb[channel] * light / midtone
+          : rgb[channel] + (255 - rgb[channel]) * (light - midtone) / (255 - midtone);
+      }
+    }
+    context.putImageData(pixels, 0, 0);
+    state.tintedSheets.set(image, canvas);
+    return canvas;
   }
 
   function finiteNumber(value, fallback) {
@@ -853,7 +898,9 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     context.setTransform(dpr, 0, 0, dpr, 0, 0);
     context.imageSmoothingEnabled = true;
     if ("imageSmoothingQuality" in context) context.imageSmoothingQuality = "high";
-    context.clearRect(0, 0, width, height);
+    // Clear the whole backing store: fractional CSS sizes can otherwise leave
+    // a partially uncleared last row/column that accumulates on color changes.
+    context.clearRect(0, 0, backingWidth / dpr, backingHeight / dpr);
     piece.rasterDpr = dpr;
     return snapped;
   }
@@ -866,7 +913,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
 
     piece.rasterReady = drawSprite(
       piece.context,
-      sprite,
+      { ...sprite, image: getTintedFrameSheet(sprite.image) },
       { x: 0, y: 0, width: display.width, height: display.height }
     );
     return piece.rasterReady;
@@ -1354,6 +1401,8 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     state.assetsReady = false;
     state.assetLoadPromise = null;
     state.ratioLockFrameEnabled = true;
+    state.frameColor = DEFAULT_FRAME_COLOR;
+    state.tintedSheets = new WeakMap();
     state.installed = false;
   }
 
@@ -1375,6 +1424,7 @@ const BADGE_IMAGE = "bubble-borough_badge.webp";
     roleVisibility,
     isRatioLockPresentationActive,
     setRatioLockFrameEnabled,
+    setFrameColor,
     setDebugCalibrationOffset,
     resetDebugCalibration,
     install,

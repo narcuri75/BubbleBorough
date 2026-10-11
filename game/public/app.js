@@ -1761,6 +1761,7 @@ const DEFAULT_CONTENT_SETTINGS = Object.freeze({
 const DEFAULT_UI_SETTINGS = Object.freeze({
   toolbarPosition: "bottom-center",
   toolbarTileColor: "#00438a",
+  tankFrameColor: "#202124",
   webSurfThemeMode: WEBSURF_THEME_MODE_AUTO,
   webSurfFullscreen: false,
   webSurfChromeTheme: WEBSURF_CHROME_THEME_DEFAULT,
@@ -2284,6 +2285,8 @@ let WATER_SURFACE_Y = 112;
 const WATER_SURFACE_VIEWPORT_TOP_PX = 112;
 const FLOOR_Y = TANK_HEIGHT * 0.83;
 const CAVE_CENTER_TARGET_SIZE_PX = 50;
+const CAVE_ENTRANCE_MEDIUM_MIN_PX = 72;
+const CAVE_ENTRANCE_LARGE_MIN_PX = 144;
 const CAVE_NAV_MAX_SIZE = 220;
 const CAVE_PATH_NODE_STEP = 10;
 const CAVE_STRICT_SAMPLE_STEP_PX = 2;
@@ -2551,7 +2554,6 @@ const FISH_VISUAL_POSE_SMOOTHING = Object.freeze({
 
 const KNOWN_DECOR_TRYPOPHOBIA_VARIANT_PATHS = new Set([
   "assets/decor/cave_layered/coral-shelf-1__cave-coral__theme-reef__trypophobia__front.webp",
-  "assets/decor/cave_layered/coral-shelf-6__cave-coral__theme-reef__trypophobia__front.webp",
   "assets/decor/cave_layered/coral-shelf-10__cave-coral__theme-reef__trypophobia__front.webp",
   "assets/decor/cave_layered/coral-shelf-9__cave-coral__theme-reef__trypophobia__front__color2.webp"
 ].map((path) => path.toLowerCase()));
@@ -3247,11 +3249,8 @@ const FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR = [
   "#inspectorSellFish",
   "#inspectorBuyAnotherFish",
   "#inspectorStoreFish",
-  "#inspectorFishSettingsButton",
-  "[data-inspector-fish-color]",
-  'input[type="checkbox"][data-inspector-fish-setting="colorize"]'
+  "#inspectorFishSettingsButton"
 ].join(",");
-const FISH_INSPECTOR_SLIDER_SOUND_SELECTOR = 'input[type="range"][data-inspector-fish-setting="size"]';
 const SELECTED_DECOR_REGULAR_BUTTON_SOUND_SELECTOR = [
   "#selectedDecorMenuButton",
   "[data-tank-context-action]",
@@ -5339,7 +5338,8 @@ const FISH_TYPES = [
       "Pond",
       "Lucky"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5531,7 +5531,8 @@ const FISH_TYPES = [
       "Brawler",
       "Jaws"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5609,7 +5610,8 @@ const FISH_TYPES = [
       "Pearl",
       "Moby"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5702,7 +5704,8 @@ const FISH_TYPES = [
       "Sail",
       "Echo"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5781,7 +5784,8 @@ const FISH_TYPES = [
       "Cedar",
       "Orion"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -5862,7 +5866,8 @@ const FISH_TYPES = [
       "Mochi",
       "Luma"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -6033,7 +6038,8 @@ const FISH_TYPES = [
       "Buddy",
       "Dash"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -7258,7 +7264,8 @@ const FISH_TYPES = [
       "Gleam",
       "Mercury"
     ],
-    "caveEnabled": false,
+    "caveEnabled": true,
+    "caveMinSize": "large",
     "needs": {
       "decor": [],
       "friends": {
@@ -9376,7 +9383,7 @@ const DECOR_META = {
     "name": "Broken Pot Fragment",
     "cost": 8,
     "width": 420,
-    "defaultScale": 2.4,
+    "defaultScale": 1.1,
     "description": "A broken pot fragment decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9390,7 +9397,76 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.825,
+          "approachY": 0.38,
+          "mouthX": 0.59,
+          "mouthY": 0.38,
+          "entranceWidth": 0.4,
+          "entranceHeight": 0.28,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.44,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.4,
+        "height": 0.28,
+        "x": 0.59,
+        "y": 0.38
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.4,
+          "height": 0.28,
+          "x": 0.59,
+          "y": 0.38
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.44,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "broken-terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Broken Terracotta Pot",
@@ -9410,13 +9486,120 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.86,
+          "approachY": 0.41,
+          "mouthX": 0.66,
+          "mouthY": 0.41,
+          "entranceWidth": 0.27,
+          "entranceHeight": 0.51,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.61,
+          "y": 0.3,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.64,
+          "y": 0.6,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.51,
+          "y": 0.47,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.27,
+        "height": 0.51,
+        "x": 0.66,
+        "y": 0.41
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.27,
+          "height": 0.51,
+          "x": 0.66,
+          "y": 0.41
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.61,
+          "y": 0.3,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.64,
+          "y": 0.6,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.51,
+          "y": 0.47,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "ceramic-tube-cluster__cave__theme-artificial__front.png": {
     "name": "Ceramic Tube Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.45,
+    "defaultScale": 1.55,
     "description": "A ceramic tube cluster decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9434,95 +9617,231 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "top-left",
-          "approachX": 0.245,
-          "approachY": 0.325,
-          "mouthX": 0.307,
-          "mouthY": 0.357
+          "id": "top-left-front",
+          "approachX": 0.258,
+          "approachY": 0.328,
+          "mouthX": 0.32,
+          "mouthY": 0.36,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.15,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "top-right",
-          "approachX": 0.805,
+          "id": "top-right-front",
+          "approachX": 0.797,
           "approachY": 0.402,
-          "mouthX": 0.738,
-          "mouthY": 0.43
+          "mouthX": 0.73,
+          "mouthY": 0.43,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-left",
-          "approachX": 0.095,
+          "id": "lower-left-front",
+          "approachX": 0.097,
           "approachY": 0.655,
-          "mouthX": 0.178,
-          "mouthY": 0.63
+          "mouthX": 0.18,
+          "mouthY": 0.63,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.2,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-center",
-          "approachX": 0.496,
-          "approachY": 0.715,
-          "mouthX": 0.496,
-          "mouthY": 0.602
+          "id": "lower-center-front",
+          "approachX": 0.5,
+          "approachY": 0.713,
+          "mouthX": 0.5,
+          "mouthY": 0.6,
+          "entranceWidth": 0.24,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-right",
-          "approachX": 0.955,
+          "id": "lower-right-front",
+          "approachX": 0.94,
           "approachY": 0.66,
-          "mouthX": 0.875,
-          "mouthY": 0.64
+          "mouthX": 0.86,
+          "mouthY": 0.64,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "top-left-seat",
-          "x": 0.326,
+          "x": 0.33,
           "y": 0.37,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "top-left-front"
+          ]
+        },
+        {
+          "id": "top-right-seat",
+          "x": 0.73,
+          "y": 0.43,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "top-right-front"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.16,
+          "y": 0.65,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "lower-left-front"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.5,
+          "y": 0.58,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center-front"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.84,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 8500,
+      "lingerMaxMs": 15000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "top-left",
+        "side": "front",
+        "width": 0.12,
+        "height": 0.15,
+        "x": 0.32,
+        "y": 0.36
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "top-left",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.15,
+          "x": 0.32,
+          "y": 0.36
+        },
+        {
+          "id": "top-right",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.12,
+          "x": 0.73,
+          "y": 0.43
+        },
+        {
+          "id": "lower-left",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.2,
+          "x": 0.18,
+          "y": 0.63
+        },
+        {
+          "id": "lower-center",
+          "side": "front",
+          "width": 0.24,
+          "height": 0.24,
+          "x": 0.5,
+          "y": 0.6
+        },
+        {
+          "id": "lower-right",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.17,
+          "x": 0.86,
+          "y": 0.64
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "top-left-seat",
+          "x": 0.33,
+          "y": 0.37,
+          "facing": -1,
+          "entryIds": [
             "top-left"
           ]
         },
         {
           "id": "top-right-seat",
-          "x": 0.716,
-          "y": 0.439,
-          "layer": 4,
+          "x": 0.73,
+          "y": 0.43,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "top-right"
           ]
         },
         {
           "id": "lower-left-seat",
-          "x": 0.202,
-          "y": 0.624,
-          "layer": 4,
+          "x": 0.16,
+          "y": 0.65,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "lower-left"
           ]
         },
         {
           "id": "lower-center-seat",
-          "x": 0.496,
+          "x": 0.5,
           "y": 0.58,
-          "layer": 4,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-center"
           ]
         },
         {
           "id": "lower-right-seat",
-          "x": 0.85,
-          "y": 0.634,
-          "layer": 4,
+          "x": 0.84,
+          "y": 0.66,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-right"
           ]
         }
-      ],
-      "lingerMinMs": 8500,
-      "lingerMaxMs": 15000
+      ]
     }
   },
   "clay-multi__cave__theme-artificial__front.png": {
@@ -9547,85 +9866,217 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "upper",
-          "approachX": 0.27,
-          "approachY": 0.23,
-          "mouthX": 0.315,
-          "mouthY": 0.306
+          "id": "upper-front",
+          "approachX": 0.29500000000000004,
+          "approachY": 0.234,
+          "mouthX": 0.34,
+          "mouthY": 0.31,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.13,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "left",
-          "approachX": 0.075,
-          "approachY": 0.64,
-          "mouthX": 0.168,
-          "mouthY": 0.622
+          "id": "left-front",
+          "approachX": 0.08699999999999998,
+          "approachY": 0.638,
+          "mouthX": 0.18,
+          "mouthY": 0.62,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "center",
-          "approachX": 0.616,
-          "approachY": 0.755,
-          "mouthX": 0.616,
-          "mouthY": 0.589
+          "id": "center-front",
+          "approachX": 0.62,
+          "approachY": 0.756,
+          "mouthX": 0.62,
+          "mouthY": 0.59,
+          "entranceWidth": 0.23,
+          "entranceHeight": 0.32,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "right",
-          "approachX": 0.975,
-          "approachY": 0.645,
-          "mouthX": 0.893,
-          "mouthY": 0.633
+          "id": "right-front",
+          "approachX": 0.962,
+          "approachY": 0.642,
+          "mouthX": 0.88,
+          "mouthY": 0.63,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "upper-seat",
-          "x": 0.337,
+          "x": 0.34,
           "y": 0.33,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "upper-front"
+          ]
+        },
+        {
+          "id": "left-seat",
+          "x": 0.2,
+          "y": 0.62,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "left-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.59,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "center-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.87,
+          "y": 0.63,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.6,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "center-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16500,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "upper",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.13,
+        "x": 0.34,
+        "y": 0.31
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "upper",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.13,
+          "x": 0.34,
+          "y": 0.31
+        },
+        {
+          "id": "left",
+          "side": "front",
+          "width": 0.2,
+          "height": 0.24,
+          "x": 0.18,
+          "y": 0.62
+        },
+        {
+          "id": "center",
+          "side": "front",
+          "width": 0.23,
+          "height": 0.32,
+          "x": 0.62,
+          "y": 0.59
+        },
+        {
+          "id": "right",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.17,
+          "x": 0.88,
+          "y": 0.63
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "upper-seat",
+          "x": 0.34,
+          "y": 0.33,
+          "facing": -1,
+          "entryIds": [
             "upper"
           ]
         },
         {
           "id": "left-seat",
-          "x": 0.198,
-          "y": 0.618,
-          "layer": 4,
+          "x": 0.2,
+          "y": 0.62,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "left"
           ]
         },
         {
           "id": "center-seat",
-          "x": 0.616,
-          "y": 0.56,
-          "layer": 4,
+          "x": 0.59,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "center"
           ]
         },
         {
           "id": "right-seat",
-          "x": 0.866,
-          "y": 0.628,
-          "layer": 4,
+          "x": 0.87,
+          "y": 0.63,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "right"
           ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.6,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "center"
+          ]
         }
-      ],
-      "lingerMinMs": 9000,
-      "lingerMaxMs": 16500
+      ]
     }
   },
   "extra-narrow-pleco-tubes__cave__theme-artificial__front.png": {
     "name": "Extra Narrow Pleco Tubes",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.45,
+    "defaultScale": 1.75,
     "description": "A extra narrow pleco tubes decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9643,95 +10094,231 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "upper-left",
-          "approachX": 0.465,
+          "id": "upper-left-front",
+          "approachX": 0.458,
           "approachY": 0.392,
-          "mouthX": 0.497,
-          "mouthY": 0.48
+          "mouthX": 0.49,
+          "mouthY": 0.48,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "upper-right",
-          "approachX": 0.76,
-          "approachY": 0.395,
-          "mouthX": 0.734,
-          "mouthY": 0.487
+          "id": "upper-right-front",
+          "approachX": 0.746,
+          "approachY": 0.398,
+          "mouthX": 0.72,
+          "mouthY": 0.49,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-left",
-          "approachX": 0.33,
-          "approachY": 0.77,
-          "mouthX": 0.391,
-          "mouthY": 0.675
+          "id": "lower-left-front",
+          "approachX": 0.319,
+          "approachY": 0.775,
+          "mouthX": 0.38,
+          "mouthY": 0.68,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-center",
-          "approachX": 0.627,
-          "approachY": 0.785,
-          "mouthX": 0.627,
-          "mouthY": 0.675
+          "id": "lower-center-front",
+          "approachX": 0.61,
+          "approachY": 0.79,
+          "mouthX": 0.61,
+          "mouthY": 0.68,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "lower-right",
-          "approachX": 0.95,
-          "approachY": 0.755,
-          "mouthX": 0.877,
-          "mouthY": 0.669
+          "id": "lower-right-front",
+          "approachX": 0.9329999999999999,
+          "approachY": 0.756,
+          "mouthX": 0.86,
+          "mouthY": 0.67,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "upper-left-seat",
-          "x": 0.505,
-          "y": 0.5,
+          "x": 0.49,
+          "y": 0.48,
           "layer": 4,
-          "facing": -1,
+          "facing": 1,
           "portalIds": [
+            "upper-left-front"
+          ]
+        },
+        {
+          "id": "upper-right-seat",
+          "x": 0.72,
+          "y": 0.49,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "upper-right-front"
+          ]
+        },
+        {
+          "id": "lower-left-seat",
+          "x": 0.38,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-left-front"
+          ]
+        },
+        {
+          "id": "lower-center-seat",
+          "x": 0.61,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-center-front"
+          ]
+        },
+        {
+          "id": "lower-right-seat",
+          "x": 0.87,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "lower-right-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9500,
+      "lingerMaxMs": 17000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "upper-left",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.14,
+        "x": 0.49,
+        "y": 0.48
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "upper-left",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.14,
+          "x": 0.49,
+          "y": 0.48
+        },
+        {
+          "id": "upper-right",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.14,
+          "x": 0.72,
+          "y": 0.49
+        },
+        {
+          "id": "lower-left",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.14,
+          "x": 0.38,
+          "y": 0.68
+        },
+        {
+          "id": "lower-center",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.14,
+          "x": 0.61,
+          "y": 0.68
+        },
+        {
+          "id": "lower-right",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.14,
+          "x": 0.86,
+          "y": 0.67
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "upper-left-seat",
+          "x": 0.49,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
             "upper-left"
           ]
         },
         {
           "id": "upper-right-seat",
-          "x": 0.724,
-          "y": 0.507,
-          "layer": 4,
+          "x": 0.72,
+          "y": 0.49,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "upper-right"
           ]
         },
         {
           "id": "lower-left-seat",
-          "x": 0.408,
-          "y": 0.653,
-          "layer": 4,
-          "facing": -1,
-          "portalIds": [
+          "x": 0.38,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
             "lower-left"
           ]
         },
         {
           "id": "lower-center-seat",
-          "x": 0.627,
-          "y": 0.65,
-          "layer": 4,
+          "x": 0.61,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-center"
           ]
         },
         {
           "id": "lower-right-seat",
-          "x": 0.858,
-          "y": 0.655,
-          "layer": 4,
+          "x": 0.87,
+          "y": 0.67,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "lower-right"
           ]
         }
-      ],
-      "lingerMinMs": 9500,
-      "lingerMaxMs": 17000
+      ]
     }
   },
   "pvc-pipe__cave__theme-artificial__front.png": {
@@ -9752,7 +10339,65 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.97,
+          "approachY": 0.51,
+          "mouthX": 0.76,
+          "mouthY": 0.51,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.46,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.75,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-2",
+          "x": 0.76,
+          "y": 0.42,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-3",
+          "x": 0.66,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-4",
+          "x": 0.81,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "terracotta-pot__cave__theme-artificial__front.png": {
     "name": "Terracotta Pot",
@@ -9772,13 +10417,120 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.9349999999999999,
+          "approachY": 0.49,
+          "mouthX": 0.75,
+          "mouthY": 0.49,
+          "entranceWidth": 0.28,
+          "entranceHeight": 0.53,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.72,
+          "y": 0.32,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.74,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.65,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.28,
+        "height": 0.53,
+        "x": 0.75,
+        "y": 0.49
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.28,
+          "height": 0.53,
+          "x": 0.75,
+          "y": 0.49
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.72,
+          "y": 0.32,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.74,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.65,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "terracotta-tunnel__cave__theme-artificial__front.png": {
     "name": "Terracotta Tunnel",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.6,
+    "defaultScale": 1.25,
     "description": "A terracotta tunnel decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9792,51 +10544,148 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.04999999999999999,
+          "approachY": 0.57,
+          "mouthX": 0.26,
+          "mouthY": 0.57,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.27,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.25,
+          "y": 0.58,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.3,
+        "height": 0.27,
+        "x": 0.26,
+        "y": 0.57
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.3,
+          "height": 0.27,
+          "x": 0.26,
+          "y": 0.57
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.25,
+          "y": 0.58,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "blue-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 1",
     "cost": 16,
     "width": 595,
-    "defaultScale": 1.1,
+    "defaultScale": 1.2,
     "caveSettings": {
+      "entry": {
+        "id": "left-front",
+        "side": "front",
+        "width": 0.18,
+        "height": 0.16,
+        "x": 0.22,
+        "y": 0.83
+      },
       "entryCount": 3,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "left-front",
-          "x": 0.24,
-          "y": 0.82,
-          "side": "front"
+          "side": "front",
+          "width": 0.18,
+          "height": 0.16,
+          "x": 0.22,
+          "y": 0.83
         },
         {
           "id": "center-front",
-          "x": 0.44,
-          "y": 0.65,
-          "side": "front"
-        },
-        {
-          "id": "right-front",
-          "x": 0.62,
-          "y": 0.84,
-          "side": "front"
-        }
-      ],
-      "seatCount": 3,
-      "seats": [
-        {
-          "id": "left-seat",
-          "x": 0.24,
-          "y": 0.82
-        },
-        {
-          "id": "center-seat",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.12,
           "x": 0.44,
           "y": 0.65
         },
         {
+          "id": "right-front",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.16,
+          "x": 0.63,
+          "y": 0.86
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "left-seat",
+          "x": 0.23,
+          "y": 0.85,
+          "facing": 1,
+          "entryIds": [
+            "left-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "center-front"
+          ]
+        },
+        {
           "id": "right-seat",
           "x": 0.62,
-          "y": 0.84
+          "y": 0.86,
+          "facing": -1,
+          "entryIds": [
+            "right-front"
+          ]
         }
       ]
     },
@@ -9853,110 +10702,255 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "left-front-front",
+          "approachX": 0.22,
+          "approachY": 0.95,
+          "mouthX": 0.22,
+          "mouthY": 0.83,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "center-front-front",
+          "approachX": 0.44,
+          "approachY": 0.77,
+          "mouthX": 0.44,
+          "mouthY": 0.65,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "right-front-front",
+          "approachX": 0.63,
+          "approachY": 0.98,
+          "mouthX": 0.63,
+          "mouthY": 0.86,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "left-seat",
+          "x": 0.23,
+          "y": 0.85,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "left-front-front"
+          ]
+        },
+        {
+          "id": "center-seat",
+          "x": 0.44,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "center-front-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.62,
+          "y": 0.86,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "right-front-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    }
   },
   "wizard-castle__cave__theme-fantasy__front.png": {
     "name": "Castle Cave 2",
     "cost": 16,
     "width": 600,
-    "defaultScale": 1.1,
+    "defaultScale": 1.15,
     "caveSettings": {
+      "entry": {
+        "id": "main-both",
+        "side": "both",
+        "width": 0.13,
+        "height": 0.11,
+        "x": 0.51,
+        "y": 0.72
+      },
       "entryCount": 3,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-both",
-          "x": 0.49,
-          "y": 0.69,
-          "side": "both"
+          "side": "both",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.51,
+          "y": 0.72
         },
         {
           "id": "right-front",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.08,
           "x": 0.76,
-          "y": 0.84,
-          "side": "front"
+          "y": 0.84
         },
         {
           "id": "far-right-front",
-          "x": 0.92,
-          "y": 0.89,
-          "side": "front"
+          "side": "front",
+          "width": 0.04,
+          "height": 0.08,
+          "x": 0.91,
+          "y": 0.88
         }
       ],
       "seatCount": 3,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "main-upper",
-          "x": 0.5,
-          "y": 0.74,
-          "facing": "right"
+          "x": 0.51,
+          "y": 0.7,
+          "facing": 1,
+          "entryIds": [
+            "main-both"
+          ]
         },
         {
           "id": "right-seat",
           "x": 0.76,
           "y": 0.84,
-          "facing": "left"
+          "facing": -1,
+          "entryIds": [
+            "right-front"
+          ]
         },
         {
           "id": "main-lower",
           "x": 0.51,
-          "y": 0.78,
-          "facing": "left"
+          "y": 0.73,
+          "facing": -1,
+          "entryIds": [
+            "main-both"
+          ]
         }
       ]
     },
     "caveBehavior": {
       "portals": [
         {
-          "id": "main_front",
-          "approachX": 0.49,
-          "approachY": 0.76,
-          "mouthX": 0.5,
-          "mouthY": 0.67,
+          "id": "main-both-front",
+          "approachX": 0.5,
+          "approachY": 0.8099999999999999,
+          "mouthX": 0.51,
+          "mouthY": 0.72,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
           "outsideLayer": 2,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.5,
-              "y": 0.6
-            },
-            {
-              "x": 0.49,
-              "y": 0.55
-            }
-          ]
+          "side": "front",
+          "path": []
         },
         {
-          "id": "side_layer4",
-          "approachX": 0.74,
-          "approachY": 0.62,
-          "mouthX": 0.69,
-          "mouthY": 0.6,
-          "outsideLayer": 4,
+          "id": "main-both-back",
+          "approachX": 0.5,
+          "approachY": 0.8099999999999999,
+          "mouthX": 0.51,
+          "mouthY": 0.72,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 5,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.63,
-              "y": 0.57
-            },
-            {
-              "x": 0.56,
-              "y": 0.54
-            }
-          ]
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "right-front-front",
+          "approachX": 0.81,
+          "approachY": 0.86,
+          "mouthX": 0.76,
+          "mouthY": 0.84,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "far-right-front-front",
+          "approachX": 0.9600000000000001,
+          "approachY": 0.9,
+          "mouthX": 0.91,
+          "mouthY": 0.88,
+          "entranceWidth": 0.04,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
-          "id": "main_chamber",
-          "x": 0.52,
-          "y": 0.52,
+          "id": "main-upper",
+          "x": 0.51,
+          "y": 0.7,
           "layer": 4,
+          "facing": 1,
           "portalIds": [
-            "main_front",
-            "side_layer4"
+            "main-both-front",
+            "main-both-back"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.76,
+          "y": 0.84,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "right-front-front"
+          ]
+        },
+        {
+          "id": "main-lower",
+          "x": 0.51,
+          "y": 0.73,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "main-both-front",
+            "main-both-back"
           ]
         }
-      ]
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
     },
     "theme": "fantasy",
     "description": "A miniature castle with enough openings and shelter to double as a proper fish hideout. Royal residency not guaranteed.",
@@ -9971,13 +10965,14 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "frozen-cave__cave__theme-frozen__front.png": {
     "name": "Frozen Cave",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 1.55,
     "description": "A frozen cave decoration for the aquarium.",
     "categories": [
       "cave"
@@ -9991,7 +10986,135 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-back",
+          "approachX": 0.45,
+          "approachY": 0.77,
+          "mouthX": 0.45,
+          "mouthY": 0.64,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.18,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.55,
+          "approachY": 0.78,
+          "mouthX": 0.55,
+          "mouthY": 0.65,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.4,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.45,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-back"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.59,
+          "y": 0.73,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "back",
+        "width": 0.16,
+        "height": 0.18,
+        "x": 0.45,
+        "y": 0.64
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "back",
+          "width": 0.16,
+          "height": 0.18,
+          "x": 0.45,
+          "y": 0.64
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.4,
+          "x": 0.55,
+          "y": 0.65
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.45,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.59,
+          "y": 0.73,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "frozen-cave__cave__theme-frozen__v2__front.png": {
     "name": "Frozen Cave 2",
@@ -10011,7 +11134,135 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-back",
+          "approachX": 0.52,
+          "approachY": 0.69,
+          "mouthX": 0.52,
+          "mouthY": 0.59,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.12,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.57,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.57,
+          "mouthY": 0.58,
+          "entranceWidth": 0.3,
+          "entranceHeight": 0.37,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.59,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-back"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.58,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "back",
+        "width": 0.11,
+        "height": 0.12,
+        "x": 0.52,
+        "y": 0.59
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "back",
+          "width": 0.11,
+          "height": 0.12,
+          "x": 0.52,
+          "y": 0.59
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.3,
+          "height": 0.37,
+          "x": 0.57,
+          "y": 0.58
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.59,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.57,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.58,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "halloween-crypt__cave__theme-halloween__front.png": {
     "name": "Crypt Cave",
@@ -10031,7 +11282,74 @@ const DECOR_META = {
       "shelter",
       "spooky"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.211,
+          "approachY": 0.917,
+          "mouthX": 0.211,
+          "mouthY": 0.797,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        },
+        {
+          "id": "opening-2",
+          "approachX": 0.516,
+          "approachY": 0.673,
+          "mouthX": 0.516,
+          "mouthY": 0.523,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        },
+        {
+          "id": "opening-3",
+          "approachX": 0.82,
+          "approachY": 0.905,
+          "mouthX": 0.82,
+          "mouthY": 0.785,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.211,
+          "y": 0.797,
+          "layer": 4,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.516,
+          "y": 0.523,
+          "layer": 4,
+          "portalIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.82,
+          "y": 0.785,
+          "layer": 4,
+          "portalIds": [
+            "opening-3"
+          ]
+        }
+      ]
+    }
   },
   "halloween-haunted-house__cave__theme-halloween__front.png": {
     "name": "Haunted House Cave",
@@ -10042,29 +11360,35 @@ const DECOR_META = {
       "entries": [
         {
           "id": "left-cellar",
-          "x": 0.18,
-          "y": 0.86,
-          "side": "front"
+          "x": 0.227,
+          "y": 0.859,
+          "side": "front",
+          "width": 0.11,
+          "height": 0.08
         },
         {
           "id": "front-door",
-          "x": 0.5,
-          "y": 0.69,
-          "side": "front"
+          "x": 0.52,
+          "y": 0.672,
+          "side": "front",
+          "width": 0.115,
+          "height": 0.145
         },
         {
           "id": "right-cellar",
-          "x": 0.84,
-          "y": 0.86,
-          "side": "front"
+          "x": 0.781,
+          "y": 0.859,
+          "side": "front",
+          "width": 0.105,
+          "height": 0.08
         }
       ],
       "seatCount": 3,
       "seats": [
         {
           "id": "left-cellar-seat",
-          "x": 0.18,
-          "y": 0.84,
+          "x": 0.227,
+          "y": 0.859,
           "facing": "right",
           "entryIds": [
             "left-cellar"
@@ -10072,8 +11396,8 @@ const DECOR_META = {
         },
         {
           "id": "front-door-seat",
-          "x": 0.5,
-          "y": 0.67,
+          "x": 0.52,
+          "y": 0.672,
           "facing": "right",
           "entryIds": [
             "front-door"
@@ -10081,8 +11405,8 @@ const DECOR_META = {
         },
         {
           "id": "right-cellar-seat",
-          "x": 0.84,
-          "y": 0.84,
+          "x": 0.781,
+          "y": 0.859,
           "facing": "left",
           "entryIds": [
             "right-cellar"
@@ -10104,7 +11428,8 @@ const DECOR_META = {
       "shelter",
       "spooky"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "coconut-shell-hideaway__cave__theme-natural__front.png": {
     "name": "Coconut Shell Hideaway",
@@ -10124,7 +11449,95 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.67,
+          "approachY": 0.84,
+          "mouthX": 0.67,
+          "mouthY": 0.63,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.38,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.78,
+          "y": 0.59,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.35,
+        "height": 0.38,
+        "x": 0.67,
+        "y": 0.63
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.38,
+          "x": 0.67,
+          "y": 0.63
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.66,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.78,
+          "y": 0.59,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "hollow-mossy-driftwood__cave-wood__theme-natural__front.png": {
     "name": "Hollow Mossy Driftwood",
@@ -10147,13 +11560,103 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.05000000000000002,
+          "approachY": 0.57,
+          "mouthX": 0.2,
+          "mouthY": 0.57,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.25,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-2-back",
+          "approachX": 0.64,
+          "approachY": 0.57,
+          "mouthX": 0.79,
+          "mouthY": 0.57,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.24,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.2,
+          "y": 0.57,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.22,
+        "height": 0.25,
+        "x": 0.2,
+        "y": 0.57
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.25,
+          "x": 0.2,
+          "y": 0.57
+        },
+        {
+          "id": "entry-2",
+          "side": "back",
+          "width": 0.2,
+          "height": 0.24,
+          "x": 0.79,
+          "y": 0.57
+        }
+      ],
+      "seatCount": 1,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.2,
+          "y": 0.57,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "live-root-overhang__cave-wood__theme-natural__front.png": {
     "name": "Live Root Overhang",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 2.25,
     "description": "A live root overhang decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10170,13 +11673,51 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1",
+          "approachX": 0.515,
+          "approachY": 0.76,
+          "mouthX": 0.52,
+          "mouthY": 0.65,
+          "entranceWidth": 0.32,
+          "entranceHeight": 0.24,
+          "outsideLayer": 2,
+          "insideLayer": 4
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.41,
+          "y": 0.66,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-1-seat-2",
+          "x": 0.63,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "mangrove-roots__cave-wood__theme-natural__front.png": {
     "name": "Mangrove Roots",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 1.95,
     "description": "A mangrove roots decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10193,72 +11734,246 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.51,
+          "approachY": 0.815,
+          "mouthX": 0.51,
+          "mouthY": 0.71,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.56,
+          "approachY": 0.545,
+          "mouthX": 0.56,
+          "mouthY": 0.44,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.56,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.8,
+          "y": 0.44,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.62,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.14,
+        "height": 0.22,
+        "x": 0.51,
+        "y": 0.71
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.22,
+          "x": 0.51,
+          "y": 0.71
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.19,
+          "x": 0.56,
+          "y": 0.44
+        }
+      ],
+      "seatCount": 4,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.56,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.8,
+          "y": 0.44,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.62,
+          "y": 0.72,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "slate__cave-rock__theme-natural__front.png": {
     "name": "Slate Cave",
     "cost": 12,
     "width": 620,
-    "defaultScale": 1.1,
+    "defaultScale": 1.2,
     "caveSettings": {
+      "entry": {
+        "id": "main-front",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.5,
+        "x": 0.51,
+        "y": 0.65
+      },
       "entryCount": 1,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-front",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.5,
           "x": 0.51,
-          "y": 0.67,
-          "side": "front"
+          "y": 0.65
         }
       ],
       "seatCount": 2,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "left-seat",
           "x": 0.42,
           "y": 0.64,
-          "facing": "right"
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         },
         {
           "id": "right-seat",
           "x": 0.6,
           "y": 0.64,
-          "facing": "left"
+          "facing": -1,
+          "entryIds": [
+            "main-front"
+          ]
         }
       ]
     },
     "caveBehavior": {
       "portals": [
         {
-          "id": "main_front",
-          "approachX": 0.5,
-          "approachY": 0.77,
-          "mouthX": 0.5,
-          "mouthY": 0.67,
+          "id": "main-front-front",
+          "approachX": 0.51,
+          "approachY": 0.75,
+          "mouthX": 0.51,
+          "mouthY": 0.65,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.5,
           "outsideLayer": 2,
           "insideLayer": 4,
-          "path": [
-            {
-              "x": 0.5,
-              "y": 0.61
-            },
-            {
-              "x": 0.5,
-              "y": 0.56
-            }
-          ]
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
-          "id": "center",
-          "x": 0.5,
-          "y": 0.53,
+          "id": "left-seat",
+          "x": 0.42,
+          "y": 0.64,
           "layer": 4,
+          "facing": 1,
           "portalIds": [
-            "main_front"
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "right-seat",
+          "x": 0.6,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "main-front-front"
           ]
         }
-      ]
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
     },
     "theme": "natural",
     "description": "A sturdy little shelter built from stacked slate. Simple, rocky, and perfect for fish that appreciate some privacy.",
@@ -10275,7 +11990,8 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1
   },
   "slate-stack__cave-rock__theme-natural__front.png": {
     "name": "Slate Stack",
@@ -10304,29 +12020,35 @@ const DECOR_META = {
           "id": "left-den",
           "approachX": 0.275,
           "approachY": 0.65,
-          "mouthX": 0.378,
-          "mouthY": 0.617
+          "mouthX": 0.38,
+          "mouthY": 0.6,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.12
         },
         {
           "id": "upper-right-den",
           "approachX": 0.9,
           "approachY": 0.5,
-          "mouthX": 0.808,
-          "mouthY": 0.512
+          "mouthX": 0.75,
+          "mouthY": 0.51,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.08
         },
         {
           "id": "lower-right-den",
           "approachX": 0.9,
           "approachY": 0.68,
           "mouthX": 0.78,
-          "mouthY": 0.657
+          "mouthY": 0.64,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.08
         }
       ],
       "insideSlots": [
         {
           "id": "left-den-seat",
           "x": 0.41,
-          "y": 0.61,
+          "y": 0.57,
           "layer": 4,
           "facing": -1,
           "portalIds": [
@@ -10335,8 +12057,8 @@ const DECOR_META = {
         },
         {
           "id": "upper-right-den-seat",
-          "x": 0.78,
-          "y": 0.518,
+          "x": 0.74,
+          "y": 0.51,
           "layer": 4,
           "facing": 1,
           "portalIds": [
@@ -10345,8 +12067,8 @@ const DECOR_META = {
         },
         {
           "id": "lower-right-den-seat",
-          "x": 0.8,
-          "y": 0.66,
+          "x": 0.78,
+          "y": 0.64,
           "layer": 4,
           "facing": 1,
           "portalIds": [
@@ -10356,13 +12078,14 @@ const DECOR_META = {
       ],
       "lingerMinMs": 10000,
       "lingerMaxMs": 18000
-    }
+    },
+    "caveEntranceCalibration": 1
   },
   "tangled-driftwood-rootscape__cave-wood__theme-natural__front.png": {
     "name": "Tangled Driftwood Rootscape",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.35,
+    "defaultScale": 2.25,
     "description": "A tangled driftwood rootscape decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10379,13 +12102,221 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.69,
+          "approachY": 0.705,
+          "mouthX": 0.69,
+          "mouthY": 0.64,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.39,
+          "approachY": 0.6825,
+          "mouthX": 0.39,
+          "mouthY": 0.62,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.46,
+          "approachY": 0.49,
+          "mouthX": 0.46,
+          "mouthY": 0.43,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.34,
+          "approachY": 0.5725,
+          "mouthX": 0.34,
+          "mouthY": 0.51,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.67,
+          "y": 0.65,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.32,
+          "y": 0.57,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.55,
+          "y": 0.5,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.39,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.1,
+        "height": 0.06,
+        "x": 0.69,
+        "y": 0.64
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.06,
+          "x": 0.69,
+          "y": 0.64
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.39,
+          "y": 0.62
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.06,
+          "x": 0.46,
+          "y": 0.43
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.06,
+          "x": 0.34,
+          "y": 0.51
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.67,
+          "y": 0.65,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.32,
+          "y": 0.57,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.55,
+          "y": 0.5,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.39,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-1__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 1",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10402,13 +12333,261 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.61,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.61,
+          "mouthY": 0.58,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.25,
+          "approachY": 0.5599999999999999,
+          "mouthX": 0.25,
+          "mouthY": 0.47,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.34,
+          "approachY": 0.39,
+          "mouthX": 0.34,
+          "mouthY": 0.32,
+          "entranceWidth": 0.05,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.36,
+          "approachY": 0.7899999999999999,
+          "mouthX": 0.36,
+          "mouthY": 0.7,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.5,
+          "approachY": 0.63,
+          "mouthX": 0.5,
+          "mouthY": 0.53,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.54,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.34,
+          "y": 0.32,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.63,
+          "y": 0.6,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.21,
+          "y": 0.45,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.4,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.13,
+        "height": 0.11,
+        "x": 0.61,
+        "y": 0.58
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.61,
+          "y": 0.58
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.25,
+          "y": 0.47
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.05,
+          "height": 0.06,
+          "x": 0.34,
+          "y": 0.32
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.11,
+          "x": 0.36,
+          "y": 0.7
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.08,
+          "x": 0.5,
+          "y": 0.53
+        }
+      ],
+      "seatCount": 6,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.52,
+          "y": 0.54,
+          "facing": 1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.49,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.34,
+          "y": 0.32,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.63,
+          "y": 0.6,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.21,
+          "y": 0.45,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.4,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-10__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 10",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10425,13 +12604,299 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.49,
+          "approachY": 0.675,
+          "mouthX": 0.49,
+          "mouthY": 0.52,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.24,
+          "approachY": 0.535,
+          "mouthX": 0.24,
+          "mouthY": 0.44,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.63,
+          "approachY": 0.7925,
+          "mouthX": 0.63,
+          "mouthY": 0.73,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.14,
+          "approachY": 0.7150000000000001,
+          "mouthX": 0.14,
+          "mouthY": 0.62,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.87,
+          "approachY": 0.7825,
+          "mouthX": 0.87,
+          "mouthY": 0.72,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.48,
+          "y": 0.55,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.24,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.63,
+          "y": 0.74,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.55,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.65,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.74,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.36,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.84,
+          "y": 0.72,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.22,
+        "height": 0.19,
+        "x": 0.49,
+        "y": 0.52
+      },
+      "entryCount": 5,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.19,
+          "x": 0.49,
+          "y": 0.52
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.12,
+          "x": 0.24,
+          "y": 0.44
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.07,
+          "x": 0.63,
+          "y": 0.73
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.1,
+          "x": 0.14,
+          "y": 0.62
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.87,
+          "y": 0.72
+        }
+      ],
+      "seatCount": 8,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.48,
+          "y": 0.55,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.24,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.63,
+          "y": 0.74,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.55,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.65,
+          "facing": -1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.74,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.36,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.84,
+          "y": 0.72,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-2__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 2",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 2.2,
     "categories": [
       "cave",
       "coral"
@@ -10448,13 +12913,202 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.58,
+          "approachY": 0.6699999999999999,
+          "mouthX": 0.58,
+          "mouthY": 0.57,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.26,
+          "approachY": 0.5925,
+          "mouthX": 0.26,
+          "mouthY": 0.52,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.84,
+          "approachY": 0.7675,
+          "mouthX": 0.84,
+          "mouthY": 0.7,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.81,
+          "approachY": 0.6725,
+          "mouthX": 0.81,
+          "mouthY": 0.61,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.05,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.58,
+          "y": 0.57,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.26,
+          "y": 0.52,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.86,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.81,
+          "y": 0.61,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.12,
+        "x": 0.58,
+        "y": 0.57
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.12,
+          "x": 0.58,
+          "y": 0.57
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.07,
+          "x": 0.26,
+          "y": 0.52
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.06,
+          "x": 0.84,
+          "y": 0.7
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.05,
+          "x": 0.81,
+          "y": 0.61
+        }
+      ],
+      "seatCount": 4,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.58,
+          "y": 0.57,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.26,
+          "y": 0.52,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.86,
+          "y": 0.72,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.81,
+          "y": 0.61,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-3__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 3",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 2.05,
     "categories": [
       "cave",
       "coral"
@@ -10471,13 +13125,301 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.55,
+          "approachY": 0.8300000000000001,
+          "mouthX": 0.55,
+          "mouthY": 0.65,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.22,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.34,
+          "approachY": 0.58,
+          "mouthX": 0.34,
+          "mouthY": 0.48,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.26,
+          "approachY": 0.74,
+          "mouthX": 0.26,
+          "mouthY": 0.66,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.84,
+          "approachY": 0.64,
+          "mouthX": 0.84,
+          "mouthY": 0.56,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.17,
+          "approachY": 0.53,
+          "mouthX": 0.17,
+          "mouthY": 0.43,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.08,
+          "approachY": 0.7899999999999999,
+          "mouthX": 0.08,
+          "mouthY": 0.71,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.55,
+          "y": 0.65,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.34,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.25,
+          "y": 0.67,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.84,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.69,
+          "y": 0.64,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.2,
+          "y": 0.43,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.11,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-6-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.22,
+        "x": 0.55,
+        "y": 0.65
+      },
+      "entryCount": 6,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.22,
+          "x": 0.55,
+          "y": 0.65
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.12,
+          "x": 0.34,
+          "y": 0.48
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.08,
+          "x": 0.26,
+          "y": 0.66
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.84,
+          "y": 0.56
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.08,
+          "x": 0.17,
+          "y": 0.43
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.08,
+          "x": 0.08,
+          "y": 0.71
+        }
+      ],
+      "seatCount": 7,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.55,
+          "y": 0.65,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.34,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.25,
+          "y": 0.67,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.84,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.69,
+          "y": 0.64,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.2,
+          "y": 0.43,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.11,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "entry-6"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-4__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 4",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.3,
     "categories": [
       "cave",
       "coral"
@@ -10494,13 +13436,381 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.44,
+          "approachY": 0.45499999999999996,
+          "mouthX": 0.44,
+          "mouthY": 0.37,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.43,
+          "approachY": 0.77,
+          "mouthX": 0.43,
+          "mouthY": 0.66,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.32,
+          "approachY": 0.94,
+          "mouthX": 0.32,
+          "mouthY": 0.83,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.79,
+          "approachY": 0.7625,
+          "mouthX": 0.79,
+          "mouthY": 0.7,
+          "entranceWidth": 0.2,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.63,
+          "approachY": 0.5125000000000001,
+          "mouthX": 0.63,
+          "mouthY": 0.45,
+          "entranceWidth": 0.06,
+          "entranceHeight": 0.05,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.07,
+          "approachY": 0.96,
+          "mouthX": 0.07,
+          "mouthY": 0.85,
+          "entranceWidth": 0.1,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-7-front",
+          "approachX": 0.86,
+          "approachY": 0.98,
+          "mouthX": 0.86,
+          "mouthY": 0.88,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-8-front",
+          "approachX": 0.23,
+          "approachY": 0.38499999999999995,
+          "mouthX": 0.23,
+          "mouthY": 0.3,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.44,
+          "y": 0.37,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.43,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.28,
+          "y": 0.83,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.63,
+          "y": 0.45,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.29,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-8-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.73,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.09,
+          "y": 0.86,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-6-front"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.83,
+          "y": 0.88,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-7-front"
+          ]
+        },
+        {
+          "id": "seat-9",
+          "x": 0.81,
+          "y": 0.66,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.1,
+        "height": 0.1,
+        "x": 0.44,
+        "y": 0.37
+      },
+      "entryCount": 8,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.1,
+          "x": 0.44,
+          "y": 0.37
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.14,
+          "x": 0.43,
+          "y": 0.66
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.1,
+          "x": 0.32,
+          "y": 0.83
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.2,
+          "height": 0.17,
+          "x": 0.79,
+          "y": 0.7
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.06,
+          "height": 0.05,
+          "x": 0.63,
+          "y": 0.45
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.1,
+          "height": 0.09,
+          "x": 0.07,
+          "y": 0.85
+        },
+        {
+          "id": "entry-7",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.06,
+          "x": 0.86,
+          "y": 0.88
+        },
+        {
+          "id": "entry-8",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.12,
+          "x": 0.23,
+          "y": 0.3
+        }
+      ],
+      "seatCount": 9,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.44,
+          "y": 0.37,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.43,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.28,
+          "y": 0.83,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.63,
+          "y": 0.45,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.25,
+          "y": 0.29,
+          "facing": -1,
+          "entryIds": [
+            "entry-8"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.73,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.09,
+          "y": 0.86,
+          "facing": -1,
+          "entryIds": [
+            "entry-6"
+          ]
+        },
+        {
+          "id": "seat-8",
+          "x": 0.83,
+          "y": 0.88,
+          "facing": -1,
+          "entryIds": [
+            "entry-7"
+          ]
+        },
+        {
+          "id": "seat-9",
+          "x": 0.81,
+          "y": 0.66,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-5__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 5",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.85,
     "categories": [
       "cave",
       "coral"
@@ -10517,36 +13827,141 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
-  },
-  "coral-shelf-6__cave-coral__theme-reef__front.png": {
-    "name": "Coral Shelf Cave 6",
-    "cost": 16,
-    "width": 520,
-    "defaultScale": 1.1,
-    "categories": [
-      "cave",
-      "coral"
-    ],
-    "theme": "reef",
-    "description": "A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.",
-    "behavior": "cave_layered",
-    "swimmable": true,
-    "tags": [
-      "cave",
-      "coral",
-      "reef",
-      "hardscape",
-      "shelter",
-      "perchable"
-    ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.5,
+          "approachY": 0.71,
+          "mouthX": 0.5,
+          "mouthY": 0.61,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-2-front",
+          "approachX": 0.8,
+          "approachY": 0.7,
+          "mouthX": 0.8,
+          "mouthY": 0.6,
+          "entranceWidth": 0.22,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.73,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.85,
+          "y": 0.57,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-2-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.15,
+        "height": 0.12,
+        "x": 0.5,
+        "y": 0.61
+      },
+      "entryCount": 2,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.12,
+          "x": 0.5,
+          "y": 0.61
+        },
+        {
+          "id": "entry-2",
+          "side": "front",
+          "width": 0.22,
+          "height": 0.12,
+          "x": 0.8,
+          "y": 0.6
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.5,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.73,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.85,
+          "y": 0.57,
+          "facing": 1,
+          "entryIds": [
+            "entry-2"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-7__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 7",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.9,
     "categories": [
       "cave",
       "coral"
@@ -10563,13 +13978,282 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.39,
+          "approachY": 0.445,
+          "mouthX": 0.39,
+          "mouthY": 0.37,
+          "entranceWidth": 0.18,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.28,
+          "approachY": 0.62,
+          "mouthX": 0.28,
+          "mouthY": 0.52,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.89,
+          "approachY": 0.83,
+          "mouthX": 0.89,
+          "mouthY": 0.77,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.29,
+          "approachY": 0.755,
+          "mouthX": 0.29,
+          "mouthY": 0.67,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-5-front",
+          "approachX": 0.76,
+          "approachY": 0.665,
+          "mouthX": 0.76,
+          "mouthY": 0.59,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.07,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-6-front",
+          "approachX": 0.76,
+          "approachY": 0.7599999999999999,
+          "mouthX": 0.76,
+          "mouthY": 0.7,
+          "entranceWidth": 0.05,
+          "entranceHeight": 0.04,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.34,
+          "y": 0.37,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.89,
+          "y": 0.77,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.29,
+          "y": 0.67,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "opening-5-seat",
+          "x": 0.76,
+          "y": 0.59,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-5-front"
+          ]
+        },
+        {
+          "id": "opening-6-seat",
+          "x": 0.76,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-6-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.18,
+        "height": 0.08,
+        "x": 0.39,
+        "y": 0.37
+      },
+      "entryCount": 6,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.18,
+          "height": 0.08,
+          "x": 0.39,
+          "y": 0.37
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.1,
+          "x": 0.28,
+          "y": 0.52
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.89,
+          "y": 0.77
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.09,
+          "x": 0.29,
+          "y": 0.67
+        },
+        {
+          "id": "opening-5",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.07,
+          "x": 0.76,
+          "y": 0.59
+        },
+        {
+          "id": "opening-6",
+          "side": "front",
+          "width": 0.05,
+          "height": 0.04,
+          "x": 0.76,
+          "y": 0.7
+        }
+      ],
+      "seatCount": 6,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.34,
+          "y": 0.37,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.89,
+          "y": 0.77,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.29,
+          "y": 0.67,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "opening-5-seat",
+          "x": 0.76,
+          "y": 0.59,
+          "facing": -1,
+          "entryIds": [
+            "opening-5"
+          ]
+        },
+        {
+          "id": "opening-6-seat",
+          "x": 0.76,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-6"
+          ]
+        }
+      ]
+    }
   },
   "coral-shelf-9__cave-coral__theme-reef__front.png": {
     "name": "Coral Shelf Cave 9",
     "cost": 16,
     "width": 520,
-    "defaultScale": 1.1,
+    "defaultScale": 1.8,
     "categories": [
       "cave",
       "coral"
@@ -10586,13 +14270,343 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.56,
+          "approachY": 0.705,
+          "mouthX": 0.56,
+          "mouthY": 0.61,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.33,
+          "approachY": 0.66,
+          "mouthX": 0.33,
+          "mouthY": 0.56,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-3-front",
+          "approachX": 0.36,
+          "approachY": 0.43499999999999994,
+          "mouthX": 0.36,
+          "mouthY": 0.35,
+          "entranceWidth": 0.09,
+          "entranceHeight": 0.09,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-4-front",
+          "approachX": 0.24,
+          "approachY": 0.7799999999999999,
+          "mouthX": 0.24,
+          "mouthY": 0.71,
+          "entranceWidth": 0.07,
+          "entranceHeight": 0.06,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-5-front",
+          "approachX": 0.64,
+          "approachY": 0.885,
+          "mouthX": 0.64,
+          "mouthY": 0.79,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-6-front",
+          "approachX": 0.87,
+          "approachY": 0.835,
+          "mouthX": 0.87,
+          "mouthY": 0.74,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.1,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-7-front",
+          "approachX": 0.79,
+          "approachY": 0.8049999999999999,
+          "mouthX": 0.79,
+          "mouthY": 0.71,
+          "entranceWidth": 0.08,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-8-front",
+          "approachX": 0.38,
+          "approachY": 0.83,
+          "mouthX": 0.38,
+          "mouthY": 0.76,
+          "entranceWidth": 0.11,
+          "entranceHeight": 0.08,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.56,
+          "y": 0.61,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.36,
+          "y": 0.35,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-3-front"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.24,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-4-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.78,
+          "y": 0.71,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-7-front"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.65,
+          "y": 0.8,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-5-front"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.35,
+          "y": 0.76,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-8-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.16,
+        "height": 0.11,
+        "x": 0.56,
+        "y": 0.61
+      },
+      "entryCount": 8,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.11,
+          "x": 0.56,
+          "y": 0.61
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.11,
+          "x": 0.33,
+          "y": 0.56
+        },
+        {
+          "id": "opening-3",
+          "side": "front",
+          "width": 0.09,
+          "height": 0.09,
+          "x": 0.36,
+          "y": 0.35
+        },
+        {
+          "id": "opening-4",
+          "side": "front",
+          "width": 0.07,
+          "height": 0.06,
+          "x": 0.24,
+          "y": 0.71
+        },
+        {
+          "id": "entry-5",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.1,
+          "x": 0.64,
+          "y": 0.79
+        },
+        {
+          "id": "entry-6",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.1,
+          "x": 0.87,
+          "y": 0.74
+        },
+        {
+          "id": "entry-7",
+          "side": "front",
+          "width": 0.08,
+          "height": 0.08,
+          "x": 0.79,
+          "y": 0.71
+        },
+        {
+          "id": "entry-8",
+          "side": "front",
+          "width": 0.11,
+          "height": 0.08,
+          "x": 0.38,
+          "y": 0.76
+        }
+      ],
+      "seatCount": 7,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.56,
+          "y": 0.61,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.25,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "opening-3-seat",
+          "x": 0.36,
+          "y": 0.35,
+          "facing": 1,
+          "entryIds": [
+            "opening-3"
+          ]
+        },
+        {
+          "id": "opening-4-seat",
+          "x": 0.24,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "opening-4"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.78,
+          "y": 0.71,
+          "facing": 1,
+          "entryIds": [
+            "entry-7"
+          ]
+        },
+        {
+          "id": "seat-6",
+          "x": 0.65,
+          "y": 0.8,
+          "facing": -1,
+          "entryIds": [
+            "entry-5"
+          ]
+        },
+        {
+          "id": "seat-7",
+          "x": 0.35,
+          "y": 0.76,
+          "facing": 1,
+          "entryIds": [
+            "entry-8"
+          ]
+        }
+      ]
+    }
   },
   "coralline-live-rock__cave-rock-coral__theme-reef__front.png": {
     "name": "Coralline Live Rock",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 2.15,
     "description": "A coralline live rock decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10611,13 +14625,196 @@ const DECOR_META = {
       "shelter",
       "perchable"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.62,
+          "approachY": 0.75,
+          "mouthX": 0.62,
+          "mouthY": 0.63,
+          "entranceWidth": 0.17,
+          "entranceHeight": 0.16,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.26,
+          "approachY": 0.7949999999999999,
+          "mouthX": 0.26,
+          "mouthY": 0.72,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-3-front",
+          "approachX": 0.46,
+          "approachY": 0.67,
+          "mouthX": 0.46,
+          "mouthY": 0.55,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.56,
+          "approachY": 0.71,
+          "mouthX": 0.56,
+          "mouthY": 0.59,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-back",
+          "approachX": 0.56,
+          "approachY": 0.71,
+          "mouthX": 0.56,
+          "mouthY": 0.59,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.12,
+          "outsideLayer": 5,
+          "insideLayer": 4,
+          "side": "back",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.73,
+          "y": 0.63,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.7,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.5,
+          "y": 0.56,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "entry-3-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.17,
+        "height": 0.16,
+        "x": 0.62,
+        "y": 0.63
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.17,
+          "height": 0.16,
+          "x": 0.62,
+          "y": 0.63
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.12,
+          "x": 0.26,
+          "y": 0.72
+        },
+        {
+          "id": "entry-3",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.11,
+          "x": 0.46,
+          "y": 0.55
+        },
+        {
+          "id": "entry-4",
+          "side": "both",
+          "width": 0.12,
+          "height": 0.12,
+          "x": 0.56,
+          "y": 0.59
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.73,
+          "y": 0.63,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.29,
+          "y": 0.7,
+          "facing": -1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.5,
+          "y": 0.56,
+          "facing": -1,
+          "entryIds": [
+            "entry-3"
+          ]
+        }
+      ]
+    }
   },
   "live-rock-cluster__cave-rock__theme-reef__front.png": {
     "name": "Live Rock Cluster",
     "cost": 8,
     "width": 420,
-    "defaultScale": 1.4,
+    "defaultScale": 2.25,
     "description": "A live rock cluster decoration for the aquarium.",
     "categories": [
       "cave",
@@ -10633,7 +14830,215 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.53,
+          "approachY": 0.775,
+          "mouthX": 0.53,
+          "mouthY": 0.63,
+          "entranceWidth": 0.21,
+          "entranceHeight": 0.23,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "opening-2-front",
+          "approachX": 0.8,
+          "approachY": 0.6799999999999999,
+          "mouthX": 0.8,
+          "mouthY": 0.6,
+          "entranceWidth": 0.13,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-3-front",
+          "approachX": 0.34,
+          "approachY": 0.835,
+          "mouthX": 0.34,
+          "mouthY": 0.69,
+          "entranceWidth": 0.14,
+          "entranceHeight": 0.12,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        },
+        {
+          "id": "entry-4-front",
+          "approachX": 0.39,
+          "approachY": 0.615,
+          "mouthX": 0.39,
+          "mouthY": 0.47,
+          "entranceWidth": 0.12,
+          "entranceHeight": 0.11,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.56,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.78,
+          "y": 0.6,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-2-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.38,
+          "y": 0.47,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-4-front"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.68,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "entry-3-front"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.64,
+          "y": 0.71,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.21,
+        "height": 0.23,
+        "x": 0.53,
+        "y": 0.63
+      },
+      "entryCount": 4,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.21,
+          "height": 0.23,
+          "x": 0.53,
+          "y": 0.63
+        },
+        {
+          "id": "opening-2",
+          "side": "front",
+          "width": 0.13,
+          "height": 0.12,
+          "x": 0.8,
+          "y": 0.6
+        },
+        {
+          "id": "entry-3",
+          "side": "front",
+          "width": 0.14,
+          "height": 0.12,
+          "x": 0.34,
+          "y": 0.69
+        },
+        {
+          "id": "entry-4",
+          "side": "front",
+          "width": 0.12,
+          "height": 0.11,
+          "x": 0.39,
+          "y": 0.47
+        }
+      ],
+      "seatCount": 5,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.57,
+          "y": 0.56,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "opening-2-seat",
+          "x": 0.78,
+          "y": 0.6,
+          "facing": 1,
+          "entryIds": [
+            "opening-2"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.38,
+          "y": 0.47,
+          "facing": 1,
+          "entryIds": [
+            "entry-4"
+          ]
+        },
+        {
+          "id": "seat-4",
+          "x": 0.34,
+          "y": 0.68,
+          "facing": 1,
+          "entryIds": [
+            "entry-3"
+          ]
+        },
+        {
+          "id": "seat-5",
+          "x": 0.64,
+          "y": 0.71,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-1__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 1",
@@ -10662,7 +15067,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.52,
+          "approachY": 0.33499999999999996,
+          "mouthX": 0.52,
+          "mouthY": 0.43,
+          "entranceWidth": 0.37,
+          "entranceHeight": 0.21,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.43,
+          "y": 0.44,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.63,
+          "y": 0.46,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.37,
+        "height": 0.21,
+        "x": 0.52,
+        "y": 0.43
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.37,
+          "height": 0.21,
+          "x": 0.52,
+          "y": 0.43
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.43,
+          "y": 0.44,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.63,
+          "y": 0.46,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-3__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 3",
@@ -10691,7 +15184,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.54,
+          "approachY": 0.37,
+          "mouthX": 0.54,
+          "mouthY": 0.47,
+          "entranceWidth": 0.35,
+          "entranceHeight": 0.19,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.42,
+          "y": 0.48,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.6,
+          "y": 0.48,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.35,
+        "height": 0.19,
+        "x": 0.54,
+        "y": 0.47
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.35,
+          "height": 0.19,
+          "x": 0.54,
+          "y": 0.47
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.42,
+          "y": 0.48,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.6,
+          "y": 0.48,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "sea-anemone-4__cave-coral__theme-reef__front.png": {
     "name": "Sea Anemone Cave 4",
@@ -10720,7 +15301,95 @@ const DECOR_META = {
     "motionLayer": "front",
     "motionSplitY": 0.55,
     "motionSwaySide": "above",
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "opening-1-front",
+          "approachX": 0.45,
+          "approachY": 0.4075,
+          "mouthX": 0.45,
+          "mouthY": 0.49,
+          "entranceWidth": 0.32,
+          "entranceHeight": 0.17,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.4,
+          "y": 0.51,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.58,
+          "y": 0.51,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "opening-1-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    },
+    "caveSettings": {
+      "entry": {
+        "id": "opening-1",
+        "side": "front",
+        "width": 0.32,
+        "height": 0.17,
+        "x": 0.45,
+        "y": 0.49
+      },
+      "entryCount": 1,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "opening-1",
+          "side": "front",
+          "width": 0.32,
+          "height": 0.17,
+          "x": 0.45,
+          "y": 0.49
+        }
+      ],
+      "seatCount": 2,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "opening-1-seat",
+          "x": 0.4,
+          "y": 0.51,
+          "facing": -1,
+          "entryIds": [
+            "opening-1"
+          ]
+        },
+        {
+          "id": "seat-2",
+          "x": 0.58,
+          "y": 0.51,
+          "facing": 1,
+          "entryIds": [
+            "opening-1"
+          ]
+        }
+      ]
+    }
   },
   "seashell-cluster__cave-coral__theme-reef__front.png": {
     "name": "Seashell Cluster",
@@ -10747,61 +15416,151 @@ const DECOR_META = {
     "caveBehavior": {
       "portals": [
         {
-          "id": "left-shell",
-          "approachX": 0.105,
-          "approachY": 0.565,
-          "mouthX": 0.216,
-          "mouthY": 0.524
+          "id": "left-shell-front",
+          "approachX": 0.109,
+          "approachY": 0.581,
+          "mouthX": 0.22,
+          "mouthY": 0.54,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.14,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "upper-shell",
-          "approachX": 0.5,
-          "approachY": 0.5,
-          "mouthX": 0.585,
-          "mouthY": 0.406
+          "id": "upper-shell-front",
+          "approachX": 0.505,
+          "approachY": 0.504,
+          "mouthX": 0.59,
+          "mouthY": 0.41,
+          "entranceWidth": 0.15,
+          "entranceHeight": 0.13,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         },
         {
-          "id": "right-shell",
-          "approachX": 0.955,
-          "approachY": 0.665,
-          "mouthX": 0.855,
-          "mouthY": 0.64
+          "id": "right-shell-front",
+          "approachX": 0.94,
+          "approachY": 0.675,
+          "mouthX": 0.84,
+          "mouthY": 0.65,
+          "entranceWidth": 0.16,
+          "entranceHeight": 0.15,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
         }
       ],
       "insideSlots": [
         {
           "id": "left-shell-seat",
-          "x": 0.245,
-          "y": 0.522,
+          "x": 0.25,
+          "y": 0.52,
           "layer": 4,
           "facing": -1,
           "portalIds": [
+            "left-shell-front"
+          ]
+        },
+        {
+          "id": "upper-shell-seat",
+          "x": 0.58,
+          "y": 0.4,
+          "layer": 4,
+          "facing": -1,
+          "portalIds": [
+            "upper-shell-front"
+          ]
+        },
+        {
+          "id": "right-shell-seat",
+          "x": 0.84,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "right-shell-front"
+          ]
+        }
+      ],
+      "lingerMinMs": 9000,
+      "lingerMaxMs": 16000,
+      "interiorZones": [],
+      "insideLayer": 4
+    },
+    "caveEntranceCalibration": 1,
+    "caveSettings": {
+      "entry": {
+        "id": "left-shell",
+        "side": "front",
+        "width": 0.15,
+        "height": 0.14,
+        "x": 0.22,
+        "y": 0.54
+      },
+      "entryCount": 3,
+      "activeEntryIndex": 0,
+      "entries": [
+        {
+          "id": "left-shell",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.14,
+          "x": 0.22,
+          "y": 0.54
+        },
+        {
+          "id": "upper-shell",
+          "side": "front",
+          "width": 0.15,
+          "height": 0.13,
+          "x": 0.59,
+          "y": 0.41
+        },
+        {
+          "id": "right-shell",
+          "side": "front",
+          "width": 0.16,
+          "height": 0.15,
+          "x": 0.84,
+          "y": 0.65
+        }
+      ],
+      "seatCount": 3,
+      "activeSeatIndex": 0,
+      "seats": [
+        {
+          "id": "left-shell-seat",
+          "x": 0.25,
+          "y": 0.52,
+          "facing": -1,
+          "entryIds": [
             "left-shell"
           ]
         },
         {
           "id": "upper-shell-seat",
-          "x": 0.61,
-          "y": 0.42,
-          "layer": 4,
+          "x": 0.58,
+          "y": 0.4,
           "facing": -1,
-          "portalIds": [
+          "entryIds": [
             "upper-shell"
           ]
         },
         {
           "id": "right-shell-seat",
-          "x": 0.825,
-          "y": 0.63,
-          "layer": 4,
+          "x": 0.84,
+          "y": 0.64,
           "facing": 1,
-          "portalIds": [
+          "entryIds": [
             "right-shell"
           ]
         }
-      ],
-      "lingerMinMs": 9000,
-      "lingerMaxMs": 16000
+      ]
     }
   },
   "meteor__cave-rock__theme-space__front.png": {
@@ -10810,28 +15569,55 @@ const DECOR_META = {
     "width": 585,
     "defaultScale": 1.1,
     "caveSettings": {
+      "entry": {
+        "id": "main-front",
+        "side": "front",
+        "width": 0.29,
+        "height": 0.35,
+        "x": 0.57,
+        "y": 0.63
+      },
       "entryCount": 1,
+      "activeEntryIndex": 0,
       "entries": [
         {
           "id": "main-front",
-          "x": 0.56,
-          "y": 0.67,
-          "side": "front"
+          "side": "front",
+          "width": 0.29,
+          "height": 0.35,
+          "x": 0.57,
+          "y": 0.63
         }
       ],
-      "seatCount": 2,
+      "seatCount": 3,
+      "activeSeatIndex": 0,
       "seats": [
         {
           "id": "upper-seat",
-          "x": 0.5,
-          "y": 0.55,
-          "facing": "right"
+          "x": 0.52,
+          "y": 0.53,
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         },
         {
           "id": "lower-seat",
-          "x": 0.49,
+          "x": 0.5,
           "y": 0.72,
-          "facing": "right"
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.63,
+          "y": 0.64,
+          "facing": 1,
+          "entryIds": [
+            "main-front"
+          ]
         }
       ]
     },
@@ -10850,7 +15636,61 @@ const DECOR_META = {
       "hardscape",
       "shelter"
     ],
-    "seller": "Arcadia Home Aquatics"
+    "seller": "Arcadia Home Aquatics",
+    "caveEntranceCalibration": 1,
+    "caveBehavior": {
+      "portals": [
+        {
+          "id": "main-front-front",
+          "approachX": 0.57,
+          "approachY": 0.75,
+          "mouthX": 0.57,
+          "mouthY": 0.63,
+          "entranceWidth": 0.29,
+          "entranceHeight": 0.35,
+          "outsideLayer": 2,
+          "insideLayer": 4,
+          "side": "front",
+          "path": []
+        }
+      ],
+      "insideSlots": [
+        {
+          "id": "upper-seat",
+          "x": 0.52,
+          "y": 0.53,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "lower-seat",
+          "x": 0.5,
+          "y": 0.72,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        },
+        {
+          "id": "seat-3",
+          "x": 0.63,
+          "y": 0.64,
+          "layer": 4,
+          "facing": 1,
+          "portalIds": [
+            "main-front-front"
+          ]
+        }
+      ],
+      "interiorZones": [],
+      "lingerMinMs": 4200,
+      "lingerMaxMs": 8600,
+      "insideLayer": 4
+    }
   },
   "fishing-lure__lure__theme-artificial.png": {
     "name": "Fishing Lure",
@@ -12650,7 +17490,6 @@ const DECOR_KEY_ALIASES = Object.freeze({
   "cave_coral_shelf_3.png": "coral-shelf-3__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_4.png": "coral-shelf-4__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_5.png": "coral-shelf-5__cave-coral__theme-reef__front.png",
-  "cave_coral_shelf_6.png": "coral-shelf-6__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_7.png": "coral-shelf-7__cave-coral__theme-reef__front.png",
   "cave_coral_shelf_9.png": "coral-shelf-9__cave-coral__theme-reef__front.png",
   "cave_sea_anemone_1.png": "sea-anemone-1__cave-coral__theme-reef__front.png",
@@ -12987,6 +17826,7 @@ const dom = {
   openEquipmentButton: document.querySelector("#openEquipmentButton"),
   openSettingsButton: document.querySelector("#openSettingsButton"),
   toolbarTileColorInput: document.querySelector("#toolbarTileColorInput"),
+  tankFrameColorInput: document.querySelector("#tankFrameColorInput"),
   openSettingsSidebarButton: document.querySelector("#openSettingsSidebarButton"),
   closeSettingsOverlay: document.querySelector("#closeSettingsOverlay"),
   closeEquipmentOverlay: document.querySelector("#closeEquipmentOverlay"),
@@ -13062,15 +17902,6 @@ const dom = {
   inspectorBreeding: document.querySelector("#inspectorBreeding"),
   inspectorMeal: document.querySelector("#inspectorMeal"),
   inspectorFishSettingsButton: document.querySelector("#inspectorFishSettingsButton"),
-  fishInspectorSettings: document.querySelector("#fishInspectorSettings"),
-  inspectorFishSizeInput: document.querySelector("#inspectorFishSizeInput"),
-  inspectorFishSizeValue: document.querySelector("#inspectorFishSizeValue"),
-  inspectorFishBehaviorSelect: document.querySelector("#inspectorFishBehaviorSelect"),
-  inspectorFishTurnAnimationInput: document.querySelector("#inspectorFishTurnAnimationInput"),
-  inspectorFishTurnAnimationValue: document.querySelector("#inspectorFishTurnAnimationValue"),
-  inspectorFishColorSwatches: document.querySelector("#inspectorFishColorSwatches"),
-  inspectorFishColorValue: document.querySelector("#inspectorFishColorValue"),
-  inspectorFishColorizeInput: document.querySelector("#inspectorFishColorizeInput"),
   toast: document.querySelector("#toast"),
   tabButtons: [...document.querySelectorAll(".tab-button")],
   tabPanels: [...document.querySelectorAll(".tab-panel")],
@@ -13222,6 +18053,7 @@ const runtime = {
   caveSettingsActivePointType: "seat",
   caveSettingsDrag: null,
   decorSettingsCaveTab: "entries",
+  decorSettingsShowCaveBackground: true,
   pendingDecorAction: null,
   pendingFishAction: null,
   pendingCustomDecorUpload: null,
@@ -13576,6 +18408,11 @@ const runtime = {
   debugBreedingSequence: null,
   debugFishBehaviorLog: [],
   debugFishBehaviorSignatures: new Map(),
+  debugFishBehaviorBroadcastEnabled: false,
+  debugFishBehaviorLoggingEnabled: false,
+  debugFishBehaviorSnapshots: new Map(),
+  debugFishBehaviorTextCache: new Map(),
+  debugFishBehaviorLastSyncAt: 0,
   lastTankPoint: null,
   viewportMetrics: {
     orientation: "",
@@ -14442,6 +19279,8 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     exclusive: true,
     onOpen: (_ctx, options) => {
       runtime.fishInspectFishId = options.fishId;
+      runtime.fishInspectBodyVersion = (runtime.fishInspectBodyVersion || 0) + 1;
+      runtime.fishInspectLastReadoutAt = 0;
       runtime.fishInspectNameDraft = getManagedFishById(options.fishId)?.fish?.name || "";
       runtime.fishInspectPreviewStartedAt = Date.now();
       runtime.fishInspectView = "animated";
@@ -14451,7 +19290,6 @@ const UTILITY_OVERLAY_MODES = Object.freeze({
     render: renderFishInspectUtilityOverlay,
     onBodyClick: handleFishInspectClick,
     onBodyInput: handleFishInspectInput,
-    onBodyChange: handleFishInspectChange,
     onBodyKeyDown: handleFishInspectKeyDown
   },
   "custom-decor-settings": createPlacedDecorUtilityMode({
@@ -17140,6 +21978,39 @@ function getFishSocialCategoryLabel(category) {
   return normalized.split("_").map((part) => part ? part[0].toUpperCase() + part.slice(1) : "").join(" ");
 }
 
+function isFishSocialProfileSourceCurrent(source, snapshot) {
+  for (const key in snapshot) {
+    const value = source?.[key];
+    const previous = snapshot[key];
+    if (Array.isArray(value)) {
+      if (!Array.isArray(previous) || value.length !== previous.length) return false;
+      for (let index = 0; index < value.length; index += 1) {
+        const entry = value[index];
+        if (entry !== previous[index] || (entry && typeof entry === "object") || typeof entry === "function") return false;
+      }
+    } else if (value !== previous || (value && typeof value === "object") || typeof value === "function") {
+      // Exotic mutable values are normalized afresh rather than cached by identity.
+      return false;
+    }
+  }
+  return true;
+}
+
+function snapshotFishSocialProfileSource(source, nested = false) {
+  const keys = nested
+    ? ["category", "socialMode", "socialGroupId", "socialMinimum", "socialIdeal", "ownKindMinimum",
+      "hostSpeciesIds", "compatibleFriendRequired", "affinityGroups", "affinityGroup", "sizeClass"]
+    : ["socialCategory", "socialMode", "socialGroupId", "socialMinimum", "socialIdeal", "socialOwnKindMinimum",
+      "socialHostSpeciesIds", "compatibleFriendRequired", "affinityGroups", "socialAffinityGroups", "socialAffinityGroup",
+      "socialSizeClass", "customAsset", "socialAffinity"];
+  const snapshot = {};
+  for (const key of keys) {
+    const value = source?.[key];
+    snapshot[key] = Array.isArray(value) ? value.slice() : value;
+  }
+  return snapshot;
+}
+
 function getFishSocialProfile(speciesOrFish) {
   const fish = speciesOrFish && typeof speciesOrFish === "object" && speciesOrFish.speciesId
     ? speciesOrFish
@@ -17150,15 +22021,45 @@ function getFishSocialProfile(speciesOrFish) {
       ? (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(speciesOrFish) : null)
       : speciesOrFish;
   const speciesId = String(species?.id || fish?.speciesId || (typeof speciesOrFish === "string" ? speciesOrFish : "") || "");
+  const configuredSpeciesProfile = speciesId && typeof FISH_SOCIAL_PROFILES !== "undefined"
+    ? FISH_SOCIAL_PROFILES[speciesId]
+    : null;
+  const cacheKey = fish || species;
+  if (typeof runtime === "undefined" || !cacheKey || typeof cacheKey !== "object") {
+    return buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile);
+  }
+  const cache = runtime.fishSocialProfileCache ||= new WeakMap();
+  const cached = cache.get(cacheKey);
+  const legacyNeeds = typeof FISH_COMFORT_PROFILES !== "undefined" ? FISH_COMFORT_PROFILES[speciesId]?.needs : null;
+  const legacyOwnKindRequired = Array.isArray(legacyNeeds) && legacyNeeds.includes("school_2_plus");
+  // Enum/label/rank tables are frozen constants. Mutable catalog/override values
+  // are checked without allocating new dependency arrays on the hot path.
+  if (cached && cached.species === species && cached.speciesId === speciesId
+    && cached.legacyOwnKindRequired === legacyOwnKindRequired
+    && isFishSocialProfileSourceCurrent(fish, cached.fish)
+    && isFishSocialProfileSourceCurrent(species, cached.speciesValues)
+    && isFishSocialProfileSourceCurrent(species?.socialProfile, cached.nested)
+    && isFishSocialProfileSourceCurrent(configuredSpeciesProfile, cached.configured)) return cached.profile;
+  const profile = buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile);
+  Object.freeze(profile.hostSpeciesIds);
+  Object.freeze(profile.affinityGroups);
+  Object.freeze(profile);
+  cache.set(cacheKey, { species, speciesId, legacyOwnKindRequired, profile,
+    fish: snapshotFishSocialProfileSource(fish), speciesValues: snapshotFishSocialProfileSource(species),
+    nested: snapshotFishSocialProfileSource(species?.socialProfile, true),
+    configured: snapshotFishSocialProfileSource(configuredSpeciesProfile, true) });
+  if (runtime.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishSocialProfileBuilds");
+  }
+  return profile;
+}
+
+function buildFishSocialProfile(fish, species, speciesId, configuredSpeciesProfile) {
   const explicitCategory = normalizeFishSocialCategory(
     fish?.socialCategory
     || species?.socialCategory
     || species?.socialProfile?.category
   );
-  const configuredSpeciesProfile = speciesId && typeof FISH_SOCIAL_PROFILES !== "undefined"
-    ? FISH_SOCIAL_PROFILES[speciesId]
-    : null;
-
   let category = explicitCategory;
   let source = explicitCategory ? "explicit" : "default";
 
@@ -17839,6 +22740,7 @@ function startWhaleBreathCycle(fish, species, now = Date.now()) {
   clearForcedGravelDigPrompt(fish);
   if (fish.caveState) {
     abortFishCaveBehavior(fish, now, false);
+    if (fish.caveState) return false;
   }
   if (fish.feedingPelletId) {
     releasePelletsTargetingFishIds(fish.id);
@@ -18152,9 +23054,9 @@ function isFishNeedMet(fish, needTag, tank = getCurrentTank(), facts = getTankCo
   }
 }
 
-function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+function getFishNeedsStatus(fish, tank = getCurrentTank(), now = Date.now(), facts = null) {
   const species = getSpeciesForFish(fish);
-  const facts = getTankComfortFacts(tank, now);
+  facts ||= getTankComfortFacts(tank, now);
   const statuses = getSpeciesNeedTags(species).map((tag) => ({
     tag,
     label: getComfortTagLabel(tag),
@@ -18222,9 +23124,9 @@ function isFishConflictActive(fish, conflictTag, tank = getCurrentTank(), facts 
   }
 }
 
-function getFishConflictStatus(fish, tank = getCurrentTank(), now = Date.now()) {
+function getFishConflictStatus(fish, tank = getCurrentTank(), now = Date.now(), facts = null) {
   const species = getSpeciesForFish(fish);
-  const facts = getTankComfortFacts(tank, now);
+  facts ||= getTankComfortFacts(tank, now);
   return getSpeciesConflictTags(species).map((tag) => ({
     tag,
     label: getComfortTagLabel(tag),
@@ -18258,6 +23160,11 @@ function renderNeutralComfortTagChips(tags) {
 function normalizeDecorKey(decorKey = "") {
   const key = String(decorKey || "").trim();
   if (!key) {
+    return "";
+  }
+
+  // Retired artwork must also disappear from old inventories and placements.
+  if (/^(?:cave_coral_shelf_6\.png|coral-shelf-6__cave-coral__theme-reef__front\.png)$/i.test(key)) {
     return "";
   }
 
@@ -21845,14 +26752,10 @@ function openDecorSettings(placedId) {
     return;
   }
 
-  if (isCaveDecorKey(item.decorKey) && !hasPlacedCaveSettings(item)) {
-    item.caveSettings = getDecorDefaultCaveSettings(item.decorKey);
-    saveState();
-  }
-
   runtime.customDecorSettingsDecorId = item.id;
   runtime.bubblerSettingsDecorId = null;
   runtime.decorSettingsCaveTab = "entries";
+  runtime.decorSettingsShowCaveBackground = true;
   openUtilityOverlay("decor-settings", { clearPrimaryToolModes: false });
 }
 
@@ -22130,6 +27033,11 @@ function sanitizeCaveLocalPoint(entry, fallback = CAVE_SETTINGS_DEFAULT_ENTRY) {
   };
 }
 
+function sanitizeCaveEntranceSize(value, fallback = 0.2) {
+  const numeric = Number(value);
+  return clamp(Number.isFinite(numeric) && numeric > 0 ? numeric : fallback, 0.02, 1);
+}
+
 function normalizeCaveSettingsIdList(value) {
   const rawValues = Array.isArray(value)
     ? value
@@ -22159,6 +27067,10 @@ function sanitizePlacedCaveSettings(settings = null) {
         ? sourceEntry.id.trim()
         : `entry-${index + 1}`,
       side: normalizeCaveEntrySide(sourceEntry?.side ?? sourceEntry?.entrySide),
+      ...(Number(sourceEntry?.width) > 0 && Number(sourceEntry?.height) > 0 ? {
+        width: sanitizeCaveEntranceSize(sourceEntry.width),
+        height: sanitizeCaveEntranceSize(sourceEntry.height)
+      } : {}),
       ...sanitizeCaveLocalPoint(sourceEntry, fallback)
     };
   });
@@ -22258,10 +27170,27 @@ function getPlacedCaveSettings(item) {
     return null;
   }
 
-  const source = item.caveSettings && typeof item.caveSettings === "object"
-    ? item.caveSettings
-    : getAuthoredDecorCaveSettings(item.decorKey);
-  return source ? sanitizePlacedCaveSettings(source) : null;
+  const authored = getAuthoredDecorCaveSettings(item.decorKey);
+  const source = item.caveSettings && typeof item.caveSettings === "object" ? item.caveSettings : authored;
+  if (!source) return null;
+  const settings = sanitizePlacedCaveSettings(source);
+  if (authored && JSON.stringify({ ...settings, activeEntryIndex: 0, activeSeatIndex: 0 }) === JSON.stringify(sanitizePlacedCaveSettings())) {
+    return sanitizePlacedCaveSettings(authored);
+  }
+  const decor = runtime.decorMap.get(item.decorKey) || runtime.decorMeta[item.decorKey];
+  const defaults = authored?.entries || decor?.caveBehavior?.portals?.map((portal) => ({
+    id: portal.id, x: portal.mouthX, y: portal.mouthY, width: portal.entranceWidth, height: portal.entranceHeight
+  })) || [];
+  for (const entry of settings.entries) {
+    if (entry.width > 0 && entry.height > 0) continue;
+    const match = defaults.find((candidate) => candidate.id === entry.id)
+      || defaults.reduce((best, candidate) => Math.hypot(candidate.x - entry.x, candidate.y - entry.y) < Math.hypot((best?.x ?? Infinity) - entry.x, (best?.y ?? Infinity) - entry.y) ? candidate : best, null);
+    if (match?.width > 0 && match?.height > 0) {
+      entry.width = match.width;
+      entry.height = match.height;
+    }
+  }
+  return settings;
 }
 
 function ensurePlacedCaveSettings(item) {
@@ -22269,8 +27198,44 @@ function ensurePlacedCaveSettings(item) {
     return null;
   }
 
-  item.caveSettings = sanitizePlacedCaveSettings(item.caveSettings || getDecorDefaultCaveSettings(item.decorKey));
+  item.caveSettings = getCaveEditorSettings(item);
   return item.caveSettings;
+}
+
+function getCaveEditorSettings(item) {
+  if (hasPlacedCaveSettings(item)) {
+    const settings = getPlacedCaveSettings(item);
+    for (const entry of settings.entries) {
+      entry.width = sanitizeCaveEntranceSize(entry.width);
+      entry.height = sanitizeCaveEntranceSize(entry.height);
+    }
+    return settings;
+  }
+  const bounds = getPlacedDecorBounds(item);
+  const triggers = getCaveTriggerRegions(item);
+  const seats = getCaveSeatRegions(item);
+  if (!bounds || !triggers.length || !seats.length) {
+    return getPlacedCaveSettings(item) || getDecorDefaultCaveSettings(item.decorKey);
+  }
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const localPoint = (region) => ({
+    x: resolveDecorHorizontalUnit(item, (region.xNorm * TANK_WIDTH - bounds.left) / width),
+    y: resolveDecorVerticalUnit(item, (region.yNorm * TANK_HEIGHT - bounds.top) / height)
+  });
+  const profile = getCaveBehaviorProfileForItem(item);
+  return sanitizePlacedCaveSettings({
+    entries: triggers.map((region) => ({
+      id: region.id, ...localPoint(region),
+      side: profile.portals?.find((portal) => portal.id === region.id)?.side || "front",
+      width: sanitizeCaveEntranceSize(region.widthPx / width),
+      height: sanitizeCaveEntranceSize(region.heightPx / height)
+    })),
+    seats: seats.map((region) => ({
+      id: region.id, ...localPoint(region), facing: region.facing,
+      entryIds: getCaveSeatPortalIds(region)
+    }))
+  });
 }
 
 function getDecorDefaultCaveSettings(decorKey = "") {
@@ -22740,10 +27705,10 @@ function buildCaveBehaviorProfileFromPlacedSettings(item) {
     return null;
   }
 
-  return buildCaveBehaviorProfileFromSettings(getPlacedCaveSettings(item));
+  return buildCaveBehaviorProfileFromSettings(getPlacedCaveSettings(item), getCaveBehaviorProfile(item.decorKey));
 }
 
-function buildCaveBehaviorProfileFromSettings(settingsValue) {
+function buildCaveBehaviorProfileFromSettings(settingsValue, authoredProfile = null) {
   const settings = sanitizePlacedCaveSettings(settingsValue);
   const entries = Array.isArray(settings.entries) && settings.entries.length
     ? settings.entries
@@ -22755,17 +27720,26 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
   const portalsByEntryId = new Map();
   const portals = entries.flatMap((entry, index) => {
     const entryId = entry.id || `user-entry-${index + 1}`;
-    const entryPortals = getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => ({
-      id: `${entryId}-${outsideLayer === 5 ? "back" : "front"}`,
-      approachX: entry.x,
-      approachY: clamp(entry.y + 0.12, 0.02, 0.98),
-      mouthX: entry.x,
-      mouthY: entry.y,
-      outsideLayer,
-      insideLayer: 4,
-      side: outsideLayer === 5 ? "back" : "front",
-      path: []
-    }));
+    const entryPortals = getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => {
+      const id = `${entryId}-${outsideLayer === 5 ? "back" : "front"}`;
+      const authoredPortal = authoredProfile?.portals?.find((portal) => portal.id === id);
+      // Keep authored approach directions (including anemones approached from above)
+      // while allowing the mouth to move with its edited entrance.
+      const approachOffsetX = authoredPortal ? authoredPortal.approachX - authoredPortal.mouthX : 0;
+      const approachOffsetY = authoredPortal ? authoredPortal.approachY - authoredPortal.mouthY : 0.12;
+      return {
+        id,
+        approachX: clamp(entry.x + approachOffsetX, 0.02, 0.98),
+        approachY: clamp(entry.y + approachOffsetY, 0.02, 0.98),
+        mouthX: entry.x,
+        mouthY: entry.y,
+        ...(entry.width && entry.height ? { entranceWidth: entry.width, entranceHeight: entry.height } : {}),
+        outsideLayer,
+        insideLayer: 4,
+        side: outsideLayer === 5 ? "back" : "front",
+        path: []
+      };
+    });
     portalsByEntryId.set(entryId, entryPortals.map((portal) => portal.id));
     return entryPortals;
   });
@@ -22819,8 +27793,8 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
       portalIds: resolveSeatPortalIds(seat)
     })),
     interiorZones: [],
-    lingerMinMs: DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMinMs,
-    lingerMaxMs: DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMaxMs,
+    lingerMinMs: authoredProfile?.lingerMinMs ?? DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMinMs,
+    lingerMaxMs: authoredProfile?.lingerMaxMs ?? DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMaxMs,
     insideLayer: 4
   };
 }
@@ -23046,6 +28020,7 @@ function setDecorGroupScale(item, nextScale, save = false) {
   if (groupItems.length <= 1) {
     return null;
   }
+  if (!canEditOccupiedCaveGeometry(groupItems)) return Number(item.scale);
 
   const currentScale = Number(item.scale) || getDecorScaleDefault(item.decorKey);
   const clampedScale = clamp(Number(nextScale) || currentScale, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
@@ -23126,6 +28101,7 @@ function updateSelectedDecorSetting(setting, value) {
     return;
   }
 
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
   if (setting === "depthZ") {
     const targetDepth = getTankDepthZFromDisplayPercent(value, getPlacedDecorDepthZ(item));
     // Ungrouped decor has no group-member collection. It must still be a
@@ -23253,6 +28229,10 @@ function getCaveSettingControlValue(setting, settings, seatIndex = null, entryIn
       return entry.x;
     case "entryY":
       return entry.y;
+    case "entryWidth":
+      return sanitizeCaveEntranceSize(entry.width);
+    case "entryHeight":
+      return sanitizeCaveEntranceSize(entry.height);
     case "entrySide":
       return normalizeCaveEntrySide(entry.side);
     case "entryCount":
@@ -23300,6 +28280,8 @@ function updateCaveSettingsPreviewMarkers(settings) {
     marker.hidden = false;
     marker.style.left = `${(entry.x * 100).toFixed(2)}%`;
     marker.style.top = `${(entry.y * 100).toFixed(2)}%`;
+    marker.style.width = `${sanitizeCaveEntranceSize(entry.width) * 100}%`;
+    marker.style.height = `${sanitizeCaveEntranceSize(entry.height) * 100}%`;
     marker.classList.toggle("is-active", index === resolved.activeEntryIndex);
   }
 
@@ -23337,9 +28319,18 @@ function updateCaveSettingsControls(item = getEditableCaveSettingsTarget()?.item
     return;
   }
 
-  const settings = getPlacedCaveSettings(item);
+  const settings = getCaveEditorSettings(item);
   if (!settings) {
     return;
+  }
+
+  for (const label of dom.utilityOverlayBody.querySelectorAll("[data-cave-entry-size-category]")) {
+    const entry = settings.entries[Number(label.dataset.caveEntrySizeCategory)];
+    if (entry) label.textContent = getCaveEntranceSizeCategory(item, {
+      mouthX: entry.x, mouthY: entry.y,
+      entranceWidth: sanitizeCaveEntranceSize(entry.width),
+      entranceHeight: sanitizeCaveEntranceSize(entry.height)
+    });
   }
 
   const labels = dom.utilityOverlayBody.querySelectorAll("[data-cave-setting-value]");
@@ -23354,6 +28345,8 @@ function updateCaveSettingsControls(item = getEditableCaveSettingsTarget()?.item
       label.textContent = `Entry ${Number(value) + 1}`;
     } else if (setting === "activeSeatIndex") {
       label.textContent = `Seat ${Number(value) + 1}`;
+    } else if (setting === "entryWidth" || setting === "entryHeight") {
+      label.textContent = `${Math.round(Number(value) * 100)}%`;
     } else if (Number.isFinite(Number(value))) {
       label.textContent = formatCaveSettingPercent(value);
     }
@@ -23433,6 +28426,19 @@ function clearCaveBehaviorForDecor(decorId) {
   }
 }
 
+function canEditOccupiedCaveGeometry(items) {
+  const ids = new Set(items.filter(Boolean).filter((item) => isCaveDecorKey(item.decorKey)).map((item) => item.id));
+  const occupants = state.fish.filter((fish) => fish.caveState && ids.has(fish.caveDecorId));
+  if (!occupants.length) {
+    // Capture entrance dimensions before a transform so they scale with the artwork.
+    for (const item of items.filter(Boolean)) if (ids.has(item.id)) ensurePlacedCaveSettings(item);
+    return true;
+  }
+  for (const fish of occupants) abortFishCaveBehavior(fish, Date.now(), false);
+  showToast("Fish are leaving this cave. Edit it once it is empty.");
+  return false;
+}
+
 function getEditableCaveSettingsTarget() {
   if (runtime.utilityOverlayMode === "custom-hide-create") {
     const item = getPendingCustomHidePreviewItem();
@@ -23440,7 +28446,7 @@ function getEditableCaveSettingsTarget() {
   }
 
   const item = getDecorSettingsTarget();
-  const settings = ensurePlacedCaveSettings(item);
+  const settings = item && isCaveDecorKey(item.decorKey) ? getCaveEditorSettings(item) : null;
   return item && settings ? { item, settings, pending: null } : null;
 }
 
@@ -23451,6 +28457,8 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   }
   const { item, pending } = target;
   const settings = target.settings;
+
+  if (!pending && (!hasPlacedCaveSettings(item) || !["activeEntryIndex", "activeSeatIndex"].includes(setting)) && !canEditOccupiedCaveGeometry([item])) return;
 
   const numericValue = Number(value);
   const rawValue = value;
@@ -23473,6 +28481,15 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   let needsRender = false;
 
   switch (setting) {
+    case "entryWidth":
+    case "entryHeight":
+      if (!settings.entries[entryIndex]) return;
+      settings.entries[entryIndex].width = sanitizeCaveEntranceSize(settings.entries[entryIndex].width);
+      settings.entries[entryIndex].height = sanitizeCaveEntranceSize(settings.entries[entryIndex].height);
+      settings.entries[entryIndex][setting === "entryWidth" ? "width" : "height"] = sanitizeCaveEntranceSize(numericValue);
+      settings.activeEntryIndex = entryIndex;
+      runtime.caveSettingsActivePointType = "entry";
+      break;
     case "entryX":
       if (!settings.entries[entryIndex]) {
         return;
@@ -23503,6 +28520,9 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
         CAVE_SETTINGS_MIN_ENTRIES,
         CAVE_SETTINGS_MAX_ENTRIES
       );
+      while (settings.entries.length < settings.entryCount) {
+        settings.entries.push({ ...buildDefaultCaveEntryPoint(settings.entries.length, settings.entryCount), width: 0.2, height: 0.2 });
+      }
       runtime.caveSettingsActivePointType = "entry";
       needsRender = true;
       break;
@@ -23562,7 +28582,7 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   item.caveSettings = sanitizePlacedCaveSettings(settings);
   if (pending) {
     pending.caveSettings = item.caveSettings;
-  } else {
+  } else if (!["activeEntryIndex", "activeSeatIndex"].includes(setting)) {
     clearCaveBehaviorForDecor(item.id);
     saveState();
   }
@@ -23598,6 +28618,7 @@ function removeSelectedCavePoint(kind = "entry", indexValue = 0) {
   if (!target?.item || !target.settings) {
     return false;
   }
+  if (!target.pending && !canEditOccupiedCaveGeometry([target.item])) return false;
 
   const isSeat = String(kind) === "seat";
   const listKey = isSeat ? "seats" : "entries";
@@ -23666,8 +28687,13 @@ function applyCaveSettingsPreviewPoint(kind, indexValue, point, options = {}) {
     return false;
   }
 
-  target.x = sanitizeCaveLocalCoordinate(point.x, target.x);
-  target.y = sanitizeCaveLocalCoordinate(point.y, target.y);
+  if (kindId === "entry" && options.resize) {
+    target.width = sanitizeCaveEntranceSize(Math.abs(point.x - target.x) * 2);
+    target.height = sanitizeCaveEntranceSize(Math.abs(point.y - target.y) * 2);
+  } else {
+    target.x = sanitizeCaveLocalCoordinate(point.x, target.x);
+    target.y = sanitizeCaveLocalCoordinate(point.y, target.y);
+  }
   if (kindId === "entry") {
     settings.activeEntryIndex = index;
   } else {
@@ -23688,6 +28714,8 @@ function applyCaveSettingsPreviewPoint(kind, indexValue, point, options = {}) {
 function getCaveSettingsPreviewPointerTarget(event) {
   const target = event.target instanceof Element ? event.target : null;
   const settings = getEditableCaveSettingsTarget()?.settings || sanitizePlacedCaveSettings();
+  const resizeHandle = target?.closest("[data-cave-entry-resize]");
+  if (resizeHandle) return { kind: "entry", index: Number(resizeHandle.dataset.caveEntryResize), resize: true };
   const entryMarker = target?.closest("[data-cave-settings-entry-marker]");
   if (entryMarker) {
     return {
@@ -23725,7 +28753,7 @@ function finishCaveSettingsPreviewDrag(event) {
 
   const point = event ? getCaveSettingsPreviewLocalPoint(event) : null;
   if (point) {
-    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: true });
+    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: true, resize: drag.resize });
   } else {
     const editableTarget = getEditableCaveSettingsTarget();
     if (editableTarget?.item && !editableTarget.pending) {
@@ -24241,6 +29269,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
   const motion = getDecorMotion(item, now);
   const bubblerMeta = hasBubblerPreview ? getPlacedDecorBubblerMeta(item, decor) : null;
   const bgImage = decor.bgPath ? runtime.images.get(decor.bgPath) : null;
+  const showBackground = !hasCavePreview || runtime.decorSettingsShowCaveBackground !== false;
   const caveBgHeadroom = hasCavePreview && bgImage
     ? Math.max(0, width * (bgImage.height / Math.max(1, bgImage.width)) - height)
     : 0;
@@ -24265,8 +29294,12 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     : 0;
   const horizontalPad = Math.ceil(Math.max(14, swayAmplitude + bobPad, bubbleSidePad));
   const verticalPad = Math.ceil(Math.max(12, bobPad + 8, bubbleHeadroom + 12, caveBgHeadroom + 12));
-  const canvasCssWidth = Math.max(1, Math.ceil(width + horizontalPad * 2));
-  const canvasCssHeight = Math.max(1, Math.ceil(height + verticalPad * 2));
+  const stage = frame.parentElement;
+  const previewScale = Math.min(1,
+    Math.max(1, (stage?.clientWidth || width) - 24) / (width + horizontalPad * 2),
+    Math.max(1, (stage?.clientHeight || height) - 24) / (height + verticalPad * 2));
+  const canvasCssWidth = Math.max(1, Math.ceil((width + horizontalPad * 2) * previewScale));
+  const canvasCssHeight = Math.max(1, Math.ceil((height + verticalPad * 2) * previewScale));
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const nextWidth = Math.max(1, Math.round(canvasCssWidth * dpr));
   const nextHeight = Math.max(1, Math.round(canvasCssHeight * dpr));
@@ -24275,10 +29308,10 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     canvas.width = nextWidth;
     canvas.height = nextHeight;
   }
-  frame.style.width = `${width}px`;
-  frame.style.height = `${height}px`;
-  canvas.style.left = `${-horizontalPad}px`;
-  canvas.style.top = `${-verticalPad}px`;
+  frame.style.width = `${width * previewScale}px`;
+  frame.style.height = `${height * previewScale}px`;
+  canvas.style.left = `${-horizontalPad * previewScale}px`;
+  canvas.style.top = `${-verticalPad * previewScale}px`;
   canvas.style.width = `${canvasCssWidth}px`;
   canvas.style.height = `${canvasCssHeight}px`;
 
@@ -24287,14 +29320,14 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     return;
   }
 
-  context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  context.clearRect(0, 0, canvasCssWidth, canvasCssHeight);
+  context.setTransform(dpr * previewScale, 0, 0, dpr * previewScale, 0, 0);
+  context.clearRect(0, 0, canvasCssWidth / previewScale, canvasCssHeight / previewScale);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   const drawX = horizontalPad;
   const drawY = verticalPad;
 
-  if ((hasCavePreview || hasBubblerPreview) && hasDecorCaveColorLayers(decor) && bgImage) {
+  if (showBackground && (hasCavePreview || hasBubblerPreview) && hasDecorCaveColorLayers(decor) && bgImage) {
     drawCaveBackgroundLayerToContext(context, item, decor, now, {
       drawX,
       drawY,
@@ -24302,7 +29335,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
       baseHeight: height,
       motion
     });
-  } else if ((hasBubblerPreview || hasCavePreview) && bgImage) {
+  } else if (showBackground && (hasBubblerPreview || hasCavePreview) && bgImage) {
     const bgHeight = width * (bgImage.height / bgImage.width);
     drawDecorImageLayerToContext(context, bgImage, drawX, drawY + (height - bgHeight), width, bgHeight, item, now, motion);
   }
@@ -27569,10 +32602,44 @@ function getDebugFishBehaviorSnapshot(fish, species = getSpeciesForFish(fish), n
 
 function resetDebugFishBehaviorBroadcastState() {
   runtime.debugFishBehaviorSignatures.clear();
+  runtime.debugFishBehaviorSnapshots.clear();
+  runtime.debugFishBehaviorTextCache.clear();
+  runtime.debugFishBehaviorLastSyncAt = 0;
+}
+
+function getCachedDebugFishBehaviorSnapshot(fish, species, now) {
+  const cached = runtime.debugFishBehaviorSnapshots.get(fish.id);
+  const tankId = state.activeTankId;
+  if (cached && cached.fish === fish && cached.species === species && cached.tankId === tankId
+    && now >= cached.now && now - cached.now < 250) return cached.snapshot;
+  const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+  runtime.debugFishBehaviorSnapshots.set(fish.id, { fish, species, tankId, now, snapshot });
+  return snapshot;
+}
+
+function toggleDebugFishBehaviorDiagnostics(kind) {
+  if (!isDebugModeEnabled()) return;
+  const key = kind === "logging" ? "debugFishBehaviorLoggingEnabled" : "debugFishBehaviorBroadcastEnabled";
+  runtime[key] = !runtime[key];
+  resetDebugFishBehaviorBroadcastState();
+  syncDebugFishBehaviorDiagnosticControls();
+}
+
+function syncDebugFishBehaviorDiagnosticControls() {
+  for (const [id, key] of [["debugFishBehaviorLabelsToggle", "debugFishBehaviorBroadcastEnabled"],
+    ["debugFishBehaviorRecordingToggle", "debugFishBehaviorLoggingEnabled"]]) {
+    const button = document.getElementById(id);
+    if (!button) continue;
+    const enabled = runtime[key] === true;
+    button.setAttribute("aria-pressed", String(enabled));
+    button.classList.toggle("is-active", enabled);
+    const label = button.querySelector("[data-diagnostic-state]");
+    if (label) label.textContent = enabled ? "On" : "Off";
+  }
 }
 
 function pushDebugFishBehaviorLog(fish, snapshot, now = Date.now()) {
-  if (!isDebugModeEnabled() || !fish || !snapshot) {
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorLoggingEnabled !== true || !fish || !snapshot) {
     return;
   }
 
@@ -27600,6 +32667,15 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
     return;
   }
 
+  if (now >= runtime.debugFishBehaviorLastSyncAt && now - runtime.debugFishBehaviorLastSyncAt < 250) return;
+  runtime.debugFishBehaviorLastSyncAt = now;
+  if (runtime.debugSidebarOpen) renderFishBehaviorSchedulerReadout(now);
+  if (runtime.debugFishBehaviorBroadcastEnabled !== true && runtime.debugFishBehaviorLoggingEnabled !== true) {
+    runtime.debugFishBehaviorSignatures.clear();
+    runtime.debugFishBehaviorSnapshots.clear();
+    return;
+  }
+
   const seenFishIds = new Set();
   for (const fish of state.fish) {
     const species = getSpeciesForFish(fish);
@@ -27608,7 +32684,7 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
     }
 
     seenFishIds.add(fish.id);
-    const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+    const snapshot = getCachedDebugFishBehaviorSnapshot(fish, species, now);
     if (!snapshot) {
       continue;
     }
@@ -27625,7 +32701,9 @@ function syncDebugFishBehaviorBroadcast(now = Date.now()) {
       runtime.debugFishBehaviorSignatures.delete(fishId);
     }
   }
-  renderFishBehaviorSchedulerReadout(now);
+  for (const fishId of runtime.debugFishBehaviorSnapshots.keys()) {
+    if (!seenFishIds.has(fishId)) runtime.debugFishBehaviorSnapshots.delete(fishId);
+  }
 }
 
 function renderFishBehaviorSchedulerReadout(now = Date.now()) {
@@ -27857,6 +32935,7 @@ function isLayoutRatioLockActive() {
 
 function getTankStageLayoutSize() {
   if (runtime.tankStageRenderLayout) return runtime.tankStageRenderLayout;
+  if (runtime.tankStageEvaluationLayout) return runtime.tankStageEvaluationLayout;
   const stage = dom?.tankStage;
   if (!(stage instanceof HTMLElement)) {
     return { width: TANK_WIDTH, height: TANK_HEIGHT };
@@ -27873,6 +32952,17 @@ function getTankStageLayoutSize() {
     width: Math.max(1, layoutWidth || Number(fallback?.width) || TANK_WIDTH),
     height: Math.max(1, layoutHeight || Number(fallback?.height) || TANK_HEIGHT)
   };
+}
+
+function withTankStageLayoutSnapshot(callback) {
+  const previous = runtime.tankStageEvaluationLayout;
+  runtime.tankStageEvaluationLayout = getTankStageLayoutSize();
+  try {
+    return callback();
+  } finally {
+    // Rendering and UI layout changes after this evaluation must read again.
+    runtime.tankStageEvaluationLayout = previous;
+  }
 }
 
 function getTankStageVisualMetrics() {
@@ -29105,6 +34195,8 @@ function bindEvents() {
   dom.debugGravelPebbleButton?.addEventListener("click", () => triggerDebugGravelPebbleTest());
   dom.debugCaveButton.addEventListener("click", () => toggleDebugNightCaveMode());
   dom.debugFishBehaviorLogButton?.addEventListener("click", () => downloadDebugFishBehaviorLog());
+  document.getElementById("debugFishBehaviorLabelsToggle")?.addEventListener("click", () => toggleDebugFishBehaviorDiagnostics("labels"));
+  document.getElementById("debugFishBehaviorRecordingToggle")?.addEventListener("click", () => toggleDebugFishBehaviorDiagnostics("logging"));
   for (const config of DEBUG_BEHAVIOR_BUTTON_CONFIGS) {
     dom[config.domKey]?.addEventListener("click", () => triggerDebugBehaviorScenario(config.action));
   }
@@ -29563,6 +34655,12 @@ function bindEvents() {
   });
   dom.toolbarTileColorInput?.addEventListener("change", (event) => {
     setToolbarTileColor(event.currentTarget?.value);
+  });
+  dom.tankFrameColorInput?.addEventListener("input", (event) => {
+    window.BubbleBoroughTankFrame?.setFrameColor?.(normalizeTankFrameColor(event.currentTarget?.value));
+  });
+  dom.tankFrameColorInput?.addEventListener("change", (event) => {
+    setTankFrameColor(event.currentTarget?.value);
   });
   dom.ambientBubbleLevelInput?.addEventListener("input", (event) => {
     setAmbientBubbleLevel(event.currentTarget?.value);
@@ -30962,18 +36060,6 @@ function bindEvents() {
       return;
     }
 
-    const sizeButton = event.target.closest("[data-size-fish]");
-    if (sizeButton) {
-      adjustFishSize(sizeButton.dataset.sizeFish, Number(sizeButton.dataset.sizeDirection) || 0);
-      return;
-    }
-
-    const defaultButton = event.target.closest("[data-copy-fish-size]");
-    if (defaultButton) {
-      saveFishSizeAsDefault(defaultButton.dataset.copyFishSize);
-      return;
-    }
-
     const button = event.target.closest("[data-open-fish]");
     if (button) {
       openFishInspector(button.dataset.openFish);
@@ -31744,7 +36830,6 @@ function bindEvents() {
   dom.randomizeFishName?.addEventListener("click", () => randomizeInspectorName());
   dom.inspectorFishSettingsButton?.addEventListener("click", () => toggleFishInspectorSettings());
   dom.fishInspector?.addEventListener("click", playFishInspectorActionSound, true);
-  dom.fishInspector?.addEventListener("pointerdown", beginFishInspectorSliderSound, true);
   dom.fishInspector?.addEventListener("click", (event) => {
     const target = event.target instanceof Element ? event.target : null;
     const actionButton = target?.closest("[data-fish-action]");
@@ -31752,43 +36837,6 @@ function bindEvents() {
       event.preventDefault();
       handleFishActionButtonClick(actionButton.dataset.fishAction || "");
       return;
-    }
-    const swatch = target?.closest("[data-inspector-fish-color]");
-    if (swatch instanceof HTMLButtonElement) {
-      event.preventDefault();
-      event.stopPropagation();
-      updateInspectorFishSetting("color", swatch.dataset.inspectorFishColor || "");
-    }
-  });
-  dom.fishInspector?.addEventListener("input", playFishInspectorSliderInputSound, true);
-  dom.fishInspector?.addEventListener("input", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
-    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
-      queueInspectorFishColorPreview(colorPicker.value);
-      return;
-    }
-    const control = target?.closest("[data-inspector-fish-setting]");
-    if (control instanceof HTMLInputElement) {
-      updateInspectorFishSetting(
-        control.dataset.inspectorFishSetting,
-        control.type === "checkbox" ? control.checked : control.value
-      );
-    }
-  });
-  dom.fishInspector?.addEventListener("change", (event) => {
-    const target = event.target instanceof Element ? event.target : null;
-    const colorPicker = target?.closest("[data-inspector-fish-color-picker]");
-    if (colorPicker instanceof HTMLInputElement && colorPicker.type === "color") {
-      updateInspectorFishSetting("color", colorPicker.value, { forcePersist: true });
-      return;
-    }
-    const control = target?.closest("[data-inspector-fish-setting]");
-    if (control instanceof HTMLInputElement || control instanceof HTMLSelectElement) {
-      updateInspectorFishSetting(
-        control.dataset.inspectorFishSetting,
-        control instanceof HTMLInputElement && control.type === "checkbox" ? control.checked : control.value
-      );
     }
   });
   window.addEventListener("pointerdown", (event) => {
@@ -32700,6 +37748,7 @@ function normalizeDecorMeta(payload) {
       fishBehavior: normalizeDecorFishBehaviorMeta(entry, key),
       moodDelta: clamp(Number(entry.moodDelta) || 0, -0.2, 0.2),
       caveBehavior: normalizeCaveBehaviorMeta(entry.caveBehavior),
+      caveEntranceCalibration: Number(entry.caveEntranceCalibration) || 0,
       swimmable: typeof entry.swimmable === "boolean"
         ? entry.swimmable
         : (typeof entry?.caveBehavior?.swimmable === "boolean" ? entry.caveBehavior.swimmable : true),
@@ -33100,6 +38149,10 @@ function normalizeCavePortalMeta(entry) {
     approachY: clamp(approachY, 0.02, 0.98),
     mouthX: clamp(mouthX, 0.02, 0.98),
     mouthY: clamp(mouthY, 0.02, 0.98),
+    ...(Number(entry.entranceWidth) > 0 && Number(entry.entranceHeight) > 0 ? {
+      entranceWidth: sanitizeCaveEntranceSize(entry.entranceWidth),
+      entranceHeight: sanitizeCaveEntranceSize(entry.entranceHeight)
+    } : {}),
     outsideLayer: CAVE_ALLOWED_OUTSIDE_LAYERS.includes(requestedOutsideLayer) ? requestedOutsideLayer : 2,
     insideLayer: clampTankLayer(CAVE_SEAT_LOCKED_LAYER),
     path
@@ -33941,6 +38994,7 @@ function buildDecorCatalog(items, catalogMeta = {}) {
         width: Number.isFinite(meta.width) ? meta.width : 140,
         defaultScale: Number.isFinite(meta.defaultScale) ? meta.defaultScale : DEFAULT_DECOR_SCALE,
         caveBehavior: meta.caveBehavior || null,
+        caveEntranceCalibration: meta.caveEntranceCalibration || 0,
         swimmable: meta.swimmable !== false,
         caveSettings: meta.caveSettings || null,
         bubbler: meta.bubbler || normalizeBubblerMeta(null, group.base.key)
@@ -34901,6 +39955,7 @@ function buildCustomFishCatalogEntry(asset) {
     },
     dislikedTypes: [],
     caveEnabled: profile?.caveEnabled !== false,
+    caveMinSize: profile?.caveMinSize === "large" ? "large" : "",
     defaultNames: [asset.name || "Custom Fish"],
     customAsset: true,
     behaviorProfileId: profile?.id || "",
@@ -35203,6 +40258,7 @@ function normalizeFishDefinition(entry, index, options = {}) {
     dislikedTypes: normalizeStringList(entry.dislikedTypes || entry.dislikes || entry.dislikedFishTypes)
       .map((value) => value.toLowerCase()),
     caveEnabled: entry.caveEnabled !== false,
+    caveMinSize: entry.caveMinSize === "large" ? "large" : "",
     customAsset: entry.customAsset === true,
     customUploadProduct: entry.customUploadProduct === true,
     davyMutation: entry.davyMutation === true,
@@ -35951,12 +41007,17 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
     }
     const dirtiness = Number.isFinite(Number(state?.lastCleanedAt)) ? getTankDirtiness(now) : 0;
     defaults.hygiene = clamp((1 - dirtiness) * 100, 5, 100);
-    defaults.comfort = clamp(getFishComfort(fish, now).value * 100, 0, 100);
-    const needsStatus = getFishNeedsStatus(fish, currentTank, now);
+    const facts = getTankComfortFacts(currentTank, now);
+    const needsStatus = getFishNeedsStatus(fish, currentTank, now, facts);
+    const conflicts = getFishConflictStatus(fish, currentTank, now, facts);
+    const comfortTank = typeof getFishSimulationTank === "function" ? getFishSimulationTank(fish) : currentTank;
+    defaults.comfort = clamp(getFishComfort(fish, now, comfortTank,
+      comfortTank === currentTank ? { facts, needsStatus, conflicts,
+        dirtiness: Number.isFinite(Number(state?.lastCleanedAt)) ? dirtiness : undefined } : null).value * 100, 0, 100);
     const metRatio = needsStatus.length
       ? needsStatus.filter((need) => need.met).length / needsStatus.length
       : 0.75;
-    defaults.environment = clamp(45 + metRatio * 55 - getFishConflictStatus(fish, currentTank, now).filter((conflict) => conflict.active).length * 12, 0, 100);
+    defaults.environment = clamp(45 + metRatio * 55 - conflicts.filter((conflict) => conflict.active).length * 12, 0, 100);
   }
   return defaults;
 }
@@ -40276,6 +45337,7 @@ function mergeFishBehaviorProfile(baseSpecies, profileSpecies) {
     poopCleanupChance: profileSpecies.poopCleanupChance,
     shadowScale: profileSpecies.shadowScale,
     caveEnabled: profileSpecies.caveEnabled,
+    caveMinSize: profileSpecies.caveMinSize,
     behaviorProfileSpeciesId: profileSpecies.id,
     behaviorProfileName: profileSpecies.name
   };
@@ -40563,20 +45625,59 @@ function normalizeFishAppearanceVariantIndex(value, species, fallbackFish = null
   return ((rawIndex % variants.length) + variants.length) % variants.length;
 }
 
-function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
+function getFishArtworkCatalog(species) {
+  if (!species || typeof species !== "object") return null;
+  const cache = runtime.fishArtworkCatalogCache ||= new WeakMap();
+  const source = Array.isArray(species.assetVariants) ? species.assetVariants : null;
+  const cached = cache.get(species);
+  if (cached && cached.source === source && cached.asset === species.asset
+    && (!source || (cached.sourceValues.length === source.length
+      && cached.sourceValues.every((value, index) => value === source[index])))) return cached;
   const variants = getFishAssetVariants(species);
-  if (!variants.length) {
-    return species?.asset || species?.fallbackAsset || null;
+  const byKey = new Map();
+  for (const path of variants) {
+    const key = getFishAppearanceVariantKey(path);
+    if (!byKey.has(key)) byKey.set(key, path);
   }
+  const catalog = { source, sourceValues: source?.slice() || [], asset: species.asset, variants, byKey };
+  cache.set(species, catalog);
+  return catalog;
+}
 
-  const purchasedAssetKey = getFishAppearanceVariantKey(fish?.appearanceAssetPath);
-  const purchasedAsset = variants.find((path) => getFishAppearanceVariantKey(path) === purchasedAssetKey);
-  if (purchasedAsset) return purchasedAsset;
-
-  const chosen = variants.find((path) => getFishAppearanceVariantKey(path) === fish?.appearanceVariantKey);
+function resolveFishArtworkPath(fish, species, catalog) {
+  const variants = catalog?.variants || [];
+  if (!variants.length) return species?.asset || species?.fallbackAsset || null;
+  const purchased = catalog.byKey.get(getFishAppearanceVariantKey(fish?.appearanceAssetPath));
+  if (purchased) return purchased;
+  const chosen = catalog.byKey.get(fish?.appearanceVariantKey);
   if (chosen) return chosen;
+  let index = 0;
+  if (variants.length > 1) {
+    const value = Number(fish?.appearanceVariant);
+    const rawIndex = Number.isFinite(value) ? Math.floor(value)
+      : fish ? getFishAppearanceVariantSeed(fish, species) % variants.length : 0;
+    index = ((rawIndex % variants.length) + variants.length) % variants.length;
+  }
+  return variants[index] || variants[0] || species?.fallbackAsset || species?.asset || null;
+}
 
-  return variants[normalizeFishAppearanceVariantIndex(fish?.appearanceVariant, species, fish)] || variants[0] || species?.fallbackAsset || species?.asset || null;
+function getFishAssetPath(fish, species = getSpeciesForFish(fish)) {
+  const catalog = getFishArtworkCatalog(species);
+  if (!fish || typeof fish !== "object") return resolveFishArtworkPath(fish, species, catalog);
+  const cache = runtime.fishResolvedArtworkCache ||= new WeakMap();
+  const cached = cache.get(fish);
+  if (cached && cached.catalog === catalog && cached.speciesId === species?.id
+    && cached.fallbackAsset === species?.fallbackAsset
+    && cached.assetPath === fish.appearanceAssetPath && cached.variantKey === fish.appearanceVariantKey
+    && Object.is(cached.variant, fish.appearanceVariant) && cached.id === fish.id && cached.name === fish.name) return cached.path;
+  const path = resolveFishArtworkPath(fish, species, catalog);
+  cache.set(fish, { catalog, speciesId: species?.id, fallbackAsset: species?.fallbackAsset,
+    assetPath: fish.appearanceAssetPath, variantKey: fish.appearanceVariantKey,
+    variant: fish.appearanceVariant, id: fish.id, name: fish.name, path });
+  if (runtime.debugFrameProfilerEnabled && typeof incrementDebugFrameProfilerCounter === "function") {
+    incrementDebugFrameProfilerCounter("fishArtworkResolutions");
+  }
+  return path;
 }
 
 function getPufferInflatedAssetPathForBaseAsset(baseAsset) {
@@ -41653,6 +46754,15 @@ function normalizeToolbarTileColor(value) {
   return DEFAULT_UI_SETTINGS.toolbarTileColor;
 }
 
+function normalizeTankFrameColor(value) {
+  const normalized = String(value || "").trim().toLowerCase();
+  if (/^#[0-9a-f]{6}$/.test(normalized)) return normalized;
+  if (/^#[0-9a-f]{3}$/.test(normalized)) {
+    return `#${normalized.slice(1).split("").map((character) => character.repeat(2)).join("")}`;
+  }
+  return DEFAULT_UI_SETTINGS.tankFrameColor;
+}
+
 function normalizeWebSurfThemeMode(value, legacyDarkMode = undefined) {
   if (typeof value === "boolean") {
     return value ? WEBSURF_THEME_MODE_YES : WEBSURF_THEME_MODE_NO;
@@ -41813,6 +46923,7 @@ function sanitizeUiSettings(rawSettings) {
   return {
     toolbarPosition: DEFAULT_UI_SETTINGS.toolbarPosition,
     toolbarTileColor: normalizeToolbarTileColor(source.toolbarTileColor),
+    tankFrameColor: normalizeTankFrameColor(source.tankFrameColor),
     webSurfThemeMode: normalizeWebSurfThemeMode(
       source.webSurfThemeMode,
       typeof source.webSurfDarkModeEnabled === "boolean"
@@ -45190,19 +50301,8 @@ function sanitizePoop(poop) {
   }
 
   const xNorm = clamp(Number(poop.xNorm) || 0.5, 0.06, 0.94);
-  const tankLayer = Number.isFinite(Number(poop.tankLayer))
-    ? clampTankLayer(poop.tankLayer)
-    : undefined;
-  const fallbackYNorm = tankLayer
-    ? getTankLayerBottomBoundaryNorm(tankLayer)
-    : getPoopFloorYNormAtXNorm(xNorm);
-  const yNorm = clamp(
-    Number.isFinite(Number(poop.yNorm))
-      ? Number(poop.yNorm)
-      : fallbackYNorm,
-    0.14,
-    0.98
-  );
+  const tankLayer = getPoopTankLayer();
+  const yNorm = getPoopLayerTargetYNorm({ tankLayer, xNorm });
 
   return {
     id: String(poop.id || createId("poop")),
@@ -45210,7 +50310,7 @@ function sanitizePoop(poop) {
     dueAt: Number.isFinite(poop.dueAt) ? poop.dueAt : undefined,
     createdAt: Number.isFinite(poop.createdAt) ? poop.createdAt : undefined,
     xNorm,
-    ...(tankLayer ? { tankLayer } : {}),
+    tankLayer,
     yNorm,
     startYNorm: clamp(Number(poop.startYNorm) || 0.54, 0.18, 0.82),
     asset: resolveAppUrl(typeof poop.asset === "string" && poop.asset.trim() ? poop.asset : POOP_ASSET_PATH)
@@ -47931,6 +53031,22 @@ function portalOpeningFitsFish(item, fish, species, now, mouth, direction = null
   // Absence of foreground pixels is not sufficient: a point above the roof
   // is also transparent. The whole body must occupy the cave's allowed space
   // before it can cross between interior and exterior depth.
+  const portals = getCaveBehaviorProfileForItem(item)?.portals || [];
+  let entrance = null;
+  let entranceDistance = Number.POSITIVE_INFINITY;
+  let entrancePortal = null;
+  for (const portal of portals) {
+    const region = getCaveEntranceRegion(item, portal);
+    if (!region) continue;
+    const distance = Math.hypot(region.xNorm - mouth.xNorm, region.yNorm - mouth.yNorm);
+    if (distance < entranceDistance) {
+      entranceDistance = distance;
+      entrance = region;
+      entrancePortal = portal;
+    }
+  }
+  if (species.caveMinSize === "large" && (!entrance?.sizedEntrance || getCaveEntranceSizeCategory(item, entrancePortal) !== "Large")) return false;
+  if (!doesFishShapeFitCaveEntrance(entrance, fishDescriptor)) return false;
   const interiorDescriptor = getCaveInteriorContainmentDescriptor(item);
   if (!interiorDescriptor || !shapeContainedByMaskStrict(interiorDescriptor, fishDescriptor, CAVE_STRICT_SAMPLE_STEP_PX)) {
     return false;
@@ -47985,7 +53101,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
   const candidates = [];
 
   for (const trigger of triggerRegions) {
-    if (!doesFishFitCaveRegionSize(trigger, fish, species, 0.42)) {
+    if (!trigger.sizedEntrance && !doesFishFitCaveRegionSize(trigger, fish, species, 0.42)) {
       continue;
     }
 
@@ -48022,7 +53138,7 @@ function buildTriggerSeatCavePlan(item, fish, now = Date.now()) {
 
     const availableSeats = seatPool
       .filter((seat) => !isCaveSeatOccupied(item.id, seat.id, fish.id))
-      .filter((seat) => doesFishFitCaveRegionSize(seat, fish, species, 0.45))
+      .filter((seat) => trigger.sizedEntrance || doesFishFitCaveRegionSize(seat, fish, species, 0.45))
       .sort((left, right) => {
         const leftScore = Math.hypot(left.xNorm - trigger.xNorm, left.yNorm - trigger.yNorm) - left.areaPx / 12000;
         const rightScore = Math.hypot(right.xNorm - trigger.xNorm, right.yNorm - trigger.yNorm) - right.areaPx / 12000;
@@ -48240,6 +53356,7 @@ function collectCaveBehaviorPlansForFish(fish, now = Date.now(), options = {}) {
   const ignoreBlockedDecor = options.ignoreBlockedDecor === true;
   const plans = state.placedDecor
     .filter((item) => isCaveDecorKey(item.decorKey))
+    .filter((item) => runtime.utilityOverlayMode !== "decor-settings" || item.id !== runtime.customDecorSettingsDecorId)
     .filter((item) => !(
       !ignoreBlockedDecor &&
       fish.blockedDecorId &&
@@ -50877,7 +55994,7 @@ function getDerivedCaveInteriorMask(decor) {
     return null;
   }
 
-  const cacheKey = [decor.path || "", decor.bgPath || "", decor.maskPath || ""].join("|");
+  const cacheKey = [decor.path || "", decor.bgPath || "", decor.maskPath || "", decor.caveEntranceCalibration || 0].join("|");
   const cached = runtime.caveInteriorMaskCache.get(cacheKey);
   if (cached) {
     return cached;
@@ -50898,8 +56015,37 @@ function getDerivedCaveInteriorMask(decor) {
     return null;
   }
 
-  runtime.caveInteriorMaskCache.set(cacheKey, fallbackMask);
-  return fallbackMask;
+  const interiorMask = getCalibratedCaveInteriorMask(decor, fallbackMask, frontMask);
+  runtime.caveInteriorMaskCache.set(cacheKey, interiorMask);
+  return interiorMask;
+}
+
+function getCalibratedCaveInteriorMask(decor, baseMask, frontMask) {
+  if (!decor.caveEntranceCalibration || !baseMask || !frontMask) return baseMask;
+  const entries = decor.caveSettings?.entries || decor.caveBehavior?.portals?.map((portal) => ({
+    x: portal.mouthX, y: portal.mouthY, width: portal.entranceWidth, height: portal.entranceHeight
+  })) || [];
+  const frontHeight = baseMask.width * frontMask.height / frontMask.width;
+  let alpha = null;
+  for (const entry of entries) {
+    if (!(entry.width > 0 && entry.height > 0)) continue;
+    const cx = entry.x * baseMask.width;
+    const cy = baseMask.height - frontHeight + entry.y * frontHeight;
+    const rx = entry.width * baseMask.width / 2;
+    const ry = entry.height * frontHeight / 2;
+    for (let y = Math.max(0, Math.floor(cy - ry)); y <= Math.min(baseMask.height - 1, Math.ceil(cy + ry)); y++) {
+      for (let x = Math.max(0, Math.floor(cx - rx)); x <= Math.min(baseMask.width - 1, Math.ceil(cx + rx)); x++) {
+        if (((x - cx) / rx) ** 2 + ((y - cy) / ry) ** 2 > 1) continue;
+        const index = (y * baseMask.width + x) * 4 + 3;
+        if (baseMask.alpha[index] >= ALPHA_HIT_THRESHOLD) continue;
+        // Some artwork has a true cutout rather than a painted back wall.
+        // Only calibrated openings join the interior; the front wall mask is unchanged.
+        if (!alpha) alpha = new Uint8ClampedArray(baseMask.alpha);
+        alpha[index] = 255;
+      }
+    }
+  }
+  return alpha ? buildAlphaMaskFromBuffer(baseMask.width, baseMask.height, alpha) || baseMask : baseMask;
 }
 
 function getDerivedCaveShellMask(decor) {
@@ -51242,6 +56388,41 @@ function getPseudoRegionAtPoint(item, localX, localY, id, radiusPx = 26) {
   };
 }
 
+function getCaveEntranceRegion(item, portal, radiusPx = 36) {
+  const region = getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id, radiusPx);
+  if (!region || !(portal.entranceWidth > 0 && portal.entranceHeight > 0)) return region;
+  const bounds = getPlacedDecorBounds(item);
+  if (!bounds) return null;
+  const widthPx = (bounds.right - bounds.left) * sanitizeCaveEntranceSize(portal.entranceWidth);
+  const heightPx = (bounds.bottom - bounds.top) * sanitizeCaveEntranceSize(portal.entranceHeight);
+  return { ...region, widthPx, heightPx, areaPx: Math.PI * widthPx * heightPx / 4,
+    left: region.x - widthPx / 2, right: region.x + widthPx / 2,
+    top: region.y - heightPx / 2, bottom: region.y + heightPx / 2,
+    sizedEntrance: true };
+}
+
+function getCaveEntranceSizeCategory(item, portal) {
+  const region = getCaveEntranceRegion(item, portal);
+  if (!region) return "Small";
+  const diameter = Math.min(region.widthPx, region.heightPx) / Math.max(0.0001, getViewportStableObjectScale("decor"));
+  return diameter >= CAVE_ENTRANCE_LARGE_MIN_PX ? "Large" : diameter >= CAVE_ENTRANCE_MEDIUM_MIN_PX ? "Medium" : "Small";
+}
+
+function doesFishShapeFitCaveEntrance(region, descriptor) {
+  if (!region?.sizedEntrance) return true;
+  if (!descriptor) return false;
+  let sampled = false;
+  for (let y = descriptor.bounds.top; y <= descriptor.bounds.bottom; y += CAVE_STRICT_SAMPLE_STEP_PX) {
+    for (let x = descriptor.bounds.left; x <= descriptor.bounds.right; x += CAVE_STRICT_SAMPLE_STEP_PX) {
+      const uv = descriptor.worldToUv(x, y);
+      if (!uv || !sampleAlphaMask(descriptor.mask, uv.u, uv.v, ALPHA_COLLISION_THRESHOLD)) continue;
+      sampled = true;
+      if (((x - region.x) / (region.widthPx / 2)) ** 2 + ((y - region.y) / (region.heightPx / 2)) ** 2 > 1) return false;
+    }
+  }
+  return sampled;
+}
+
 function getDerivedCaveTriggerRegions(item, decor) {
   if (!item || !decor?.path || !decor?.bgPath) {
     return [];
@@ -51320,14 +56501,14 @@ function getCaveTriggerRegions(item) {
   const placedProfile = buildCaveBehaviorProfileFromPlacedSettings(item);
   if (placedProfile?.portals?.length) {
     return placedProfile.portals
-      .map((portal, index) => getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id || `trigger-${index + 1}`, 36))
+      .map((portal) => getCaveEntranceRegion(item, portal))
       .filter(Boolean);
   }
 
   const authoredProfile = decor.caveBehavior || runtime.decorMeta[item.decorKey]?.caveBehavior || null;
   if (Array.isArray(authoredProfile?.portals) && authoredProfile.portals.length) {
     return authoredProfile.portals
-      .map((portal, index) => getPseudoRegionAtPoint(item, portal.mouthX, portal.mouthY, portal.id || `trigger-${index + 1}`, 36))
+      .map((portal) => getCaveEntranceRegion(item, portal))
       .filter(Boolean);
   }
 
@@ -51368,6 +56549,7 @@ function getCaveSeatRegions(item) {
         return region
           ? {
             ...region,
+            useBodyFit: placedProfile.portals?.some((portal) => portal.entranceWidth > 0 && portal.entranceHeight > 0),
             facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction),
             portalIds: getCaveSeatPortalIds(slot)
           }
@@ -51384,6 +56566,7 @@ function getCaveSeatRegions(item) {
         return region
           ? {
             ...region,
+            useBodyFit: authoredProfile.portals?.some((portal) => portal.entranceWidth > 0 && portal.entranceHeight > 0),
             portalIds: getCaveSeatPortalIds(slot),
             ...(slot.facing !== undefined || slot.direction !== undefined || slot.seatFacing !== undefined
               ? { facing: normalizeCaveSeatFacing(slot.facing ?? slot.direction ?? slot.seatFacing) }
@@ -51475,6 +56658,10 @@ function doesFishFitCaveRegionSize(region, fish, species, multiplier = 1) {
   if (species.caveEnabled === false) {
     return false;
   }
+
+  // Sized entrances and their seats use the full current fish silhouette.
+  // The legacy marker/adult-size shortcut must not reject a valid route.
+  if (region.sizedEntrance || region.useBodyFit) return true;
 
   const bodySize = getFishBodySizePx(fish, species);
   if (!bodySize) {
@@ -51995,7 +57182,7 @@ function tick() {
   const profileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   const now = advanceDebugSimulationClock(Date.now());
   const tutorialChanged = syncTutorialFlow(now);
-  const changed = syncState(now) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
+  const changed = withTankStageLayoutSnapshot(() => syncState(now)) || runtime.gravelStateDirty || runtime.tankStateDirty || tutorialChanged;
   const simulationFinishedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   renderTickUi(now, { stateChanged: false });
   if (changed) {
@@ -52210,8 +57397,7 @@ function syncCurrentTankState(now, options = {}) {
         fishId: poop.fishId,
         createdAt: poop.dueAt,
         xNorm: clamp((fish?.xNorm ?? randomSwimX()) + (Math.random() - 0.5) * 0.06, 0.08, 0.92),
-        startYNorm: fish ? clamp(fish.yNorm + 0.04, 0.14, 0.8) : randomSwimY(),
-        tankLayer: fish ? getFishTankLayer(fish) : 1
+        startYNorm: fish ? clamp(fish.yNorm + 0.04, 0.14, 0.8) : randomSwimY()
       }));
       if (fish) {
         fish.nextWasteAt = 0;
@@ -63121,6 +68307,7 @@ function stepDecorGroupScale(item, step, save = false) {
   if (groupItems.length <= 1) {
     return null;
   }
+  if (!canEditOccupiedCaveGeometry(groupItems)) return Number(item.scale);
 
   const currentScale = Number(item.scale) || getDecorScaleDefault(item.decorKey);
   const nextScale = clamp(currentScale + step * SIZE_STEP, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
@@ -63432,6 +68619,7 @@ function stepActiveDecorScale(direction) {
   } else {
     const item = activeTarget.item;
     if (item) {
+      if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return null;
       const groupScale = stepDecorGroupScale(item, step, activeTarget.mode === "selected");
       if (groupScale !== null) {
         return groupScale;
@@ -63928,6 +69116,7 @@ function snapDecorScaleToStep(value) {
 }
 
 function beginDecorCornerResize(item, corner, point, pointerId) {
+  if (item && !canEditOccupiedCaveGeometry([item])) return;
   if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const resizeCorner = normalizeDecorResizeCorner(corner);
   const bounds = getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
@@ -64029,6 +69218,7 @@ function finalizeDecorCornerResize() {
 }
 
 function beginDecorDrag(item, point, pointerId, options = {}) {
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
   if (typeof beginDecorEditHistory === "function" && !options.isNewPlacement) beginDecorEditHistory("Move decorations");
   runtime.pointerDown = true;
   runtime.suppressNextTankClick = true;
@@ -65294,6 +70484,7 @@ function adjustPlacedDecorSize(placedId, direction) {
   if (!item) {
     return;
   }
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
 
   if (isPlacedDecorGrouped(item)) {
     stepDecorGroupScale(item, Math.sign(Number(direction) || 0), true);
@@ -65912,10 +71103,9 @@ function getPoopFloorYNormAtXNorm(xNorm) {
   return clamp((getTankFloorSurfaceYAtX(clamp(xNorm, 0.08, 0.92) * TANK_WIDTH) + 4) / TANK_HEIGHT, 0.8, 0.96);
 }
 
-function getPoopTankLayer(poop) {
-  return Number.isFinite(Number(poop?.tankLayer))
-    ? clampTankLayer(poop.tankLayer)
-    : 1;
+function getPoopTankLayer() {
+  // One of five depth layers: waste stays in the rear 20% of the tank.
+  return TANK_DEPTH_LAYERS;
 }
 
 function getPoopLayerTargetAnchorY(poop, sprite = null, width = POOP_DRAW_WIDTH_PX) {
@@ -65934,9 +71124,9 @@ function getPoopLayerTargetYNorm(poop, sprite = null, width = POOP_DRAW_WIDTH_PX
   return getPoopLayerTargetAnchorY(poop, sprite, width) / TANK_HEIGHT;
 }
 
-function createPoopRecord({ fishId = "", createdAt = Date.now(), xNorm = 0.5, startYNorm = 0.54, tankLayer = 1 } = {}) {
+function createPoopRecord({ fishId = "", createdAt = Date.now(), xNorm = 0.5, startYNorm = 0.54 } = {}) {
   const clampedXNorm = clamp(xNorm, 0.08, 0.92);
-  const clampedLayer = clampTankLayer(tankLayer);
+  const clampedLayer = getPoopTankLayer();
   const targetYNorm = getPoopLayerTargetYNorm({ tankLayer: clampedLayer, xNorm: clampedXNorm });
   return {
     id: createId("poop"),
@@ -69495,27 +74685,141 @@ function closeFishInspectPreview() {
   runtime.fishInspectPreviewStartedAt = 0;
   runtime.fishInspectView = "animated";
   runtime.fishInspectPausedAt = 0;
+  runtime.fishInspectLastReadoutAt = 0;
+}
+
+function renderFishInspectIcon(kind) {
+  const paths = {
+    details: '<path d="M7 3h7l4 4v14H6V3h1Zm7 0v5h4M9 12h6m-6 4h6"/>',
+    care: '<path d="M5 3v6m3-6v6m-6-6v6a3 3 0 0 0 6 0m-3 3v9m13-18c-3 3-4 6-4 9h4m0-9v18"/>',
+    name: '<path d="m3 3 9 0 9 9-9 9-9-9V3Z"/><circle cx="8" cy="8" r="1"/>',
+    age: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16m-11 4h1m4 0h1m-6 3h1"/>',
+    water: '<path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12Z"/>',
+    genetics: '<path d="M7 3c0 9 10 9 10 18M17 3c0 9-10 9-10 18M8 5h8m-7 4h6m-6 6h6m-7 4h8"/>',
+    food: '<path d="M3 12h18a9 9 0 0 1-18 0Zm3-3h12M10 5h4m-2-2v2"/>',
+    behavior: '<circle cx="9" cy="7" r="3"/><circle cx="18" cy="8" r="2"/><path d="M3 21v-4a6 6 0 0 1 12 0v4H3Zm13-7a4 4 0 0 1 6 3v4h-4"/>',
+    size: '<path d="M14 3h7v7m0-7-7 7M10 21H3v-7m0 7 7-7"/>'
+  };
+  return `<svg class="fish-inspect-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind] || paths.details}</svg>`;
+}
+
+function getFishInspectPresentation(managed, wallNow = Date.now()) {
+  const { fish, inStorage } = managed;
+  const species = getSpeciesForFish(fish);
+  const baseSpecies = getBaseSpeciesForFish(fish) || species;
+  const now = inStorage ? getFishStorageSimulationNow(fish, wallNow) : getPeacefulModeSimulationNow(wallNow);
+  const dead = isFishDead(fish);
+  const peaceful = isPeacefulModeEnabled();
+  const maxHealth = getFishMaxHealthUnits(fish);
+  const health = peaceful && !dead ? maxHealth : clamp(Number(fish.healthUnits) || 0, 0, maxHealth);
+  const snapshot = dead || inStorage ? null : getFishNeedsSnapshot(fish, now);
+  const mood = dead ? "Deceased" : inStorage ? "Stored" : snapshot.mood.label;
+  const moodTone = snapshot ? getFishMoodPresentation(mood).tone : "neutral";
+  const concerns = dead ? [] : getFishCareConcerns(fish, now);
+  const socialConcern = mood === "Lonely" ? "Needs companions" : "";
+  const condition = dead ? "Deceased" : concerns.length
+    ? [getFishCareConditionText(fish, now), socialConcern].filter(Boolean).join(" · ")
+    : socialConcern || getFishCareConditionText(fish, now);
+  const progression = getFishManagementProgressionPresentation(fish, baseSpecies);
+  const variant = getFishAppearanceVariantKey(fish.appearanceVariantKey || fish.appearanceAssetPath || "");
+  const foods = getFishAcceptedFoodKeys(fish);
+  const food = isDetritusFish(fish) ? "Grime + waste · optional algae wafers"
+    : isMealFreeFish(fish) ? "No routine food"
+    : foods.map(key => key === "basic" ? "Basic Food / Fish Flakes" : getFoodMeta(key)?.name || key).join(", ") || "No routine food";
+  // Shop placeholders describe unconfigured products, not an owned custom fish.
+  const behaviorSpecies = { ...species, id: species?.customAsset ? "" : species?.behaviorProfileSpeciesId || species?.id };
+  const socialBehavior = { school: "Schooling", shoal: "Shoaling", pair: "Pair bonding", pod: "Pod social", host: "Host bonding", solitary: "Solitary" }[getFishSocialProfile(fish).socialMode];
+  const behavior = socialBehavior || formatFishShopBehavior(behaviorSpecies);
+  const profileName = fish.behaviorSpeciesId
+    ? getFishInspectorBehaviorProfiles().find(profile => profile.id === fish.behaviorSpeciesId)?.name
+    : "";
+  const dailyNote = dead ? "Not applicable" : inStorage ? "Stored" : peaceful ? "Peaceful mode" : isMealFreeFish(fish) ? "No routine meals" : "";
+  const slots = getDailyMealIndicatorSlots(wallNow);
+  const meals = dailyNote ? null : getFishDailyMealIndicatorState(fish, wallNow, getFishSimulationTank(fish));
+  return {
+    fish, species, baseSpecies, now, dead, inStorage, health, maxHealth, mood, moodTone, progression,
+    condition,
+    conditionTone: dead ? "neutral" : concerns.length || socialConcern ? "warn" : "good",
+    activity: dead ? "" : inStorage ? "Stored safely" : snapshot.activity,
+    facts: [
+      ["age", "Age", formatFishBiologicalAge(fish, now)],
+      ["food", "Food", food],
+      ["water", "Water Type", getFishVariantWaterType(fish) === "saltwater" ? "Saltwater" : "Freshwater"],
+      ["behavior", "Behavior", profileName ? `${behavior} (${profileName})` : behavior],
+      ["genetics", "Genetics", formatFishShopGenetics(baseSpecies, variant)],
+      ["size", "Size", `${Math.round((Number(fish.scale) || DEFAULT_FISH_SCALE) * 100)}%`]
+    ],
+    dailyNote,
+    mealSummary: meals ? `${Number(meals.am) + Number(meals.pm)}/2 meals recorded` : dailyNote,
+    mealSlots: slots.map((slot, index) => {
+      const eaten = meals && (index === 0 ? meals.am : meals.pm);
+      const label = dailyNote || (eaten ? "Eaten" : wallNow < slot.start ? "Upcoming" : "Not yet eaten");
+      return { period: slot.label, label, eaten: Boolean(eaten) };
+    })
+  };
+}
+
+function getFishInspectReadoutMarkup(managed, wallNow = Date.now()) {
+  const p = getFishInspectPresentation(managed, wallNow);
+  const { fish, progression } = p;
+  return {
+    summary: `<div class="fish-inspect-identity"><div><span class="fish-inspect-species">${escapeHtml(getFishDisplaySpeciesName(fish, p.species))}</span><h2>${escapeHtml(fish.name || "Fish")}</h2></div>${progression ? `<span class="fish-inspect-level-badge">${escapeHtml(progression.levelLabel)}</span>` : ""}</div>
+      <div class="fish-inspect-status-row"><div class="fish-inspect-health"><div class="hearts" aria-hidden="true">${renderHearts(p.health, p.maxHealth)}</div><strong aria-label="${p.health / 2} of ${p.maxHealth / 2} hearts">${p.health / 2}/${p.maxHealth / 2}</strong></div><span class="fish-inspect-mood" data-mood-tone="${escapeHtml(p.moodTone)}">Mood <strong>${escapeHtml(p.mood)}</strong></span></div>
+      <p class="fish-inspect-condition" data-tone="${p.conditionTone}"><span aria-hidden="true">${p.conditionTone === "good" ? "✓" : p.conditionTone === "warn" ? "!" : "—"}</span>${escapeHtml(p.condition)}</p>
+      ${p.activity ? `<p class="fish-inspect-activity">${escapeHtml(p.activity)}</p>` : ""}`,
+    progression: progression ? `<div class="fish-inspect-card-heading"><h3>Care Level ${progression.careLevel}</h3><span>${escapeHtml(progression.xpLabel || "Maximum Care Level")}</span></div>${progression.isMaxLevel ? "" : `<div class="fish-care-xp-track fish-inspect-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.levelXpSpan}" aria-valuenow="${progression.levelXp}"><span style="width:${Math.round(progression.xpProgress * 100)}%"></span></div>`}` : "",
+    facts: `<h3>${renderFishInspectIcon("details")}Details</h3><dl class="fish-inspect-facts">${p.facts.map(([key, label, value]) => `<div>${renderFishInspectIcon(key)}<dt>${label}</dt><dd${key === "size" ? ' data-fish-inspect-fact-size' : ""}>${escapeHtml(value)}</dd></div>`).join("")}</dl>`,
+    daily: `<div class="fish-inspect-card-heading"><h3>${renderFishInspectIcon("care")}Daily Care</h3><span class="fish-inspect-meal-summary">${escapeHtml(p.mealSummary)}</span></div><div class="fish-inspect-meals">${p.mealSlots.map(slot => `<div class="fish-inspect-meal${slot.eaten ? " is-eaten" : ""}"><span class="fish-inspect-meal-symbol" aria-hidden="true">${slot.eaten ? "✓" : "◷"}</span><div><strong>${escapeHtml(slot.period)}</strong><span>${escapeHtml(slot.label)}</span></div></div>`).join("")}</div>`,
+    actions: `${!p.dead && p.baseSpecies && isFishSpeciesShopUnlocked(p.baseSpecies) ? '<button class="small-button alt" type="button" data-fish-inspect-action="buy">Buy Another</button><button class="small-button warn" type="button" data-fish-inspect-action="sell">Rehome</button>' : ""}
+      ${!p.dead ? `<button class="small-button" type="button" data-fish-inspect-action="store">${p.inStorage ? "Place in Tank" : "Put Away"}</button>` : '<button class="small-button warn" type="button" data-fish-inspect-action="dispose">Dispose</button>'}`
+  };
+}
+
+function refreshFishInspectReadouts(now = Date.now(), readouts = null) {
+  if (!runtime.utilityOverlayOpen || runtime.utilityOverlayMode !== "fish-inspect") return false;
+  const root = dom.utilityOverlayBody?.querySelector("[data-fish-inspect-key]");
+  const key = `${runtime.fishInspectFishId}:${runtime.fishInspectBodyVersion || 0}`;
+  if (!root || root.dataset.fishInspectKey !== key) return false;
+  if (!readouts && now >= runtime.fishInspectLastReadoutAt && now - runtime.fishInspectLastReadoutAt < 500) return true;
+  const managed = getFishInspectorManagedTarget();
+  if (!managed) {
+    if (!readouts) renderUtilityOverlay();
+    return false;
+  }
+  runtime.fishInspectLastReadoutAt = now;
+  const markup = readouts || getFishInspectReadoutMarkup(managed, now);
+  for (const [name, html] of Object.entries(markup)) {
+    const section = root.querySelector(`[data-fish-inspect-section="${name}"]`);
+    if (!section) continue;
+    // Cache on the actual node so reopening a fish cannot reuse a stale global cache.
+    if (section.fishInspectMarkup !== html) {
+      section.innerHTML = html;
+      section.fishInspectMarkup = html;
+    }
+    section.hidden = !html;
+  }
+  const { fish } = managed;
+  const input = root.querySelector("[data-fish-inspect-name]");
+  const draft = runtime.fishInspectNameDraft ?? fish.name;
+  if (input && input.value !== draft) input.value = draft;
+  const view = runtime.fishInspectView || "animated";
+  for (const button of root.querySelectorAll("[data-fish-inspect-view]")) button.setAttribute("aria-pressed", String(button.dataset.fishInspectView === view));
+  root.querySelector("[data-fish-inspect-preview]")?.setAttribute("aria-label", `${view === "animated" ? "Animated" : view === "left" ? "Left" : "Right"} side view of ${fish.name || "this fish"}`);
+  setTextIfChanged(dom.utilityOverlayTitle, fish.name || "Fish");
+  return true;
 }
 
 function renderFishInspectUtilityOverlay() {
   const managed = getFishInspectorManagedTarget();
   if (!managed) return { kicker: "Fish", title: "Inspect", body: '<div class="empty-state">This fish is no longer available.</div>', footer: "" };
-  const { fish, inStorage } = managed;
-  const species = getSpeciesForFish(fish);
-  const baseSpecies = getBaseSpeciesForFish(fish);
-  const now = inStorage ? getFishStorageSimulationNow(fish, Date.now()) : getPeacefulModeSimulationNow(Date.now());
-  const dead = isFishDead(fish);
-  const color = getFishColorSetting(fish);
-  const scale = Math.round((Number(fish.scale) || DEFAULT_FISH_SCALE) * 100);
-  const behaviorOptions = `<option value="">Original (${escapeHtml(baseSpecies?.name || "Fish")})</option>`
-    + getFishInspectorBehaviorProfiles().map(profile => `<option value="${escapeHtml(profile.id)}"${profile.id === fish.behaviorSpeciesId ? " selected" : ""}>${escapeHtml(profile.name)}</option>`).join("");
-  const condition = dead ? "Deceased" : getFishCareConditionText(fish, now);
-  const health = isPeacefulModeEnabled() && !dead ? getFishMaxHealthUnits(fish) : fish.healthUnits;
+  const { fish } = managed;
+  const readouts = getFishInspectReadoutMarkup(managed);
   const view = runtime.fishInspectView || "animated";
   return {
     kicker: "Inspect",
     title: fish.name || "Fish",
-    body: `<div class="fish-inspect-layout">
+    fishInspectReadouts: readouts,
+    body: `<div class="fish-inspect-layout" data-fish-inspect-key="${escapeHtml(`${fish.id}:${runtime.fishInspectBodyVersion || 0}`)}">
       <section class="fish-inspect-preview-column" aria-label="Fish preview">
         <div class="fish-inspect-preview-stage"><canvas data-fish-inspect-preview aria-label="${view === "animated" ? "Animated" : view === "left" ? "Left" : "Right"} side view of ${escapeHtml(fish.name || "this fish")}"></canvas><span data-fish-inspect-preview-loading>Loading fish…</span></div>
         <div class="fish-inspect-views" role="group" aria-label="Fish inspection views">
@@ -69524,18 +74828,11 @@ function renderFishInspectUtilityOverlay() {
         </div>
       </section>
       <div class="fish-inspect-controls">
-        <div class="fish-inspect-details"><strong>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</strong><div class="hearts">${renderHearts(health, getFishMaxHealthUnits(fish))}</div><span>${escapeHtml(condition)}</span><span>Age: ${escapeHtml(formatFishBiologicalAge(fish, now))}</span></div>
-        <div class="fish-inspect-name-row"><label>Name<input type="text" maxlength="20" value="${escapeHtml(runtime.fishInspectNameDraft ?? fish.name)}" data-fish-inspect-name /></label><button class="small-button alt" type="button" data-fish-inspect-action="random-name" aria-label="Randomize fish name">?</button><button class="small-button" type="button" data-fish-inspect-action="save-name">Save</button></div>
-        <label class="inspector-setting-row"><span>Size</span><input type="range" min="50" max="300" step="5" value="${scale}" data-fish-inspect-setting="size" /><strong data-fish-inspect-size>${scale}%</strong></label>
-        <label class="inspector-setting-row inspector-setting-row-select"><span>Behavior</span><select data-fish-inspect-setting="behavior">${behaviorOptions}</select></label>
-        <section class="fish-inspector-color-card"><div class="bubbler-color-row"><span>Color</span><strong data-fish-inspect-color-label>${escapeHtml(formatCaveColorChoiceLabel(color))}</strong></div>
-          <div class="bubbler-color-swatches fish-inspect-colors"><button class="small-button alt ${!color ? "is-selected" : ""}" type="button" data-fish-inspect-color="" aria-pressed="${!color}">Original</button><button class="small-button cave-color-rgb-tile ${isDecorRgbColorSetting(color) ? "is-selected" : ""}" type="button" data-fish-inspect-color="${DECOR_RGB_COLOR_SETTING}" aria-pressed="${isDecorRgbColorSetting(color)}">RGB</button><input type="color" value="${escapeHtml(normalizeHexColor(color) || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR)}" data-fish-inspect-setting="color" aria-label="Custom fish color" /></div>
-          <label class="cave-colorize-toggle"><input type="checkbox" data-fish-inspect-setting="colorize" ${getFishColorizeSetting(fish) ? "checked" : ""} /><span>Colorize</span></label>
-        </section>
-        <div class="fish-inspect-actions">
-          ${!dead && baseSpecies && isFishSpeciesShopUnlocked(baseSpecies) ? '<button class="small-button alt" type="button" data-fish-inspect-action="buy">Buy Another</button><button class="small-button warn" type="button" data-fish-inspect-action="sell">Rehome</button>' : ""}
-          ${!dead ? `<button class="small-button" type="button" data-fish-inspect-action="store">${inStorage ? "Place in Tank" : "Put Away"}</button>` : '<button class="small-button warn" type="button" data-fish-inspect-action="dispose">Dispose</button>'}
+        <div class="fish-inspect-card-scroll">
+        ${["summary", "progression", "facts", "daily"].map(section => `<section class="fish-inspect-card" data-fish-inspect-section="${section}"${!readouts[section] ? " hidden" : ""}>${readouts[section]}</section>`).join("")}
+        <section class="fish-inspect-card"><h3>${renderFishInspectIcon("name")}Name</h3><div class="fish-inspect-name-row"><label><span class="fish-inspect-input-label">Fish name</span><input type="text" maxlength="20" value="${escapeHtml(runtime.fishInspectNameDraft ?? fish.name)}" data-fish-inspect-name /></label><button class="small-button alt" type="button" data-fish-inspect-action="random-name" aria-label="Randomize fish name">?</button><button class="small-button" type="button" data-fish-inspect-action="save-name">Save</button></div></section>
         </div>
+        <div class="fish-inspect-actions" data-fish-inspect-section="actions">${readouts.actions}</div>
       </div>
     </div>`,
     footer: "",
@@ -69558,11 +74855,6 @@ function handleFishInspectClick(_ctx, target) {
     }
     runtime.fishInspectView = view;
     renderUtilityOverlay();
-    return true;
-  }
-  const colorButton = target.closest("button[data-fish-inspect-color]");
-  if (colorButton) {
-    updateInspectorFishSetting("color", colorButton.dataset.fishInspectColor);
     return true;
   }
   const button = target.closest("[data-fish-inspect-action]");
@@ -69592,28 +74884,13 @@ function handleFishInspectInput(_ctx, target) {
     runtime.fishInspectNameDraft = target.value;
     return true;
   }
-  const setting = target.dataset.fishInspectSetting;
-  if (!["size", "color"].includes(setting)) return false;
-  updateInspectorFishSetting(setting, target.value, { persist: false, refreshControls: false });
-  const fish = getFishInspectorManagedTarget()?.fish;
-  if (fish) {
-    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-size]"), `${Math.round(fish.scale * 100)}%`);
-    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-color-label]"), formatCaveColorChoiceLabel(getFishColorSetting(fish)));
-  }
-  return true;
-}
-
-function handleFishInspectChange(_ctx, target) {
-  const setting = target.dataset.fishInspectSetting;
-  if (!setting) return false;
-  updateInspectorFishSetting(setting, setting === "colorize" ? target.checked : target.value, { forcePersist: true });
-  return true;
+  return false;
 }
 
 function handleFishInspectKeyDown(ctx, target, event) {
   if (!target.matches("[data-fish-inspect-name]") || event.key !== "Enter") return false;
   event.preventDefault();
-  return handleFishInspectClick(ctx, { closest: () => ({ dataset: { fishInspectAction: "save-name" } }) });
+  return handleFishInspectClick(ctx, { closest: selector => selector === "[data-fish-inspect-action]" ? { dataset: { fishInspectAction: "save-name" } } : null });
 }
 
 function getFishInspectLoopPose(fish, now, startedAt) {
@@ -69747,42 +75024,6 @@ function renderFishInspectPreview(now = Date.now()) {
   for (const thumbnail of dom.utilityOverlayBody.querySelectorAll?.("[data-fish-inspect-thumbnail]") || []) {
     drawPreview(thumbnail, thumbnail.dataset.fishInspectThumbnail, true);
   }
-}
-
-function adjustFishSize(fishId, direction) {
-  const managed = getManagedFishById(fishId);
-  if (!managed) {
-    return;
-  }
-
-  const { fish, inStorage } = managed;
-  const now = Date.now();
-  const nextScale = clamp(fish.scale + direction * SIZE_STEP, FISH_SCALE_MIN, FISH_SCALE_MAX);
-  if (Math.abs(nextScale - fish.scale) < 0.0001) {
-    return;
-  }
-
-  if (inStorage) {
-    fish.scale = nextScale;
-  } else {
-    preserveTankDirtinessThroughChange(now, () => {
-      fish.scale = nextScale;
-    });
-  }
-  saveState();
-  renderUi(now);
-}
-
-function saveFishSizeAsDefault(fishId) {
-  const managed = getManagedFishById(fishId);
-  if (!managed) {
-    return;
-  }
-
-  const { fish } = managed;
-  state.fishScaleDefaults[fish.speciesId] = clamp(fish.scale, FISH_SCALE_MIN, FISH_SCALE_MAX);
-  saveState();
-  renderUi(Date.now());
 }
 
 function openFishInspector(fishId, options = {}) {
@@ -70054,236 +75295,6 @@ function getFishInspectorBehaviorProfiles() {
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
   ));
-}
-
-function renderFishInspectorBehaviorOptions(fish, baseSpecies) {
-  const profiles = getFishInspectorBehaviorProfiles();
-  const options = [
-    `<option value="">Original (${escapeHtml(baseSpecies?.name || "Fish")})</option>`,
-    ...profiles.map((profile) => `
-      <option value="${escapeHtml(profile.id)}">${escapeHtml(profile.name)}</option>
-    `)
-  ].join("");
-  setMarkupIfChanged("fish-inspector-behavior-options", dom.inspectorFishBehaviorSelect, options);
-  if (dom.inspectorFishBehaviorSelect) {
-    dom.inspectorFishBehaviorSelect.value = sanitizeFishBehaviorSpeciesId(fish?.behaviorSpeciesId, fish?.speciesId);
-  }
-}
-
-function setInspectorInputValue(input, value) {
-  if (input instanceof HTMLInputElement && document.activeElement !== input) {
-    input.value = String(value);
-  }
-}
-
-function renderFishInspectorColorControls(fish) {
-  if (!dom.inspectorFishColorSwatches) {
-    return;
-  }
-
-  const activeColor = getFishColorSetting(fish);
-  const activeCustomColor = normalizeHexColor(activeColor);
-  const originalSelected = !activeColor;
-  const rgbSelected = isDecorRgbColorSetting(activeColor);
-  const customSelected = Boolean(activeCustomColor);
-  const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-  const originalTile = `
-    <button
-      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
-      type="button"
-      data-inspector-fish-color=""
-      aria-pressed="${originalSelected}"
-      aria-label="Use original fish color"
-      title="Original color">
-      Original
-    </button>
-  `;
-  const rgbTile = `
-    <button
-      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile cave-color-rgb-tile ${rgbSelected ? "is-selected" : ""}"
-      type="button"
-      data-inspector-fish-color="${DECOR_RGB_COLOR_SETTING}"
-      aria-pressed="${rgbSelected}"
-      aria-label="Fade fish through RGB colors"
-      title="RGB color cycle">
-      RGB
-    </button>
-  `;
-  const customColorPicker = `
-    <label
-      class="cave-color-picker-shell fish-color-picker-shell ${customSelected ? "is-selected" : ""}"
-      title="Choose custom fish color">
-      <input
-        class="cave-color-picker-input fish-color-picker-input"
-        type="color"
-        value="${escapeHtml(pickerColor)}"
-        data-inspector-fish-color-picker
-        aria-label="Choose custom fish color" />
-    </label>
-  `;
-
-  setMarkupIfChanged(
-    "fish-inspector-color-swatches",
-    dom.inspectorFishColorSwatches,
-    `
-      <div class="color-choice-mode-row">
-        ${originalTile}
-        ${rgbTile}
-        ${customColorPicker}
-      </div>
-    `
-  );
-}
-
-function updateInspectorFishReadouts(fish) {
-  const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
-  const activeColor = getFishColorSetting(fish);
-  const species = getSpeciesForFish(fish);
-  const preferredTurnMode = areSimpleTurnAnimationsForced() ? "simple" : "complex";
-  setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
-  setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
-  setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
-  if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
-    dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
-    dom.inspectorFishTurnAnimationInput.disabled = true;
-    dom.inspectorFishTurnAnimationInput.title = "Turn animation is controlled globally in Game Settings.";
-  }
-  setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
-  if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {
-    dom.inspectorFishColorizeInput.checked = getFishColorizeSetting(fish);
-  }
-  renderFishInspectorColorControls(fish);
-}
-
-function updateInspectorFishSetting(setting, rawValue, options = {}) {
-  const managed = getFishInspectorManagedTarget();
-  if (!managed) {
-    return;
-  }
-
-  const { fish, inStorage } = managed;
-  const now = Date.now();
-  let changed = false;
-  const applyChange = () => {
-    switch (setting) {
-      case "size": {
-        const nextScale = clamp((Number(rawValue) || 100) / 100, FISH_SCALE_MIN, FISH_SCALE_MAX);
-        if (Math.abs(nextScale - fish.scale) > 0.0001) {
-          fish.scale = nextScale;
-          changed = true;
-        }
-        break;
-      }
-      case "behavior": {
-        const nextBehaviorSpeciesId = sanitizeFishBehaviorSpeciesId(rawValue, fish.speciesId);
-        if ((fish.behaviorSpeciesId || "") !== nextBehaviorSpeciesId) {
-          fish.behaviorSpeciesId = nextBehaviorSpeciesId;
-          fish.activity = "roam";
-          fish.feedingPelletId = null;
-          fish.hangoutDecorId = null;
-          clearFishSchoolFollowState(fish);
-          clearFishCaveBehavior(fish);
-          const effectiveSpecies = getSpeciesForFish(fish);
-          if (effectiveSpecies) {
-            fish.swimSpeed = normalizeFishSpeed(effectiveSpecies);
-          }
-          fish.targetAt = now;
-          if (effectiveSpecies) {
-            enforceFishLayerBoundary(fish, effectiveSpecies);
-          }
-          changed = true;
-        }
-        break;
-      }
-      case "turnAnimation": {
-        const nextTurnAnimation = rawValue === true || String(rawValue).trim().toLowerCase() === "complex"
-          ? "complex"
-          : "simple";
-        if (fish.turnAnimationPreference !== nextTurnAnimation) {
-          fish.turnAnimationPreference = nextTurnAnimation;
-          changed = true;
-        }
-        break;
-      }
-      case "color": {
-        const nextColor = normalizeDecorColorSetting(rawValue);
-        if (getFishColorSetting(fish) !== nextColor) {
-          fish.fishColor = nextColor;
-          fish.hueShift = 0;
-          fish.saturation = 100;
-          fish.brightness = 100;
-          changed = true;
-        }
-        break;
-      }
-      case "colorize": {
-        const nextColorize = normalizeDecorColorizeSetting(rawValue);
-        if (getFishColorizeSetting(fish) !== nextColorize) {
-          fish.fishColorize = nextColorize;
-          changed = true;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  };
-
-  if (setting === "size" && !inStorage) {
-    preserveTankDirtinessThroughChange(now, applyChange);
-  } else {
-    applyChange();
-  }
-
-  const persist = options.persist !== false;
-  const refreshControls = options.refreshControls !== false;
-  if (!changed) {
-    if (persist && options.forcePersist === true) {
-      saveState();
-    }
-    if (refreshControls) {
-      if (runtime.utilityOverlayMode === "fish-inspect") renderUtilityOverlay();
-      else updateInspectorFishReadouts(fish);
-    }
-    return;
-  }
-  if (persist) {
-    saveState();
-  }
-  if (runtime.utilityOverlayMode === "fish-inspect") {
-    if (refreshControls) renderUtilityOverlay();
-    return;
-  }
-  if (setting === "color" || setting === "colorize") {
-    if (!refreshControls) {
-      return;
-    }
-    updateInspectorFishReadouts(fish);
-    return;
-  }
-  renderUi(now);
-}
-
-function queueInspectorFishColorPreview(rawValue) {
-  runtime.pendingInspectorFishColorValue = normalizeDecorColorSetting(rawValue);
-  if (runtime.inspectorFishColorPreviewFrame) {
-    return;
-  }
-
-  runtime.inspectorFishColorPreviewFrame = window.requestAnimationFrame(() => {
-    runtime.inspectorFishColorPreviewFrame = 0;
-    const nextColor = runtime.pendingInspectorFishColorValue;
-    runtime.pendingInspectorFishColorValue = "";
-    updateInspectorFishSetting("color", nextColor, {
-      persist: false,
-      refreshControls: false
-    });
-    const managed = getManagedFishById(runtime.selectedFishId);
-    if (managed?.fish) {
-      setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(getFishColorSetting(managed.fish)));
-      dom.inspectorFishColorSwatches?.querySelector(".fish-color-picker-shell")?.classList.add("is-selected");
-    }
-  });
 }
 // </bundle-source>
 
@@ -78445,8 +83456,16 @@ function syncActiveSoundEffectVolumes(category = "") {
   }
 }
 
+function resolveAudioAssetUrl(path) {
+  const url = resolveAppUrl(path);
+  // Retire media cache entries created before byte-range delivery was fixed.
+  // Keep a stable URL so pooled voices and subsequent visits still share cache.
+  const [base, ...fragment] = url.split("#");
+  return `${base}${base.includes("?") ? "&" : "?"}bb-audio=2${fragment.length ? `#${fragment.join("#")}` : ""}`;
+}
+
 function createAmbienceAudioChannel() {
-  const audio = new Audio(resolveAppUrl(AMBIENCE_AUDIO_PATH));
+  const audio = new Audio(resolveAudioAssetUrl(AMBIENCE_AUDIO_PATH));
   audio.loop = false;
   audio.preload = "auto";
   audio.volume = 0;
@@ -78844,7 +83863,7 @@ function pickSoundEffectPathExcluding(pathOrPaths, excludedPath) {
 }
 
 function createPooledSoundEffectAudio(path) {
-  const audio = new Audio(resolveAppUrl(path));
+  const audio = new Audio(resolveAudioAssetUrl(path));
   audio.preload = "auto";
   audio.addEventListener("ended", () => {
     runtime.activeSoundEffects.delete(audio);
@@ -79145,7 +84164,7 @@ function getSubmarineSonarAudio() {
   if (typeof Audio !== "function") {
     return null;
   }
-  const audio = new Audio(resolveAppUrl(SUBMARINE_SONAR_SOUND_PATH));
+  const audio = new Audio(resolveAudioAssetUrl(SUBMARINE_SONAR_SOUND_PATH));
   audio.loop = true;
   audio.preload = "auto";
   audio.volume = 0;
@@ -79360,14 +84379,6 @@ function isDecorSettingsSoundMode() {
 
 function playFishInspectorActionSound(event) {
   playToolbarButtonPressSoundForAction(event, FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR);
-}
-
-function beginFishInspectorSliderSound(event) {
-  beginSoundRangeDrag(event, FISH_INSPECTOR_SLIDER_SOUND_SELECTOR);
-}
-
-function playFishInspectorSliderInputSound(event) {
-  playSoundRangeInput(event, FISH_INSPECTOR_SLIDER_SOUND_SELECTOR);
 }
 
 function playSelectedDecorActionSound(event) {
@@ -80032,6 +85043,7 @@ function renderToolbarPosition() {
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, tutorialUi);
   document.documentElement.dataset.toolbarPosition = toolbarPosition;
   document.documentElement.style.setProperty("--toolbar-tile-color", uiSettings.toolbarTileColor);
+  window.BubbleBoroughTankFrame?.setFrameColor?.(uiSettings.tankFrameColor);
   document.documentElement.dataset.displayPosition = displayPosition;
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";
@@ -83902,7 +88914,7 @@ function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
   const caveTabButton = target?.closest?.("[data-decor-cave-tab]");
   if (caveTabButton) {
     const nextTab = String(caveTabButton.dataset.decorCaveTab || "entries");
-    runtime.decorSettingsCaveTab = ["entries", "seats", "preview"].includes(nextTab) ? nextTab : "entries";
+    runtime.decorSettingsCaveTab = ["entries", "seats"].includes(nextTab) ? nextTab : "entries";
     renderUtilityOverlay();
     return true;
   }
@@ -83989,13 +89001,15 @@ function handleCaveSettingsUtilityOverlayPointerDown(ctx, event) {
     const pointTarget = getCaveSettingsPreviewPointerTarget(event);
     const point = getCaveSettingsPreviewLocalPoint(event);
     if (pointTarget && point) {
+      if (!caveTarget.pending && !canEditOccupiedCaveGeometry([caveTarget.item])) return true;
       runtime.caveSettingsDrag = {
         kind: pointTarget.kind,
         index: pointTarget.index,
+        resize: pointTarget.resize === true,
         pointerId: event.pointerId
       };
       previewFrame.setPointerCapture?.(event.pointerId);
-      applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
+      if (!pointTarget.resize) applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
       event.preventDefault();
       return true;
     }
@@ -84020,7 +89034,7 @@ function handleCaveSettingsUtilityOverlayPointerMove(ctx, event) {
   }
   const point = getCaveSettingsPreviewLocalPoint(event);
   if (point) {
-    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false });
+    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false, resize: drag.resize });
     event.preventDefault();
     return true;
   }
@@ -84047,6 +89061,12 @@ function handleCaveSettingsUtilityOverlayFocusIn(ctx, target) {
 }
 
 function handleCommonUtilityOverlayInput(ctx, target) {
+  const caveBackgroundToggle = target?.closest?.("[data-cave-preview-background]");
+  if (caveBackgroundToggle instanceof HTMLInputElement) {
+    runtime.decorSettingsShowCaveBackground = caveBackgroundToggle.checked;
+    renderDecorSettingsMotionPreview();
+    return true;
+  }
   const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
   if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
     updateSelectedCaveColorSetting(
@@ -84492,7 +89512,11 @@ function renderUtilityOverlay() {
     dom.utilityOverlayHeaderActions.hidden = !headerActions.trim();
   }
   if (dom.utilityOverlayBody) {
-    setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
+    const retainedInspection = config.fishInspectReadouts && refreshFishInspectReadouts(Date.now(), config.fishInspectReadouts);
+    if (!retainedInspection) {
+      setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
+      if (config.fishInspectReadouts) refreshFishInspectReadouts(Date.now(), config.fishInspectReadouts);
+    }
     syncWallpaperUtilityNameKeyboards();
     syncWallpaperScrollControls(dom.utilityOverlayBody);
   }
@@ -86789,12 +91813,12 @@ function renderCaveSettingsMarkers(settings) {
     <button
       class="cave-settings-marker cave-settings-entry-marker ${index === resolved.activeEntryIndex ? "is-active" : ""}"
       type="button"
-      style="left: ${(entry.x * 100).toFixed(2)}%; top: ${(entry.y * 100).toFixed(2)}%;"
+      style="left: ${(entry.x * 100).toFixed(2)}%; top: ${(entry.y * 100).toFixed(2)}%; width: ${sanitizeCaveEntranceSize(entry.width) * 100}%; height: ${sanitizeCaveEntranceSize(entry.height) * 100}%;"
       data-cave-entry-select="${index}"
       data-cave-settings-entry-marker="${index}"
       aria-label="Select cave entry ${index + 1}"
       title="Entry ${index + 1}">
-      ${index + 1}
+      <span>${index + 1}</span><span class="cave-entry-resize-handle" data-cave-entry-resize="${index}" aria-hidden="true"></span>
     </button>
   `).join("");
   const seatMarkers = resolved.seats.map((seat, index) => `
@@ -86817,7 +91841,7 @@ function renderCaveSettingsMarkers(settings) {
 }
 
 function renderLegacyCaveSettingsControls(item) {
-  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
+  const settings = getCaveEditorSettings(item);
   const entryCountOptions = Array.from({ length: CAVE_SETTINGS_MAX_ENTRIES - CAVE_SETTINGS_MIN_ENTRIES + 1 }, (_, index) => {
     const count = CAVE_SETTINGS_MIN_ENTRIES + index;
     return `<option value="${count}" ${settings.entryCount === count ? "selected" : ""}>${count}</option>`;
@@ -86848,6 +91872,7 @@ function renderLegacyCaveSettingsControls(item) {
             ${sideOptions}
           </select>
         </label>
+        ${renderCaveEntranceSizeControls(item, entry, index)}
         <label class="bubbler-control-row cave-coordinate-row">
           <span>X <strong data-cave-setting-value="entryX" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.x)}</strong></span>
           <input
@@ -86959,8 +91984,8 @@ function renderCaveSettingsControls(item) {
     return renderLegacyCaveSettingsControls(item);
   }
 
-  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
-  const currentTab = ["entries", "seats", "preview"].includes(runtime.decorSettingsCaveTab)
+  const settings = getCaveEditorSettings(item);
+  const currentTab = ["entries", "seats"].includes(runtime.decorSettingsCaveTab)
     ? runtime.decorSettingsCaveTab
     : "entries";
   const tabButton = (id, label, icon) => `
@@ -86982,7 +92007,7 @@ function renderCaveSettingsControls(item) {
       <option value="${escapeHtml(option.id)}" ${side === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>
     `).join("");
     return `
-      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
+      <div class="decor-cave-point-row decor-cave-entry-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
         <button class="decor-cave-point-badge is-entry" type="button" data-cave-entry-select="${index}" aria-label="Select entry ${index + 1}">${index + 1}</button>
         <label class="decor-cave-side-control">
           <span class="sr-only">Entry ${index + 1} side</span>
@@ -86999,6 +92024,7 @@ function renderCaveSettingsControls(item) {
           <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.y}" data-cave-setting="entryY" data-cave-entry-index="${index}" />
         </label>
         <button class="decor-cave-delete-button" type="button" data-cave-remove-entry="${index}" aria-label="Delete entry ${index + 1}" title="Delete entry" ${settings.entryCount <= CAVE_SETTINGS_MIN_ENTRIES ? "disabled" : ""}>×</button>
+        ${renderCaveEntranceSizeControls(item, entry, index)}
       </div>
     `;
   }).join("");
@@ -87043,17 +92069,6 @@ function renderCaveSettingsControls(item) {
       </div>
       <div class="decor-cave-compact-list">${seatRows}</div>
     `;
-  } else {
-    panelMarkup = `
-      <div class="decor-cave-preview-summary">
-        <strong>Position cave points directly on the preview.</strong>
-        <span>Drag the numbered entry and seat markers on the decor image. The X and Y values update live.</span>
-        <div class="decor-cave-preview-stats">
-          <span><b>${settings.entryCount}</b> ${settings.entryCount === 1 ? "entry" : "entries"}</span>
-          <span><b>${settings.seatCount}</b> ${pluralize("seat", settings.seatCount)}</span>
-        </div>
-      </div>
-    `;
   }
 
   return `
@@ -87061,7 +92076,6 @@ function renderCaveSettingsControls(item) {
       <div class="decor-cave-tabs" role="tablist" aria-label="Cave settings">
         ${tabButton("entries", "Entries", "↪")}
         ${tabButton("seats", "Seats", "●")}
-        ${tabButton("preview", "Preview", "◉")}
       </div>
       <div class="decor-cave-tab-panel" role="tabpanel">${panelMarkup}</div>
     </section>
@@ -87090,14 +92104,15 @@ function renderDecorSettingsOverlay(item) {
     return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
-  const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
+  // Editor geometry must use the original artwork, not the padded square shop thumbnail.
+  const imageSrc = escapeHtml(decor.path);
   const capabilities = getDecorMotionCapabilities(item);
   const motionSettings = getPlacedDecorMotionSettings(item);
   const hasMotionControls = capabilities.hasBob || capabilities.hasSway;
   const hasBubblerControls = canConfigureDecorBubbler(item);
   const hasCaveControls = isCaveDecorKey(item.decorKey);
   const hasCaveColorControls = hasDecorCaveColorLayers(decor);
-  const caveSettings = hasCaveControls ? (getPlacedCaveSettings(item) || sanitizePlacedCaveSettings()) : null;
+  const caveSettings = hasCaveControls ? getCaveEditorSettings(item) : null;
   const sizeValue = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const depthReadout = formatDecorSettingReadout("depthZ", item);
   const depthValue = Math.round(getTankDepthDisplayPercent(getPlacedDecorDepthZ(item)));
@@ -87204,13 +92219,27 @@ function renderDecorSettingsOverlay(item) {
                 ${hasCaveControls ? renderCaveSettingsMarkers(caveSettings) : ""}
               </div>
             </div>
-            ${hasCaveControls ? `<div class="decor-settings-preview-hint">Drag the numbered markers to position entries and seats.</div>` : ""}
+            ${hasCaveControls ? `<div class="decor-settings-preview-hint">
+              ${decor.bgPath ? `<label class="decor-settings-preview-background-toggle"><input type="checkbox" data-cave-preview-background ${runtime.decorSettingsShowCaveBackground !== false ? "checked" : ""} />Show background</label>` : ""}
+              <span>Drag markers to move them. Drag an oval's handle to match the entrance size.</span>
+            </div>` : ""}
           </div>
         </div>
         ${controlsMarkup}
       </div>
     </div>
   `;
+}
+
+function renderCaveEntranceSizeControls(item, entry, index) {
+  const width = sanitizeCaveEntranceSize(entry.width);
+  const height = sanitizeCaveEntranceSize(entry.height);
+  const category = getCaveEntranceSizeCategory(item, { mouthX: entry.x, mouthY: entry.y, entranceWidth: width, entranceHeight: height });
+  return `<div class="cave-entrance-size-controls">
+    <label class="decor-cave-coordinate-control"><span>Width <strong data-cave-setting-value="entryWidth" data-cave-entry-index="${index}">${Math.round(width * 100)}%</strong></span><input type="range" min="0.02" max="1" step="0.01" value="${width}" data-cave-setting="entryWidth" data-cave-entry-index="${index}" aria-label="Entry ${index + 1} width" /></label>
+    <label class="decor-cave-coordinate-control"><span>Height <strong data-cave-setting-value="entryHeight" data-cave-entry-index="${index}">${Math.round(height * 100)}%</strong></span><input type="range" min="0.02" max="1" step="0.01" value="${height}" data-cave-setting="entryHeight" data-cave-entry-index="${index}" aria-label="Entry ${index + 1} height" /></label>
+    <strong class="cave-entrance-size-category" data-cave-entry-size-category="${index}">${category}</strong>
+  </div>`;
 }
 // </bundle-source>
 
@@ -87858,6 +92887,9 @@ function renderSettingsOverlay() {
   syncVolumeControl(dom.gravelShadowIntensityInput, dom.gravelShadowIntensityOutput, uiSettings.gravelShadowIntensity);
   if (dom.toolbarTileColorInput instanceof HTMLInputElement) {
     dom.toolbarTileColorInput.value = uiSettings.toolbarTileColor;
+  }
+  if (dom.tankFrameColorInput instanceof HTMLInputElement) {
+    dom.tankFrameColorInput.value = uiSettings.tankFrameColor;
   }
   if (dom.ambientBubbleLevelInput instanceof HTMLInputElement) {
     const ambientBubbleLevel = normalizeAmbientBubbleLevel(uiSettings.ambientBubbleLevel);
@@ -89954,8 +94986,6 @@ function renderManagedFishCard(fish, now, options = {}) {
   const juvenile = !dead && isFishJuvenile(fish, now);
   const comfort = getFishComfort(fish, now);
   const age = formatFishBiologicalAge(fish, now);
-  const defaultScale = getFishScaleDefault(fish.speciesId);
-  const usesDefaultScale = Math.abs(defaultScale - fish.scale) < 0.001;
   const inStorage = Boolean(options.inStorage);
   const displaySpeciesName = getFishDisplaySpeciesName(fish, species);
   const detritusFish = isDetritusFish(fish);
@@ -90062,16 +95092,9 @@ function renderManagedFishCard(fish, now, options = {}) {
         <div class="mini-note fish-health-note">${healthNote}</div>
       </div>
       <div class="fish-actions fish-card-actions">
-        <div class="size-controls">
-          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="-1" aria-label="Make ${escapeHtml(fish.name)} smaller">-</button>
-          <span class="size-badge">${formatFishScale(fish.scale)}</span>
-          <button class="small-button icon alt" data-size-fish="${escapeHtml(fish.id)}" data-size-direction="1" aria-label="Make ${escapeHtml(fish.name)} larger">+</button>
-        </div>
+        <span class="size-badge">${formatFishScale(fish.scale)}</span>
         <div class="fish-card-button-row">
           <span class="price-tag">${rewardLabel}</span>
-          <button class="small-button" data-copy-fish-size="${escapeHtml(fish.id)}" title="Use ${formatFishScale(fish.scale)} as the default size for future ${escapeHtml(displaySpeciesName.toLowerCase())}s">
-            ${usesDefaultScale ? "Default Set" : "Set Default"}
-          </button>
           <button class="small-button alt" data-open-fish="${escapeHtml(fish.id)}">Details</button>
           ${dead ? "" : `
             <button class="small-button alt" data-sell-fish="${fish.id}">
@@ -90928,9 +95951,6 @@ function renderFishInspector(now) {
     dom.fishNameInput.value = nextInputName;
     dom.fishNameInput.dataset.fishId = fish.id;
   }
-  if (dom.fishInspectorSettings) {
-    dom.fishInspectorSettings.hidden = !runtime.fishInspectorSettingsOpen || dead;
-  }
   dom.fishInspector?.classList.toggle("is-settings-window", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   if (dom.closeInspector) {
     dom.closeInspector.hidden = !runtime.fishInspectorSettingsOpen || dead;
@@ -90940,8 +95960,6 @@ function renderFishInspector(now) {
     dom.inspectorFishSettingsButton.textContent = "INSPECT";
     dom.inspectorFishSettingsButton.classList.toggle("is-active", Boolean(runtime.fishInspectorSettingsOpen && !dead));
   }
-  renderFishInspectorBehaviorOptions(fish, baseSpecies);
-  updateInspectorFishReadouts(fish);
   updateWallpaperFishNameKeyboard();
   updateFishInspectorDisplayDocking();
 }
@@ -92771,16 +97789,18 @@ function animationLoop(frameTime) {
   updateSplashBursts(now);
   updateGlassTapEffects(now);
   const fishMotionProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
-  updateFishMotion(now, deltaSeconds);
-  if (typeof updateMoodBubbles === "function") {
-    updateMoodBubbles(now);
-  }
-  updateMachineryMotion(now, deltaSeconds);
-  if (runtime.debugFrameProfilerEnabled) {
-    endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
-  }
-  syncDebugFishBehaviorBroadcast(now);
-  updateWaterLifeEffects(now, deltaSeconds);
+  withTankStageLayoutSnapshot(() => {
+    updateFishMotion(now, deltaSeconds);
+    if (typeof updateMoodBubbles === "function") {
+      updateMoodBubbles(now);
+    }
+    updateMachineryMotion(now, deltaSeconds);
+    if (runtime.debugFrameProfilerEnabled) {
+      endDebugFrameProfilerSection("fishMotion", fishMotionProfileStartedAt);
+    }
+    syncDebugFishBehaviorBroadcast(now);
+    updateWaterLifeEffects(now, deltaSeconds);
+  });
   const stageViewProfileStartedAt = runtime.debugFrameProfilerEnabled ? performance.now() : 0;
   updateStageRenderView(frameTime);
   if (runtime.debugFrameProfilerEnabled) {
@@ -92799,6 +97819,7 @@ function animationLoop(frameTime) {
   renderCustomHidePreview(now);
   renderDecorSettingsMotionPreview(now);
   renderFishInspectPreview(Date.now());
+  refreshFishInspectReadouts(Date.now());
   finishDebugFrameProfile();
 }
 // </bundle-source>
@@ -94024,6 +99045,11 @@ function startPufferInflation(fish, species, now = Date.now()) {
     return false;
   }
 
+  if (fish.caveState) {
+    abortFishCaveBehavior(fish, now, false);
+    if (fish.caveState) return false;
+  }
+
   const durationMs = randomBetween(getPufferInflationMinDurationMs(), getPufferInflationMaxDurationMs());
   fish.pufferInflatedAt = now;
   fish.pufferInflatedUntil = now + durationMs;
@@ -94347,6 +99373,18 @@ function setToolbarTileColor(value) {
     return;
   }
 
+  state.uiSettings = nextSettings;
+  saveState();
+  renderUi(Date.now(), { full: false });
+}
+
+function setTankFrameColor(value) {
+  if (!state) return;
+  const currentSettings = getUiSettings();
+  const nextSettings = sanitizeUiSettings({ ...currentSettings, tankFrameColor: value });
+  // Also restore the committed color if a live preview returned to the saved value.
+  window.BubbleBoroughTankFrame?.setFrameColor?.(nextSettings.tankFrameColor);
+  if (currentSettings.tankFrameColor === nextSettings.tankFrameColor) return;
   state.uiSettings = nextSettings;
   saveState();
   renderUi(Date.now(), { full: false });
@@ -101449,13 +106487,14 @@ function renderTank(now) {
       if (layer === 3) {
         drawAmbientBubbles(now, 2);
       }
+      // Waste is behind decor even when its footprint extends below the depth line.
+      drawPoops(now, layer);
       const caveSceneDrawn = drawCaveLayerScene(now, layer, decorRenderFrame);
       if (!caveSceneDrawn) {
         drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
         drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
         drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
       }
-      drawPoops(now, layer);
       if (layer !== TANK_DEPTH_LAYERS) {
         drawWaterParticles(now, layer);
       }
@@ -110778,26 +115817,41 @@ function drawFishPebbleTosses(now, layer = null) {
   }
 }
 
-function fitDebugFishBehaviorLine(text, maxWidth) {
+function fitDebugFishBehaviorLine(text, maxWidth, context = tankContext) {
   const value = String(text || "");
-  if (tankContext.measureText(value).width <= maxWidth) {
+  if (context.measureText(value).width <= maxWidth) {
     return value;
   }
 
   const suffix = "...";
-  let end = value.length;
-  while (end > 3 && tankContext.measureText(`${value.slice(0, end)}${suffix}`).width > maxWidth) {
-    end -= 1;
+  let low = 3;
+  let high = value.length;
+  while (low < high) {
+    const middle = Math.ceil((low + high) / 2);
+    if (context.measureText(`${value.slice(0, middle)}${suffix}`).width <= maxWidth) low = middle;
+    else high = middle - 1;
   }
-  return `${value.slice(0, Math.max(1, end))}${suffix}`;
+  return `${value.slice(0, Math.max(1, low))}${suffix}`;
+}
+
+function getDebugFishBehaviorTextLayout(snapshot, maxWidth, context) {
+  const key = JSON.stringify([context.font, maxWidth, snapshot.labelLines]);
+  const cache = runtime.debugFishBehaviorTextCache;
+  if (cache.has(key)) return cache.get(key);
+  const lines = snapshot.labelLines.filter((line) => String(line || "").trim()).slice(0, 5)
+    .map((line) => fitDebugFishBehaviorLine(line, maxWidth, context));
+  const layout = { lines, width: Math.max(...lines.map((line) => context.measureText(line).width), 1) };
+  if (cache.size >= 256) cache.delete(cache.keys().next().value);
+  cache.set(key, layout);
+  return layout;
 }
 
 function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now(), context = tankContext) {
-  if (!isDebugModeEnabled()) {
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorBroadcastEnabled !== true) {
     return;
   }
 
-  const snapshot = getDebugFishBehaviorSnapshot(fish, species, now);
+  const snapshot = getCachedDebugFishBehaviorSnapshot(fish, species, now);
   if (!snapshot?.labelLines?.length) {
     return;
   }
@@ -110813,11 +115867,9 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
   context.textAlign = "center";
   context.textBaseline = "middle";
 
-  const lines = snapshot.labelLines
-    .filter((line) => String(line || "").trim())
-    .slice(0, 5)
-    .map((line) => fitDebugFishBehaviorLine(line, maxTextWidth));
-  const textWidth = Math.max(...lines.map((line) => context.measureText(line).width), 1);
+  const layout = getDebugFishBehaviorTextLayout(snapshot, maxTextWidth, context);
+  const lines = layout.lines;
+  const textWidth = layout.width;
   const labelWidth = Math.ceil(textWidth + paddingX * 2);
   const labelHeight = Math.ceil(lines.length * lineHeight + paddingY * 2);
   const centerX = clamp(
@@ -110873,7 +115925,7 @@ function drawDebugFishBehaviorBroadcast(fish, species, pose, width, height, topF
 }
 
 function queueDebugFishBehaviorBroadcast(fish, species, pose, width, height, topFrameBottomY, stableScale, now = Date.now()) {
-  if (!isDebugModeEnabled() || !fish?.id) return;
+  if (!isDebugModeEnabled() || runtime.debugFishBehaviorBroadcastEnabled !== true || !fish?.id) return;
   runtime.fishStatsOverlayQueue ||= new Map();
   runtime.fishStatsOverlayQueue.set(fish.id, { fish, species, pose, width, height, topFrameBottomY, stableScale, now });
 }
@@ -114787,9 +119839,7 @@ function getPoopPose(poop, now = Date.now()) {
   const x = poop.xNorm * TANK_WIDTH + Math.sin(now / 520 + poop.xNorm * 11) * (1 - sinkProgress) * 6;
   const width = POOP_DRAW_WIDTH_PX;
   const height = width * (poopSprite.height / Math.max(1, poopSprite.width));
-  const targetYNorm = Number.isFinite(Number(poop.tankLayer))
-    ? getPoopLayerTargetYNorm(poop, poopSprite, width)
-    : (Number.isFinite(Number(poop.yNorm)) ? Number(poop.yNorm) : getPoopFloorYNormAtXNorm(poop.xNorm));
+  const targetYNorm = getPoopLayerTargetYNorm(poop, poopSprite, width);
   const startYNorm = Math.min(
     clamp(Number(poop.startYNorm) || 0.54, 0.14, 0.82),
     Math.max(0.14, targetYNorm - 0.012)
@@ -115180,7 +120230,7 @@ function updateComfortHistoryEvents(now = Date.now()) {
   return changed;
 }
 
-function getFishComfort(fish, now, targetTank = null) {
+function getFishComfort(fish, now, targetTank = null, habitat = null) {
   targetTank = targetTank || (typeof getFishSimulationTank === "function" ? getFishSimulationTank(fish) : (typeof getCurrentTank === "function" ? getCurrentTank() : null));
   if (!isFishDead(fish) && (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return { value: 1, label: "Peaceful" };
   if (hasActiveCandyBoost(fish, now)) return { value: 1, label: "Candy boost" };
@@ -115195,7 +120245,7 @@ function getFishComfort(fish, now, targetTank = null) {
     return { value: 1, label: "Calm" };
   }
 
-  const dirtiness = getTankDirtiness(now, targetTank);
+  const dirtiness = Number.isFinite(habitat?.dirtiness) ? habitat.dirtiness : getTankDirtiness(now, targetTank);
   if (hasExposedDeadTankFish(now, targetTank) || dirtiness >= CRITICAL_TANK_DIRTINESS) {
     return { value: 0, label: "Critical" };
   }
@@ -115212,11 +120262,12 @@ function getFishComfort(fish, now, targetTank = null) {
   const mealBoost = lastAteAt > 0 && now - lastAteAt <= COMFORT_MEALTIME_BOOST_MS
     ? COMFORT_COMPONENTS.mealBoost
     : 0;
-  const needsStatus = getFishNeedsStatus(fish, targetTank, now);
+  const facts = habitat?.facts || getTankComfortFacts(targetTank, now);
+  const needsStatus = habitat?.needsStatus || getFishNeedsStatus(fish, targetTank, now, facts);
   const needsPoints = needsStatus.reduce((total, need) => total + (need.met ? COMFORT_COMPONENTS.needs / Math.max(1, needsStatus.length) : 0), 0);
   const healthPoints = getFishHealthRatio(fish) * COMFORT_COMPONENTS.health;
-  const spacePoints = getTankSpaceComfortPoints(targetTank);
-  const activeConflicts = getFishConflictStatus(fish, targetTank, now).filter((conflict) => conflict.active);
+  const spacePoints = facts.spacePoints;
+  const activeConflicts = (habitat?.conflicts || getFishConflictStatus(fish, targetTank, now, facts)).filter((conflict) => conflict.active);
   const conflictPenalty = Math.min(COMFORT_COMPONENTS.maxConflictPenalty, activeConflicts.length * COMFORT_COMPONENTS.conflictPenalty);
   const glassTapStressPenalty = getFishGlassTapStressPenalty(fish, now);
   const diseasePenalty = getFishDiseaseComfortPenalty(fish, now);
@@ -115250,6 +120301,23 @@ function getFishComfort(fish, now, targetTank = null) {
 }
 
 function getFishNeedValue(fish, needKey, now = Date.now()) {
+  // Loaded/created fish already have normalized needs. Reading hunger or a
+  // retired meter must not rebuild live habitat values. Full normalization
+  // remains at load/update boundaries and for habitat reads below.
+  const needs = fish?.needs;
+  if (needs && typeof needs === "object" && !Array.isArray(needs)
+    && FISH_NEED_KEYS.every((key) => Object.prototype.hasOwnProperty.call(needs, key))
+    && !((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) && !isFishDead(fish))
+    && !hasActiveCandyBoost(fish, now)) {
+    if (["energy", "social", "stimulation"].includes(needKey)) {
+      needs[needKey] = 80;
+      return 80;
+    }
+    if (needKey === "hunger" && Number.isFinite(Number(needs.hunger))) {
+      needs.hunger = clamp(Number(needs.hunger), 0, 100);
+      return needs.hunger;
+    }
+  }
   fish.needs = sanitizeFishNeeds(fish?.needs, fish, now);
   return clamp(Number(fish.needs[needKey]) || 0, 0, 100);
 }
@@ -115375,13 +120443,18 @@ function getFishDisposition(fish, now = Date.now()) {
   const currentTank = typeof getFishSimulationTank === "function"
     ? getFishSimulationTank(fish)
     : (typeof getCurrentTank === "function" ? getCurrentTank() : null);
-  const comfort = typeof getFishComfort === "function" ? getFishComfort(fish, now, currentTank).value : 1;
+  // Share only within this synchronous evaluation. Edits and time changes
+  // remain visible on the very next call without an invalidation protocol.
+  const facts = typeof getTankComfortFacts === "function" ? getTankComfortFacts(currentTank, now) : null;
+  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, currentTank, now, facts) : [];
+  const conflicts = typeof getFishConflictStatus === "function" ? getFishConflictStatus(fish, currentTank, now, facts) : [];
+  const dirtiness = typeof getTankDirtiness === "function" ? clamp(Number(getTankDirtiness(now, currentTank)) || 0, 0, 1) : 0;
+  const comfort = typeof getFishComfort === "function"
+    ? getFishComfort(fish, now, currentTank, facts ? { facts, needsStatus, conflicts, dirtiness } : null).value : 1;
   const healthRatio = typeof getFishHealthRatio === "function" ? clamp(Number(getFishHealthRatio(fish)) || 0, 0, 1) : 1;
   const personality = typeof getFishPersonality === "function" ? getFishPersonality(fish) : "";
   const mealFree = typeof isMealFreeFish === "function" ? isMealFreeFish(fish) : false;
   const hunger = mealFree || typeof getFishNeedValue !== "function" ? 100 : getFishNeedValue(fish, "hunger", now);
-  const needsStatus = typeof getFishNeedsStatus === "function" ? getFishNeedsStatus(fish, currentTank, now) : [];
-  const conflicts = typeof getFishConflictStatus === "function" ? getFishConflictStatus(fish, currentTank, now) : [];
   const activeConflicts = conflicts.filter((conflict) => conflict?.active);
   const missingNeeds = needsStatus.filter((need) => need && !need.met);
   const biologicalSocialStatus = typeof getFishBiologicalSocialStatus === "function"
@@ -115398,7 +120471,6 @@ function getFishDisposition(fish, now = Date.now()) {
   const hungerLowThreshold = typeof FISH_HUNGER_LOW_THRESHOLD !== "undefined" ? FISH_HUNGER_LOW_THRESHOLD : 55;
   const hungerCriticalThreshold = typeof FISH_HUNGER_CRITICAL_THRESHOLD !== "undefined" ? FISH_HUNGER_CRITICAL_THRESHOLD : 14;
   const gravelPebbleActivity = typeof FISH_GRAVEL_PEBBLE_ACTIVITY !== "undefined" ? FISH_GRAVEL_PEBBLE_ACTIVITY : "gravel_pebble";
-  const dirtiness = typeof getTankDirtiness === "function" ? clamp(Number(getTankDirtiness(now, currentTank)) || 0, 0, 1) : 0;
   const behaviorSignals = fish?.behaviorSignals && typeof fish.behaviorSignals === "object" ? fish.behaviorSignals : {};
   const avoidSignal = behaviorSignals.avoid_specific_fish;
   const recentAvoidance = Boolean(avoidSignal && (!Number(avoidSignal.expiresAt) || Number(avoidSignal.expiresAt) > now));
@@ -115425,24 +120497,24 @@ function getFishDisposition(fish, now = Date.now()) {
     const relationships = typeof sanitizeFishRelationships === "function"
       ? sanitizeFishRelationships(fish.relationships)
       : (fish.relationships && typeof fish.relationships === "object" ? fish.relationships : {});
-    nearbyFriend = nearbyTankFish
-      .filter((otherFish) => otherFish && otherFish.id !== fish.id)
-      .map((otherFish) => ({
-        fish: otherFish,
-        relation: relationships[otherFish.id],
-        distance: Math.hypot(
-          (Number(fish.xNorm) || 0.5) - (Number(otherFish.xNorm) || 0.5),
-          (Number(fish.yNorm) || 0.5) - (Number(otherFish.yNorm) || 0.5)
-        )
-      }))
-      .filter((entry) => (
-        (typeof areFishEstablishedFriends === "function"
-          ? areFishEstablishedFriends(fish, entry.fish)
-          : entry.relation?.kind === "friend")
-        && entry.distance <= 0.24
-        && (typeof canFishBuildFriendship !== "function" || canFishBuildFriendship(fish, entry.fish, now, { passive: false }))
-      ))
-      .sort((left, right) => left.distance - right.distance)[0] || null;
+    let nearestDistance = Infinity;
+    for (const otherFish of nearbyTankFish) {
+      if (!otherFish || otherFish.id === fish.id) continue;
+      const relation = relationships[otherFish.id];
+      const distance = Math.hypot(
+        (Number(fish.xNorm) || 0.5) - (Number(otherFish.xNorm) || 0.5),
+        (Number(fish.yNorm) || 0.5) - (Number(otherFish.yNorm) || 0.5)
+      );
+      const established = typeof areFishEstablishedFriends === "function"
+        ? areFishEstablishedFriends(fish, otherFish) : relation?.kind === "friend";
+      if (!established || !(distance <= 0.24)) continue;
+      if (typeof canFishBuildFriendship === "function" && !canFishBuildFriendship(fish, otherFish, now, { passive: false })) continue;
+      // Strict comparison preserves the first candidate when distances tie.
+      if (distance < nearestDistance) {
+        nearestDistance = distance;
+        nearbyFriend = { fish: otherFish, relation, distance };
+      }
+    }
   }
 
   const calmed = typeof isFishCalmed === "function" && isFishCalmed(fish, now);
@@ -115758,8 +120830,17 @@ function updateFishNeeds(now = Date.now()) {
     if (!deltas) {
       continue;
     }
-    for (const key of FISH_NEED_KEYS) {
-      changed = setFishNeedValue(fish, key, fish.needs[key] + (Number(deltas[key]) || 0), now) || changed;
+    // Only hunger accepts action deltas. The other six setter calls used to
+    // rebuild the same needs object before returning false.
+    if (!hasActiveCandyBoost(fish, now)) {
+      const previousHunger = fish.needs.hunger;
+      fish.needs.hunger = clamp(Number(previousHunger + (Number(deltas.hunger) || 0)) || 0, 0, 100);
+      changed = Math.abs(previousHunger - fish.needs.hunger) > 0.001 || changed;
+      if (fish.needs.hunger !== previousHunger) {
+        // Hunger can change the meal component of comfort. Preserve the final
+        // habitat values that the old post-hunger normalization produced.
+        fish.needs = sanitizeFishNeeds(fish.needs, fish, now);
+      }
     }
     fish.needsUpdatedAt = now;
     if (!isMealFreeFish(fish) && fish.needs.hunger <= FISH_HUNGER_CRITICAL_THRESHOLD) {

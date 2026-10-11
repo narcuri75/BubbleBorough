@@ -362,6 +362,7 @@ function stepDecorGroupScale(item, step, save = false) {
   if (groupItems.length <= 1) {
     return null;
   }
+  if (!canEditOccupiedCaveGeometry(groupItems)) return Number(item.scale);
 
   const currentScale = Number(item.scale) || getDecorScaleDefault(item.decorKey);
   const nextScale = clamp(currentScale + step * SIZE_STEP, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
@@ -673,6 +674,7 @@ function stepActiveDecorScale(direction) {
   } else {
     const item = activeTarget.item;
     if (item) {
+      if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return null;
       const groupScale = stepDecorGroupScale(item, step, activeTarget.mode === "selected");
       if (groupScale !== null) {
         return groupScale;
@@ -1169,6 +1171,7 @@ function snapDecorScaleToStep(value) {
 }
 
 function beginDecorCornerResize(item, corner, point, pointerId) {
+  if (item && !canEditOccupiedCaveGeometry([item])) return;
   if (typeof beginDecorEditHistory === "function") beginDecorEditHistory("Resize decoration");
   const resizeCorner = normalizeDecorResizeCorner(corner);
   const bounds = getPlacedDecorOpaqueBounds(item) || getPlacedDecorBounds(item);
@@ -1270,6 +1273,7 @@ function finalizeDecorCornerResize() {
 }
 
 function beginDecorDrag(item, point, pointerId, options = {}) {
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
   if (typeof beginDecorEditHistory === "function" && !options.isNewPlacement) beginDecorEditHistory("Move decorations");
   runtime.pointerDown = true;
   runtime.suppressNextTankClick = true;
@@ -2535,6 +2539,7 @@ function adjustPlacedDecorSize(placedId, direction) {
   if (!item) {
     return;
   }
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
 
   if (isPlacedDecorGrouped(item)) {
     stepDecorGroupScale(item, Math.sign(Number(direction) || 0), true);

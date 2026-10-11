@@ -87,13 +87,14 @@ function renderTank(now) {
       if (layer === 3) {
         drawAmbientBubbles(now, 2);
       }
+      // Waste is behind decor even when its footprint extends below the depth line.
+      drawPoops(now, layer);
       const caveSceneDrawn = drawCaveLayerScene(now, layer, decorRenderFrame);
       if (!caveSceneDrawn) {
         drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_BACK, excludeCaveInterior: true });
         drawFish(now, layer, { excludeBehavior: "sucker", subLayer: TANK_SUBLAYER_MIDDLE, excludeCaveInterior: true });
         drawDecor(layer, now, { pass: "base", frameCache: decorRenderFrame });
       }
-      drawPoops(now, layer);
       if (layer !== TANK_DEPTH_LAYERS) {
         drawWaterParticles(now, layer);
       }

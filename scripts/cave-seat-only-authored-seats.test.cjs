@@ -20,7 +20,7 @@ function getSeatOnlyCaves() {
   return decor.filter((entry) => entry?.behavior === 'cave_layered' && entry.swimmable === false);
 }
 
-test('every seat-only cave authors one portal and one seat for every usable opening', () => {
+test('every seat-only cave authors a portal and at least one seat for every usable opening', () => {
   const caves = getSeatOnlyCaves();
   assert.equal(caves.length, 5);
 
@@ -30,12 +30,16 @@ test('every seat-only cave authors one portal and one seat for every usable open
     const profile = cave.caveBehavior;
     assert.ok(profile && typeof profile === 'object', `${cave.file} must author caveBehavior`);
     assert.equal(profile.portals?.length, expectedCount, `${cave.file} portal count`);
-    assert.equal(profile.insideSlots?.length, expectedCount, `${cave.file} seat count`);
+    assert.ok(profile.insideSlots?.length >= expectedCount, `${cave.file} seat count`);
+    if (cave.caveSettings) {
+      assert.equal(profile.insideSlots.length, cave.caveSettings.seats.length, `${cave.file} configured seat count`);
+    }
 
     const portalIds = new Set(profile.portals.map((portal) => portal.id));
     assert.equal(portalIds.size, expectedCount, `${cave.file} portal ids must be unique`);
 
     for (const portal of profile.portals) {
+      assert.ok(profile.insideSlots.some((seat) => seat.portalIds?.includes(portal.id)), `${cave.file} ${portal.id} must have a seat`);
       for (const field of ['approachX', 'approachY', 'mouthX', 'mouthY']) {
         assert.equal(typeof portal[field], 'number', `${cave.file} ${portal.id}.${field}`);
         assert.ok(portal[field] >= 0 && portal[field] <= 1, `${cave.file} ${portal.id}.${field} must be normalized`);

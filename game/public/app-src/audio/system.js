@@ -37,8 +37,16 @@ function syncActiveSoundEffectVolumes(category = "") {
   }
 }
 
+function resolveAudioAssetUrl(path) {
+  const url = resolveAppUrl(path);
+  // Retire media cache entries created before byte-range delivery was fixed.
+  // Keep a stable URL so pooled voices and subsequent visits still share cache.
+  const [base, ...fragment] = url.split("#");
+  return `${base}${base.includes("?") ? "&" : "?"}bb-audio=2${fragment.length ? `#${fragment.join("#")}` : ""}`;
+}
+
 function createAmbienceAudioChannel() {
-  const audio = new Audio(resolveAppUrl(AMBIENCE_AUDIO_PATH));
+  const audio = new Audio(resolveAudioAssetUrl(AMBIENCE_AUDIO_PATH));
   audio.loop = false;
   audio.preload = "auto";
   audio.volume = 0;
@@ -436,7 +444,7 @@ function pickSoundEffectPathExcluding(pathOrPaths, excludedPath) {
 }
 
 function createPooledSoundEffectAudio(path) {
-  const audio = new Audio(resolveAppUrl(path));
+  const audio = new Audio(resolveAudioAssetUrl(path));
   audio.preload = "auto";
   audio.addEventListener("ended", () => {
     runtime.activeSoundEffects.delete(audio);
@@ -737,7 +745,7 @@ function getSubmarineSonarAudio() {
   if (typeof Audio !== "function") {
     return null;
   }
-  const audio = new Audio(resolveAppUrl(SUBMARINE_SONAR_SOUND_PATH));
+  const audio = new Audio(resolveAudioAssetUrl(SUBMARINE_SONAR_SOUND_PATH));
   audio.loop = true;
   audio.preload = "auto";
   audio.volume = 0;
@@ -952,14 +960,6 @@ function isDecorSettingsSoundMode() {
 
 function playFishInspectorActionSound(event) {
   playToolbarButtonPressSoundForAction(event, FISH_INSPECTOR_TOOLBAR_BUTTON_SOUND_SELECTOR);
-}
-
-function beginFishInspectorSliderSound(event) {
-  beginSoundRangeDrag(event, FISH_INSPECTOR_SLIDER_SOUND_SELECTOR);
-}
-
-function playFishInspectorSliderInputSound(event) {
-  playSoundRangeInput(event, FISH_INSPECTOR_SLIDER_SOUND_SELECTOR);
 }
 
 function playSelectedDecorActionSound(event) {

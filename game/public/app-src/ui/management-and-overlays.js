@@ -2158,7 +2158,7 @@ function handleCaveSettingsUtilityOverlayBodyClick(ctx, target) {
   const caveTabButton = target?.closest?.("[data-decor-cave-tab]");
   if (caveTabButton) {
     const nextTab = String(caveTabButton.dataset.decorCaveTab || "entries");
-    runtime.decorSettingsCaveTab = ["entries", "seats", "preview"].includes(nextTab) ? nextTab : "entries";
+    runtime.decorSettingsCaveTab = ["entries", "seats"].includes(nextTab) ? nextTab : "entries";
     renderUtilityOverlay();
     return true;
   }
@@ -2245,13 +2245,15 @@ function handleCaveSettingsUtilityOverlayPointerDown(ctx, event) {
     const pointTarget = getCaveSettingsPreviewPointerTarget(event);
     const point = getCaveSettingsPreviewLocalPoint(event);
     if (pointTarget && point) {
+      if (!caveTarget.pending && !canEditOccupiedCaveGeometry([caveTarget.item])) return true;
       runtime.caveSettingsDrag = {
         kind: pointTarget.kind,
         index: pointTarget.index,
+        resize: pointTarget.resize === true,
         pointerId: event.pointerId
       };
       previewFrame.setPointerCapture?.(event.pointerId);
-      applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
+      if (!pointTarget.resize) applyCaveSettingsPreviewPoint(pointTarget.kind, pointTarget.index, point, { commit: false });
       event.preventDefault();
       return true;
     }
@@ -2276,7 +2278,7 @@ function handleCaveSettingsUtilityOverlayPointerMove(ctx, event) {
   }
   const point = getCaveSettingsPreviewLocalPoint(event);
   if (point) {
-    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false });
+    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: false, resize: drag.resize });
     event.preventDefault();
     return true;
   }
@@ -2303,6 +2305,12 @@ function handleCaveSettingsUtilityOverlayFocusIn(ctx, target) {
 }
 
 function handleCommonUtilityOverlayInput(ctx, target) {
+  const caveBackgroundToggle = target?.closest?.("[data-cave-preview-background]");
+  if (caveBackgroundToggle instanceof HTMLInputElement) {
+    runtime.decorSettingsShowCaveBackground = caveBackgroundToggle.checked;
+    renderDecorSettingsMotionPreview();
+    return true;
+  }
   const caveColorPicker = target?.closest?.("[data-cave-color-picker]");
   if (caveColorPicker instanceof HTMLInputElement && caveColorPicker.type === "color") {
     updateSelectedCaveColorSetting(
@@ -2748,7 +2756,11 @@ function renderUtilityOverlay() {
     dom.utilityOverlayHeaderActions.hidden = !headerActions.trim();
   }
   if (dom.utilityOverlayBody) {
-    setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
+    const retainedInspection = config.fishInspectReadouts && refreshFishInspectReadouts(Date.now(), config.fishInspectReadouts);
+    if (!retainedInspection) {
+      setMarkupIfChanged("utility-overlay-body", dom.utilityOverlayBody, body);
+      if (config.fishInspectReadouts) refreshFishInspectReadouts(Date.now(), config.fishInspectReadouts);
+    }
     syncWallpaperUtilityNameKeyboards();
     syncWallpaperScrollControls(dom.utilityOverlayBody);
   }
@@ -5045,12 +5057,12 @@ function renderCaveSettingsMarkers(settings) {
     <button
       class="cave-settings-marker cave-settings-entry-marker ${index === resolved.activeEntryIndex ? "is-active" : ""}"
       type="button"
-      style="left: ${(entry.x * 100).toFixed(2)}%; top: ${(entry.y * 100).toFixed(2)}%;"
+      style="left: ${(entry.x * 100).toFixed(2)}%; top: ${(entry.y * 100).toFixed(2)}%; width: ${sanitizeCaveEntranceSize(entry.width) * 100}%; height: ${sanitizeCaveEntranceSize(entry.height) * 100}%;"
       data-cave-entry-select="${index}"
       data-cave-settings-entry-marker="${index}"
       aria-label="Select cave entry ${index + 1}"
       title="Entry ${index + 1}">
-      ${index + 1}
+      <span>${index + 1}</span><span class="cave-entry-resize-handle" data-cave-entry-resize="${index}" aria-hidden="true"></span>
     </button>
   `).join("");
   const seatMarkers = resolved.seats.map((seat, index) => `
@@ -5073,7 +5085,7 @@ function renderCaveSettingsMarkers(settings) {
 }
 
 function renderLegacyCaveSettingsControls(item) {
-  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
+  const settings = getCaveEditorSettings(item);
   const entryCountOptions = Array.from({ length: CAVE_SETTINGS_MAX_ENTRIES - CAVE_SETTINGS_MIN_ENTRIES + 1 }, (_, index) => {
     const count = CAVE_SETTINGS_MIN_ENTRIES + index;
     return `<option value="${count}" ${settings.entryCount === count ? "selected" : ""}>${count}</option>`;
@@ -5104,6 +5116,7 @@ function renderLegacyCaveSettingsControls(item) {
             ${sideOptions}
           </select>
         </label>
+        ${renderCaveEntranceSizeControls(item, entry, index)}
         <label class="bubbler-control-row cave-coordinate-row">
           <span>X <strong data-cave-setting-value="entryX" data-cave-entry-index="${index}">${formatCaveSettingPercent(entry.x)}</strong></span>
           <input
@@ -5215,8 +5228,8 @@ function renderCaveSettingsControls(item) {
     return renderLegacyCaveSettingsControls(item);
   }
 
-  const settings = getPlacedCaveSettings(item) || sanitizePlacedCaveSettings();
-  const currentTab = ["entries", "seats", "preview"].includes(runtime.decorSettingsCaveTab)
+  const settings = getCaveEditorSettings(item);
+  const currentTab = ["entries", "seats"].includes(runtime.decorSettingsCaveTab)
     ? runtime.decorSettingsCaveTab
     : "entries";
   const tabButton = (id, label, icon) => `
@@ -5238,7 +5251,7 @@ function renderCaveSettingsControls(item) {
       <option value="${escapeHtml(option.id)}" ${side === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>
     `).join("");
     return `
-      <div class="decor-cave-point-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
+      <div class="decor-cave-point-row decor-cave-entry-row ${active ? "is-active" : ""}" data-cave-entry-card="${index}">
         <button class="decor-cave-point-badge is-entry" type="button" data-cave-entry-select="${index}" aria-label="Select entry ${index + 1}">${index + 1}</button>
         <label class="decor-cave-side-control">
           <span class="sr-only">Entry ${index + 1} side</span>
@@ -5255,6 +5268,7 @@ function renderCaveSettingsControls(item) {
           <input type="range" min="0.02" max="0.98" step="0.01" value="${entry.y}" data-cave-setting="entryY" data-cave-entry-index="${index}" />
         </label>
         <button class="decor-cave-delete-button" type="button" data-cave-remove-entry="${index}" aria-label="Delete entry ${index + 1}" title="Delete entry" ${settings.entryCount <= CAVE_SETTINGS_MIN_ENTRIES ? "disabled" : ""}>×</button>
+        ${renderCaveEntranceSizeControls(item, entry, index)}
       </div>
     `;
   }).join("");
@@ -5299,17 +5313,6 @@ function renderCaveSettingsControls(item) {
       </div>
       <div class="decor-cave-compact-list">${seatRows}</div>
     `;
-  } else {
-    panelMarkup = `
-      <div class="decor-cave-preview-summary">
-        <strong>Position cave points directly on the preview.</strong>
-        <span>Drag the numbered entry and seat markers on the decor image. The X and Y values update live.</span>
-        <div class="decor-cave-preview-stats">
-          <span><b>${settings.entryCount}</b> ${settings.entryCount === 1 ? "entry" : "entries"}</span>
-          <span><b>${settings.seatCount}</b> ${pluralize("seat", settings.seatCount)}</span>
-        </div>
-      </div>
-    `;
   }
 
   return `
@@ -5317,7 +5320,6 @@ function renderCaveSettingsControls(item) {
       <div class="decor-cave-tabs" role="tablist" aria-label="Cave settings">
         ${tabButton("entries", "Entries", "↪")}
         ${tabButton("seats", "Seats", "●")}
-        ${tabButton("preview", "Preview", "◉")}
       </div>
       <div class="decor-cave-tab-panel" role="tabpanel">${panelMarkup}</div>
     </section>
@@ -5346,14 +5348,15 @@ function renderDecorSettingsOverlay(item) {
     return `<div class="custom-decor-name-panel decor-settings-panel transit-tube-settings"><div class="custom-decor-create-layout decor-settings-layout"><div class="custom-decor-preview-column"><div class="custom-decor-size-window"><img class="transit-tube-settings-preview" ${assetImageAttributes(getDecorThumbnailPath(decor))} alt="Clear transit tube"></div><div class="mini-note">Fish use a linked pair as a shortcut when traveling to services or home. Bubbles only run during transit.</div></div><div class="custom-decor-controls-column"><label class="custom-decor-name-row"><span>Tube name</span><input type="text" maxlength="36" value="${escapeHtml(getTransitTubeDisplayName(item, currentTank))}" data-transit-tube-name="${escapeHtml(item.id)}"></label><label class="custom-decor-name-row"><span>Connect to</span><select class="shop-sort-select" data-transit-tube-link="${escapeHtml(item.id)}"><option value="">Not connected</option>${options}</select></label><div class="custom-decor-type-summary">${linked ? `Linked to ${escapeHtml(getTransitTubeDisplayName(linked.item, linked.tank))} in ${escapeHtml(getTankLabel(linked.tank))}.` : "Place another tube in a different neighborhood, then select it here."}</div><div class="bubbler-color-row"><span>Glass color</span><strong>${escapeHtml(formatCaveColorChoiceLabel(activeColor))}</strong></div><div class="bubbler-color-swatches"><button class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${!activeColor ? "is-selected" : ""}" type="button" data-transit-tube-color="" aria-pressed="${!activeColor}">Original</button>${colorSwatches}</div></div></div></div>`;
   }
 
-  const imageSrc = escapeHtml(getDecorThumbnailPath(decor));
+  // Editor geometry must use the original artwork, not the padded square shop thumbnail.
+  const imageSrc = escapeHtml(decor.path);
   const capabilities = getDecorMotionCapabilities(item);
   const motionSettings = getPlacedDecorMotionSettings(item);
   const hasMotionControls = capabilities.hasBob || capabilities.hasSway;
   const hasBubblerControls = canConfigureDecorBubbler(item);
   const hasCaveControls = isCaveDecorKey(item.decorKey);
   const hasCaveColorControls = hasDecorCaveColorLayers(decor);
-  const caveSettings = hasCaveControls ? (getPlacedCaveSettings(item) || sanitizePlacedCaveSettings()) : null;
+  const caveSettings = hasCaveControls ? getCaveEditorSettings(item) : null;
   const sizeValue = clamp(Number(item.scale) || getDecorScaleDefault(item.decorKey), DECOR_SCALE_MIN, DECOR_SCALE_MAX);
   const depthReadout = formatDecorSettingReadout("depthZ", item);
   const depthValue = Math.round(getTankDepthDisplayPercent(getPlacedDecorDepthZ(item)));
@@ -5460,11 +5463,25 @@ function renderDecorSettingsOverlay(item) {
                 ${hasCaveControls ? renderCaveSettingsMarkers(caveSettings) : ""}
               </div>
             </div>
-            ${hasCaveControls ? `<div class="decor-settings-preview-hint">Drag the numbered markers to position entries and seats.</div>` : ""}
+            ${hasCaveControls ? `<div class="decor-settings-preview-hint">
+              ${decor.bgPath ? `<label class="decor-settings-preview-background-toggle"><input type="checkbox" data-cave-preview-background ${runtime.decorSettingsShowCaveBackground !== false ? "checked" : ""} />Show background</label>` : ""}
+              <span>Drag markers to move them. Drag an oval's handle to match the entrance size.</span>
+            </div>` : ""}
           </div>
         </div>
         ${controlsMarkup}
       </div>
     </div>
   `;
+}
+
+function renderCaveEntranceSizeControls(item, entry, index) {
+  const width = sanitizeCaveEntranceSize(entry.width);
+  const height = sanitizeCaveEntranceSize(entry.height);
+  const category = getCaveEntranceSizeCategory(item, { mouthX: entry.x, mouthY: entry.y, entranceWidth: width, entranceHeight: height });
+  return `<div class="cave-entrance-size-controls">
+    <label class="decor-cave-coordinate-control"><span>Width <strong data-cave-setting-value="entryWidth" data-cave-entry-index="${index}">${Math.round(width * 100)}%</strong></span><input type="range" min="0.02" max="1" step="0.01" value="${width}" data-cave-setting="entryWidth" data-cave-entry-index="${index}" aria-label="Entry ${index + 1} width" /></label>
+    <label class="decor-cave-coordinate-control"><span>Height <strong data-cave-setting-value="entryHeight" data-cave-entry-index="${index}">${Math.round(height * 100)}%</strong></span><input type="range" min="0.02" max="1" step="0.01" value="${height}" data-cave-setting="entryHeight" data-cave-entry-index="${index}" aria-label="Entry ${index + 1} height" /></label>
+    <strong class="cave-entrance-size-category" data-cave-entry-size-category="${index}">${category}</strong>
+  </div>`;
 }

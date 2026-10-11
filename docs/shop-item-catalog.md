@@ -2,7 +2,7 @@
 
 Generated from the current store catalogs. The “About this item” page reuses the catalog copy and card facts. Inventory, unlock, ownership, and seasonal availability labels can change with game state; those are marked as dynamic below.
 
-Catalog totals: 39 fish, 170 decor records, 7 food, 5 pharmacy items, 14 purchasable backgrounds, and 3 machinery items.
+Catalog totals: 39 fish, 164 decor records, 7 food, 5 pharmacy items, 14 purchasable backgrounds, and 3 machinery items.
 
 ## Food
 
@@ -1503,19 +1503,6 @@ A reef shelf with a natural hollow beneath it, adding both height and a tucked-a
 **About this item**
 
 A rugged coral shelf that gives the tank a bit of reef structure and a quiet space underneath.
-
-**Catalog facts**
-
-- Price: 16 coins
-- Theme: reef
-- Categories: cave, coral
-- About-page status: ownership, unlock status, seasonal availability, and borough-service notes are dynamic.
-
-### Coral Shelf Cave 6
-
-**About this item**
-
-A raised coral formation with a sheltered opening below, perfect for breaking up an open aquarium floor.
 
 **Catalog facts**
 

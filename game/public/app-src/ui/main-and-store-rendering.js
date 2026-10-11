@@ -205,6 +205,7 @@ function renderToolbarPosition() {
   const displayCollapsed = getEffectiveDisplayCollapsed(uiSettings, tutorialUi);
   document.documentElement.dataset.toolbarPosition = toolbarPosition;
   document.documentElement.style.setProperty("--toolbar-tile-color", uiSettings.toolbarTileColor);
+  window.BubbleBoroughTankFrame?.setFrameColor?.(uiSettings.tankFrameColor);
   document.documentElement.dataset.displayPosition = displayPosition;
   document.documentElement.dataset.toolbarCollapsed = toolbarCollapsed ? "true" : "false";
   document.documentElement.dataset.displayCollapsed = displayCollapsed ? "true" : "false";

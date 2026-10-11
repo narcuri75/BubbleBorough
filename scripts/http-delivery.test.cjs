@@ -90,6 +90,64 @@ test("development keeps no-store and reads edited bytes instead of production ca
   assert.equal((await request("/")).body.toString(), "updated");
 });
 
+test("audio serves exact byte ranges with strong validators and safe conditional fallback", async t => {
+  const request = await listen(createServer({ production: true }), t);
+  const url = "/assets/sounds/whalebreath.mp3?bb-audio=2";
+  const content = await fs.readFile(path.join(__dirname, "../game/assets/sounds/whalebreath.mp3"));
+  const full = await request(url, { "Accept-Encoding": "br, gzip" });
+  assert.equal(full.status, 200);
+  assert.equal(full.headers["content-type"], "audio/mpeg");
+  assert.equal(full.headers["accept-ranges"], "bytes");
+  assert.match(full.headers.etag, /^"[a-f0-9]+"$/);
+  assert.equal(full.headers["content-encoding"], undefined);
+  assert.deepEqual(full.body, content);
+  for (const [range, start, end] of [["bytes=0-31", 0, 31], ["bytes=12-", 12, content.length - 1],
+    ["bytes=-20", content.length - 20, content.length - 1], ["bytes=5-999999", 5, content.length - 1]]) {
+    const partial = await request(url, { Range: range, "If-Range": full.headers.etag });
+    assert.equal(partial.status, 206, range);
+    assert.equal(partial.headers["content-range"], `bytes ${start}-${end}/${content.length}`);
+    assert.equal(partial.headers["content-length"], String(end - start + 1));
+    assert.equal(partial.headers.etag, full.headers.etag);
+    assert.deepEqual(partial.body, content.subarray(start, end + 1));
+  }
+  for (const validator of ['"old-version"', `W/${full.headers.etag}`, "Wed, 01 Jan 2020 00:00:00 GMT"]) {
+    const fallback = await request(url, { Range: "bytes=0-31", "If-Range": validator });
+    assert.equal(fallback.status, 200);
+    assert.deepEqual(fallback.body, content);
+  }
+  for (const range of [`bytes=${content.length}-`, "bytes=-0"]) {
+    const missing = await request(url, { Range: range });
+    assert.equal(missing.status, 416);
+    assert.equal(missing.headers["content-range"], `bytes */${content.length}`);
+    assert.equal(missing.headers["cache-control"], "no-store");
+    assert.equal(missing.body.length, 0);
+  }
+  for (const range of ["bytes=10-5", "bytes=bad", "bytes=0-1,4-5", "bytes=", "bytes=9007199254740993-"]) {
+    assert.equal((await request(url, { Range: range })).status, 200);
+  }
+  const head = await request(url, { Range: "bytes=0-31" }, "HEAD");
+  assert.equal(head.status, 200);
+  assert.equal(head.headers["content-length"], String(content.length));
+  assert.equal(head.body.length, 0);
+  const unchanged = await request(url, { Range: "bytes=0-31", "If-None-Match": full.headers.etag });
+  assert.equal(unchanged.status, 304);
+  assert.equal(unchanged.body.length, 0);
+});
+
+test("every sound from the cache-error report supports media ranges in development and production", async t => {
+  for (const production of [false, true]) {
+    const request = await listen(createServer({ production }), t);
+    for (const sound of ["boat_horn", "whalebreath", "splash3", "splash4", "glass_shine", "glass_wipe_2", "ambience"]) {
+      const result = await request(`/assets/sounds/${sound}.mp3?bb-audio=2`, { Range: "bytes=0-15" });
+      const content = await fs.readFile(path.join(__dirname, `../game/assets/sounds/${sound}.mp3`));
+      assert.equal(result.status, 206, sound);
+      assert.deepEqual(result.body, content.subarray(0, 16));
+      assert.equal(result.headers["content-type"], "audio/mpeg");
+      if (!production) assert.equal(result.headers["cache-control"], "no-store");
+    }
+  }
+});
+
 test("production routes preserve fresh HTML, binary assets, errors, redirects and path protection", async t => {
   const request = await listen(createServer({ production: true }), t);
   const html = await request("/play", { "Accept-Encoding": "br" });

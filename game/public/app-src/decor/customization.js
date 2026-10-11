@@ -3035,14 +3035,10 @@ function openDecorSettings(placedId) {
     return;
   }
 
-  if (isCaveDecorKey(item.decorKey) && !hasPlacedCaveSettings(item)) {
-    item.caveSettings = getDecorDefaultCaveSettings(item.decorKey);
-    saveState();
-  }
-
   runtime.customDecorSettingsDecorId = item.id;
   runtime.bubblerSettingsDecorId = null;
   runtime.decorSettingsCaveTab = "entries";
+  runtime.decorSettingsShowCaveBackground = true;
   openUtilityOverlay("decor-settings", { clearPrimaryToolModes: false });
 }
 
@@ -3320,6 +3316,11 @@ function sanitizeCaveLocalPoint(entry, fallback = CAVE_SETTINGS_DEFAULT_ENTRY) {
   };
 }
 
+function sanitizeCaveEntranceSize(value, fallback = 0.2) {
+  const numeric = Number(value);
+  return clamp(Number.isFinite(numeric) && numeric > 0 ? numeric : fallback, 0.02, 1);
+}
+
 function normalizeCaveSettingsIdList(value) {
   const rawValues = Array.isArray(value)
     ? value
@@ -3349,6 +3350,10 @@ function sanitizePlacedCaveSettings(settings = null) {
         ? sourceEntry.id.trim()
         : `entry-${index + 1}`,
       side: normalizeCaveEntrySide(sourceEntry?.side ?? sourceEntry?.entrySide),
+      ...(Number(sourceEntry?.width) > 0 && Number(sourceEntry?.height) > 0 ? {
+        width: sanitizeCaveEntranceSize(sourceEntry.width),
+        height: sanitizeCaveEntranceSize(sourceEntry.height)
+      } : {}),
       ...sanitizeCaveLocalPoint(sourceEntry, fallback)
     };
   });
@@ -3448,10 +3453,27 @@ function getPlacedCaveSettings(item) {
     return null;
   }
 
-  const source = item.caveSettings && typeof item.caveSettings === "object"
-    ? item.caveSettings
-    : getAuthoredDecorCaveSettings(item.decorKey);
-  return source ? sanitizePlacedCaveSettings(source) : null;
+  const authored = getAuthoredDecorCaveSettings(item.decorKey);
+  const source = item.caveSettings && typeof item.caveSettings === "object" ? item.caveSettings : authored;
+  if (!source) return null;
+  const settings = sanitizePlacedCaveSettings(source);
+  if (authored && JSON.stringify({ ...settings, activeEntryIndex: 0, activeSeatIndex: 0 }) === JSON.stringify(sanitizePlacedCaveSettings())) {
+    return sanitizePlacedCaveSettings(authored);
+  }
+  const decor = runtime.decorMap.get(item.decorKey) || runtime.decorMeta[item.decorKey];
+  const defaults = authored?.entries || decor?.caveBehavior?.portals?.map((portal) => ({
+    id: portal.id, x: portal.mouthX, y: portal.mouthY, width: portal.entranceWidth, height: portal.entranceHeight
+  })) || [];
+  for (const entry of settings.entries) {
+    if (entry.width > 0 && entry.height > 0) continue;
+    const match = defaults.find((candidate) => candidate.id === entry.id)
+      || defaults.reduce((best, candidate) => Math.hypot(candidate.x - entry.x, candidate.y - entry.y) < Math.hypot((best?.x ?? Infinity) - entry.x, (best?.y ?? Infinity) - entry.y) ? candidate : best, null);
+    if (match?.width > 0 && match?.height > 0) {
+      entry.width = match.width;
+      entry.height = match.height;
+    }
+  }
+  return settings;
 }
 
 function ensurePlacedCaveSettings(item) {
@@ -3459,8 +3481,44 @@ function ensurePlacedCaveSettings(item) {
     return null;
   }
 
-  item.caveSettings = sanitizePlacedCaveSettings(item.caveSettings || getDecorDefaultCaveSettings(item.decorKey));
+  item.caveSettings = getCaveEditorSettings(item);
   return item.caveSettings;
+}
+
+function getCaveEditorSettings(item) {
+  if (hasPlacedCaveSettings(item)) {
+    const settings = getPlacedCaveSettings(item);
+    for (const entry of settings.entries) {
+      entry.width = sanitizeCaveEntranceSize(entry.width);
+      entry.height = sanitizeCaveEntranceSize(entry.height);
+    }
+    return settings;
+  }
+  const bounds = getPlacedDecorBounds(item);
+  const triggers = getCaveTriggerRegions(item);
+  const seats = getCaveSeatRegions(item);
+  if (!bounds || !triggers.length || !seats.length) {
+    return getPlacedCaveSettings(item) || getDecorDefaultCaveSettings(item.decorKey);
+  }
+  const width = Math.max(1, bounds.right - bounds.left);
+  const height = Math.max(1, bounds.bottom - bounds.top);
+  const localPoint = (region) => ({
+    x: resolveDecorHorizontalUnit(item, (region.xNorm * TANK_WIDTH - bounds.left) / width),
+    y: resolveDecorVerticalUnit(item, (region.yNorm * TANK_HEIGHT - bounds.top) / height)
+  });
+  const profile = getCaveBehaviorProfileForItem(item);
+  return sanitizePlacedCaveSettings({
+    entries: triggers.map((region) => ({
+      id: region.id, ...localPoint(region),
+      side: profile.portals?.find((portal) => portal.id === region.id)?.side || "front",
+      width: sanitizeCaveEntranceSize(region.widthPx / width),
+      height: sanitizeCaveEntranceSize(region.heightPx / height)
+    })),
+    seats: seats.map((region) => ({
+      id: region.id, ...localPoint(region), facing: region.facing,
+      entryIds: getCaveSeatPortalIds(region)
+    }))
+  });
 }
 
 function getDecorDefaultCaveSettings(decorKey = "") {
@@ -3930,10 +3988,10 @@ function buildCaveBehaviorProfileFromPlacedSettings(item) {
     return null;
   }
 
-  return buildCaveBehaviorProfileFromSettings(getPlacedCaveSettings(item));
+  return buildCaveBehaviorProfileFromSettings(getPlacedCaveSettings(item), getCaveBehaviorProfile(item.decorKey));
 }
 
-function buildCaveBehaviorProfileFromSettings(settingsValue) {
+function buildCaveBehaviorProfileFromSettings(settingsValue, authoredProfile = null) {
   const settings = sanitizePlacedCaveSettings(settingsValue);
   const entries = Array.isArray(settings.entries) && settings.entries.length
     ? settings.entries
@@ -3945,17 +4003,26 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
   const portalsByEntryId = new Map();
   const portals = entries.flatMap((entry, index) => {
     const entryId = entry.id || `user-entry-${index + 1}`;
-    const entryPortals = getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => ({
-      id: `${entryId}-${outsideLayer === 5 ? "back" : "front"}`,
-      approachX: entry.x,
-      approachY: clamp(entry.y + 0.12, 0.02, 0.98),
-      mouthX: entry.x,
-      mouthY: entry.y,
-      outsideLayer,
-      insideLayer: 4,
-      side: outsideLayer === 5 ? "back" : "front",
-      path: []
-    }));
+    const entryPortals = getCaveEntryOutsideLayers(entry.side).map((outsideLayer) => {
+      const id = `${entryId}-${outsideLayer === 5 ? "back" : "front"}`;
+      const authoredPortal = authoredProfile?.portals?.find((portal) => portal.id === id);
+      // Keep authored approach directions (including anemones approached from above)
+      // while allowing the mouth to move with its edited entrance.
+      const approachOffsetX = authoredPortal ? authoredPortal.approachX - authoredPortal.mouthX : 0;
+      const approachOffsetY = authoredPortal ? authoredPortal.approachY - authoredPortal.mouthY : 0.12;
+      return {
+        id,
+        approachX: clamp(entry.x + approachOffsetX, 0.02, 0.98),
+        approachY: clamp(entry.y + approachOffsetY, 0.02, 0.98),
+        mouthX: entry.x,
+        mouthY: entry.y,
+        ...(entry.width && entry.height ? { entranceWidth: entry.width, entranceHeight: entry.height } : {}),
+        outsideLayer,
+        insideLayer: 4,
+        side: outsideLayer === 5 ? "back" : "front",
+        path: []
+      };
+    });
     portalsByEntryId.set(entryId, entryPortals.map((portal) => portal.id));
     return entryPortals;
   });
@@ -4009,8 +4076,8 @@ function buildCaveBehaviorProfileFromSettings(settingsValue) {
       portalIds: resolveSeatPortalIds(seat)
     })),
     interiorZones: [],
-    lingerMinMs: DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMinMs,
-    lingerMaxMs: DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMaxMs,
+    lingerMinMs: authoredProfile?.lingerMinMs ?? DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMinMs,
+    lingerMaxMs: authoredProfile?.lingerMaxMs ?? DEFAULT_CAVE_BEHAVIOR_PROFILE.lingerMaxMs,
     insideLayer: 4
   };
 }
@@ -4236,6 +4303,7 @@ function setDecorGroupScale(item, nextScale, save = false) {
   if (groupItems.length <= 1) {
     return null;
   }
+  if (!canEditOccupiedCaveGeometry(groupItems)) return Number(item.scale);
 
   const currentScale = Number(item.scale) || getDecorScaleDefault(item.decorKey);
   const clampedScale = clamp(Number(nextScale) || currentScale, DECOR_SCALE_MIN, DECOR_SCALE_MAX);
@@ -4316,6 +4384,7 @@ function updateSelectedDecorSetting(setting, value) {
     return;
   }
 
+  if (!canEditOccupiedCaveGeometry([item, ...getDecorGroupTransformItems(item)])) return;
   if (setting === "depthZ") {
     const targetDepth = getTankDepthZFromDisplayPercent(value, getPlacedDecorDepthZ(item));
     // Ungrouped decor has no group-member collection. It must still be a
@@ -4443,6 +4512,10 @@ function getCaveSettingControlValue(setting, settings, seatIndex = null, entryIn
       return entry.x;
     case "entryY":
       return entry.y;
+    case "entryWidth":
+      return sanitizeCaveEntranceSize(entry.width);
+    case "entryHeight":
+      return sanitizeCaveEntranceSize(entry.height);
     case "entrySide":
       return normalizeCaveEntrySide(entry.side);
     case "entryCount":
@@ -4490,6 +4563,8 @@ function updateCaveSettingsPreviewMarkers(settings) {
     marker.hidden = false;
     marker.style.left = `${(entry.x * 100).toFixed(2)}%`;
     marker.style.top = `${(entry.y * 100).toFixed(2)}%`;
+    marker.style.width = `${sanitizeCaveEntranceSize(entry.width) * 100}%`;
+    marker.style.height = `${sanitizeCaveEntranceSize(entry.height) * 100}%`;
     marker.classList.toggle("is-active", index === resolved.activeEntryIndex);
   }
 
@@ -4527,9 +4602,18 @@ function updateCaveSettingsControls(item = getEditableCaveSettingsTarget()?.item
     return;
   }
 
-  const settings = getPlacedCaveSettings(item);
+  const settings = getCaveEditorSettings(item);
   if (!settings) {
     return;
+  }
+
+  for (const label of dom.utilityOverlayBody.querySelectorAll("[data-cave-entry-size-category]")) {
+    const entry = settings.entries[Number(label.dataset.caveEntrySizeCategory)];
+    if (entry) label.textContent = getCaveEntranceSizeCategory(item, {
+      mouthX: entry.x, mouthY: entry.y,
+      entranceWidth: sanitizeCaveEntranceSize(entry.width),
+      entranceHeight: sanitizeCaveEntranceSize(entry.height)
+    });
   }
 
   const labels = dom.utilityOverlayBody.querySelectorAll("[data-cave-setting-value]");
@@ -4544,6 +4628,8 @@ function updateCaveSettingsControls(item = getEditableCaveSettingsTarget()?.item
       label.textContent = `Entry ${Number(value) + 1}`;
     } else if (setting === "activeSeatIndex") {
       label.textContent = `Seat ${Number(value) + 1}`;
+    } else if (setting === "entryWidth" || setting === "entryHeight") {
+      label.textContent = `${Math.round(Number(value) * 100)}%`;
     } else if (Number.isFinite(Number(value))) {
       label.textContent = formatCaveSettingPercent(value);
     }
@@ -4623,6 +4709,19 @@ function clearCaveBehaviorForDecor(decorId) {
   }
 }
 
+function canEditOccupiedCaveGeometry(items) {
+  const ids = new Set(items.filter(Boolean).filter((item) => isCaveDecorKey(item.decorKey)).map((item) => item.id));
+  const occupants = state.fish.filter((fish) => fish.caveState && ids.has(fish.caveDecorId));
+  if (!occupants.length) {
+    // Capture entrance dimensions before a transform so they scale with the artwork.
+    for (const item of items.filter(Boolean)) if (ids.has(item.id)) ensurePlacedCaveSettings(item);
+    return true;
+  }
+  for (const fish of occupants) abortFishCaveBehavior(fish, Date.now(), false);
+  showToast("Fish are leaving this cave. Edit it once it is empty.");
+  return false;
+}
+
 function getEditableCaveSettingsTarget() {
   if (runtime.utilityOverlayMode === "custom-hide-create") {
     const item = getPendingCustomHidePreviewItem();
@@ -4630,7 +4729,7 @@ function getEditableCaveSettingsTarget() {
   }
 
   const item = getDecorSettingsTarget();
-  const settings = ensurePlacedCaveSettings(item);
+  const settings = item && isCaveDecorKey(item.decorKey) ? getCaveEditorSettings(item) : null;
   return item && settings ? { item, settings, pending: null } : null;
 }
 
@@ -4641,6 +4740,8 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   }
   const { item, pending } = target;
   const settings = target.settings;
+
+  if (!pending && (!hasPlacedCaveSettings(item) || !["activeEntryIndex", "activeSeatIndex"].includes(setting)) && !canEditOccupiedCaveGeometry([item])) return;
 
   const numericValue = Number(value);
   const rawValue = value;
@@ -4663,6 +4764,15 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   let needsRender = false;
 
   switch (setting) {
+    case "entryWidth":
+    case "entryHeight":
+      if (!settings.entries[entryIndex]) return;
+      settings.entries[entryIndex].width = sanitizeCaveEntranceSize(settings.entries[entryIndex].width);
+      settings.entries[entryIndex].height = sanitizeCaveEntranceSize(settings.entries[entryIndex].height);
+      settings.entries[entryIndex][setting === "entryWidth" ? "width" : "height"] = sanitizeCaveEntranceSize(numericValue);
+      settings.activeEntryIndex = entryIndex;
+      runtime.caveSettingsActivePointType = "entry";
+      break;
     case "entryX":
       if (!settings.entries[entryIndex]) {
         return;
@@ -4693,6 +4803,9 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
         CAVE_SETTINGS_MIN_ENTRIES,
         CAVE_SETTINGS_MAX_ENTRIES
       );
+      while (settings.entries.length < settings.entryCount) {
+        settings.entries.push({ ...buildDefaultCaveEntryPoint(settings.entries.length, settings.entryCount), width: 0.2, height: 0.2 });
+      }
       runtime.caveSettingsActivePointType = "entry";
       needsRender = true;
       break;
@@ -4752,7 +4865,7 @@ function updateSelectedCaveSetting(setting, value, seatIndexValue = null, entryI
   item.caveSettings = sanitizePlacedCaveSettings(settings);
   if (pending) {
     pending.caveSettings = item.caveSettings;
-  } else {
+  } else if (!["activeEntryIndex", "activeSeatIndex"].includes(setting)) {
     clearCaveBehaviorForDecor(item.id);
     saveState();
   }
@@ -4788,6 +4901,7 @@ function removeSelectedCavePoint(kind = "entry", indexValue = 0) {
   if (!target?.item || !target.settings) {
     return false;
   }
+  if (!target.pending && !canEditOccupiedCaveGeometry([target.item])) return false;
 
   const isSeat = String(kind) === "seat";
   const listKey = isSeat ? "seats" : "entries";
@@ -4856,8 +4970,13 @@ function applyCaveSettingsPreviewPoint(kind, indexValue, point, options = {}) {
     return false;
   }
 
-  target.x = sanitizeCaveLocalCoordinate(point.x, target.x);
-  target.y = sanitizeCaveLocalCoordinate(point.y, target.y);
+  if (kindId === "entry" && options.resize) {
+    target.width = sanitizeCaveEntranceSize(Math.abs(point.x - target.x) * 2);
+    target.height = sanitizeCaveEntranceSize(Math.abs(point.y - target.y) * 2);
+  } else {
+    target.x = sanitizeCaveLocalCoordinate(point.x, target.x);
+    target.y = sanitizeCaveLocalCoordinate(point.y, target.y);
+  }
   if (kindId === "entry") {
     settings.activeEntryIndex = index;
   } else {
@@ -4878,6 +4997,8 @@ function applyCaveSettingsPreviewPoint(kind, indexValue, point, options = {}) {
 function getCaveSettingsPreviewPointerTarget(event) {
   const target = event.target instanceof Element ? event.target : null;
   const settings = getEditableCaveSettingsTarget()?.settings || sanitizePlacedCaveSettings();
+  const resizeHandle = target?.closest("[data-cave-entry-resize]");
+  if (resizeHandle) return { kind: "entry", index: Number(resizeHandle.dataset.caveEntryResize), resize: true };
   const entryMarker = target?.closest("[data-cave-settings-entry-marker]");
   if (entryMarker) {
     return {
@@ -4915,7 +5036,7 @@ function finishCaveSettingsPreviewDrag(event) {
 
   const point = event ? getCaveSettingsPreviewLocalPoint(event) : null;
   if (point) {
-    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: true });
+    applyCaveSettingsPreviewPoint(drag.kind, drag.index, point, { commit: true, resize: drag.resize });
   } else {
     const editableTarget = getEditableCaveSettingsTarget();
     if (editableTarget?.item && !editableTarget.pending) {
@@ -5431,6 +5552,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
   const motion = getDecorMotion(item, now);
   const bubblerMeta = hasBubblerPreview ? getPlacedDecorBubblerMeta(item, decor) : null;
   const bgImage = decor.bgPath ? runtime.images.get(decor.bgPath) : null;
+  const showBackground = !hasCavePreview || runtime.decorSettingsShowCaveBackground !== false;
   const caveBgHeadroom = hasCavePreview && bgImage
     ? Math.max(0, width * (bgImage.height / Math.max(1, bgImage.width)) - height)
     : 0;
@@ -5455,8 +5577,12 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     : 0;
   const horizontalPad = Math.ceil(Math.max(14, swayAmplitude + bobPad, bubbleSidePad));
   const verticalPad = Math.ceil(Math.max(12, bobPad + 8, bubbleHeadroom + 12, caveBgHeadroom + 12));
-  const canvasCssWidth = Math.max(1, Math.ceil(width + horizontalPad * 2));
-  const canvasCssHeight = Math.max(1, Math.ceil(height + verticalPad * 2));
+  const stage = frame.parentElement;
+  const previewScale = Math.min(1,
+    Math.max(1, (stage?.clientWidth || width) - 24) / (width + horizontalPad * 2),
+    Math.max(1, (stage?.clientHeight || height) - 24) / (height + verticalPad * 2));
+  const canvasCssWidth = Math.max(1, Math.ceil((width + horizontalPad * 2) * previewScale));
+  const canvasCssHeight = Math.max(1, Math.ceil((height + verticalPad * 2) * previewScale));
   const dpr = Math.max(1, window.devicePixelRatio || 1);
   const nextWidth = Math.max(1, Math.round(canvasCssWidth * dpr));
   const nextHeight = Math.max(1, Math.round(canvasCssHeight * dpr));
@@ -5465,10 +5591,10 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     canvas.width = nextWidth;
     canvas.height = nextHeight;
   }
-  frame.style.width = `${width}px`;
-  frame.style.height = `${height}px`;
-  canvas.style.left = `${-horizontalPad}px`;
-  canvas.style.top = `${-verticalPad}px`;
+  frame.style.width = `${width * previewScale}px`;
+  frame.style.height = `${height * previewScale}px`;
+  canvas.style.left = `${-horizontalPad * previewScale}px`;
+  canvas.style.top = `${-verticalPad * previewScale}px`;
   canvas.style.width = `${canvasCssWidth}px`;
   canvas.style.height = `${canvasCssHeight}px`;
 
@@ -5477,14 +5603,14 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
     return;
   }
 
-  context.setTransform(dpr, 0, 0, dpr, 0, 0);
-  context.clearRect(0, 0, canvasCssWidth, canvasCssHeight);
+  context.setTransform(dpr * previewScale, 0, 0, dpr * previewScale, 0, 0);
+  context.clearRect(0, 0, canvasCssWidth / previewScale, canvasCssHeight / previewScale);
   context.imageSmoothingEnabled = true;
   context.imageSmoothingQuality = "high";
   const drawX = horizontalPad;
   const drawY = verticalPad;
 
-  if ((hasCavePreview || hasBubblerPreview) && hasDecorCaveColorLayers(decor) && bgImage) {
+  if (showBackground && (hasCavePreview || hasBubblerPreview) && hasDecorCaveColorLayers(decor) && bgImage) {
     drawCaveBackgroundLayerToContext(context, item, decor, now, {
       drawX,
       drawY,
@@ -5492,7 +5618,7 @@ function renderDecorSettingsMotionPreview(now = Date.now()) {
       baseHeight: height,
       motion
     });
-  } else if ((hasBubblerPreview || hasCavePreview) && bgImage) {
+  } else if (showBackground && (hasBubblerPreview || hasCavePreview) && bgImage) {
     const bgHeight = width * (bgImage.height / bgImage.width);
     drawDecorImageLayerToContext(context, bgImage, drawX, drawY + (height - bgHeight), width, bgHeight, item, now, motion);
   }

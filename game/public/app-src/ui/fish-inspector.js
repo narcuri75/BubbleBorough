@@ -19,27 +19,141 @@ function closeFishInspectPreview() {
   runtime.fishInspectPreviewStartedAt = 0;
   runtime.fishInspectView = "animated";
   runtime.fishInspectPausedAt = 0;
+  runtime.fishInspectLastReadoutAt = 0;
+}
+
+function renderFishInspectIcon(kind) {
+  const paths = {
+    details: '<path d="M7 3h7l4 4v14H6V3h1Zm7 0v5h4M9 12h6m-6 4h6"/>',
+    care: '<path d="M5 3v6m3-6v6m-6-6v6a3 3 0 0 0 6 0m-3 3v9m13-18c-3 3-4 6-4 9h4m0-9v18"/>',
+    name: '<path d="m3 3 9 0 9 9-9 9-9-9V3Z"/><circle cx="8" cy="8" r="1"/>',
+    age: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4m8-4v4M4 11h16m-11 4h1m4 0h1m-6 3h1"/>',
+    water: '<path d="M12 3s-7 8-7 12a7 7 0 0 0 14 0c0-4-7-12-7-12Z"/>',
+    genetics: '<path d="M7 3c0 9 10 9 10 18M17 3c0 9-10 9-10 18M8 5h8m-7 4h6m-6 6h6m-7 4h8"/>',
+    food: '<path d="M3 12h18a9 9 0 0 1-18 0Zm3-3h12M10 5h4m-2-2v2"/>',
+    behavior: '<circle cx="9" cy="7" r="3"/><circle cx="18" cy="8" r="2"/><path d="M3 21v-4a6 6 0 0 1 12 0v4H3Zm13-7a4 4 0 0 1 6 3v4h-4"/>',
+    size: '<path d="M14 3h7v7m0-7-7 7M10 21H3v-7m0 7 7-7"/>'
+  };
+  return `<svg class="fish-inspect-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${paths[kind] || paths.details}</svg>`;
+}
+
+function getFishInspectPresentation(managed, wallNow = Date.now()) {
+  const { fish, inStorage } = managed;
+  const species = getSpeciesForFish(fish);
+  const baseSpecies = getBaseSpeciesForFish(fish) || species;
+  const now = inStorage ? getFishStorageSimulationNow(fish, wallNow) : getPeacefulModeSimulationNow(wallNow);
+  const dead = isFishDead(fish);
+  const peaceful = isPeacefulModeEnabled();
+  const maxHealth = getFishMaxHealthUnits(fish);
+  const health = peaceful && !dead ? maxHealth : clamp(Number(fish.healthUnits) || 0, 0, maxHealth);
+  const snapshot = dead || inStorage ? null : getFishNeedsSnapshot(fish, now);
+  const mood = dead ? "Deceased" : inStorage ? "Stored" : snapshot.mood.label;
+  const moodTone = snapshot ? getFishMoodPresentation(mood).tone : "neutral";
+  const concerns = dead ? [] : getFishCareConcerns(fish, now);
+  const socialConcern = mood === "Lonely" ? "Needs companions" : "";
+  const condition = dead ? "Deceased" : concerns.length
+    ? [getFishCareConditionText(fish, now), socialConcern].filter(Boolean).join(" · ")
+    : socialConcern || getFishCareConditionText(fish, now);
+  const progression = getFishManagementProgressionPresentation(fish, baseSpecies);
+  const variant = getFishAppearanceVariantKey(fish.appearanceVariantKey || fish.appearanceAssetPath || "");
+  const foods = getFishAcceptedFoodKeys(fish);
+  const food = isDetritusFish(fish) ? "Grime + waste · optional algae wafers"
+    : isMealFreeFish(fish) ? "No routine food"
+    : foods.map(key => key === "basic" ? "Basic Food / Fish Flakes" : getFoodMeta(key)?.name || key).join(", ") || "No routine food";
+  // Shop placeholders describe unconfigured products, not an owned custom fish.
+  const behaviorSpecies = { ...species, id: species?.customAsset ? "" : species?.behaviorProfileSpeciesId || species?.id };
+  const socialBehavior = { school: "Schooling", shoal: "Shoaling", pair: "Pair bonding", pod: "Pod social", host: "Host bonding", solitary: "Solitary" }[getFishSocialProfile(fish).socialMode];
+  const behavior = socialBehavior || formatFishShopBehavior(behaviorSpecies);
+  const profileName = fish.behaviorSpeciesId
+    ? getFishInspectorBehaviorProfiles().find(profile => profile.id === fish.behaviorSpeciesId)?.name
+    : "";
+  const dailyNote = dead ? "Not applicable" : inStorage ? "Stored" : peaceful ? "Peaceful mode" : isMealFreeFish(fish) ? "No routine meals" : "";
+  const slots = getDailyMealIndicatorSlots(wallNow);
+  const meals = dailyNote ? null : getFishDailyMealIndicatorState(fish, wallNow, getFishSimulationTank(fish));
+  return {
+    fish, species, baseSpecies, now, dead, inStorage, health, maxHealth, mood, moodTone, progression,
+    condition,
+    conditionTone: dead ? "neutral" : concerns.length || socialConcern ? "warn" : "good",
+    activity: dead ? "" : inStorage ? "Stored safely" : snapshot.activity,
+    facts: [
+      ["age", "Age", formatFishBiologicalAge(fish, now)],
+      ["food", "Food", food],
+      ["water", "Water Type", getFishVariantWaterType(fish) === "saltwater" ? "Saltwater" : "Freshwater"],
+      ["behavior", "Behavior", profileName ? `${behavior} (${profileName})` : behavior],
+      ["genetics", "Genetics", formatFishShopGenetics(baseSpecies, variant)],
+      ["size", "Size", `${Math.round((Number(fish.scale) || DEFAULT_FISH_SCALE) * 100)}%`]
+    ],
+    dailyNote,
+    mealSummary: meals ? `${Number(meals.am) + Number(meals.pm)}/2 meals recorded` : dailyNote,
+    mealSlots: slots.map((slot, index) => {
+      const eaten = meals && (index === 0 ? meals.am : meals.pm);
+      const label = dailyNote || (eaten ? "Eaten" : wallNow < slot.start ? "Upcoming" : "Not yet eaten");
+      return { period: slot.label, label, eaten: Boolean(eaten) };
+    })
+  };
+}
+
+function getFishInspectReadoutMarkup(managed, wallNow = Date.now()) {
+  const p = getFishInspectPresentation(managed, wallNow);
+  const { fish, progression } = p;
+  return {
+    summary: `<div class="fish-inspect-identity"><div><span class="fish-inspect-species">${escapeHtml(getFishDisplaySpeciesName(fish, p.species))}</span><h2>${escapeHtml(fish.name || "Fish")}</h2></div>${progression ? `<span class="fish-inspect-level-badge">${escapeHtml(progression.levelLabel)}</span>` : ""}</div>
+      <div class="fish-inspect-status-row"><div class="fish-inspect-health"><div class="hearts" aria-hidden="true">${renderHearts(p.health, p.maxHealth)}</div><strong aria-label="${p.health / 2} of ${p.maxHealth / 2} hearts">${p.health / 2}/${p.maxHealth / 2}</strong></div><span class="fish-inspect-mood" data-mood-tone="${escapeHtml(p.moodTone)}">Mood <strong>${escapeHtml(p.mood)}</strong></span></div>
+      <p class="fish-inspect-condition" data-tone="${p.conditionTone}"><span aria-hidden="true">${p.conditionTone === "good" ? "✓" : p.conditionTone === "warn" ? "!" : "—"}</span>${escapeHtml(p.condition)}</p>
+      ${p.activity ? `<p class="fish-inspect-activity">${escapeHtml(p.activity)}</p>` : ""}`,
+    progression: progression ? `<div class="fish-inspect-card-heading"><h3>Care Level ${progression.careLevel}</h3><span>${escapeHtml(progression.xpLabel || "Maximum Care Level")}</span></div>${progression.isMaxLevel ? "" : `<div class="fish-care-xp-track fish-inspect-xp-track" role="progressbar" aria-label="Care XP toward Level ${progression.careLevel + 1}" aria-valuemin="0" aria-valuemax="${progression.levelXpSpan}" aria-valuenow="${progression.levelXp}"><span style="width:${Math.round(progression.xpProgress * 100)}%"></span></div>`}` : "",
+    facts: `<h3>${renderFishInspectIcon("details")}Details</h3><dl class="fish-inspect-facts">${p.facts.map(([key, label, value]) => `<div>${renderFishInspectIcon(key)}<dt>${label}</dt><dd${key === "size" ? ' data-fish-inspect-fact-size' : ""}>${escapeHtml(value)}</dd></div>`).join("")}</dl>`,
+    daily: `<div class="fish-inspect-card-heading"><h3>${renderFishInspectIcon("care")}Daily Care</h3><span class="fish-inspect-meal-summary">${escapeHtml(p.mealSummary)}</span></div><div class="fish-inspect-meals">${p.mealSlots.map(slot => `<div class="fish-inspect-meal${slot.eaten ? " is-eaten" : ""}"><span class="fish-inspect-meal-symbol" aria-hidden="true">${slot.eaten ? "✓" : "◷"}</span><div><strong>${escapeHtml(slot.period)}</strong><span>${escapeHtml(slot.label)}</span></div></div>`).join("")}</div>`,
+    actions: `${!p.dead && p.baseSpecies && isFishSpeciesShopUnlocked(p.baseSpecies) ? '<button class="small-button alt" type="button" data-fish-inspect-action="buy">Buy Another</button><button class="small-button warn" type="button" data-fish-inspect-action="sell">Rehome</button>' : ""}
+      ${!p.dead ? `<button class="small-button" type="button" data-fish-inspect-action="store">${p.inStorage ? "Place in Tank" : "Put Away"}</button>` : '<button class="small-button warn" type="button" data-fish-inspect-action="dispose">Dispose</button>'}`
+  };
+}
+
+function refreshFishInspectReadouts(now = Date.now(), readouts = null) {
+  if (!runtime.utilityOverlayOpen || runtime.utilityOverlayMode !== "fish-inspect") return false;
+  const root = dom.utilityOverlayBody?.querySelector("[data-fish-inspect-key]");
+  const key = `${runtime.fishInspectFishId}:${runtime.fishInspectBodyVersion || 0}`;
+  if (!root || root.dataset.fishInspectKey !== key) return false;
+  if (!readouts && now >= runtime.fishInspectLastReadoutAt && now - runtime.fishInspectLastReadoutAt < 500) return true;
+  const managed = getFishInspectorManagedTarget();
+  if (!managed) {
+    if (!readouts) renderUtilityOverlay();
+    return false;
+  }
+  runtime.fishInspectLastReadoutAt = now;
+  const markup = readouts || getFishInspectReadoutMarkup(managed, now);
+  for (const [name, html] of Object.entries(markup)) {
+    const section = root.querySelector(`[data-fish-inspect-section="${name}"]`);
+    if (!section) continue;
+    // Cache on the actual node so reopening a fish cannot reuse a stale global cache.
+    if (section.fishInspectMarkup !== html) {
+      section.innerHTML = html;
+      section.fishInspectMarkup = html;
+    }
+    section.hidden = !html;
+  }
+  const { fish } = managed;
+  const input = root.querySelector("[data-fish-inspect-name]");
+  const draft = runtime.fishInspectNameDraft ?? fish.name;
+  if (input && input.value !== draft) input.value = draft;
+  const view = runtime.fishInspectView || "animated";
+  for (const button of root.querySelectorAll("[data-fish-inspect-view]")) button.setAttribute("aria-pressed", String(button.dataset.fishInspectView === view));
+  root.querySelector("[data-fish-inspect-preview]")?.setAttribute("aria-label", `${view === "animated" ? "Animated" : view === "left" ? "Left" : "Right"} side view of ${fish.name || "this fish"}`);
+  setTextIfChanged(dom.utilityOverlayTitle, fish.name || "Fish");
+  return true;
 }
 
 function renderFishInspectUtilityOverlay() {
   const managed = getFishInspectorManagedTarget();
   if (!managed) return { kicker: "Fish", title: "Inspect", body: '<div class="empty-state">This fish is no longer available.</div>', footer: "" };
-  const { fish, inStorage } = managed;
-  const species = getSpeciesForFish(fish);
-  const baseSpecies = getBaseSpeciesForFish(fish);
-  const now = inStorage ? getFishStorageSimulationNow(fish, Date.now()) : getPeacefulModeSimulationNow(Date.now());
-  const dead = isFishDead(fish);
-  const color = getFishColorSetting(fish);
-  const scale = Math.round((Number(fish.scale) || DEFAULT_FISH_SCALE) * 100);
-  const behaviorOptions = `<option value="">Original (${escapeHtml(baseSpecies?.name || "Fish")})</option>`
-    + getFishInspectorBehaviorProfiles().map(profile => `<option value="${escapeHtml(profile.id)}"${profile.id === fish.behaviorSpeciesId ? " selected" : ""}>${escapeHtml(profile.name)}</option>`).join("");
-  const condition = dead ? "Deceased" : getFishCareConditionText(fish, now);
-  const health = isPeacefulModeEnabled() && !dead ? getFishMaxHealthUnits(fish) : fish.healthUnits;
+  const { fish } = managed;
+  const readouts = getFishInspectReadoutMarkup(managed);
   const view = runtime.fishInspectView || "animated";
   return {
     kicker: "Inspect",
     title: fish.name || "Fish",
-    body: `<div class="fish-inspect-layout">
+    fishInspectReadouts: readouts,
+    body: `<div class="fish-inspect-layout" data-fish-inspect-key="${escapeHtml(`${fish.id}:${runtime.fishInspectBodyVersion || 0}`)}">
       <section class="fish-inspect-preview-column" aria-label="Fish preview">
         <div class="fish-inspect-preview-stage"><canvas data-fish-inspect-preview aria-label="${view === "animated" ? "Animated" : view === "left" ? "Left" : "Right"} side view of ${escapeHtml(fish.name || "this fish")}"></canvas><span data-fish-inspect-preview-loading>Loading fish…</span></div>
         <div class="fish-inspect-views" role="group" aria-label="Fish inspection views">
@@ -48,18 +162,11 @@ function renderFishInspectUtilityOverlay() {
         </div>
       </section>
       <div class="fish-inspect-controls">
-        <div class="fish-inspect-details"><strong>${escapeHtml(getFishDisplaySpeciesName(fish, species))}</strong><div class="hearts">${renderHearts(health, getFishMaxHealthUnits(fish))}</div><span>${escapeHtml(condition)}</span><span>Age: ${escapeHtml(formatFishBiologicalAge(fish, now))}</span></div>
-        <div class="fish-inspect-name-row"><label>Name<input type="text" maxlength="20" value="${escapeHtml(runtime.fishInspectNameDraft ?? fish.name)}" data-fish-inspect-name /></label><button class="small-button alt" type="button" data-fish-inspect-action="random-name" aria-label="Randomize fish name">?</button><button class="small-button" type="button" data-fish-inspect-action="save-name">Save</button></div>
-        <label class="inspector-setting-row"><span>Size</span><input type="range" min="50" max="300" step="5" value="${scale}" data-fish-inspect-setting="size" /><strong data-fish-inspect-size>${scale}%</strong></label>
-        <label class="inspector-setting-row inspector-setting-row-select"><span>Behavior</span><select data-fish-inspect-setting="behavior">${behaviorOptions}</select></label>
-        <section class="fish-inspector-color-card"><div class="bubbler-color-row"><span>Color</span><strong data-fish-inspect-color-label>${escapeHtml(formatCaveColorChoiceLabel(color))}</strong></div>
-          <div class="bubbler-color-swatches fish-inspect-colors"><button class="small-button alt ${!color ? "is-selected" : ""}" type="button" data-fish-inspect-color="" aria-pressed="${!color}">Original</button><button class="small-button cave-color-rgb-tile ${isDecorRgbColorSetting(color) ? "is-selected" : ""}" type="button" data-fish-inspect-color="${DECOR_RGB_COLOR_SETTING}" aria-pressed="${isDecorRgbColorSetting(color)}">RGB</button><input type="color" value="${escapeHtml(normalizeHexColor(color) || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR)}" data-fish-inspect-setting="color" aria-label="Custom fish color" /></div>
-          <label class="cave-colorize-toggle"><input type="checkbox" data-fish-inspect-setting="colorize" ${getFishColorizeSetting(fish) ? "checked" : ""} /><span>Colorize</span></label>
-        </section>
-        <div class="fish-inspect-actions">
-          ${!dead && baseSpecies && isFishSpeciesShopUnlocked(baseSpecies) ? '<button class="small-button alt" type="button" data-fish-inspect-action="buy">Buy Another</button><button class="small-button warn" type="button" data-fish-inspect-action="sell">Rehome</button>' : ""}
-          ${!dead ? `<button class="small-button" type="button" data-fish-inspect-action="store">${inStorage ? "Place in Tank" : "Put Away"}</button>` : '<button class="small-button warn" type="button" data-fish-inspect-action="dispose">Dispose</button>'}
+        <div class="fish-inspect-card-scroll">
+        ${["summary", "progression", "facts", "daily"].map(section => `<section class="fish-inspect-card" data-fish-inspect-section="${section}"${!readouts[section] ? " hidden" : ""}>${readouts[section]}</section>`).join("")}
+        <section class="fish-inspect-card"><h3>${renderFishInspectIcon("name")}Name</h3><div class="fish-inspect-name-row"><label><span class="fish-inspect-input-label">Fish name</span><input type="text" maxlength="20" value="${escapeHtml(runtime.fishInspectNameDraft ?? fish.name)}" data-fish-inspect-name /></label><button class="small-button alt" type="button" data-fish-inspect-action="random-name" aria-label="Randomize fish name">?</button><button class="small-button" type="button" data-fish-inspect-action="save-name">Save</button></div></section>
         </div>
+        <div class="fish-inspect-actions" data-fish-inspect-section="actions">${readouts.actions}</div>
       </div>
     </div>`,
     footer: "",
@@ -82,11 +189,6 @@ function handleFishInspectClick(_ctx, target) {
     }
     runtime.fishInspectView = view;
     renderUtilityOverlay();
-    return true;
-  }
-  const colorButton = target.closest("button[data-fish-inspect-color]");
-  if (colorButton) {
-    updateInspectorFishSetting("color", colorButton.dataset.fishInspectColor);
     return true;
   }
   const button = target.closest("[data-fish-inspect-action]");
@@ -116,28 +218,13 @@ function handleFishInspectInput(_ctx, target) {
     runtime.fishInspectNameDraft = target.value;
     return true;
   }
-  const setting = target.dataset.fishInspectSetting;
-  if (!["size", "color"].includes(setting)) return false;
-  updateInspectorFishSetting(setting, target.value, { persist: false, refreshControls: false });
-  const fish = getFishInspectorManagedTarget()?.fish;
-  if (fish) {
-    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-size]"), `${Math.round(fish.scale * 100)}%`);
-    setTextIfChanged(dom.utilityOverlayBody.querySelector("[data-fish-inspect-color-label]"), formatCaveColorChoiceLabel(getFishColorSetting(fish)));
-  }
-  return true;
-}
-
-function handleFishInspectChange(_ctx, target) {
-  const setting = target.dataset.fishInspectSetting;
-  if (!setting) return false;
-  updateInspectorFishSetting(setting, setting === "colorize" ? target.checked : target.value, { forcePersist: true });
-  return true;
+  return false;
 }
 
 function handleFishInspectKeyDown(ctx, target, event) {
   if (!target.matches("[data-fish-inspect-name]") || event.key !== "Enter") return false;
   event.preventDefault();
-  return handleFishInspectClick(ctx, { closest: () => ({ dataset: { fishInspectAction: "save-name" } }) });
+  return handleFishInspectClick(ctx, { closest: selector => selector === "[data-fish-inspect-action]" ? { dataset: { fishInspectAction: "save-name" } } : null });
 }
 
 function getFishInspectLoopPose(fish, now, startedAt) {
@@ -271,42 +358,6 @@ function renderFishInspectPreview(now = Date.now()) {
   for (const thumbnail of dom.utilityOverlayBody.querySelectorAll?.("[data-fish-inspect-thumbnail]") || []) {
     drawPreview(thumbnail, thumbnail.dataset.fishInspectThumbnail, true);
   }
-}
-
-function adjustFishSize(fishId, direction) {
-  const managed = getManagedFishById(fishId);
-  if (!managed) {
-    return;
-  }
-
-  const { fish, inStorage } = managed;
-  const now = Date.now();
-  const nextScale = clamp(fish.scale + direction * SIZE_STEP, FISH_SCALE_MIN, FISH_SCALE_MAX);
-  if (Math.abs(nextScale - fish.scale) < 0.0001) {
-    return;
-  }
-
-  if (inStorage) {
-    fish.scale = nextScale;
-  } else {
-    preserveTankDirtinessThroughChange(now, () => {
-      fish.scale = nextScale;
-    });
-  }
-  saveState();
-  renderUi(now);
-}
-
-function saveFishSizeAsDefault(fishId) {
-  const managed = getManagedFishById(fishId);
-  if (!managed) {
-    return;
-  }
-
-  const { fish } = managed;
-  state.fishScaleDefaults[fish.speciesId] = clamp(fish.scale, FISH_SCALE_MIN, FISH_SCALE_MAX);
-  saveState();
-  renderUi(Date.now());
 }
 
 function openFishInspector(fishId, options = {}) {
@@ -578,234 +629,4 @@ function getFishInspectorBehaviorProfiles() {
     && !isCustomFishShopKey(species.id)
     && !isCustomFishAssetKey(species.id)
   ));
-}
-
-function renderFishInspectorBehaviorOptions(fish, baseSpecies) {
-  const profiles = getFishInspectorBehaviorProfiles();
-  const options = [
-    `<option value="">Original (${escapeHtml(baseSpecies?.name || "Fish")})</option>`,
-    ...profiles.map((profile) => `
-      <option value="${escapeHtml(profile.id)}">${escapeHtml(profile.name)}</option>
-    `)
-  ].join("");
-  setMarkupIfChanged("fish-inspector-behavior-options", dom.inspectorFishBehaviorSelect, options);
-  if (dom.inspectorFishBehaviorSelect) {
-    dom.inspectorFishBehaviorSelect.value = sanitizeFishBehaviorSpeciesId(fish?.behaviorSpeciesId, fish?.speciesId);
-  }
-}
-
-function setInspectorInputValue(input, value) {
-  if (input instanceof HTMLInputElement && document.activeElement !== input) {
-    input.value = String(value);
-  }
-}
-
-function renderFishInspectorColorControls(fish) {
-  if (!dom.inspectorFishColorSwatches) {
-    return;
-  }
-
-  const activeColor = getFishColorSetting(fish);
-  const activeCustomColor = normalizeHexColor(activeColor);
-  const originalSelected = !activeColor;
-  const rgbSelected = isDecorRgbColorSetting(activeColor);
-  const customSelected = Boolean(activeCustomColor);
-  const pickerColor = activeCustomColor || DEFAULT_CUSTOM_GRAVEL_LAYER_COLOR;
-  const originalTile = `
-    <button
-      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile ${originalSelected ? "is-selected" : ""}"
-      type="button"
-      data-inspector-fish-color=""
-      aria-pressed="${originalSelected}"
-      aria-label="Use original fish color"
-      title="Original color">
-      Original
-    </button>
-  `;
-  const rgbTile = `
-    <button
-      class="custom-gravel-color-swatch bubbler-color-swatch bubbler-color-default-tile cave-color-rgb-tile ${rgbSelected ? "is-selected" : ""}"
-      type="button"
-      data-inspector-fish-color="${DECOR_RGB_COLOR_SETTING}"
-      aria-pressed="${rgbSelected}"
-      aria-label="Fade fish through RGB colors"
-      title="RGB color cycle">
-      RGB
-    </button>
-  `;
-  const customColorPicker = `
-    <label
-      class="cave-color-picker-shell fish-color-picker-shell ${customSelected ? "is-selected" : ""}"
-      title="Choose custom fish color">
-      <input
-        class="cave-color-picker-input fish-color-picker-input"
-        type="color"
-        value="${escapeHtml(pickerColor)}"
-        data-inspector-fish-color-picker
-        aria-label="Choose custom fish color" />
-    </label>
-  `;
-
-  setMarkupIfChanged(
-    "fish-inspector-color-swatches",
-    dom.inspectorFishColorSwatches,
-    `
-      <div class="color-choice-mode-row">
-        ${originalTile}
-        ${rgbTile}
-        ${customColorPicker}
-      </div>
-    `
-  );
-}
-
-function updateInspectorFishReadouts(fish) {
-  const sizePercent = Math.round(clamp(Number(fish?.scale) || DEFAULT_FISH_SCALE, FISH_SCALE_MIN, FISH_SCALE_MAX) * 100);
-  const activeColor = getFishColorSetting(fish);
-  const species = getSpeciesForFish(fish);
-  const preferredTurnMode = areSimpleTurnAnimationsForced() ? "simple" : "complex";
-  setInspectorInputValue(dom.inspectorFishSizeInput, sizePercent);
-  setTextIfChanged(dom.inspectorFishSizeValue, `${sizePercent}%`);
-  setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(activeColor));
-  if (dom.inspectorFishTurnAnimationInput instanceof HTMLInputElement) {
-    dom.inspectorFishTurnAnimationInput.checked = preferredTurnMode === "complex";
-    dom.inspectorFishTurnAnimationInput.disabled = true;
-    dom.inspectorFishTurnAnimationInput.title = "Turn animation is controlled globally in Game Settings.";
-  }
-  setTextIfChanged(dom.inspectorFishTurnAnimationValue, preferredTurnMode === "complex" ? "Complex" : "Simple");
-  if (dom.inspectorFishColorizeInput instanceof HTMLInputElement) {
-    dom.inspectorFishColorizeInput.checked = getFishColorizeSetting(fish);
-  }
-  renderFishInspectorColorControls(fish);
-}
-
-function updateInspectorFishSetting(setting, rawValue, options = {}) {
-  const managed = getFishInspectorManagedTarget();
-  if (!managed) {
-    return;
-  }
-
-  const { fish, inStorage } = managed;
-  const now = Date.now();
-  let changed = false;
-  const applyChange = () => {
-    switch (setting) {
-      case "size": {
-        const nextScale = clamp((Number(rawValue) || 100) / 100, FISH_SCALE_MIN, FISH_SCALE_MAX);
-        if (Math.abs(nextScale - fish.scale) > 0.0001) {
-          fish.scale = nextScale;
-          changed = true;
-        }
-        break;
-      }
-      case "behavior": {
-        const nextBehaviorSpeciesId = sanitizeFishBehaviorSpeciesId(rawValue, fish.speciesId);
-        if ((fish.behaviorSpeciesId || "") !== nextBehaviorSpeciesId) {
-          fish.behaviorSpeciesId = nextBehaviorSpeciesId;
-          fish.activity = "roam";
-          fish.feedingPelletId = null;
-          fish.hangoutDecorId = null;
-          clearFishSchoolFollowState(fish);
-          clearFishCaveBehavior(fish);
-          const effectiveSpecies = getSpeciesForFish(fish);
-          if (effectiveSpecies) {
-            fish.swimSpeed = normalizeFishSpeed(effectiveSpecies);
-          }
-          fish.targetAt = now;
-          if (effectiveSpecies) {
-            enforceFishLayerBoundary(fish, effectiveSpecies);
-          }
-          changed = true;
-        }
-        break;
-      }
-      case "turnAnimation": {
-        const nextTurnAnimation = rawValue === true || String(rawValue).trim().toLowerCase() === "complex"
-          ? "complex"
-          : "simple";
-        if (fish.turnAnimationPreference !== nextTurnAnimation) {
-          fish.turnAnimationPreference = nextTurnAnimation;
-          changed = true;
-        }
-        break;
-      }
-      case "color": {
-        const nextColor = normalizeDecorColorSetting(rawValue);
-        if (getFishColorSetting(fish) !== nextColor) {
-          fish.fishColor = nextColor;
-          fish.hueShift = 0;
-          fish.saturation = 100;
-          fish.brightness = 100;
-          changed = true;
-        }
-        break;
-      }
-      case "colorize": {
-        const nextColorize = normalizeDecorColorizeSetting(rawValue);
-        if (getFishColorizeSetting(fish) !== nextColorize) {
-          fish.fishColorize = nextColorize;
-          changed = true;
-        }
-        break;
-      }
-      default:
-        break;
-    }
-  };
-
-  if (setting === "size" && !inStorage) {
-    preserveTankDirtinessThroughChange(now, applyChange);
-  } else {
-    applyChange();
-  }
-
-  const persist = options.persist !== false;
-  const refreshControls = options.refreshControls !== false;
-  if (!changed) {
-    if (persist && options.forcePersist === true) {
-      saveState();
-    }
-    if (refreshControls) {
-      if (runtime.utilityOverlayMode === "fish-inspect") renderUtilityOverlay();
-      else updateInspectorFishReadouts(fish);
-    }
-    return;
-  }
-  if (persist) {
-    saveState();
-  }
-  if (runtime.utilityOverlayMode === "fish-inspect") {
-    if (refreshControls) renderUtilityOverlay();
-    return;
-  }
-  if (setting === "color" || setting === "colorize") {
-    if (!refreshControls) {
-      return;
-    }
-    updateInspectorFishReadouts(fish);
-    return;
-  }
-  renderUi(now);
-}
-
-function queueInspectorFishColorPreview(rawValue) {
-  runtime.pendingInspectorFishColorValue = normalizeDecorColorSetting(rawValue);
-  if (runtime.inspectorFishColorPreviewFrame) {
-    return;
-  }
-
-  runtime.inspectorFishColorPreviewFrame = window.requestAnimationFrame(() => {
-    runtime.inspectorFishColorPreviewFrame = 0;
-    const nextColor = runtime.pendingInspectorFishColorValue;
-    runtime.pendingInspectorFishColorValue = "";
-    updateInspectorFishSetting("color", nextColor, {
-      persist: false,
-      refreshControls: false
-    });
-    const managed = getManagedFishById(runtime.selectedFishId);
-    if (managed?.fish) {
-      setTextIfChanged(dom.inspectorFishColorValue, formatCaveColorChoiceLabel(getFishColorSetting(managed.fish)));
-      dom.inspectorFishColorSwatches?.querySelector(".fish-color-picker-shell")?.classList.add("is-selected");
-    }
-  });
 }

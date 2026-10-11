@@ -717,12 +717,17 @@ function getDerivedFishNeedDefaults(fish, now = Date.now()) {
     }
     const dirtiness = Number.isFinite(Number(state?.lastCleanedAt)) ? getTankDirtiness(now) : 0;
     defaults.hygiene = clamp((1 - dirtiness) * 100, 5, 100);
-    defaults.comfort = clamp(getFishComfort(fish, now).value * 100, 0, 100);
-    const needsStatus = getFishNeedsStatus(fish, currentTank, now);
+    const facts = getTankComfortFacts(currentTank, now);
+    const needsStatus = getFishNeedsStatus(fish, currentTank, now, facts);
+    const conflicts = getFishConflictStatus(fish, currentTank, now, facts);
+    const comfortTank = typeof getFishSimulationTank === "function" ? getFishSimulationTank(fish) : currentTank;
+    defaults.comfort = clamp(getFishComfort(fish, now, comfortTank,
+      comfortTank === currentTank ? { facts, needsStatus, conflicts,
+        dirtiness: Number.isFinite(Number(state?.lastCleanedAt)) ? dirtiness : undefined } : null).value * 100, 0, 100);
     const metRatio = needsStatus.length
       ? needsStatus.filter((need) => need.met).length / needsStatus.length
       : 0.75;
-    defaults.environment = clamp(45 + metRatio * 55 - getFishConflictStatus(fish, currentTank, now).filter((conflict) => conflict.active).length * 12, 0, 100);
+    defaults.environment = clamp(45 + metRatio * 55 - conflicts.filter((conflict) => conflict.active).length * 12, 0, 100);
   }
   return defaults;
 }

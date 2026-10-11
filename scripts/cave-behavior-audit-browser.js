@@ -8,6 +8,11 @@
   panel.style.cssText = "position:fixed;top:8px;left:8px;z-index:2147483647;width:440px;max-height:42vh;overflow:auto;padding:10px;background:#07151fee;color:#a7f3d0;font:12px monospace";
   panel.innerHTML = '<b>Cave playtest · memory only</b><div><button id="auditFresh">Build freshwater scene</button> <button id="auditReef">Build reef scene</button> <button id="auditRoomy">Build larger shelters</button> <button id="auditCluster">Build ceramic tube scene</button> <button id="auditFlicker">Test front shell sweep</button> <button id="auditVisits">Start eligible visits</button></div><pre id="caveAuditReadout">Waiting for game initialization</pre>';
   document.body.append(panel);
+  const reviewControls = document.createElement("div");
+  reviewControls.innerHTML = '<select aria-label="Review cave artwork" id="auditCaveArtwork"></select> <button id="auditReviewArtwork">Review entrances</button>';
+  panel.append(reviewControls);
+  const artworkSelect = reviewControls.querySelector("select");
+  let reviewCaves = [];
   const readout = panel.querySelector("pre");
   const buttons = [...panel.querySelectorAll("button")];
   buttons.forEach(button => { button.disabled = true; });
@@ -26,6 +31,33 @@
     return result;
   };
   let stats = {}, startedAt = 0, setupBusy = false, diagnostics = "";
+  async function reviewArtwork() {
+    if (setupBusy || !runtime.lastAnimationUpdateAt) return;
+    const decor = reviewCaves.find((entry) => entry.key === artworkSelect.value);
+    if (!decor) return;
+    setupBusy = true;
+    try {
+      const tank = getCurrentTank();
+      tank.waterType = decor.waterTypes?.includes("saltwater") ? "saltwater" : "freshwater";
+      state.tutorial = getDisabledIntroTutorialState();
+      state.fish.splice(0); state.placedDecor.splice(0); runtime.activeFishCavePlans.clear();
+      runtime.freshGameSaveLocked = false;
+      state.decorInventory[decor.key] = 1;
+      runtime.placementMode = { scale: getDecorScaleDefault(decor.key), freePlacementEnabled: true };
+      const { placedItem } = createPlacedDecor(decor.key, 0.5, 0.62, 3);
+      runtime.placementMode = null;
+      await preloadImages(getTankSwitchPreloadPaths(tank), { maxAttempts: 2 });
+      if (dom.loadingOverlay) dom.loadingOverlay.hidden = true;
+      normalizePlacedDecorState(); renderUi(Date.now()); renderTank(Date.now());
+      openDecorSettings(placedItem.id);
+      panel.style.top = "auto"; panel.style.bottom = "8px";
+      readout.hidden = true;
+      reset();
+    } catch (error) { readout.hidden = false; readout.textContent = error.stack; }
+    finally { setupBusy = false; }
+  }
+  artworkSelect.onchange = reviewArtwork;
+  reviewControls.querySelector("button").onclick = reviewArtwork;
   const reset = () => { history.clear(); blocked.clear(); startedAt = Date.now(); stats = { entries: 0, arrivals: 0, exits: 0, abandoned: 0, largeSteps: 0, stalledFish: 0, maxStep: 0, arrivalsBySpecies: {}, exitsBySpecies: {} }; };
   const completeArrival = completeFishCaveEntryArrival;
   completeFishCaveEntryArrival = (...args) => {
@@ -142,6 +174,13 @@
   window.setInterval(() => {
     const ready = Boolean(state && runtime.lastAnimationUpdateAt);
     buttons.forEach(button => { button.disabled = !ready || setupBusy; });
+    artworkSelect.disabled = !ready || setupBusy;
+    if (ready && !reviewCaves.length) {
+      reviewCaves = [...new Map([...runtime.decorMap.values()]
+        .filter((decor) => isCaveDecorKey(decor.key) && !decor.customType)
+        .map((decor) => [decor.key, decor])).values()];
+      artworkSelect.replaceChildren(...reviewCaves.map((decor) => Object.assign(document.createElement("option"), { value: decor.key, textContent: decor.name })));
+    }
     if (!ready) return;
     if (!startedAt) { readout.textContent = "Ready · choose a test aquarium"; return; }
     if (!startedAt || setupBusy) return;

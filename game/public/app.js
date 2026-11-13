@@ -94854,7 +94854,7 @@ function renderMedicineTray() {
       `;
 
     const markup = `
-      <div class="care-tray-content care-tray-content-merged" style="--care-food-min-width: ${foodSectionWidth}px; --care-medicine-min-width: ${medicineSectionWidth}px; --care-tools-min-width: ${toolsSectionWidth}px; --care-tray-min-width: ${trayContentWidth}px;">
+      <div class="care-tray-content care-tray-content-merged ${medicalEnabled ? "" : "is-medical-disabled"}" style="--care-food-min-width: ${foodSectionWidth}px; --care-medicine-min-width: ${medicineSectionWidth}px; --care-tools-min-width: ${toolsSectionWidth}px; --care-tray-min-width: ${trayContentWidth}px;">
         <section class="care-tray-food" aria-label="Food">
           <div class="care-tray-heading-row">
             <img class="care-tray-inline-icon" ${assetImageAttributes("assets/icons/feed_fish.png")} alt="" aria-hidden="true" draggable="false" />

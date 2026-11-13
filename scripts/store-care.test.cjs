@@ -72,6 +72,15 @@ test("medical and illness systems are centrally disabled across gameplay entry p
   assert.match(vet, /function purchaseStillwaterConsultation[\s\S]*medical-system-disabled/);
 });
 
+test("disabled medication keeps Food, Scrub, and Scoop in visible care-tray columns", () => {
+  const tray = fs.readFileSync(path.join(root, "ui/customization-actions-and-inventory.js"), "utf8");
+  const styles = fs.readFileSync(path.join(root, "../styles.css"), "utf8");
+  assert.match(tray, /care-tray-content-merged \$\{medicalEnabled \? "" : "is-medical-disabled"\}/);
+  assert.match(tray, /data-care-tool="scrub"/);
+  assert.match(tray, /data-care-tool="scoop"/);
+  assert.match(styles, /\.care-tray-content\.is-medical-disabled\s*\{\s*grid-template-columns:\s*minmax\(0, var\(--care-food-min-width,[^)]+\)\) 1px minmax\(0, var\(--care-tools-min-width,[^)]+\)\);/);
+});
+
 test("injured fish begin natural recovery without medicine", () => {
   const now = 10000;
   const fish = { id: "injured", healthUnits: 4, injuryRecoveryProgressMs: 0, injuryRecoveryStartHealthUnits: 0 };

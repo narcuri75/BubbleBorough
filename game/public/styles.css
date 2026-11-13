@@ -15595,6 +15595,10 @@ body.fixed-16-9-aspect-ratio .tank-stage {
   padding: 0 4px;
 }
 
+.care-tray-content.is-medical-disabled {
+  grid-template-columns: minmax(0, var(--care-food-min-width, 248px)) 1px minmax(0, var(--care-tools-min-width, 163px));
+}
+
 .care-tray-food,
 .care-tray-medical,
 .care-tray-tools {

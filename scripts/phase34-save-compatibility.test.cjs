@@ -156,11 +156,45 @@ test('Phase 34 mastery sanitization canonicalizes saved keys, preserves alternat
 
 test('Phase 34 older fish safely default progression fields without inferring XP from age', () => {
   assert.match(persistence, /if \(incomingVersion < 65\)/);
-  assert.match(bootstrap, /const STATE_VERSION = 68;/);
+  assert.match(bootstrap, /const STATE_VERSION = 69;/);
   assert.match(fishSanitize, /careXp: Math\.max\(0, Math\.floor\(Number\(fish\.careXp\) \|\| 0\)\)/);
   assert.match(fishSanitize, /careLevel: clamp\(Math\.floor\(Number\(fish\.careLevel\) \|\| FISH_CARE_LEVEL_MIN\)/);
   assert.match(fishSanitize, /lastCareXpDayKey: typeof fish\.lastCareXpDayKey === "string" \? fish\.lastCareXpDayKey : ""/);
   assert.doesNotMatch(fishSanitize, /careXp[^\n]{0,120}(birthAt|ageDays|lifespan)/i);
+});
+
+test('v69 cures retired illness while preserving dormant medical history and inventory', () => {
+  const migrate = vm.runInNewContext(`(${extractFunction(persistence, 'migrateSaveSchema')})`, {});
+  const diseased = {
+    id: 'sick', diseaseState: 'severe', diseaseType: 'infection', diseaseInfectedAt: 10,
+    diseaseProgressMs: 20, diseaseExposureLevel: 3, diseaseRequiresTreatment: true,
+    treatmentCourses: {
+      disease: { medicineId: 'infectionTreatment', status: 'active' },
+      injury: { medicineId: 'firstAid', status: 'active' }
+    }
+  };
+  const save = {
+    version: 68,
+    tanks: [{ fish: [{ ...diseased, calmedUntil: 99, waterStressBoostUntil: 88 }], medicineEffects: [{ type: 'betaBlocker' }], medicineClouds: [{}], medicineWaterTint: {} }],
+    storedFish: [{ ...diseased, id: 'stored' }],
+    medicineInventory: { infectionTreatment: 4, firstAid: 2 },
+    vetConsultations: [{ id: 'historical-consultation' }]
+  };
+  const migrated = migrate(save);
+  for (const fish of [migrated.tanks[0].fish[0], migrated.storedFish[0]]) {
+    assert.equal(fish.diseaseState, 'none');
+    assert.equal(fish.diseaseType, '');
+    assert.equal(fish.diseaseRequiresTreatment, false);
+    assert.equal(fish.treatmentCourses.disease, undefined);
+    assert.equal(fish.treatmentCourses.injury.medicineId, 'firstAid');
+  }
+  assert.equal(migrated.tanks[0].fish[0].calmedUntil, 0);
+  assert.equal(migrated.tanks[0].fish[0].waterStressBoostUntil, 0);
+  assert.equal(migrated.tanks[0].medicineEffects.length, 0);
+  assert.equal(migrated.tanks[0].medicineClouds.length, 0);
+  assert.equal(migrated.tanks[0].medicineWaterTint, null);
+  assert.deepEqual(migrated.medicineInventory, save.medicineInventory);
+  assert.deepEqual(migrated.vetConsultations, save.vetConsultations);
 });
 
 test('Phase 34 reconciliation runs owned-appearance grandfathering on both startup and imported saves', () => {

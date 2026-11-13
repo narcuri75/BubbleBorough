@@ -1,5 +1,5 @@
 (() => {
-  const CATEGORY_IDS = ["food", "pharmacy", "fish", "decor", "equipment"];
+  const CATEGORY_IDS = ["food", "fish", "decor", "equipment"];
   const categoryLabels = { food: "Food", pharmacy: "Pharmacy", fish: "Fish", decor: "Decor", equipment: "Equipment" };
   const TANKAZON_CART_STORAGE_KEY = "bubble-borough-tankazon-cart-v1";
   const TANKAZON_VIEW_STORAGE_KEY = "bubble-borough-tankazon-view-v1";

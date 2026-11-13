@@ -1422,6 +1422,53 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v69 retires contagious illness while preserving medicine inventory,
+  // consultations, receipts, and other historical medical records. Active
+  // disease and its treatment course are cleared for tank and stored fish.
+  if (incomingVersion < 69) {
+    const cureRetiredIllness = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish)) return fish;
+      const treatmentCourses = fish.treatmentCourses && typeof fish.treatmentCourses === "object" && !Array.isArray(fish.treatmentCourses)
+        ? { ...fish.treatmentCourses }
+        : fish.treatmentCourses;
+      if (treatmentCourses && Object.prototype.hasOwnProperty.call(treatmentCourses, "disease")) delete treatmentCourses.disease;
+      return {
+        ...fish,
+        diseaseState: "none",
+        diseaseType: "",
+        diseaseInfectedAt: 0,
+        diseaseProgressMs: 0,
+        diseaseLastProgressAt: 0,
+        diseaseExposureLevel: 0,
+        diseaseRecoveryProgressMs: 0,
+        diseaseTreatedUntil: 0,
+        diseaseLastDamageAt: 0,
+        diseaseSource: "",
+        diseaseRequiresTreatment: false,
+        temporaryImmunityUntil: 0,
+        nextGreenBubbleAt: 0,
+        calmedUntil: 0,
+        waterStressBoostUntil: 0,
+        treatmentCourses
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? {
+              ...tank,
+              fish: Array.isArray(tank.fish) ? tank.fish.map(cureRetiredIllness) : tank.fish,
+              medicineEffects: [],
+              medicineClouds: [],
+              medicineWaterTint: null
+            }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(cureRetiredIllness) : migrated.storedFish
+    };
+  }
+
   return migrated;
 }
 
@@ -2442,21 +2489,23 @@ function reconcileState(rawState) {
     nextState.lifetimeDeaths = corpseCount;
   }
 
-  // Progression locks are purchase permissions, not ownership permissions.
-  // Legacy saves used to permanently unlock a species merely because the player
-  // already owned one. Strip those stale milestone unlocks and rebuild them only
-  // from milestones the save has actually earned. Existing fish remain untouched.
-  const milestoneFishUnlockIds = new Set(
-    PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
-  );
-  const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
-    .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
-  nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
-    ...nonMilestoneFishUnlocks,
-    ...PROGRESSION_MILESTONES
-      .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
-      .flatMap((milestone) => milestone.unlocks || [])
-  ]);
+  if (typeof isFishUnlockProgressionEnabled !== "function" || isFishUnlockProgressionEnabled()) {
+    // Progression locks are purchase permissions, not ownership permissions.
+    // Legacy saves used to permanently unlock a species merely because the player
+    // already owned one. Strip those stale milestone unlocks and rebuild them only
+    // from milestones the save has actually earned. Existing fish remain untouched.
+    const milestoneFishUnlockIds = new Set(
+      PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
+    );
+    const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
+      .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
+    nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
+      ...nonMilestoneFishUnlocks,
+      ...PROGRESSION_MILESTONES
+        .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
+        .flatMap((milestone) => milestone.unlocks || [])
+    ]);
+  }
   nextState.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
     ...nextState.unlockedDecorKeys,
     ...Object.keys(nextState.decorInventory || {}),
@@ -3080,3 +3129,15 @@ function openLocalBackgroundPicker() {
 function openLocalDecorPicker() {
   openCustomAssetPicker("decor");
 }
+function isMedicalSystemEnabled() {
+  return MEDICAL_SYSTEM_ENABLED;
+}
+
+function isIllnessSystemEnabled() {
+  return MEDICAL_SYSTEM_ENABLED && ILLNESS_SYSTEM_ENABLED;
+}
+
+function isFishUnlockProgressionEnabled() {
+  return FISH_UNLOCK_PROGRESSION_ENABLED;
+}
+

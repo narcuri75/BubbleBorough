@@ -3997,6 +3997,7 @@ function handleWebSurfEmailAction(message) {
 }
 
 function getBubbleBodegaDiseaseTreatmentId(fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return "";
   const known = fish?.careKnowledge?.disease;
   const legacyRecovery = fish?.diseaseState === DISEASE_STATE_RECOVERING && !fish?.treatmentCourses?.disease;
   if (!legacyRecovery && (!known || known.episode !== getFishCareEpisode(fish, "disease"))) return "";
@@ -4202,11 +4203,11 @@ function renderWebSurfHomePage() {
   const browser = getWebSurfBrowserState();
   const playerBookmarks = browser.bookmarks.map((bookmark) => {
     const route = resolveWebSurfUrl(bookmark.url);
-    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(route.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(route.site.displayName)}. Drag to reorder."><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+    return route?.status === "ok" && isWebSurfRouteAllowed(route) ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(route.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(route.site.displayName)}. Drag to reorder."><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
   }).join("");
   const recentPages = browser.history.slice(-5).reverse().map((entry) => {
     const route = resolveWebSurfUrl(entry.url);
-    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(entry.title || route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+    return route?.status === "ok" && isWebSurfRouteAllowed(route) ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(entry.title || route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
   }).join("");
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {

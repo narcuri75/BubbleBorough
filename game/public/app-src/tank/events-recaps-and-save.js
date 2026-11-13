@@ -393,6 +393,7 @@ function ensureFishSpeciesBaseVariantUnlocked(species, record) {
 
 function normalizeFishSpeciesMasteryBaseVariants() {
   if (!state || typeof runtime === "undefined" || !runtime?.fishMap?.values) return false;
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return false;
   let changed = false;
   for (const species of runtime.fishMap.values()) {
     if (!isFishSpeciesCareProgressionEligible(species)) continue;
@@ -418,6 +419,7 @@ function normalizeOwnedFishAppearanceUnlocks() {
   const tankFish = typeof getAllTankFish === "function" ? getAllTankFish(state) : [];
   const storedFish = Array.isArray(state.storedFish) ? state.storedFish : [];
   const ownedFish = [...tankFish, ...storedFish];
+  const unlockProgressionEnabled = !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled());
   let changed = false;
 
   for (const fish of ownedFish) {
@@ -444,6 +446,7 @@ function normalizeOwnedFishAppearanceUnlocks() {
       changed = true;
     }
 
+    if (!unlockProgressionEnabled) continue;
     const record = getFishSpeciesMasteryRecord(species.id, { species });
     if (!record) continue;
     const canonicalKey = typeof getFishAppearanceVariantKey === "function"
@@ -495,13 +498,15 @@ function getFishSpeciesMasteryRecord(speciesId, options = {}) {
   }
   const species = options.species
     || (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(key) : null);
-  if (typeof ensureFishSpeciesBaseVariantUnlocked === "function") {
+  if (typeof ensureFishSpeciesBaseVariantUnlocked === "function"
+      && !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled())) {
     ensureFishSpeciesBaseVariantUnlocked(species, record);
   }
   return record;
 }
 
 function getFishLockedAppearanceVariantPool(species, record = null) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return [];
   if (!species || !isFishSpeciesCareProgressionEligible(species)) return [];
   const mastery = record || getFishSpeciesMasteryRecord(species.id, { species });
   if (!mastery) return [];
@@ -783,6 +788,7 @@ function surfaceFishCareLevelProgressionNotification(fish, species, levelResult,
 }
 
 function unlockRandomFishAppearanceVariantForLevel(fish, species, careLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return null;
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return null;
   if (!fish || !species || !isFishCareProgressionEligible(fish, species) || !isFishSpeciesCareProgressionEligible(species)) return null;
   const level = clamp(Math.floor(Number(careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
@@ -860,6 +866,7 @@ function getFishCrossedCareLevels(previousLevel, newLevel) {
 }
 
 function unlockFishAppearanceVariantsForLevelIncrease(fish, species, previousLevel, newLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return [];
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return [];
   if (!fish || !species || !isFishCareProgressionEligible(fish, species)) return [];
   const fromLevel = clamp(Math.floor(Number(previousLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);

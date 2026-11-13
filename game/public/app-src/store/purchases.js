@@ -518,6 +518,10 @@ function buyFood(foodKey, packageId = "") {
 }
 
 function buyMedicine(medicineKey) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    showToast("Medicine is currently unavailable.");
+    return { ok: false, reason: "medical-system-disabled" };
+  }
   ensurePurchaseReturnTracking();
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
@@ -580,6 +584,11 @@ function selectFoodMode(foodKey, options = {}) {
 }
 
 function selectMedicineMode(medicineKey) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    runtime.medicineModeKey = "";
+    showToast("Medicine is currently unavailable.");
+    return { ok: false, reason: "medical-system-disabled" };
+  }
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
     return;

@@ -1810,6 +1810,7 @@ function bindEvents() {
     renderUi(Date.now());
   });
   dom.storePharmacyTab?.addEventListener("click", () => {
+    if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return;
     runtime.storeTab = "pharmacy";
     runtime.bubbleBodegaHomeOpen = false;
     updateWebSurfRoute("bubblebodega.swim/shop/pharmacy");

@@ -13,7 +13,14 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 68;
+const STATE_VERSION = 69;
+// Medical gameplay is intentionally dormant. Keep its persisted data and
+// implementation available so the feature can be restored without data loss.
+const MEDICAL_SYSTEM_ENABLED = false;
+const ILLNESS_SYSTEM_ENABLED = false;
+// Fish and appearance content remains authored and progression data remains in
+// saves, but progression-based purchase locks and unlock events are dormant.
+const FISH_UNLOCK_PROGRESSION_ENABLED = false;
 window.closeStillwaterPage = closeStillwaterPage;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;
@@ -23392,6 +23399,9 @@ function shouldShowFoodInStore(food) {
 }
 
 function shouldShowMedicineInStore(medicine) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return false;
+  }
   if (!medicine) {
     return false;
   }
@@ -25107,7 +25117,7 @@ function openExclusiveOverlay(kind, options = {}) {
 
   switch (overlayKind) {
     case "store": {
-      const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : options.tab === "cleanup" ? "fish" : "food";
+      const requestedTab = ["food", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : options.tab === "cleanup" ? "fish" : "food";
       const allowedTabs = getTutorialAllowedStoreTabs();
       runtime.storeOverlayOpen = true;
       runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
@@ -25169,7 +25179,7 @@ function openProteusDesignerPage() {
     return true;
   }
   if (!runtime.storeOverlayOpen) {
-    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
+    const storeTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
     if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
   }
   window.closeProteusBiodynePage?.(false);
@@ -25271,7 +25281,7 @@ function getWebSurfSiteRegistry() {
   return [
     { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
     { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.webp", beginsDiscovered: true, bookmarkable: true },
-    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: true, bookmarkable: true },
+    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
@@ -25371,6 +25381,7 @@ function resolveWebSurfUrl(value) {
 }
 
 function isWebSurfRouteAllowed(route) {
+  if (route.site.id === "stillwater" && typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (route.site.id === "proteus") return state?.proteusDiscovered === true;
   if (route.site.id === "locker") return state?.davyJonesLockerUnlocked === true;
   return true;
@@ -25410,6 +25421,9 @@ function navigateWebSurf(value, options = {}) {
   finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
   const route = resolveWebSurfUrl(value);
   if (route.status !== "ok") return showWebSurfRouteError(route.status, route.url);
+  if (route.site.id === "stillwater" && typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return showWebSurfRouteError("site-unavailable", route.url);
+  }
   if (!isWebSurfRouteAllowed(route)) return showWebSurfRouteError("access-denied", route.url);
   runtime.webSurfRouteError = null;
   runtime.webSurfThemesOpen = false;
@@ -25436,7 +25450,7 @@ function navigateWebSurf(value, options = {}) {
   }
   if (route.site.id === "bodega") {
     ensureWebSurfBrowserTab("store");
-    const category = path.match(/^\/shop\/(food|pharmacy|fish|decor|equipment)$/)?.[1];
+    const category = path.match(/^\/shop\/(food|fish|decor|equipment)$/)?.[1];
     if (path !== "/" && !category && path !== "/account/orders") return showWebSurfRouteError("page-not-found", route.url);
     return category ? openStoreOverlay(category, { forceCategory: true, openHome: false }) : openBubbleBodegaHome();
   }
@@ -25461,7 +25475,7 @@ function navigateWebSurf(value, options = {}) {
 
 function getWebSurfUrlForDestination(destination) {
   if (String(destination || "") === "store") {
-    const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    const category = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     return `bubblebodega.swim/shop/${category}`;
   }
   return ({ stillwater: "stillwatervet.swim", home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
@@ -26130,7 +26144,7 @@ function openWebSurfSettingsPage() {
   }
 
   if (!runtime.storeOverlayOpen) {
-    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    const storeTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
   }
 
@@ -26209,7 +26223,7 @@ function openWebSurfSessionPage() {
 }
 
 function resolveBubbleBodegaOpeningView(tab, options = {}) {
-  const categories = ["food", "pharmacy", "fish", "decor", "equipment"];
+  const categories = ["food", "fish", "decor", "equipment"];
   const category = categories.includes(tab) ? tab : tab === "cleanup" ? "fish" : "food";
   if (options.forceCategory === true || getActiveTutorial() || options.openHome === false) return category;
   if (options.openAll === true) return "all";
@@ -26248,11 +26262,11 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.bubbleBodegaHomeOpen = view === "home";
     runtime.bubbleBodegaSessionVisited = true;
     runtime.webSurfLastPage = "store";
-    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(view)) tab = view;
+    if (["food", "fish", "decor", "equipment"].includes(view)) tab = view;
     window.prepareBubbleBodegaView?.(view);
     updateWebSurfRoute(view === "home"
       ? "bubblebodega.swim"
-      : `bubblebodega.swim/shop/${["food", "pharmacy", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
+      : `bubblebodega.swim/shop/${["food", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
   }
   // A request made while the window was already open used to remain here until
   // a later reopen, when it could overwrite Home. Navigation is synchronous now.
@@ -26262,7 +26276,7 @@ function openStoreOverlay(tab = "food", options = {}) {
 }
 
 function openBubbleBodegaHome() {
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   return openStoreOverlay(previousStoreTab, { openHome: true });
@@ -26273,7 +26287,7 @@ function openDavyJonesLockerPage() {
     showToast("That WebSurf destination has not been discovered yet.");
     return false;
   }
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
@@ -26291,7 +26305,7 @@ function openDavyJonesLockerPage() {
 }
 
 function openBubbleBank(tab = "account", options = {}) {
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
@@ -26322,7 +26336,7 @@ function handleWebPageNavigation(event) {
   // listing over this freshly visible native catalogue.
   if (target?.closest("#tankazonAllCategories")) {
     event?.preventDefault?.();
-    const tab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    const tab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
       ? runtime.storeTab
       : "food";
     openStoreOverlay(tab, { openAll: true });
@@ -26337,7 +26351,7 @@ function handleWebPageNavigation(event) {
   if (bodegaHomeCategory) {
     event?.preventDefault?.();
     const category = String(bodegaHomeCategory.dataset.bodegaHomeCategory || "food");
-    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(category)) {
+    if (["food", "fish", "decor", "equipment"].includes(category)) {
       runtime.bubbleBodegaHomeOpen = false;
       openStoreOverlay(category, { forceCategory: true, openHome: false });
     }
@@ -34718,6 +34732,7 @@ function bindEvents() {
     renderUi(Date.now());
   });
   dom.storePharmacyTab?.addEventListener("click", () => {
+    if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return;
     runtime.storeTab = "pharmacy";
     runtime.bubbleBodegaHomeOpen = false;
     updateWebSurfRoute("bubblebodega.swim/shop/pharmacy");
@@ -40401,6 +40416,10 @@ function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
     : String(variantKey || "").split(/[?#]/)[0].split("/").pop();
   if (!key) return false;
 
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return true;
+  }
+
   const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
     ? isFishSpeciesCareProgressionEligible(species)
     : false;
@@ -40426,11 +40445,13 @@ function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
 }
 
 function getFishStoreVariants(species) {
-  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+  const progressionEligible = typeof isFishSpeciesCareProgressionEligible === "function"
     ? isFishSpeciesCareProgressionEligible(species)
     : false;
+  const progressionEnabled = progressionEligible
+    && !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled());
   const allPaths = getFishAssetVariants(species);
-  const paths = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+  const paths = progressionEligible && typeof getFishProgressionAppearanceVariants === "function"
     ? getFishProgressionAppearanceVariants(species)
     : allPaths;
   const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
@@ -40494,6 +40515,7 @@ function getFishStoreVariants(species) {
 }
 
 function getFishStoreVariantProgressMessage(species, variants = getFishStoreVariants(species)) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return "";
   if (!species || typeof isFishSpeciesCareProgressionEligible !== "function" || !isFishSpeciesCareProgressionEligible(species)) return "";
   const entries = Array.isArray(variants) ? variants : [];
   if (entries.length <= 1) return "";
@@ -41231,6 +41253,7 @@ function randomDelay(minMs, maxMs) {
 }
 
 function hasIllnessUnlocked(targetState = state) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   return Boolean(targetState?.dailyBonus?.milestones?.["stable-tank"]);
 }
 
@@ -41246,6 +41269,7 @@ function isActiveDiseaseState(stateId) {
 }
 
 function hasActiveFishDisease(fish) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
@@ -41253,6 +41277,7 @@ function hasActiveFishDisease(fish) {
 }
 
 function isFishDiseaseVisible(fish) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
@@ -41393,6 +41418,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
 function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING, options = {}) {
   if (
     !fish
+    || (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled())
     || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
     || isProteusZombieFish(fish)
@@ -41428,6 +41454,7 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
 }
 
 function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (!fish || isFishDead(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
     return false;
   }
@@ -42241,6 +42268,7 @@ function applyFirstAidDiseaseSlowdown(now = Date.now()) {
 }
 
 function processFishDisease(now = Date.now()) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.fish?.length) {
     return false;
@@ -42424,10 +42452,11 @@ function syncFishPrimaryCondition(fish, now = Date.now(), options = {}) {
 function processFishConditionFramework(now = Date.now()) {
   if (!Array.isArray(state?.fish)) return false;
   let changed = false;
+  const medicalEnabled = typeof isMedicalSystemEnabled !== "function" || isMedicalSystemEnabled();
   const previousSimulatedAt = Math.min(now, Number(state.lastSimulatedAt) || now);
   for (const fish of state.fish) {
     if (!fish || isFishDead(fish)) continue;
-    if (typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
+    if (medicalEnabled && typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
     const waterMismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
     if (waterMismatch) {
       if (!(Number(fish.osmoticStressStartedAt) > 0)) {
@@ -42480,11 +42509,23 @@ function processFishConditionFramework(now = Date.now()) {
       }
     }
 
+    const maxHealth = getFishMaxHealthUnits(fish);
+    if (
+      (Number(fish.healthUnits) || 0) > 0
+      && (Number(fish.healthUnits) || 0) < maxHealth
+      && !(Number(fish.injuryRecoveryStartHealthUnits) > 0)
+      && !(medicalEnabled && typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "injury"))
+    ) {
+      fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(fish.healthUnits) || 1);
+      fish.injuryRecoveryProgressMs = Math.max(1, Number(fish.injuryRecoveryProgressMs) || 0);
+      fish.injuryRecoveryLastAt = now;
+      changed = true;
+    }
+
     if ((Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0) {
       const elapsed = clamp(now - (Number(fish.injuryRecoveryLastAt) || previousSimulatedAt), 0, DAY_MS);
       fish.injuryRecoveryLastAt = now;
       fish.injuryRecoveryProgressMs = Math.min(INJURY_RECOVERY_REQUIRED_MS, Math.max(1, Number(fish.injuryRecoveryProgressMs) || 0) + elapsed);
-      const maxHealth = getFishMaxHealthUnits(fish);
       const startHealth = Math.min(maxHealth, Math.max(1, Number(fish.injuryRecoveryStartHealthUnits) || Number(fish.healthUnits) || 1));
       const fraction = clamp(fish.injuryRecoveryProgressMs / INJURY_RECOVERY_REQUIRED_MS, 0, 1);
       const targetHealth = Math.min(maxHealth, Math.floor(startHealth + (maxHealth - startHealth) * fraction + 0.0001));
@@ -47825,6 +47866,53 @@ function migrateSaveSchema(rawState) {
     };
   }
 
+  // v69 retires contagious illness while preserving medicine inventory,
+  // consultations, receipts, and other historical medical records. Active
+  // disease and its treatment course are cleared for tank and stored fish.
+  if (incomingVersion < 69) {
+    const cureRetiredIllness = (fish) => {
+      if (!fish || typeof fish !== "object" || Array.isArray(fish)) return fish;
+      const treatmentCourses = fish.treatmentCourses && typeof fish.treatmentCourses === "object" && !Array.isArray(fish.treatmentCourses)
+        ? { ...fish.treatmentCourses }
+        : fish.treatmentCourses;
+      if (treatmentCourses && Object.prototype.hasOwnProperty.call(treatmentCourses, "disease")) delete treatmentCourses.disease;
+      return {
+        ...fish,
+        diseaseState: "none",
+        diseaseType: "",
+        diseaseInfectedAt: 0,
+        diseaseProgressMs: 0,
+        diseaseLastProgressAt: 0,
+        diseaseExposureLevel: 0,
+        diseaseRecoveryProgressMs: 0,
+        diseaseTreatedUntil: 0,
+        diseaseLastDamageAt: 0,
+        diseaseSource: "",
+        diseaseRequiresTreatment: false,
+        temporaryImmunityUntil: 0,
+        nextGreenBubbleAt: 0,
+        calmedUntil: 0,
+        waterStressBoostUntil: 0,
+        treatmentCourses
+      };
+    };
+    migrated = {
+      ...migrated,
+      tanks: Array.isArray(migrated.tanks)
+        ? migrated.tanks.map((tank) => tank && typeof tank === "object" && !Array.isArray(tank)
+          ? {
+              ...tank,
+              fish: Array.isArray(tank.fish) ? tank.fish.map(cureRetiredIllness) : tank.fish,
+              medicineEffects: [],
+              medicineClouds: [],
+              medicineWaterTint: null
+            }
+          : tank)
+        : migrated.tanks,
+      storedFish: Array.isArray(migrated.storedFish) ? migrated.storedFish.map(cureRetiredIllness) : migrated.storedFish
+    };
+  }
+
   return migrated;
 }
 
@@ -48845,21 +48933,23 @@ function reconcileState(rawState) {
     nextState.lifetimeDeaths = corpseCount;
   }
 
-  // Progression locks are purchase permissions, not ownership permissions.
-  // Legacy saves used to permanently unlock a species merely because the player
-  // already owned one. Strip those stale milestone unlocks and rebuild them only
-  // from milestones the save has actually earned. Existing fish remain untouched.
-  const milestoneFishUnlockIds = new Set(
-    PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
-  );
-  const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
-    .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
-  nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
-    ...nonMilestoneFishUnlocks,
-    ...PROGRESSION_MILESTONES
-      .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
-      .flatMap((milestone) => milestone.unlocks || [])
-  ]);
+  if (typeof isFishUnlockProgressionEnabled !== "function" || isFishUnlockProgressionEnabled()) {
+    // Progression locks are purchase permissions, not ownership permissions.
+    // Legacy saves used to permanently unlock a species merely because the player
+    // already owned one. Strip those stale milestone unlocks and rebuild them only
+    // from milestones the save has actually earned. Existing fish remain untouched.
+    const milestoneFishUnlockIds = new Set(
+      PROGRESSION_MILESTONES.flatMap((milestone) => milestone.unlocks || [])
+    );
+    const nonMilestoneFishUnlocks = nextState.unlockedFishSpecies
+      .filter((speciesId) => !milestoneFishUnlockIds.has(speciesId));
+    nextState.unlockedFishSpecies = sanitizeUnlockedFishSpecies([
+      ...nonMilestoneFishUnlocks,
+      ...PROGRESSION_MILESTONES
+        .filter((milestone) => nextState.dailyBonus?.milestones?.[milestone.id])
+        .flatMap((milestone) => milestone.unlocks || [])
+    ]);
+  }
   nextState.unlockedDecorKeys = sanitizeUnlockedDecorKeys([
     ...nextState.unlockedDecorKeys,
     ...Object.keys(nextState.decorInventory || {}),
@@ -49482,6 +49572,17 @@ function openLocalBackgroundPicker() {
 
 function openLocalDecorPicker() {
   openCustomAssetPicker("decor");
+}
+function isMedicalSystemEnabled() {
+  return MEDICAL_SYSTEM_ENABLED;
+}
+
+function isIllnessSystemEnabled() {
+  return MEDICAL_SYSTEM_ENABLED && ILLNESS_SYSTEM_ENABLED;
+}
+
+function isFishUnlockProgressionEnabled() {
+  return FISH_UNLOCK_PROGRESSION_ENABLED;
 }
 // </bundle-source>
 
@@ -58639,6 +58740,7 @@ function transferChumIntoBoat(boat = getBoat(), requestedAmount = BOAT_RESOURCE_
 }
 
 function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return 0;
   if (!submarine) return 0;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
   const normalizedType = resourceType === "calming" ? "calming" : "health";
@@ -60730,6 +60832,7 @@ function deploySubmarineFood(submarine, target, now = Date.now()) {
 }
 
 function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.[resourceType]) <= 0) return false;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) return false;
@@ -62249,6 +62352,7 @@ function getNextDayStartTimestamp(timestamp = Date.now()) {
 }
 
 function hasActiveTankMedicineEffect(effectType, now = Date.now(), targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   const effects = Array.isArray(targetTank?.medicineEffects)
     ? targetTank.medicineEffects
     : (Array.isArray(state?.medicineEffects) ? state.medicineEffects : []);
@@ -62256,6 +62360,7 @@ function hasActiveTankMedicineEffect(effectType, now = Date.now(), targetTank = 
 }
 
 function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs = MEDICINE_VISUAL_DURATION_MS) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!medicine || !point) return;
   state.medicineClouds.push({
     id: createId("med-cloud"),
@@ -62273,6 +62378,7 @@ function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs =
 }
 
 function consumeSelectedMedicineDose(medicine) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
   if (quantity <= 0) return false;
   if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicine.id, 1);
@@ -62282,6 +62388,9 @@ function consumeSelectedMedicineDose(medicine) {
 }
 
 function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable." };
+  }
   if (!medicine || !fish) return { ok: false, message: "Click a fish to treat." };
   if (isFishDead(fish)) return { ok: false, message: "Medicine cannot be used on a dead fish." };
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode." };
@@ -62339,6 +62448,10 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
 }
 
 function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = "") {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    runtime.medicineModeKey = "";
+    return false;
+  }
   const medicineKey = runtime.medicineModeKey;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine || !point) return false;
@@ -62410,6 +62523,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = ""
 }
 
 function processTankMedicineEffects(now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!Array.isArray(state?.medicineEffects)) return false;
   const before = state.medicineEffects.length;
   state.medicineEffects = state.medicineEffects.filter((effect) => effect && (Number(effect.endsAt) || 0) > now);
@@ -66751,6 +66865,10 @@ function buyFood(foodKey, packageId = "") {
 }
 
 function buyMedicine(medicineKey) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    showToast("Medicine is currently unavailable.");
+    return { ok: false, reason: "medical-system-disabled" };
+  }
   ensurePurchaseReturnTracking();
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
@@ -66813,6 +66931,11 @@ function selectFoodMode(foodKey, options = {}) {
 }
 
 function selectMedicineMode(medicineKey) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    runtime.medicineModeKey = "";
+    showToast("Medicine is currently unavailable.");
+    return { ok: false, reason: "medical-system-disabled" };
+  }
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) {
     return;
@@ -73802,6 +73925,9 @@ function getBubbleBodegaFishStoreVariants(species) {
   }
 
   const variants = getFishStoreVariants(species);
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return variants;
+  }
   // BubbleBodega is a collection view, not a spoiler list. Normal play shows
   // only appearances the player has actually discovered. Debug Mode keeps the
   // complete CURRENT variant set selectable for testing, while obsolete assets
@@ -74247,6 +74373,10 @@ function isFishSpeciesProgressUnlocked(speciesOrId) {
     return false;
   }
 
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return species.Fish_enabled !== false;
+  }
+
   if (!species.unlockRequirement) {
     return true;
   }
@@ -74643,6 +74773,9 @@ function getFishPurchaseCost(speciesId) {
 }
 
 function unlockFishSpecies(speciesId, now = Date.now(), reasonText = "") {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return false;
+  }
   const species = runtime.fishMap.get(speciesId);
   if (!species || isFishSpeciesUnlocked(species)) {
     return false;
@@ -80232,6 +80365,9 @@ function setSelectedFishDiseaseStageForDebug(fish, stateId, now = Date.now()) {
   if (!fish) {
     return false;
   }
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) {
+    return resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now);
+  }
 
   const diseaseState = sanitizeDiseaseState(stateId);
   if (diseaseState === DISEASE_STATE_NONE) {
@@ -81869,6 +82005,7 @@ function ensureFishSpeciesBaseVariantUnlocked(species, record) {
 
 function normalizeFishSpeciesMasteryBaseVariants() {
   if (!state || typeof runtime === "undefined" || !runtime?.fishMap?.values) return false;
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return false;
   let changed = false;
   for (const species of runtime.fishMap.values()) {
     if (!isFishSpeciesCareProgressionEligible(species)) continue;
@@ -81894,6 +82031,7 @@ function normalizeOwnedFishAppearanceUnlocks() {
   const tankFish = typeof getAllTankFish === "function" ? getAllTankFish(state) : [];
   const storedFish = Array.isArray(state.storedFish) ? state.storedFish : [];
   const ownedFish = [...tankFish, ...storedFish];
+  const unlockProgressionEnabled = !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled());
   let changed = false;
 
   for (const fish of ownedFish) {
@@ -81920,6 +82058,7 @@ function normalizeOwnedFishAppearanceUnlocks() {
       changed = true;
     }
 
+    if (!unlockProgressionEnabled) continue;
     const record = getFishSpeciesMasteryRecord(species.id, { species });
     if (!record) continue;
     const canonicalKey = typeof getFishAppearanceVariantKey === "function"
@@ -81971,13 +82110,15 @@ function getFishSpeciesMasteryRecord(speciesId, options = {}) {
   }
   const species = options.species
     || (typeof runtime !== "undefined" && runtime?.fishMap?.get ? runtime.fishMap.get(key) : null);
-  if (typeof ensureFishSpeciesBaseVariantUnlocked === "function") {
+  if (typeof ensureFishSpeciesBaseVariantUnlocked === "function"
+      && !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled())) {
     ensureFishSpeciesBaseVariantUnlocked(species, record);
   }
   return record;
 }
 
 function getFishLockedAppearanceVariantPool(species, record = null) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return [];
   if (!species || !isFishSpeciesCareProgressionEligible(species)) return [];
   const mastery = record || getFishSpeciesMasteryRecord(species.id, { species });
   if (!mastery) return [];
@@ -82259,6 +82400,7 @@ function surfaceFishCareLevelProgressionNotification(fish, species, levelResult,
 }
 
 function unlockRandomFishAppearanceVariantForLevel(fish, species, careLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return null;
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return null;
   if (!fish || !species || !isFishCareProgressionEligible(fish, species) || !isFishSpeciesCareProgressionEligible(species)) return null;
   const level = clamp(Math.floor(Number(careLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
@@ -82336,6 +82478,7 @@ function getFishCrossedCareLevels(previousLevel, newLevel) {
 }
 
 function unlockFishAppearanceVariantsForLevelIncrease(fish, species, previousLevel, newLevel, now = Date.now(), tank = null, options = {}) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return [];
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return [];
   if (!fish || !species || !isFishCareProgressionEligible(fish, species)) return [];
   const fromLevel = clamp(Math.floor(Number(previousLevel) || FISH_CARE_LEVEL_MIN), FISH_CARE_LEVEL_MIN, FISH_CARE_LEVEL_MAX);
@@ -85709,6 +85852,9 @@ async function handleDavyJonesLockerPageClick(event) {
 }
 
 function renderStoreOverlay() {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled() && runtime.storeTab === "pharmacy") {
+    runtime.storeTab = "food";
+  }
   syncWebSurfThemePresentation();
   resetWebSurfToolbarVisibility();
   const routeError = runtime.webSurfRouteError;
@@ -90753,6 +90899,7 @@ function handleWebSurfEmailAction(message) {
 }
 
 function getBubbleBodegaDiseaseTreatmentId(fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return "";
   const known = fish?.careKnowledge?.disease;
   const legacyRecovery = fish?.diseaseState === DISEASE_STATE_RECOVERING && !fish?.treatmentCourses?.disease;
   if (!legacyRecovery && (!known || known.episode !== getFishCareEpisode(fish, "disease"))) return "";
@@ -90958,11 +91105,11 @@ function renderWebSurfHomePage() {
   const browser = getWebSurfBrowserState();
   const playerBookmarks = browser.bookmarks.map((bookmark) => {
     const route = resolveWebSurfUrl(bookmark.url);
-    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(route.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(route.site.displayName)}. Drag to reorder."><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+    return route?.status === "ok" && isWebSurfRouteAllowed(route) ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}" data-websurf-bookmark-reorder-url="${escapeHtml(route.url)}" draggable="false" aria-roledescription="Draggable bookmark" title="Open ${escapeHtml(route.site.displayName)}. Drag to reorder."><span><strong>${escapeHtml(route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
   }).join("");
   const recentPages = browser.history.slice(-5).reverse().map((entry) => {
     const route = resolveWebSurfUrl(entry.url);
-    return route?.status === "ok" ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(entry.title || route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
+    return route?.status === "ok" && isWebSurfRouteAllowed(route) ? `<button type="button" class="websurf-bookmark" data-websurf-route="${escapeHtml(route.url)}"><span><strong>${escapeHtml(entry.title || route.site.displayName)}</strong><small>${escapeHtml(route.url)}</small></span></button>` : "";
   }).join("");
   const trashIcon = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-2 6h10l-1 11H8L7 9Zm3 2v7h2v-7h-2Zm4 0v7h2v-7h-2Z"/></svg>`;
   const mailMarkup = messages.map((message) => {
@@ -94585,6 +94732,8 @@ function handleCareTrayAction(event) {
 }
 
 function renderMedicineTray() {
+  const medicalEnabled = typeof isMedicalSystemEnabled !== "function" || isMedicalSystemEnabled();
+  if (!medicalEnabled) runtime.medicineModeKey = "";
   const visible = runtime.medicineTrayOpen;
   if (dom.medicineTray) {
     dom.medicineTray.hidden = !visible;
@@ -94602,10 +94751,10 @@ function renderMedicineTray() {
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   ));
-  const medicineItems = getMedicineCatalog().filter((medicine) => (
+  const medicineItems = medicalEnabled ? getMedicineCatalog().filter((medicine) => (
     shouldShowMedicineInStore(medicine)
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
-  ));
+  )) : [];
 
   const careCardWidth = 78;
   const careCardGap = 7;
@@ -94613,9 +94762,9 @@ function renderMedicineTray() {
     ? count * careCardWidth + Math.max(0, count - 1) * careCardGap
     : emptyWidth;
   const foodSectionWidth = sectionWidthForCount(foodItems.length, 248);
-  const medicineSectionWidth = sectionWidthForCount(medicineItems.length, 163);
+  const medicineSectionWidth = medicalEnabled ? sectionWidthForCount(medicineItems.length, 163) : 0;
   const toolsSectionWidth = 163;
-  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + 50;
+  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + (medicalEnabled ? 50 : 25);
   dom.medicineTray?.style.setProperty("--care-tray-content-width", `${trayContentWidth}px`);
   const cleaningIncome = getTankCleaningIncomeStatus(getCurrentTank(), Date.now());
 
@@ -94714,7 +94863,7 @@ function renderMedicineTray() {
           <div class="care-tray-food-items">${foodMarkup}</div>
         </section>
 
-        <div class="care-tray-divider" aria-hidden="true"></div>
+        ${medicalEnabled ? `<div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-medical" aria-label="Medication">
           <div class="care-tray-heading-row">
@@ -94722,7 +94871,7 @@ function renderMedicineTray() {
             <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
-        </section>
+        </section>` : ""}
 
         <div class="care-tray-divider" aria-hidden="true"></div>
 
@@ -139695,6 +139844,9 @@ function reconcileFishTreatmentCourses(fish, now = Date.now()) {
 }
 
 function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable.", reason: "medical-system-disabled" };
+  }
   if (!fish || isFishDead(fish) || fish.storageFrozen) return { ok: false, message: "Select a living fish in a tank." };
   if (isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode. Resume normal care before giving the next drop." };
   if (isFishWaterTypeMismatch(fish)) return { ok: false, message: "Move this fish to compatible water before giving a treatment drop." };
@@ -139715,6 +139867,9 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
 }
 
 function applyFishCourseDose(medicine, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable.", reason: "medical-system-disabled" };
+  }
   reconcileFishTreatmentCourses(fish, now);
   const eligibility = getFishMedicationEligibility(medicine.id, fish, now);
   if (!eligibility.ok) return eligibility;
@@ -139749,6 +139904,13 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    const concerns = getFishCareConcerns(fish, now);
+    const guidance = [];
+    if (concerns.includes("injured")) guidance.push("Injuries recover naturally over time. Keep the tank clean, comfortable, and compatible with this fish.");
+    if (concerns.includes("osmotic-stress")) guidance.push(isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to begin recovery." : "The water type is compatible again, so recovery is underway.");
+    return guidance.map((copy) => `<article class="fish-care-guide"><strong>Natural recovery</strong><p>${escapeHtml(copy)}</p></article>`).join("");
+  }
   const concerns = getDiscoveredFishCareConcerns(fish, now);
   const assessment = concerns.length < getFishCareConcerns(fish, now).length
     ? `<article class="fish-care-guide"><strong>Needs assessment</strong><p>Check the visible symptoms with the Pharmacy Symptom Checker, or request a vet consultation.</p></article>`
@@ -139917,6 +140079,9 @@ function buildStillwaterFishReport(fish, now = Date.now()) {
 }
 
 function purchaseStillwaterConsultation(tankId, fishIds, submissionId, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Veterinary consultations are currently unavailable.", reason: "medical-system-disabled" };
+  }
   if (!submissionId) return { ok: false, message: "Open a new consultation first." };
   const existing = state.vetConsultations?.find((report) => report.id === submissionId);
   if (existing) return { ok: true, consultation: existing, alreadyCompleted: true };
@@ -139977,6 +140142,10 @@ function closeStillwaterPage() {
 }
 
 function openStillwaterPage() {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    closeStillwaterPage();
+    return false;
+  }
   if (!openStoreOverlay(runtime.storeTab || "pharmacy", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
   window.closeProteusBiodynePage?.(false);
   window.closeWebSurfSubsidiaryPage?.(false);

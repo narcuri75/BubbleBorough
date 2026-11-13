@@ -34,7 +34,8 @@ test("shrimp and snails live in an Other section inside the Fish storefront", ()
   const rendering = fs.readFileSync(path.join(root, "ui/main-and-store-rendering.js"), "utf8");
   const catalog = fs.readFileSync(path.join(root, "store/catalog.js"), "utf8");
   const html = fs.readFileSync(path.join(root, "../../index.html"), "utf8");
-  assert.match(store, /CATEGORY_IDS = \["food", "pharmacy", "fish", "decor", "equipment"\]/);
+  assert.match(store, /CATEGORY_IDS = \["food", "fish", "decor", "equipment"\]/);
+  assert.doesNotMatch(store, /CATEGORY_IDS = \[[^\]]*"pharmacy"/);
   assert.doesNotMatch(store, /categoryLabels[^\n]*cleanup/);
   assert.doesNotMatch(html, /id="storeCleanupTab"/);
   assert.doesNotMatch(html, /id="cleanupShop"/);
@@ -56,6 +57,48 @@ test("pointer release retains the overlay position while a custom tool is active
   const input = fs.readFileSync(path.join(root, "assets/custom-content.js"), "utf8");
   assert.match(input, /const toolCursorActive = runtime\.cleaningMode[\s\S]*Boolean\(runtime\.feedingModeFoodKey\)[\s\S]*Boolean\(runtime\.medicineModeKey\)/);
   assert.match(input, /if \(!toolCursorActive\) \{\s*runtime\.pointerStagePx = null;/);
+});
+
+test("medical and illness systems are centrally disabled across gameplay entry points", () => {
+  const bootstrap = fs.readFileSync(path.join(root, "00-bootstrap.js"), "utf8");
+  const disease = fs.readFileSync(path.join(root, "fish/needs-disease-and-behavior.js"), "utf8");
+  const purchases = fs.readFileSync(path.join(root, "store/purchases.js"), "utf8");
+  const vet = fs.readFileSync(path.join(root, "fish/care-and-vet.js"), "utf8");
+  assert.match(bootstrap, /const MEDICAL_SYSTEM_ENABLED = false;/);
+  assert.match(bootstrap, /const ILLNESS_SYSTEM_ENABLED = false;/);
+  assert.match(disease, /function infectFishWithDisease[\s\S]*!isIllnessSystemEnabled\(\)/);
+  assert.match(disease, /function processFishDisease[\s\S]*!isIllnessSystemEnabled\(\)/);
+  assert.match(purchases, /function buyMedicine[\s\S]*medical-system-disabled/);
+  assert.match(vet, /function purchaseStillwaterConsultation[\s\S]*medical-system-disabled/);
+});
+
+test("injured fish begin natural recovery without medicine", () => {
+  const now = 10000;
+  const fish = { id: "injured", healthUnits: 4, injuryRecoveryProgressMs: 0, injuryRecoveryStartHealthUnits: 0 };
+  const c = vm.createContext({
+    state: { fish: [fish], lastSimulatedAt: now },
+    DAY_MS,
+    INJURY_RECOVERY_REQUIRED_MS: 1000,
+    WATER_STRESS_RECOVERY_REQUIRED_MS: 1000,
+    WATER_STRESS_RECOVERY_BOOST_MULTIPLIER: 2,
+    OSMOTIC_STRESS_FATAL_MS: 5000,
+    OSMOTIC_STRESS_STAGE_4_MS: 4000,
+    OSMOTIC_STRESS_STAGE_3_MS: 3000,
+    OSMOTIC_STRESS_STAGE_2_MS: 2000,
+    OSMOTIC_STRESS_DAMAGE_INTERVAL_MS: 1000,
+    clamp: (value, min, max) => Math.max(min, Math.min(max, value)),
+    isFishDead: () => false,
+    isFishWaterTypeMismatch: () => false,
+    isFishCourseOngoing: () => false,
+    getFishMaxHealthUnits: () => 6,
+    syncFishPrimaryCondition: () => false
+  });
+  addFunctions(c, "fish/needs-disease-and-behavior.js", ["getFishOsmoticStressStage", "processFishConditionFramework"]);
+  assert.equal(c.processFishConditionFramework(now), true);
+  assert.equal(fish.injuryRecoveryStartHealthUnits, 4);
+  c.processFishConditionFramework(now + 1000);
+  assert.equal(fish.healthUnits, 6);
+  assert.equal(fish.injuryRecoveryStartHealthUnits, 0);
 });
 
 test("every Fish Care catalog image and fallback resolves to a loose or sprite asset", () => {
@@ -293,6 +336,10 @@ function offscreenFeedingHarness(foodKey = "basic") {
     floatingPellets: [{ id: "pellet", foodKey, xNorm: .5, yNorm: .5, createdAt: now, expiresAt: now + DAY_MS }] };
   const c = harness({ state: tank, runtime: { decorMap: new Map() }, MINUTE_MS: 60000,
     getCurrentTank: () => tank, getSpeciesForFish: () => ({ behavior: "free", name: "Fish" }), PIRANHA_BEHAVIOR_ENABLED: true,
+    getEffectiveFishBehavior: (_fish, species) => species?.behavior || "free",
+    setFishDesiredTankDepth() {},
+    sanitizeTankDepthZ: (value, fallback) => Number.isFinite(Number(value)) ? Number(value) : fallback,
+    getFishTankDepthZ: () => 0,
     FISH_HUNGER_CRITICAL_THRESHOLD: 20, FISH_HUNGER_LOW_THRESHOLD: 40, FISH_WILLING_TO_EAT_HUNGER_MAX: 95,
     FISH_BASIC_MEAL_HUNGER_GAIN: 50, FISH_BASIC_MEAL_HUNGER_FLOOR: 85, FISH_OVERFEED_HUNGER_THRESHOLD: 95,
     getFishNeedValue: (f, key) => f.needs[key] ?? 100,
@@ -307,7 +354,7 @@ function offscreenFeedingHarness(foodKey = "basic") {
   for (const name of ["isTutorialTankDirtinessLocked", "scrubImpossiblePredatorState", "scrubProtectedTankFishPredatorState",
     "updateFishNeeds", "processSmartAutoFeeder", "processBoroughStructureServices", "processFishNeedsAutonomy",
     "processFishEggs", "updatePelletSettledState", "processTankMedicineEffects", "processFishDisease",
-    "processFishBehaviorState", "processFishDecayStates", "processDetritusFish",
+    "processFishBehaviorState", "advanceFishBehaviorBrainOffline", "processFishDecayStates", "processDetritusFish",
     "applyCriticalComfortHealthEffects", "updateComfortHistoryEvents", "maybeGenerateDailyRecapForTank",
     "normalizeCurrentTankShellState", "pruneTankState"]) c[name] = () => false;
   addFunctions(c, "fish/feeding-and-medicine.js", ["canFishEatFoodPellet", "canFishTargetFoodPellet", "assignPelletToFish",

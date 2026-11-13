@@ -214,10 +214,10 @@ test("Fish to Home to close/reopen preserves Home and clears stale forced-catego
 test("last category is restored during the session and Home is the next fresh session's default", () => {
   const f = fixture();
   f.open();
-  f.category("pharmacy");
+  f.category("fish");
   f.close();
   f.open();
-  assert.equal(f.dom.pharmacyShop.hidden, false);
+  assert.equal(f.dom.fishShop.hidden, false);
   assert.equal(f.dom.bubbleBodegaHomePage.hidden, true);
   const next = fixture({ saved: f.saved() });
   next.open();
@@ -316,18 +316,15 @@ test("tutorial categories take precedence over the default and explicit Home", (
   assert.equal(f.dom.bubbleBodegaHomePage.hidden, true);
 });
 
-test("rapid All Categories to Food to Pharmacy cannot snap back to Food", () => {
+test("legacy Pharmacy requests fall back to Food", () => {
   const f = fixture();
   f.open();
-  f.extras.tankazonAllCategories.click();
-  f.category("food");
-  f.c.refreshTankazonOpening();
-  f.category("pharmacy");
+  f.c.openStoreOverlay("pharmacy", { forceCategory: true, openHome: false });
   f.flush();
-  assert.equal(f.saved(), "pharmacy");
-  assert.equal(f.c.runtime.storeTab, "pharmacy");
-  assert.equal(f.dom.pharmacyShop.hidden, false);
-  assert.equal(f.dom.foodShop.hidden, true);
+  assert.equal(f.saved(), "food");
+  assert.equal(f.c.runtime.storeTab, "food");
+  assert.equal(f.dom.pharmacyShop.hidden, true);
+  assert.equal(f.dom.foodShop.hidden, false);
 });
 
 function cardFixture() {

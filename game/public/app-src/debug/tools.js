@@ -4447,6 +4447,9 @@ function setSelectedFishDiseaseStageForDebug(fish, stateId, now = Date.now()) {
   if (!fish) {
     return false;
   }
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) {
+    return resetFishDiseaseFields(fish, DISEASE_STATE_NONE, now);
+  }
 
   const diseaseState = sanitizeDiseaseState(stateId);
   if (diseaseState === DISEASE_STATE_NONE) {

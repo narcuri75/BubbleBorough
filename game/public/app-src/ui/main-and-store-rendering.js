@@ -871,6 +871,9 @@ async function handleDavyJonesLockerPageClick(event) {
 }
 
 function renderStoreOverlay() {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled() && runtime.storeTab === "pharmacy") {
+    runtime.storeTab = "food";
+  }
   syncWebSurfThemePresentation();
   resetWebSurfToolbarVisibility();
   const routeError = runtime.webSurfRouteError;

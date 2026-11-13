@@ -1390,7 +1390,7 @@ function openExclusiveOverlay(kind, options = {}) {
 
   switch (overlayKind) {
     case "store": {
-      const requestedTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : options.tab === "cleanup" ? "fish" : "food";
+      const requestedTab = ["food", "fish", "decor", "equipment"].includes(options.tab) ? options.tab : options.tab === "cleanup" ? "fish" : "food";
       const allowedTabs = getTutorialAllowedStoreTabs();
       runtime.storeOverlayOpen = true;
       runtime.storeTab = allowedTabs && !allowedTabs.has(requestedTab)
@@ -1452,7 +1452,7 @@ function openProteusDesignerPage() {
     return true;
   }
   if (!runtime.storeOverlayOpen) {
-    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
+    const storeTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "fish";
     if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
   }
   window.closeProteusBiodynePage?.(false);
@@ -1554,7 +1554,7 @@ function getWebSurfSiteRegistry() {
   return [
     { id: "home", domain: "websurf.swim", aliases: ["www.websurf.swim"], homePath: "/", displayName: "WebSurf", bookmarkIcon: "assets/web/websurf/WebSurf_icon.png", beginsDiscovered: true, bookmarkable: false },
     { id: "bodega", domain: "bubblebodega.swim", aliases: ["www.bubblebodega.swim"], homePath: "/", displayName: "BubbleBodega", bookmarkIcon: "assets/web/bodega/Box.webp", beginsDiscovered: true, bookmarkable: true },
-    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: true, bookmarkable: true },
+    { id: "stillwater", domain: "stillwatervet.swim", aliases: [], homePath: "/", displayName: "Stillwater Veterinary Telehealth", bookmarkIcon: "assets/web/proteus/sub/stillwater-vet_logo.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "bank", domain: "bubbleborough.swim", aliases: ["www.bubbleborough.swim"], homePath: "/bank/account", displayName: "Bubble Borough Bank", bookmarkIcon: "assets/misc/coin_unicode.webp", beginsDiscovered: true, bookmarkable: true },
     { id: "proteus", domain: "proteusbiodyne.swim", aliases: ["www.proteusbiodyne.swim"], homePath: "/", displayName: "Proteus Biodyne", bookmarkIcon: "assets/web/proteus/Proteus_Logo_Icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
     { id: "locker", domain: "davyjoneslocker.hadal", aliases: ["www.davyjoneslocker.hadal"], homePath: "/", displayName: "Davy Jones' Locker", bookmarkIcon: "assets/web/davy/icons/davy_icon.webp", beginsDiscovered: false, bookmarkable: true, hidden: true },
@@ -1654,6 +1654,7 @@ function resolveWebSurfUrl(value) {
 }
 
 function isWebSurfRouteAllowed(route) {
+  if (route.site.id === "stillwater" && typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (route.site.id === "proteus") return state?.proteusDiscovered === true;
   if (route.site.id === "locker") return state?.davyJonesLockerUnlocked === true;
   return true;
@@ -1693,6 +1694,9 @@ function navigateWebSurf(value, options = {}) {
   finishWebSurfBookmarkDrag(null, { cancel: true, render: false });
   const route = resolveWebSurfUrl(value);
   if (route.status !== "ok") return showWebSurfRouteError(route.status, route.url);
+  if (route.site.id === "stillwater" && typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return showWebSurfRouteError("site-unavailable", route.url);
+  }
   if (!isWebSurfRouteAllowed(route)) return showWebSurfRouteError("access-denied", route.url);
   runtime.webSurfRouteError = null;
   runtime.webSurfThemesOpen = false;
@@ -1719,7 +1723,7 @@ function navigateWebSurf(value, options = {}) {
   }
   if (route.site.id === "bodega") {
     ensureWebSurfBrowserTab("store");
-    const category = path.match(/^\/shop\/(food|pharmacy|fish|decor|equipment)$/)?.[1];
+    const category = path.match(/^\/shop\/(food|fish|decor|equipment)$/)?.[1];
     if (path !== "/" && !category && path !== "/account/orders") return showWebSurfRouteError("page-not-found", route.url);
     return category ? openStoreOverlay(category, { forceCategory: true, openHome: false }) : openBubbleBodegaHome();
   }
@@ -1744,7 +1748,7 @@ function navigateWebSurf(value, options = {}) {
 
 function getWebSurfUrlForDestination(destination) {
   if (String(destination || "") === "store") {
-    const category = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    const category = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     return `bubblebodega.swim/shop/${category}`;
   }
   return ({ stillwater: "stillwatervet.swim", home: "websurf.swim", themes: "websurf.swim/themes", bank: "bubbleborough.swim/bank/account", proteus: "proteusbiodyne.swim", locker: "davyjoneslocker.hadal", arcadia: "arcadia.swim", clearwell: "clearwell.swim", commoncurrent: "commoncurrent.swim", tidewell: "tidewell.swim", settings: "websurf.swim/settings" })[String(destination || "")] || "";
@@ -2413,7 +2417,7 @@ function openWebSurfSettingsPage() {
   }
 
   if (!runtime.storeOverlayOpen) {
-    const storeTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
+    const storeTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab) ? runtime.storeTab : "food";
     if (!openStoreOverlay(storeTab, { render: false, rememberWebSurfPage: false })) return false;
   }
 
@@ -2492,7 +2496,7 @@ function openWebSurfSessionPage() {
 }
 
 function resolveBubbleBodegaOpeningView(tab, options = {}) {
-  const categories = ["food", "pharmacy", "fish", "decor", "equipment"];
+  const categories = ["food", "fish", "decor", "equipment"];
   const category = categories.includes(tab) ? tab : tab === "cleanup" ? "fish" : "food";
   if (options.forceCategory === true || getActiveTutorial() || options.openHome === false) return category;
   if (options.openAll === true) return "all";
@@ -2531,11 +2535,11 @@ function openStoreOverlay(tab = "food", options = {}) {
     runtime.bubbleBodegaHomeOpen = view === "home";
     runtime.bubbleBodegaSessionVisited = true;
     runtime.webSurfLastPage = "store";
-    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(view)) tab = view;
+    if (["food", "fish", "decor", "equipment"].includes(view)) tab = view;
     window.prepareBubbleBodegaView?.(view);
     updateWebSurfRoute(view === "home"
       ? "bubblebodega.swim"
-      : `bubblebodega.swim/shop/${["food", "pharmacy", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
+      : `bubblebodega.swim/shop/${["food", "fish", "decor", "equipment"].includes(view) ? view : "food"}`);
   }
   // A request made while the window was already open used to remain here until
   // a later reopen, when it could overwrite Home. Navigation is synchronous now.
@@ -2545,7 +2549,7 @@ function openStoreOverlay(tab = "food", options = {}) {
 }
 
 function openBubbleBodegaHome() {
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   return openStoreOverlay(previousStoreTab, { openHome: true });
@@ -2556,7 +2560,7 @@ function openDavyJonesLockerPage() {
     showToast("That WebSurf destination has not been discovered yet.");
     return false;
   }
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
@@ -2574,7 +2578,7 @@ function openDavyJonesLockerPage() {
 }
 
 function openBubbleBank(tab = "account", options = {}) {
-  const previousStoreTab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+  const previousStoreTab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
     ? runtime.storeTab
     : "food";
   if (!openStoreOverlay(previousStoreTab, { render: false, rememberWebSurfPage: false })) return false;
@@ -2605,7 +2609,7 @@ function handleWebPageNavigation(event) {
   // listing over this freshly visible native catalogue.
   if (target?.closest("#tankazonAllCategories")) {
     event?.preventDefault?.();
-    const tab = ["food", "pharmacy", "fish", "decor", "equipment"].includes(runtime.storeTab)
+    const tab = ["food", "fish", "decor", "equipment"].includes(runtime.storeTab)
       ? runtime.storeTab
       : "food";
     openStoreOverlay(tab, { openAll: true });
@@ -2620,7 +2624,7 @@ function handleWebPageNavigation(event) {
   if (bodegaHomeCategory) {
     event?.preventDefault?.();
     const category = String(bodegaHomeCategory.dataset.bodegaHomeCategory || "food");
-    if (["food", "pharmacy", "fish", "decor", "equipment"].includes(category)) {
+    if (["food", "fish", "decor", "equipment"].includes(category)) {
       runtime.bubbleBodegaHomeOpen = false;
       openStoreOverlay(category, { forceCategory: true, openHome: false });
     }

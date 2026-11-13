@@ -3,7 +3,7 @@
   "migrationSourceSha256": "f868dcce8131b9874b64128a76262b44b3e2a1b0d9b65bdd15ec8bd99d51d097",
   "bootstrap": "00-bootstrap.js",
   "moduleCount": 57,
-  "functionCount": 4201,
+  "functionCount": 4204,
   "modules": [
     {
       "path": "decor/history-and-layouts.js",
@@ -332,7 +332,7 @@
     },
     {
       "path": "core/settings-and-persistence.js",
-      "functionCount": 133,
+      "functionCount": 136,
       "dependencies": [
         "assets/custom-content.js",
         "assets/image-storage-and-import.js",

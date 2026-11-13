@@ -1736,6 +1736,9 @@ function shouldShowFoodInStore(food) {
 }
 
 function shouldShowMedicineInStore(medicine) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return false;
+  }
   if (!medicine) {
     return false;
   }

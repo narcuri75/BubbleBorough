@@ -1191,6 +1191,7 @@ function getNextDayStartTimestamp(timestamp = Date.now()) {
 }
 
 function hasActiveTankMedicineEffect(effectType, now = Date.now(), targetTank = typeof getCurrentTank === "function" ? getCurrentTank() : null) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   const effects = Array.isArray(targetTank?.medicineEffects)
     ? targetTank.medicineEffects
     : (Array.isArray(state?.medicineEffects) ? state.medicineEffects : []);
@@ -1198,6 +1199,7 @@ function hasActiveTankMedicineEffect(effectType, now = Date.now(), targetTank = 
 }
 
 function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs = MEDICINE_VISUAL_DURATION_MS) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!medicine || !point) return;
   state.medicineClouds.push({
     id: createId("med-cloud"),
@@ -1215,6 +1217,7 @@ function addMedicineVisualEffect(medicine, point, now = Date.now(), durationMs =
 }
 
 function consumeSelectedMedicineDose(medicine) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   const quantity = Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0);
   if (quantity <= 0) return false;
   if (typeof recordPurchaseProductUse === "function") recordPurchaseProductUse("medicine", medicine.id, 1);
@@ -1224,6 +1227,9 @@ function consumeSelectedMedicineDose(medicine) {
 }
 
 function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable." };
+  }
   if (!medicine || !fish) return { ok: false, message: "Click a fish to treat." };
   if (isFishDead(fish)) return { ok: false, message: "Medicine cannot be used on a dead fish." };
   if (typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode." };
@@ -1281,6 +1287,10 @@ function applyTargetedMedicineToFish(medicine, fish, now = Date.now()) {
 }
 
 function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = "") {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    runtime.medicineModeKey = "";
+    return false;
+  }
   const medicineKey = runtime.medicineModeKey;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine || !point) return false;
@@ -1352,6 +1362,7 @@ function applySelectedMedicineAtPoint(point, now = Date.now(), targetFishId = ""
 }
 
 function processTankMedicineEffects(now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!Array.isArray(state?.medicineEffects)) return false;
   const before = state.medicineEffects.length;
   state.medicineEffects = state.medicineEffects.filter((effect) => effect && (Number(effect.endsAt) || 0) > now);

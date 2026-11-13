@@ -2339,6 +2339,8 @@ function handleCareTrayAction(event) {
 }
 
 function renderMedicineTray() {
+  const medicalEnabled = typeof isMedicalSystemEnabled !== "function" || isMedicalSystemEnabled();
+  if (!medicalEnabled) runtime.medicineModeKey = "";
   const visible = runtime.medicineTrayOpen;
   if (dom.medicineTray) {
     dom.medicineTray.hidden = !visible;
@@ -2356,10 +2358,10 @@ function renderMedicineTray() {
     && food.id !== "upgraded"
     && Math.max(0, Number(state.foodInventory?.[food.id]) || 0) > 0
   ));
-  const medicineItems = getMedicineCatalog().filter((medicine) => (
+  const medicineItems = medicalEnabled ? getMedicineCatalog().filter((medicine) => (
     shouldShowMedicineInStore(medicine)
     && Math.max(0, Number(state.medicineInventory?.[medicine.id]) || 0) > 0
-  ));
+  )) : [];
 
   const careCardWidth = 78;
   const careCardGap = 7;
@@ -2367,9 +2369,9 @@ function renderMedicineTray() {
     ? count * careCardWidth + Math.max(0, count - 1) * careCardGap
     : emptyWidth;
   const foodSectionWidth = sectionWidthForCount(foodItems.length, 248);
-  const medicineSectionWidth = sectionWidthForCount(medicineItems.length, 163);
+  const medicineSectionWidth = medicalEnabled ? sectionWidthForCount(medicineItems.length, 163) : 0;
   const toolsSectionWidth = 163;
-  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + 50;
+  const trayContentWidth = foodSectionWidth + medicineSectionWidth + toolsSectionWidth + (medicalEnabled ? 50 : 25);
   dom.medicineTray?.style.setProperty("--care-tray-content-width", `${trayContentWidth}px`);
   const cleaningIncome = getTankCleaningIncomeStatus(getCurrentTank(), Date.now());
 
@@ -2468,7 +2470,7 @@ function renderMedicineTray() {
           <div class="care-tray-food-items">${foodMarkup}</div>
         </section>
 
-        <div class="care-tray-divider" aria-hidden="true"></div>
+        ${medicalEnabled ? `<div class="care-tray-divider" aria-hidden="true"></div>
 
         <section class="care-tray-medical" aria-label="Medication">
           <div class="care-tray-heading-row">
@@ -2476,7 +2478,7 @@ function renderMedicineTray() {
             <div class="care-tray-heading">Medication</div>
           </div>
           <div class="care-tray-medical-items">${medicineMarkup}</div>
-        </section>
+        </section>` : ""}
 
         <div class="care-tray-divider" aria-hidden="true"></div>
 

@@ -18,6 +18,20 @@
         "Fish can snap in a direction instead of gradually swimming that way.",
         "Fish can disappear momentarily or clip through cave images and cave walls."
       ]
+    },
+    {
+      "version": "0.2.3",
+      "pushedAt": "11/12/2026 9:43PM",
+      "publishedAt": "2026-11-13T05:43:00.000Z",
+      "notes": [
+        "[header] Temporary gameplay changes",
+        "[bullet] The illness, pharmacy, and veterinary systems are temporarily disabled while ongoing issues are addressed.",
+        "[bullet] Unlock progression has also been disabled for now.",
+        "[bullet] Fish can still die, but they may now recover naturally instead of requiring medicine or a diagnosis.",
+        "[header] In development",
+        "[bullet] A 3D browser version of Bubble Borough is currently in development."
+      ],
+      "knownIssues": []
     }
   ]
 }

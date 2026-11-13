@@ -235,3 +235,53 @@ test("Phase 40 npm test runs the consolidated progression suite in addition to t
   assert.match(pkg.scripts.test, /scripts\/phase34-save-compatibility\.test\.cjs/);
   assert.match(pkg.scripts.test, /scripts\/phase40-progression-regressions\.test\.cjs/);
 });
+
+test("disabled fish unlocking makes every enabled species available without rewriting saved unlocks", () => {
+  const lockedSpecies = { id: "betta", Fish_enabled: true, unlockRequirement: "example-milestone" };
+  const disabledSpecies = { id: "otocinclus", Fish_enabled: false, unlockRequirement: "example-milestone" };
+  const state = { unlockedFishSpecies: [] };
+  const runtime = { fishMap: new Map([[lockedSpecies.id, lockedSpecies], [disabledSpecies.id, disabledSpecies]]) };
+  const c = load("store/catalog.js", ["isFishSpeciesProgressUnlocked", "isFishSpeciesShopUnlocked"], {
+    state,
+    runtime,
+    isFishUnlockProgressionEnabled: () => false,
+    isDebugModeEnabled: () => false
+  });
+
+  assert.equal(c.isFishSpeciesShopUnlocked(lockedSpecies), true);
+  assert.equal(c.isFishSpeciesShopUnlocked(disabledSpecies), false, "Fish_enabled remains an absolute catalog gate");
+  assert.deepEqual(state.unlockedFishSpecies, [], "availability bypass must preserve dormant progression data");
+
+  const unlock = load("store/catalog.js", ["unlockFishSpecies"], {
+    isFishUnlockProgressionEnabled: () => false
+  });
+  assert.equal(unlock.unlockFishSpecies(lockedSpecies.id), false, "milestones must not write new unlock records while disabled");
+  assert.deepEqual(state.unlockedFishSpecies, []);
+});
+
+test("disabled fish unlocking exposes all current variants and suppresses future unlock rolls", () => {
+  const species = {
+    id: "betta",
+    asset: "assets/fish/betta/base.png",
+    assetVariants: ["assets/fish/betta/base.png", "assets/fish/betta/v1.png", "assets/fish/betta/v2.png"]
+  };
+  const bindings = {
+    isFishUnlockProgressionEnabled: () => false,
+    isFishSpeciesCareProgressionEligible: () => true,
+    getFishAssetVariants: entry => entry.assetVariants,
+    getFishProgressionAppearanceVariants: entry => entry.assetVariants,
+    getFishAppearanceVariantKey: fileKey,
+    getFishBaseAppearanceVariantKey: entry => fileKey(entry.asset),
+    getFishVariantLabelFromTileName: (_path, index) => `Variant ${index + 1}`,
+    isDebugModeEnabled: () => false
+  };
+  const variants = load("fish/needs-disease-and-behavior.js", ["getFishStoreVariants"], bindings)
+    .getFishStoreVariants(species);
+  assert.ok(variants.every(entry => entry.unlocked === true && entry.locked === false));
+
+  const fish = { id: "fish-1", variantUnlockCareLevel: 1 };
+  const events = load("tank/events-recaps-and-save.js", ["unlockFishAppearanceVariantsForLevelIncrease"], bindings)
+    .unlockFishAppearanceVariantsForLevelIncrease(fish, species, 1, 2, Date.now());
+  assert.deepEqual(Array.from(events), []);
+  assert.equal(fish.variantUnlockCareLevel, 1, "disabled rolls must not advance dormant unlock bookkeeping");
+});

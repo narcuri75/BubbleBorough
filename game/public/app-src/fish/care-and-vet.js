@@ -164,6 +164,9 @@ function reconcileFishTreatmentCourses(fish, now = Date.now()) {
 }
 
 function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable.", reason: "medical-system-disabled" };
+  }
   if (!fish || isFishDead(fish) || fish.storageFrozen) return { ok: false, message: "Select a living fish in a tank." };
   if (isPeacefulModeEnabled()) return { ok: false, message: "Treatment is paused in Peaceful Mode. Resume normal care before giving the next drop." };
   if (isFishWaterTypeMismatch(fish)) return { ok: false, message: "Move this fish to compatible water before giving a treatment drop." };
@@ -184,6 +187,9 @@ function getFishMedicationEligibility(medicineId, fish, now = Date.now()) {
 }
 
 function applyFishCourseDose(medicine, fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Medicine is currently unavailable.", reason: "medical-system-disabled" };
+  }
   reconcileFishTreatmentCourses(fish, now);
   const eligibility = getFishMedicationEligibility(medicine.id, fish, now);
   if (!eligibility.ok) return eligibility;
@@ -218,6 +224,13 @@ function applyFishCourseDose(medicine, fish, now = Date.now()) {
 }
 
 function getFishTreatmentGuideMarkup(fish, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    const concerns = getFishCareConcerns(fish, now);
+    const guidance = [];
+    if (concerns.includes("injured")) guidance.push("Injuries recover naturally over time. Keep the tank clean, comfortable, and compatible with this fish.");
+    if (concerns.includes("osmotic-stress")) guidance.push(isFishWaterTypeMismatch(fish) ? "Move this fish to compatible water to begin recovery." : "The water type is compatible again, so recovery is underway.");
+    return guidance.map((copy) => `<article class="fish-care-guide"><strong>Natural recovery</strong><p>${escapeHtml(copy)}</p></article>`).join("");
+  }
   const concerns = getDiscoveredFishCareConcerns(fish, now);
   const assessment = concerns.length < getFishCareConcerns(fish, now).length
     ? `<article class="fish-care-guide"><strong>Needs assessment</strong><p>Check the visible symptoms with the Pharmacy Symptom Checker, or request a vet consultation.</p></article>`
@@ -386,6 +399,9 @@ function buildStillwaterFishReport(fish, now = Date.now()) {
 }
 
 function purchaseStillwaterConsultation(tankId, fishIds, submissionId, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    return { ok: false, message: "Veterinary consultations are currently unavailable.", reason: "medical-system-disabled" };
+  }
   if (!submissionId) return { ok: false, message: "Open a new consultation first." };
   const existing = state.vetConsultations?.find((report) => report.id === submissionId);
   if (existing) return { ok: true, consultation: existing, alreadyCompleted: true };
@@ -446,6 +462,10 @@ function closeStillwaterPage() {
 }
 
 function openStillwaterPage() {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) {
+    closeStillwaterPage();
+    return false;
+  }
   if (!openStoreOverlay(runtime.storeTab || "pharmacy", { render: false, rememberWebSurfPage: false, allowDuringTutorial: true })) return false;
   window.closeProteusBiodynePage?.(false);
   window.closeWebSurfSubsidiaryPage?.(false);

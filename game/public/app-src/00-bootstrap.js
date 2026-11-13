@@ -10,7 +10,14 @@ const CLOUD_SYNC_DEBOUNCE_MS = 3000;
 const CLOUD_SYNC_MIN_INTERVAL_MS = 60000;
 const SAVE_FILE_FORMAT = "bubble-borough-save";
 const SAVE_FILE_EXPORT_VERSION = 1;
-const STATE_VERSION = 68;
+const STATE_VERSION = 69;
+// Medical gameplay is intentionally dormant. Keep its persisted data and
+// implementation available so the feature can be restored without data loss.
+const MEDICAL_SYSTEM_ENABLED = false;
+const ILLNESS_SYSTEM_ENABLED = false;
+// Fish and appearance content remains authored and progression data remains in
+// saves, but progression-based purchase locks and unlock events are dormant.
+const FISH_UNLOCK_PROGRESSION_ENABLED = false;
 window.closeStillwaterPage = closeStillwaterPage;
 const CUSTOM_IMAGE_DB_NAME = "bubble-borough-custom-images-v1";
 const CUSTOM_IMAGE_DB_VERSION = 1;

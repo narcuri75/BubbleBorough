@@ -252,6 +252,9 @@ function getBubbleBodegaFishStoreVariants(species) {
   }
 
   const variants = getFishStoreVariants(species);
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return variants;
+  }
   // BubbleBodega is a collection view, not a spoiler list. Normal play shows
   // only appearances the player has actually discovered. Debug Mode keeps the
   // complete CURRENT variant set selectable for testing, while obsolete assets
@@ -697,6 +700,10 @@ function isFishSpeciesProgressUnlocked(speciesOrId) {
     return false;
   }
 
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return species.Fish_enabled !== false;
+  }
+
   if (!species.unlockRequirement) {
     return true;
   }
@@ -1093,6 +1100,9 @@ function getFishPurchaseCost(speciesId) {
 }
 
 function unlockFishSpecies(speciesId, now = Date.now(), reasonText = "") {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return false;
+  }
   const species = runtime.fishMap.get(speciesId);
   if (!species || isFishSpeciesUnlocked(species)) {
     return false;

@@ -639,6 +639,7 @@ function transferChumIntoBoat(boat = getBoat(), requestedAmount = BOAT_RESOURCE_
 }
 
 function transferMedicineIntoSubmarine(resourceType, submarine = getSubmarine(), requestedAmount = SUBMARINE_RESOURCE_CAPACITY) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return 0;
   if (!submarine) return 0;
   submarine.inventory = sanitizeSubmarineInventory(submarine.inventory);
   const normalizedType = resourceType === "calming" ? "calming" : "health";
@@ -2730,6 +2731,7 @@ function deploySubmarineFood(submarine, target, now = Date.now()) {
 }
 
 function deploySubmarineMedicine(submarine, target, medicineKey, resourceType, now = Date.now()) {
+  if (typeof isMedicalSystemEnabled === "function" && !isMedicalSystemEnabled()) return false;
   if (!submarine || !target || normalizeSubmarineResourceCount(submarine.inventory?.[resourceType]) <= 0) return false;
   const medicine = getMedicineMeta(medicineKey);
   if (!medicine) return false;

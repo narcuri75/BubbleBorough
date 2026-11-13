@@ -111,6 +111,10 @@ function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
     : String(variantKey || "").split(/[?#]/)[0].split("/").pop();
   if (!key) return false;
 
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) {
+    return true;
+  }
+
   const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
     ? isFishSpeciesCareProgressionEligible(species)
     : false;
@@ -136,11 +140,13 @@ function isFishAppearanceVariantUnlocked(species, variantKey, options = {}) {
 }
 
 function getFishStoreVariants(species) {
-  const progressionEnabled = typeof isFishSpeciesCareProgressionEligible === "function"
+  const progressionEligible = typeof isFishSpeciesCareProgressionEligible === "function"
     ? isFishSpeciesCareProgressionEligible(species)
     : false;
+  const progressionEnabled = progressionEligible
+    && !(typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled());
   const allPaths = getFishAssetVariants(species);
-  const paths = progressionEnabled && typeof getFishProgressionAppearanceVariants === "function"
+  const paths = progressionEligible && typeof getFishProgressionAppearanceVariants === "function"
     ? getFishProgressionAppearanceVariants(species)
     : allPaths;
   const baseKey = typeof getFishBaseAppearanceVariantKey === "function"
@@ -204,6 +210,7 @@ function getFishStoreVariants(species) {
 }
 
 function getFishStoreVariantProgressMessage(species, variants = getFishStoreVariants(species)) {
+  if (typeof isFishUnlockProgressionEnabled === "function" && !isFishUnlockProgressionEnabled()) return "";
   if (!species || typeof isFishSpeciesCareProgressionEligible !== "function" || !isFishSpeciesCareProgressionEligible(species)) return "";
   const entries = Array.isArray(variants) ? variants : [];
   if (entries.length <= 1) return "";
@@ -941,6 +948,7 @@ function randomDelay(minMs, maxMs) {
 }
 
 function hasIllnessUnlocked(targetState = state) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   return Boolean(targetState?.dailyBonus?.milestones?.["stable-tank"]);
 }
 
@@ -956,6 +964,7 @@ function isActiveDiseaseState(stateId) {
 }
 
 function hasActiveFishDisease(fish) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
@@ -963,6 +972,7 @@ function hasActiveFishDisease(fish) {
 }
 
 function isFishDiseaseVisible(fish) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (fish && !isFishDead(fish) && typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled()) {
     return false;
   }
@@ -1103,6 +1113,7 @@ function resetFishDiseaseFields(fish, stateId = DISEASE_STATE_NONE, now = Date.n
 function infectFishWithDisease(fish, source = "conditions", now = Date.now(), initialState = DISEASE_STATE_INCUBATING, options = {}) {
   if (
     !fish
+    || (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled())
     || (!hasIllnessUnlocked() && options.bypassUnlock !== true)
     || isFishDead(fish)
     || isProteusZombieFish(fish)
@@ -1138,6 +1149,7 @@ function infectFishWithDisease(fish, source = "conditions", now = Date.now(), in
 }
 
 function maybeSeedDavyJonesViralIllness(fish, now = Date.now()) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if (!fish || isFishDead(fish) || Math.random() >= DAVY_JONES_VIRAL_PURCHASE_CHANCE) {
     return false;
   }
@@ -1951,6 +1963,7 @@ function applyFirstAidDiseaseSlowdown(now = Date.now()) {
 }
 
 function processFishDisease(now = Date.now()) {
+  if (typeof isIllnessSystemEnabled === "function" && !isIllnessSystemEnabled()) return false;
   if ((typeof isPeacefulModeEnabled === "function" && isPeacefulModeEnabled())) return false;
   if (!state?.fish?.length) {
     return false;
@@ -2134,10 +2147,11 @@ function syncFishPrimaryCondition(fish, now = Date.now(), options = {}) {
 function processFishConditionFramework(now = Date.now()) {
   if (!Array.isArray(state?.fish)) return false;
   let changed = false;
+  const medicalEnabled = typeof isMedicalSystemEnabled !== "function" || isMedicalSystemEnabled();
   const previousSimulatedAt = Math.min(now, Number(state.lastSimulatedAt) || now);
   for (const fish of state.fish) {
     if (!fish || isFishDead(fish)) continue;
-    if (typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
+    if (medicalEnabled && typeof reconcileFishTreatmentCourses === "function") changed = reconcileFishTreatmentCourses(fish, now) || changed;
     const waterMismatch = typeof isFishWaterTypeMismatch === "function" && isFishWaterTypeMismatch(fish);
     if (waterMismatch) {
       if (!(Number(fish.osmoticStressStartedAt) > 0)) {
@@ -2190,11 +2204,23 @@ function processFishConditionFramework(now = Date.now()) {
       }
     }
 
+    const maxHealth = getFishMaxHealthUnits(fish);
+    if (
+      (Number(fish.healthUnits) || 0) > 0
+      && (Number(fish.healthUnits) || 0) < maxHealth
+      && !(Number(fish.injuryRecoveryStartHealthUnits) > 0)
+      && !(medicalEnabled && typeof isFishCourseOngoing === "function" && isFishCourseOngoing(fish, "injury"))
+    ) {
+      fish.injuryRecoveryStartHealthUnits = Math.max(1, Number(fish.healthUnits) || 1);
+      fish.injuryRecoveryProgressMs = Math.max(1, Number(fish.injuryRecoveryProgressMs) || 0);
+      fish.injuryRecoveryLastAt = now;
+      changed = true;
+    }
+
     if ((Number(fish.injuryRecoveryStartHealthUnits) || 0) > 0) {
       const elapsed = clamp(now - (Number(fish.injuryRecoveryLastAt) || previousSimulatedAt), 0, DAY_MS);
       fish.injuryRecoveryLastAt = now;
       fish.injuryRecoveryProgressMs = Math.min(INJURY_RECOVERY_REQUIRED_MS, Math.max(1, Number(fish.injuryRecoveryProgressMs) || 0) + elapsed);
-      const maxHealth = getFishMaxHealthUnits(fish);
       const startHealth = Math.min(maxHealth, Math.max(1, Number(fish.injuryRecoveryStartHealthUnits) || Number(fish.healthUnits) || 1));
       const fraction = clamp(fish.injuryRecoveryProgressMs / INJURY_RECOVERY_REQUIRED_MS, 0, 1);
       const targetHealth = Math.min(maxHealth, Math.floor(startHealth + (maxHealth - startHealth) * fraction + 0.0001));
